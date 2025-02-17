@@ -1,94 +1,237 @@
 import type { Config } from 'tailwindcss';
 
 export default {
-    darkMode: ['class'],
-    content: [
+  darkMode: ['class'],
+  content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-  	extend: {
-  		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
-  			}
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
-  	}
+    extend: {
+      borderRadius: {
+        md: 'calc(var(--radius) - 2px)',
+        xl: 'var(--rounded-xl)',
+        lg: 'var(--radius)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      fontSize: {
+        xl: 'var(--xl)',
+        '2xl': 'var(--2xl)',
+        lg: 'var(--lg)',
+        md: 'var(--md)',
+        sm: 'var(--sm)',
+        xs: 'var(--xs)',
+      },
+      colors: {
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        tertiary: 'var(--tertiary)',
+        white: 'var(--white)',
+        brand: 'var(--brand)',
+        brandDark: 'var(--brand-dark)',
+        red: 'var(--red)',
+        deepRed: 'var(--deepRed)',
+        warning: 'var(--warning)',
+        default: {
+          '25': 'var(--default-25)',
+          '50': 'var(--default-50)',
+          '100': 'var(--default-100)',
+          '200': 'var(--default-200)',
+          '300': 'var(--default-300)',
+          '400': 'var(--default-400)',
+          '500': 'var(--default-500)',
+          '600': 'var(--default-600)',
+          '700': 'var(--default-700)',
+          '800': 'var(--default-800)',
+          '900': 'var(--default-900)',
+        },
+        accent: {
+          '25': 'var(--accent-25)',
+          '50': 'var(--accent-50)',
+          '100': 'var(--accent-100)',
+          '200': 'var(--accent-200)',
+          '300': 'var(--accent-300)',
+          '400': 'var(--accent-400)',
+          '500': 'var(--accent-500)',
+          '600': 'var(--accent-600)',
+          '700': 'var(--accent-700)',
+          '800': 'var(--accent-800)',
+          '900': 'var(--accent-900)',
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        bg: {
+          primary: 'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          tertiary: 'var(--bg-tertiary)',
+          gradient: 'var(--bg-gradient)',
+        },
+        btn: {
+          primary: {
+            DEFAULT: 'var(--brand-600)',
+            hover: '#f00',
+            active: '#5B3DB5',
+            disabled: '#A8A8A8',
+          },
+          secondary: {
+            DEFAULT: '#F3F4F6',
+            hover: '#E5E7EB',
+            active: '#D1D5DB',
+            disabled: '#A8A8A8',
+          },
+          danger: {
+            DEFAULT: '#EF4444',
+            hover: '#DC2626',
+            active: '#B91C1C',
+            disabled: '#A8A8A8',
+          },
+        },
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        chart: {
+          '1': 'hsl(var(--chart-1))',
+          '2': 'hsl(var(--chart-2))',
+          '3': 'hsl(var(--chart-3))',
+          '4': 'hsl(var(--chart-4))',
+          '5': 'hsl(var(--chart-5))',
+        },
+      },
+    },
+    spacing: {
+      '0': '0px',
+      '1': '1px',
+      '2': '2px',
+      '4': '4px',
+      '5': '5px',
+      '6': '6px',
+      '8': '8px',
+      '10': '10px',
+      '15': '15px',
+      '20': '20px',
+      '25': '25px',
+      '30': '30px',
+      '35': '35px',
+      '40': '40px',
+      '45': '45px',
+      '50': '50px',
+      '55': '55px',
+      '60': '60px',
+      '65': '65px',
+      '70': '70px',
+      '75': '75px',
+      '80': '80px',
+      '85': '85px',
+      '90': '90px',
+      '95': '95px',
+      '100': '100px',
+      '105': '105px',
+      '110': '110px',
+      '115': '115px',
+      '120': '120px',
+      '125': '125px',
+      '130': '130px',
+      '135': '135px',
+      '140': '140px',
+      '145': '145px',
+      '150': '150px',
+      '155': '155px',
+      '160': '160px',
+      '165': '165px',
+      '170': '170px',
+      '175': '175px',
+      '180': '180px',
+      '185': '185px',
+      '190': '190px',
+      '195': '195px',
+      '200': '200px',
+      '205': '205px',
+      '210': '210px',
+      '215': '215px',
+      '220': '220px',
+      '225': '225px',
+      '230': '230px',
+      '235': '235px',
+      '240': '240px',
+      '245': '245px',
+      '250': '250px',
+      '255': '255px',
+      '260': '260px',
+      '265': '265px',
+      '270': '270px',
+      '275': '275px',
+      '280': '280px',
+      '285': '285px',
+      '290': '290px',
+      '295': '295px',
+      '300': '300px',
+      '305': '305px',
+      '310': '310px',
+      '315': '315px',
+      '320': '320px',
+      '325': '325px',
+      '330': '330px',
+      '335': '335px',
+      '340': '340px',
+      '345': '345px',
+      '350': '350px',
+      '355': '355px',
+      '360': '360px',
+      '365': '365px',
+      '370': '370px',
+      '375': '375px',
+      '380': '380px',
+      '385': '385px',
+      '390': '390px',
+      '395': '395px',
+      '400': '400px',
+      '405': '405px',
+      '410': '410px',
+      '415': '415px',
+      '420': '420px',
+      '425': '425px',
+      '430': '430px',
+      '435': '435px',
+      '440': '440px',
+      '445': '445px',
+      '450': '450px',
+      '455': '455px',
+      '460': '460px',
+      '465': '465px',
+      '470': '470px',
+      '475': '475px',
+      '480': '480px',
+      '485': '485px',
+      '490': '490px',
+      '495': '495px',
+      '500': '500px',
+      '550': '550px',
+    },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;

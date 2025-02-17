@@ -1,0 +1,39 @@
+.footer {
+  @apply bg-default-25 px-30 text-center;
+  .footer-content {
+    @apply flex items-center justify-between py-60;
+  }
+  .footer-left {
+    @apply flex items-center gap-90;
+    nav {
+      @apply flex items-center gap-30 text-xl;
+      a {
+        @apply text-default-600;
+        &:hover {
+          @apply text-default-800;
+        }
+      }
+    }
+  }
+  .footer-right {
+    @apply flex items-center gap-20;
+    nav {
+      @apply flex items-center gap-20;
+      a {
+        @apply text-default-400;
+        &:hover {
+          @apply text-default-800;
+        }
+      }
+    }
+  }
+  .footer a {
+    @apply text-default-400;
+    &:hover {
+      @apply text-default-800;
+    }
+  }
+  .footer-bottom {
+    @apply border-t border-default-200 pb-40 pt-40 font-medium text-default-400;
+  }
+}
