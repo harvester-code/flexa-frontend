@@ -14,7 +14,7 @@ export async function getSavedEmail() {
 
 export const signInAction = async (formData: FormData) => {
   if (!formData.get('email') || !formData.get('password')) {
-    return redirect('/login?error-message=Email and password are required');
+    return redirect('/?error-message=Email and password are required');
   }
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -35,11 +35,11 @@ export const signInAction = async (formData: FormData) => {
   // 이메일 형식 검증
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return redirect('/login?error-message=Invalid email format');
+    return redirect('/?error-message=Invalid email format');
   }
   // 비밀번호 최소 길이 검증
   if (password.length < 6) {
-    return redirect('/login?error-message=Password must be at least 6 characters');
+    return redirect('/?error-message=Password must be at least 6 characters');
   }
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -48,7 +48,7 @@ export const signInAction = async (formData: FormData) => {
   });
   if (error) {
     console.error(error.code + ' ' + error.message);
-    redirect('/login?error-message=' + error.message);
+    redirect('/?error-message=' + error.message);
   } else {
     redirect('/protected');
   }
@@ -108,7 +108,7 @@ export const signUpAction = async (formData: FormData) => {
 export const signOutAction = async () => {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return redirect('/login');
+  return redirect('/');
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
