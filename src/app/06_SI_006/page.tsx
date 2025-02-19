@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { OrbitProgress } from "react-loading-indicators";
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
@@ -45,19 +46,17 @@ const tabsSecondary: { text: string; number?: number }[] = [
 
 const BarColors = {
   "DEFAULT": [
-    ...[
-      '#F4EBFF',
-      '#E9D7FE',
-      '#D6BBFB',
-      '#B692F6',
-      '#9E77ED',
-      '#7F56D9',
-      '#6941C6',
-      '#53389E',
-      '#42307D',
-    ].reverse(),
+    '#42307D',
+    '#53389E',
+    '#6941C6',
+    '#7F56D9',
+    '#9E77ED',
+    '#B692F6',
+    '#D6BBFB',
+    '#E9D7FE',
+    '#F4EBFF',
     '#B9C0D4',
-  ],
+  ].reverse(),
   "2": [
     '#E9D7FE',
     '#53389E',
@@ -89,6 +88,7 @@ const DirectUploadDone: React.FC = () => {
     operatorItems: { [criteriaId: string]: IOperatorItem[] };
     valueItems: { [criteriaId: string]: IDropdownItem[] };
   }>();
+  const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
   const [selDate, setSelDate] = useState<Date>(moment().toDate());
   const [selAirport, setSelAirport] = useState<string>('ICN');
@@ -96,7 +96,7 @@ const DirectUploadDone: React.FC = () => {
   const [selColorCriteria, setSelColorCriteria] = useState<string>('Airline');
   const [tab, setTab] = useState(1);
   const [tabSecondary, setTabSecondary] = useState(0);
-  const [chartData, setChartData] = useState<{ x: string[]; data: IChartData }>();
+  const [chartData, setChartData] = useState<{ total: number, x: string[]; data: IChartData }>();
   const refWidth = useRef(null);
   const { width } = useResize(refWidth);
   const userId = 'test';
@@ -104,6 +104,7 @@ const DirectUploadDone: React.FC = () => {
   const barColorsCurrent = !chartDataCurrent ? [] : String(chartDataCurrent?.length) in BarColors ? BarColors[String(chartDataCurrent?.length)] : BarColors.DEFAULT;
   const loadFlightSchedule = useCallback(
     (first_load: boolean = true) => {
+      setLoadingFlightSchedule(true);
       getFlightSchedule({
         first_load,
         user_id: userId,
@@ -111,7 +112,6 @@ const DirectUploadDone: React.FC = () => {
         airport: selAirport,
         condition: selConditions,
       }).then(({ data }) => {
-        console.log(data);
         if (data?.add_conditions) {
           const logicItems: IDropdownItem[] = [{ id: 'AND', text: 'AND' }];
           const criteriaItems: IDropdownItem[] = [];
@@ -120,10 +120,12 @@ const DirectUploadDone: React.FC = () => {
           for (const criteriaCur of data?.add_conditions) {
             const idCur = criteriaCur.name;
             criteriaItems.push({ id: idCur, text: criteriaCur.name });
-            if (criteriaCur.operator === '=')
-              operatorItems[idCur] = [{ id: 'O1', text: '=', multiSelect: false }];
-            else if (criteriaCur.operator === 'is in')
-              operatorItems[idCur] = [{ id: 'O2', text: 'is in', multiSelect: true }];
+            criteriaCur.operator.map((val, index) => {
+              if (val === '=')
+                operatorItems[idCur] = [{ id: `O${index + 1}`, text: '=', multiSelect: false }];
+              else if (val === 'is in')
+                operatorItems[idCur] = [{ id: `O${index + 1}`, text: 'is in', multiSelect: true }];
+            });
             valueItems[idCur] = [];
             for (const valueCur of criteriaCur.value) {
               valueItems[idCur].push({ id: valueCur, text: valueCur });
@@ -132,11 +134,24 @@ const DirectUploadDone: React.FC = () => {
           setConditions({ logicItems, criteriaItems, operatorItems, valueItems });
         }
         if (data?.chart_x_data && data?.chart_y_data) {
+          for(const criteriaCur in data?.chart_y_data) {
+            const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
+            const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
+            for(const itemCur of criteriaDataCur) {
+              itemCur.acc_y = Array(itemCur.y.length).fill(0);
+              for(let i = 0; i < itemCur.y.length; i++) {
+                acc_y[i] += itemCur.y[i];
+                itemCur.acc_y[i] = Number(acc_y[i]);
+              }
+            }
+          }
           setChartData({
+            total: data?.total,
             x: data?.chart_x_data,
             data: data?.chart_y_data,
           });
         }
+        setLoadingFlightSchedule(false);
       });
     },
     [userId, selDate, selAirport, selConditions]
@@ -254,7 +269,7 @@ const DirectUploadDone: React.FC = () => {
             />
           ) : null}
           <div className="mt-[30px] flex items-center justify-between">
-            <p className="text-lg font-semibold">Total: 287 Flights</p>
+            <p className="text-lg font-semibold">Total: {chartData?.total} Flights</p>
             <div className="flex flex-col">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -287,30 +302,33 @@ const DirectUploadDone: React.FC = () => {
             <Plot
               // @ts-expect-error ...
               data={chartDataCurrent
-                ?.sort((a, b) => a.order - b.order)
+                ?.sort((a, b) => b.order - a.order)
                 .map((item, index) => {
                   return {
                     x: chartData.x,
-                    y: item.y,
+                    y: item.acc_y,
                     name: item.name,
                     type: 'bar',
                     marker: {
                       color: barColorsCurrent[index],
-                      opacity: chartDataCurrent?.length < 5 ? 1 : 0.75,
+                      opacity: 1,
                     },
+                    hovertemplate: item.y?.map(
+                      (val) => `[%{x}] ${val}`
+                    )
                   };
                 })}
               layout={{
                 width,
                 height: 500,
                 margin: {
-                  l: 10,
+                  l: 20,
                   r: 10,
                 },
                 barmode: 'overlay',
                 legend: {
                   x: 1,
-                  y: 1.3,
+                  y: 1.2,
                   xanchor: 'right',
                   yanchor: 'top',
                   orientation: 'h',
@@ -330,6 +348,10 @@ const DirectUploadDone: React.FC = () => {
             </button>
           </div>
         </>
+      ) : loadingFlightSchedule ? (
+        <div className='flex flex-1 justify-center items-center min-h-[200px]'>
+          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+        </div>
       ) : (
         <div className="h-[100px]" />
       )}

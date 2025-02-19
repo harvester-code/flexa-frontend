@@ -2,7 +2,7 @@ import axios from '@/lib/axios';
 
 export interface IConditionData {
   name: string;
-  operator: string;
+  operator: string [];
   value: string [];
 };
 
@@ -11,6 +11,7 @@ export interface IChartData {
     name: string;
     order: number;
     y: Array<number>;
+    acc_y?: Array<number>;
   }>;
 }
 
@@ -18,6 +19,7 @@ export interface IFlightScheduleResponse {
   add_conditions: Array<IConditionData>,
   chart_x_data: string[];
   chart_y_data: IChartData;
+  total: number;
 }
 
 export const getFlightSchedule = (params: {
