@@ -6,6 +6,7 @@
 - React 19
 - Tailwind CSS 3
 - shadcn/ui
+- plotly.js
 - Supabase
 
 ### 실행 명령어:

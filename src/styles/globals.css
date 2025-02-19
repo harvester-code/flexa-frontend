@@ -217,27 +217,27 @@ h1 {
 }
 .title-sm {
   font-size: 24px;
-  @apply inline-flex h-40 items-center font-semibold text-default-900;
+  @apply inline-flex h-[40px] items-center font-semibold text-default-900;
 }
 
 .text-40 {
-  @apply flex h-40 items-center font-medium text-default-800;
+  @apply flex h-[40px] items-center font-medium text-default-800;
 }
 .text-xl {
   font-size: 20px;
 }
 .paging {
-  @apply mt-40 flex items-center justify-center gap-10;
+  @apply mt-[40px] flex items-center justify-center gap-[10px];
   .arrow-button {
     border-radius: 8px;
     border: 1px solid var(--default-200);
-    @apply flex h-40 w-40 items-center justify-center;
+    @apply flex h-[40px] w-[40px] items-center justify-center;
     &:hover {
       background: #f9f9fb;
     }
   }
   .paging-button {
-    @apply flex h-40 w-40 items-center justify-center rounded-md text-md;
+    @apply flex h-[40px] w-[40px] items-center justify-center rounded-md text-md;
     &:hover {
       @apply bg-accent-300;
     }
@@ -258,14 +258,14 @@ input::placeholder {
   @apply ml-auto mr-auto flex min-h-dvh flex-col;
 }
 #container {
-  @apply relative flex min-h-dvh flex-col pl-100;
+  @apply relative flex min-h-dvh flex-col pl-[100px];
 }
 #content {
-  @apply flex flex-grow flex-col bg-default-25 pb-70 pl-30 pr-30;
+  @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-[30px] pr-[30px];
 }
 .contentsHeader {
   border-bottom: 1px solid var(--default-300);
-  @apply flex h-100 items-center;
+  @apply flex h-[100px] items-center;
 }
 
 .loginContainer {
@@ -283,11 +283,11 @@ input::placeholder {
     padding-right: 100px;
     @apply flex h-dvh flex-none flex-col items-center justify-center;
     .copyright {
-      @apply absolute bottom-30 text-center text-sm text-secondary;
+      @apply absolute bottom-[30px] text-center text-sm text-secondary;
     }
   }
   .loginImg {
-    @apply flex h-dvh flex-grow items-center overflow-hidden pl-95;
+    @apply flex h-dvh flex-grow items-center overflow-hidden pl-[95px];
     img {
       min-width: 935px;
       margin-right: 95px;
@@ -311,7 +311,7 @@ button {
 .btn-sm {
   height: 36px;
   padding: 0 14px;
-  @apply gap-5 rounded-md bg-white font-semibold;
+  @apply gap-[5px] rounded-md bg-white font-semibold;
 }
 .btn-md {
   height: 40px;
@@ -319,14 +319,14 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-90 gap-5 rounded-md bg-white text-sm font-semibold;
+  @apply min-w-[90px] gap-[5px] rounded-md bg-white text-sm font-semibold;
 }
 
 .btn-lg {
   height: 44px;
   width: 100%;
   padding: 0 14px;
-  @apply gap-5 font-semibold;
+  @apply gap-[5px] font-semibold;
 }
 
 .btn-default {
@@ -342,7 +342,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-100 bg-white px-20 text-accent-600;
+  @apply min-w-[100px] bg-white px-[20px] text-accent-600;
   &:hover {
     background: var(--accent-25);
   }
@@ -354,7 +354,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-100 bg-white px-20;
+  @apply min-w-[100px] bg-white px-[20px];
 }
 .btn-green-line {
   border: 1px solid #079455;
@@ -362,7 +362,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-100 bg-white px-20;
+  @apply min-w-[100px] bg-white px-[20px];
 }
 .text-md {
   font-size: 16px !important;
@@ -398,7 +398,7 @@ button {
   border: 1px solid var(--deepRed);
   height: 34px;
   border-radius: 100px;
-  @apply flex items-center gap-2 text-xs font-semibold text-deepRed;
+  @apply flex items-center gap-[2px] text-xs font-semibold text-deepRed;
 }
 button:disabled {
   border: 1px solid #dcdfea !important;
@@ -408,19 +408,19 @@ button:disabled {
 .resend-button {
   border: 1px solid var(--brand);
   border-radius: 15px;
-  @apply flex h-30 w-120 items-center justify-center text-sm text-brandDark;
+  @apply flex h-[30px] w-[120px] items-center justify-center text-sm text-brandDark;
   &:hover {
     background: #f9f5ff;
   }
 }
 .btn-link {
-  @apply inline-flex items-center gap-10 text-sm font-semibold underline;
+  @apply inline-flex items-center gap-[10px] text-sm font-semibold underline;
   &:hover {
     @apply text-brand;
   }
 }
 .btn-more {
-  @apply inline-flex h-30 w-30 items-center gap-2 rounded-full;
+  @apply inline-flex h-[30px] w-[30px] items-center gap-[2px] rounded-full;
   svg {
     margin-top: 2px;
     width: 11px;
@@ -446,7 +446,7 @@ input[type='tel'] {
   &.error {
     outline: 1px solid var(--red);
     + .msg-error {
-      @apply mt-5 flex text-red;
+      @apply mt-[5px] flex text-red;
     }
   }
 }
@@ -514,13 +514,13 @@ input[type='checkbox'] {
 }
 
 textarea {
-  @apply w-full rounded-md border border-default-200 bg-white p-15 text-md text-default-800;
+  @apply w-full rounded-md border border-default-200 bg-white p-[15px] text-md text-default-800;
   &:focus {
     outline: 1px solid var(--accent-600);
   }
 }
 .select {
-  @apply h-40 flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-15;
+  @apply h-[40px] flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-[15px];
   background: url('/image/ico-arrow-down.svg') no-repeat right 12px center;
   &:focus {
     outline: 1px solid var(--accent-600);
@@ -528,16 +528,16 @@ textarea {
 }
 .select-box {
   height: 44px;
-  @apply relative flex flex-grow cursor-pointer items-center gap-20 rounded-full border border-default-300 bg-white px-15;
+  @apply relative flex flex-grow cursor-pointer items-center gap-[20px] rounded-full border border-default-300 bg-white px-[15px];
   .select-line {
     @apply flex flex-grow text-md font-medium text-default-800;
     .btn-list {
-      @apply flex items-center gap-8;
+      @apply flex items-center gap-[8px];
       li {
         @apply flex items-center;
         button {
           height: 24px;
-          @apply inline-flex items-center gap-2 rounded-full border border-default-300 bg-default-25 pl-10 pr-6 font-medium text-default-700 hover:text-default-900;
+          @apply inline-flex items-center gap-[2px] rounded-full border border-default-300 bg-default-25 pl-[10px] pr-[6px] font-medium text-default-700 hover:text-default-900;
           .nav-icon {
             width: 12px;
             height: 12px;
@@ -548,7 +548,7 @@ textarea {
     }
   }
   .select-btn {
-    @apply ml-auto h-20 w-20;
+    @apply ml-auto h-[20px] w-[20px];
   }
   .select-item {
     top: 48px;
@@ -557,12 +557,12 @@ textarea {
     border: 1px solid #dcdfea;
     @apply absolute left-0 hidden w-full overflow-auto rounded-md bg-white;
     ul {
-      @apply flex flex-col gap-4;
+      @apply flex flex-col gap-[4px];
       li {
         @apply flex items-center;
         button {
           border-radius: 2px;
-          @apply flex h-40 flex-grow items-center justify-start p-10 text-md font-medium text-default-600 hover:bg-accent-100;
+          @apply flex h-[40px] flex-grow items-center justify-start p-[10px] text-md font-medium text-default-600 hover:bg-accent-100;
         }
       }
     }
@@ -581,7 +581,7 @@ textarea {
     .btn-list {
       li {
         button {
-          @apply h-30;
+          @apply h-[30px];
         }
       }
     }
@@ -598,17 +598,17 @@ textarea {
     .btn-list {
       li {
         button {
-          @apply h-30;
+          @apply h-[30px];
         }
       }
     }
     .select-item {
       top: 44px;
       ul {
-        @apply gap-2;
+        @apply gap-[2px];
         li {
           button {
-            @apply h-30 py-5 text-sm;
+            @apply h-[30px] py-[5px] text-sm;
           }
         }
       }
@@ -617,7 +617,7 @@ textarea {
   &.select-color {
     background: url('/image/ico-button-menu.svg') no-repeat 15px center;
     background-size: 20px 20px;
-    @apply flex items-center gap-10 pl-40;
+    @apply flex items-center gap-[10px] pl-[40px];
     .select-line {
       @apply flex-grow justify-center;
     }
@@ -631,7 +631,7 @@ textarea {
 }
 
 .btn-top {
-  @apply pointer-events-none fixed bottom-20 right-20 z-50 opacity-0 transition-all duration-300;
+  @apply pointer-events-none fixed bottom-[20px] right-[20px] z-50 opacity-0 transition-all duration-300;
   a {
     width: 48px;
     height: 48px;
@@ -656,10 +656,10 @@ textarea {
   @apply font-bold text-brandDark;
 }
 .signUpContainer {
-  @apply flex flex-col items-center justify-center pb-60 pt-60;
+  @apply flex flex-col items-center justify-center pb-[60px] pt-[60px];
   .loginStep {
     gap: 17px;
-    @apply flex pb-85 pt-35 text-sm font-semibold text-secondary;
+    @apply flex pb-[85px] pt-[35px] text-sm font-semibold text-secondary;
     li {
       width: 240px;
       gap: 7px;
@@ -697,13 +697,13 @@ textarea {
 }
 .signUpForm {
   width: 360px;
-  @apply mt-30;
+  @apply mt-[30px];
 }
 .checkboxContainer {
   background-color: #f9f9fb;
   border-radius: 8px;
   border: 1px solid #dcdfea;
-  @apply mt-20 flex flex-col;
+  @apply mt-[20px] flex flex-col;
   dt {
     background-color: #eff1f5;
     border-bottom: 1px solid #dcdfea;
@@ -712,12 +712,12 @@ textarea {
   }
   dd {
     padding: 16px 12px;
-    @apply flex flex-col gap-10;
+    @apply flex flex-col gap-[10px];
   }
 }
 .code-inputs {
   gap: 2px;
-  @apply mt-10 flex justify-center;
+  @apply mt-[10px] flex justify-center;
   p {
     @apply flex justify-center;
     padding: 6px;
@@ -740,18 +740,18 @@ textarea {
   }
 }
 .timer-block {
-  @apply mt-25 flex items-center justify-between;
+  @apply mt-[25px] flex items-center justify-between;
   .timer {
-    @apply flex gap-15;
+    @apply flex gap-[15px];
   }
 }
 
 .password-Feedback {
-  @apply mt-10 flex flex-col gap-10;
+  @apply mt-[10px] flex flex-col gap-[10px];
   li {
-    @apply flex items-center gap-8 text-sm;
+    @apply flex items-center gap-[8px] text-sm;
     span {
-      @apply flex h-20 w-20;
+      @apply flex h-[20px] w-[20px];
     }
   }
 }
@@ -778,13 +778,13 @@ textarea {
 
 /* simulation */
 .tag-sm {
-  @apply flex h-30 items-center justify-between gap-5 rounded-md bg-accent-50 px-10 text-xs font-semibold text-brandDark;
+  @apply flex h-[30px] items-center justify-between gap-[5px] rounded-md bg-accent-50 px-[10px] text-xs font-semibold text-brandDark;
 }
 #content {
   .simSearch {
     border-bottom: 1px solid var(--default-400);
     height: 44px;
-    @apply flex w-300 items-center gap-10 pl-10 pr-10;
+    @apply flex w-[300px] items-center gap-[10px] pl-[10px] pr-[10px];
     input {
       height: 24px;
       @apply w-full;
@@ -814,12 +814,12 @@ textarea {
         border-bottom: 1px solid #9e77ed;
         padding-left: 4px;
         padding-right: 4px;
-        @apply h-50 text-sm font-medium text-default-600;
+        @apply h-[50px] text-sm font-medium text-default-600;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-5;
+          @apply mb-[5px];
         }
         button {
-          @apply flex items-center gap-6 text-sm font-medium text-default-600;
+          @apply flex items-center gap-[6px] text-sm font-medium text-default-600;
         }
       }
     }
@@ -832,9 +832,9 @@ textarea {
       td {
         padding: 10px 4px;
         line-height: 20px;
-        @apply h-60 font-medium text-default-700;
+        @apply h-[60px] font-medium text-default-700;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-5;
+          @apply mb-[5px];
         }
       }
     }
@@ -846,10 +846,10 @@ textarea {
     tr {
       th {
         background: #f9f9fb;
-        @apply min-h-40 border-b border-default-300 px-20 py-10 text-sm font-semibold text-default-600;
+        @apply min-h-[40px] border-b border-default-300 px-[20px] py-[10px] text-sm font-semibold text-default-600;
         &:first-of-type {
           border-radius: 8px 0px 0px 0px;
-          @apply border-r border-default-300 pl-25 pr-25;
+          @apply border-r border-default-300 pl-[25px] pr-[25px];
         }
         &:last-of-type {
           border-radius: 0px 8px 0px 0px;
@@ -863,7 +863,7 @@ textarea {
       td {
         padding: 16px 14px;
         line-height: 20px;
-        @apply h-60 border-t border-default-200 font-medium text-default-600;
+        @apply h-[60px] border-t border-default-200 font-medium text-default-600;
         &:first-of-type {
           @apply border-r border-default-200;
         }
@@ -878,9 +878,9 @@ textarea {
     tr {
       th {
         border-bottom: 1px solid #9e77ed;
-        @apply h-50 bg-default-100 px-6 text-sm font-medium text-default-600;
+        @apply h-[50px] bg-default-100 px-[6px] text-sm font-medium text-default-600;
         button {
-          @apply flex items-center gap-6 text-xs font-medium text-default-600;
+          @apply flex items-center gap-[6px] text-xs font-medium text-default-600;
         }
       }
     }
@@ -889,14 +889,14 @@ textarea {
     tr {
       @apply text-sm;
       th {
-        @apply border-b border-default-200 bg-default-50 px-6 text-left text-sm font-semibold text-default-800;
+        @apply border-b border-default-200 bg-default-50 px-[6px] text-left text-sm font-semibold text-default-800;
       }
       td {
         padding: 10px 4px;
         line-height: 20px;
-        @apply h-70 border-b border-default-200 bg-white px-6 font-medium text-default-700;
+        @apply h-[70px] border-b border-default-200 bg-white px-[6px] font-medium text-default-700;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-5;
+          @apply mb-[5px];
         }
       }
     }
@@ -906,28 +906,28 @@ textarea {
 .sub-title {
   @apply flex flex-col;
   dt {
-    @apply h-20 text-sm font-medium text-default-500;
+    @apply h-[20px] text-sm font-medium text-default-500;
   }
   dd {
-    @apply flex h-40 items-center gap-20 text-xl font-semibold text-default-800;
+    @apply flex h-[40px] items-center gap-[20px] text-xl font-semibold text-default-800;
     span {
       border: 1px solid var(--default-200);
       background: var(--default-50);
       border-radius: 100px;
-      @apply inline-flex h-30 items-center px-15 text-sm font-medium text-default-800;
+      @apply inline-flex h-[30px] items-center px-[15px] text-sm font-medium text-default-800;
     }
   }
 }
 
 .tab-default {
   border-bottom: 1px solid var(--default-100);
-  @apply grid items-center justify-center gap-10 px-10;
+  @apply grid items-center justify-center gap-[10px] px-[10px];
   button {
     border-bottom: 3px solid transparent;
     padding-bottom: 13px;
     line-height: 100%;
     height: 40px;
-    @apply pt-4 text-sm font-medium text-default-400;
+    @apply pt-[4px] text-sm font-medium text-default-400;
     &:hover {
       @apply text-accent-700;
     }
@@ -948,7 +948,7 @@ textarea {
   &.tab-secondary {
     button {
       border-bottom: 2px solid transparent;
-      @apply h-50 text-md font-semibold text-default-400;
+      @apply h-[50px] text-md font-semibold text-default-400;
       &.active {
         border-bottom: 2px solid var(--default-800);
         @apply text-default-800;
@@ -966,16 +966,16 @@ textarea {
 .overview-wrap {
   margin-left: -30px;
   width: calc(100% + 60px);
-  @apply grid grid-cols-4 gap-20 bg-default-100 p-30;
+  @apply grid grid-cols-4 gap-[20px] bg-default-100 p-[30px];
   .overview-item {
     border: 1px solid var(--default-200);
     aspect-ratio: 30/16;
-    @apply flex max-h-200 w-full flex-col gap-10 rounded-md bg-white p-10;
+    @apply flex max-h-[200px] w-full flex-col gap-[10px] rounded-md bg-white p-[10px];
     dl {
-      @apply flex flex-col gap-8;
+      @apply flex flex-col gap-[8px];
       dt {
         line-height: 30px;
-        @apply h-30 font-semibold text-default-500;
+        @apply h-[30px] font-semibold text-default-500;
       }
       dd {
         line-height: 24px;
@@ -1038,18 +1038,18 @@ textarea {
   img {
     @apply h-full w-full object-cover;
   }
-  @apply -ml-30 flex h-210 items-center justify-center overflow-hidden object-center text-white;
+  @apply -ml-[30px] flex h-[210px] items-center justify-center overflow-hidden object-center text-white;
 }
 .progress-bar {
-  @apply mt-5 flex h-20 w-full items-center gap-10;
+  @apply mt-[5px] flex h-[20px] w-full items-center gap-[10px];
   .progress-bar-inner {
-    @apply flex h-8 flex-none flex-grow items-center rounded-full bg-default-200;
+    @apply flex h-[8px] flex-none flex-grow items-center rounded-full bg-default-200;
     p {
-      @apply h-8 rounded-full bg-accent-700;
+      @apply h-[8px] rounded-full bg-accent-700;
     }
   }
   p {
-    @apply w-40 flex-none text-right text-sm font-medium text-default-800;
+    @apply w-[40px] flex-none text-right text-sm font-medium text-default-800;
   }
 }
 .profile-wrap {
@@ -1057,7 +1057,7 @@ textarea {
   width: 1340px;
   @apply mx-auto;
   .profile-header {
-    @apply flex items-center gap-20 pl-30 pr-30;
+    @apply flex items-center gap-[20px] pl-[30px] pr-[30px];
     .profile-img {
       border: 4px solid #fff;
       background: #fcfcfd;
@@ -1066,14 +1066,14 @@ textarea {
       p {
         font-size: 60px;
         border: 1px solid var(--default-300);
-        @apply flex h-160 w-160 items-center justify-center overflow-hidden rounded-full font-semibold text-default-700;
+        @apply flex h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full font-semibold text-default-700;
         img {
           @apply h-full w-full object-cover;
         }
       }
     }
     .profile-info {
-      @apply mt-20 flex flex-col gap-4;
+      @apply mt-[20px] flex flex-col gap-[4px];
       dt {
         font-size: 30px;
         line-height: 38px;
@@ -1086,7 +1086,7 @@ textarea {
     }
   }
   .tab-default {
-    @apply w-200;
+    @apply w-[200px];
     button {
       height: 32px;
     }
@@ -1094,15 +1094,15 @@ textarea {
   .profile-form {
     @apply border-t border-default-300 text-sm;
     .form-item {
-      @apply flex items-start justify-between gap-30 border-b border-default-100 pb-20 pt-20;
+      @apply flex items-start justify-between gap-[30px] border-b border-default-100 pb-[20px] pt-[20px];
       .form-item-title {
-        @apply flex w-280 flex-none items-center;
+        @apply flex w-[280px] flex-none items-center;
         dl {
           @apply flex flex-col;
           dt {
-            @apply flex items-center gap-5 whitespace-nowrap font-semibold text-default-800;
+            @apply flex items-center gap-[5px] whitespace-nowrap font-semibold text-default-800;
             span {
-              @apply w-280 flex-none text-accent-600;
+              @apply w-[280px] flex-none text-accent-600;
             }
           }
           dd {
@@ -1121,7 +1121,7 @@ textarea {
 .upload-button {
   border-radius: var(--radius-xl);
   border: 1px solid var(--default-200);
-  @apply flex w-460 cursor-pointer flex-col rounded-xl bg-white pb-15 pt-15 text-sm text-default-600;
+  @apply flex w-[460px] cursor-pointer flex-col rounded-xl bg-white pb-[15px] pt-[15px] text-sm text-default-600;
 }
 
 .text-editor {
@@ -1133,15 +1133,15 @@ textarea {
 }
 
 .current-device {
-  @apply inline-flex items-center gap-4 rounded-full border border-default-200 bg-white px-8 text-xs font-medium text-default-800;
+  @apply inline-flex items-center gap-[4px] rounded-full border border-default-200 bg-white px-[8px] text-xs font-medium text-default-800;
 }
 
 .upload-list {
-  @apply flex flex-col gap-10;
+  @apply flex flex-col gap-[10px];
   .upload-list-item {
-    @apply flex items-start gap-10 rounded-md border bg-white p-20;
+    @apply flex items-start gap-[10px] rounded-md border bg-white p-[20px];
     .icon {
-      @apply flex w-40 items-center justify-center;
+      @apply flex w-[40px] items-center justify-center;
       img {
         @apply w-full;
       }
@@ -1149,21 +1149,21 @@ textarea {
     dl {
       @apply flex flex-col;
       dt {
-        @apply h-20 overflow-hidden text-ellipsis font-semibold text-default-800;
+        @apply h-[20px] overflow-hidden text-ellipsis font-semibold text-default-800;
       }
       dd {
-        @apply h-20 text-sm text-default-500;
+        @apply h-[20px] text-sm text-default-500;
       }
     }
   }
 }
 
 .chart-info {
-  @apply flex items-center gap-15 text-sm font-medium text-default-800;
+  @apply flex items-center gap-[15px] text-sm font-medium text-default-800;
   li {
-    @apply flex items-center gap-5;
+    @apply flex items-center gap-[5px];
     span {
-      @apply flex h-8 w-8 rounded-full bg-default-200;
+      @apply flex h-[8px] w-[8px] rounded-full bg-default-200;
     }
   }
 }
@@ -1173,24 +1173,24 @@ textarea {
   .schedule-top {
     border-radius: 8px 8px 0px 0px;
     padding: 30px 30px 25px 30px;
-    @apply flex flex-col gap-20 border-b border-gray-300 bg-default-100;
+    @apply flex flex-col gap-[20px] border-b border-gray-300 bg-default-100;
   }
   .schedule-bottom {
-    @apply flex flex-col p-20;
+    @apply flex flex-col p-[20px];
   }
 }
 .select-grid {
-  @apply flex flex-grow gap-10;
+  @apply flex flex-grow gap-[10px];
   .select-list {
     grid-template-columns: 100px 1fr 1fr 1fr;
-    @apply grid w-full gap-20;
+    @apply grid w-full gap-[20px];
     dl {
-      @apply min-w-100 flex-grow;
+      @apply min-w-[100px] flex-grow;
       dt {
         gap: 3px;
-        @apply mb-5 flex items-center pl-15 text-sm font-medium text-default-800;
+        @apply mb-[5px] flex items-center pl-[15px] text-sm font-medium text-default-800;
         button {
-          @apply ml-2;
+          @apply ml-[2px];
         }
       }
     }
@@ -1243,23 +1243,23 @@ textarea {
 }
 
 .attribute-wrap {
-  @apply mt-30 flex flex-col gap-50;
+  @apply mt-[30px] flex flex-col gap-[50px];
   .attribute-item {
-    @apply flex flex-col justify-between gap-10 border-t border-default-300 pt-15;
+    @apply flex flex-col justify-between gap-[10px] border-t border-default-300 pt-[15px];
   }
 }
 
 .select-block {
-  @apply min-w-100 flex-grow;
+  @apply min-w-[100px] flex-grow;
   dt {
     gap: 3px;
-    @apply mb-5 flex items-center pl-15 text-sm font-medium text-default-800;
+    @apply mb-[5px] flex items-center pl-[15px] text-sm font-medium text-default-800;
     button {
-      @apply ml-2;
+      @apply ml-[2px];
     }
   }
   .select-box {
-    @apply h-40;
+    @apply h-[40px];
     .select-item {
       top: 44px;
     }
@@ -1273,7 +1273,7 @@ textarea {
 }
 
 .input-rounded {
-  @apply h-40 rounded-full border border-default-300 !important;
+  @apply h-[40px] rounded-full border border-default-300 !important;
 }
 
 .input-default {
@@ -1296,9 +1296,9 @@ textarea {
 }
 .tooltip-line {
   gap: 3px;
-  @apply mb-5 flex items-center text-sm font-medium text-default-800;
+  @apply mb-[5px] flex items-center text-sm font-medium text-default-800;
   button {
-    @apply ml-2;
+    @apply ml-[2px];
   }
 }
 .add-item {
@@ -1307,15 +1307,15 @@ textarea {
 }
 
 .processing-wrap {
-  @apply flex flex-col gap-10;
+  @apply flex flex-col gap-[10px];
   .processing-item {
-    @apply flex h-140 items-center rounded-md border border-default-300 bg-default-100 px-20 pr-400;
+    @apply flex h-[140px] items-center rounded-md border border-default-300 bg-default-100 px-[20px] pr-[400px];
     .item-move {
       font-size: 24px;
       @apply flex items-center justify-center text-default-300;
     }
     .item-name {
-      @apply ml-15 flex w-250 flex-none items-center gap-10;
+      @apply ml-[15px] flex w-[250px] flex-none items-center gap-[10px];
       span {
         font-size: 30px;
         @apply bg-transparent font-semibold text-default-900;
@@ -1326,14 +1326,14 @@ textarea {
 
 .gate-list {
   width: calc(100% + 60px);
-  @apply -ml-30 flex justify-between gap-20 bg-default-100 px-40 py-10;
+  @apply -ml-[30px] flex justify-between gap-[20px] bg-default-100 px-[40px] py-[10px];
   li {
     @apply flex flex-grow;
     button {
-      @apply flex h-40 flex-grow items-center justify-center gap-8 rounded-full border border-default-200 bg-white text-default-400;
+      @apply flex h-[40px] flex-grow items-center justify-center gap-[8px] rounded-full border border-default-200 bg-white text-default-400;
       span {
         height: 24px;
-        @apply flex items-center justify-center rounded-full border border-default-200 bg-default-50 px-10 text-xs font-medium text-default-400 text-default-700;
+        @apply flex items-center justify-center rounded-full border border-default-200 bg-default-50 px-[10px] text-xs font-medium text-default-400 text-default-700;
       }
     }
     &.active {
@@ -1346,12 +1346,12 @@ textarea {
 
 /* indicator */
 .indicator {
-  @apply flex flex-col gap-20 rounded-xl bg-default-100 p-20;
+  @apply flex flex-col gap-[20px] rounded-xl bg-default-100 p-[20px];
   .indicator-list {
     @apply grid;
     dl {
       padding: 24px;
-      @apply flex h-120 flex-col gap-10 rounded-xl border border-default-200 bg-white;
+      @apply flex h-[120px] flex-col gap-[10px] rounded-xl border border-default-200 bg-white;
       dt {
         @apply text-sm font-medium text-default-600;
       }
@@ -1364,23 +1364,23 @@ textarea {
 }
 /* chart-btn */
 .chart-btn {
-  @apply grid grid-cols-4 justify-between gap-20;
+  @apply grid grid-cols-4 justify-between gap-[20px];
   button {
-    @apply relative flex flex-grow flex-col items-center justify-center gap-15 rounded-xl border border-default-200 bg-white p-20 text-xl font-semibold text-default-900;
+    @apply relative flex flex-grow flex-col items-center justify-center gap-[15px] rounded-xl border border-default-200 bg-white p-[20px] text-xl font-semibold text-default-900;
     span {
       height: 22px;
-      @apply absolute right-10 top-10 flex items-center justify-center rounded-full border border-default-200 px-10 text-xs font-medium text-default-800;
+      @apply absolute right-[10px] top-[10px] flex items-center justify-center rounded-full border border-default-200 px-[10px] text-xs font-medium text-default-800;
     }
   }
 }
 /* checkbtn-list */
 .checkbtn-list {
-  @apply flex flex-col gap-10;
+  @apply flex flex-col gap-[10px];
   li {
     @apply flex flex-grow;
     button {
       gap: 12px;
-      @apply flex h-80 flex-grow items-center rounded-md border border-default-300 px-25;
+      @apply flex h-[80px] flex-grow items-center rounded-md border border-default-300 px-[25px];
       .checkbtn {
         width: 16px;
         height: 16px;
@@ -1421,23 +1421,23 @@ textarea {
     h2 {
       font-size: 52px;
       line-height: 60px;
-      @apply mb-10 mt-15 text-default-800;
+      @apply mb-[10px] mt-[15px] text-default-800;
     }
     .email-input {
       width: 565px;
-      @apply mt-70 flex items-center gap-15;
+      @apply mt-[70px] flex items-center gap-[15px];
       button {
         width: 150px !important;
-        @apply float-none px-20;
+        @apply float-none px-[20px];
       }
     }
   }
   .support-content {
     width: 700px;
     margin: 0 auto;
-    @apply flex flex-col gap-10 pt-100;
+    @apply flex flex-col gap-[10px] pt-[100px];
     > dl {
-      @apply flex flex-col items-center gap-25 text-center;
+      @apply flex flex-col items-center gap-[25px] text-center;
       dt {
         font-size: 40px;
         @apply font-semibold text-default-800;
@@ -1448,7 +1448,7 @@ textarea {
     }
   }
   .support-list {
-    @apply mt-70 flex flex-col gap-25;
+    @apply mt-[70px] flex flex-col gap-[25px];
     .support-item {
       box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
       @apply flex flex-col rounded-md border border-default-200 bg-white;
@@ -1456,7 +1456,7 @@ textarea {
         padding: 20px 35px;
         @apply flex cursor-pointer items-start;
         span {
-          @apply mr-25 text-lg font-semibold text-default-500;
+          @apply mr-[25px] text-lg font-semibold text-default-500;
         }
         p {
           @apply text-lg font-semibold text-default-900;
@@ -1486,24 +1486,24 @@ textarea {
   .contact-content {
     margin-left: -30px;
     width: calc(100% + 60px);
-    @apply flex flex-col gap-10;
+    @apply flex flex-col gap-[10px];
     h3 {
       font-size: 40px;
-      @apply mb-20 font-semibold text-default-800;
+      @apply mb-[20px] font-semibold text-default-800;
     }
     .get-in-touch {
       padding-top: 100px;
       padding-bottom: 130px;
       width: 1140px;
       margin: 0 auto;
-      @apply grid grid-cols-2 gap-60;
+      @apply grid grid-cols-2 gap-[60px];
       .contact-info-list {
-        @apply mt-65 flex flex-col gap-20;
+        @apply mt-[65px] flex flex-col gap-[20px];
         .contact-info-item {
           height: 165px;
-          @apply relative flex flex-col justify-between gap-10 rounded-xl border border-default-200 bg-white p-30 pb-25;
+          @apply relative flex flex-col justify-between gap-[10px] rounded-xl border border-default-200 bg-white p-[30px] pb-[25px];
           .image {
-            @apply flex items-start gap-20;
+            @apply flex items-start gap-[20px];
           }
           dl {
             dt {
@@ -1519,9 +1519,9 @@ textarea {
       }
       .contact-form {
         padding: 60px 30px;
-        @apply flex flex-col gap-10 rounded-xl border border-accent-400 bg-accent-50;
+        @apply flex flex-col gap-[10px] rounded-xl border border-accent-400 bg-accent-50;
         dl {
-          @apply gap-5;
+          @apply gap-[5px];
           dt {
             @apply text-sm font-medium;
           }
@@ -1529,7 +1529,7 @@ textarea {
       }
     }
     .location-block {
-      @apply bg-default-100 pb-100 pt-50;
+      @apply bg-default-100 pb-[100px] pt-[50px];
       .location {
         width: 1140px;
         margin: 0 auto;
@@ -1544,7 +1544,7 @@ textarea {
   @apply flex w-full flex-col items-center justify-center bg-default-25 text-center;
   .errorImg {
     font-size: 30px;
-    @apply flex flex-col items-center justify-center gap-15 font-medium text-default-300;
+    @apply flex flex-col items-center justify-center gap-[15px] font-medium text-default-300;
   }
   .errorBlock {
     @apply flex flex-col items-center justify-center;
@@ -1556,10 +1556,10 @@ textarea {
     h1 {
       font-size: 48px;
       line-height: normal;
-      @apply mt-5 text-center font-semibold text-default-600;
+      @apply mt-[5px] text-center font-semibold text-default-600;
     }
     .error-desc {
-      @apply mt-5 text-xl font-medium text-default-700;
+      @apply mt-[5px] text-xl font-medium text-default-700;
     }
   }
 }
@@ -1570,20 +1570,20 @@ textarea {
   width: calc(100% + 60px);
   @apply flex flex-col;
   .legal-header {
-    @apply flex h-360 flex-col items-center justify-center bg-default-100 p-20;
+    @apply flex h-[360px] flex-col items-center justify-center bg-default-100 p-[20px];
     h2 {
       font-size: 52px;
       line-height: 60px;
-      @apply mt-10;
+      @apply mt-[10px];
     }
   }
   .legal-content {
     width: 720px;
     margin: 0 auto;
     line-height: 150%;
-    @apply flex flex-grow flex-col gap-40 pt-100 text-lg;
+    @apply flex flex-grow flex-col gap-[40px] pt-[100px] text-lg;
     dl {
-      @apply flex flex-col gap-20;
+      @apply flex flex-col gap-[20px];
       dt {
         font-size: 30px;
         @apply font-semibold text-default-800;
@@ -1598,12 +1598,12 @@ textarea {
 }
 
 .location {
-  @apply mt-20 flex h-50 items-center gap-15 rounded-md border border-default-200 bg-default-50 px-20 font-medium;
+  @apply mt-[20px] flex h-[50px] items-center gap-[15px] rounded-md border border-default-200 bg-default-50 px-[20px] font-medium;
   span:first-child {
     @apply inline-flex text-default-600;
   }
   span {
-    @apply inline-flex items-center gap-15 text-default-800;
+    @apply inline-flex items-center gap-[15px] text-default-800;
     &::after {
       content: '';
       width: 18px;
@@ -1622,20 +1622,20 @@ textarea {
 
 .MuiPaper-root.sub-menu {
   h6 {
-    @apply flex h-40 items-center pl-10 text-md font-semibold text-default-800;
+    @apply flex h-[40px] items-center pl-[10px] text-md font-semibold text-default-800;
   }
   * {
     font-family: 'Pretendard', sans-serif;
   }
   box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
-  @apply mt-10 w-135 rounded-md border border-default-200 px-10 transition-none;
+  @apply mt-[10px] w-[135px] rounded-md border border-default-200 px-[10px] transition-none;
   ul {
-    @apply py-5;
+    @apply py-[5px];
     hr {
       @apply m-0 border-default-200;
     }
     li {
-      @apply flex h-40 items-center gap-5 px-5 py-0 text-md leading-none;
+      @apply flex h-[40px] items-center gap-[5px] px-[5px] py-0 text-md leading-none;
       &.text {
         @apply pointer-events-none;
       }
@@ -1653,15 +1653,15 @@ textarea {
   &.member-menu {
     width: 270px;
     li {
-      @apply my-2 cursor-default gap-5 pl-5;
+      @apply my-[2px] cursor-default gap-[5px] pl-[5px];
       .name {
         font-size: 8px;
-        @apply flex h-20 w-20 flex-none items-center justify-center rounded-full border border-default-200 bg-default-50 text-default-900;
+        @apply flex h-[20px] w-[20px] flex-none items-center justify-center rounded-full border border-default-200 bg-default-50 text-default-900;
       }
       .email {
         @apply flex flex-col text-sm text-default-700;
         dt {
-          @apply block w-190 overflow-hidden text-ellipsis whitespace-nowrap;
+          @apply block w-[190px] overflow-hidden text-ellipsis whitespace-nowrap;
         }
         dd {
           font-size: 10px;
@@ -1669,7 +1669,7 @@ textarea {
         }
       }
       button {
-        @apply ml-auto flex h-20 w-20 items-center justify-center text-xs;
+        @apply ml-auto flex h-[20px] w-[20px] items-center justify-center text-xs;
       }
       &:hover {
         @apply bg-default-100;
@@ -1682,7 +1682,7 @@ textarea {
   @apply flex flex-grow items-center;
   .tab {
     border-bottom: 2px solid var(--default-200);
-    @apply relative flex h-40 flex-grow items-center justify-center gap-10 pr-30 font-semibold text-default-400;
+    @apply relative flex h-[40px] flex-grow items-center justify-center gap-[10px] pr-[30px] font-semibold text-default-400;
     .tab-btn {
       @apply flex h-full flex-grow items-center justify-center;
     }
@@ -1697,11 +1697,11 @@ textarea {
 }
 
 .process-list {
-  @apply mt-5 flex flex-col;
+  @apply mt-[5px] flex flex-col;
   .process-item {
-    @apply flex flex-col justify-between gap-20 border-b border-default-200 pb-25 pt-25;
+    @apply flex flex-col justify-between gap-[20px] border-b border-default-200 pb-[25px] pt-[25px];
     dl {
-      @apply flex flex-col gap-10;
+      @apply flex flex-col gap-[10px];
       dt {
         @apply text-xl font-semibold leading-none text-default-800;
       }
@@ -1710,7 +1710,7 @@ textarea {
       }
     }
     .add-precess {
-      @apply flex h-40 w-full items-center justify-center gap-5 rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
+      @apply flex h-[40px] w-full items-center justify-center gap-[5px] rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
     }
   }
 }

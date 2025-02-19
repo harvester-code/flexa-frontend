@@ -14,38 +14,38 @@ export default async function LoginPage() {
       <div className="loginBlock">
         <div>
           <h2 className="login-title">Log in</h2>
-          <p className="mt-10 whitespace-nowrap">Enter your login information to access the solution.</p>
+          <p className="mt-[10px] whitespace-nowrap">Enter your login information to access the solution.</p>
           <form>
-            <Label htmlFor="email" className="mt-60 flex text-sm">
+            <Label htmlFor="email" className="mt-[60px] flex text-sm">
               Email
             </Label>
             <Input
-              className="bg-default-50 mt-5 flex h-40 items-center justify-center whitespace-nowrap rounded-md pl-10"
+              className="bg-default-50 mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md pl-[10px]"
               name="email"
               defaultValue={savedEmail}
               placeholder="Enter your Email"
               required
             />
-            <Label htmlFor="password" className="mt-20 flex text-sm">
+            <Label htmlFor="password" className="mt-[20px] flex text-sm">
               Password
             </Label>
             <Input
-              className="bg-default-50 mt-5 flex h-40 items-center justify-center whitespace-nowrap rounded-md pl-10"
+              className="bg-default-50 mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md pl-[10px]"
               type="password"
               name="password"
               placeholder="Enter your password"
               minLength={6}
               required
             />
-            <div className="mt-25 flex justify-between">
-              <div className="flex items-center gap-2">
+            <div className="mt-[25px] flex justify-between">
+              <div className="flex items-center gap-[2px]">
                 <Checkbox
                   id="rememberMe"
                   name="rememberMe"
                   defaultChecked={!!savedEmail}
-                  className="h-15 w-15"
+                  className="h-[15px] w-[15px]"
                 />
-                <Label htmlFor="rememberMe" className="pl-5 text-sm">
+                <Label htmlFor="rememberMe" className="pl-[5px] text-sm">
                   Save Account
                 </Label>
               </div>
@@ -56,8 +56,8 @@ export default async function LoginPage() {
             <SubmitButton formAction={signInAction}>Sign In</SubmitButton>
           </form>
 
-          <div className="mt-30 flex justify-center">
-            <p className="flex gap-10 text-sm">
+          <div className="mt-[30px] flex justify-center">
+            <p className="flex gap-[10px] text-sm">
               Don&apos;t have an account?{' '}
               <Link href="/register" className="text-brand font-semibold underline">
                 Sign Up

@@ -54,7 +54,7 @@ export default function SideNavigation() {
           </div>
         </button>
       </div>
-      <ul className="gnb-list mt-20">
+      <ul className="gnb-list mt-[20px]">
         <li className="active">
           <Link href="/">
             <NavIcon01 />

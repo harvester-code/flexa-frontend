@@ -5,7 +5,7 @@
   padding-right: 12px;
   z-index: 1000;
   /* transition: all 0.1s ease-in-out; */
-  @apply fixed left-0 top-0 flex h-dvh w-260 flex-none flex-col items-center overflow-hidden bg-white pt-30;
+  @apply fixed left-0 top-0 flex h-dvh w-[260px] flex-none flex-col items-center overflow-hidden bg-white pt-[30px];
   h1 {
     img {
       width: 80px;
@@ -14,12 +14,12 @@
   }
   hr {
     border-top: 1px solid #dcdfea;
-    @apply mb-10 mt-10 w-full;
+    @apply mb-[10px] mt-[10px] w-full;
   }
   .search-box {
     height: 44px;
     padding: 0 12px;
-    @apply mt-50 flex w-full items-center justify-between gap-10 rounded-md border border-default-200 bg-white;
+    @apply mt-[50px] flex w-full items-center justify-between gap-[10px] rounded-md border border-default-200 bg-white;
     input {
       @apply h-full w-full;
       &:focus {
@@ -27,7 +27,7 @@
       }
     }
     button {
-      @apply flex h-30 w-30 items-center justify-center rounded-full;
+      @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
     }
     &.active {
       border: 1px solid var(--brand-dark);
@@ -42,7 +42,7 @@
     } */
   }
   .gnb-list {
-    @apply flex w-full flex-col gap-10;
+    @apply flex w-full flex-col gap-[10px];
     > li {
       border-radius: 8px;
       > a {
@@ -50,7 +50,7 @@
         padding: 0 12px 0 26px;
         border-radius: 8px;
         line-height: 100%;
-        @apply flex cursor-pointer items-center justify-between gap-10 font-semibold text-secondary;
+        @apply flex cursor-pointer items-center justify-between gap-[10px] font-semibold text-secondary;
         > .text {
           margin-top: 2px;
           @apply whitespace-nowrap;
@@ -107,7 +107,7 @@
           a {
             color: #404968;
             padding-left: 28px;
-            @apply flex h-40 items-center pr-20 text-sm;
+            @apply flex h-[40px] items-center pr-[20px] text-sm;
             &:hover {
               @apply text-brandDark;
             }
@@ -137,14 +137,14 @@
   }
   .my-menu {
     border-top: 1px solid #dcdfea;
-    @apply mt-auto flex w-full flex-none flex-col pb-20 pt-10;
+    @apply mt-auto flex w-full flex-none flex-col pb-[20px] pt-[10px];
     > button {
       padding: 0 12px 0 13px;
-      @apply flex h-60 w-full items-center justify-center gap-10;
+      @apply flex h-[60px] w-full items-center justify-center gap-[10px];
       .profile-icon {
         background-color: #fcfcfd;
         border: 1px solid #b9c0d4;
-        @apply flex h-50 w-50 items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
+        @apply flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
         img {
           width: 100%;
           height: 100%;
@@ -165,7 +165,7 @@
       padding: 0 12px 20px 12px;
       border-radius: 10px 10px 0 0;
       box-shadow: 0px -1px 4px 0px rgba(0, 0, 0, 0.15);
-      @apply absolute left-0 hidden w-full flex-col gap-5 bg-white text-sm;
+      @apply absolute left-0 hidden w-full flex-col gap-[5px] bg-white text-sm;
 
       .my-name {
         border-bottom: 1px solid #dcdfea;
@@ -185,12 +185,12 @@
           }
         }
         .profile-photo {
-          @apply relative h-40 w-40;
+          @apply relative h-[40px] w-[40px];
           .photo {
             background-color: #fcfcfd;
             border: 1px solid #b9c0d4;
             line-height: 100%;
-            @apply relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
+            @apply relative flex h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
             img {
               width: 100%;
               height: 100%;
@@ -200,7 +200,7 @@
           .online {
             border: 3px solid #fff;
             box-sizing: content-box;
-            @apply absolute bottom-0 right-0 h-10 w-10 rounded-full bg-green-500;
+            @apply absolute bottom-0 right-0 h-[10px] w-[10px] rounded-full bg-green-500;
           }
         }
       }
@@ -208,21 +208,21 @@
         a {
           border-radius: 4px;
           gap: 8px;
-          @apply flex h-40 w-full items-center pl-10 pr-10 text-secondary;
+          @apply flex h-[40px] w-full items-center pl-[10px] pr-[10px] text-secondary;
           &:hover {
             background: #f9f5ff;
             @apply text-primary;
           }
         }
         hr {
-          @apply mb-5 mt-5;
+          @apply mb-[5px] mt-[5px];
         }
       }
       .logout {
         border: 1px solid #dcdfea;
         border-radius: 8px;
         gap: 8px;
-        @apply flex h-40 w-full items-center justify-center text-sm font-medium text-tertiary;
+        @apply flex h-[40px] w-full items-center justify-center text-sm font-medium text-tertiary;
         &:hover {
           border: 1px solid #4a5578;
           background: #f9f9fb;
@@ -231,10 +231,10 @@
     }
   }
   #navigation:not(.active) {
-    @apply w-100;
+    @apply w-[100px];
   }
   &.default {
-    @apply w-100;
+    @apply w-[100px];
     .search-box {
       border: none;
       @apply justify-center;
@@ -242,11 +242,11 @@
         @apply hidden;
       }
       button {
-        @apply flex h-30 w-30 items-center justify-center rounded-full;
+        @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
       }
     }
     .gnb-list {
-      @apply flex w-full flex-col gap-10;
+      @apply flex w-full flex-col gap-[10px];
       > li {
         > a {
           @apply relative flex items-center justify-center p-0;

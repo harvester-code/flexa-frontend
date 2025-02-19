@@ -8,7 +8,7 @@
       padding: 20px 16px 20px 24px;
       @apply flex items-center justify-between;
       h2 {
-        @apply flex h-50 items-center gap-8 text-lg font-semibold leading-none text-default-900;
+        @apply flex h-[50px] items-center gap-[8px] text-lg font-semibold leading-none text-default-900;
         span {
           height: 24px;
           padding: 0 6px;
@@ -16,36 +16,36 @@
         }
       }
       button {
-        @apply flex h-40 w-40 items-center justify-center rounded-full border border-default-300 text-xs leading-none text-default-700;
+        @apply flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 text-xs leading-none text-default-700;
       }
     }
     .search-msg {
-      @apply flex items-center border-b border-gray-200 px-15 py-10;
+      @apply flex items-center border-b border-gray-200 px-[15px] py-[10px];
     }
     .chat-list {
       @apply flex h-full flex-grow flex-col overflow-auto;
       .chat-list-item {
-        @apply relative flex flex-col gap-15 border-b border-gray-200 p-15;
+        @apply relative flex flex-col gap-[15px] border-b border-gray-200 p-[15px];
         .item-header {
           @apply flex items-center;
           .bulit {
-            @apply flex h-20 w-20 items-center;
+            @apply flex h-[20px] w-[20px] items-center;
             .chat {
-              @apply flex h-8 w-8 rounded-full bg-accent-700;
+              @apply flex h-[8px] w-[8px] rounded-full bg-accent-700;
             }
           }
           .user-photo {
-            @apply relative flex h-40 w-40 items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
+            @apply relative flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
             .online {
               width: 14px;
               height: 14px;
               border: 2px solid #fff;
-              @apply absolute -bottom-2 -right-2 flex rounded-full bg-green-600;
+              @apply absolute -bottom-[2px] -right-[2px] flex rounded-full bg-green-600;
             }
           }
           .user-name {
             margin-left: 12px;
-            @apply flex flex-col gap-5;
+            @apply flex flex-col gap-[5px];
             dt {
               @apply font-semibold leading-none text-default-900;
             }
@@ -64,7 +64,7 @@
           -webkit-box-orient: vertical;
           overflow: hidden;
           text-overflow: ellipsis;
-          @apply cursor-pointer pl-20 text-sm text-gray-600;
+          @apply cursor-pointer pl-[20px] text-sm text-gray-600;
         }
         &.active {
           @apply bg-accent-50;
@@ -91,25 +91,25 @@
     @apply flex flex-grow flex-col bg-default-50;
     .chat-box-header {
       box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.1);
-      @apply relative z-10 flex items-center justify-between border-b border-gray-200 bg-white px-25;
+      @apply relative z-10 flex items-center justify-between border-b border-gray-200 bg-white px-[25px];
       .user-info {
-        @apply flex h-100 items-center gap-15;
+        @apply flex h-[100px] items-center gap-[15px];
         .photo {
-          @apply flex h-60 w-60 items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
+          @apply flex h-[60px] w-[60px] items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
         }
         .name {
-          @apply flex flex-col gap-10;
+          @apply flex flex-col gap-[10px];
           dt {
             @apply flex items-center text-xl font-semibold leading-none text-default-900;
             span {
-              @apply ml-8 flex items-center text-xs leading-none text-default-600;
+              @apply ml-[8px] flex items-center text-xs leading-none text-default-600;
               &.online {
                 @apply text-green-700;
                 &::before {
                   content: '';
                   width: 5px;
                   height: 5px;
-                  @apply mx-4 inline-block rounded-full bg-green-500;
+                  @apply mx-[4px] inline-block rounded-full bg-green-500;
                 }
               }
             }
@@ -120,13 +120,13 @@
         }
       }
       .chat-menu {
-        @apply flex items-center gap-10;
+        @apply flex items-center gap-[10px];
       }
     }
     .chat-box-body {
-      @apply flex flex-grow flex-col overflow-auto px-25 pb-65 pt-20;
+      @apply flex flex-grow flex-col overflow-auto px-[25px] pb-[65px] pt-[20px];
       .starting-msg {
-        @apply flex flex-grow flex-col items-center justify-center gap-15;
+        @apply flex flex-grow flex-col items-center justify-center gap-[15px];
         h3 {
           font-size: 24px;
           @apply font-semibold leading-none text-default-600;
@@ -137,10 +137,10 @@
       }
     }
     .chat-box-footer {
-      @apply p-25;
+      @apply p-[25px];
       .chat-block {
         padding: 12px 15px;
-        @apply flex h-100 flex-col items-end rounded-md border border-gray-300 bg-white;
+        @apply flex h-[100px] flex-col items-end rounded-md border border-gray-300 bg-white;
         input[type='text'] {
           @apply !border-none !p-0;
           &:focus {
@@ -148,13 +148,13 @@
           }
         }
         button {
-          @apply flex h-35 w-35 items-center justify-center;
+          @apply flex h-[35px] w-[35px] items-center justify-center;
           &.btn-send {
             box-shadow:
               0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
               0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
               0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-            @apply ml-8 flex h-40 w-70 items-center justify-center rounded-md bg-accent-600 text-sm text-white;
+            @apply ml-[8px] flex h-[40px] w-[70px] items-center justify-center rounded-md bg-accent-600 text-sm text-white;
           }
         }
       }
@@ -163,7 +163,7 @@
 }
 
 .chating-list {
-  @apply flex flex-col gap-15;
+  @apply flex flex-col gap-[15px];
   .chating-item {
     gap: 12px;
     @apply flex;
@@ -177,18 +177,18 @@
       }
     }
     .photo {
-      @apply relative flex h-40 w-40 items-center justify-center rounded-full border border-default-300 bg-default-25 font-semibold leading-none;
+      @apply relative flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 bg-default-25 font-semibold leading-none;
       span {
         width: 14px;
         height: 14px;
         border: 2px solid #fff;
-        @apply absolute -bottom-2 -right-2 flex rounded-full bg-green-600;
+        @apply absolute -bottom-[2px] -right-[2px] flex rounded-full bg-green-600;
       }
     }
     .msg-box {
-      @apply flex flex-col gap-5;
+      @apply flex flex-col gap-[5px];
       .msg-info {
-        @apply flex h-20 items-center justify-between;
+        @apply flex h-[20px] items-center justify-between;
         dt {
           @apply text-sm font-semibold leading-none text-default-800;
         }
@@ -200,10 +200,10 @@
         padding: 10px 14px;
         line-height: 24px;
         border-radius: 0 8px 8px 8px;
-        @apply w-fit min-w-200 max-w-500 border border-gray-200 bg-white text-default-900;
+        @apply w-fit min-w-[200px] max-w-[500px] border border-gray-200 bg-white text-default-900;
       }
       .emoji {
-        @apply mt-5 flex items-center justify-end leading-none;
+        @apply mt-[5px] flex items-center justify-end leading-none;
       }
     }
   }
@@ -213,7 +213,7 @@
   gap: 12px;
   @apply flex items-center;
   dl {
-    @apply flex flex-col gap-8;
+    @apply flex flex-col gap-[8px];
     dt {
       @apply text-sm font-semibold leading-none text-default-900;
     }
@@ -223,9 +223,9 @@
   }
 }
 .date-line {
-  @apply relative flex justify-center py-10;
+  @apply relative flex justify-center py-[10px];
   p {
-    @apply relative z-10 flex h-20 items-center bg-default-50 px-10 text-sm leading-none;
+    @apply relative z-10 flex h-[20px] items-center bg-default-50 px-[10px] text-sm leading-none;
   }
   &::before {
     content: '';

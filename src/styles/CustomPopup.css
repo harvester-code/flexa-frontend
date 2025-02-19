@@ -6,7 +6,7 @@
   .popup-icon {
     width: 48px;
     height: 48px;
-    @apply mb-5;
+    @apply mb-[5px];
   }
 
   font-family: 'Pretendard', sans-serif;
@@ -20,7 +20,7 @@
   .ico-popup-close {
     padding: 0 !important;
 
-    @apply absolute right-10 top-10 ml-auto inline-flex items-center justify-center font-semibold text-default-400;
+    @apply absolute right-[10px] top-[10px] ml-auto inline-flex items-center justify-center font-semibold text-default-400;
     svg {
       width: 24px;
       height: 24px;
@@ -30,21 +30,21 @@
     }
   }
   .popup-contents {
-    @apply flex min-h-80 flex-col;
+    @apply flex min-h-[80px] flex-col;
   }
   .MuiTypography-root {
     font-family: 'Pretendard', sans-serif;
     font-weight: 600;
     line-height: 28px;
-    @apply mb-15 min-h-50 p-0 text-xl text-default-900;
+    @apply mb-[15px] min-h-[50px] p-0 text-xl text-default-900;
   }
   .MuiDialogContent-root {
     @apply p-0;
     .text {
-      @apply text-sm leading-8 text-default-700;
+      @apply text-sm leading-[8px] text-default-700;
     }
     .popup-btn-wrap {
-      @apply mt-20 flex justify-between gap-10;
+      @apply mt-[20px] flex justify-between gap-[10px];
       button {
         @apply w-1/2;
       }

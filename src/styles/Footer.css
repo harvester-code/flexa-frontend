@@ -1,12 +1,12 @@
 .footer {
-  @apply bg-default-25 px-30 text-center;
+  @apply bg-default-25 px-[30px] text-center;
   .footer-content {
-    @apply flex items-center justify-between py-60;
+    @apply flex items-center justify-between py-[60px];
   }
   .footer-left {
-    @apply flex items-center gap-90;
+    @apply flex items-center gap-[90px];
     nav {
-      @apply flex items-center gap-30 text-xl;
+      @apply flex items-center gap-[30px] text-xl;
       a {
         @apply text-default-600;
         &:hover {
@@ -16,9 +16,9 @@
     }
   }
   .footer-right {
-    @apply flex items-center gap-20;
+    @apply flex items-center gap-[20px];
     nav {
-      @apply flex items-center gap-20;
+      @apply flex items-center gap-[20px];
       a {
         @apply text-default-400;
         &:hover {
@@ -34,6 +34,6 @@
     }
   }
   .footer-bottom {
-    @apply border-t border-default-200 pb-40 pt-40 font-medium text-default-400;
+    @apply border-t border-default-200 pb-[40px] pt-[40px] font-medium text-default-400;
   }
 }
