@@ -11,7 +11,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/');
   }
   const userInfo = {
     fullName: user?.user_metadata?.full_name || 'User',
