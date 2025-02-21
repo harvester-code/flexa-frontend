@@ -1,6 +1,5 @@
 'use client';
 
-import Conditions, { ICondition, IDropdownItem, IOperatorItem } from '@/components/Conditions';
 import { IChartData, getFlightSchedule } from '@/api/simulations';
 import { useResize } from '@/hooks/use-resize';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
@@ -8,24 +7,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import moment from 'moment';
 import dynamic from 'next/dynamic';
 import React, { useCallback, useRef, useState } from 'react';
+import { OrbitProgress } from 'react-loading-indicators';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
+import Conditions, { ICondition, IDropdownItem, IOperatorItem } from '@/components/Conditions';
 import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
 import RootLayoutDefault from '@/components/layoutDefault';
+import { Calendar } from '@/components/ui/calendar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { OrbitProgress } from "react-loading-indicators";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
@@ -45,41 +41,23 @@ const tabsSecondary: { text: string; number?: number }[] = [
 ];
 
 const BarColors = {
-  "DEFAULT": [
-    '#42307D',
-    '#53389E',
-    '#6941C6',
-    '#7F56D9',
-    '#9E77ED',
-    '#B692F6',
-    '#D6BBFB',
-    '#E9D7FE',
-    '#F4EBFF',
+  DEFAULT: [
     '#B9C0D4',
-  ].reverse(),
-  "2": [
-    '#E9D7FE',
-    '#53389E',
-  ].reverse(),
-  "3": [
-    '#E9D7FE',
-    '#9E77ED',
-    '#53389E',
-  ].reverse(),
-  "4": [
-    '#E9D7FE',
-    '#B692F6',
-    '#7F56D9',
-    '#53389E',
-  ].reverse(),
-  "5": [
     '#F4EBFF',
+    '#E9D7FE',
     '#D6BBFB',
+    '#B692F6',
     '#9E77ED',
     '#7F56D9',
+    '#6941C6',
     '#53389E',
-  ].reverse(),
-}
+    '#42307D',
+  ],
+  '2': ['#D6BBFB', '#6941C6'],
+  '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
+  '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
+  '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
+};
 
 const DirectUploadDone: React.FC = () => {
   const [conditions, setConditions] = useState<{
@@ -96,12 +74,16 @@ const DirectUploadDone: React.FC = () => {
   const [selColorCriteria, setSelColorCriteria] = useState<string>('Airline');
   const [tab, setTab] = useState(1);
   const [tabSecondary, setTabSecondary] = useState(0);
-  const [chartData, setChartData] = useState<{ total: number, x: string[]; data: IChartData }>();
+  const [chartData, setChartData] = useState<{ total: number; x: string[]; data: IChartData }>();
   const refWidth = useRef(null);
   const { width } = useResize(refWidth);
   const userId = 'test';
   const chartDataCurrent = chartData?.data?.[selColorCriteria];
-  const barColorsCurrent = !chartDataCurrent ? [] : String(chartDataCurrent?.length) in BarColors ? BarColors[String(chartDataCurrent?.length)] : BarColors.DEFAULT;
+  const barColorsCurrent = !chartDataCurrent
+    ? []
+    : String(chartDataCurrent?.length) in BarColors
+      ? BarColors[String(chartDataCurrent?.length)]
+      : BarColors.DEFAULT;
   const loadFlightSchedule = useCallback(
     (first_load: boolean = true) => {
       setLoadingFlightSchedule(true);
@@ -121,8 +103,7 @@ const DirectUploadDone: React.FC = () => {
             const idCur = criteriaCur.name;
             criteriaItems.push({ id: idCur, text: criteriaCur.name });
             criteriaCur.operator.map((val, index) => {
-              if (val === '=')
-                operatorItems[idCur] = [{ id: `O${index + 1}`, text: '=', multiSelect: false }];
+              if (val === '=') operatorItems[idCur] = [{ id: `O${index + 1}`, text: '=', multiSelect: false }];
               else if (val === 'is in')
                 operatorItems[idCur] = [{ id: `O${index + 1}`, text: 'is in', multiSelect: true }];
             });
@@ -134,12 +115,12 @@ const DirectUploadDone: React.FC = () => {
           setConditions({ logicItems, criteriaItems, operatorItems, valueItems });
         }
         if (data?.chart_x_data && data?.chart_y_data) {
-          for(const criteriaCur in data?.chart_y_data) {
+          for (const criteriaCur in data?.chart_y_data) {
             const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
             const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
-            for(const itemCur of criteriaDataCur) {
+            for (const itemCur of criteriaDataCur) {
               itemCur.acc_y = Array(itemCur.y.length).fill(0);
-              for(let i = 0; i < itemCur.y.length; i++) {
+              for (let i = 0; i < itemCur.y.length; i++) {
                 acc_y[i] += itemCur.y[i];
                 itemCur.acc_y[i] = Number(acc_y[i]);
               }
@@ -221,7 +202,9 @@ const DirectUploadDone: React.FC = () => {
               <Calendar
                 mode="single"
                 selected={selDate}
-                onSelect={(date) => { if(date) setSelDate(date); }}
+                onSelect={(date) => {
+                  if (date) setSelDate(date);
+                }}
               />
             </PopoverContent>
           </Popover>
@@ -312,10 +295,10 @@ const DirectUploadDone: React.FC = () => {
                     marker: {
                       color: barColorsCurrent[index],
                       opacity: 1,
+                      cornerradius: 7,
+                      // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
                     },
-                    hovertemplate: item.y?.map(
-                      (val) => `[%{x}] ${val}`
-                    )
+                    hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                   };
                 })}
               layout={{
@@ -334,7 +317,7 @@ const DirectUploadDone: React.FC = () => {
                   orientation: 'h',
                 },
                 bargap: 0.4,
-                barcornerradius: 7,
+                // barcornerradius: 7,
               }}
               config={{
                 displayModeBar: false,
@@ -349,7 +332,7 @@ const DirectUploadDone: React.FC = () => {
           </div>
         </>
       ) : loadingFlightSchedule ? (
-        <div className='flex flex-1 justify-center items-center min-h-[200px]'>
+        <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
         </div>
       ) : (

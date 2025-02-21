@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import SideNavigation from '@/components/SideNavigation';
-import UserProvider from '@/components/providers/UserProvider';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -23,13 +22,17 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       `${user?.user_metadata?.last_name?.[0] || ''}${user?.user_metadata?.first_name?.[0] || ''}` || '-',
   };
 
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+  
   return (
-    <UserProvider userInfo={userInfo}>
-      <SideNavigation />
+    <div>
+      <SideNavigation userInfo={userInfo} session={session} />
       <div id="container">
         <section id="content">{children}</section>
         <Footer />
       </div>
-    </UserProvider>
+    </div>
   );
 }

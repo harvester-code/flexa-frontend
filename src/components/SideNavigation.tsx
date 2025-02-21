@@ -5,8 +5,7 @@ import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-sv
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useContext } from 'react';
+import { useEffect, useState } from 'react';
 import NavIcon01 from '@/components/icons/NavIcon01';
 import NavIcon02 from '@/components/icons/NavIcon02';
 import NavIcon03 from '@/components/icons/NavIcon03';
@@ -14,16 +13,27 @@ import NavIcon04 from '@/components/icons/NavIcon04';
 import NavIcon05 from '@/components/icons/NavIcon05';
 import NavIcon06 from '@/components/icons/NavIcon06';
 import SearchIcon from '@/components/icons/search';
-import { UserContext } from '@/components/providers/UserProvider';
 import { Button } from '@/components/ui/button';
+import { TUserInfo } from '@/store/recoil/memory-atoms';
+import { setRecoil } from '@/store/recoil';
+import { Session } from '@supabase/supabase-js';
 
-export default function SideNavigation() {
-  const userInfo = useContext(UserContext);
+interface ISideNavigationProps {
+  userInfo: TUserInfo;
+  session: Session | null;
+}
+
+export default function SideNavigation({ userInfo, session }: ISideNavigationProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMyMenuOpen, setIsMyMenuOpen] = useState(false);
-
+  useEffect(() => {
+    setRecoil('userInfo', userInfo);
+  }, [userInfo]);
+  useEffect(() => {
+    setRecoil('accessToken', session?.access_token);
+  }, [session?.access_token]);
   return (
     <div
       id="navigation"
