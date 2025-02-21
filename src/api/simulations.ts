@@ -33,3 +33,5 @@ export const getFlightSchedule = (params: {
     value: string[];
   }>;
 }) => axios.post<IFlightScheduleResponse>('/api/v1/simulations/flight-schedule', params);
+
+export const getScenarioList = () => axios.get<any>('/api/v1/simulations/scenario');
