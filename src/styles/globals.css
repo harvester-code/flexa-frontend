@@ -966,11 +966,11 @@ textarea {
 .overview-wrap {
   margin-left: -30px;
   width: calc(100% + 60px);
-  @apply grid grid-cols-4 gap-[20px] bg-default-100 p-[30px];
+  @apply grid grid-cols-6 gap-[10px] bg-default-100 p-[30px];
   .overview-item {
     border: 1px solid var(--default-200);
-    aspect-ratio: 30/16;
-    @apply flex max-h-[200px] w-full flex-col gap-[10px] rounded-md bg-white p-[10px];
+    aspect-ratio: 200/120;
+    @apply flex w-full flex-col rounded-md bg-white p-[10px];
     dl {
       @apply flex flex-col gap-[8px];
       dt {
@@ -978,8 +978,14 @@ textarea {
         @apply h-[30px] font-semibold text-default-500;
       }
       dd {
-        line-height: 24px;
-        @apply text-lg font-medium text-default-900;
+        line-height: 30px;
+        font-size: 24px;
+        @apply font-medium text-default-900;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }

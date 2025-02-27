@@ -4,6 +4,7 @@ import { RecoilState, atom } from 'recoil';
 const PREFIX = 'MEMORY_ATOMS_';
 
 export type TUserInfo = {
+  id: string;
   fullName: string;
   email: string;
   firstName: string;

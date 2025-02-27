@@ -1,8 +1,10 @@
 'use client';
 
-import { getScenarioList } from '@/api/simulations';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { useScenarioList } from '@/api/simulations';
+import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import moment from 'moment';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -11,6 +13,7 @@ import Input from '@/components/Input';
 import Paging from '@/components/Paging';
 import Search from '@/components/Search';
 import RootLayoutDefault from '@/components/layoutDefault';
+import CreateScenario from '@/components/popups/CreateScenario';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,171 +21,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePathname, useRouter } from 'next/navigation';
+import { queryClient } from '@/api/query-client';
+
+interface IScenarioStates {
+  name: string;
+  note: string;
+  selected: boolean;
+  editMode: boolean;
+}
 
 const SimulationPage: React.FC = () => {
   const initialVisibleDiv: 'tag' | 'full' = 'tag';
   const [visibleDiv] = useState<'tag' | 'full'>(initialVisibleDiv);
   const [selectAll, setSelectAll] = useState(false);
+  const [selected, setSelected] = useState<boolean[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [createPopupVisible, setCreatePopupVisible] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { scenarioList } = useScenarioList();
 
   useEffect(() => {
-    getScenarioList().then(({ data }) => {
-      console.log(data);
-    });
-  }, []);
-  const data = [
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-link.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-    {
-      name: 'ICN_T1_Scenario_Rev2',
-      size: '200 KB',
-      terminal: 'T1',
-      editor: 'Danny Park',
-      targetDate: 'Oct 31 2024',
-      editDate: 'Oct 31 2024',
-      editTime: '16:22',
-      memo: 'This is a simulation that reflects the Check-In island renewal.',
-      imagePath: '/image/ico-folder-open.svg',
-    },
-  ];
+    if (scenarioList?.length > 0) {
+      setSelected(Array(scenarioList.length).fill(false));
+      setScenarioStates(
+        scenarioList.map((item) => {
+          return {
+            name: item.simulation_name,
+            note: item.note,
+            selected: false,
+            editMode: false,
+          };
+        })
+      );
+    }
+  }, [scenarioList]);
 
-  const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(Array(data.length).fill(null));
-  const [selected, setSelected] = useState<boolean[]>(Array(data.length).fill(false));
-  const [memos, setMemos] = useState(data.map((item) => item.memo));
+  const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(Array(10).fill(null));
+  const [scenarioStates, setScenarioStates] = useState<IScenarioStates[]>([]);
+  const [page, setPage] = useState(1);
 
-  const handleCheckboxChange = (index: number) => {
-    setSelected((prev) => {
-      const newSelected = [...prev];
-      newSelected[index] = !newSelected[index];
-      return newSelected;
-    });
-  };
-  const handleMemoChange = (index: number, newMemo: string) => {
-    setMemos((prevMemos) => {
-      const updatedMemos = [...prevMemos];
-      updatedMemos[index] = newMemo;
-      return updatedMemos;
+  const handleRowChange = (index: number, newState: Partial<IScenarioStates>) => {
+    setScenarioStates((prev) => {
+      const newStates = [...prev];
+      newStates[index] = { ...newStates[index], ...newState };
+      return newStates;
     });
   };
 
@@ -198,8 +81,8 @@ const SimulationPage: React.FC = () => {
     setAnchorEls(newAnchorEls);
   };
 
-  return (
-    <RootLayoutDefault>
+  return scenarioList?.length > 0 && scenarioList?.length == scenarioStates?.length ? (
+    <div>
       <ContentsHeader text="Simulation" />
       <div className="mt-[30px] flex justify-between">
         <h2 className="title-sm">Scenario List</h2>
@@ -214,7 +97,7 @@ const SimulationPage: React.FC = () => {
             className="btn-md btn-primary"
             icon={<img src="/image/ico-plus.svg" alt="" />}
             text="New Scenario"
-            onClick={() => {}}
+            onClick={() => setCreatePopupVisible(true)}
           />
         </div>
       </div>
@@ -242,7 +125,7 @@ const SimulationPage: React.FC = () => {
             </div>
           )}
         </div>
-        <Search />
+        <Search value={searchKeyword} onChangeText={(text) => setSearchKeyword(text)} />
       </div>
       <div className="table-container mt-[20px]">
         <table className="table-default">
@@ -256,7 +139,7 @@ const SimulationPage: React.FC = () => {
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setSelectAll(checked);
-                    setSelected(Array(data.length).fill(checked)); // 전체 선택/해제
+                    setSelected(Array(scenarioList.length).fill(checked)); // 전체 선택/해제
                   }}
                   className="checkbox text-sm"
                 />
@@ -291,57 +174,77 @@ const SimulationPage: React.FC = () => {
                   <img src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
-              <th className="!pl-[20px] text-left">Memo</th>
+              <th className="!pl-[20px] text-left">Note</th>
               <th className="w-[90px]"></th>
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`} onClick={() => {
-                router.push(`${pathname}/test`);
-              }}>
+            {scenarioList?.map((item, index) => searchKeyword?.length > 0 && item.simulation_name.indexOf(searchKeyword) < 0 ? null : (
+              <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`}>
                 <td className="text-center">
                   <Checkbox
                     label=""
                     id={`check-${index}`}
                     checked={selected[index]}
-                    onChange={() => handleCheckboxChange(index)}
+                    onChange={() =>
+                      setSelected([...selected.map((_, i) => (i == index ? !selected[index] : selected[i]))])
+                    }
                     className="checkbox text-sm"
                   />
                 </td>
                 <td className="">
                   <div className="flex items-center gap-[10px]">
-                    <span>
+                    {/* <span>
                       <img src={item.imagePath} alt="" />
-                    </span>
-                    <span>
-                      {item.name}
-                      <br />
-                      <span className="text-sm text-gray-500">{item.size}</span>
-                    </span>
+                    </span> */}
+                    {scenarioStates[index].editMode ? (
+                      <Input
+                        type="text"
+                        placeholder=""
+                        value={scenarioStates[index]?.name}
+                        className="!border-none bg-transparent !text-default-700"
+                        onChange={(e) => handleRowChange(index, { name: e.target.value })}
+                        // disabled={true}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => {
+                          router.push(`${pathname}/${item.id}`);
+                        }}
+                      >
+                        {item.simulation_name}
+                        <br />
+                        <span className="text-sm text-gray-500">{item.size}</span>
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="text-center">{item.terminal}</td>
                 <td className="">{item.editor}</td>
-                <td className="">{item.targetDate}</td>
                 <td className="">
-                  {item.editDate} <br /> <span className="font-normal text-default-500">{item.editTime}</span>
+                  {item?.simulation_date ? moment(item?.simulation_date).format('MM DD YYYY') : null}
                 </td>
                 <td className="">
-                  <Input
-                    type="text"
-                    placeholder=""
-                    value={memos[index]}
-                    className="!border-none bg-transparent !text-default-700"
-                    onChange={(e) => handleMemoChange(index, e.target.value)}
-                    // disabled={true}
-                  />
-                  {/* <input
-                    type="text"
-                    value={memos[index]}
-                    onChange={(e) => handleMemoChange(index, e.target.value)}
-                    className="mr-[30px] w-full rounded-md border-none bg-transparent px-[15px] py-[10px]"
-                  /> */}
+                  {moment(item?.updated_at).format('MM DD YYYY')} <br />{' '}
+                  <span className="font-normal text-default-500">
+                    {moment(item?.updated_at).format('hh:mm')}
+                  </span>
+                </td>
+                <td className="">
+                  {scenarioStates[index].editMode ? (
+                    <Input
+                      type="text"
+                      placeholder=""
+                      value={scenarioStates[index]?.note}
+                      className="!border-none bg-transparent !text-default-700"
+                      onChange={(e) => handleRowChange(index, { note: e.target.value })}
+                      // disabled={true}
+                    />
+                  ) : (
+                    <span>
+                      {item.note}
+                    </span>
+                  )}
                 </td>
                 <td className="text-right">
                   <DropdownMenu>
@@ -360,9 +263,9 @@ const SimulationPage: React.FC = () => {
                         <img src="/image/ico-duplicate.svg" alt="" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRowChange(index, { editMode: true })}>
                         <img src="/image/ico-rename.svg" alt="" />
-                        Rename
+                        Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <img src="/image/ico-share.svg" alt="" />
@@ -381,9 +284,16 @@ const SimulationPage: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <Paging currentPage={1} totalPage={10} />
-    </RootLayoutDefault>
-  );
+      <Paging currentPage={page} totalPage={30} onChangePage={(page) => setPage(page)} />
+      <CreateScenario
+        open={createPopupVisible}
+        onClose={() => setCreatePopupVisible(false)}
+        onCreate={(simulationId: string) => {
+          queryClient.invalidateQueries(['ScenarioList']);
+        }}
+      />
+    </div>
+  ) : null;
 };
 
 export default SimulationPage;

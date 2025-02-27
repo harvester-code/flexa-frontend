@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import SearchIcon from '@/components/icons/search';
 
-const SimSearch: React.FC = () => {
+interface ISearchProps {
+  value: string;
+  onChangeText: (text: string) => void;
+}
+
+export default function Search({ value, onChangeText }: ISearchProps) {
   const [isActive, setIsActive] = useState(false);
 
   const handleFocus = () => setIsActive(true);
@@ -9,12 +14,10 @@ const SimSearch: React.FC = () => {
 
   return (
     <div className={`simSearch ${isActive ? 'active' : ''}`}>
-      <input type="text" placeholder="Search" onFocus={handleFocus} onBlur={handleBlur} />
+      <input type="text" placeholder="Search" onFocus={handleFocus} onBlur={handleBlur} value={value} onChange={(e) => onChangeText(e.target.value)} />
       <button>
         <SearchIcon />
       </button>
     </div>
   );
-};
-
-export default SimSearch;
+}

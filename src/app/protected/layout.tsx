@@ -13,6 +13,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     redirect('/');
   }
   const userInfo = {
+    id: user?.id,
     fullName: user?.user_metadata?.full_name || 'User',
     email: user?.email || '',
     firstName: user?.user_metadata?.first_name,
