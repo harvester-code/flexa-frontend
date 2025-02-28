@@ -12,24 +12,26 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   if (!user) {
     redirect('/');
   }
-  const userInfo = {
-    id: user?.id,
-    fullName: user?.user_metadata?.full_name || 'User',
-    email: user?.email || '',
-    firstName: user?.user_metadata?.first_name,
-    lastName: user?.user_metadata?.last_name,
-    profileImage: user?.user_metadata?.profile_image,
-    initials:
-      `${user?.user_metadata?.last_name?.[0] || ''}${user?.user_metadata?.first_name?.[0] || ''}` || '-',
+
+  const { data: userInfo, error } = await supabase
+    .from('user_info')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  const enrichedUserInfo = {
+    ...userInfo,
+    fullName: `${userInfo.first_name} ${userInfo.last_name}`.trim(),
+    initials: `${userInfo.last_name?.[0] || ''}${userInfo.first_name?.[0] || ''}` || '-',
   };
 
   const {
-    data: { session }
+    data: { session },
   } = await supabase.auth.getSession();
-  
+
   return (
     <div>
-      <SideNavigation userInfo={userInfo} session={session} />
+      <SideNavigation userInfo={enrichedUserInfo} session={session} />
       <div id="container">
         <section id="content">{children}</section>
         <Footer />
