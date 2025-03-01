@@ -21,7 +21,7 @@ export default function ProfilePage() {
         <div className="profile-header">
           <div className="profile-img">
             <p>
-              <img src="https://picsum.photos/200" alt="thumbnail" />
+              <img src={userInfo?.profileImageUrl || 'https://picsum.photos/200'} alt="thumbnail" />
             </p>
           </div>
           <dl className="profile-info">

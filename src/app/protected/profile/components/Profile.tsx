@@ -8,7 +8,7 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 
 export default function Profile() {
-  const { userInfo } = useUserInfo();
+  const { userInfo, setUserInfo } = useUserInfo();
 
   const [firstName, setFirstName] = useState(userInfo?.firstName || '');
   const [lastName, setLastName] = useState(userInfo?.lastName || '');
@@ -21,6 +21,12 @@ export default function Profile() {
   const [isActiveItalic, setIsActiveItalic] = useState(false);
   const [isActiveUnderline, setIsActiveUnderline] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+
+  // 이미지 업로드 관련 상태 추가
+  const [profileImage, setProfileImage] = useState<string | undefined>(userInfo?.profileImageUrl);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 서식 적용 함수
   const applyFormat = (command: string) => {
@@ -87,6 +93,7 @@ export default function Profile() {
       setEmail(userInfo.email || '');
       setPosition(userInfo.position || '');
       setIntroduction(userInfo.introduction || '');
+      setProfileImage(userInfo.profileImageUrl || '');
 
       // 에디터 내용도 업데이트
       if (editorRef.current) {
@@ -94,6 +101,150 @@ export default function Profile() {
       }
     }
   }, [userInfo]);
+
+  // 파일 선택 핸들러
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  // 이미지 업로드 처리 함수
+  const handleImageUpload = async (file: File) => {
+    // 파일 유형 검증
+    const validTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('지원되지 않는 파일 형식입니다. SVG, PNG, JPG 또는 GIF 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 파일 크기 검증 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('파일 크기가 너무 큽니다. 최대 5MB까지 업로드 가능합니다.');
+      return;
+    }
+
+    // 이미지 크기 검증 (800x400px 제한)
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = async () => {
+      URL.revokeObjectURL(objectUrl);
+
+      if (img.width > 800 || img.height > 400) {
+        setUploadError('이미지 크기가 너무 큽니다. 최대 800x400px까지 업로드 가능합니다.');
+        return;
+      }
+
+      try {
+        setIsUploading(true);
+        setUploadError(null);
+
+        // Supabase 스토리지에 업로드
+        const supabase = createClient();
+        const userId = userInfo?.id;
+
+        if (!userId) {
+          setUploadError('사용자 정보를 찾을 수 없습니다.');
+          setIsUploading(false);
+          return;
+        }
+
+        // 기존 이미지가 있으면 삭제
+        if (profileImage) {
+          const filePathMatch = profileImage.match(/\/profile_image\/(.+)$/);
+
+          if (filePathMatch && filePathMatch[1]) {
+            const oldFilePath = decodeURIComponent(filePathMatch[1]);
+
+            // 스토리지에서 기존 파일 삭제
+            const { error: removeError } = await supabase.storage.from('profile_image').remove([oldFilePath]);
+
+            if (removeError) {
+              console.error('기존 이미지 삭제 오류:', removeError);
+              // 기존 이미지 삭제 실패해도 새 이미지 업로드는 계속 진행
+            }
+          }
+        }
+
+        // 파일 이름 생성 (중복 방지를 위해 타임스탬프 추가)
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // 스토리지에 업로드
+        const { error: uploadError } = await supabase.storage.from('profile_image').upload(filePath, file);
+
+        if (uploadError) {
+          throw new Error(uploadError.message);
+        }
+
+        // 업로드된 이미지의 공개 URL 가져오기
+        const { data: publicUrlData } = supabase.storage.from('profile_image').getPublicUrl(filePath);
+
+        const imageUrl = publicUrlData.publicUrl;
+
+        // 사용자 정보 업데이트
+        const { data, error } = await supabase
+          .from('user_info')
+          .update({
+            profile_image_url: imageUrl,
+          })
+          .eq('user_id', userId)
+          .select()
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        // 상태 업데이트
+        setProfileImage(imageUrl);
+
+        // 전역 상태 업데이트
+        if (userInfo) {
+          setUserInfo({
+            ...userInfo,
+            profileImageUrl: imageUrl,
+          });
+        }
+      } catch (error) {
+        console.error('이미지 업로드 오류:', error);
+        setUploadError('이미지 업로드 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setUploadError('이미지를 로드할 수 없습니다. 유효한 이미지 파일인지 확인해 주세요.');
+    };
+
+    img.src = objectUrl;
+  };
+
+  // 업로드 버튼 클릭 핸들러
+  const handleUploadButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +274,7 @@ export default function Profile() {
     setPosition(userInfo?.position || '');
     setIntroduction(userInfo?.introduction || '');
     setInitials(userInfo?.initials || '');
+    setProfileImage(userInfo?.profileImageUrl);
   };
 
   return (
@@ -205,23 +357,102 @@ export default function Profile() {
           </div>
           <div className="form-item-content">
             <div className="flex items-start gap-20">
-              <p className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-full border border-default-300 bg-default-25 text-lg font-semibold text-default-600">
-                {initials}
-                {/* <img
-                  src="https://picsum.photos/200"
-                  alt="thumbnail"
-                  className="h-full w-full object-cover"
-                /> */}
-              </p>
-              <button className="upload-button" type="button">
-                <p>
-                  <img src="/image/ico-cloud.svg" alt="upload" />
-                </p>
-                <p className="mt-10">
-                  <span className="text-md font-semibold text-accent-700">Click to Upload</span> or Drag & Drop
-                </p>
-                <p className="text-xs">SVG, PNG, JPG or GIF (max. 800x400px)</p>
-              </button>
+              <div className="flex flex-col gap-4">
+                {/* 숨겨진 파일 입력 */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/svg+xml,image/png,image/jpeg,image/gif"
+                  className="hidden"
+                />
+
+                {/* 업로드 버튼 */}
+                <button
+                  className="upload-button"
+                  type="button"
+                  onClick={handleUploadButtonClick}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <p className="text-md font-semibold text-accent-700">업로드 중...</p>
+                  ) : (
+                    <>
+                      <p>
+                        <img src="/image/ico-cloud.svg" alt="upload" />
+                      </p>
+                      <p className="mt-10">
+                        <span className="text-md font-semibold text-accent-700">Click to Upload</span> or Drag &
+                        Drop
+                      </p>
+                      <p className="text-xs">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                    </>
+                  )}
+                </button>
+
+                {/* 오류 메시지 */}
+                {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
+
+                {/* 이미지가 있을 경우 삭제 버튼 */}
+                {profileImage && (
+                  <button
+                    type="button"
+                    className="text-red-500 text-sm hover:underline"
+                    onClick={async () => {
+                      if (confirm('프로필 이미지를 삭제하시겠습니까?')) {
+                        const supabase = createClient();
+
+                        try {
+                          // 1. 먼저 현재 프로필 이미지 URL에서 파일 경로 추출
+                          const filePathMatch = profileImage.match(/\/profile_image\/(.+)$/);
+
+                          if (filePathMatch && filePathMatch[1]) {
+                            const filePath = decodeURIComponent(filePathMatch[1]);
+
+                            // 2. 스토리지에서 파일 삭제
+                            const { error: storageError } = await supabase.storage
+                              .from('profile_image')
+                              .remove([filePath]);
+
+                            if (storageError) {
+                              console.error('스토리지 파일 삭제 오류:', storageError);
+                              // 스토리지 삭제 실패해도 DB 업데이트는 계속 진행
+                            }
+                          }
+
+                          // 3. 사용자 정보에서 이미지 URL 제거
+                          const { error } = await supabase
+                            .from('user_info')
+                            .update({ profile_image_url: null })
+                            .eq('user_id', userInfo?.id);
+
+                          if (error) {
+                            throw error;
+                          }
+
+                          // 4. 상태 업데이트
+                          setProfileImage(undefined);
+
+                          // 5. 전역 상태 업데이트
+                          if (userInfo) {
+                            setUserInfo({
+                              ...userInfo,
+                              profileImageUrl: undefined,
+                            });
+                          }
+                        } catch (error) {
+                          console.error('이미지 삭제 오류:', error);
+                          alert('이미지 삭제 중 오류가 발생했습니다.');
+                        }
+                      }
+                    }}
+                  >
+                    이미지 삭제
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
