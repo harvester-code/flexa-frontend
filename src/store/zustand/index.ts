@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { combine } from 'zustand/middleware';
 
 export type TUserInfo = {
   id: string;
