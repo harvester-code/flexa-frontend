@@ -1,11 +1,10 @@
 import { createScenario } from '@/api/simulations';
-import { getRecoil } from '@/store/recoil';
-import { TUserInfo } from '@/store/recoil/memory-atoms';
 import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import React, { useState } from 'react';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/ui/dialog';
+import { useUserInfo } from '@/store/zustand';
 
 interface ICreateScenarioData {
   name: string;
@@ -24,6 +23,7 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
   const [scenarioMemo, setScenarioMemo] = useState('');
   const [locationAirport, setLocationAirport] = useState('');
   const [terminal, setTerminal] = useState('');
+  const { userInfo } = useUserInfo();
   return (
     <Dialog
       open={open}
@@ -104,12 +104,11 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
                 alert('Please enter the memo.');
                 return;
               }
-              const userInfo = getRecoil<TUserInfo>('userInfo');
               createScenario({
                 simulation_name: scenarioName,
                 terminal,
                 note: scenarioMemo,
-                editor: userInfo.fullName,
+                editor: userInfo?.fullName || '',
               })
                 .then(({ data }) => {
                   if (data?.simulation_id) {

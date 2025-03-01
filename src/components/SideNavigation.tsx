@@ -1,8 +1,10 @@
 'use client';
 
 import { signOutAction } from '@/api/auth';
+import { TUserInfo, useUserInfo } from '@/store/zustand';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Session } from '@supabase/supabase-js';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -14,9 +16,6 @@ import NavIcon05 from '@/components/icons/NavIcon05';
 import NavIcon06 from '@/components/icons/NavIcon06';
 import SearchIcon from '@/components/icons/search';
 import { Button } from '@/components/ui/button';
-import { TUserInfo } from '@/store/recoil/memory-atoms';
-import { setRecoil } from '@/store/recoil';
-import { Session } from '@supabase/supabase-js';
 
 interface ISideNavigationProps {
   userInfo: TUserInfo;
@@ -28,11 +27,12 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMyMenuOpen, setIsMyMenuOpen] = useState(false);
+  const { setUserInfo, setAccessToken } = useUserInfo();
   useEffect(() => {
-    setRecoil('userInfo', userInfo);
+    setUserInfo(userInfo);
   }, [userInfo]);
   useEffect(() => {
-    setRecoil('accessToken', session?.access_token);
+    setAccessToken(session?.access_token || '');
   }, [session?.access_token]);
   return (
     <div

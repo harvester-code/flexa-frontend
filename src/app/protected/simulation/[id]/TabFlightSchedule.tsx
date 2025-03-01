@@ -2,8 +2,6 @@
 
 import { IChartData, getFlightSchedule } from '@/api/simulations';
 import { useResize } from '@/hooks/use-resize';
-import { getRecoil } from '@/store/recoil';
-import { TUserInfo } from '@/store/recoil/memory-atoms';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import moment from 'moment';
@@ -22,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useUserInfo } from '@/store/zustand';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
@@ -69,7 +68,7 @@ export default function TabFlightSchedule() {
 
   const { width } = useResize(refWidth);
 
-  const userInfo = getRecoil<TUserInfo>('userInfo');
+  const { userInfo } = useUserInfo();
   const chartDataCurrent = chartData?.data?.[selColorCriteria];
   const barColorsCurrent = !chartDataCurrent
     ? []
@@ -81,7 +80,7 @@ export default function TabFlightSchedule() {
       setLoadingFlightSchedule(true);
       getFlightSchedule({
         first_load,
-        user_id: userInfo.id,
+        user_id: userInfo?.id || '',
         date: moment(selDate).format('YYYY-MM-DD'),
         airport: selAirport,
         condition: selConditions,
