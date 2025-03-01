@@ -2,12 +2,16 @@ import { create } from 'zustand';
 
 export type TUserInfo = {
   id: string;
-  fullName: string;
   email: string;
   firstName: string;
   lastName: string;
-  profileImage: string;
+  fullName: string;
   initials: string;
+  profileImageUrl?: string;
+  roleId: number;
+  groupId: number;
+  createdAt: string;
+  updatedAt?: string;
 };
 
 export const useUserInfo = create<{
