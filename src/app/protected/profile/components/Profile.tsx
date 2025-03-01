@@ -2,24 +2,98 @@
 
 import { createClient } from '@/lib/supabase-client';
 import { useUserInfo } from '@/store/zustand';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useEffect } from 'react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 
 export default function Profile() {
-  const { userInfo, setUserInfo } = useUserInfo();
+  const { userInfo } = useUserInfo();
 
   const [firstName, setFirstName] = useState(userInfo?.firstName || '');
   const [lastName, setLastName] = useState(userInfo?.lastName || '');
   const [initials, setInitials] = useState(userInfo?.initials || '');
   const [email, setEmail] = useState(userInfo?.email || '');
 
-  const [position, setPosition] = useState('');
-  const [introduction, setIntroduction] = useState('');
+  const [position, setPosition] = useState(userInfo?.position || '');
+  const [introduction, setIntroduction] = useState(userInfo?.introduction || '');
   const [isActiveBold, setIsActiveBold] = useState(false);
   const [isActiveItalic, setIsActiveItalic] = useState(false);
   const [isActiveUnderline, setIsActiveUnderline] = useState(false);
-  const [isActiveList, setIsActiveList] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // 서식 적용 함수
+  const applyFormat = (command: string) => {
+    document.execCommand(command, false);
+    // 서식 적용 후 현재 상태 확인하여 버튼 상태 업데이트
+    if (command === 'bold') {
+      setIsActiveBold(document.queryCommandState('bold'));
+    } else if (command === 'italic') {
+      setIsActiveItalic(document.queryCommandState('italic'));
+    } else if (command === 'underline') {
+      setIsActiveUnderline(document.queryCommandState('underline'));
+    }
+
+    // 포커스 유지
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
+  // contentEditable div의 내용이 변경될 때 호출
+  const handleEditorChange = () => {
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML;
+
+      // HTML 태그를 제외한 순수 텍스트 길이 계산
+      const textLength = content.replace(/<[^>]*>/g, '').length;
+
+      // 글자수 제한 (275자)
+      if (textLength > 275) {
+        // 이전 상태로 되돌리기
+        editorRef.current.innerHTML = introduction;
+        return; // 함수 종료
+      }
+
+      // 글자수가 제한 이내인 경우 상태 업데이트
+      setIntroduction(content);
+
+      // 내용이 비어있는지 확인하는 조건
+      const isEmpty =
+        !content ||
+        content === '<br>' ||
+        content === '' ||
+        content === '<u></u>' ||
+        content === '<u><br></u>' ||
+        content.replace(/<(?!br\s*\/?)[^>]+>/g, '').trim() === '';
+
+      if (isEmpty) {
+        // 모든 서식 버튼 비활성화
+        setIsActiveBold(false);
+        setIsActiveItalic(false);
+        setIsActiveUnderline(false);
+
+        // 에디터 내용 완전히 비우기
+        editorRef.current.innerHTML = '';
+      }
+    }
+  };
+  // userInfo가 변경될 때마다 상태 업데이트
+  useEffect(() => {
+    if (userInfo) {
+      setFirstName(userInfo.firstName || '');
+      setLastName(userInfo.lastName || '');
+      setInitials(userInfo.initials || '');
+      setEmail(userInfo.email || '');
+      setPosition(userInfo.position || '');
+      setIntroduction(userInfo.introduction || '');
+
+      // 에디터 내용도 업데이트
+      if (editorRef.current) {
+        editorRef.current.innerHTML = userInfo.introduction || '';
+      }
+    }
+  }, [userInfo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,29 +104,24 @@ export default function Profile() {
       .update({
         first_name: firstName,
         last_name: lastName,
+        position: position,
+        bio: introduction,
       })
       .eq('user_id', userInfo?.id)
       .select()
       .single();
 
     if (!error && data) {
-      setUserInfo({
-        ...userInfo!,
-        firstName,
-        lastName,
-        fullName: `${firstName} ${lastName}`.trim(),
-      });
       alert('Successfully updated!');
-    } // 여기에 Supabase에 저장하는 로직 추가
-    console.log('저장할 데이터:', { firstName, lastName, email, position, introduction });
+    }
   };
 
   const handleCancel = () => {
     // 취소 로직 (예: 초기값으로 되돌리기)
     setFirstName(userInfo?.firstName || '');
     setLastName(userInfo?.lastName || '');
-    setPosition('');
-    setIntroduction('');
+    setPosition(userInfo?.position || '');
+    setIntroduction(userInfo?.introduction || '');
     setInitials(userInfo?.initials || '');
   };
 
@@ -185,7 +254,10 @@ export default function Profile() {
                 type="button"
                 title="Bold"
                 className={isActiveBold ? 'active' : ''}
-                onClick={() => setIsActiveBold(!isActiveBold)}
+                onClick={() => {
+                  setIsActiveBold(!isActiveBold);
+                  applyFormat('bold');
+                }}
               >
                 <img src="/image/ico-bold.svg" alt="bold" />
               </button>
@@ -193,7 +265,10 @@ export default function Profile() {
                 type="button"
                 title="Italic"
                 className={isActiveItalic ? 'active' : ''}
-                onClick={() => setIsActiveItalic(!isActiveItalic)}
+                onClick={() => {
+                  setIsActiveItalic(!isActiveItalic);
+                  applyFormat('italic');
+                }}
               >
                 <img src="/image/ico-italic.svg" alt="italic" />
               </button>
@@ -201,26 +276,31 @@ export default function Profile() {
                 type="button"
                 title="Underline"
                 className={isActiveUnderline ? 'active' : ''}
-                onClick={() => setIsActiveUnderline(!isActiveUnderline)}
+                onClick={() => {
+                  setIsActiveUnderline(!isActiveUnderline);
+                  applyFormat('underline');
+                }}
               >
                 <img src="/image/ico-underline.svg" alt="underline" />
               </button>
-              <button
-                type="button"
-                title="List"
-                className={isActiveList ? 'active' : ''}
-                onClick={() => setIsActiveList(!isActiveList)}
-              >
-                <img src="/image/ico-list.svg" alt="list" />
-              </button>
             </p>
-            <textarea
-              placeholder="Write a brief summary..."
-              value={introduction}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setIntroduction(e.target.value)}
-              className="textarea-field h-155 mt-10"
-            ></textarea>
-            <p className="text-default-500">275 characters remaining</p>
+            <div
+              ref={editorRef}
+              contentEditable
+              onInput={handleEditorChange}
+              className="textarea-field h-155 mt-10 overflow-auto p-2"
+              data-placeholder="Write a brief summary..."
+              style={{
+                minHeight: '155px',
+                maxHeight: '150px',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                display: 'block',
+              }}
+            />
+            <p className="text-default-500">
+              {275 - (introduction.replace(/<[^>]*>/g, '').length || 0)} characters remaining
+            </p>
           </div>
         </div>
       </div>
