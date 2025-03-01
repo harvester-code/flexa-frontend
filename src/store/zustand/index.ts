@@ -8,8 +8,10 @@ export type TUserInfo = {
   fullName: string;
   initials: string;
   profileImageUrl?: string;
-  roleId: number;
+  position: string;
+  introduction: string;
   groupId: number;
+  roleId: number;
   createdAt: string;
   updatedAt?: string;
 };
@@ -21,7 +23,7 @@ export const useUserInfo = create<{
   setAccessToken: (token: string) => void;
 }>((set) => ({
   userInfo: undefined,
-  setUserInfo: (info)  => set({ userInfo: info }),
+  setUserInfo: (info) => set({ userInfo: info }),
   setAccessToken: (token) => set({ accessToken: token }),
 }));
 

@@ -19,7 +19,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
     .single();
 
-    
   const enrichedUserInfo = {
     id: userInfo.user_id,
     email: userInfo?.email || '',
@@ -28,8 +27,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     fullName: `${userInfo.first_name} ${userInfo.last_name}`.trim(),
     initials: `${userInfo.last_name?.[0] || ''}${userInfo.first_name?.[0] || ''}` || '-',
     profileImageUrl: userInfo?.profile_image_url,
-    roleId: userInfo.role_id,
+    position: userInfo?.position,
+    introduction: userInfo?.bio,
     groupId: userInfo.group_id,
+    roleId: userInfo.role_id,
     createdAt: userInfo.created_at,
     updatedAt: userInfo.updated_at,
   };
