@@ -3,7 +3,7 @@
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase-client';
 import { CheckCircle2, Circle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { ToastAction } from '@/components/ui/toast';
@@ -13,9 +13,108 @@ export default function Password() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [currentSession, setCurrentSession] = useState<string | null>(null);
   const { toast } = useToast();
   const supabase = createClient();
   const [isPasswordValid, setIsPasswordValid] = useState(true);
+
+  // 현재 세션 조회
+  useEffect(() => {
+    const getCurrentSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          // 현재 활성화된 세션 목록 조회
+          const { data: sessionData } = await supabase
+            .from('user_login_history2')
+            .select('session_id')
+            .eq('user_id', session.user.id)
+            .order('logged_in_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (sessionData) {
+            console.log('현재 세션 ID:', sessionData.session_id);
+            setCurrentSession(sessionData.session_id);
+          }
+        } else {
+          setCurrentSession(null);
+        }
+      } catch (error) {
+        console.error('세션 정보 조회 실패:', error);
+        setCurrentSession(null);
+      }
+    };
+    getCurrentSession();
+  }, []);
+
+  // 로그인 히스토리 가져오기
+  const fetchLoginHistory = async () => {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error('사용자 정보 조회 실패:', userError.message);
+        toast({
+          variant: 'destructive',
+          title: '로그인 기록 조회 실패',
+          description: '사용자 정보를 가져올 수 없습니다.',
+        });
+        return;
+      }
+
+      if (!user) {
+        console.error('사용자 정보 없음');
+        toast({
+          variant: 'destructive',
+          title: '로그인 기록 조회 실패',
+          description: '로그인이 필요합니다.',
+        });
+        return;
+      }
+
+      console.log('현재 사용자 ID:', user.id); // 디버깅용
+
+      const { data, error } = await supabase
+        .from('user_login_history2')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('logged_in_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('로그인 기록 조회 실패:', error.message);
+        toast({
+          variant: 'destructive',
+          title: '로그인 기록 조회 실패',
+          description: error.message,
+        });
+        return;
+      }
+
+      console.log('조회된 로그인 기록:', data); // 디버깅용
+      setLoginHistory(data || []);
+    } catch (error: any) {
+      console.error('로그인 히스토리 조회 실패:', error.message);
+      toast({
+        variant: 'destructive',
+        title: '로그인 기록 조회 실패',
+        description: error.message || '로그인 기록을 가져오는 중 오류가 발생했습니다.',
+      });
+    }
+  };
+
+  // 컴포넌트 마운트 시와 세션 변경 시 로그인 히스토리 가져오기
+  useEffect(() => {
+    fetchLoginHistory();
+  }, [currentSession]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); // 폼 기본 동작 방지
@@ -223,42 +322,50 @@ export default function Password() {
         </div>
         <div className="mt-16 flex items-start justify-between">
           <dl className="flex flex-col gap-2">
-            <dt className="text-lg font-semibold text-default-900">Login History</dt>
+            <dt className="text-lg font-semibold text-default-900">로그인 기록</dt>
+            <dd className="text-sm">최근 로그인한 기기 목록입니다.</dd>
           </dl>
         </div>
-        <div className="profile-form mt-20">
-          <div className="form-item pl-20">
-            <div className="flex items-start gap-20">
-              <img src="/image/ico-desktop.svg" alt="desktop" />
-              <dl className="flex flex-col gap-2">
-                <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
-                  2018 Macbook Pro 15-inch
-                  <span className="current-device">
-                    <img src="/image/ico-dot-green.svg" alt="" />
-                    <span>Current Device</span>
-                  </span>
-                </dt>
-                <dd className="text-sm">193.186.4.321, Mac OS • 22 Jan at 10:40am</dd>
-              </dl>
-            </div>
-          </div>
-          <div className="form-item pl-20">
-            <div className="flex items-start gap-20">
-              <img src="/image/ico-desktop.svg" alt="desktop" />
-              <dl className="flex flex-col gap-2">
-                <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
-                  2018 Macbook Pro 15-inch
-                </dt>
-                <dd className="text-sm">193.186.4.321, Mac OS • 22 Jan at 10:40am</dd>
-              </dl>
-            </div>
-            <button className="gap-15 mt-10 flex items-center font-medium text-default-400 hover:text-accent-700">
-              <span>Log out from this devide</span>
-              <img src="/image/ico-logout-device.svg" alt="logout" />
-            </button>
-          </div>
-        </div>
       </form>
+      <div className="profile-form mt-20">
+        {loginHistory.map((history) => (
+          <div key={history.id} className="form-item pl-20">
+            <div className="flex items-center gap-20">
+              <img src="/image/ico-desktop.svg" alt="desktop" />
+              <dl className="flex flex-col gap-2">
+                <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
+                  {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
+                  {history.session_id === currentSession && (
+                    <span className="current-device">
+                      <img src="/image/ico-dot-green.svg" alt="" />
+                      <span>현재 기기</span>
+                    </span>
+                  )}
+                </dt>
+                <dd className="text-sm">
+                  {history.ip_address}, {history.user_agent} •{' '}
+                  {new Date(history.logged_in_at).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </dd>
+              </dl>
+            </div>
+            {/* {history.session_id !== currentSession && (
+              <button
+                onClick={() => handleDeviceLogout(history.session_id)}
+                className="gap-15 mt-10 flex items-center font-medium text-default-400 hover:text-accent-700"
+              >
+                <span>이 기기에서 로그아웃</span>
+                <img src="/image/ico-logout-device.svg" alt="logout" />
+              </button>
+            )} */}
+          </div>
+        ))}
+      </div>
     </>
   );
 }
