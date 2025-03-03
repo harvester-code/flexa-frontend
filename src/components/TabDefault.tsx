@@ -14,9 +14,15 @@ interface TabDefaultProps {
 
 export default function TabDefault({ currentTab, className, tabs, tabCount, onTabChange }: TabDefaultProps) {
   return (
-    <div className={`tab-default ${className}`}>
+    <div className={`tab-default grid w-full ${className}`}>
       {tabs.slice(0, tabCount).map((tab, index) => (
-        <button key={index} className={`${currentTab === index ? 'active' : ''}`} onClick={() => { if(onTabChange) onTabChange(index) }}>
+        <button
+          key={index}
+          className={`${currentTab === index ? 'active' : ''} w-full`}
+          onClick={() => {
+            if (onTabChange) onTabChange(index);
+          }}
+        >
           {tab.text} {tab.number ? <span>{tab.number}</span> : null}
         </button>
       ))}

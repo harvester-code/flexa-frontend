@@ -269,8 +269,7 @@ input::placeholder {
 }
 
 .loginContainer {
-  background: linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%),
-    #fff;
+  background: linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff;
   @apply flex flex-grow items-center justify-center;
   .loginBlock {
     border-left: 2px solid #fff;
@@ -1039,12 +1038,12 @@ textarea {
 
 /* profile */
 .profile-top {
-  width: calc(100% + 60px);
+  width: 100%;
   background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   img {
     @apply h-full w-full object-cover;
   }
-  @apply -ml-[30px] flex h-[210px] items-center justify-center overflow-hidden object-center text-white;
+  @apply flex h-[210px] items-center justify-center overflow-hidden object-center text-white;
 }
 .progress-bar {
   @apply mt-[5px] flex h-[20px] w-full items-center gap-[10px];
@@ -1060,10 +1059,11 @@ textarea {
 }
 .profile-wrap {
   margin-top: -40px;
-  width: 1340px;
-  @apply mx-auto;
+  width: 100%;
+  max-width: 1340px;
+  @apply mx-auto px-4;
   .profile-header {
-    @apply flex items-center gap-[20px] pl-[30px] pr-[30px];
+    @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
     .profile-img {
       border: 4px solid #fff;
       background: #fcfcfd;
@@ -1079,7 +1079,7 @@ textarea {
       }
     }
     .profile-info {
-      @apply mt-[20px] flex flex-col gap-[4px];
+      @apply mt-[20px] flex flex-col gap-[4px] text-center md:text-left;
       dt {
         font-size: 30px;
         line-height: 38px;
@@ -1092,9 +1092,10 @@ textarea {
     }
   }
   .tab-default {
-    @apply w-[200px];
+    @apply mx-auto w-full md:mx-0 md:w-[200px];
     button {
       height: 32px;
+      @apply w-full;
     }
   }
   .profile-form {
