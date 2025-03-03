@@ -1,7 +1,7 @@
 .footer {
   @apply bg-default-25 px-[30px] text-center;
   .footer-content {
-    @apply flex items-center justify-between py-[60px];
+    @apply flex items-center justify-between py-8;
   }
   .footer-left {
     @apply flex items-center gap-[90px];
@@ -34,6 +34,6 @@
     }
   }
   .footer-bottom {
-    @apply border-t border-default-200 pb-[40px] pt-[40px] font-medium text-default-400;
+    @apply border-t border-default-200 pb-10 pt-10 font-medium text-default-400;
   }
 }
