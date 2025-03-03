@@ -1,5 +1,6 @@
 'use client';
 
+import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase-client';
 import { useUserInfo } from '@/store/zustand';
 import { useRef, useState } from 'react';
@@ -9,7 +10,7 @@ import Input from '@/components/Input';
 
 export default function Profile() {
   const { userInfo, setUserInfo } = useUserInfo();
-
+  const { toast } = useToast();
   const [firstName, setFirstName] = useState(userInfo?.firstName || '');
   const [lastName, setLastName] = useState(userInfo?.lastName || '');
   const [initials, setInitials] = useState(userInfo?.initials || '');
@@ -263,7 +264,10 @@ export default function Profile() {
       .single();
 
     if (!error && data) {
-      alert('Successfully updated!');
+      toast({
+        title: 'Successfully updated!',
+        description: 'Your profile information has been updated successfully.',
+      });
     }
   };
 
