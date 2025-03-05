@@ -19,8 +19,7 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onClose }) => {
       <DialogContent>
         <div className="popup-contents">
           <p className="text">
-            Are you sure you want to delete that list? <br /> The deleted list can be checked in
-            Trash Bin.
+            Are you sure you want to delete that list? <br /> The deleted list can be checked in Trash Bin.
           </p>
         </div>
         <div className="popup-btn-wrap">

@@ -1,6 +1,5 @@
 'use client';
 
-import { useResize } from '@/hooks/use-resize';
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
 import {
@@ -10,7 +9,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/UIs/DropdownMenu';
+import { useResize } from '@/hooks/use-resize';
 
 export interface ICondition {
   criteria: string;
@@ -125,7 +125,9 @@ function Dropdown({
               <div className="flex flex-row">
                 {selItems?.slice(0, 5).map((itemCurrent, index) => {
                   return index >= 4 ? (
-                    <span key={index} className="ml-[10px] text-sm font-medium text-gray-700">{'...'}</span>
+                    <span key={index} className="ml-[10px] text-sm font-medium text-gray-700">
+                      {'...'}
+                    </span>
                   ) : (
                     <button
                       key={index}
@@ -138,7 +140,7 @@ function Dropdown({
                       <span className="text-sm font-medium text-gray-700">{itemCurrent?.text || ' '}</span>
                       <img className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
                     </button>
-                  )
+                  );
                 })}
               </div>
             ) : (
@@ -151,7 +153,7 @@ function Dropdown({
         <DropdownMenuTrigger asChild disabled={disabled}>
           <div />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="cursor-pointer bg-white max-h-[400px] overflow-y-auto">
+        <DropdownMenuContent className="max-h-[400px] cursor-pointer overflow-y-auto bg-white">
           {label ? <DropdownMenuLabel>{label}</DropdownMenuLabel> : null}
           {items?.map((itemCurrent: IDropdownItem, index: number) => {
             const selItemCur = selItems?.find((item) => item.id === itemCurrent.id);
@@ -167,7 +169,7 @@ function Dropdown({
                       if (selItemCur) {
                         const newSelItems = selItems.filter((item) => item.id !== itemCurrent.id);
                         setSelItems(newSelItems);
-                        if(onChange) onChange(newSelItems);
+                        if (onChange) onChange(newSelItems);
                       } else {
                         const newSelItems = [...selItems, itemCurrent];
                         setSelItems(newSelItems);
@@ -179,7 +181,11 @@ function Dropdown({
                     }
                   }}
                 >
-                  {selItemCur ? <div className="h-[8px] w-[8px] rounded-full bg-black" /> : <div className="h-[8px] w-[8px]" />}
+                  {selItemCur ? (
+                    <div className="h-[8px] w-[8px] rounded-full bg-black" />
+                  ) : (
+                    <div className="h-[8px] w-[8px]" />
+                  )}
                   <span className="ml-[10px] text-md font-medium text-gray-800">{itemCurrent.text}</span>
                 </DropdownMenuItem>
               </div>
@@ -239,10 +245,12 @@ function ConditionItem({
           className="mt-[6px] flex-1"
           onChange={(items) => {
             const criteriaId = items[0].id;
-            if(criteria != criteriaId) {
+            if (criteria != criteriaId) {
               setCriteria(criteriaId);
               setOperator(operatorItems[criteriaId][0].id);
-              setValue(operatorItems[criteriaId][0].multiSelect === false ? [valueItems[criteriaId][0].id] : []);
+              setValue(
+                operatorItems[criteriaId][0].multiSelect === false ? [valueItems[criteriaId][0].id] : []
+              );
             }
           }}
         />
@@ -305,13 +313,14 @@ export default function Conditions({
   valueItems,
 }: IConditionsProps) {
   const defaultCriteriaId = criteriaItems[0]?.id;
-  const defaultConditionItem = { logic: logicItems[0].id, criteria: defaultCriteriaId, operator: operatorItems[defaultCriteriaId][0].id, value: [valueItems[defaultCriteriaId][0].id] };
+  const defaultConditionItem = {
+    logic: logicItems[0].id,
+    criteria: defaultCriteriaId,
+    operator: operatorItems[defaultCriteriaId][0].id,
+    value: [valueItems[defaultCriteriaId][0].id],
+  };
   const [conditionsTime, setConditionsTime] = useState(Date.now());
-  const [conditions, setConditions] = useState<ICondition[]>(
-    initialValue || [
-      defaultConditionItem
-    ]
-  );
+  const [conditions, setConditions] = useState<ICondition[]>(initialValue || [defaultConditionItem]);
   useEffect(() => {
     if (onChange) onChange(conditions);
   }, [conditions]);
@@ -335,9 +344,9 @@ export default function Conditions({
             }}
           />
         ))}
-        <div className='flex flex-row items-center justify-center'>
+        <div className="flex flex-row items-center justify-center">
           <button
-            className="py-[5px] px-[30px]"
+            className="px-[30px] py-[5px]"
             onClick={() => {
               setConditions([...conditions, defaultConditionItem]);
               setConditionsTime(Date.now());

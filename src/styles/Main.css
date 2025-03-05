@@ -191,7 +191,7 @@
     @apply flex;
     h3 {
       font-size: 24px;
-      @apply flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-default-100 px-[20px] font-semibold text-default-[900px];
+      @apply text-default-[900px] flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-default-100 px-[20px] font-semibold;
       &.hide {
         svg {
           transform: rotateZ(180deg);

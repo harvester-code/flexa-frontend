@@ -1,9 +1,9 @@
-import { getSavedEmail, signInAction } from '@/api/auth';
 import Link from 'next/link';
+import { getSavedEmail, signInAction } from '@/api/auth';
 import { SubmitButton } from '@/components/SubmitButton';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/UIs/Checkbox';
+import { Input } from '@/components/UIs/Input';
+import { Label } from '@/components/UIs/Label';
 
 export default async function LoginPage() {
   const savedEmail = await getSavedEmail();
@@ -20,7 +20,7 @@ export default async function LoginPage() {
               Email
             </Label>
             <Input
-              className="bg-default-50 mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md pl-[10px]"
+              className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md bg-default-50 pl-[10px]"
               name="email"
               defaultValue={savedEmail}
               placeholder="Enter your Email"
@@ -30,7 +30,7 @@ export default async function LoginPage() {
               Password
             </Label>
             <Input
-              className="bg-default-50 mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md pl-[10px]"
+              className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md bg-default-50 pl-[10px]"
               type="password"
               name="password"
               placeholder="Enter your password"
@@ -49,7 +49,7 @@ export default async function LoginPage() {
                   Save Account
                 </Label>
               </div>
-              <Link href="/forgot-password" className="text-brand text-sm font-semibold underline">
+              <Link href="/forgot-password" className="text-sm font-semibold text-brand underline">
                 Forgot Password?
               </Link>
             </div>
@@ -59,7 +59,7 @@ export default async function LoginPage() {
           <div className="mt-[30px] flex justify-center">
             <p className="flex gap-[10px] text-sm">
               Don&apos;t have an account?{' '}
-              <Link href="/register" className="text-brand font-semibold underline">
+              <Link href="/register" className="font-semibold text-brand underline">
                 Sign Up
               </Link>
             </p>

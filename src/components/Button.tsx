@@ -10,15 +10,7 @@ interface ButtonProps {
   textSub?: string;
 }
 
-export default function Button({
-  text,
-  onClick,
-  disabled,
-  className,
-  icon,
-  iconRight,
-  textSub,
-}: ButtonProps) {
+export default function Button({ text, onClick, disabled, className, icon, iconRight, textSub }: ButtonProps) {
   return (
     <button
       onClick={onClick}

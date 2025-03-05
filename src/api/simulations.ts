@@ -53,11 +53,13 @@ export interface IScenarioData {
 export const getScenarioList = () => axios.get<IScenarioData[]>('/api/v1/simulations/scenario');
 
 export const useScenarioList = () => {
-  const response = useQuery('ScenarioList', () => getScenarioList().then<IScenarioData[]>(response => response?.data));
+  const response = useQuery('ScenarioList', () =>
+    getScenarioList().then<IScenarioData[]>((response) => response?.data)
+  );
 
   return {
-      ...response,
-      scenarioList: response?.data || [],
+    ...response,
+    scenarioList: response?.data || [],
   };
 };
 

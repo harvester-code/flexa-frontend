@@ -89,7 +89,7 @@ export default {
             active: '#B91C1C',
             disabled: '#A8A8A8',
           },
-        },        
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -136,9 +136,7 @@ export default {
       //   md: 'calc(var(--radius) - 2px)',
       //   sm: 'calc(var(--radius) - 4px)',
       // },
-      spacing: {
-
-      },      
+      spacing: {},
     },
   },
   plugins: [require('tailwindcss-animate')],

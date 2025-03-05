@@ -19,9 +19,7 @@ const SecondaryPopup: React.FC<SecondaryPopupProps> = ({ open, onClose, onSecond
       <DialogTitle>Title...</DialogTitle>
       <DialogContent>
         <div className="popup-contents">
-          <p className="text">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.
-          </p>
+          <p className="text">Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</p>
         </div>
         <div className="popup-btn-wrap">
           <button className="btn-sm btn-default" onClick={onClose}>

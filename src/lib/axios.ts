@@ -1,5 +1,5 @@
-import { getUserInfo } from '@/store/zustand';
 import axios from 'axios';
+import { getUserInfo } from '@/store/zustand';
 
 export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 

@@ -1,8 +1,8 @@
 'use client';
 
+import React, { useState } from 'react';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
 import Input from '@/components/Input';
 
 const data = [

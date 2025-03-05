@@ -1,6 +1,7 @@
-@import '@/styles/CustomPopup.css';
-@import '@/styles/Navigation.css';
-@import '@/styles/Footer.css';
+@import '@/styles/custom-popup.css';
+@import '@/styles/navigation.css';
+@import '@/styles/footer.css';
+
 @font-face {
   font-family: 'Pretendard';
   font-weight: 700;

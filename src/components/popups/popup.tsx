@@ -11,14 +11,7 @@ interface CustomPopupProps {
   className?: string;
 }
 
-const CustomPopup: React.FC<CustomPopupProps> = ({
-  open,
-  onClose,
-  title,
-  content,
-  iconPath,
-  className,
-}) => {
+const CustomPopup: React.FC<CustomPopupProps> = ({ open, onClose, title, content, iconPath, className }) => {
   return (
     <Dialog
       open={open}

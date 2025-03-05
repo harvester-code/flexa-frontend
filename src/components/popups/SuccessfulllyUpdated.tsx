@@ -19,8 +19,7 @@ const SuccessfulllyUpdated: React.FC<SuccessfulllyUpdatedProps> = ({ open, onClo
       <DialogContent>
         <div className="popup-contents">
           <p className="text">
-            Your password has been successfully updated. <br /> Please log in with your new
-            password.
+            Your password has been successfully updated. <br /> Please log in with your new password.
           </p>
         </div>
         <div className="popup-btn-wrap">

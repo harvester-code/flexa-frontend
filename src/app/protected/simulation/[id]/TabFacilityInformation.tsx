@@ -1,5 +1,7 @@
 'use client';
 
+// import { Menu, MenuItem } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import {
   faAngleDown,
   faAngleLeft,
@@ -9,8 +11,6 @@ import {
   faPen,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { Menu, MenuItem } from '@mui/material';
-import React, { useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import SelectBox from '@/components/SelectBox';
@@ -336,7 +336,7 @@ export default function TabFacilityInformation() {
           </tbody>
         </table>
       </div>
-      <div className="mt-[30px] h-[360px] flex items-center justify-center rounded-md bg-white">API AREA</div>
+      <div className="mt-[30px] flex h-[360px] items-center justify-center rounded-md bg-white">API AREA</div>
       <p className="mt-[20px] flex justify-end">
         <Button
           className="btn-md btn-tertiary"
@@ -346,7 +346,7 @@ export default function TabFacilityInformation() {
         />
       </p>
       <div className="mt-[40px] flex items-center justify-center">
-        <button className="h-[50px] flex w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
+        <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
           Hide Overview Charts
         </button>
@@ -390,7 +390,7 @@ export default function TabFacilityInformation() {
           </li>
         </ul>
       </div>
-      <div className="mt-[15px] h-[360px] flex items-center justify-center rounded-md bg-white">API AREA</div>
+      <div className="mt-[15px] flex h-[360px] items-center justify-center rounded-md bg-white">API AREA</div>
       <div className="mt-[30px] flex justify-between">
         <button className="btn-md btn-default btn-rounded w-[210px] justify-between">
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />

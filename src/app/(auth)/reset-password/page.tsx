@@ -1,9 +1,9 @@
-import { resetPasswordAction } from '@/api/auth';
 import Image from 'next/image';
+import { resetPasswordAction } from '@/api/auth';
 import { BackToLogin } from '@/components/BackToLogin';
 import { SubmitButton } from '@/components/SubmitButton';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input } from '@/components/UIs/Input';
+import { Label } from '@/components/UIs/Label';
 
 export default function ResetPassword() {
   return (

@@ -1,21 +1,21 @@
 'use client';
 
-import { signOutAction } from '@/api/auth';
-import { TUserInfo, useUserInfo } from '@/store/zustand';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Session } from '@supabase/supabase-js';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import NavIcon01 from '@/components/icons/NavIcon01';
-import NavIcon02 from '@/components/icons/NavIcon02';
-import NavIcon03 from '@/components/icons/NavIcon03';
-import NavIcon04 from '@/components/icons/NavIcon04';
-import NavIcon05 from '@/components/icons/NavIcon05';
-import NavIcon06 from '@/components/icons/NavIcon06';
-import SearchIcon from '@/components/icons/search';
-import { Button } from '@/components/ui/button';
+import { signOutAction } from '@/api/auth';
+import NavIcon01 from '@/components/Icons/NavIcon01';
+import NavIcon02 from '@/components/Icons/NavIcon02';
+import NavIcon03 from '@/components/Icons/NavIcon03';
+import NavIcon04 from '@/components/Icons/NavIcon04';
+import NavIcon05 from '@/components/Icons/NavIcon05';
+import NavIcon06 from '@/components/Icons/NavIcon06';
+import SearchIcon from '@/components/Icons/Search';
+import { Button } from '@/components/UIs/Button';
+import { TUserInfo, useUserInfo } from '@/store/zustand';
 
 interface ISideNavigationProps {
   userInfo: TUserInfo;
@@ -28,12 +28,16 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
   const [isOpen, setIsOpen] = useState(false);
   const [isMyMenuOpen, setIsMyMenuOpen] = useState(false);
   const { setUserInfo, setAccessToken } = useUserInfo();
+
   useEffect(() => {
     setUserInfo(userInfo);
   }, [userInfo]);
+
   useEffect(() => {
     setAccessToken(session?.access_token || '');
   }, [session?.access_token]);
+
+  // TODO: 네비게이션 메뉴 map으로 만들기
   return (
     <div
       id="navigation"
@@ -51,6 +55,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
           <Image src="/image/img-logo-nav.svg" alt="flexa" width={100} height={100} />
         </Link>
       </h1>
+
       <div className={`search-box ${isInputFocused ? 'active' : ''}`}>
         <input
           type="text"
@@ -64,14 +69,16 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
           </div>
         </button>
       </div>
+
       <ul className="gnb-list mt-[20px]">
         <li className="active">
-          <Link href="/">
+          <Link href="/protected/home">
             <NavIcon01 />
             <span className="text">Home</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
           </Link>
         </li>
+
         <li>
           <Link href="/protected/facility">
             <NavIcon02 />
@@ -79,6 +86,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
           </Link>
         </li>
+
         <li>
           <Link href="/protected/passenger-flow">
             <NavIcon03 />
@@ -86,6 +94,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
           </Link>
         </li>
+
         <li>
           <Link href="/protected/simulation">
             <NavIcon04 />
@@ -94,7 +103,9 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
           </Link>
         </li>
       </ul>
+
       <hr />
+
       <ul className="gnb-list">
         <li>
           <Link href="/protected/messenger">
@@ -109,6 +120,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
             <span className="text">Settings</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleDown} />
           </a>
+
           <ul className="sub-menu">
             <li>
               <a href="#">User Management</a>
@@ -122,6 +134,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
           </ul>
         </li>
       </ul>
+
       <div className={`my-menu ${isMyMenuOpen ? 'active' : ''}`}>
         <button
           onClick={() => {
@@ -135,6 +148,7 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
           </div>
         </button>
+
         <div className="my-menu-list">
           <div className="my-name">
             <div className="profile-photo">
@@ -149,25 +163,25 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
 
           <div className="my-menu-nav">
             <Link href="/protected/profile">
-              <img src="/image/ico-profile-01.svg" alt="profile" />
+              <Image src="/image/ico-profile-01.svg" alt="profile" width={16} height={16} />
               Profile
             </Link>
             <hr />
             <a href="#">
-              <img src="/image/ico-profile-02.svg" alt="simulation" />
+              <Image src="/image/ico-profile-02.svg" alt="simulation" width={16} height={16} />
               Simulation Mangement
             </a>
             <a href="#">
-              <img src="/image/ico-profile-03.svg" alt="filter" />
+              <Image src="/image/ico-profile-03.svg" alt="filter" width={16} height={16} />
               Fliter Management
             </a>
             <a href="#">
-              <img src="/image/ico-profile-04.svg" alt="trash" />
+              <Image src="/image/ico-profile-04.svg" alt="trash" width={16} height={16} />
               Trash Bin
             </a>
             <hr />
             <a href="#">
-              <img src="/image/ico-profile-05.svg" alt="support" />
+              <Image src="/image/ico-profile-05.svg" alt="support" width={16} height={16} />
               Support
             </a>
           </div>

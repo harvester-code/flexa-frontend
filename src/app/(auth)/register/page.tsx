@@ -1,6 +1,6 @@
-import { RegisterForm } from './_components/register-form';
 import Image from 'next/image';
 import { BackToLogin } from '@/components/BackToLogin';
+import { RegisterForm } from './_components/register-form';
 
 export default function RegisterPage() {
   return (

@@ -1,8 +1,8 @@
 'use client';
 
+import React, { useState } from 'react';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import SelectBox from '@/components/SelectBox';
@@ -12,8 +12,8 @@ export default function TabPassengerSchedule() {
   return (
     <div>
       <h2 className="title-sm mt-[25px]">Passenger Schedule</h2>
-      <p className="text-[40px] mt-[30px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
-      <div className="p-[15px] mt-[20px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50">
+      <p className="mt-[30px] text-[40px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
+      <div className="mt-[20px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"
           label=""
