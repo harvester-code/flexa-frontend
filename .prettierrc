@@ -7,13 +7,19 @@
   "printWidth": 112,
   "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
   "importOrder": [
-    "^[./]",
-    "^next$",
+    "^react",
+    "^next",
     "<THIRD_PARTY_MODULES>",
+
+    "^@/styles/(.*)$",
+    "^@/api/(.*)$",
     "^@/app/(.*)$",
     "^@/components/(.*)$",
-    "^@/styles/(.*)$",
-    "^@/public/(.*)$"
+    "^@/hooks/(.*)$",
+    "^@/lib/(.*)$",
+    "^@/store/(.*)$",
+
+    "^[./]"
   ],
   "importOrderSeparation": false,
   "importOrderSortSpecifiers": true

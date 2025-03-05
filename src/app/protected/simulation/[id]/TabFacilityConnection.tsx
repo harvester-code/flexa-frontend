@@ -100,9 +100,7 @@ export default function TabFacilityConnection() {
       </div>
       <div className="mt-[20px] flex justify-end">
         <div className="w-[340px]">
-          <SelectBox
-            options={['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload']}
-          />
+          <SelectBox options={['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload']} />
         </div>
       </div>
       <div className="table-wrap mt-[20px] overflow-hidden rounded-md border border-default-300">

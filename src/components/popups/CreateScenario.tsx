@@ -1,6 +1,6 @@
-import { createScenario } from '@/api/simulations';
-import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import React, { useState } from 'react';
+import { createContextMenuScope } from '@radix-ui/react-context-menu';
+import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/ui/dialog';

@@ -18,9 +18,7 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onClose }) => {
       <DialogTitle>Are you sure you want to deny this Request?</DialogTitle>
       <DialogContent>
         <div className="popup-contents">
-          <p className="text">
-            Are you sure you want to deny “Danny Park’s Request” for accessing the pages?
-          </p>
+          <p className="text">Are you sure you want to deny “Danny Park’s Request” for accessing the pages?</p>
         </div>
         <div className="popup-btn-wrap">
           <button className="btn-sm btn-default" onClick={onClose}>

@@ -1,11 +1,11 @@
 'use client';
 
-import { AgreementForm } from './agreement-form';
-import { signUpAction } from '@/api/auth';
 import { useState } from 'react';
+import { signUpAction } from '@/api/auth';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AgreementForm } from './agreement-form';
 
 export function RegisterForm() {
   const [isAgreed, setIsAgreed] = useState(false);

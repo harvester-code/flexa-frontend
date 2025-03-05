@@ -1,14 +1,16 @@
 'use client';
 
+// import Tooltip from '@mui/material/Tooltip';
 import React, { useState } from 'react';
 import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import Tooltip from '@mui/material/Tooltip';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 
-const Tooltip = (props: any) => { return <div></div> };
+const Tooltip = (props: any) => {
+  return <div></div>;
+};
 
 export default function TabProcessingProcedures() {
   const [checkIn, setCheckIn] = useState('A, B, C, D, E, F, G, H, J, K, L, M, N, Mobile, CAT');
@@ -50,8 +52,8 @@ export default function TabProcessingProcedures() {
                 <React.Fragment>
                   <strong>Tool-tip Title</strong>
                   <br />
-                  The average or top n% of the total queue count experienced by one passenger across
-                  all processes.
+                  The average or top n% of the total queue count experienced by one passenger across all
+                  processes.
                 </React.Fragment>
               }
               placement="right"
@@ -62,10 +64,7 @@ export default function TabProcessingProcedures() {
           </button>
         </dt>
         <dd>
-          <SelectBox
-            options={['Airline_Code', 'Operating_Carrier_Code']}
-            className="select-default"
-          />
+          <SelectBox options={['Airline_Code', 'Operating_Carrier_Code']} className="select-default" />
         </dd>
       </dl>
       <div className="processing-wrap mt-[10px]">
@@ -88,8 +87,8 @@ export default function TabProcessingProcedures() {
                     <React.Fragment>
                       <strong>Tool-tip Title</strong>
                       <br />
-                      The average or top n% of the total queue count experienced by one passenger
-                      across all processes.
+                      The average or top n% of the total queue count experienced by one passenger across all
+                      processes.
                     </React.Fragment>
                   }
                   placement="right"
@@ -127,8 +126,8 @@ export default function TabProcessingProcedures() {
                     <React.Fragment>
                       <strong>Tool-tip Title</strong>
                       <br />
-                      The average or top n% of the total queue count experienced by one passenger
-                      across all processes.
+                      The average or top n% of the total queue count experienced by one passenger across all
+                      processes.
                     </React.Fragment>
                   }
                   placement="right"
@@ -166,8 +165,8 @@ export default function TabProcessingProcedures() {
                     <React.Fragment>
                       <strong>Tool-tip Title</strong>
                       <br />
-                      The average or top n% of the total queue count experienced by one passenger
-                      across all processes.
+                      The average or top n% of the total queue count experienced by one passenger across all
+                      processes.
                     </React.Fragment>
                   }
                   placement="right"
@@ -205,8 +204,8 @@ export default function TabProcessingProcedures() {
                     <React.Fragment>
                       <strong>Tool-tip Title</strong>
                       <br />
-                      The average or top n% of the total queue count experienced by one passenger
-                      across all processes.
+                      The average or top n% of the total queue count experienced by one passenger across all
+                      processes.
                     </React.Fragment>
                   }
                   placement="right"

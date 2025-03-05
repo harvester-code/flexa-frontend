@@ -14,7 +14,14 @@ export default function Search({ value, onChangeText }: ISearchProps) {
 
   return (
     <div className={`simSearch ${isActive ? 'active' : ''}`}>
-      <input type="text" placeholder="Search" onFocus={handleFocus} onBlur={handleBlur} value={value} onChange={(e) => onChangeText(e.target.value)} />
+      <input
+        type="text"
+        placeholder="Search"
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        value={value}
+        onChange={(e) => onChangeText(e.target.value)}
+      />
       <button>
         <SearchIcon />
       </button>

@@ -42,9 +42,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
               type="text"
               placeholder="Enter the Process"
               value={secondProcess}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSecondProcess(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSecondProcess(e.target.value)}
               className="input-default input-transparent !h-[30px]"
             />
           </li>
@@ -64,9 +62,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
               type="text"
               placeholder="Enter the Process"
               value={fourthProcess}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFourthProcess(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFourthProcess(e.target.value)}
               className="input-default input-transparent !h-[30px]"
             />
           </li>

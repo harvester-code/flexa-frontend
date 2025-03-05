@@ -19,9 +19,7 @@ const TerminalLayout: React.FC<TerminalLayoutProps> = ({ open, onClose }) => {
             <img src="/image/ico-cloud.svg" alt="upload" className="w-[40px]" />
           </p>
           <p className="mt-[10px] text-xs">
-            <span className="text-md font-semibold leading-none text-accent-700">
-              Click to Upload
-            </span>
+            <span className="text-md font-semibold leading-none text-accent-700">Click to Upload</span>
             or Drag & Drop
           </p>
           <p className="text-xs leading-none">SVG, PNG, JPG or GIF (max. 800x400px)</p>
@@ -31,9 +29,7 @@ const TerminalLayout: React.FC<TerminalLayoutProps> = ({ open, onClose }) => {
             <div className="flex items-center gap-[20px]">
               <img src="/image/ico-file-csv.png" alt="terminal" />
               <dl className="flex flex-col gap-[10px] text-sm">
-                <dt className="font-semibold leading-none text-default-900">
-                  T1_Departure_Floor.svg
-                </dt>
+                <dt className="font-semibold leading-none text-default-900">T1_Departure_Floor.svg</dt>
                 <dd className="leading-none">4.2 MB</dd>
               </dl>
             </div>

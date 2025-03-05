@@ -1,10 +1,10 @@
 'use client';
 
-import Password from './components/Password';
-import Profile from './components/Profile';
-import { useUserInfo } from '@/store/zustand';
 import { useState } from 'react';
 import TabDefault from '@/components/TabDefault';
+import { useUserInfo } from '@/store/zustand';
+import Password from './components/Password';
+import Profile from './components/Profile';
 
 export default function ProfilePage() {
   const tabs: { text: string; number?: number }[] = [{ text: 'Profile' }, { text: 'Password' }];

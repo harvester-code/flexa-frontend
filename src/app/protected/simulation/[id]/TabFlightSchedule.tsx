@@ -1,13 +1,12 @@
 'use client';
 
-import { IChartData, getFlightSchedule } from '@/api/simulations';
-import { useResize } from '@/hooks/use-resize';
+import React, { useCallback, useRef, useState } from 'react';
+import { OrbitProgress } from 'react-loading-indicators';
+import dynamic from 'next/dynamic';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import moment from 'moment';
-import dynamic from 'next/dynamic';
-import React, { useCallback, useRef, useState } from 'react';
-import { OrbitProgress } from 'react-loading-indicators';
+import { IChartData, getFlightSchedule } from '@/api/simulations';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { ICondition, IDropdownItem, IOperatorItem } from '@/components/Conditions';
@@ -20,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useResize } from '@/hooks/use-resize';
 import { useUserInfo } from '@/store/zustand';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });

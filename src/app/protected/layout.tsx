@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import SideNavigation from '@/components/SideNavigation';
+import { createClient } from '@/lib/supabase-server';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
