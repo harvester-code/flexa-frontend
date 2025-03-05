@@ -11,17 +11,17 @@ import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
 import Input from '@/components/Input';
+import RootLayoutDefault from '@/components/LayoutDefault';
 import Paging from '@/components/Paging';
+import CreateScenario from '@/components/Popups/CreateScenario';
 import Search from '@/components/Search';
-import RootLayoutDefault from '@/components/layoutDefault';
-import CreateScenario from '@/components/popups/CreateScenario';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/UIs/DropdownMenu';
 
 interface IScenarioStates {
   name: string;

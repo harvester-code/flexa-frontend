@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { getSavedEmail, signInAction } from '@/api/auth';
 import { SubmitButton } from '@/components/SubmitButton';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/UIs/Checkbox';
+import { Input } from '@/components/UIs/Input';
+import { Label } from '@/components/UIs/Label';
 
 export default async function LoginPage() {
   const savedEmail = await getSavedEmail();

@@ -3,7 +3,7 @@ import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
-import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/UIs/Dialog';
 import { useUserInfo } from '@/store/zustand';
 
 interface ICreateScenarioData {
