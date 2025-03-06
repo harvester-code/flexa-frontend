@@ -234,7 +234,7 @@ export default function TabFlightSchedule() {
                         style={{ width: 143 }}
                         onClick={() => setSelColorCriteria(text)}
                       >
-                        <span className="ml-[10px] text-md font-medium text-gray-800">{text}</span>
+                        <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
                       </DropdownMenuItem>
                     </div>
                   ))}

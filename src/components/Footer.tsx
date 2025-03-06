@@ -11,23 +11,23 @@ const FooterComponent: React.FC = () => (
           </Link>
         </span>
         <nav>
-          <Link href="#" className="text-md">
+          <Link href="#" className="text-base">
             Contact
           </Link>
-          <Link href="#" className="text-md">
+          <Link href="#" className="text-base">
             Support
           </Link>
         </nav>
       </div>
       <div className="footer-right">
         <nav>
-          <Link href="#" className="text-md">
+          <Link href="#" className="text-base">
             Terms
           </Link>
-          <Link href="#" className="text-md">
+          <Link href="#" className="text-base">
             Privacy
           </Link>
-          <Link href="#" className="text-md">
+          <Link href="#" className="text-base">
             Cookies
           </Link>
         </nav>

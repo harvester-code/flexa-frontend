@@ -9,10 +9,10 @@
   dl {
     @apply flex flex-col gap-[10px] bg-gray-100 p-[20px];
     dt {
-      @apply text-md font-bold;
+      @apply text-base font-bold;
     }
     dd {
-      @apply text-md;
+      @apply text-base;
       ul {
         @apply flex list-inside list-disc flex-col;
         li {

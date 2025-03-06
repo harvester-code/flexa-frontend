@@ -41,7 +41,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
               onCheckedChange={handleAgreeToAll}
               className="checkbox"
             />
-            <Label htmlFor="agreeToAll" className="text-md font-semibold">
+            <Label htmlFor="agreeToAll" className="text-base font-semibold">
               Agree to All
             </Label>
           </div>

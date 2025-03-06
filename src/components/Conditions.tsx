@@ -120,7 +120,7 @@ function Dropdown({
         >
           <div className="flex h-[30px] flex-row items-center">
             {selItems?.length == 1 ? (
-              <span className="text-md font-medium text-gray-800">{selItems?.[0]?.text}</span>
+              <span className="text-base font-medium text-gray-800">{selItems?.[0]?.text}</span>
             ) : selItems?.length > 1 ? (
               <div className="flex flex-row">
                 {selItems?.slice(0, 5).map((itemCurrent, index) => {
@@ -186,7 +186,7 @@ function Dropdown({
                   ) : (
                     <div className="h-[8px] w-[8px]" />
                   )}
-                  <span className="ml-[10px] text-md font-medium text-gray-800">{itemCurrent.text}</span>
+                  <span className="ml-[10px] text-base font-medium text-gray-800">{itemCurrent.text}</span>
                 </DropdownMenuItem>
               </div>
             );

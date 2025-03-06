@@ -19,7 +19,7 @@ const TerminalLayout: React.FC<TerminalLayoutProps> = ({ open, onClose }) => {
             <img src="/image/ico-cloud.svg" alt="upload" className="w-[40px]" />
           </p>
           <p className="mt-[10px] text-xs">
-            <span className="text-md font-semibold leading-none text-accent-700">Click to Upload</span>
+            <span className="text-base font-semibold leading-none text-accent-700">Click to Upload</span>
             or Drag & Drop
           </p>
           <p className="text-xs leading-none">SVG, PNG, JPG or GIF (max. 800x400px)</p>

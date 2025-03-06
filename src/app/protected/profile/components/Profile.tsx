@@ -381,15 +381,15 @@ export default function Profile() {
                   disabled={isUploading}
                 >
                   {isUploading ? (
-                    <p className="text-md font-semibold text-accent-700">업로드 중...</p>
+                    <p className="text-base font-semibold text-accent-700">업로드 중...</p>
                   ) : (
                     <>
                       <p>
                         <img src="/image/ico-cloud.svg" alt="upload" />
                       </p>
                       <p className="mt-10">
-                        <span className="text-md font-semibold text-accent-700">Click to Upload</span> or Drag &
-                        Drop
+                        <span className="text-base font-semibold text-accent-700">Click to Upload</span> or Drag
+                        & Drop
                       </p>
                       <p className="text-xs">SVG, PNG, JPG or GIF (max. 800x400px)</p>
                     </>
