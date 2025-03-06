@@ -1,9 +1,10 @@
 import React from 'react';
+import Head from 'next/head';
 
 const HeadComponent: React.FC = () => (
-  <head>
+  <Head>
     <title>Flexa App</title>
-  </head>
+  </Head>
 );
 
 export default HeadComponent;
