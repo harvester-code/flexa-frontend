@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const FooterComponent: React.FC = () => (
@@ -7,7 +8,7 @@ const FooterComponent: React.FC = () => (
       <div className="footer-left">
         <span className="logo">
           <Link href="/">
-            <img src="/image/img-logo-nav.svg" alt="Flexa" width={60} height={60} />
+            <Image src="/image/img-logo-nav.svg" alt="Flexa" width={60} height={60} />
           </Link>
         </span>
         <nav>
