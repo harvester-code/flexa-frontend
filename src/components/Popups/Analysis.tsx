@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 
@@ -25,7 +26,7 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onClose }) => {
       <IconButton aria-label="close" onClick={onClose} className="ico-popup-close">
         <CloseIcon />
       </IconButton>
-      <img src="/image/popup/file_export.svg" alt="icon" className="popup-icon" />
+      <Image src="/image/popup/file_export.svg" alt="icon" className="popup-icon" />
       <DialogTitle className="!min-h-0">Go to the desired analysis page</DialogTitle>
       <DialogContent>
         <p className="text mb-[20px] min-h-[40px]">Click on the analytics page you want to go to</p>

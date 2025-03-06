@@ -2,6 +2,7 @@
 
 // import { Menu, MenuItem } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import {
   faAngleDown,
   faAngleLeft,
@@ -359,7 +360,7 @@ export default function TabFacilityInformation() {
         <p>
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-filter.svg" alt="filter" />}
+            icon={<Image src="/image/ico-filter.svg" alt="filter" />}
             text="Color Criteria"
             onClick={handleColorClick}
           />

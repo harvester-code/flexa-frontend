@@ -1,6 +1,7 @@
 'use client';
 
 import React, { RefObject, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Button from '@/components/Button';
 import {
   DropdownMenu,
@@ -138,7 +139,7 @@ function Dropdown({
                       }}
                     >
                       <span className="text-sm font-medium text-gray-700">{itemCurrent?.text || ' '}</span>
-                      <img className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
+                      <Image className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
                     </button>
                   );
                 })}
@@ -148,7 +149,7 @@ function Dropdown({
             )}
           </div>
           <div className="flex-1" />
-          <img className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
+          <Image className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
         </div>
         <DropdownMenuTrigger asChild disabled={disabled}>
           <div />
@@ -218,7 +219,7 @@ function ConditionItem({
             <span className="text-sm font-medium text-gray-800">Logic</span>
             <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
             <button>
-              <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+              <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
             </button>
           </div>
           <Dropdown
@@ -236,7 +237,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Criteria</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -260,7 +261,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Operator</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -276,7 +277,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Value</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help2.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help2.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -294,7 +295,7 @@ function ConditionItem({
             if (onDelete) onDelete();
           }}
         >
-          <img src="/image/ico-close-circle-x.svg" alt="" />
+          <Image src="/image/ico-close-circle-x.svg" alt="" />
         </button>
       </div>
     </div>
@@ -359,7 +360,7 @@ export default function Conditions({
       <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
         <Button
           className="btn-md btn-primary"
-          iconRight={<img src="/image/ico-check.svg" alt="" />}
+          iconRight={<Image src="/image/ico-check.svg" alt="" />}
           text="Apply"
           onClick={() => {
             if (onBtnApply) onBtnApply(conditions);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -89,13 +90,13 @@ const SimulationPage: React.FC = () => {
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-filter.svg" alt="" />}
+            icon={<Image src="/image/ico-filter.svg" alt="" />}
             text="More Fliters"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            icon={<img src="/image/ico-plus.svg" alt="" />}
+            icon={<Image src="/image/ico-plus.svg" alt="" />}
             text="New Scenario"
             onClick={() => setCreatePopupVisible(true)}
           />
@@ -106,10 +107,10 @@ const SimulationPage: React.FC = () => {
           {/* {visibleDiv === 'tag' && (
             <div className="pb-[7px] pt-[7px] flex flex-grow items-center gap-[10px] p-[10px]">
               <button className="tag-sm">
-                ICN <img src="/image/ico-delect.svg" alt="" />
+                ICN <Image src="/image/ico-delect.svg" alt="" />
               </button>
               <button className="tag-sm">
-                Terminal 1 <img src="/image/ico-delect.svg" alt="" />
+                Terminal 1 <Image src="/image/ico-delect.svg" alt="" />
               </button>
             </div>
           )} */}
@@ -118,7 +119,7 @@ const SimulationPage: React.FC = () => {
               <p className="text-sm text-deepRed">8 row(s) selected</p>
               <Button
                 className="btn-delete"
-                icon={<img src="/image/ico-delect-red.svg" alt="" />}
+                icon={<Image src="/image/ico-delect-red.svg" alt="" />}
                 text="Delete Selected"
                 onClick={() => {}}
               />
@@ -147,31 +148,31 @@ const SimulationPage: React.FC = () => {
               <th className="w-[220px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Name
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-center">
                 <button className="ml-auto mr-auto inline-flex items-center gap-[2px]">
                   Terminal
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Editor
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Target Date
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[130px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Edit Date
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="!pl-[20px] text-left">Note</th>
@@ -196,7 +197,7 @@ const SimulationPage: React.FC = () => {
                   <td className="">
                     <div className="flex items-center gap-[10px]">
                       {/* <span>
-                      <img src={item.imagePath} alt="" />
+                      <Image src={item.imagePath} alt="" />
                     </span> */}
                       {scenarioStates[index].editMode ? (
                         <Input
@@ -249,30 +250,30 @@ const SimulationPage: React.FC = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger>
                         <div className="btn-more mt-[5px]">
-                          <img src="/image/ico-dot-menu.svg" alt="more" />
+                          <Image src="/image/ico-dot-menu.svg" alt="more" />
                         </div>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="pr-[20px]">
                         <DropdownMenuItem>
-                          <img src="/image/ico-run.svg" alt="" />
+                          <Image src="/image/ico-run.svg" alt="" />
                           Run
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                          <img src="/image/ico-duplicate.svg" alt="" />
+                          <Image src="/image/ico-duplicate.svg" alt="" />
                           Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleRowChange(index, { editMode: true })}>
-                          <img src="/image/ico-rename.svg" alt="" />
+                          <Image src="/image/ico-rename.svg" alt="" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <img src="/image/ico-share.svg" alt="" />
+                          <Image src="/image/ico-share.svg" alt="" />
                           Share
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-red">
-                          <img src="/image/ico-trash-r.svg" alt="" />
+                          <Image src="/image/ico-trash-r.svg" alt="" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>

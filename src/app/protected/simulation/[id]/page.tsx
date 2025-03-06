@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
+import Image from 'next/image';
 import Button from '@/components/Button';
 import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
@@ -38,13 +39,13 @@ const SimulationDetail: React.FC = () => {
         <div className="mt-[15px] flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-arrow-left.svg" alt="" />}
+            icon={<Image src="/image/ico-arrow-left.svg" alt="" />}
             text="Back to Scenario List"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            icon={<img src="/image/ico-save.svg" alt="" />}
+            icon={<Image src="/image/ico-save.svg" alt="" />}
             text="Save"
             onClick={() => {}}
           />

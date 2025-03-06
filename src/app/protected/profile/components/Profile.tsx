@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useEffect } from 'react';
+import Image from 'next/image';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { useToast } from '@/hooks/use-toast';
@@ -143,7 +144,7 @@ export default function Profile() {
     }
 
     // 이미지 크기 검증 (800x400px 제한)
-    const img = new Image();
+    const img = new window.Image();
     const objectUrl = URL.createObjectURL(file);
 
     img.onload = async () => {
@@ -353,7 +354,7 @@ export default function Profile() {
               <dt>
                 Profile Picture
                 <button>
-                  <img src="/image/ico-help.svg" alt="help" />
+                  <Image src="/image/ico-help.svg" alt="help" />
                 </button>
               </dt>
               <dd>Your uploaded photo will appear in your profile.</dd>
@@ -385,7 +386,7 @@ export default function Profile() {
                   ) : (
                     <>
                       <p>
-                        <img src="/image/ico-cloud.svg" alt="upload" />
+                        <Image src="/image/ico-cloud.svg" alt="upload" />
                       </p>
                       <p className="mt-10">
                         <span className="text-base font-semibold text-accent-700">Click to Upload</span> or Drag
@@ -494,7 +495,7 @@ export default function Profile() {
                   applyFormat('bold');
                 }}
               >
-                <img src="/image/ico-bold.svg" alt="bold" />
+                <Image src="/image/ico-bold.svg" alt="bold" />
               </button>
               <button
                 type="button"
@@ -505,7 +506,7 @@ export default function Profile() {
                   applyFormat('italic');
                 }}
               >
-                <img src="/image/ico-italic.svg" alt="italic" />
+                <Image src="/image/ico-italic.svg" alt="italic" />
               </button>
               <button
                 type="button"
@@ -516,7 +517,7 @@ export default function Profile() {
                   applyFormat('underline');
                 }}
               >
-                <img src="/image/ico-underline.svg" alt="underline" />
+                <Image src="/image/ico-underline.svg" alt="underline" />
               </button>
             </p>
             <div

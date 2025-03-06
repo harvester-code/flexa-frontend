@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
@@ -32,7 +33,7 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
       }}
     >
       <DialogContent className="w-[400px] min-w-[400px] pt-[34px]">
-        <img src="/image/popup/description.svg" alt="icon" className="popup-icon" />
+        <Image src="/image/popup/description.svg" alt="icon" className="popup-icon" />
         <DialogTitle className="!min-h-0">Create New Scenario</DialogTitle>
         <p className="text mb-[8px] min-h-[40px]">Enter the name and memo for the new scenario.</p>
         <div className="popup-input-wrap">
