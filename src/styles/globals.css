@@ -311,7 +311,7 @@ button {
 .btn-sm {
   height: 36px;
   padding: 0 14px;
-  @apply gap-[5px] rounded-md bg-white font-semibold;
+  @apply gap-[5px] rounded-[8px] bg-white font-semibold;
 }
 .btn-md {
   height: 40px;
@@ -319,7 +319,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-[90px] gap-[5px] rounded-md bg-white text-sm font-semibold;
+  @apply min-w-[90px] gap-[5px] rounded-[8px] bg-white text-sm font-semibold;
 }
 
 .btn-lg {
@@ -376,7 +376,7 @@ button {
     0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply rounded-md text-white;
+  @apply rounded-[8px] text-white;
   &:hover {
     background: var(--accent-600);
   }
