@@ -1,6 +1,7 @@
 'use client';
 
 import React, { RefObject, createRef, useEffect, useState } from 'react';
+import { OrbitProgress } from 'react-loading-indicators';
 import { usePathname, useRouter } from 'next/navigation';
 import { popModal, pushModal } from '@/ClientProviders';
 import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
@@ -183,7 +184,7 @@ const SimulationPage: React.FC = () => {
     );
   };
 
-  return scenarioList?.length > 0 && scenarioList?.length == scenarioStates?.length ? (
+  return (
     <div>
       <ContentsHeader text="Simulation" />
       <div className="mt-[30px] flex justify-between">
@@ -288,123 +289,135 @@ const SimulationPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {scenarioList?.map((item, index) =>
-              searchKeyword?.length > 0 && item.simulation_name.indexOf(searchKeyword) < 0 ? null : (
-                <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`}>
-                  <td className="text-center">
-                    <Checkbox
-                      label=""
-                      id={`check-${index}`}
-                      checked={selected[index]}
-                      onChange={() =>
-                        setSelected([...selected.map((_, i) => (i == index ? !selected[index] : selected[i]))])
-                      }
-                      className="checkbox text-sm"
-                    />
-                  </td>
-                  <td className="">
-                    <div className="flex items-center gap-[10px]">
-                      {/* <span>
+            {scenarioList?.length > 0 && scenarioList?.length == scenarioStates?.length ? (
+              scenarioList?.map((item, index) =>
+                searchKeyword?.length > 0 && item.simulation_name.indexOf(searchKeyword) < 0 ? null : (
+                  <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`}>
+                    <td className="text-center">
+                      <Checkbox
+                        label=""
+                        id={`check-${index}`}
+                        checked={selected[index]}
+                        onChange={() =>
+                          setSelected([
+                            ...selected.map((_, i) => (i == index ? !selected[index] : selected[i])),
+                          ])
+                        }
+                        className="checkbox text-sm"
+                      />
+                    </td>
+                    <td className="">
+                      <div className="flex items-center gap-[10px]">
+                        {/* <span>
                       <img src={item.imagePath} alt="" />
                     </span> */}
-                      <div
-                        onClick={() => {
-                          if (!scenarioStates[index].editName) router.push(`${pathname}/${item.id}`);
-                        }}
-                      >
-                        <input
-                          ref={scenarioStates[index].refName}
-                          type="text"
-                          placeholder=""
-                          value={scenarioStates[index]?.name}
-                          className="!border-none bg-transparent py-[8px] !text-default-700"
-                          onChange={(e) => handleRowChange(index, { name: e.target.value })}
-                          disabled={scenarioStates[index].editName ? false : true}
-                          style={{ pointerEvents: scenarioStates[index].editName ? 'auto' : 'none' }}
-                          onBlur={() => onRenameEnd(index)}
-                          onKeyDown={(e) => {
-                            if (e.key == 'Enter') onRenameEnd(index);
+                        <div
+                          onClick={() => {
+                            if (!scenarioStates[index].editName) router.push(`${pathname}/${item.id}`);
                           }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-center">{item.terminal}</td>
-                  <td className="">{item.editor}</td>
-                  <td className="">
-                    {item?.simulation_date ? dayjs(item?.simulation_date).format('MM DD YYYY') : null}
-                  </td>
-                  <td className="">
-                    {dayjs(item?.updated_at).format('MM DD YYYY')} <br />{' '}
-                    <span className="font-normal text-default-500">
-                      {dayjs(item?.updated_at).format('hh:mm')}
-                    </span>
-                  </td>
-                  <td className="">
-                    <input
-                      ref={scenarioStates[index].refMemo}
-                      type="text"
-                      placeholder=""
-                      value={scenarioStates[index]?.memo}
-                      className="!border-none bg-transparent py-[8px] !text-default-700"
-                      onChange={(e) => handleRowChange(index, { memo: e.target.value })}
-                      disabled={scenarioStates[index].editMemo ? false : true}
-                      onBlur={() => oneditMemoEnd(index)}
-                      onKeyDown={(e) => {
-                        if (e.key == 'Enter') oneditMemoEnd(index);
-                      }}
-                    />
-                  </td>
-                  <td className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <div className="btn-more mt-[5px]">
-                          <img src="/image/ico-dot-menu.svg" alt="more" />
+                        >
+                          <input
+                            ref={scenarioStates[index].refName}
+                            type="text"
+                            placeholder=""
+                            value={scenarioStates[index]?.name}
+                            className="!border-none bg-transparent py-[8px] !text-default-700"
+                            onChange={(e) => handleRowChange(index, { name: e.target.value })}
+                            disabled={scenarioStates[index].editName ? false : true}
+                            style={{ pointerEvents: scenarioStates[index].editName ? 'auto' : 'none' }}
+                            onBlur={() => onRenameEnd(index)}
+                            onKeyDown={(e) => {
+                              if (e.key == 'Enter') onRenameEnd(index);
+                            }}
+                          />
                         </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="pr-[20px]">
-                        <DropdownMenuItem>
-                          <img src="/image/ico-run.svg" alt="" />
-                          Run
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onDuplicate(index)}>
-                          <img src="/image/ico-duplicate.svg" alt="" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onRename(index)}>
-                          <img src="/image/ico-rename.svg" alt="" />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => oneditMemo(index)}>
-                          <img src="/image/ico-rename.svg" alt="" />
-                          Edit Memo
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onSetMaster(index)}>
-                          <img src="/image/ico-rename.svg" alt="" />
-                          Set Master
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <img src="/image/ico-share.svg" alt="" />
-                          Share
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red" onClick={() => onDelete(index)}>
-                          <img src="/image/ico-trash-r.svg" alt="" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
+                      </div>
+                    </td>
+                    <td className="text-center">{item.terminal}</td>
+                    <td className="">{item.editor}</td>
+                    <td className="">
+                      {item?.simulation_date ? dayjs(item?.simulation_date).format('MM DD YYYY') : null}
+                    </td>
+                    <td className="">
+                      {dayjs(item?.updated_at).format('MM DD YYYY')} <br />{' '}
+                      <span className="font-normal text-default-500">
+                        {dayjs(item?.updated_at).format('hh:mm')}
+                      </span>
+                    </td>
+                    <td className="">
+                      <input
+                        ref={scenarioStates[index].refMemo}
+                        type="text"
+                        placeholder=""
+                        value={scenarioStates[index]?.memo}
+                        className="!border-none bg-transparent py-[8px] !text-default-700"
+                        onChange={(e) => handleRowChange(index, { memo: e.target.value })}
+                        disabled={scenarioStates[index].editMemo ? false : true}
+                        onBlur={() => oneditMemoEnd(index)}
+                        onKeyDown={(e) => {
+                          if (e.key == 'Enter') oneditMemoEnd(index);
+                        }}
+                      />
+                    </td>
+                    <td className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <div className="btn-more mt-[5px]">
+                            <img src="/image/ico-dot-menu.svg" alt="more" />
+                          </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="pr-[20px]">
+                          <DropdownMenuItem>
+                            <img src="/image/ico-run.svg" alt="" />
+                            Run
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onDuplicate(index)}>
+                            <img src="/image/ico-duplicate.svg" alt="" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onRename(index)}>
+                            <img src="/image/ico-rename.svg" alt="" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => oneditMemo(index)}>
+                            <img src="/image/ico-rename.svg" alt="" />
+                            Edit Memo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSetMaster(index)}>
+                            <img src="/image/ico-rename.svg" alt="" />
+                            Set Master
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <img src="/image/ico-share.svg" alt="" />
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red" onClick={() => onDelete(index)}>
+                            <img src="/image/ico-trash-r.svg" alt="" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                )
               )
+            ) : (
+              <tr>
+                <td colSpan={7}>
+                  <div className="flex flex-1 flex-col items-center justify-center">
+                    <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+                  </div>
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
       <Paging currentPage={page} totalPage={30} onChangePage={(page) => setPage(page)} />
     </div>
-  ) : null;
+  );
 };
 
 export default SimulationPage;
