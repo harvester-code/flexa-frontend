@@ -213,12 +213,13 @@ function ConditionItem({
   const [operator, setOperator] = useState<string>(condition?.operator || 'O1');
   const [value, setValue] = useState<string[]>(condition?.value || ['']);
   useEffect(() => {
-    if(onChange) onChange({
-      logic,
-      criteria,
-      operator,
-      value
-    });
+    if (onChange)
+      onChange({
+        logic,
+        criteria,
+        operator,
+        value,
+      });
   }, [logic, criteria, operator, value]);
   return (
     <div className="flex flex-row">
@@ -344,16 +345,16 @@ export default function Conditions({
             operatorItems={operatorItems}
             valueItems={valueItems}
             onChange={(state) => {
-              const newConditions = conditions.map((val, idx) => idx == index ? state : val);
+              const newConditions = conditions.map((val, idx) => (idx == index ? state : val));
               setConditions(newConditions);
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
             onDelete={() => {
               const newConditions = [...conditions];
               newConditions.splice(index, 1);
               setConditions(newConditions);
               setConditionsTime(Date.now());
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
           />
         ))}
@@ -364,7 +365,7 @@ export default function Conditions({
               const newConditions = [...conditions, defaultConditionItem];
               setConditions(newConditions);
               setConditionsTime(Date.now());
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
           >
             <span className="text-lg font-medium text-purple-600">+ Add Condition</span>

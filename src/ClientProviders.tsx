@@ -1,9 +1,9 @@
 'use client';
 
-import { queryClient } from '@/api/query-client';
 import React, { useEffect, useRef } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { create } from 'zustand';
+import { queryClient } from '@/api/query-client';
 
 interface IModalProps {
   component: React.ReactNode;

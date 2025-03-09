@@ -1,7 +1,7 @@
+import dayjs from 'dayjs';
+import { create } from 'zustand';
 import { IChartData } from '@/api/simulations';
 import { IConditionData, IConditionState } from '@/components/Conditions';
-import { create } from 'zustand';
-import dayjs from 'dayjs';
 
 export interface IScenarioHistory {
   checkpoint: string;
@@ -37,7 +37,7 @@ export interface IFlightSchedule {
   conditions_visible: boolean;
 }
 
-export interface IScenarioMetadata {  
+export interface IScenarioMetadata {
   id: number;
   simulation_id: string;
   overview: Partial<IScenarioOverview>;
@@ -46,7 +46,7 @@ export interface IScenarioMetadata {
   passenger_attr: { [key: string]: any };
   facility_conn: { [key: string]: any };
   facility_info: { [key: string]: any };
-  history: IScenarioHistory [];
+  history: IScenarioHistory[];
 }
 
 interface IScenarioMetadataZustand extends Partial<IScenarioMetadata> {
@@ -60,18 +60,27 @@ interface IScenarioMetadataZustand extends Partial<IScenarioMetadata> {
 }
 
 export const useSimulationMetadata = create<IScenarioMetadataZustand>((set, get) => ({
-  setMetadata: (data) => set({ ...data }),  
+  setMetadata: (data) => set({ ...data }),
 
-  setOverview: (overview, replace) => set(replace ? { overview } : { overview: { ...(get().overview || {} as IScenarioOverview), ...overview } }),  
-  setFlightSchedule: (flight_sch, replace) => set(replace ? { flight_sch } : { flight_sch: { ...(get().flight_sch || {} as IFlightSchedule), ...flight_sch } }),
-  
-  addHistoryItem: (item: IScenarioHistory) => set({ history: [ ...(get()?.history || []), item ]}),
-  setHistoryItem: (item: IScenarioHistory, index: number) => set({ history: get()?.history?.map((val, idx) => idx == index ? item : val) }),
+  setOverview: (overview, replace) =>
+    set(
+      replace ? { overview } : { overview: { ...(get().overview || ({} as IScenarioOverview)), ...overview } }
+    ),
+  setFlightSchedule: (flight_sch, replace) =>
+    set(
+      replace
+        ? { flight_sch }
+        : { flight_sch: { ...(get().flight_sch || ({} as IFlightSchedule)), ...flight_sch } }
+    ),
+
+  addHistoryItem: (item: IScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
+  setHistoryItem: (item: IScenarioHistory, index: number) =>
+    set({ history: get()?.history?.map((val, idx) => (idx == index ? item : val)) }),
 }));
 
 export const useSimulationStore = create<{
   tabIndex: number;
-  checkpoint?: { time: string, diff: number };
+  checkpoint?: { time: string; diff: number };
 
   setTabIndex: (index: number) => void;
   setCheckpoint: (time: string, diff: number) => void;
@@ -84,7 +93,7 @@ export const useSimulationStore = create<{
 }));
 
 export const useSimulationFlighScheduleStore = create<{
-  chartData?: { total: number; x: string[]; data: IChartData }
+  chartData?: { total: number; x: string[]; data: IChartData };
   setChartData: (data: { total: number; x: string[]; data: IChartData }) => void;
 
   selColorCriteria: string;
@@ -101,7 +110,6 @@ export const useSimulationFlighScheduleStore = create<{
 
   selConditions: IConditionState[];
   setSelConditions: (selConditions: IConditionState[]) => void;
-
 }>((set, get) => ({
   chartData: undefined,
   setChartData: (chartData) => set({ chartData }),
