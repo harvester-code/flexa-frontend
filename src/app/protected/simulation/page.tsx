@@ -1,20 +1,31 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { RefObject, createRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { popModal, pushModal } from '@/ClientProviders';
 import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { queryClient } from '@/api/query-client';
-import { useScenarioList } from '@/api/simulations';
+import {
+  IScenarioData,
+  deleteScenario,
+  deleteScenarioMulti,
+  duplicateScenario,
+  getScenarioMetadata,
+  modifyScenario,
+  setMasterScenario,
+  setScenarioMetadata,
+  useScenarioList,
+} from '@/api/simulations';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
 import Input from '@/components/Input';
-import RootLayoutDefault from '@/components/LayoutDefault';
 import Paging from '@/components/Paging';
-import CreateScenario from '@/components/Popups/CreateScenario';
+import CreateScenario, { PushCreateScenarioPopup } from '@/components/Popups/CreateScenario';
+import { PopupAlert } from '@/components/Popups/PopupAlert';
 import Search from '@/components/Search';
 import {
   DropdownMenu,
@@ -23,12 +34,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/UIs/DropdownMenu';
+import { useUserInfo } from '@/store/zustand';
 
 interface IScenarioStates {
   name: string;
-  note: string;
-  selected: boolean;
-  editMode: boolean;
+  memo: string;
+  editName: boolean;
+  editMemo: boolean;
+  refName: React.Ref<HTMLInputElement>;
+  refMemo: React.Ref<HTMLInputElement>;
 }
 
 const SimulationPage: React.FC = () => {
@@ -37,21 +51,23 @@ const SimulationPage: React.FC = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [selected, setSelected] = useState<boolean[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [createPopupVisible, setCreatePopupVisible] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { scenarioList } = useScenarioList();
+  const { userInfo } = useUserInfo();
+  const { scenarioList } = useScenarioList(userInfo?.groupId);
 
   useEffect(() => {
     if (scenarioList?.length > 0) {
-      setSelected(Array(scenarioList.length).fill(false));
+      setSelected(Array(scenarioList?.length).fill(false));
       setScenarioStates(
         scenarioList.map((item) => {
           return {
             name: item.simulation_name,
-            note: item.note,
-            selected: false,
-            editMode: false,
+            memo: item.memo,
+            editName: false,
+            editMemo: false,
+            refName: createRef(),
+            refMemo: createRef(),
           };
         })
       );
@@ -62,6 +78,10 @@ const SimulationPage: React.FC = () => {
   const [scenarioStates, setScenarioStates] = useState<IScenarioStates[]>([]);
   const [page, setPage] = useState(1);
 
+  let selRowCount = 0;
+
+  for (const rowCur of selected) if (rowCur) selRowCount++;
+
   const handleRowChange = (index: number, newState: Partial<IScenarioStates>) => {
     setScenarioStates((prev) => {
       const newStates = [...prev];
@@ -70,16 +90,98 @@ const SimulationPage: React.FC = () => {
     });
   };
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>, index: number) => {
-    const newAnchorEls = [...anchorEls];
-    newAnchorEls[index] = event.currentTarget;
-    setAnchorEls(newAnchorEls);
+  const onRename = (index: number) => {
+    const item = scenarioStates[index];
+    handleRowChange(index, { editName: true });
+    // TODO : 드롭다운이 닫힐때 포커스가 DropdownMenuTrigger 으로 이동하는 증상 때문에 바로 input 에 포커스 주기 불가능. 딜레이 적용.
+    setTimeout(() => {
+      (item.refName as RefObject<HTMLInputElement>)?.current?.focus();
+    }, 400);
   };
 
-  const handleClose = (index: number) => {
-    const newAnchorEls = [...anchorEls];
-    newAnchorEls[index] = null;
-    setAnchorEls(newAnchorEls);
+  const onRenameEnd = (index: number) => {
+    const item = scenarioList[index];
+    handleRowChange(index, { editName: false });
+    modifyScenario({
+      id: item.id,
+      simulation_name: scenarioStates[index]?.name,
+      memo: scenarioStates[index]?.memo,
+    }).catch(() => {
+      handleRowChange(index, { name: scenarioList[index].simulation_name });
+      PopupAlert.confirm('Failed to change the name');
+    });
+  };
+
+  const oneditMemo = (index: number) => {
+    const item = scenarioStates[index];
+    handleRowChange(index, { editMemo: true });
+    setTimeout(() => {
+      (item.refMemo as RefObject<HTMLInputElement>)?.current.focus();
+    }, 400);
+  };
+
+  const oneditMemoEnd = (index: number) => {
+    const item = scenarioList[index];
+    handleRowChange(index, { editMemo: false });
+    modifyScenario({
+      id: item.id,
+      simulation_name: scenarioStates[index]?.name,
+      memo: scenarioStates[index]?.memo,
+    }).catch(() => {
+      handleRowChange(index, { memo: scenarioList[index].memo });
+      PopupAlert.confirm('Failed to change the memo');
+    });
+  };
+
+  const onSetMaster = (index: number) => {
+    const item = scenarioList[index];
+    setMasterScenario({
+      group_id: String(userInfo?.groupId),
+      scenario_id: item.id,
+    }).then((response) => {
+      queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+    });
+  };
+
+  const onDuplicate = (index: number) => {
+    const item = scenarioList[index];
+    duplicateScenario({
+      scenario_id: item.id,
+      editor: userInfo?.fullName || '',
+    }).then((response) => {
+      queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+    });
+  };
+
+  const onDelete = (index: number) => {
+    const item = scenarioList[index];
+    PopupAlert.delete(
+      'Are you sure you want to delete that list?\nThe deleted list can be checked in Trash Bin.',
+      'Delete',
+      () => {
+        deleteScenario({ scenario_id: item.id }).then(() => {
+          PopupAlert.confirm('Successfully Deleted.', 'Confirm', undefined, 'Deletion Complete');
+          queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+        });
+      },
+      `Are you sure you want to delete ${item.simulation_name}?`
+    );
+  };
+
+  const onDeleteMulti = () => {
+    const selIds: string[] = [];
+    for (let i = 0; i < selected.length; i++) if (selected[i]) selIds.push(scenarioList[i].id);
+    PopupAlert.delete(
+      'Are you sure you want to delete that list?\nThe deleted list can be checked in Trash Bin.',
+      'Delete',
+      () => {
+        deleteScenarioMulti({ scenario_ids: selIds }).then(() => {
+          PopupAlert.confirm('Successfully Deleted.', 'Confirm', undefined, 'Deletion Complete');
+          queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+        });
+      },
+      `Are you sure you want to delete ${selIds.length} rows?`
+    );
   };
 
   return scenarioList?.length > 0 && scenarioList?.length == scenarioStates?.length ? (
@@ -98,7 +200,13 @@ const SimulationPage: React.FC = () => {
             className="btn-md btn-primary"
             icon={<Image src="/image/ico-plus.svg" alt="" />}
             text="New Scenario"
-            onClick={() => setCreatePopupVisible(true)}
+            onClick={() => {
+              PushCreateScenarioPopup({
+                onCreate: (simulationId: string) => {
+                  queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+                },
+              });
+            }}
           />
         </div>
       </div>
@@ -114,17 +222,18 @@ const SimulationPage: React.FC = () => {
               </button>
             </div>
           )} */}
-          {visibleDiv === 'full' && (
+
+          {selRowCount > 0 ? (
             <div className="tag-full">
-              <p className="text-sm text-deepRed">8 row(s) selected</p>
+              <p className="text-sm text-deepRed">{selRowCount} row(s) selected</p>
               <Button
                 className="btn-delete"
                 icon={<Image src="/image/ico-delect-red.svg" alt="" />}
                 text="Delete Selected"
-                onClick={() => {}}
+                onClick={() => onDeleteMulti()}
               />
             </div>
-          )}
+          ) : null}
         </div>
         <Search value={searchKeyword} onChangeText={(text) => setSearchKeyword(text)} />
       </div>
@@ -175,7 +284,7 @@ const SimulationPage: React.FC = () => {
                   <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
-              <th className="!pl-[20px] text-left">Note</th>
+              <th className="!pl-[20px] text-left">Memo</th>
               <th className="w-[90px]"></th>
             </tr>
           </thead>
@@ -199,52 +308,53 @@ const SimulationPage: React.FC = () => {
                       {/* <span>
                       <Image src={item.imagePath} alt="" />
                     </span> */}
-                      {scenarioStates[index].editMode ? (
-                        <Input
+                      <div
+                        onClick={() => {
+                          if (!scenarioStates[index].editName) router.push(`${pathname}/${item.id}`);
+                        }}
+                      >
+                        <input
+                          ref={scenarioStates[index].refName}
                           type="text"
                           placeholder=""
                           value={scenarioStates[index]?.name}
-                          className="!border-none bg-transparent !text-default-700"
+                          className="!border-none bg-transparent py-[8px] !text-default-700"
                           onChange={(e) => handleRowChange(index, { name: e.target.value })}
-                          // disabled={true}
-                        />
-                      ) : (
-                        <span
-                          onClick={() => {
-                            router.push(`${pathname}/${item.id}`);
+                          disabled={scenarioStates[index].editName ? false : true}
+                          style={{ pointerEvents: scenarioStates[index].editName ? 'auto' : 'none' }}
+                          onBlur={() => onRenameEnd(index)}
+                          onKeyDown={(e) => {
+                            if (e.key == 'Enter') onRenameEnd(index);
                           }}
-                        >
-                          {item.simulation_name}
-                          <br />
-                          <span className="text-sm text-gray-500">{item.size}</span>
-                        </span>
-                      )}
+                        />
+                      </div>
                     </div>
                   </td>
                   <td className="text-center">{item.terminal}</td>
                   <td className="">{item.editor}</td>
                   <td className="">
-                    {item?.simulation_date ? moment(item?.simulation_date).format('MM DD YYYY') : null}
+                    {item?.simulation_date ? dayjs(item?.simulation_date).format('MM DD YYYY') : null}
                   </td>
                   <td className="">
-                    {moment(item?.updated_at).format('MM DD YYYY')} <br />{' '}
+                    {dayjs(item?.updated_at).format('MM DD YYYY')} <br />{' '}
                     <span className="font-normal text-default-500">
-                      {moment(item?.updated_at).format('hh:mm')}
+                      {dayjs(item?.updated_at).format('hh:mm')}
                     </span>
                   </td>
                   <td className="">
-                    {scenarioStates[index].editMode ? (
-                      <Input
-                        type="text"
-                        placeholder=""
-                        value={scenarioStates[index]?.note}
-                        className="!border-none bg-transparent !text-default-700"
-                        onChange={(e) => handleRowChange(index, { note: e.target.value })}
-                        // disabled={true}
-                      />
-                    ) : (
-                      <span>{item.note}</span>
-                    )}
+                    <input
+                      ref={scenarioStates[index].refMemo}
+                      type="text"
+                      placeholder=""
+                      value={scenarioStates[index]?.memo}
+                      className="!border-none bg-transparent py-[8px] !text-default-700"
+                      onChange={(e) => handleRowChange(index, { memo: e.target.value })}
+                      disabled={scenarioStates[index].editMemo ? false : true}
+                      onBlur={() => oneditMemoEnd(index)}
+                      onKeyDown={(e) => {
+                        if (e.key == 'Enter') oneditMemoEnd(index);
+                      }}
+                    />
                   </td>
                   <td className="text-right">
                     <DropdownMenu>
@@ -259,20 +369,28 @@ const SimulationPage: React.FC = () => {
                           Run
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDuplicate(index)}>
                           <Image src="/image/ico-duplicate.svg" alt="" />
                           Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRowChange(index, { editMode: true })}>
+                        <DropdownMenuItem onClick={() => onRename(index)}>
                           <Image src="/image/ico-rename.svg" alt="" />
-                          Edit
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => oneditMemo(index)}>
+                          <Image src="/image/ico-rename.svg" alt="" />
+                          Edit Memo
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSetMaster(index)}>
+                          <Image src="/image/ico-rename.svg" alt="" />
+                          Set Master
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Image src="/image/ico-share.svg" alt="" />
                           Share
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red">
+                        <DropdownMenuItem className="text-red" onClick={() => onDelete(index)}>
                           <Image src="/image/ico-trash-r.svg" alt="" />
                           Delete
                         </DropdownMenuItem>
@@ -286,13 +404,6 @@ const SimulationPage: React.FC = () => {
         </table>
       </div>
       <Paging currentPage={page} totalPage={30} onChangePage={(page) => setPage(page)} />
-      <CreateScenario
-        open={createPopupVisible}
-        onClose={() => setCreatePopupVisible(false)}
-        onCreate={(simulationId: string) => {
-          queryClient.invalidateQueries(['ScenarioList']);
-        }}
-      />
     </div>
   ) : null;
 };

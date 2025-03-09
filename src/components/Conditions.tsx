@@ -13,26 +13,6 @@ import {
 } from '@/components/UIs/DropdownMenu';
 import { useResize } from '@/hooks/use-resize';
 
-export interface ICondition {
-  criteria: string;
-  operator: string;
-  value: string[];
-  logic?: string;
-  logicVisible?: boolean;
-}
-
-interface IConditionsProps {
-  initialValue?: ICondition[];
-
-  onChange?: (conditions: ICondition[]) => void;
-  onBtnApply?: (conditions: ICondition[]) => void;
-
-  logicItems: IDropdownItem[];
-  criteriaItems: IDropdownItem[];
-  operatorItems: { [criteriaId: string]: IOperatorItem[] };
-  valueItems: { [criteriaId: string]: IDropdownItem[] };
-}
-
 export interface IDropdownItem {
   id: string;
   text: string;
@@ -52,16 +32,34 @@ interface IDropdownProps {
   label?: string;
 }
 
-interface IConditionProps {
-  condition: ICondition;
+export interface IConditionState {
+  criteria: string;
+  operator: string;
+  value: string[];
+  logic?: string;
   logicVisible?: boolean;
+}
 
-  onDelete?: () => void;
-
+export interface IConditionData {
   logicItems: IDropdownItem[];
   criteriaItems: IDropdownItem[];
   operatorItems: { [criteriaId: string]: IOperatorItem[] };
   valueItems: { [criteriaId: string]: IDropdownItem[] };
+}
+
+interface IConditionItemProps extends IConditionData {
+  condition: IConditionState;
+  logicVisible?: boolean;
+
+  onDelete?: () => void;
+  onChange?: (states: IConditionState) => void;
+}
+
+interface IConditionsProps extends IConditionData {
+  initialValue?: IConditionState[];
+
+  onChange?: (conditions: IConditionState[]) => void;
+  onBtnApply?: (conditions: IConditionState[]) => void;
 }
 
 function Dropdown({
@@ -135,7 +133,9 @@ function Dropdown({
                       className={`z-50 flex flex-row rounded-full border border-gray-200 py-[2px] pl-[10px] pr-[4px] ${index > 0 ? 'ml-[8px]' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelItems(selItems.filter((item) => item.id !== itemCurrent.id));
+                        const newSelItems = selItems.filter((item) => item.id !== itemCurrent.id);
+                        setSelItems(newSelItems);
+                        if (onChange) onChange(newSelItems);
                       }}
                     >
                       <span className="text-sm font-medium text-gray-700">{itemCurrent?.text || ' '}</span>
@@ -202,15 +202,24 @@ function ConditionItem({
   condition,
   logicVisible = false,
   onDelete,
+  onChange,
   logicItems,
   criteriaItems,
   operatorItems,
   valueItems,
-}: IConditionProps) {
+}: IConditionItemProps) {
   const [logic, setLogic] = useState<string>(condition?.logic || 'L1');
   const [criteria, setCriteria] = useState<string>(condition?.criteria || 'C1');
   const [operator, setOperator] = useState<string>(condition?.operator || 'O1');
   const [value, setValue] = useState<string[]>(condition?.value || ['']);
+  useEffect(() => {
+    if(onChange) onChange({
+      logic,
+      criteria,
+      operator,
+      value
+    });
+  }, [logic, criteria, operator, value]);
   return (
     <div className="flex flex-row">
       {logicVisible ? (
@@ -286,7 +295,7 @@ function ConditionItem({
           items={valueItems[criteria]}
           className="mt-[6px] flex-1"
           multiSelect={operatorItems[criteria]?.find((val) => val.id == operator)?.multiSelect === true}
-          onChange={(items) => setValue([items?.[0]?.id])}
+          onChange={(items) => setValue(items.map((val) => val?.id))}
         />
       </div>
       <div className="ml-[8px] flex flex-col justify-end pb-[10px]">
@@ -321,14 +330,11 @@ export default function Conditions({
     value: [valueItems[defaultCriteriaId][0].id],
   };
   const [conditionsTime, setConditionsTime] = useState(Date.now());
-  const [conditions, setConditions] = useState<ICondition[]>(initialValue || [defaultConditionItem]);
-  useEffect(() => {
-    if (onChange) onChange(conditions);
-  }, [conditions]);
+  const [conditions, setConditions] = useState<IConditionState[]>(initialValue || [defaultConditionItem]);
   return (
     <div className="mt-[30px] flex flex-col rounded-lg border border-gray-200">
       <div className="flex flex-col gap-y-[20px] border-b border-gray-200 bg-gray-200 px-[30px] pb-[14px] pt-[30px]">
-        {conditions.map((item: ICondition, index: number) => (
+        {conditions.map((item: IConditionState, index: number) => (
           <ConditionItem
             key={`${conditionsTime}_${index}`}
             condition={item}
@@ -337,11 +343,17 @@ export default function Conditions({
             criteriaItems={criteriaItems}
             operatorItems={operatorItems}
             valueItems={valueItems}
+            onChange={(state) => {
+              const newConditions = conditions.map((val, idx) => idx == index ? state : val);
+              setConditions(newConditions);
+              if(onChange) onChange(newConditions);
+            }}
             onDelete={() => {
               const newConditions = [...conditions];
               newConditions.splice(index, 1);
               setConditions(newConditions);
               setConditionsTime(Date.now());
+              if(onChange) onChange(newConditions);
             }}
           />
         ))}
@@ -349,8 +361,10 @@ export default function Conditions({
           <button
             className="px-[30px] py-[5px]"
             onClick={() => {
-              setConditions([...conditions, defaultConditionItem]);
+              const newConditions = [...conditions, defaultConditionItem];
+              setConditions(newConditions);
               setConditionsTime(Date.now());
+              if(onChange) onChange(newConditions);
             }}
           >
             <span className="text-lg font-medium text-purple-600">+ Add Condition</span>

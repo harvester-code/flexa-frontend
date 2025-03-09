@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { popModal, pushModal } from '@/ClientProviders';
 import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
-import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/UIs/Dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
 import { useUserInfo } from '@/store/zustand';
+import { PopupAlert } from './PopupAlert';
 
-interface ICreateScenarioData {
-  name: string;
-  memo: string;
-  airport: string;
-  terminal: string;
-}
-interface LogOutProps {
-  open: boolean;
+interface PopupProps {
   onCreate: (simulationId: string) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
-const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
+export const PushCreateScenarioPopup = (props: PopupProps) => {
+  const modalId = pushModal({
+    component: (
+      <PopupComponent
+        {...props}
+        onClose={() => {
+          popModal(modalId);
+          if (props?.onClose) props.onClose();
+        }}
+      />
+    ),
+  });
+};
+
+const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
   const [scenarioName, setScenarioName] = useState('');
   const [scenarioMemo, setScenarioMemo] = useState('');
   const [locationAirport, setLocationAirport] = useState('');
@@ -27,13 +35,13 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
   const { userInfo } = useUserInfo();
   return (
     <Dialog
-      open={open}
+      open={true}
       onOpenChange={(isOpen) => {
-        if (!isOpen) onClose();
+        if (!isOpen) onClose?.();
       }}
     >
-      <DialogContent className="w-[400px] min-w-[400px] pt-[34px]">
-        <Image src="/image/popup/description.svg" alt="icon" className="popup-icon" />
+      <DialogContent className="w-[400px] min-w-[400px] pt-[34px]" aria-describedby={undefined}>
+        <img src="/image/popup/description.svg" alt="icon" className="popup-icon" />
         <DialogTitle className="!min-h-0">Create New Scenario</DialogTitle>
         <p className="text mb-[8px] min-h-[40px]">Enter the name and memo for the new scenario.</p>
         <div className="popup-input-wrap">
@@ -94,32 +102,33 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
             className="btn-sm btn-primary ml-[12px] flex-1"
             onClick={() => {
               if (!scenarioName) {
-                alert('Please enter the scenario name.');
+                PopupAlert.confirm('Please enter the scenario name.', 'confirm', () => {}, 'Test');
                 return;
               }
               if (!terminal) {
-                alert('Please select the simulation location.');
+                PopupAlert.confirm('Please select the simulation location.');
                 return;
               }
               if (!scenarioMemo) {
-                alert('Please enter the memo.');
+                PopupAlert.confirm('Please enter the memo.');
                 return;
               }
               createScenario({
                 simulation_name: scenarioName,
                 terminal,
-                note: scenarioMemo,
+                memo: scenarioMemo,
                 editor: userInfo?.fullName || '',
+                group_id: String(userInfo?.groupId),
               })
                 .then(({ data }) => {
                   if (data?.simulation_id) {
                     onCreate(data?.simulation_id);
-                    onClose();
-                  } else alert('Failed to create the scenario.');
+                    onClose?.();
+                  } else PopupAlert.confirm('Failed to create the scenario.');
                 })
                 .catch((e) => {
                   console.log(e);
-                  alert('Failed to create the scenario.');
+                  PopupAlert.confirm('Failed to create the scenario.');
                 });
             }}
           >
@@ -131,4 +140,4 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onCreate, onClose }) => {
   );
 };
 
-export default PopupContent;
+export default PopupComponent;
