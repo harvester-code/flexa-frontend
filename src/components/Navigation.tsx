@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import NavIcon01 from '@/components/Icons/NavIcon01';
@@ -28,9 +30,9 @@ const Navigation: React.FC = () => {
       }}
     >
       <h1>
-        <a href="/">
-          <img src="/image/img-logo-nav.svg" alt="flexa" />
-        </a>
+        <Link href="/">
+          <Image src="/image/img-logo-nav.svg" alt="flexa" />
+        </Link>
       </h1>
       <div className={`search-box ${isInputFocused ? 'active' : ''}`}>
         <input
@@ -47,11 +49,11 @@ const Navigation: React.FC = () => {
       </div>
       <ul className="gnb-list mt-[20px]">
         <li className="active">
-          <a href="/">
+          <Link href="/">
             <NavIcon01 />
             <span className="text">Home</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-          </a>
+          </Link>
         </li>
         <li>
           <a href="#">
@@ -129,30 +131,30 @@ const Navigation: React.FC = () => {
           </div>
           <div className="my-menu-nav">
             <a href="#">
-              <img src="/image/ico-profile-01.svg" alt="profile" />
+              <Image src="/image/ico-profile-01.svg" alt="profile" />
               Profile
             </a>
             <hr />
             <a href="#">
-              <img src="/image/ico-profile-02.svg" alt="simulation" />
+              <Image src="/image/ico-profile-02.svg" alt="simulation" />
               Simulation Mangement
             </a>
             <a href="#">
-              <img src="/image/ico-profile-03.svg" alt="filter" />
+              <Image src="/image/ico-profile-03.svg" alt="filter" />
               Fliter Management
             </a>
             <a href="#">
-              <img src="/image/ico-profile-04.svg" alt="trash" />
+              <Image src="/image/ico-profile-04.svg" alt="trash" />
               Trash Bin
             </a>
             <hr />
             <a href="#">
-              <img src="/image/ico-profile-05.svg" alt="support" />
+              <Image src="/image/ico-profile-05.svg" alt="support" />
               Support
             </a>
           </div>
           <button className="logout">
-            <img src="/image/ico-profile-06.svg" alt="logout" />
+            <Image src="/image/ico-profile-06.svg" alt="logout" />
             Log Out
           </button>
         </div>

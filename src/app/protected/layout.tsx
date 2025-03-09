@@ -3,7 +3,8 @@ import Footer from '@/components/Footer';
 import SideNavigation from '@/components/SideNavigation';
 import { createClient } from '@/lib/supabase-server';
 
-export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+// FIXME: 레이아웃 통일하기
+async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
 
   // 인증된 사용자 정보 가져오기
@@ -38,12 +39,14 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   };
 
   return (
-    <div>
+    <>
       <SideNavigation userInfo={enrichedUserInfo} />
-      <div id="container">
-        <section id="content">{children}</section>
+      <div className="ml-[100px]">
+        <section className="mx-auto max-w-[1340px] px-[30px]">{children}</section>
         <Footer />
       </div>
-    </div>
+    </>
   );
 }
+
+export default ProtectedLayout;

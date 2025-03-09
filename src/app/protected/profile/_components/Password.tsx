@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { CheckCircle2, Circle } from 'lucide-react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
@@ -331,13 +332,13 @@ export default function Password() {
         {loginHistory.map((history) => (
           <div key={history.id} className="form-item pl-20">
             <div className="flex items-center gap-20">
-              <img src="/image/ico-desktop.svg" alt="desktop" />
+              <Image src="/image/ico-desktop.svg" alt="desktop" />
               <dl className="flex flex-col gap-2">
                 <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
                   {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
                   {history.session_id === currentSession && (
                     <span className="current-device">
-                      <img src="/image/ico-dot-green.svg" alt="" />
+                      <Image src="/image/ico-dot-green.svg" alt="" />
                       <span>현재 기기</span>
                     </span>
                   )}
@@ -360,7 +361,7 @@ export default function Password() {
                 className="gap-15 mt-10 flex items-center font-medium text-default-400 hover:text-accent-700"
               >
                 <span>이 기기에서 로그아웃</span>
-                <img src="/image/ico-logout-device.svg" alt="logout" />
+                <Image src="/image/ico-logout-device.svg" alt="logout" />
               </button>
             )} */}
           </div>

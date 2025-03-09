@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import TabDefault from '@/components/TabDefault';
 import { useUserInfo } from '@/store/zustand';
 import Password from './_components/Password';
@@ -15,13 +16,13 @@ export default function ProfilePage() {
   return (
     <>
       <div className="profile-top">
-        <img src="https://picsum.photos/2000" alt="thumbnail" />
+        <Image src="https://picsum.photos/2000" alt="thumbnail" />
       </div>
       <div className="profile-wrap">
         <div className="profile-header">
           <div className="profile-img">
             <p>
-              <img src={userInfo?.profileImageUrl || 'https://picsum.photos/200'} alt="thumbnail" />
+              <Image src={userInfo?.profileImageUrl || 'https://picsum.photos/200'} alt="thumbnail" />
             </p>
           </div>
           <dl className="profile-info">

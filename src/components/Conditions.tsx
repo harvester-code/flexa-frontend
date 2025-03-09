@@ -1,6 +1,7 @@
 'use client';
 
 import React, { RefObject, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Button from '@/components/Button';
 import {
   DropdownMenu,
@@ -118,7 +119,7 @@ function Dropdown({
         >
           <div className="flex h-[30px] flex-row items-center">
             {selItems?.length == 1 ? (
-              <span className="text-md font-medium text-gray-800">{selItems?.[0]?.text}</span>
+              <span className="text-base font-medium text-gray-800">{selItems?.[0]?.text}</span>
             ) : selItems?.length > 1 ? (
               <div className="flex flex-row">
                 {selItems?.slice(0, 5).map((itemCurrent, index) => {
@@ -138,7 +139,7 @@ function Dropdown({
                       }}
                     >
                       <span className="text-sm font-medium text-gray-700">{itemCurrent?.text || ' '}</span>
-                      <img className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
+                      <Image className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
                     </button>
                   );
                 })}
@@ -148,7 +149,7 @@ function Dropdown({
             )}
           </div>
           <div className="flex-1" />
-          <img className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
+          <Image className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
         </div>
         <DropdownMenuTrigger asChild disabled={disabled}>
           <div />
@@ -186,7 +187,7 @@ function Dropdown({
                   ) : (
                     <div className="h-[8px] w-[8px]" />
                   )}
-                  <span className="ml-[10px] text-md font-medium text-gray-800">{itemCurrent.text}</span>
+                  <span className="ml-[10px] text-base font-medium text-gray-800">{itemCurrent.text}</span>
                 </DropdownMenuItem>
               </div>
             );
@@ -212,12 +213,13 @@ function ConditionItem({
   const [operator, setOperator] = useState<string>(condition?.operator || 'O1');
   const [value, setValue] = useState<string[]>(condition?.value || ['']);
   useEffect(() => {
-    if(onChange) onChange({
-      logic,
-      criteria,
-      operator,
-      value
-    });
+    if (onChange)
+      onChange({
+        logic,
+        criteria,
+        operator,
+        value,
+      });
   }, [logic, criteria, operator, value]);
   return (
     <div className="flex flex-row">
@@ -227,7 +229,7 @@ function ConditionItem({
             <span className="text-sm font-medium text-gray-800">Logic</span>
             <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
             <button>
-              <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+              <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
             </button>
           </div>
           <Dropdown
@@ -245,7 +247,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Criteria</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -269,7 +271,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Operator</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -285,7 +287,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Value</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <img className="ml-[2px]" src="/image/ico-help2.svg" alt="" />
+            <Image className="ml-[2px]" src="/image/ico-help2.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -303,7 +305,7 @@ function ConditionItem({
             if (onDelete) onDelete();
           }}
         >
-          <img src="/image/ico-close-circle-x.svg" alt="" />
+          <Image src="/image/ico-close-circle-x.svg" alt="" />
         </button>
       </div>
     </div>
@@ -343,16 +345,16 @@ export default function Conditions({
             operatorItems={operatorItems}
             valueItems={valueItems}
             onChange={(state) => {
-              const newConditions = conditions.map((val, idx) => idx == index ? state : val);
+              const newConditions = conditions.map((val, idx) => (idx == index ? state : val));
               setConditions(newConditions);
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
             onDelete={() => {
               const newConditions = [...conditions];
               newConditions.splice(index, 1);
               setConditions(newConditions);
               setConditionsTime(Date.now());
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
           />
         ))}
@@ -363,7 +365,7 @@ export default function Conditions({
               const newConditions = [...conditions, defaultConditionItem];
               setConditions(newConditions);
               setConditionsTime(Date.now());
-              if(onChange) onChange(newConditions);
+              if (onChange) onChange(newConditions);
             }}
           >
             <span className="text-lg font-medium text-purple-600">+ Add Condition</span>
@@ -373,7 +375,7 @@ export default function Conditions({
       <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
         <Button
           className="btn-md btn-primary"
-          iconRight={<img src="/image/ico-check.svg" alt="" />}
+          iconRight={<Image src="/image/ico-check.svg" alt="" />}
           text="Apply"
           onClick={() => {
             if (onBtnApply) onBtnApply(conditions);

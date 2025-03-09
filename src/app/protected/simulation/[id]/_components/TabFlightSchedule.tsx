@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
@@ -178,7 +179,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-search-s.svg" alt="" />}
+            icon={<Image src="/image/ico-search-s.svg" alt="" />}
             text="ICN"
             textSub="Incheon Airport"
             onClick={() => {}}
@@ -207,13 +208,13 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
           </Popover>
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-find.svg" alt="" />}
+            icon={<Image src="/image/ico-find.svg" alt="" />}
             text="Find Peak Day"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            iconRight={<img src="/image/ico-search-w.svg" alt="" />}
+            iconRight={<Image src="/image/ico-search-w.svg" alt="" />}
             text="Load"
             onClick={() => {
               loadFlightSchedule();
@@ -263,7 +264,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
                   <div className="flex h-[30px] flex-row items-center pb-[10px]">
                     <Button
                       className="btn-lg btn-default text-sm"
-                      icon={<img src="/image/ico-button-menu.svg" alt="" />}
+                      icon={<Image src="/image/ico-button-menu.svg" alt="" />}
                       text="Color Criteria"
                       onClick={() => {}}
                     />
@@ -277,7 +278,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
                         style={{ width: 143 }}
                         onClick={() => setSelColorCriteria(text)}
                       >
-                        <span className="ml-[10px] text-md font-medium text-gray-800">{text}</span>
+                        <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
                       </DropdownMenuItem>
                     </div>
                   ))}

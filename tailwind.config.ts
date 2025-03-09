@@ -14,14 +14,6 @@ export default {
         lg: 'var(--radius)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      fontSize: {
-        xl: 'var(--xl)',
-        '2xl': 'var(--2xl)',
-        lg: 'var(--lg)',
-        md: 'var(--md)',
-        sm: 'var(--sm)',
-        xs: 'var(--xs)',
-      },
       colors: {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
@@ -100,22 +92,12 @@ export default {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
-        // primary: {
-        //   DEFAULT: 'hsl(var(--primary))',
-        //   foreground: 'hsl(var(--primary-foreground))',
-        // },
-        // secondary: {
-        //   DEFAULT: 'hsl(var(--secondary))',
-        //   foreground: 'hsl(var(--secondary-foreground))',
-        // },
+
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
         },
-        // accent: {
-        //   DEFAULT: 'hsl(var(--accent))',
-        //   foreground: 'hsl(var(--accent-foreground))',
-        // },
+
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
@@ -131,11 +113,7 @@ export default {
           '5': 'hsl(var(--chart-5))',
         },
       },
-      // borderRadius: {
-      //   lg: 'var(--radius)',
-      //   md: 'calc(var(--radius) - 2px)',
-      //   sm: 'calc(var(--radius) - 4px)',
-      // },
+
       spacing: {},
     },
   },

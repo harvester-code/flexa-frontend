@@ -1,25 +1,154 @@
 'use client';
 
-import { useState } from 'react';
+import '@/styles/home.css';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { SANKEY_NODE_COLORS } from '@/constants';
 import { faAngleUp, faArrowRight, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useSupabaseTestData } from '@/api/home';
+import { Slider, Typography } from '@mui/material';
+import type Plotly from 'plotly.js-dist-min';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
+import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
-import { Input } from '@/components/UIs/Input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/UIs/Tooltip';
 
-export default function HomePage() {
-  const { data, isLoading, error } = useSupabaseTestData();
-  const [chartType, setChartType] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isSlideActive, setIsSlideActive] = useState([false, false]);
-  const [topValue, setTopValue] = useState('');
+const HorizontalBarChart = dynamic(() => import('@/components/Charts/HorizontalBarChart'), { ssr: false });
+const LineChart = dynamic(() => import('@/components/Charts/LineChart'), { ssr: false });
+const SankeyChart = dynamic(() => import('@/components/Charts/SankeyChart'), { ssr: false });
 
+function HomePage() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [range1, setRange1] = useState<number>(4);
+  const [range2, setRange2] = useState<number[]>([4, 20]);
+  const [topValue, setTopValue] = useState('');
+  const [isSlideActive, setIsSlideActive] = useState<boolean[]>([true, true, true, true]);
+  const [chartType, setChartType] = useState(true);
+
+  // FIXME: 라인차트에 날짜 데이터가 없는 상태.
+  const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
+  const [histogramChartData, setHistogramChartData] = useState<Plotly.Data[]>([]);
+  const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
+
+  // ================================================================================
+  // TODO: 실제 API로 교체하기
+  useEffect(() => {
+    const fetchLineChartData = async () => {
+      try {
+        const res = await fetch('/samples/data/line_chart_data.json');
+        const data = await res.json();
+
+        const [throughput, waitingTime] = data.line_chart_data;
+
+        const trace1: Plotly.Data = {
+          ...throughput,
+          name: 'Throughtput',
+          line: { color: '#53389e' },
+        };
+        const trace2: Plotly.Data = {
+          ...waitingTime,
+          name: 'Waiting time',
+          yaxis: 'y2',
+          // TODO: HEX CODE 확인해보기
+          line: { color: 'orange' },
+        };
+
+        setLineChartData([trace1, trace2]);
+      } catch (error) {
+        console.error((error as Error).message);
+      }
+    };
+
+    fetchLineChartData();
+  }, []);
+
+  // ================================================================================
+  // TODO: 실제 API로 교체하기
+  useEffect(() => {
+    const fetchHistogramChartData = async () => {
+      const data: Plotly.Data[] = [
+        {
+          x: [20],
+          y: ['monkeys'],
+          name: 'SF Zoo',
+          orientation: 'h',
+          marker: {
+            color: 'rgba(55,128,191,0.6)',
+            width: 1,
+          },
+          type: 'bar',
+        },
+        {
+          x: [12],
+          y: ['monkeys'],
+          name: 'LA Zoo',
+          orientation: 'h',
+          type: 'bar',
+          marker: {
+            color: 'rgba(255,153,51,0.6)',
+            width: 1,
+          },
+        },
+      ];
+
+      setHistogramChartData(data);
+    };
+
+    fetchHistogramChartData();
+  }, []);
+
+  // ================================================================================
+  // TODO: 실제 API로 교체하기
+  useEffect(() => {
+    const fetchSankeyChartData = async () => {
+      try {
+        const res = await fetch('/samples/data/passenger_flow_sankey_chart_data.json');
+        // FIXME: 오타 발생
+        const { sanky } = await res.json();
+
+        const data: Plotly.Data[] = [
+          {
+            type: 'sankey',
+            orientation: 'h',
+            node: {
+              pad: 15,
+              thickness: 20,
+              // line: {
+              //   color: 'black',
+              //   width: 0.5,
+              // },
+              label: sanky.label,
+              color: SANKEY_NODE_COLORS,
+            },
+            link: sanky.link,
+          },
+        ];
+
+        setSankeyChartData(data);
+      } catch (error) {
+        console.error((error as Error).message);
+      }
+    };
+
+    fetchSankeyChartData();
+  }, []);
+
+  // ================================================================================
   const handleTabClick = (index: number) => {
     setActiveIndex(index);
+  };
+
+  const handleRangeChange = (event: Event, newValue: number | number[]) => {
+    setRange2(newValue as number[]);
+  };
+
+  const formatTime = (value: number) => {
+    const hours = Math.floor(value);
+    const minutes = Math.round((value % 1) * 60);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
   const toggleSlide = (index: number) => {
@@ -30,17 +159,25 @@ export default function HomePage() {
     });
   };
 
-  if (isLoading) return <div>로딩중...</div>;
-  if (error) return <div>에러 발생 {error.message}</div>;
-
   return (
-    <div>
+    <>
       <ContentsHeader text="Home" />
+
+      {/* FIXME: 동적으로 변경되어 수정 필요 */}
       <div className="selected-block">
         <dl>
           <dt>Selected</dt>
           <dd>
             <ul>
+              <li>
+                <button>Type &gt; Actual</button>
+              </li>
+              <li>
+                <button>Date &gt; Oct 14, 2024 - Oct 15, 2024</button>
+              </li>
+              <li>
+                <button>Terminal &gt; T1</button>
+              </li>
               <li>
                 <button>Type &gt; Actual</button>
               </li>
@@ -56,16 +193,19 @@ export default function HomePage() {
         <div className="flex items-center gap-10">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-filter.svg" alt="filter" />}
+            icon={<Image src="/image/ico-filter.svg" alt="filter" width={24} height={24} />}
             text="Fliter Details"
             onClick={() => {}}
           />
           <Button className="btn-md btn-primary" text="See Results" onClick={() => {}} />
         </div>
       </div>
-      <div className="mt-[30px] flex items-center justify-between">
+
+      {/* ==================================================================================================== */}
+
+      <div className="mt-30 flex items-center justify-between">
         <h2 className="title-sm">Terminal Overview</h2>
-        <div className="main-tab flex items-center gap-[10px]">
+        <div className="main-tab flex items-center gap-10">
           <button className={activeIndex === 0 ? 'active' : ''} onClick={() => handleTabClick(0)}>
             Time Stamp
           </button>
@@ -75,11 +215,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 오버뷰 컨테이너 */}
-      <div className="overview-container mt-[20px]">
+      {/* ==================================================================================================== */}
+
+      <div className="overview-container mt-20">
         <div className={`overview-block ${activeIndex === 0 ? '' : 'hide'}`}>
           <div className="map-block">
-            <img src="/image/thumb/@img-main-02.png" alt="map" />
+            <Image src="/image/thumb/@img-main-02.png" alt="map" width={1280} height={600} />
             <div className="map-zoom">
               <button className="btn-zoom-in">
                 <FontAwesomeIcon className="nav-icon" icon={faPlus} />
@@ -154,8 +295,9 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          {/* TODO: Schadcn 으로 변경 가능한지 검토하기 */}
           <div className="map-selector select-alone">
-            {/* <Typography className="left">
+            <Typography className="left">
               Oct 14 <br /> 00:00
             </Typography>
             <Slider
@@ -169,12 +311,13 @@ export default function HomePage() {
             />
             <Typography className="right">
               Oct 15 <br /> 24:00
-            </Typography> */}
+            </Typography>
           </div>
         </div>
+
         <div className={`overview-block ${activeIndex === 1 ? '' : 'hide'}`}>
           <div className="map-block">
-            <img src="/image/thumb/@img-main-01.png" alt="map" />
+            <Image src="/image/thumb/@img-main-01.png" alt="map" width={1280} height={600} />
             <div className="map-zoom">
               <button className="btn-zoom-in">
                 <FontAwesomeIcon className="nav-icon" icon={faPlus} />
@@ -184,8 +327,9 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+          {/* TODO: Schadcn 으로 변경 가능한지 검토하기 */}
           <div className="map-selector">
-            {/* <Typography className="left">
+            <Typography className="left">
               Oct 14 <br /> 00:00
             </Typography>
             <Slider
@@ -199,40 +343,44 @@ export default function HomePage() {
             />
             <Typography className="right">
               Oct 15 <br /> 24:00
-            </Typography> */}
+            </Typography>
           </div>
         </div>
       </div>
 
-      {/* 슬라이드 컨텐츠 */}
+      {/* ==================================================================================================== */}
+      {/* Summary */}
       <div className="slide-container">
         <div className="slide-head">
           <h3 className={isSlideActive[0] ? '' : 'hide'} onClick={() => toggleSlide(0)}>
             Summary <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
           </h3>
         </div>
+
         <div className={`slide-contents ${isSlideActive[0] ? '' : 'hide'}`}>
-          <div className="mt-15 gap-15 flex justify-end">
-            <div className="w-180">
-              <SelectBox options={['Mean', 'Top n%']} defaultValue="" className="select-sm" />
+          <div className="my-[14px] flex justify-end gap-4">
+            <div className="min-w-[180px]">
+              <SelectBox className="select-sm" options={['Mean', 'Top n%']} defaultValue="" />
             </div>
-            <div className="flex items-center gap-5 text-lg font-semibold">
-              Top
-              <div className="w-80">
+
+            <div className="flex items-center gap-1 text-lg font-semibold">
+              <span>Top</span>
+              <div className="max-w-20">
                 <Input
+                  className="input-rounded text-center text-sm"
                   type="text"
                   placeholder="0-100"
                   value={topValue}
-                  onChange={(e) => setTopValue(e.target.value)}
-                  className="input-rounded text-center text-sm"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopValue(e.target.value)}
                 />
               </div>
-              %
+              <span>%</span>
             </div>
           </div>
+
           <div className="summary-block">
-            <div className="summery-left">
-              <div className="summery">
+            <div className="summary-left">
+              <div className="summary">
                 <dl>
                   <dt>Departure Flights</dt>
                   <dd>306</dd>
@@ -242,13 +390,13 @@ export default function HomePage() {
                   <dd>311</dd>
                 </dl>
               </div>
-              <div className="summery">
+              <div className="summary">
                 <dl>
                   <dt>Delay / Return</dt>
                   <dd>41 / 3</dd>
                 </dl>
               </div>
-              <div className="summery">
+              <div className="summary">
                 <dl>
                   <dt>Departure Passengers</dt>
                   <dd>41,357</dd>
@@ -258,19 +406,20 @@ export default function HomePage() {
                   <dd>44,386</dd>
                 </dl>
               </div>
-              <div className="summery">
+              <div className="summary">
                 <dl>
                   <dt>Transfer Passengers</dt>
                   <dd className="text-default-300">N/A</dd>
                 </dl>
               </div>
             </div>
-            <div className="summery-right">
+
+            <div className="summary-right">
               <p>KPI</p>
               <div>
                 <dl>
                   <dt>
-                    <TooltipProvider>
+                    <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button>Passengers Throughput</button>
@@ -292,7 +441,7 @@ export default function HomePage() {
                 </dl>
                 <dl>
                   <dt>
-                    <TooltipProvider>
+                    <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button>Waiting Time</button>
@@ -314,7 +463,7 @@ export default function HomePage() {
                 </dl>
                 <dl>
                   <dt>
-                    <TooltipProvider>
+                    <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button>Queue Length</button>
@@ -336,7 +485,7 @@ export default function HomePage() {
                 </dl>
                 <dl>
                   <dt>
-                    <TooltipProvider>
+                    <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button>Facility efficiency</button>
@@ -362,16 +511,18 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 슬라이드 컨텐츠 */}
+      {/* ==================================================================================================== */}
+      {/* Alert & Issues */}
       <div className="slide-container">
         <div className="slide-head">
           <h3 className={isSlideActive[1] ? '' : 'hide'} onClick={() => toggleSlide(1)}>
             Alert & Issues <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
           </h3>
         </div>
+
         <div className={`slide-contents ${isSlideActive[1] ? '' : 'hide'}`}>
-          <div className="mt-15 gap-15 flex justify-end">
-            <div className="w-240">
+          <div className="my-[14px] flex justify-end gap-[14px]">
+            <div className="min-w-60">
               <SelectBox
                 options={[
                   'All Facilities',
@@ -384,7 +535,7 @@ export default function HomePage() {
                 className="select-sm"
               />
             </div>
-            <div className="w-240">
+            <div className="min-w-60">
               <SelectBox
                 options={['Passenger Throughput', 'Waiting Time', 'Queue Length', 'Facility Efficiency']}
                 defaultValue=""
@@ -392,6 +543,7 @@ export default function HomePage() {
               />
             </div>
           </div>
+
           <div className="issues-list">
             <div className="issue">
               <dl>
@@ -461,117 +613,125 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 슬라이드 컨텐츠 */}
+      {/* ==================================================================================================== */}
+      {/* Details */}
       <div className="slide-container">
         <div className="slide-head">
           <h3 className={isSlideActive[2] ? '' : 'hide'} onClick={() => toggleSlide(2)}>
-            Details <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
+            <span>Details</span>
+            <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
           </h3>
         </div>
+
         <div className={`slide-contents ${isSlideActive[2] ? '' : 'hide'}`}>
           <div className="detail-list">
-            {/* 디테일 아이템 */}
             <div className="detail-item">
               <div className="detail-head">
                 <h4>Check-In</h4>
                 <a href="#">
-                  Details <FontAwesomeIcon style={{ fontSize: '12px' }} icon={faArrowRight} />
+                  <span>Details</span>
+                  <FontAwesomeIcon style={{ fontSize: '14px' }} icon={faArrowRight} />
                 </a>
               </div>
+
               <div className="detail-body">
                 <div className="summary">
                   <div>
-                    <img src="/image/ico-main-01.svg" alt="" />
+                    <Image src="/image/ico-main-01.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Opened</dt>
                       <dd>352 / 486</dd>
                     </dl>
                   </div>
                   <div>
-                    <img src="/image/ico-main-02.svg" alt="" />
+                    <Image src="/image/ico-main-02.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Throughput</dt>
                       <dd>500</dd>
                     </dl>
                   </div>
                   <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
+                    <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Max Queue</dt>
                       <dd>500</dd>
                     </dl>
                   </div>
                   <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
+                    <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Queue Length</dt>
                       <dd>135</dd>
                     </dl>
                   </div>
                   <div>
-                    <img src="/image/ico-main-04.svg" alt="" />
+                    <Image src="/image/ico-main-04.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Proc. Time</dt>
                       <dd>00:00:11</dd>
                     </dl>
                   </div>
                   <div>
-                    <img src="/image/ico-main-04-1.svg" alt="" />
+                    <Image src="/image/ico-main-04-1.svg" width={30} height={30} alt="" />
                     <dl>
                       <dt>Waiting Time</dt>
                       <dd>00:12:29</dd>
                     </dl>
                   </div>
                 </div>
+
                 <div className="scroll-list">
-                  <div className="scroll-item">
+                  <div className="scroll-item closed">
                     <div className="scroll-item-head">
                       <h5>
-                        <em>A</em> <span className="stats-close">CLOSED</span>
+                        <em>A</em>
+                        <span className="stats-close">CLOSED</span>
                       </h5>
                       <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
+                        <span>Details</span>
+                        <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
                       </a>
                     </div>
+
                     <div className="scroll-item-body">
                       <div className="summary-sm disabled">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -592,42 +752,42 @@ export default function HomePage() {
                     <div className="scroll-item-body">
                       <div className="summary-sm">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -648,42 +808,42 @@ export default function HomePage() {
                     <div className="scroll-item-body">
                       <div className="summary-sm">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -704,42 +864,42 @@ export default function HomePage() {
                     <div className="scroll-item-body">
                       <div className="summary-sm">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -760,42 +920,42 @@ export default function HomePage() {
                     <div className="scroll-item-body">
                       <div className="summary-sm">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -816,1165 +976,42 @@ export default function HomePage() {
                     <div className="scroll-item-body">
                       <div className="summary-sm">
                         <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
+                          <Image src="/image/ico-main-01.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Opened</dt>
                             <dd>0 / 2</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
+                          <Image src="/image/ico-main-02.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Throughput</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Max Queue</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
+                          <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Queue Length</dt>
                             <dd>0</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
+                          <Image src="/image/ico-main-04.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Proc. Time</dt>
                             <dd>00:00:00</dd>
                           </dl>
                         </div>
                         <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* 디테일 아이템 끝 */}
-            <div className="detail-item">
-              <div className="detail-head">
-                <h4>Boarding pass Control</h4>
-                <a href="#">
-                  Details <FontAwesomeIcon style={{ fontSize: '12px' }} icon={faArrowRight} />
-                </a>
-              </div>
-              <div className="detail-body">
-                <div className="summary">
-                  <div>
-                    <img src="/image/ico-main-01.svg" alt="" />
-                    <dl>
-                      <dt>Opened</dt>
-                      <dd>352 / 486</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-02.svg" alt="" />
-                    <dl>
-                      <dt>Throughput</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Max Queue</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Queue Length</dt>
-                      <dd>135</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04.svg" alt="" />
-                    <dl>
-                      <dt>Proc. Time</dt>
-                      <dd>00:00:11</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04-1.svg" alt="" />
-                    <dl>
-                      <dt>Waiting Time</dt>
-                      <dd>00:12:29</dd>
-                    </dl>
-                  </div>
-                </div>
-                <div className="scroll-list">
-                  {/* closed 상태 클래스 추가 */}
-                  <div className="scroll-item closed">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG1</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG2</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG3</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG4</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG5</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG6</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="detail-item">
-              <div className="detail-head">
-                <h4>Security Control</h4>
-                <a href="#">
-                  Details <FontAwesomeIcon style={{ fontSize: '12px' }} icon={faArrowRight} />
-                </a>
-              </div>
-              <div className="detail-body">
-                <div className="summary">
-                  <div>
-                    <img src="/image/ico-main-01.svg" alt="" />
-                    <dl>
-                      <dt>Opened</dt>
-                      <dd>352 / 486</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-02.svg" alt="" />
-                    <dl>
-                      <dt>Throughput</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Max Queue</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Queue Length</dt>
-                      <dd>135</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04.svg" alt="" />
-                    <dl>
-                      <dt>Proc. Time</dt>
-                      <dd>00:00:11</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04-1.svg" alt="" />
-                    <dl>
-                      <dt>Waiting Time</dt>
-                      <dd>00:12:29</dd>
-                    </dl>
-                  </div>
-                </div>
-                <div className="scroll-list">
-                  {/* closed 상태 클래스 추가 */}
-                  <div className="scroll-item closed">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG1</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG3</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG4</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG5</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG6</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="detail-item">
-              <div className="detail-head">
-                <h4>Passport Control</h4>
-                <a href="#">
-                  Details <FontAwesomeIcon style={{ fontSize: '12px' }} icon={faArrowRight} />
-                </a>
-              </div>
-              <div className="detail-body">
-                <div className="summary">
-                  <div>
-                    <img src="/image/ico-main-01.svg" alt="" />
-                    <dl>
-                      <dt>Opened</dt>
-                      <dd>352 / 486</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-02.svg" alt="" />
-                    <dl>
-                      <dt>Throughput</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Max Queue</dt>
-                      <dd>500</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-03.svg" alt="" />
-                    <dl>
-                      <dt>Queue Length</dt>
-                      <dd>135</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04.svg" alt="" />
-                    <dl>
-                      <dt>Proc. Time</dt>
-                      <dd>00:00:11</dd>
-                    </dl>
-                  </div>
-                  <div>
-                    <img src="/image/ico-main-04-1.svg" alt="" />
-                    <dl>
-                      <dt>Waiting Time</dt>
-                      <dd>00:12:29</dd>
-                    </dl>
-                  </div>
-                </div>
-                <div className="scroll-list">
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG1</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG2</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG3</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG4</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG5</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
-                          <dl>
-                            <dt>Waiting Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="scroll-item">
-                    <div className="scroll-item-head">
-                      <h5>
-                        <em>DG6</em> <span className="stats-close">CLOSED</span>
-                      </h5>
-                      <a href="#">
-                        Details <FontAwesomeIcon style={{ fontSize: '10px' }} icon={faArrowRight} />
-                      </a>
-                    </div>
-                    <div className="scroll-item-body">
-                      <div className="summary-sm">
-                        <div>
-                          <img src="/image/ico-main-01.svg" alt="" />
-                          <dl>
-                            <dt>Opened</dt>
-                            <dd>0 / 2</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-02.svg" alt="" />
-                          <dl>
-                            <dt>Throughput</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Max Queue</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-03.svg" alt="" />
-                          <dl>
-                            <dt>Queue Length</dt>
-                            <dd>0</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04.svg" alt="" />
-                          <dl>
-                            <dt>Proc. Time</dt>
-                            <dd>00:00:00</dd>
-                          </dl>
-                        </div>
-                        <div>
-                          <img src="/image/ico-main-04-1.svg" alt="" />
+                          <Image src="/image/ico-main-04-1.svg" alt="" width={24} height={24} />
                           <dl>
                             <dt>Waiting Time</dt>
                             <dd>00:00:00</dd>
@@ -1990,21 +1027,23 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 슬라이드 컨텐츠 */}
+      {/* ==================================================================================================== */}
+      {/* Charts */}
       <div className="slide-container">
         <div className="slide-head">
           <h3 className={isSlideActive[3] ? '' : 'hide'} onClick={() => toggleSlide(3)}>
             Charts <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
           </h3>
         </div>
+
         <div className={`slide-contents ${isSlideActive[3] ? '' : 'hide'}`}>
           <div className="charts">
-            {/* 차트 아이템 */}
+            {/* Line Chart */}
             <div className="chart-item">
               <div className="chart-item-head">
                 <h5>Flow Chart</h5>
                 <div>
-                  Bar Chart
+                  <span>Bar Chart</span>
                   <Checkbox
                     id="chart-type"
                     label=""
@@ -2012,59 +1051,81 @@ export default function HomePage() {
                     onChange={() => setChartType(!chartType)}
                     className="checkbox-toggle"
                   />
-                  Line Chart
+                  <span>Line Chart</span>
                 </div>
               </div>
+
               <div className="chart-item-body">
                 <div className="chart-block">
                   <div className="flex items-center justify-between">
-                    <div className="w-[240px]">
-                      <SelectBox
-                        options={[
-                          'All Facilities',
-                          'Check-in',
-                          'Boarding Pass Control',
-                          'Security Control',
-                          'Passport Control',
-                        ]}
-                        defaultValue=""
-                        className="select-sm"
-                      />
-                    </div>
+                    <SelectBox
+                      className="select-sm max-w-60"
+                      defaultValue=""
+                      options={[
+                        'All Facilities',
+                        'Check-in',
+                        'Boarding Pass Control',
+                        'Security Control',
+                        'Passport Control',
+                      ]}
+                    />
+
                     <div className="tab-btn flex items-center">
                       <Button
                         className="btn-md btn-default active"
-                        icon={<img src="/image/ico-dot-violet.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-violet.svg" alt="" width={10} height={10} />}
                         text="Throughput"
                         onClick={() => {}}
                       />
                       <Button
                         className="btn-md btn-default active"
-                        icon={<img src="/image/ico-dot-orange.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
                         text="Waiting Time"
                         onClick={() => {}}
                       />
                       <Button
                         className="btn-md btn-default"
-                        icon={<img src="/image/ico-dot-green.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
                         text="Queue Length"
                         onClick={() => {}}
                       />
                       <Button
                         className="btn-md btn-default"
-                        icon={<img src="/image/ico-dot-green.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
                         text="Facility Efficiency"
                         onClick={() => {}}
                       />
                     </div>
                   </div>
-                  <div className="mt-[40px] flex h-[360px] items-center justify-center rounded-md bg-white">
-                    API AREA
+
+                  <div className="rounded-md bg-white">
+                    <LineChart
+                      chartData={lineChartData}
+                      chartLayout={{
+                        xaxis: { showgrid: false },
+                        yaxis: {
+                          title: {
+                            text: 'Throughtput (number of people)',
+                          },
+                        },
+                        yaxis2: {
+                          title: {
+                            text: 'Waiting time',
+                          },
+                          overlaying: 'y',
+                          side: 'right',
+                          showgrid: false,
+                        },
+                        margin: { l: 60, r: 60, b: 24, t: 24 },
+                        showlegend: false,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
-            {/* 차트 아이템 끝 */}
+
+            {/* Histogram Chart */}
             <div className="chart-item">
               <div className="chart-item-head">
                 <h5>Histogram</h5>
@@ -2072,108 +1133,120 @@ export default function HomePage() {
               <div className="chart-item-body">
                 <div className="chart-block">
                   <div className="flex items-center justify-between">
-                    <div className="w-[240px]">
-                      <SelectBox
-                        options={[
-                          'All Facilities',
-                          'Check-in',
-                          'Boarding Pass Control',
-                          'Security Control',
-                          'Passport Control',
-                        ]}
-                        defaultValue=""
-                        className="select-sm"
-                      />
-                    </div>
+                    <SelectBox
+                      className="select-sm max-w-60"
+                      defaultValue=""
+                      options={[
+                        'All Facilities',
+                        'Check-in',
+                        'Boarding Pass Control',
+                        'Security Control',
+                        'Passport Control',
+                      ]}
+                    />
+
                     <div className="tab-btn flex items-center">
                       <Button
                         className="btn-md btn-default active"
-                        icon={<img src="/image/ico-dot-orange.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
                         text="Waiting Time"
                         onClick={() => {}}
                       />
                       <Button
                         className="btn-md btn-default"
-                        icon={<img src="/image/ico-dot-green.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
                         text="Queue Length"
                         onClick={() => {}}
                       />
                       <Button
                         className="btn-md btn-default"
-                        icon={<img src="/image/ico-dot-green.svg" alt="" />}
+                        icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
                         text="Facility Efficiency"
                         onClick={() => {}}
                       />
                     </div>
                   </div>
-                  <div className="mt-[40px] flex h-[360px] items-center justify-center rounded-md bg-white">
-                    API AREA
+                  <div className="rounded-md bg-white">
+                    <HorizontalBarChart
+                      chartData={histogramChartData}
+                      chartLayout={{
+                        barmode: 'stack',
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Sankey Chart */}
             <div className="chart-item">
               <div className="chart-item-head">
                 <h5>Sankey Chart</h5>
                 <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
               </div>
+
               <div className="chart-item-body">
                 <div className="chart-block">
-                  <div className="mt-[30px] grid grid-cols-5 gap-[60px]">
-                    <div className="flex flex-col items-center justify-center gap-[10px]">
-                      <p className="font-semibold text-default-900">Check-In</p>
-                      <p className="flex h-[40px] items-center justify-center text-sm font-medium text-default-600">
-                        By Check-In Counter
-                      </p>
+                  <div className="mb-6 grid grid-cols-5 gap-14">
+                    <div className="text-center">
+                      <p className="mb-2 font-semibold text-default-900">Check-In</p>
+                      <p className="text-sm font-medium text-default-600">By Check-In Counter</p>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-[10px]">
-                      <p className="font-semibold text-default-900">Boarding pass</p>
+
+                    <div className="text-center">
+                      <p className="mb-2 font-semibold text-default-900">Boarding pass</p>
                       <div className="w-full">
                         <SelectBox
+                          className="select-sm"
                           options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
                           defaultValue=""
-                          className="select-sm"
                         />
                       </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-[10px]">
-                      <p className="font-semibold text-default-900">Security Check</p>
+
+                    <div className="text-center">
+                      <p className="mb-2 font-semibold text-default-900">Security Check</p>
                       <div className="w-full">
                         <SelectBox
+                          className="select-sm"
                           options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
                           defaultValue="Old, New"
-                          className="select-sm"
                         />
                       </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-[10px]">
-                      <p className="font-semibold text-default-900">Passport</p>
+
+                    <div className="text-center">
+                      <p className="mb-2 font-semibold text-default-900">Passport</p>
                       <div className="w-full">
                         <SelectBox
+                          className="select-sm"
                           options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
                           defaultValue="Manual, Automated"
-                          className="select-sm"
                         />
                       </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-[10px]">
-                      <p className="font-semibold text-default-900">Boarding</p>
-                      <p className="flex h-[40px] items-center justify-center text-sm font-medium text-default-600">
-                        Eastern, Western
-                      </p>
+
+                    <div className="text-center">
+                      <p className="mb-2 font-semibold text-default-900">Boarding</p>
+                      <p className="text-sm font-medium text-default-600">Eastern, Western</p>
                     </div>
                   </div>
-                  <div className="mt-[40px] flex h-[360px] items-center justify-center rounded-md">
-                    API AREA
-                  </div>
+
+                  <SankeyChart
+                    chartData={sankeyChartData}
+                    chartLayout={{
+                      margin: { l: 80, r: 80, b: 24, t: 24 },
+                      font: { size: 20 },
+                    }}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* {data && <pre>{JSON.stringify(data, null, 2)}</pre>} */}
-    </div>
+    </>
   );
 }
+
+export default HomePage;

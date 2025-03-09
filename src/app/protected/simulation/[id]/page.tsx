@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { getScenarioMetadata, setMasterScenario, setScenarioMetadata } from '@/api/simulations';
@@ -74,6 +75,7 @@ export default function SimulationDetail(props) {
       });
     });
   }, [params?.id]);
+
   return (
     <div>
       <ContentsHeader text="Simulation" />
@@ -87,7 +89,7 @@ export default function SimulationDetail(props) {
         <div className="mt-[15px] flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-arrow-left.svg" alt="" />}
+            icon={<Image src="/image/ico-arrow-left.svg" alt="" />}
             text="Back to Scenario List"
             onClick={() => {
               router.replace(`/protected/simulation`);
@@ -95,7 +97,7 @@ export default function SimulationDetail(props) {
           />
           <Button
             className="btn-md btn-primary"
-            icon={<img src="/image/ico-save.svg" alt="" />}
+            icon={<Image src="/image/ico-save.svg" alt="" />}
             text="Save"
             onClick={() => {
               if (metadata) {

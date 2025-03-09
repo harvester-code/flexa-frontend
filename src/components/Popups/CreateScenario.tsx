@@ -1,11 +1,11 @@
-import { popModal, pushModal } from '@/ClientProviders';
-import { createScenario } from '@/api/simulations';
-import { useUserInfo } from '@/store/zustand';
-import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import React, { useState } from 'react';
+import { popModal, pushModal } from '@/ClientProviders';
+import { createContextMenuScope } from '@radix-ui/react-context-menu';
+import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
+import { useUserInfo } from '@/store/zustand';
 import { PopupAlert } from './PopupAlert';
 
 interface PopupProps {
@@ -16,10 +16,13 @@ interface PopupProps {
 export const PushCreateScenarioPopup = (props: PopupProps) => {
   const modalId = pushModal({
     component: (
-      <PopupComponent {...props} onClose={() => {
-        popModal(modalId);
-        if(props?.onClose) props.onClose();
-      }} />
+      <PopupComponent
+        {...props}
+        onClose={() => {
+          popModal(modalId);
+          if (props?.onClose) props.onClose();
+        }}
+      />
     ),
   });
 };

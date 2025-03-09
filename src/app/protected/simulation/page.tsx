@@ -2,6 +2,7 @@
 
 import React, { RefObject, createRef, useEffect, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { popModal, pushModal } from '@/ClientProviders';
 import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
@@ -192,13 +193,13 @@ const SimulationPage: React.FC = () => {
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<img src="/image/ico-filter.svg" alt="" />}
+            icon={<Image src="/image/ico-filter.svg" alt="" />}
             text="More Fliters"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            icon={<img src="/image/ico-plus.svg" alt="" />}
+            icon={<Image src="/image/ico-plus.svg" alt="" />}
             text="New Scenario"
             onClick={() => {
               PushCreateScenarioPopup({
@@ -215,10 +216,10 @@ const SimulationPage: React.FC = () => {
           {/* {visibleDiv === 'tag' && (
             <div className="pb-[7px] pt-[7px] flex flex-grow items-center gap-[10px] p-[10px]">
               <button className="tag-sm">
-                ICN <img src="/image/ico-delect.svg" alt="" />
+                ICN <Image src="/image/ico-delect.svg" alt="" />
               </button>
               <button className="tag-sm">
-                Terminal 1 <img src="/image/ico-delect.svg" alt="" />
+                Terminal 1 <Image src="/image/ico-delect.svg" alt="" />
               </button>
             </div>
           )} */}
@@ -228,7 +229,7 @@ const SimulationPage: React.FC = () => {
               <p className="text-sm text-deepRed">{selRowCount} row(s) selected</p>
               <Button
                 className="btn-delete"
-                icon={<img src="/image/ico-delect-red.svg" alt="" />}
+                icon={<Image src="/image/ico-delect-red.svg" alt="" />}
                 text="Delete Selected"
                 onClick={() => onDeleteMulti()}
               />
@@ -257,31 +258,31 @@ const SimulationPage: React.FC = () => {
               <th className="w-[220px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Name
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-center">
                 <button className="ml-auto mr-auto inline-flex items-center gap-[2px]">
                   Terminal
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Editor
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Target Date
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[130px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Edit Date
-                  <img src="/image/ico-sort.svg" alt="" />
+                  <Image src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="!pl-[20px] text-left">Memo</th>

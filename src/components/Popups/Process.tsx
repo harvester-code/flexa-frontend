@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CloseIcon from '@mui/icons-material/Close';
@@ -69,11 +70,11 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
         </ul>
         <div className="mt-[5px] flex flex-col gap-[5px]">
           <button className="flex h-[40px] w-full justify-start gap-[8px] px-[10px] text-sm">
-            <img src="/image/ico-process-add.svg" alt="add" />
+            <Image src="/image/ico-process-add.svg" alt="add" />
             Add
           </button>
           <button className="flex h-[40px] w-full justify-start gap-[8px] px-[10px] text-sm">
-            <img src="/image/ico-process-apply.svg" alt="apply" />
+            <Image src="/image/ico-process-apply.svg" alt="apply" />
             Apply
           </button>
         </div>

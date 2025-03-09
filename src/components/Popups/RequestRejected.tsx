@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 
 interface RequestRejectedProps {
@@ -15,7 +16,7 @@ const RequestRejected: React.FC<RequestRejectedProps> = ({ open, onClose }) => {
         className: 'bg-include',
       }}
     >
-      <img src="/image/popup/report_off.svg" alt="icon" className="popup-icon" />
+      <Image src="/image/popup/report_off.svg" alt="icon" className="popup-icon" />
       <DialogTitle>The request to access the solutino has been rejected.</DialogTitle>
       <DialogContent>
         <div className="popup-contents">

@@ -1,5 +1,5 @@
 .footer {
-  @apply bg-default-25 px-[30px] text-center;
+  @apply mt-24 bg-default-25 px-[30px] text-center;
   .footer-content {
     @apply flex items-center justify-between py-8;
   }
@@ -16,9 +16,9 @@
     }
   }
   .footer-right {
-    @apply flex items-center gap-[20px];
+    @apply flex items-center gap-5;
     nav {
-      @apply flex items-center gap-[20px];
+      @apply flex items-center gap-5;
       a {
         @apply text-default-400;
         &:hover {

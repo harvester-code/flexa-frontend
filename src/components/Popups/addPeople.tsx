@@ -45,7 +45,7 @@ const AddPeople: React.FC<AddPeopleProps> = ({ open, onClose }) => {
         <div className="px-[10px]">
           <Checkbox
             id="check01"
-            label={<span className="text-md">Don’t include chat history</span>}
+            label={<span className="text-base">Don’t include chat history</span>}
             checked={history}
             onChange={(e) => handleHistoryChange(e.target.checked)}
             className="checkbox text-sm"
@@ -54,7 +54,7 @@ const AddPeople: React.FC<AddPeopleProps> = ({ open, onClose }) => {
         <div className="mt-[5px] px-[10px]">
           <Checkbox
             id="check02"
-            label={<span className="text-md">Include all chat history</span>}
+            label={<span className="text-base">Include all chat history</span>}
             checked={noHistory}
             onChange={(e) => handleNoHistoryChange(e.target.checked)}
             className="checkbox text-sm"

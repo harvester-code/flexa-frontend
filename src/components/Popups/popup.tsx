@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 
@@ -24,7 +25,7 @@ const CustomPopup: React.FC<CustomPopupProps> = ({ open, onClose, title, content
         <CloseIcon />
       </IconButton>
 
-      {iconPath && <img src={iconPath} alt="icon" className="popup-icon" />}
+      {iconPath && <Image src={iconPath} alt="icon" className="popup-icon" />}
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <div className="popup-contents">

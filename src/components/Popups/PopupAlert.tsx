@@ -1,5 +1,5 @@
-import { popModal, pushModal } from '@/ClientProviders';
 import React from 'react';
+import { popModal, pushModal } from '@/ClientProviders';
 import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
 
 interface ButtonProps {
@@ -45,14 +45,18 @@ export class PopupAlert {
     onDelete?: () => void,
     title?: string,
     cancelButtonText: string = 'Cancel',
-    onCancel?: () => void,
+    onCancel?: () => void
   ) {
     const modalId = pushModal({
       component: (
         <PopupComponent
           title={title}
           content={content}
-          buttonPos={{ text: deleteButtonText, onClick: onDelete, className: 'btn-sm border border-[#D92D20] text-[#D92D20]' }}
+          buttonPos={{
+            text: deleteButtonText,
+            onClick: onDelete,
+            className: 'btn-sm border border-[#D92D20] text-[#D92D20]',
+          }}
           buttonNeg={{ text: cancelButtonText, onClick: onCancel }}
           onClose={() => {
             popModal(modalId);
@@ -94,7 +98,7 @@ const PopupComponent: React.FC<PopupAlertProps> = ({
     >
       <DialogContent aria-describedby={undefined}>
         {iconPath && <img src={iconPath} alt="icon" className="popup-icon" />}
-        {title ? <DialogTitle>{title}</DialogTitle> : null}        
+        {title ? <DialogTitle>{title}</DialogTitle> : null}
         <div className="popup-contents mt-[14px] text-sm">
           <p className="text">{content}</p>
         </div>
