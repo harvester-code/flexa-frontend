@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import TabDefault from '@/components/TabDefault';
 import { useUserInfo } from '@/store/zustand';
-import Password from './components/Password';
-import Profile from './components/Profile';
+import Password from './_components/Password';
+import Profile from './_components/Profile';
 
 export default function ProfilePage() {
   const tabs: { text: string; number?: number }[] = [{ text: 'Profile' }, { text: 'Password' }];

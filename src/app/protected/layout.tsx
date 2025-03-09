@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase-server';
 // FIXME: 레이아웃 통일하기
 async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
+
+  // 인증된 사용자 정보 가져오기
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -36,13 +38,9 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     updatedAt: userInfo.updated_at,
   };
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
   return (
     <>
-      <SideNavigation userInfo={enrichedUserInfo} session={session} />
+      <SideNavigation userInfo={enrichedUserInfo} />
       <div className="ml-[100px]">
         <section className="mx-auto max-w-[1340px] px-[30px]">{children}</section>
         <Footer />
