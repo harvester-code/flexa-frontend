@@ -11,13 +11,12 @@
 
 ## 실행 명령어:
 
-package.json의 scripts 참조
-
 ```shell
-# 예시
-$ npm install
+$ npm install --force
 $ npm run dev
 ```
+
+package.json의 scripts 참조
 
 ## 폴더 구조:
 
