@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Session } from '@supabase/supabase-js';
 import { signOutAction } from '@/api/auth';
 import NavIcon01 from '@/components/Icons/NavIcon01';
 import NavIcon02 from '@/components/Icons/NavIcon02';
@@ -15,14 +14,14 @@ import NavIcon05 from '@/components/Icons/NavIcon05';
 import NavIcon06 from '@/components/Icons/NavIcon06';
 import SearchIcon from '@/components/Icons/Search';
 import { Button } from '@/components/UIs/Button';
+import { createClient } from '@/lib/supabase-client';
 import { TUserInfo, useUserInfo } from '@/store/zustand';
 
 interface ISideNavigationProps {
   userInfo: TUserInfo;
-  session: Session | null;
 }
 
-export default function SideNavigation({ userInfo, session }: ISideNavigationProps) {
+export default function SideNavigation({ userInfo }: ISideNavigationProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,11 +30,17 @@ export default function SideNavigation({ userInfo, session }: ISideNavigationPro
 
   useEffect(() => {
     setUserInfo(userInfo);
-  }, [userInfo]);
 
-  useEffect(() => {
-    setAccessToken(session?.access_token || '');
-  }, [session?.access_token]);
+    const initSession = async () => {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setAccessToken(session?.access_token || '');
+    };
+
+    initSession();
+  }, [userInfo]);
 
   // TODO: 네비게이션 메뉴 map으로 만들기
   return (

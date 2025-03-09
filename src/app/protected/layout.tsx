@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase-server';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
+
+  // 인증된 사용자 정보 가져오기
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,13 +37,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     updatedAt: userInfo.updated_at,
   };
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
   return (
     <div>
-      <SideNavigation userInfo={enrichedUserInfo} session={session} />
+      <SideNavigation userInfo={enrichedUserInfo} />
       <div id="container">
         <section id="content">{children}</section>
         <Footer />
