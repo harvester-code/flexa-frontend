@@ -1,13 +1,12 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-function LineChart({
-  chartData,
-  chartLayout,
-}: {
+interface LineChartProps {
   chartData: Plotly.Data[];
   chartLayout: Partial<Plotly.Layout>;
-}) {
+}
+
+function LineChart({ chartData, chartLayout }: LineChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
