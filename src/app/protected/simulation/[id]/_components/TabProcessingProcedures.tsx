@@ -60,7 +60,7 @@ export default function TabProcessingProcedures() {
               placement="right"
               arrow
             >
-              <Image src="/image/ico-help.svg" alt="tooltip" />
+              <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
             </Tooltip>
           </button>
         </dt>
@@ -76,7 +76,7 @@ export default function TabProcessingProcedures() {
           <p className="item-name">
             <span>Check-In</span>
             <button>
-              <Image src="/image/ico-write.svg" alt="delete" />
+              <Image width={20} height={20} src="/image/ico-write.svg" alt="delete" />
             </button>
           </p>
           <dl className="ml-[40px] flex-grow">
@@ -95,7 +95,7 @@ export default function TabProcessingProcedures() {
                   placement="right"
                   arrow
                 >
-                  <Image src="/image/ico-help.svg" alt="tooltip" />
+                  <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                 </Tooltip>
               </button>
             </dt>
@@ -115,7 +115,7 @@ export default function TabProcessingProcedures() {
           <p className="item-name">
             <span>Boarding Pass</span>
             <button>
-              <Image src="/image/ico-write.svg" alt="delete" />
+              <Image width={20} height={20} src="/image/ico-write.svg" alt="delete" />
             </button>
           </p>
           <dl className="ml-[40px] flex-grow">
@@ -134,7 +134,7 @@ export default function TabProcessingProcedures() {
                   placement="right"
                   arrow
                 >
-                  <Image src="/image/ico-help.svg" alt="tooltip" />
+                  <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                 </Tooltip>
               </button>
             </dt>
@@ -154,7 +154,7 @@ export default function TabProcessingProcedures() {
           <p className="item-name">
             <span>Security</span>
             <button>
-              <Image src="/image/ico-write.svg" alt="delete" />
+              <Image width={20} height={20} src="/image/ico-write.svg" alt="delete" />
             </button>
           </p>
           <dl className="ml-[40px] flex-grow">
@@ -173,7 +173,7 @@ export default function TabProcessingProcedures() {
                   placement="right"
                   arrow
                 >
-                  <Image src="/image/ico-help.svg" alt="tooltip" />
+                  <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                 </Tooltip>
               </button>
             </dt>
@@ -193,7 +193,7 @@ export default function TabProcessingProcedures() {
           <p className="item-name">
             <span>Passport</span>
             <button>
-              <Image src="/image/ico-write.svg" alt="delete" />
+              <Image width={20} height={20} src="/image/ico-write.svg" alt="delete" />
             </button>
           </p>
           <dl className="ml-[40px] flex-grow">
@@ -212,7 +212,7 @@ export default function TabProcessingProcedures() {
                   placement="right"
                   arrow
                 >
-                  <Image src="/image/ico-help.svg" alt="tooltip" />
+                  <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                 </Tooltip>
               </button>
             </dt>
@@ -228,7 +228,7 @@ export default function TabProcessingProcedures() {
       </div>
       <p className="add-item">
         <button>
-          <Image src="/image/ico-add-item.svg" alt="add item" />
+          <Image width={24} height={24} src="/image/ico-add-item.svg" alt="add item" />
         </button>
       </p>
       <p className="flex justify-end gap-[10px] px-[20px]">

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { popModal, pushModal } from '@/ClientProviders';
 import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
 
@@ -97,7 +98,7 @@ const PopupComponent: React.FC<PopupAlertProps> = ({
       }}
     >
       <DialogContent aria-describedby={undefined}>
-        {iconPath && <img src={iconPath} alt="icon" className="popup-icon" />}
+        {iconPath && <Image width={16} height={16} src={iconPath} alt="icon" className="popup-icon" />}
         {title ? <DialogTitle>{title}</DialogTitle> : null}
         <div className="popup-contents mt-[14px] text-sm">
           <p className="text">{content}</p>

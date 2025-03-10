@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
+import { Plot } from 'react-plotly.js';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
@@ -28,8 +29,6 @@ import {
   useSimulationMetadata,
   useSimulationStore,
 } from '@/store/zustand/simulation';
-
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 const tabsSecondary: { text: string; number?: number }[] = [
   { text: 'Connect Cirium®' },
@@ -179,7 +178,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<Image src="/image/ico-search-s.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />}
             text="ICN"
             textSub="Incheon Airport"
             onClick={() => {}}
@@ -189,7 +188,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
               <div>
                 <Button
                   className="btn-md btn-default"
-                  icon={<img src="/image/ico-calendar.svg" alt="" />}
+                  icon={<Image width={16} height={16} src="/image/ico-calendar.svg" alt="" />}
                   text={dayjs(selDate).format('MMM D, YYYY')}
                   onClick={() => {}}
                 />
@@ -208,13 +207,13 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
           </Popover>
           <Button
             className="btn-md btn-default"
-            icon={<Image src="/image/ico-find.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-find.svg" alt="" />}
             text="Find Peak Day"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            iconRight={<Image src="/image/ico-search-w.svg" alt="" />}
+            iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             text="Load"
             onClick={() => {
               loadFlightSchedule();
@@ -264,7 +263,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
                   <div className="flex h-[30px] flex-row items-center pb-[10px]">
                     <Button
                       className="btn-lg btn-default text-sm"
-                      icon={<Image src="/image/ico-button-menu.svg" alt="" />}
+                      icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
                       text="Color Criteria"
                       onClick={() => {}}
                     />
@@ -338,7 +337,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
         </>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <img src="/image/ico-error.svg" alt="" />
+          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
           <p className="title-sm" style={{ color: '#30374F' }}>
             Unable to load data
           </p>
@@ -350,7 +349,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
             <Button
               className="btn-md btn-secondary text-md"
               text="Inquire About Data Access"
-              icon={<img src="/image/ico-question.svg" alt="" />}
+              icon={<Image width={16} height={16} src="/image/ico-question.svg" alt="" />}
               onClick={() => {}}
             />
           </p>

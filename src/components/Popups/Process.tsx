@@ -70,11 +70,11 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
         </ul>
         <div className="mt-[5px] flex flex-col gap-[5px]">
           <button className="flex h-[40px] w-full justify-start gap-[8px] px-[10px] text-sm">
-            <Image src="/image/ico-process-add.svg" alt="add" />
+            <Image width={20} height={20} src="/image/ico-process-add.svg" alt="add" />
             Add
           </button>
           <button className="flex h-[40px] w-full justify-start gap-[8px] px-[10px] text-sm">
-            <Image src="/image/ico-process-apply.svg" alt="apply" />
+            <Image width={20} height={20} src="/image/ico-process-apply.svg" alt="apply" />
             Apply
           </button>
         </div>

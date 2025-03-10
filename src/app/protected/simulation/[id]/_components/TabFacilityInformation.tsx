@@ -360,7 +360,7 @@ export default function TabFacilityInformation() {
         <p>
           <Button
             className="btn-md btn-default"
-            icon={<Image src="/image/ico-filter.svg" alt="filter" />}
+            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
             text="Color Criteria"
             onClick={handleColorClick}
           />

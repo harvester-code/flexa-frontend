@@ -139,7 +139,7 @@ function Dropdown({
                       }}
                     >
                       <span className="text-sm font-medium text-gray-700">{itemCurrent?.text || ' '}</span>
-                      <Image className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
+                      <Image width={16} height={16} className="ml-[2px]" src="/image/ico-close-x.svg" alt="" />
                     </button>
                   );
                 })}
@@ -149,7 +149,7 @@ function Dropdown({
             )}
           </div>
           <div className="flex-1" />
-          <Image className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
+          <Image width={20} height={20} className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
         </div>
         <DropdownMenuTrigger asChild disabled={disabled}>
           <div />
@@ -229,7 +229,7 @@ function ConditionItem({
             <span className="text-sm font-medium text-gray-800">Logic</span>
             <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
             <button>
-              <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+              <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
             </button>
           </div>
           <Dropdown
@@ -247,7 +247,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Criteria</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -271,7 +271,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Operator</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <Image className="ml-[2px]" src="/image/ico-help.svg" alt="" />
+            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -287,7 +287,7 @@ function ConditionItem({
           <span className="text-sm font-medium text-gray-800">Value</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
           <button>
-            <Image className="ml-[2px]" src="/image/ico-help2.svg" alt="" />
+            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
           </button>
         </div>
         <Dropdown
@@ -305,7 +305,7 @@ function ConditionItem({
             if (onDelete) onDelete();
           }}
         >
-          <Image src="/image/ico-close-circle-x.svg" alt="" />
+          <Image width={24} height={24} src="/image/ico-close-circle-x.svg" alt="" />
         </button>
       </div>
     </div>
@@ -375,7 +375,7 @@ export default function Conditions({
       <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
         <Button
           className="btn-md btn-primary"
-          iconRight={<Image src="/image/ico-check.svg" alt="" />}
+          iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
           text="Apply"
           onClick={() => {
             if (onBtnApply) onBtnApply(conditions);

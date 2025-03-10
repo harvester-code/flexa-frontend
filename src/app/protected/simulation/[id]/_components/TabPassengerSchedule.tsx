@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight, faAngleUp, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@/components/Button';
@@ -156,7 +157,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </TooltipTrigger>
                       <TooltipContent side="right" align="center">
                         <React.Fragment>
@@ -181,7 +182,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </TooltipTrigger>
                       <TooltipContent side="right" align="center">
                         <React.Fragment>
@@ -205,7 +206,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -234,7 +235,7 @@ const AppliedPassengerAttributes: React.FC = () => {
               </dl>
             </div>
             <button>
-              <img src="/image/ico-delete-line.svg" alt="" />
+              <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
             </button>
           </div>
           <div className="select-grid">
@@ -246,7 +247,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -271,7 +272,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -296,7 +297,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -321,7 +322,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -341,7 +342,7 @@ const AppliedPassengerAttributes: React.FC = () => {
               </dl>
             </div>
             <button>
-              <img src="/image/ico-delete-line.svg" alt="" />
+              <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
             </button>
           </div>
           <div className="flex items-center justify-center">
@@ -386,7 +387,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -436,7 +437,7 @@ const AppliedPassengerAttributes: React.FC = () => {
       <div className="mt-[20px] flex items-center justify-end">
         <Button
           className="btn-md btn-primary"
-          icon={<img src="/image/ico-write-w.svg" alt="" />}
+          icon={<Image width={16} height={16} src="/image/ico-write-w.svg" alt="" />}
           text="Input Passenger Attributes"
           onClick={() => {}}
         />
@@ -447,7 +448,7 @@ const AppliedPassengerAttributes: React.FC = () => {
           <h3 className="title-sm gap-[15px]">
             <span>PRM Status</span>
             <button>
-              <img src="/image/ico-write.svg" alt="edit title" />
+              <Image width={16} height={16} src="/image/ico-write.svg" alt="edit title" />
             </button>
           </h3>
           <div className="mt-[20px] flex items-end justify-between gap-[15px]">
@@ -459,7 +460,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -484,7 +485,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -536,7 +537,7 @@ const AppliedPassengerAttributes: React.FC = () => {
           <h3 className="title-sm gap-[15px]">
             <span>Attribute 2</span>
             <button>
-              <img src="/image/ico-write.svg" alt="edit title" />
+              <Image width={16} height={16} src="/image/ico-write.svg" alt="edit title" />
             </button>
           </h3>
           <div className="mt-[20px] flex items-end justify-between gap-[15px]">
@@ -548,7 +549,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -573,7 +574,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <img src="/image/ico-help.svg" alt="tooltip" />
+                          <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                         </TooltipTrigger>
                         <TooltipContent side="right" align="center">
                           <React.Fragment>
@@ -624,7 +625,7 @@ const AppliedPassengerAttributes: React.FC = () => {
       </div>
       <p className="relative mt-[25px] flex justify-center after:absolute after:top-1/2 after:block after:h-1 after:w-full after:-translate-y-1/2 after:bg-default-200 after:content-['']">
         <button className="relative z-10">
-          <img src="/image/ico-add-item.svg" alt="" />
+          <Image width={16} height={16} src="/image/ico-add-item.svg" alt="" />
         </button>
       </p>
       <div className="mt-[40px] flex items-center justify-end gap-[10px]">
@@ -668,7 +669,7 @@ const AppliedPassengerAttributes: React.FC = () => {
                 <div className="flex h-[30px] flex-row items-center pb-[10px]">
                   <Button
                     className="btn-lg btn-default text-sm"
-                    icon={<img src="/image/ico-button-menu.svg" alt="" />}
+                    icon={<Image width={16} height={16} src="/image/ico-button-menu.svg" alt="" />}
                     text="Color Criteria"
                     onClick={() => {}}
                   />

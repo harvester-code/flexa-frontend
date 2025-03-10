@@ -25,7 +25,7 @@ const CustomPopup: React.FC<CustomPopupProps> = ({ open, onClose, title, content
         <CloseIcon />
       </IconButton>
 
-      {iconPath && <Image src={iconPath} alt="icon" className="popup-icon" />}
+      {iconPath && <Image width={24} height={24} src={iconPath} alt="icon" className="popup-icon" />}
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <div className="popup-contents">

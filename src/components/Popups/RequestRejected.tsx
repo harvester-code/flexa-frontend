@@ -16,7 +16,7 @@ const RequestRejected: React.FC<RequestRejectedProps> = ({ open, onClose }) => {
         className: 'bg-include',
       }}
     >
-      <Image src="/image/popup/report_off.svg" alt="icon" className="popup-icon" />
+      <Image width={24} height={24} src="/image/popup/report_off.svg" alt="icon" className="popup-icon" />
       <DialogTitle>The request to access the solutino has been rejected.</DialogTitle>
       <DialogContent>
         <div className="popup-contents">

@@ -31,7 +31,7 @@ const Navigation: React.FC = () => {
     >
       <h1>
         <Link href="/">
-          <Image src="/image/img-logo-nav.svg" alt="flexa" />
+          <Image width={100} height={100} src="/image/img-logo-nav.svg" alt="flexa" />
         </Link>
       </h1>
       <div className={`search-box ${isInputFocused ? 'active' : ''}`}>
@@ -131,30 +131,30 @@ const Navigation: React.FC = () => {
           </div>
           <div className="my-menu-nav">
             <a href="#">
-              <Image src="/image/ico-profile-01.svg" alt="profile" />
+              <Image width={16} height={16} src="/image/ico-profile-01.svg" alt="profile" />
               Profile
             </a>
             <hr />
             <a href="#">
-              <Image src="/image/ico-profile-02.svg" alt="simulation" />
+              <Image width={16} height={16} src="/image/ico-profile-02.svg" alt="simulation" />
               Simulation Mangement
             </a>
             <a href="#">
-              <Image src="/image/ico-profile-03.svg" alt="filter" />
+              <Image width={16} height={16} src="/image/ico-profile-03.svg" alt="filter" />
               Fliter Management
             </a>
             <a href="#">
-              <Image src="/image/ico-profile-04.svg" alt="trash" />
+              <Image width={16} height={16} src="/image/ico-profile-04.svg" alt="trash" />
               Trash Bin
             </a>
             <hr />
             <a href="#">
-              <Image src="/image/ico-profile-05.svg" alt="support" />
+              <Image width={16} height={16} src="/image/ico-profile-05.svg" alt="support" />
               Support
             </a>
           </div>
           <button className="logout">
-            <Image src="/image/ico-profile-06.svg" alt="logout" />
+            <Image width={16} height={16} src="/image/ico-profile-06.svg" alt="logout" />
             Log Out
           </button>
         </div>

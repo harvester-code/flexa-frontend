@@ -283,9 +283,9 @@ export default function Password() {
                   className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-brand' : 'text-gray-400'}`}
                 >
                   {newPassword.length >= 6 ? (
-                    <CheckCircle2 className="h-7 w-7 transition-all duration-200" />
+                    <CheckCircle2 className="h-4 w-4 transition-all duration-200" />
                   ) : (
-                    <Circle className="h-7 w-7 transition-all duration-200" />
+                    <Circle className="h-4 w-4 transition-all duration-200" />
                   )}
                   Minimum 6 characters
                 </li>
@@ -293,9 +293,9 @@ export default function Password() {
                   className={`flex items-center gap-2 ${/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword) ? 'text-brand' : 'text-gray-400'}`}
                 >
                   {/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword) ? (
-                    <CheckCircle2 className="h-7 w-7 transition-all duration-200" />
+                    <CheckCircle2 className="h-4 w-4 transition-all duration-200" />
                   ) : (
-                    <Circle className="h-7 w-7 transition-all duration-200" />
+                    <Circle className="h-4 w-4 transition-all duration-200" />
                   )}
                   Including letters and numbers
                 </li>
@@ -332,13 +332,13 @@ export default function Password() {
         {loginHistory.map((history) => (
           <div key={history.id} className="form-item pl-20">
             <div className="flex items-center gap-20">
-              <Image src="/image/ico-desktop.svg" alt="desktop" />
+              <Image width={30} height={30} src="/image/ico-desktop.svg" alt="desktop" />
               <dl className="flex flex-col gap-2">
                 <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
                   {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
                   {history.session_id === currentSession && (
                     <span className="current-device">
-                      <Image src="/image/ico-dot-green.svg" alt="" />
+                      <Image width={16} height={16} src="/image/ico-dot-green.svg" alt="" />
                       <span>현재 기기</span>
                     </span>
                   )}
@@ -361,7 +361,7 @@ export default function Password() {
                 className="gap-15 mt-10 flex items-center font-medium text-default-400 hover:text-accent-700"
               >
                 <span>이 기기에서 로그아웃</span>
-                <Image src="/image/ico-logout-device.svg" alt="logout" />
+                <Image width={20} height={20} src="/image/ico-logout-device.svg" alt="logout" />
               </button>
             )} */}
           </div>

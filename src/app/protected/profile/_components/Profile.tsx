@@ -354,7 +354,7 @@ export default function Profile() {
               <dt>
                 Profile Picture
                 <button>
-                  <Image src="/image/ico-help.svg" alt="help" />
+                  <Image width={16} height={16} src="/image/ico-help.svg" alt="help" />
                 </button>
               </dt>
               <dd>Your uploaded photo will appear in your profile.</dd>
@@ -386,9 +386,9 @@ export default function Profile() {
                   ) : (
                     <>
                       <p>
-                        <Image src="/image/ico-cloud.svg" alt="upload" />
+                        <Image width={70} height={70} src="/image/ico-cloud.svg" alt="upload" />
                       </p>
-                      <p className="mt-10">
+                      <p className="mt-1">
                         <span className="text-base font-semibold text-accent-700">Click to Upload</span> or Drag
                         & Drop
                       </p>
@@ -495,7 +495,7 @@ export default function Profile() {
                   applyFormat('bold');
                 }}
               >
-                <Image src="/image/ico-bold.svg" alt="bold" />
+                <Image width={35} height={35} src="/image/ico-bold.svg" alt="bold" />
               </button>
               <button
                 type="button"
@@ -506,7 +506,7 @@ export default function Profile() {
                   applyFormat('italic');
                 }}
               >
-                <Image src="/image/ico-italic.svg" alt="italic" />
+                <Image width={35} height={35} src="/image/ico-italic.svg" alt="italic" />
               </button>
               <button
                 type="button"
@@ -517,7 +517,7 @@ export default function Profile() {
                   applyFormat('underline');
                 }}
               >
-                <Image src="/image/ico-underline.svg" alt="underline" />
+                <Image width={35} height={35} src="/image/ico-underline.svg" alt="underline" />
               </button>
             </p>
             <div

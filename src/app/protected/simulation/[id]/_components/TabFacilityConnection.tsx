@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faAngleUp, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@/components/Button';
@@ -164,7 +165,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -188,7 +189,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -212,7 +213,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -222,7 +223,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="select-grid">
@@ -244,7 +245,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -268,7 +269,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -292,7 +293,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -302,7 +303,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="flex items-center justify-center">
@@ -331,7 +332,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -355,7 +356,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -379,7 +380,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -389,7 +390,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="table-import hidden">
@@ -445,7 +446,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -469,7 +470,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -493,7 +494,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -503,7 +504,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="select-grid">
@@ -525,7 +526,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -549,7 +550,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -573,7 +574,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -583,7 +584,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="flex items-center justify-center">
@@ -612,7 +613,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -636,7 +637,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -660,7 +661,7 @@ const FacilityConnection: React.FC = () => {
                         placement="right"
                         arrow
                       >
-                        <img src="/image/ico-help.svg" alt="tooltip" />
+                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
                       </Tooltip>
                     </button>
                   </dt>
@@ -670,7 +671,7 @@ const FacilityConnection: React.FC = () => {
                 </dl>
               </div>
               <button>
-                <img src="/image/ico-delete-line.svg" alt="" />
+                <Image width={16} height={16} src="/image/ico-delete-line.svg" alt="" />
               </button>
             </div>
             <div className="table-import">

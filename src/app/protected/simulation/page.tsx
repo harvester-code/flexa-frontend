@@ -193,13 +193,13 @@ const SimulationPage: React.FC = () => {
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<Image src="/image/ico-filter.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="" />}
             text="More Fliters"
             onClick={() => {}}
           />
           <Button
             className="btn-md btn-primary"
-            icon={<Image src="/image/ico-plus.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-plus.svg" alt="" />}
             text="New Scenario"
             onClick={() => {
               PushCreateScenarioPopup({
@@ -216,10 +216,10 @@ const SimulationPage: React.FC = () => {
           {/* {visibleDiv === 'tag' && (
             <div className="pb-[7px] pt-[7px] flex flex-grow items-center gap-[10px] p-[10px]">
               <button className="tag-sm">
-                ICN <Image src="/image/ico-delect.svg" alt="" />
+                ICN <Image width={16} height={16} src="/image/ico-delect.svg" alt="" />
               </button>
               <button className="tag-sm">
-                Terminal 1 <Image src="/image/ico-delect.svg" alt="" />
+                Terminal 1 <Image width={16} height={16} src="/image/ico-delect.svg" alt="" />
               </button>
             </div>
           )} */}
@@ -229,7 +229,7 @@ const SimulationPage: React.FC = () => {
               <p className="text-sm text-deepRed">{selRowCount} row(s) selected</p>
               <Button
                 className="btn-delete"
-                icon={<Image src="/image/ico-delect-red.svg" alt="" />}
+                icon={<Image width={20} height={20} src="/image/ico-delect-red.svg" alt="" />}
                 text="Delete Selected"
                 onClick={() => onDeleteMulti()}
               />
@@ -258,31 +258,31 @@ const SimulationPage: React.FC = () => {
               <th className="w-[220px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Name
-                  <Image src="/image/ico-sort.svg" alt="" />
+                  <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-center">
                 <button className="ml-auto mr-auto inline-flex items-center gap-[2px]">
                   Terminal
-                  <Image src="/image/ico-sort.svg" alt="" />
+                  <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Editor
-                  <Image src="/image/ico-sort.svg" alt="" />
+                  <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[120px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Target Date
-                  <Image src="/image/ico-sort.svg" alt="" />
+                  <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="w-[130px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Edit Date
-                  <Image src="/image/ico-sort.svg" alt="" />
+                  <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
               <th className="!pl-[20px] text-left">Memo</th>
@@ -310,7 +310,7 @@ const SimulationPage: React.FC = () => {
                     <td className="">
                       <div className="flex items-center gap-[10px]">
                         {/* <span>
-                      <img src={item.imagePath} alt="" />
+                      <Image width={16} height={16} src={item.imagePath} alt="" />
                     </span> */}
                         <div
                           onClick={() => {
@@ -364,38 +364,38 @@ const SimulationPage: React.FC = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger>
                           <div className="btn-more mt-[5px]">
-                            <img src="/image/ico-dot-menu.svg" alt="more" />
+                            <Image width={16} height={16} src="/image/ico-dot-menu.svg" alt="more" />
                           </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="pr-[20px]">
                           <DropdownMenuItem>
-                            <img src="/image/ico-run.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-run.svg" alt="" />
                             Run
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onDuplicate(index)}>
-                            <img src="/image/ico-duplicate.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-duplicate.svg" alt="" />
                             Duplicate
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onRename(index)}>
-                            <img src="/image/ico-rename.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Rename
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => oneditMemo(index)}>
-                            <img src="/image/ico-rename.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Edit Memo
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onSetMaster(index)}>
-                            <img src="/image/ico-rename.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Set Master
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <img src="/image/ico-share.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-share.svg" alt="" />
                             Share
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red" onClick={() => onDelete(index)}>
-                            <img src="/image/ico-trash-r.svg" alt="" />
+                            <Image width={16} height={16} src="/image/ico-trash-r.svg" alt="" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>

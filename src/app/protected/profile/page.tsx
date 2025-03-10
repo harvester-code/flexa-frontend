@@ -16,13 +16,18 @@ export default function ProfilePage() {
   return (
     <>
       <div className="profile-top">
-        <Image src="https://picsum.photos/2000" alt="thumbnail" />
+        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2000} height={2000} />
       </div>
       <div className="profile-wrap">
         <div className="profile-header">
           <div className="profile-img">
             <p>
-              <Image src={userInfo?.profileImageUrl || 'https://picsum.photos/200'} alt="thumbnail" />
+              <Image
+                src={userInfo?.profileImageUrl || 'https://picsum.photos/200'}
+                alt="thumbnail"
+                width={200}
+                height={200}
+              />
             </p>
           </div>
           <dl className="profile-info">

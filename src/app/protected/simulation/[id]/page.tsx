@@ -89,7 +89,7 @@ export default function SimulationDetail(props) {
         <div className="mt-[15px] flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<Image src="/image/ico-arrow-left.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-arrow-left.svg" alt="" />}
             text="Back to Scenario List"
             onClick={() => {
               router.replace(`/protected/simulation`);
@@ -97,7 +97,7 @@ export default function SimulationDetail(props) {
           />
           <Button
             className="btn-md btn-primary"
-            icon={<Image src="/image/ico-save.svg" alt="" />}
+            icon={<Image width={20} height={20} src="/image/ico-save.svg" alt="" />}
             text="Save"
             onClick={() => {
               if (metadata) {
