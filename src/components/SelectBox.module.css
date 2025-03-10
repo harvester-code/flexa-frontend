@@ -1,0 +1,98 @@
+.select-box {
+  @apply relative flex max-h-10 min-w-[120px] cursor-pointer items-center gap-4 rounded-full border border-default-300 bg-white px-3.5 py-2 shadow-sm;
+
+  .select-line {
+    @apply flex h-full flex-grow text-sm font-medium leading-6 text-default-800;
+  }
+
+  .select-item {
+    @apply absolute left-0 top-11 hidden w-full overflow-auto rounded-md border border-default-300 bg-white;
+
+    ul {
+      @apply p-1.5;
+
+      li {
+        @apply rounded-sm hover:bg-accent-100;
+
+        button {
+          @apply p-2.5 font-medium leading-5 text-default-600;
+        }
+      }
+    }
+  }
+  &.active {
+    @apply border-accent-600;
+    .select-item {
+      @apply z-10 block;
+    }
+    .select-btn {
+      @apply rotate-180 text-accent-500;
+    }
+  }
+
+  &.select-checkin {
+    @apply max-w-60 rounded-none border-b-2 border-l-0 border-r-0 border-t-0 border-default-900 bg-transparent px-0 shadow-none;
+
+    .select-line {
+      @apply text-2xl font-semibold text-default-900;
+    }
+  }
+
+  /* ============= */
+  /* 적용 안됨 */
+  @media DISABLED {
+    &.select-lg {
+      height: 50px;
+      .btn-list {
+        li {
+          button {
+            /* @apply h-[30px]; */
+          }
+        }
+      }
+      .select-item {
+        top: 54px;
+      }
+    }
+    &.select-sm {
+      height: 40px;
+      @apply text-sm;
+      .select-line {
+        @apply text-sm;
+      }
+      .btn-list {
+        li {
+          button {
+            /* @apply h-[30px]; */
+          }
+        }
+      }
+      .select-item {
+        top: 44px;
+        ul {
+          @apply gap-0.5;
+          li {
+            button {
+              /* @apply h-[30px] py-[5px] text-sm; */
+              @apply py-[5px] text-sm;
+            }
+          }
+        }
+      }
+    }
+    &.select-color {
+      background: url('/image/ico-button-menu.svg') no-repeat 15px center;
+      background-size: 20px 20px;
+      @apply flex items-center gap-2.5 pl-10;
+      .select-line {
+        @apply flex-grow justify-center;
+      }
+      .select-btn {
+        @apply hidden;
+      }
+    }
+    &.select-square {
+      @apply rounded-md;
+    }
+  }
+}

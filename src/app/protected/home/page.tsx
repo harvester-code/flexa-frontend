@@ -1,6 +1,5 @@
 'use client';
 
-import '@/styles/home.css';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
