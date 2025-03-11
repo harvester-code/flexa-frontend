@@ -146,7 +146,7 @@ export default function TabScenarioOverview() {
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => {
-            router.replace(`/protected/simulation`);
+            router.replace(`/simulation`);
           }}
         >
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />

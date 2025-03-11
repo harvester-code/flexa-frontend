@@ -50,7 +50,7 @@ export const signInAction = async (formData: FormData) => {
     console.error(error.code + ' ' + error.message);
     redirect('/?error-message=' + error.message);
   } else {
-    redirect('/protected');
+    redirect('/home');
   }
 };
 
@@ -66,29 +66,29 @@ export const signUpAction = async (formData: FormData) => {
 
   // 필수 필드 검증
   if (!firstName || !lastName || !email || !password) {
-    return redirect('/register?error-message=All fields are required');
+    return redirect('/auth/register?error-message=All fields are required');
   }
 
   // 이름 길이 검증
   if (firstName.length < 2 || lastName.length < 2) {
-    return redirect('/register?error-message=Names must be at least 2 characters');
+    return redirect('/auth/register?error-message=Names must be at least 2 characters');
   }
 
   // 이름에 공백이 있는지 검증
   if (firstName.includes(' ') || lastName.includes(' ')) {
-    return redirect('/register?error-message=Name cannot contain spaces');
+    return redirect('/auth/register?error-message=Name cannot contain spaces');
   }
 
   // 비밀번호 길이 검증
   if (password.length < 6) {
-    return redirect('/register?error-message=Password must be at least 6 characters');
+    return redirect('/auth/register?error-message=Password must be at least 6 characters');
   }
 
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback?next=/register/success`,
+      emailRedirectTo: `${origin}/auth/callback?next=/auth/register/success`,
       data: {
         first_name: formattedFirstName,
         last_name: formattedLastName,
@@ -99,16 +99,16 @@ export const signUpAction = async (formData: FormData) => {
 
   if (error) {
     console.error(error.code + ' ' + error.message);
-    return redirect('/register?error-message=' + error.message);
+    return redirect('/auth/register?error-message=' + error.message);
   }
 
-  return redirect('/register/success/?email=' + email);
+  return redirect('/auth/register/success/?email=' + email);
 };
 
 export const signOutAction = async () => {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return redirect('/');
+  return redirect('/auth/login');
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
@@ -119,20 +119,20 @@ export const forgotPasswordAction = async (formData: FormData) => {
 
   // 이메일 필수값 검증
   if (!email) {
-    return redirect('/forgot-password?error-message=Email is required');
+    return redirect('/auth/forgot-password?error-message=Email is required');
   }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/reset-password`,
+    redirectTo: `${origin}/auth/callback?redirect_to=/auth/reset-password`,
   });
   if (error) {
     console.error(error.message);
-    return redirect('/forgot-password?error-message=Could not reset password');
+    return redirect('/auth/forgot-password?error-message=Could not reset password');
   }
   if (callbackUrl) {
     return redirect(callbackUrl);
   }
   return redirect(
-    '/forgot-password/success?email=' +
+    '/auth/forgot-password/success?email=' +
       email +
       '&success-message=Check your email for a link to reset your password.'
   );
@@ -145,19 +145,19 @@ export const resetPasswordAction = async (formData: FormData) => {
 
   // 필수 필드 검증
   if (!password || !confirmPassword) {
-    redirect('/reset-password?error-message=Password and confirm password are required');
+    redirect('/auth/reset-password?error-message=Password and confirm password are required');
   }
 
   // 비밀번호 일치 검증
   if (password !== confirmPassword) {
-    redirect('/reset-password?error-message=Passwords do not match');
+    redirect('/auth/reset-password?error-message=Passwords do not match');
   }
   const { error } = await supabase.auth.updateUser({
     password: password,
   });
   if (error) {
-    redirect('/reset-password?error-message=Password update failed');
+    redirect('/auth/reset-password?error-message=Password update failed');
   }
   await supabase.auth.signOut();
-  redirect('/reset-password/success?success-message=Password updated');
+  redirect('/auth/reset-password/success?success-message=Password updated');
 };

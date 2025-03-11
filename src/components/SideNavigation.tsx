@@ -77,7 +77,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
 
       <ul className="gnb-list mt-[20px]">
         <li className="active">
-          <Link href="/protected/home">
+          <Link href="/home">
             <NavIcon01 />
             <span className="text">Home</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
@@ -85,7 +85,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
         </li>
 
         <li>
-          <Link href="/protected/facility">
+          <Link href="/facility">
             <NavIcon02 />
             <span className="text">Detailed Facilities</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
@@ -93,7 +93,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
         </li>
 
         <li>
-          <Link href="/protected/passenger-flow">
+          <Link href="/passenger-flow">
             <NavIcon03 />
             <span className="text">Passenger Flow</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
@@ -101,7 +101,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
         </li>
 
         <li>
-          <Link href="/protected/simulation">
+          <Link href="/simulation">
             <NavIcon04 />
             <span className="text">Simulation</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
@@ -113,7 +113,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
 
       <ul className="gnb-list">
         <li>
-          <Link href="/protected/messenger">
+          <Link href="/messenger">
             <NavIcon05 />
             <span className="text">Messenger</span>
             <span className="number">959+</span>
@@ -167,7 +167,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
           </div>
 
           <div className="my-menu-nav">
-            <Link href="/protected/profile">
+            <Link href="/profile">
               <Image src="/image/ico-profile-01.svg" alt="profile" width={16} height={16} />
               Profile
             </Link>

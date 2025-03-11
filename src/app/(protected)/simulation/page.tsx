@@ -4,7 +4,7 @@ import React, { RefObject, createRef, useEffect, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { popModal, pushModal } from '@/ClientProviders';
+import { popModal, pushModal } from '@/contexts/ClientProviders';
 import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';

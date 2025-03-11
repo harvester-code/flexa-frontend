@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
+import { createClient } from '@/utils/supabase/server';
 import Footer from '@/components/Footer';
 import SideNavigation from '@/components/SideNavigation';
-import { createClient } from '@/lib/supabase-server';
 
 // FIXME: 레이아웃 통일하기
 async function ProtectedLayout({ children }: { children: React.ReactNode }) {

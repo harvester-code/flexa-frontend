@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { popModal, pushModal } from '@/ClientProviders';
+import { popModal, pushModal } from '@/contexts/ClientProviders';
 import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';

@@ -92,7 +92,7 @@ export default function SimulationDetail(props) {
             icon={<Image width={20} height={20} src="/image/ico-arrow-left.svg" alt="" />}
             text="Back to Scenario List"
             onClick={() => {
-              router.replace(`/protected/simulation`);
+              router.replace(`/simulation`);
             }}
           />
           <Button

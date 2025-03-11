@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import { CheckCircle2, Circle } from 'lucide-react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { ToastAction } from '@/components/UIs/Toast';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase-client';
 
 export default function Password() {
   const [currentPassword, setCurrentPassword] = useState('');
