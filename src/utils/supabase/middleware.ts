@@ -6,11 +6,7 @@ export const updateSession = async (request: NextRequest) => {
   // Feel free to remove once you have Supabase connected.
   try {
     // Create an unmodified response
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    let response = NextResponse.next({ request: { headers: request.headers } });
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,9 +18,9 @@ export const updateSession = async (request: NextRequest) => {
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-            response = NextResponse.next({
-              request,
-            });
+
+            response = NextResponse.next({ request });
+
             cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
           },
         },
@@ -35,13 +31,14 @@ export const updateSession = async (request: NextRequest) => {
     // https://supabase.com/docs/guides/auth/server-side/nextjs
     const user = await supabase.auth.getUser();
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith('/protected') && user.error) {
-      return NextResponse.redirect(new URL('/', request.url));
+    const isPublicRoute = request.nextUrl.pathname.startsWith('/auth');
+
+    if (!isPublicRoute && user.error) {
+      return NextResponse.redirect(new URL('/auth/login', request.nextUrl));
     }
 
-    if (request.nextUrl.pathname === '/' && !user.error) {
-      return NextResponse.redirect(new URL('/protected', request.url));
+    if (isPublicRoute && !user.error) {
+      return NextResponse.redirect(new URL('/home', request.nextUrl));
     }
 
     return response;
@@ -49,10 +46,6 @@ export const updateSession = async (request: NextRequest) => {
     // If you are here, a Supabase client could not be created!
     // This is likely because you have not set up environment variables.
     // Check out http://localhost:3000 for Next Steps.
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    return NextResponse.next({ request: { headers: request.headers } });
   }
 };

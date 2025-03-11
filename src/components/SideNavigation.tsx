@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signOutAction } from '@/api/auth';
@@ -14,7 +15,6 @@ import NavIcon05 from '@/components/Icons/NavIcon05';
 import NavIcon06 from '@/components/Icons/NavIcon06';
 import SearchIcon from '@/components/Icons/Search';
 import { Button } from '@/components/UIs/Button';
-import { createClient } from '@/lib/supabase-client';
 import { TUserInfo, useUserInfo } from '@/store/zustand';
 
 interface ISideNavigationProps {
