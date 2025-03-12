@@ -2,7 +2,6 @@
 @import '@/styles/custom-popup.css';
 @import '@/styles/navigation.css';
 @import '@/styles/footer.css';
-@import '@/styles/home.css';
 
 @font-face {
   font-family: 'Pretendard';
@@ -258,10 +257,6 @@ input::placeholder {
 }
 #content {
   @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-[30px] pr-[30px];
-}
-.contentsHeader {
-  border-bottom: 1px solid var(--default-300);
-  @apply flex h-[100px] items-center;
 }
 
 .loginContainer {

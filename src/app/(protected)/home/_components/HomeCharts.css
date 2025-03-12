@@ -1,0 +1,19 @@
+.charts {
+  @apply mt-5 flex flex-col gap-[35px];
+  .chart-item {
+    .chart-item-head {
+      @apply flex items-center justify-between pl-5;
+      h5 {
+        @apply flex h-[50px] items-center text-xl font-semibold;
+      }
+      div {
+        @apply flex items-center gap-1 text-sm font-medium text-default-800;
+      }
+    }
+    .chart-item-body {
+      .chart-block {
+        @apply flex flex-col rounded-md border border-default-200 bg-white p-5;
+      }
+    }
+  }
+}
