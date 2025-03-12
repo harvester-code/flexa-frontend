@@ -13,7 +13,7 @@ import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/UIs/Tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 
 const HorizontalBarChart = dynamic(() => import('@/components/Charts/HorizontalBarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/Charts/LineChart'), { ssr: false });

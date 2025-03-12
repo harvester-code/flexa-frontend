@@ -5,7 +5,7 @@ import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
-import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 import { useUserInfo } from '@/store/zustand';
 import { PopupAlert } from './PopupAlert';
 

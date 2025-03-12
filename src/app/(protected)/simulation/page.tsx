@@ -34,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/UIs/DropdownMenu';
+} from '@/components/ui/DropdownMenu';
 import { useUserInfo } from '@/store/zustand';
 
 interface IScenarioStates {

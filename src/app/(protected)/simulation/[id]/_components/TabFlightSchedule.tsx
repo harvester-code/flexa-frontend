@@ -13,14 +13,14 @@ import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { IConditionState, IDropdownItem, IOperatorItem } from '@/components/Conditions';
 import TabDefault from '@/components/TabDefault';
-import { Calendar } from '@/components/UIs/Calendar';
+import { Calendar } from '@/components/ui/Calendar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/UIs/DropdownMenu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/UIs/Popover';
+} from '@/components/ui/DropdownMenu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/use-resize';
 import { useUserInfo } from '@/store/zustand';
 import {

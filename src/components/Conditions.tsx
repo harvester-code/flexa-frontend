@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/UIs/DropdownMenu';
+} from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/use-resize';
 
 export interface IDropdownItem {

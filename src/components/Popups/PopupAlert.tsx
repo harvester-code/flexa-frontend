@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { popModal, pushModal } from '@/contexts/ClientProviders';
-import { Dialog, DialogContent, DialogTitle } from '@/components/UIs/Dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 
 interface ButtonProps {
   text: string;

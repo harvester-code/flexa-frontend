@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { CheckCircle2, Circle } from 'lucide-react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { ToastAction } from '@/components/UIs/Toast';
+import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Password() {

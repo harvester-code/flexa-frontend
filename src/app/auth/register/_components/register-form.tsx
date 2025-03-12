@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { signUpAction } from '@/api/auth';
 import { SubmitButton } from '@/components/SubmitButton';
-import { Input } from '@/components/UIs/Input';
-import { Label } from '@/components/UIs/Label';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { AgreementForm } from './agreement-form';
 
 export function RegisterForm() {

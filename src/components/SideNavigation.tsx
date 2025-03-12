@@ -14,7 +14,7 @@ import NavIcon04 from '@/components/Icons/NavIcon04';
 import NavIcon05 from '@/components/Icons/NavIcon05';
 import NavIcon06 from '@/components/Icons/NavIcon06';
 import SearchIcon from '@/components/Icons/Search';
-import { Button } from '@/components/UIs/Button';
+import { Button } from '@/components/ui/Button';
 import { TUserInfo, useUserInfo } from '@/store/zustand';
 
 interface ISideNavigationProps {
