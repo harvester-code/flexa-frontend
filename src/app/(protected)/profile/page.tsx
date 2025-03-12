@@ -13,11 +13,13 @@ export default function ProfilePage() {
   const { userInfo } = useUserInfo();
   const [currentTab, setCurrentTab] = useState(0);
 
+  // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   return (
     <>
-      <div className="profile-top">
-        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2000} height={2000} />
+      <div className="absolute left-0 right-0 top-0 -z-50 max-h-52 w-full overflow-hidden">
+        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2440} height={210} />
       </div>
+
       <div className="profile-wrap">
         <div className="profile-header">
           <div className="profile-img">

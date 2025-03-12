@@ -1027,14 +1027,6 @@ textarea {
 }
 
 /* profile */
-.profile-top {
-  width: 100%;
-  background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
-  img {
-    @apply h-full w-full object-cover;
-  }
-  @apply flex h-[210px] items-center justify-center overflow-hidden object-center text-white;
-}
 .progress-bar {
   @apply mt-[5px] flex h-[20px] w-full items-center gap-[10px];
   .progress-bar-inner {
@@ -1048,10 +1040,7 @@ textarea {
   }
 }
 .profile-wrap {
-  margin-top: -40px;
-  width: 100%;
-  max-width: 1340px;
-  @apply mx-auto px-4;
+  @apply mx-auto px-4 pt-44;
   .profile-header {
     @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
     .profile-img {
