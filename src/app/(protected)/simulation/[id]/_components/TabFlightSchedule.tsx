@@ -287,7 +287,6 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
           </div>
           <div className="mt-[10px] flex items-center justify-center rounded-md bg-white">
             <Plot
-              // @ts-expect-error ...
               data={chartDataCurrent
                 ?.sort((a, b) => b.order - a.order)
                 .map((item, index) => {
