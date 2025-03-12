@@ -1,0 +1,21 @@
+.selected-block {
+  @apply mt-[30px] flex min-h-20 items-center justify-between rounded-md border border-default-200 px-5 py-2.5 text-xs;
+  dl {
+    @apply flex items-center gap-5;
+    dt {
+      @apply font-bold text-default-900;
+    }
+    dd {
+      ul {
+        @apply flex flex-wrap items-center gap-2.5;
+        li {
+          @apply flex items-center gap-2.5;
+          button {
+            height: 24px;
+            @apply flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700;
+          }
+        }
+      }
+    }
+  }
+}

@@ -7,8 +7,8 @@ import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Slider, Typography } from '@mui/material';
-import Button from '@/components/Button';
 import ContentsHeader from '@/components/ContentsHeader';
+import SelectBlock from '@/components/SelectBlock';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -39,42 +39,7 @@ function HomePage() {
       <ContentsHeader text="Home" />
 
       {/* FIXME: 동적으로 변경되어 수정 필요 */}
-      <div className="selected-block">
-        <dl>
-          <dt>Selected</dt>
-          <dd>
-            <ul>
-              <li>
-                <button>Type &gt; Actual</button>
-              </li>
-              <li>
-                <button>Date &gt; Oct 14, 2024 - Oct 15, 2024</button>
-              </li>
-              <li>
-                <button>Terminal &gt; T1</button>
-              </li>
-              <li>
-                <button>Type &gt; Actual</button>
-              </li>
-              <li>
-                <button>Date &gt; Oct 14, 2024 - Oct 15, 2024</button>
-              </li>
-              <li>
-                <button>Terminal &gt; T1</button>
-              </li>
-            </ul>
-          </dd>
-        </dl>
-        <div className="flex items-center gap-2.5">
-          <Button
-            className="btn-md btn-default"
-            icon={<Image src="/image/ico-filter.svg" alt="filter" width={24} height={24} />}
-            text="Fliter Details"
-            onClick={() => {}}
-          />
-          <Button className="btn-md btn-primary" text="See Results" onClick={() => {}} />
-        </div>
-      </div>
+      <SelectBlock />
 
       {/* ==================================================================================================== */}
 

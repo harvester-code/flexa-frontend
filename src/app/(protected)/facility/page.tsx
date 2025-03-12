@@ -8,6 +8,7 @@ import { TabsContent } from '@radix-ui/react-tabs';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
+import SelectBlock from '@/components/SelectBlock';
 import SelectBox from '@/components/SelectBox';
 import AppTable from '@/components/Table';
 import AppTabs from '@/components/Tabs';
@@ -158,31 +159,7 @@ function FacilityPage() {
       <ContentsHeader text="Detailed Facilities" />
 
       {/* ==================================================================================================== */}
-
-      <div className="selected-block">
-        <dl>
-          <dt>Selected</dt>
-          <dd>
-            <ul>
-              <li>
-                <button>Scenario &gt; ICN_T2_Rev2.project</button>
-              </li>
-            </ul>
-          </dd>
-        </dl>
-
-        <div className="flex items-center gap-2.5">
-          <Button
-            className="btn-md btn-default"
-            text="Select Scenario"
-            icon={<Image src="/image/ico-link.svg" alt="filter" width={20} height={20} />}
-            onClick={() => {}}
-          />
-          <Button className="btn-md btn-primary" text="See Results" onClick={() => {}} />
-        </div>
-      </div>
-
-      {/* ==================================================================================================== */}
+      <SelectBlock />
 
       {/* TODO: bg-color, border-color 추가하기 */}
       <div className="mt-[30px] rounded-md border px-5 py-7">
