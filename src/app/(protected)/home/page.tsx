@@ -15,7 +15,6 @@ import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 
-const HorizontalBarChart = dynamic(() => import('@/components/charts/HorizontalBarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
@@ -29,7 +28,9 @@ function HomePage() {
 
   // FIXME: 라인차트에 날짜 데이터가 없는 상태.
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const [histogramChartData, setHistogramChartData] = useState<Plotly.Data[]>([]);
+  const [histogramChartData, setHistogramChartData] = useState<
+    { label: string; value: number; color: string }[]
+  >([]);
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
 
   // ================================================================================
@@ -68,29 +69,12 @@ function HomePage() {
   // TODO: 실제 API로 교체하기
   useEffect(() => {
     const fetchHistogramChartData = async () => {
-      const data: Plotly.Data[] = [
-        {
-          x: [20],
-          y: ['monkeys'],
-          name: 'SF Zoo',
-          orientation: 'h',
-          marker: {
-            color: 'rgba(55,128,191,0.6)',
-            width: 1,
-          },
-          type: 'bar',
-        },
-        {
-          x: [12],
-          y: ['monkeys'],
-          name: 'LA Zoo',
-          orientation: 'h',
-          type: 'bar',
-          marker: {
-            color: 'rgba(255,153,51,0.6)',
-            width: 1,
-          },
-        },
+      const data = [
+        { label: '00:00 - 15:00', value: 14, color: '#4400d9' },
+        { label: '15:00 - 30:00', value: 27, color: '#622bd9' },
+        { label: '30:00 - 45:00', value: 24, color: '#7f56d9' },
+        { label: '45:00 - 60:00', value: 19, color: '#9d82d9' },
+        { label: '60:00 -', value: 16, color: '#bbaed9' },
       ];
 
       setHistogramChartData(data);
@@ -189,7 +173,7 @@ function HomePage() {
             </ul>
           </dd>
         </dl>
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-2.5">
           <Button
             className="btn-md btn-default"
             icon={<Image src="/image/ico-filter.svg" alt="filter" width={24} height={24} />}
@@ -204,7 +188,7 @@ function HomePage() {
 
       <div className="mt-30 flex items-center justify-between">
         <h2 className="title-sm">Terminal Overview</h2>
-        <div className="main-tab flex items-center gap-10">
+        <div className="main-tab flex items-center gap-2.5">
           <button className={activeIndex === 0 ? 'active' : ''} onClick={() => handleTabClick(0)}>
             Time Stamp
           </button>
@@ -1058,7 +1042,7 @@ function HomePage() {
                 <div className="chart-block">
                   <div className="flex items-center justify-between">
                     <SelectBox
-                      className="select-sm max-w-60"
+                      className="!min-w-60"
                       defaultValue=""
                       options={[
                         'All Facilities',
@@ -1133,7 +1117,7 @@ function HomePage() {
                 <div className="chart-block">
                   <div className="flex items-center justify-between">
                     <SelectBox
-                      className="select-sm max-w-60"
+                      className="!min-w-60"
                       defaultValue=""
                       options={[
                         'All Facilities',
@@ -1165,13 +1149,21 @@ function HomePage() {
                       />
                     </div>
                   </div>
-                  <div className="rounded-md bg-white">
-                    <HorizontalBarChart
-                      chartData={histogramChartData}
-                      chartLayout={{
-                        barmode: 'stack',
-                      }}
-                    />
+                  <div className="mt-10 rounded-md bg-white">
+                    <div className="flex text-center">
+                      {histogramChartData &&
+                        histogramChartData.map((d, idx) => (
+                          <div style={{ width: `${d.value}%` }} key={idx}>
+                            <div
+                              className={`py-3.5 ${idx === 0 ? 'rounded-l-lg' : idx === histogramChartData.length - 1 ? 'rounded-r-lg' : ''}`}
+                              style={{ background: `${d.color}` }}
+                            >
+                              <p className="text-3xl font-bold text-white">{d.value}%</p>
+                            </div>
+                            <p className="mt-1 text-sm font-medium">{d.label}</p>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
               </div>
