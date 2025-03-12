@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SearchIcon from '@/components/Icons/Search';
+import SearchIcon from '@/components/icons/Search';
 
 interface ISearchProps {
   value: string;

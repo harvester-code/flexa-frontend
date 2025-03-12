@@ -12,8 +12,8 @@ import SelectBox from '@/components/SelectBox';
 import AppTable from '@/components/Table';
 import AppTabs from '@/components/Tabs';
 
-const LineChart = dynamic(() => import('@/components/Charts/LineChart'), { ssr: false });
-const HeatMapChart = dynamic(() => import('@/components/Charts/HeatMapChart'), { ssr: false });
+const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
+const HeatMapChart = dynamic(() => import('@/components/charts/HeatMapChart'), { ssr: false });
 
 function FacilityPage() {
   const TAB_MENUS: { label: string; value: string }[] = [
