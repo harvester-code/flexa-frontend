@@ -56,7 +56,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
       }}
     >
       <h1>
-        <Link href="/">
+        <Link href="/home">
           <Image src="/image/img-logo-nav.svg" alt="flexa" width={100} height={100} />
         </Link>
       </h1>
