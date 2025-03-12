@@ -12,7 +12,6 @@ interface SelectBoxProps {
   defaultValue?: string;
 }
 
-// FIXME: className 적용방법 개선하기
 const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue }) => {
   const [isActive, setIsActive] = useState(false);
   const [selectedValue, setSelectedValue] = useState(defaultValue || options[0] || '');
@@ -40,25 +39,26 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue 
     };
   }, []);
 
+  // FIXME: Tailwind css로 변경하기
   return (
     <div
       ref={selectBoxRef}
-      className={cn(styles['select-box'], className && styles[className], isActive && styles['active'])}
+      className={cn(styles.selectBox, className && styles[className], isActive && styles['active'])}
       onClick={toggleActive}
     >
-      <div className={cn(styles['select-line'])}>{selectedValue}</div>
+      <div className={cn(styles.selectLine)}>{selectedValue}</div>
 
-      <div className={cn(styles['select-item'])}>
-        <ul>
+      <div className={cn(styles.selectItem)}>
+        <ul className={cn(styles.selectOptionCont)}>
           {options.map((option, index) => (
-            <li key={index}>
-              <button onClick={() => handleSelect(option)}>{option}</button>
+            <li className={cn(styles.selectOptionItem)} key={index} onClick={() => handleSelect(option)}>
+              <button className={cn(styles.selectOptionBtn)}>{option}</button>
             </li>
           ))}
         </ul>
       </div>
 
-      <button className={cn(styles['select-btn'])}>
+      <button className={cn(styles.selectBtn)}>
         <FontAwesomeIcon className={cn(styles['nav-icon'])} size="sm" icon={faCaretDown} />
       </button>
     </div>

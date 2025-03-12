@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Checkbox } from '@/components/UIs/Checkbox';
-import { Label } from '@/components/UIs/Label';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Label } from '@/components/ui/Label';
 
 interface AgreementFormProps {
   onAgreeAll: (agreed: boolean) => void;

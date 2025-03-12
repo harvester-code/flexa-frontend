@@ -25,16 +25,16 @@ import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
 import Input from '@/components/Input';
 import Paging from '@/components/Paging';
-import CreateScenario, { PushCreateScenarioPopup } from '@/components/Popups/CreateScenario';
-import { PopupAlert } from '@/components/Popups/PopupAlert';
 import Search from '@/components/Search';
+import CreateScenario, { PushCreateScenarioPopup } from '@/components/popups/CreateScenario';
+import { PopupAlert } from '@/components/popups/PopupAlert';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/UIs/DropdownMenu';
+} from '@/components/ui/DropdownMenu';
 import { useUserInfo } from '@/store/zustand';
 
 interface IScenarioStates {

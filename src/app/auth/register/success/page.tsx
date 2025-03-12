@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -8,9 +9,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signUpAction } from '@/api/auth';
 import { SubmitButton } from '@/components/SubmitButton';
 
-export default function RegisterSuccess() {
+function RegisterSuccessContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
+
   return (
     <div className="signUpContainer">
       <h1>
@@ -29,5 +31,14 @@ export default function RegisterSuccess() {
         Back to Login
       </Link>
     </div>
+  );
+}
+
+// TODO: Suspense 개선하기
+export default function RegisterSuccess() {
+  return (
+    <Suspense>
+      <RegisterSuccessContent />
+    </Suspense>
   );
 }

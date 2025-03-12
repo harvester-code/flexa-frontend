@@ -7,14 +7,14 @@ import { createClient } from '@/utils/supabase/client';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signOutAction } from '@/api/auth';
-import NavIcon01 from '@/components/Icons/NavIcon01';
-import NavIcon02 from '@/components/Icons/NavIcon02';
-import NavIcon03 from '@/components/Icons/NavIcon03';
-import NavIcon04 from '@/components/Icons/NavIcon04';
-import NavIcon05 from '@/components/Icons/NavIcon05';
-import NavIcon06 from '@/components/Icons/NavIcon06';
-import SearchIcon from '@/components/Icons/Search';
-import { Button } from '@/components/UIs/Button';
+import NavIcon01 from '@/components/icons/NavIcon01';
+import NavIcon02 from '@/components/icons/NavIcon02';
+import NavIcon03 from '@/components/icons/NavIcon03';
+import NavIcon04 from '@/components/icons/NavIcon04';
+import NavIcon05 from '@/components/icons/NavIcon05';
+import NavIcon06 from '@/components/icons/NavIcon06';
+import SearchIcon from '@/components/icons/Search';
+import { Button } from '@/components/ui/Button';
 import { TUserInfo, useUserInfo } from '@/store/zustand';
 
 interface ISideNavigationProps {
