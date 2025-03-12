@@ -1,7 +1,6 @@
 /* FIXME: 글로벌 / 모듈 CSS 구분 제대로 변경하기 */
 @import '@/styles/custom-popup.css';
 @import '@/styles/navigation.css';
-@import '@/styles/footer.css';
 
 @font-face {
   font-family: 'Pretendard';

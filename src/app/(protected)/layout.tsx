@@ -41,10 +41,12 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SideNavigation userInfo={enrichedUserInfo} />
-      <div className="ml-[100px]">
-        <section className="mx-auto max-w-[1340px] px-[30px]">{children}</section>
+      <main className="relative ml-[100px]">
+        <section className="mx-auto min-h-[calc(100svh-260px)] max-w-[1340px] px-[30px] pb-24">
+          {children}
+        </section>
         <Footer />
-      </div>
+      </main>
     </>
   );
 }
