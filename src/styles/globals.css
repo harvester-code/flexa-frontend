@@ -310,14 +310,12 @@ button {
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply min-w-[90px] gap-[5px] rounded-[8px] bg-white text-sm font-semibold;
 }
-
 .btn-lg {
   height: 44px;
   width: 100%;
   padding: 0 14px;
   @apply gap-[5px] font-semibold;
 }
-
 .btn-default {
   border: 1px solid var(--default-200);
 
@@ -336,7 +334,6 @@ button {
     background: var(--accent-25);
   }
 }
-
 .btn-red-line {
   border: 1px solid #d92d20;
   color: #d92d20;
