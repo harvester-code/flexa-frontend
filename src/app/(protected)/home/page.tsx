@@ -8,7 +8,7 @@ import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Slider, Typography } from '@mui/material';
 import ContentsHeader from '@/components/ContentsHeader';
-import SelectBlock from '@/components/SelectBlock';
+import SimulationOverview from '@/components/popups/SimulationOverview';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -38,8 +38,7 @@ function HomePage() {
     <>
       <ContentsHeader text="Home" />
 
-      {/* FIXME: 동적으로 변경되어 수정 필요 */}
-      <SelectBlock />
+      <SimulationOverview selectedItem={['helloworld']} />
 
       {/* ==================================================================================================== */}
 
