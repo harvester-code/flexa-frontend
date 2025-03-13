@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ContentsHeader from '@/components/ContentsHeader';
 
 function PassengerFlowPage() {
   const [mapUrl, setMapUrl] = useState<string>('');
@@ -17,12 +18,15 @@ function PassengerFlowPage() {
   }, []);
   return (
     <>
-      <div>PassengerFlowPage</div>
-      {mapUrl ? (
+      <ContentsHeader text="Passenger Flow" />
+
+      <div className="mt-8 text-lg">개발 진행중입니다.</div>
+
+      {/* {mapUrl ? (
         <iframe src={mapUrl} width="100%" height={800} loading="lazy" referrerPolicy="no-referrer"></iframe>
       ) : (
         <div>Loading...</div>
-      )}
+      )} */}
     </>
   );
 }

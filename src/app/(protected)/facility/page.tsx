@@ -17,7 +17,7 @@ function FacilityPage() {
   ];
 
   const [scenarios, setScenarios] = useState();
-  const selectedScenario = ['hello world'];
+  const selectedScenario = ['Scenario > ICN_T2_Rev2.project'];
 
   return (
     <>
@@ -30,7 +30,7 @@ function FacilityPage() {
       </div>
 
       {/* HACK: 아래 코드 구조 개선해보기 */}
-      {/* <AppTabs className="mt-[30px]" tabs={TAB_MENUS}>
+      <AppTabs className="mt-[30px]" tabs={TAB_MENUS}>
         <TabsContent value={TAB_MENUS[0].value}>
           <FacilityKPISummary />
         </TabsContent>
@@ -38,7 +38,7 @@ function FacilityPage() {
         <TabsContent value={TAB_MENUS[1].value}>
           <FacilityPassengerAnalysis />
         </TabsContent>
-      </AppTabs> */}
+      </AppTabs>
     </>
   );
 }

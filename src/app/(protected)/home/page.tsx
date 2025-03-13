@@ -6,9 +6,10 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Slider, Typography } from '@mui/material';
 import ContentsHeader from '@/components/ContentsHeader';
 import SimulationOverview from '@/components/popups/SimulationOverview';
+import { MultipleSlider } from '@/components/ui/MultipleSlider';
+import { Slider } from '@/components/ui/Slider';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -38,7 +39,7 @@ function HomePage() {
     <>
       <ContentsHeader text="Home" />
 
-      <SimulationOverview selectedItem={['helloworld']} />
+      <SimulationOverview className="mt-[30px]" selectedItem={['Scenario > ICN_T2_Rev2.project']} />
 
       {/* ==================================================================================================== */}
 
@@ -134,23 +135,9 @@ function HomePage() {
               </div>
             </div>
           </div>
-          {/* TODO: Schadcn 으로 변경 가능한지 검토하기 */}
-          <div className="map-selector select-alone">
-            <Typography className="left">
-              Oct 14 <br /> 00:00
-            </Typography>
-            <Slider
-              value={range1}
-              onChange={(event, newValue) => setRange1(newValue as number)}
-              valueLabelDisplay="auto"
-              min={0}
-              max={24}
-              step={1 / 6}
-              valueLabelFormat={(value) => `Oct 15 ${formatTime(value)}`}
-            />
-            <Typography className="right">
-              Oct 15 <br /> 24:00
-            </Typography>
+
+          <div className="select-alone mt-8">
+            <Slider defaultValue={[50]} />
           </div>
         </div>
 
@@ -166,23 +153,9 @@ function HomePage() {
               </button>
             </div>
           </div>
-          {/* TODO: Schadcn 으로 변경 가능한지 검토하기 */}
-          <div className="map-selector">
-            <Typography className="left">
-              Oct 14 <br /> 00:00
-            </Typography>
-            <Slider
-              value={range2}
-              onChange={handleRangeChange}
-              valueLabelDisplay="auto"
-              min={0}
-              max={24}
-              step={1 / 6}
-              valueLabelFormat={(value) => `Oct 15 ${formatTime(value)}`}
-            />
-            <Typography className="right">
-              Oct 15 <br /> 24:00
-            </Typography>
+
+          <div className="mb-2 mt-8">
+            <MultipleSlider defaultValue={[0, 80]} />
           </div>
         </div>
       </div>

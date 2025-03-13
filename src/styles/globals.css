@@ -251,9 +251,9 @@ input::placeholder {
   min-width: 1440px;
   @apply ml-auto mr-auto flex min-h-dvh flex-col;
 }
-#container {
+/* #container {
   @apply relative flex min-h-dvh flex-col pl-[100px];
-}
+} */
 #content {
   @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-[30px] pr-[30px];
 }

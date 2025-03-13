@@ -8,7 +8,7 @@ const MultipleSlider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const [values, setValues] = React.useState([50, 80]); // 초기 값
+  const [values, setValues] = React.useState([30, 60]); // 초기 값
   const trackRef = React.useRef<HTMLDivElement>(null);
 
   return (
@@ -31,8 +31,8 @@ const MultipleSlider = React.forwardRef<
           <SliderPrimitive.Thumb className="relative block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
 
           <div
-            className="absolute -top-8 flex h-6 w-10 items-center justify-center rounded-md bg-black text-xs font-medium text-white shadow-lg"
-            style={{ left: `calc(${value}% - 16px)` }}
+            className="absolute top-5 flex h-6 w-10 items-center justify-center rounded-md text-sm font-medium text-primary"
+            style={{ left: `calc(${value}% - 17px)` }}
           >
             {value}
           </div>
