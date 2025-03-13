@@ -60,4 +60,8 @@ src/
 ## 참고 사항:
 
 - 프로젝트에 Supabase를 연결할 때 아래 레포지토리 구조를 참고해서 작업해주세요.
+
   - [next.js/examples/with-supabase at canary · vercel/next.js](https://github.com/vercel/next.js/tree/canary/examples/with-supabase)
+
+- Docker, Makefile 등 프로젝트에 필요한 파일 생성시 참고해주세요.
+  - https://github.com/vercel/next.js/tree/canary/examples/with-docker-multi-env
