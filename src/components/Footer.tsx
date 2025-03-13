@@ -3,38 +3,36 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const FooterComponent: React.FC = () => (
-  <footer className="footer">
-    <div className="footer-content">
-      <div className="footer-left">
-        <span className="logo">
-          <Link href="/">
-            <Image src="/image/img-logo-nav.svg" alt="Flexa" width={60} height={60} />
-          </Link>
-        </span>
-        <nav>
-          <Link href="#" className="text-base">
+  <footer className="bg-default-100 px-12 text-center">
+    <div className="flex items-center justify-between py-[70px]">
+      <div className="flex items-center gap-20">
+        <Image src="/image/img-logo-nav.svg" alt="Flexa" width={110} height={32} />
+        <nav className="flex gap-[30px] text-xl font-semibold">
+          <Link className="text-default-600" href="#">
             Contact
           </Link>
-          <Link href="#" className="text-base">
+          <Link className="text-default-600" href="#">
             Support
           </Link>
         </nav>
       </div>
-      <div className="footer-right">
-        <nav>
-          <Link href="#" className="text-base">
+
+      <div className="flex items-center">
+        <nav className="flex gap-5 font-medium">
+          <Link className="text-default-400 hover:text-default-800" href="#">
             Terms
           </Link>
-          <Link href="#" className="text-base">
+          <Link className="text-default-400 hover:text-default-800" href="#">
             Privacy
           </Link>
-          <Link href="#" className="text-base">
+          <Link className="text-default-400 hover:text-default-800" href="#">
             Cookies
           </Link>
         </nav>
       </div>
     </div>
-    <div className="footer-bottom text-sm">
+
+    <div className="-m-px border-t border-default-200 pb-10 pt-6 font-medium text-default-400">
       <p>© 2024 Flexa. All rights reserved.</p>
     </div>
   </footer>

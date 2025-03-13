@@ -3,21 +3,24 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import TabDefault from '@/components/TabDefault';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 import Password from './_components/Password';
 import Profile from './_components/Profile';
 
 export default function ProfilePage() {
   const tabs: { text: string; number?: number }[] = [{ text: 'Profile' }, { text: 'Password' }];
 
-  const { userInfo } = useUserInfo();
+  const { data: userInfo, isLoading } = useUser();
+
   const [currentTab, setCurrentTab] = useState(0);
 
+  // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   return (
     <>
-      <div className="profile-top">
-        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2000} height={2000} />
+      <div className="absolute left-0 right-0 top-0 -z-50 max-h-52 w-full overflow-hidden">
+        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2440} height={210} />
       </div>
+
       <div className="profile-wrap">
         <div className="profile-header">
           <div className="profile-img">

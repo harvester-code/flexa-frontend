@@ -3,15 +3,17 @@
 import { useRef, useState } from 'react';
 import { useEffect } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/utils/supabase/client';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { useToast } from '@/hooks/use-toast';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
+import { createClient } from '@/utils/supabase/browser';
 
 export default function Profile() {
-  const { userInfo, setUserInfo } = useUserInfo();
   const { toast } = useToast();
+
+  const { data: userInfo, isLoading } = useUser();
+
   const [firstName, setFirstName] = useState(userInfo?.firstName || '');
   const [lastName, setLastName] = useState(userInfo?.lastName || '');
   const [initials, setInitials] = useState(userInfo?.initials || '');
@@ -25,7 +27,7 @@ export default function Profile() {
   const editorRef = useRef<HTMLDivElement>(null);
 
   // 이미지 업로드 관련 상태 추가
-  const [profileImage, setProfileImage] = useState<string | undefined>(userInfo?.profileImageUrl);
+  const [profileImage, setProfileImage] = useState<string | null | undefined>(userInfo?.profileImageUrl);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -221,12 +223,13 @@ export default function Profile() {
         setProfileImage(imageUrl);
 
         // 전역 상태 업데이트
-        if (userInfo) {
-          setUserInfo({
-            ...userInfo,
-            profileImageUrl: imageUrl,
-          });
-        }
+        // FIXME: 아래 코드 다시 작성
+        // if (userInfo) {
+        //   setUserInfo({
+        //     ...userInfo,
+        //     profileImageUrl: imageUrl,
+        //   });
+        // }
       } catch (error) {
         console.error('이미지 업로드 오류:', error);
         setUploadError('이미지 업로드 중 오류가 발생했습니다. 다시 시도해 주세요.');
@@ -260,7 +263,8 @@ export default function Profile() {
         position: position,
         bio: introduction,
       })
-      .eq('user_id', userInfo?.id)
+      // FIXME: 느낌표 없애기
+      .eq('user_id', userInfo!.id)
       .select()
       .single();
 
@@ -279,6 +283,7 @@ export default function Profile() {
     setPosition(userInfo?.position || '');
     setIntroduction(userInfo?.introduction || '');
     setInitials(userInfo?.initials || '');
+    // FIXME: 느낌표 없애기
     setProfileImage(userInfo?.profileImageUrl);
   };
 
@@ -431,7 +436,8 @@ export default function Profile() {
                           const { error } = await supabase
                             .from('user_info')
                             .update({ profile_image_url: null })
-                            .eq('user_id', userInfo?.id);
+                            // FIXME: 느낌표 없애기
+                            .eq('user_id', userInfo!.id);
 
                           if (error) {
                             throw error;
@@ -441,12 +447,13 @@ export default function Profile() {
                           setProfileImage(undefined);
 
                           // 5. 전역 상태 업데이트
-                          if (userInfo) {
-                            setUserInfo({
-                              ...userInfo,
-                              profileImageUrl: undefined,
-                            });
-                          }
+                          // FIXME: 아래 코드 다시 작성
+                          // if (userInfo) {
+                          //   setUserInfo({
+                          //     ...userInfo,
+                          //     profileImageUrl: undefined,
+                          //   });
+                          // }
                         } catch (error) {
                           console.error('이미지 삭제 오류:', error);
                           alert('이미지 삭제 중 오류가 발생했습니다.');

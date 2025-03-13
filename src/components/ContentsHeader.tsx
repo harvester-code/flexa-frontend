@@ -6,7 +6,7 @@ interface ContentsHeaderProps {
 
 export default function ContentsHeader({ text }: ContentsHeaderProps) {
   return (
-    <div className="contentsHeader">
+    <div className="flex h-[100px] items-center border-b border-default-300">
       <h1>{text}</h1>
     </div>
   );

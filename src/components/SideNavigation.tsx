@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
+import { usePathname } from 'next/navigation';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signOutAction } from '@/api/auth';
@@ -15,32 +15,17 @@ import NavIcon05 from '@/components/icons/NavIcon05';
 import NavIcon06 from '@/components/icons/NavIcon06';
 import SearchIcon from '@/components/icons/Search';
 import { Button } from '@/components/ui/Button';
-import { TUserInfo, useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 
-interface ISideNavigationProps {
-  userInfo: TUserInfo;
-}
+export default function SideNavigation() {
+  const pathname = usePathname();
 
-export default function SideNavigation({ userInfo }: ISideNavigationProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMyMenuOpen, setIsMyMenuOpen] = useState(false);
-  const { setUserInfo, setAccessToken } = useUserInfo();
 
-  useEffect(() => {
-    setUserInfo(userInfo);
-
-    const initSession = async () => {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setAccessToken(session?.access_token || '');
-    };
-
-    initSession();
-  }, [userInfo]);
+  const { data: userInfo, isLoading } = useUser();
 
   // TODO: 네비게이션 메뉴 map으로 만들기
   return (
@@ -56,7 +41,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
       }}
     >
       <h1>
-        <Link href="/">
+        <Link href="/home">
           <Image src="/image/img-logo-nav.svg" alt="flexa" width={100} height={100} />
         </Link>
       </h1>
@@ -76,7 +61,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
       </div>
 
       <ul className="gnb-list mt-[20px]">
-        <li className="active">
+        <li className={pathname === '/home' ? 'active' : ''}>
           <Link href="/home">
             <NavIcon01 />
             <span className="text">Home</span>
@@ -84,7 +69,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
           </Link>
         </li>
 
-        <li>
+        <li className={pathname === '/facility' ? 'active' : ''}>
           <Link href="/facility">
             <NavIcon02 />
             <span className="text">Detailed Facilities</span>
@@ -92,7 +77,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
           </Link>
         </li>
 
-        <li>
+        <li className={pathname === '/passenger-flow' ? 'active' : ''}>
           <Link href="/passenger-flow">
             <NavIcon03 />
             <span className="text">Passenger Flow</span>
@@ -100,7 +85,7 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
           </Link>
         </li>
 
-        <li>
+        <li className={pathname === '/simulation' ? 'active' : ''}>
           <Link href="/simulation">
             <NavIcon04 />
             <span className="text">Simulation</span>
@@ -112,13 +97,14 @@ export default function SideNavigation({ userInfo }: ISideNavigationProps) {
       <hr />
 
       <ul className="gnb-list">
-        <li>
+        <li className={pathname === '/messenger' ? 'active' : ''}>
           <Link href="/messenger">
             <NavIcon05 />
             <span className="text">Messenger</span>
             <span className="number">959+</span>
           </Link>
         </li>
+
         <li className={`settings ${isOpen ? 'active' : ''}`}>
           <a onClick={() => setIsOpen((prev) => !prev)}>
             <NavIcon06 />

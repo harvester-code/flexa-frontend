@@ -43,7 +43,7 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue 
   return (
     <div
       ref={selectBoxRef}
-      className={cn(styles.selectBox, className && styles[className], isActive && styles['active'])}
+      className={cn(styles.selectBox, isActive && styles['active'], className, className && styles[className])}
       onClick={toggleActive}
     >
       <div className={cn(styles.selectLine)}>{selectedValue}</div>

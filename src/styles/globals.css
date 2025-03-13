@@ -1,8 +1,6 @@
 /* FIXME: 글로벌 / 모듈 CSS 구분 제대로 변경하기 */
 @import '@/styles/custom-popup.css';
 @import '@/styles/navigation.css';
-@import '@/styles/footer.css';
-@import '@/styles/home.css';
 
 @font-face {
   font-family: 'Pretendard';
@@ -259,10 +257,6 @@ input::placeholder {
 #content {
   @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-[30px] pr-[30px];
 }
-.contentsHeader {
-  border-bottom: 1px solid var(--default-300);
-  @apply flex h-[100px] items-center;
-}
 
 .loginContainer {
   background: linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff;
@@ -316,14 +310,12 @@ button {
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply min-w-[90px] gap-[5px] rounded-[8px] bg-white text-sm font-semibold;
 }
-
 .btn-lg {
   height: 44px;
   width: 100%;
   padding: 0 14px;
   @apply gap-[5px] font-semibold;
 }
-
 .btn-default {
   border: 1px solid var(--default-200);
 
@@ -342,7 +334,6 @@ button {
     background: var(--accent-25);
   }
 }
-
 .btn-red-line {
   border: 1px solid #d92d20;
   color: #d92d20;
@@ -1033,14 +1024,6 @@ textarea {
 }
 
 /* profile */
-.profile-top {
-  width: 100%;
-  background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
-  img {
-    @apply h-full w-full object-cover;
-  }
-  @apply flex h-[210px] items-center justify-center overflow-hidden object-center text-white;
-}
 .progress-bar {
   @apply mt-[5px] flex h-[20px] w-full items-center gap-[10px];
   .progress-bar-inner {
@@ -1054,10 +1037,7 @@ textarea {
   }
 }
 .profile-wrap {
-  margin-top: -40px;
-  width: 100%;
-  max-width: 1340px;
-  @apply mx-auto px-4;
+  @apply mx-auto px-4 pt-44;
   .profile-header {
     @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
     .profile-img {

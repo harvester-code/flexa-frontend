@@ -4,29 +4,22 @@ import React, { RefObject, createRef, useEffect, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { popModal, pushModal } from '@/contexts/ClientProviders';
-import { faArrowRight, faL } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { queryClient } from '@/api/query-client';
 import {
-  IScenarioData,
   deleteScenario,
   deleteScenarioMulti,
   duplicateScenario,
-  getScenarioMetadata,
   modifyScenario,
   setMasterScenario,
-  setScenarioMetadata,
   useScenarioList,
 } from '@/api/simulations';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
-import Input from '@/components/Input';
 import Paging from '@/components/Paging';
 import Search from '@/components/Search';
-import CreateScenario, { PushCreateScenarioPopup } from '@/components/popups/CreateScenario';
+import { PushCreateScenarioPopup } from '@/components/popups/CreateScenario';
 import { PopupAlert } from '@/components/popups/PopupAlert';
 import {
   DropdownMenu,
@@ -35,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 
 interface IScenarioStates {
   name: string;
@@ -54,7 +47,7 @@ const SimulationPage: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const pathname = usePathname();
   const router = useRouter();
-  const { userInfo } = useUserInfo();
+  const { data: userInfo } = useUser();
   const { scenarioList } = useScenarioList(userInfo?.groupId);
 
   useEffect(() => {
