@@ -1,8 +1,8 @@
 import '@/styles/globals.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import ClientProviders from '@/contexts/ClientProviders';
-import { Toaster } from '@/components/ui/Toaster';
+import { cn } from '@/lib/utils';
+import Providers from './provider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -22,13 +22,10 @@ export const metadata: Metadata = {
 // FIXME: 레이아웃 통일하기
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClientProviders>
-          {children}
-          <Toaster />
-        </ClientProviders>
-      </body>
-    </html>
+    <Providers>
+      <html lang="en">
+        <body className={cn(geistSans.variable, geistMono.variable, 'antialiased')}>{children}</body>
+      </html>
+    </Providers>
   );
 }

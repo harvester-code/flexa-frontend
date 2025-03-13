@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/utils/supabase/client';
 import { CheckCircle2, Circle } from 'lucide-react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/utils/supabase/browser';
 
+// TODO: 헤당 컴포넌트 다시 점검하기
 export default function Password() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

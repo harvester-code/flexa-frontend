@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { popModal, pushModal } from '@/contexts/ClientProviders';
+import { popModal, pushModal } from '@/app/provider';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 
 interface ButtonProps {

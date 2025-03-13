@@ -1,18 +1,22 @@
 import axios from 'axios';
-import { getUserInfo } from '@/store/zustand';
+import { createClient } from '@/utils/supabase/browser';
 
 export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 
 const api = axios.create({
   baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use(
-  (config) => {
-    const token = getUserInfo().accessToken;
+  async (config) => {
+    const supabase = createClient();
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

@@ -3,15 +3,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
 import { Plot } from 'react-plotly.js';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
-import { IChartData, IConditionParams, getFlightSchedule } from '@/api/simulations';
+import { IConditionParams, getFlightSchedule } from '@/api/simulations';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
-import Conditions, { IConditionState, IDropdownItem, IOperatorItem } from '@/components/Conditions';
+import Conditions, { IDropdownItem, IOperatorItem } from '@/components/Conditions';
 import TabDefault from '@/components/TabDefault';
 import { Calendar } from '@/components/ui/Calendar';
 import {
@@ -22,9 +21,8 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/use-resize';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 import {
-  IFlightSchedule,
   useSimulationFlighScheduleStore,
   useSimulationMetadata,
   useSimulationStore,
@@ -104,7 +102,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
 
   const { width } = useResize(refWidth);
 
-  const { userInfo } = useUserInfo();
+  const { data: userInfo } = useUser();
   const conditions = flight_sch?.add_conditions;
   const chartDataCurrent = chartData?.data?.[selColorCriteria];
   const barColorsCurrent = !chartDataCurrent

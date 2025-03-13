@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import TabDefault from '@/components/TabDefault';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 import Password from './_components/Password';
 import Profile from './_components/Profile';
 
 export default function ProfilePage() {
   const tabs: { text: string; number?: number }[] = [{ text: 'Profile' }, { text: 'Password' }];
 
-  const { userInfo } = useUserInfo();
+  const { data: userInfo, isLoading } = useUser();
+
   const [currentTab, setCurrentTab] = useState(0);
 
   // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);

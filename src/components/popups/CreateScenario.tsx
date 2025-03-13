@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { popModal, pushModal } from '@/contexts/ClientProviders';
-import { createContextMenuScope } from '@radix-ui/react-context-menu';
 import { createScenario } from '@/api/simulations';
+import { popModal, pushModal } from '@/app/provider';
 import Input from '@/components/Input';
-import SelectBox from '@/components/SelectBox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
-import { useUserInfo } from '@/store/zustand';
+import { useUser } from '@/hooks/useUser';
 import { PopupAlert } from './PopupAlert';
 
 interface PopupProps {
@@ -33,7 +31,8 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
   const [scenarioMemo, setScenarioMemo] = useState('');
   const [locationAirport, setLocationAirport] = useState('');
   const [terminal, setTerminal] = useState('');
-  const { userInfo } = useUserInfo();
+  const { data: userInfo } = useUser();
+
   return (
     <Dialog
       open={true}
