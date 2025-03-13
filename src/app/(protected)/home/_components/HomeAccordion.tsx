@@ -21,7 +21,7 @@ function HomeAccordion({ title, open = true, children }: HomeAccordionProps) {
           onClick={() => setIsOpened(!isOpened)}
         >
           <span>{title}</span>
-          <FontAwesomeIcon className="icon-lg" icon={faAngleUp} />
+          <FontAwesomeIcon className={cn(styles.tmpIcon, 'icon-lg')} icon={faAngleUp} />
         </h3>
       </div>
 
