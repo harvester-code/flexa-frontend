@@ -36,7 +36,7 @@ function HomePage() {
   };
 
   return (
-    <>
+    <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Home" />
 
       <SimulationOverview className="mt-[30px]" selectedItem={['Scenario > ICN_T2_Rev2.project']} />
@@ -179,7 +179,7 @@ function HomePage() {
       <HomeAccordion title="Charts">
         <HomeCharts />
       </HomeAccordion>
-    </>
+    </div>
   );
 }
 

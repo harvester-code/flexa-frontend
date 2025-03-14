@@ -20,7 +20,7 @@ function FacilityPage() {
   const selectedScenario = ['Scenario > ICN_T2_Rev2.project'];
 
   return (
-    <>
+    <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Detailed Facilities" />
 
       <SimulationOverview className="mt-[30px]" selectedItem={selectedScenario} />
@@ -39,7 +39,7 @@ function FacilityPage() {
           <FacilityPassengerAnalysis />
         </TabsContent>
       </AppTabs>
-    </>
+    </div>
   );
 }
 

@@ -1037,7 +1037,6 @@ textarea {
   }
 }
 .profile-wrap {
-  @apply mx-auto px-4 pt-44;
   .profile-header {
     @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
     .profile-img {

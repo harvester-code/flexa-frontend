@@ -17,11 +17,11 @@ export default function ProfilePage() {
   // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   return (
     <>
-      <div className="absolute left-0 right-0 top-0 -z-50 max-h-52 w-full overflow-hidden">
+      <div className="-z-50 max-h-52 w-full overflow-hidden">
         <Image src="https://picsum.photos/2000" alt="thumbnail" width={2440} height={210} />
       </div>
 
-      <div className="profile-wrap">
+      <div className="profile-wrap -m-9 mx-auto max-w-[1340px] px-[30px] pb-24">
         <div className="profile-header">
           <div className="profile-img">
             <p>

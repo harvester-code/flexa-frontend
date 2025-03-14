@@ -179,7 +179,7 @@ const SimulationPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Simulation" />
       <div className="mt-[30px] flex justify-between">
         <h2 className="title-sm">Scenario List</h2>

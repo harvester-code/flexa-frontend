@@ -45,6 +45,7 @@ const MessengerPage: React.FC = () => {
   return (
     <>
       <Navigation />
+
       <div id="container">
         <section id="messenger">
           <div className="messenger-header">
@@ -324,7 +325,7 @@ const MessengerPage: React.FC = () => {
                       <dd>Thursday 11:40am</dd>
                     </dl>
                     <div className="msg">
-                      Hey Olivia, I've finished with the requirements doc! I made some notes in the gdoc as well
+                      Hey Olivia, I ve finished with the requirements doc! I made some notes in the gdoc as well
                       for Phoenix to look over.
                     </div>
                   </div>
@@ -338,7 +339,7 @@ const MessengerPage: React.FC = () => {
                       <dt>Billbo Han</dt>
                       <dd>Thursday 11:40am</dd>
                     </dl>
-                    <div className="msg">Hey Olivia, I've finished with the requirements</div>
+                    <div className="msg">Hey Olivia, I ve finished with the requirements</div>
                   </div>
                 </div>
                 <div className="chating-item">
@@ -367,7 +368,7 @@ const MessengerPage: React.FC = () => {
                       <dt>You</dt>
                       <dd>Thursday 11:40am</dd>
                     </dl>
-                    <div className="msg">Awesome! Thanks. I'll look at this today.</div>
+                    <div className="msg">Awesome! Thanks. I ll look at this today.</div>
                   </div>
                 </div>
                 <div className="chating-item">
@@ -379,7 +380,7 @@ const MessengerPage: React.FC = () => {
                       <dt>Billbo Han</dt>
                       <dd>Thursday 11:40am</dd>
                     </dl>
-                    <div className="msg">No rush though — we still have to wait for Lana's designs.</div>
+                    <div className="msg">No rush though — we still have to wait for Lana s designs.</div>
                   </div>
                 </div>
                 {/* 날짜 구분 */}
@@ -405,7 +406,7 @@ const MessengerPage: React.FC = () => {
                       <dt>You</dt>
                       <dd>Thursday 11:40am</dd>
                     </dl>
-                    <div className="msg">Sure thing, I'll have a look today. They're looking great!</div>
+                    <div className="msg">Sure thing, I ll have a look today. They re looking great!</div>
                     <p className="emoji">👍 ❤️ 👌</p>
                   </div>
                 </div>
