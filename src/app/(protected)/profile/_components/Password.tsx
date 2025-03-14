@@ -40,7 +40,6 @@ export default function Password() {
             .single();
 
           if (sessionData) {
-            console.log('현재 세션 ID:', sessionData.session_id);
             setCurrentSession(sessionData.session_id);
           }
         } else {
@@ -82,8 +81,6 @@ export default function Password() {
         return;
       }
 
-      console.log('현재 사용자 ID:', user.id); // 디버깅용
-
       const { data, error } = await supabase
         .from('user_login_history')
         .select('*')
@@ -101,7 +98,6 @@ export default function Password() {
         return;
       }
 
-      console.log('조회된 로그인 기록:', data); // 디버깅용
       setLoginHistory(data || []);
     } catch (error: any) {
       console.error('로그인 히스토리 조회 실패:', error.message);

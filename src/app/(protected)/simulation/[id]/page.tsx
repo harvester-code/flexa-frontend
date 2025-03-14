@@ -65,7 +65,6 @@ export default function SimulationDetail(props) {
   const { tabIndex, setTabIndex, setCheckpoint } = useSimulationStore();
   useEffect(() => {
     getScenarioMetadata({ simulation_id: params?.id }).then((response) => {
-      console.log(response);
       const clientTime = dayjs();
       const serverTime = dayjs(response?.data?.checkpoint);
       setCheckpoint(response?.data?.checkpoint, clientTime.diff(serverTime, 'second'));
@@ -101,9 +100,7 @@ export default function SimulationDetail(props) {
             text="Save"
             onClick={() => {
               if (metadata) {
-                setScenarioMetadata(metadata).then((response) => {
-                  console.log(response);
-                });
+                setScenarioMetadata(metadata).then((response) => {});
               }
             }}
           />
