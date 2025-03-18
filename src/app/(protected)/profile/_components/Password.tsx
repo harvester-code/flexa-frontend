@@ -32,7 +32,7 @@ export default function Password() {
         if (session?.user) {
           // 현재 활성화된 세션 목록 조회
           const { data: sessionData } = await supabase
-            .from('user_login_history2')
+            .from('user_login_history')
             .select('session_id')
             .eq('user_id', session.user.id)
             .order('logged_in_at', { ascending: false })
@@ -85,7 +85,7 @@ export default function Password() {
       console.log('현재 사용자 ID:', user.id); // 디버깅용
 
       const { data, error } = await supabase
-        .from('user_login_history2')
+        .from('user_login_history')
         .select('*')
         .eq('user_id', user.id)
         .order('logged_in_at', { ascending: false })

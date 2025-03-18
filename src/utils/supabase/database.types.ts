@@ -308,33 +308,6 @@ export type Database = {
       };
       user_login_history: {
         Row: {
-          created_at: string;
-          id: string;
-          ip_address: unknown;
-          updated_at: string;
-          user_agent: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at: string;
-          id: string;
-          ip_address: unknown;
-          updated_at: string;
-          user_agent: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          ip_address?: unknown;
-          updated_at?: string;
-          user_agent?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      user_login_history2: {
-        Row: {
           id: string;
           ip_address: string | null;
           logged_in_at: string | null;
