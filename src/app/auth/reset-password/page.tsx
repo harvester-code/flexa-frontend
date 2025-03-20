@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { resetPasswordAction } from '@/api/auth';
+import { resetPasswordAction } from '@/actions/auth';
 import { BackToLogin } from '@/components/BackToLogin';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/Input';

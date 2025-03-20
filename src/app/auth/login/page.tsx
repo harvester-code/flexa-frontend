@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getSavedEmail, signInAction } from '@/api/auth';
+import { getSavedEmail, signInAction } from '@/actions/auth';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';

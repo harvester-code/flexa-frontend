@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signUpAction } from '@/api/auth';
+import { signUpAction } from '@/actions/auth';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';

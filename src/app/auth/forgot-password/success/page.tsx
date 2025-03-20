@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { forgotPasswordAction } from '@/api/auth';
+import { forgotPasswordAction } from '@/actions/auth';
 import { SubmitButton } from '@/components/SubmitButton';
 
 function ForgotPasswordSuccessContent() {

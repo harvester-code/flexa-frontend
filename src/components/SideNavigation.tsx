@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { signOutAction } from '@/api/auth';
+import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
 import NavIcon01 from '@/components/icons/NavIcon01';
 import NavIcon02 from '@/components/icons/NavIcon02';
