@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { createScenario } from '@/api/simulations';
 import { popModal, pushModal } from '@/app/provider';
+import { createScenario } from '@/services/simulations';
+import { useUser } from '@/queries/userQueries';
 import Input from '@/components/Input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
-import { useUser } from '@/hooks/useUser';
 import { PopupAlert } from './PopupAlert';
 
 interface PopupProps {

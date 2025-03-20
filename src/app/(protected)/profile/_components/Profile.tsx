@@ -3,10 +3,10 @@
 import { useRef, useState } from 'react';
 import { useEffect } from 'react';
 import Image from 'next/image';
+import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { useToast } from '@/hooks/useToast';
-import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/utils/supabase/browser';
 
 export default function Profile() {

@@ -2,6 +2,7 @@
 
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { IConditionData, IConditionState, IDropdownItem } from '@/types/conditions';
 import Button from '@/components/Button';
 import {
   DropdownMenu,
@@ -13,15 +14,6 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
 
-export interface IDropdownItem {
-  id: string;
-  text: string;
-}
-
-export interface IOperatorItem extends IDropdownItem {
-  multiSelect: boolean;
-}
-
 interface IDropdownProps {
   defaultId?: string | Array<string>;
   items: IDropdownItem[];
@@ -30,21 +22,6 @@ interface IDropdownProps {
   disabled?: boolean;
   className?: string;
   label?: string;
-}
-
-export interface IConditionState {
-  criteria: string;
-  operator: string;
-  value: string[];
-  logic?: string;
-  logicVisible?: boolean;
-}
-
-export interface IConditionData {
-  logicItems: IDropdownItem[];
-  criteriaItems: IDropdownItem[];
-  operatorItems: { [criteriaId: string]: IOperatorItem[] };
-  valueItems: { [criteriaId: string]: IDropdownItem[] };
 }
 
 interface IConditionItemProps extends IConditionData {
@@ -72,10 +49,14 @@ function Dropdown({
   label,
 }: IDropdownProps) {
   const refDropdown: RefObject<HTMLDivElement | null> = useRef(null);
+
   const [initialized, setInitialized] = useState(false);
   const [selItems, setSelItems] = useState<Array<IDropdownItem>>([]);
+
   const { width } = useResize(refDropdown);
+
   const [openDropdownMenu, setOpenDropdownMenu] = useState(false);
+
   useEffect(() => {
     if (defaultId) {
       const selItems: { [key: string]: boolean } = {};
@@ -94,6 +75,7 @@ function Dropdown({
     }
     setInitialized(true);
   }, []);
+
   useEffect(() => {
     if (initialized) {
       if (!multiSelect && selItems.length > 1) {
@@ -103,6 +85,7 @@ function Dropdown({
       }
     }
   }, [multiSelect]);
+
   return (
     <div className="flex flex-col">
       <DropdownMenu open={openDropdownMenu} onOpenChange={setOpenDropdownMenu}>
@@ -148,12 +131,16 @@ function Dropdown({
               <div className="h-[30px]" />
             )}
           </div>
+
           <div className="flex-1" />
+
           <Image width={20} height={20} className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
         </div>
+
         <DropdownMenuTrigger asChild disabled={disabled}>
           <div />
         </DropdownMenuTrigger>
+
         <DropdownMenuContent className="max-h-[400px] cursor-pointer overflow-y-auto bg-white">
           {label ? <DropdownMenuLabel>{label}</DropdownMenuLabel> : null}
           {items?.map((itemCurrent: IDropdownItem, index: number) => {

@@ -8,17 +8,24 @@
   "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
   "importOrder": [
     "^@/styles/(.*)$",
-    "^react",
-    "^next",
+
+    "^react$",
+    "^next(?:/.*)?$",
     "<THIRD_PARTY_MODULES>",
 
-    "^@/api/(.*)$",
+    "^@/types/(.*)$",
     "^@/app/(.*)$",
+
+    "^@/api/(.*)$",
+    "^@/services/(.*)$",
+    "^@/stores/(.*)$",
+    "^@/queries/(.*)$",
+    "^@/constants/(.*)$",
+
     "^@/components/(.*)$",
     "^@/hooks/(.*)$",
     "^@/lib/(.*)$",
     "^@/utils/(.*)$",
-    "^@/store/(.*)$",
 
     "^[./]"
   ],

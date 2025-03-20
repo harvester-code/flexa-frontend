@@ -1,16 +1,23 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { OrbitProgress } from 'react-loading-indicators';
-import { Plot } from 'react-plotly.js';
 import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
-import { IConditionParams, getFlightSchedule } from '@/api/simulations';
+import { OrbitProgress } from 'react-loading-indicators';
+import { Plot } from 'react-plotly.js';
+import { IConditionParams, IDropdownItem, IOperatorItem } from '@/types/conditions';
+import { getFlightSchedule } from '@/services/simulations';
+import {
+  useSimulationFlighScheduleStore,
+  useSimulationMetadata,
+  useSimulationStore,
+} from '@/stores/simulation';
+import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
-import Conditions, { IDropdownItem, IOperatorItem } from '@/components/Conditions';
+import Conditions from '@/components/Conditions';
 import TabDefault from '@/components/TabDefault';
 import { Calendar } from '@/components/ui/Calendar';
 import {
@@ -21,12 +28,6 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/useResize';
-import { useUser } from '@/hooks/useUser';
-import {
-  useSimulationFlighScheduleStore,
-  useSimulationMetadata,
-  useSimulationStore,
-} from '@/store/zustand/simulation';
 
 const tabsSecondary: { text: string; number?: number }[] = [
   { text: 'Connect Cirium®' },
@@ -60,27 +61,33 @@ interface TabFlightScheduleProps {
 const parseConditions = (conditionData: IConditionParams[]) => {
   const logicItems: IDropdownItem[] = [{ id: 'AND', text: 'AND' }];
   const criteriaItems: IDropdownItem[] = [];
+
   const operatorItems: { [criteriaId: string]: IOperatorItem[] } = {};
   const valueItems: { [criteriaId: string]: IDropdownItem[] } = {};
+
   for (const criteriaCur of conditionData) {
     const idCur = criteriaCur.name;
+
     criteriaItems.push({ id: idCur, text: criteriaCur.name });
     criteriaCur.operator.map((val, index) => {
       if (val === '=') operatorItems[idCur] = [{ id: `O${index + 1}`, text: '=', multiSelect: false }];
       else if (val === 'is in')
         operatorItems[idCur] = [{ id: `O${index + 1}`, text: 'is in', multiSelect: true }];
     });
+
     valueItems[idCur] = [];
+
     for (const valueCur of criteriaCur.value) {
       valueItems[idCur].push({ id: valueCur, text: valueCur });
     }
   }
+
   return { logicItems, criteriaItems, operatorItems, valueItems };
 };
 
 export default function TabFlightSchedule({ simulationId }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
-  const { flight_sch, setFlightSchedule } = useSimulationMetadata();
+  const { setFlightSchedule, flight_sch } = useSimulationMetadata();
   const { tabIndex, setTabIndex } = useSimulationStore();
   const {
     chartData,
@@ -103,17 +110,22 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
   const { width } = useResize(refWidth);
 
   const { data: userInfo } = useUser();
+
   const conditions = flight_sch?.add_conditions;
   const chartDataCurrent = chartData?.data?.[selColorCriteria];
+
   const barColorsCurrent = !chartDataCurrent
     ? []
     : String(chartDataCurrent?.length) in BarColors
       ? BarColors[String(chartDataCurrent?.length)]
       : BarColors.DEFAULT;
+
   const loadFlightSchedule = useCallback(
     (first_load: boolean = true) => {
       if (!simulationId) return;
+
       setLoadingFlightSchedule(true);
+
       getFlightSchedule(simulationId, {
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
@@ -164,6 +176,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
   return (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Flight Schedule</h2>
+
       <TabDefault
         tabCount={tabsSecondary.length}
         currentTab={tabSecondary}
@@ -171,8 +184,10 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
         className={`tab-secondary mt-[25px] grid-cols-3`}
         // onTabChange={(tabIndex) => setTabSecondary(tabIndex)}
       />
+
       <div className="mt-[40px] flex items-center justify-between">
         <p className="text-xl font-semibold text-default-800">Load Flight Schedule Data</p>
+
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
@@ -192,6 +207,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
                 />
               </div>
             </PopoverTrigger>
+
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 toDate={new Date('2025-03-05')}
@@ -203,22 +219,23 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
               />
             </PopoverContent>
           </Popover>
+
           <Button
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-find.svg" alt="" />}
             text="Find Peak Day"
             onClick={() => {}}
           />
+
           <Button
             className="btn-md btn-primary"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             text="Load"
-            onClick={() => {
-              loadFlightSchedule();
-            }}
+            onClick={() => loadFlightSchedule()}
           />
         </div>
       </div>
+
       {loadingFlightSchedule ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
@@ -283,6 +300,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
               </DropdownMenu>
             </div>
           </div>
+
           <div className="mt-[10px] flex items-center justify-center rounded-md bg-white">
             <Plot
               data={chartDataCurrent
@@ -335,12 +353,15 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
           <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+
           <p className="title-sm" style={{ color: '#30374F' }}>
             Unable to load data
           </p>
+
           <p className="text-sm font-medium text-default-600">
             Please check the airport name or date and re-enter the information
           </p>
+
           <p className="mt-[50px] flex items-center justify-center gap-[10px]">
             <Button className="btn-md btn-default text-md" text="Clear Search" onClick={() => {}} />
             <Button
@@ -354,6 +375,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
       ) : (
         <div className="h-[100px]" />
       )}
+
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -362,6 +384,7 @@ export default function TabFlightSchedule({ simulationId }: TabFlightSchedulePro
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Scenario Overview</span>
         </button>
+
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}

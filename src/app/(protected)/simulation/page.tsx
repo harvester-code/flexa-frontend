@@ -1,19 +1,20 @@
 'use client';
 
 import React, { RefObject, createRef, useEffect, useState } from 'react';
-import { OrbitProgress } from 'react-loading-indicators';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { OrbitProgress } from 'react-loading-indicators';
 import {
   deleteScenario,
   deleteScenarioMulti,
   duplicateScenario,
   modifyScenario,
   setMasterScenario,
-  useScenarioList,
-} from '@/api/simulations';
+} from '@/services/simulations';
+import { useScenarios } from '@/queries/simulationQueries';
+import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -28,7 +29,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { useUser } from '@/hooks/useUser';
 
 interface IScenarioStates {
   name: string;
@@ -42,15 +42,18 @@ interface IScenarioStates {
 const SimulationPage: React.FC = () => {
   const queryClient = useQueryClient();
 
+  const pathname = usePathname();
+  const router = useRouter();
+
   const initialVisibleDiv: 'tag' | 'full' = 'tag';
   const [visibleDiv] = useState<'tag' | 'full'>(initialVisibleDiv);
+
   const [selectAll, setSelectAll] = useState(false);
   const [selected, setSelected] = useState<boolean[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const pathname = usePathname();
-  const router = useRouter();
+
   const { data: userInfo } = useUser();
-  const { scenarioList } = useScenarioList(userInfo?.groupId);
+  const { data: scenarioList } = useScenarios(userInfo?.groupId);
 
   useEffect(() => {
     if (scenarioList?.length > 0) {

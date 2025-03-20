@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Input from '@/components/Input';
-import { useSimulationMetadata, useSimulationStore } from '@/store/zustand/simulation';
 
 const PageRowAmount = 10;
 

@@ -44,9 +44,11 @@ const fetchUser = async () => {
   return user;
 };
 
-export const useUser = () => {
+const useUser = () => {
   return useQuery({
     queryKey: ['user'],
     queryFn: fetchUser,
   });
 };
+
+export { useUser };

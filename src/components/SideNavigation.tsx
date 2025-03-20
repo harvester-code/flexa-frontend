@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signOutAction } from '@/api/auth';
+import { useUser } from '@/queries/userQueries';
 import NavIcon01 from '@/components/icons/NavIcon01';
 import NavIcon02 from '@/components/icons/NavIcon02';
 import NavIcon03 from '@/components/icons/NavIcon03';
@@ -15,7 +16,6 @@ import NavIcon05 from '@/components/icons/NavIcon05';
 import NavIcon06 from '@/components/icons/NavIcon06';
 import SearchIcon from '@/components/icons/Search';
 import { Button } from '@/components/ui/Button';
-import { useUser } from '@/hooks/useUser';
 
 export default function SideNavigation() {
   const pathname = usePathname();

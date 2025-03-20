@@ -1,53 +1,13 @@
 import dayjs from 'dayjs';
 import { create } from 'zustand';
-import { IChartData } from '@/api/simulations';
-import { IConditionData, IConditionState } from '@/components/Conditions';
-
-export interface IScenarioHistory {
-  checkpoint: string;
-  updated_at?: string;
-  simulation: 'Done' | 'Yet';
-  memo: string;
-  error_count: number;
-}
-
-export interface IScenarioOverview {
-  date: string;
-  terminal: string;
-  analysis_type: string;
-  data_source: string;
-  flights: string;
-  passengers: string;
-  passengers_pattern: string;
-  generation_method: string;
-  check_in: string;
-  boarding_pass: string;
-  security: string;
-  passport: string;
-}
-
-export interface IFlightSchedule {
-  add_conditions: IConditionData;
-  add_priorities: IConditionData;
-
-  color_criteria: string;
-  conditions: IConditionState[];
-  airport: string;
-  date: Date;
-  conditions_visible: boolean;
-}
-
-export interface IScenarioMetadata {
-  id: number;
-  simulation_id: string;
-  overview: Partial<IScenarioOverview>;
-  flight_sch: Partial<IFlightSchedule>;
-  passenger_sch: { [key: string]: any };
-  passenger_attr: { [key: string]: any };
-  facility_conn: { [key: string]: any };
-  facility_info: { [key: string]: any };
-  history: IScenarioHistory[];
-}
+import { IConditionState } from '@/types/conditions';
+import {
+  IChartData,
+  IFlightSchedule,
+  IScenarioHistory,
+  IScenarioMetadata,
+  IScenarioOverview,
+} from '@/types/simulations';
 
 interface IScenarioMetadataZustand extends Partial<IScenarioMetadata> {
   setMetadata: (data: IScenarioMetadata) => void;
@@ -66,6 +26,7 @@ export const useSimulationMetadata = create<IScenarioMetadataZustand>((set, get)
     set(
       replace ? { overview } : { overview: { ...(get().overview || ({} as IScenarioOverview)), ...overview } }
     ),
+
   setFlightSchedule: (flight_sch, replace) =>
     set(
       replace
@@ -74,6 +35,7 @@ export const useSimulationMetadata = create<IScenarioMetadataZustand>((set, get)
     ),
 
   addHistoryItem: (item: IScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
+
   setHistoryItem: (item: IScenarioHistory, index: number) =>
     set({ history: get()?.history?.map((val, idx) => (idx == index ? item : val)) }),
 }));

@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import { getScenarioMetadata, setMasterScenario, setScenarioMetadata } from '@/api/simulations';
+import { IScenarioHistory } from '@/types/simulations';
+import { getScenarioMetadata, setScenarioMetadata } from '@/services/simulations';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
-import { IScenarioHistory, useSimulationMetadata, useSimulationStore } from '@/store/zustand/simulation';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -62,7 +63,9 @@ export default function SimulationDetail(props) {
   const params: { id: string } = React.use(props?.params);
   const router = useRouter();
   const metadata = useSimulationMetadata();
+
   const { tabIndex, setTabIndex, setCheckpoint } = useSimulationStore();
+
   useEffect(() => {
     getScenarioMetadata({ simulation_id: params?.id }).then((response) => {
       const clientTime = dayjs();

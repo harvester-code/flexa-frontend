@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useUser } from '@/queries/userQueries';
 import TabDefault from '@/components/TabDefault';
-import { useUser } from '@/hooks/useUser';
 import Password from './_components/Password';
 import Profile from './_components/Profile';
 
