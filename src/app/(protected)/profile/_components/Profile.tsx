@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/utils/supabase/browser';
 

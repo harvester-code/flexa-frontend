@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { useResize } from '@/hooks/use-resize';
+import { useResize } from '@/hooks/useResize';
 
 export interface IDropdownItem {
   id: string;

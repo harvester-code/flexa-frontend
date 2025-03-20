@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { useResize } from '@/hooks/use-resize';
+import { useResize } from '@/hooks/useResize';
 import { useUser } from '@/hooks/useUser';
 import {
   useSimulationFlighScheduleStore,
