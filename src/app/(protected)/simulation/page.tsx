@@ -4,8 +4,8 @@ import React, { RefObject, createRef, useEffect, useState } from 'react';
 import { OrbitProgress } from 'react-loading-indicators';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { queryClient } from '@/api/query-client';
 import {
   deleteScenario,
   deleteScenarioMulti,
@@ -40,6 +40,8 @@ interface IScenarioStates {
 }
 
 const SimulationPage: React.FC = () => {
+  const queryClient = useQueryClient();
+
   const initialVisibleDiv: 'tag' | 'full' = 'tag';
   const [visibleDiv] = useState<'tag' | 'full'>(initialVisibleDiv);
   const [selectAll, setSelectAll] = useState(false);
