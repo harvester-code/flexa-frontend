@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Menu, MenuItem } from '@mui/material';
-import Button from '@/components/Button';
+import { CircleSmall } from 'lucide-react';
+import { Button, ButtonGroup } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
+import { cn } from '@/lib/utils';
 
 function FacilityPassengerAnalysis() {
-  const [colorAnchorEl, setColorAnchorEl] = useState<HTMLElement | null>(null);
-  const handleColorClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setColorAnchorEl(event.currentTarget);
-  };
-  const handleColorClose = () => {
-    setColorAnchorEl(null);
-  };
-
   const formatTime = (value: number) => {
     const hours = Math.floor(value);
     const minutes = Math.round((value % 1) * 60);
@@ -29,9 +22,37 @@ function FacilityPassengerAnalysis() {
     { id: 5, Airline: 'Jeju Air(7C)', Pax: '33' },
   ];
 
+  const BUTTONS_1 = [
+    'Airline',
+    'Destination',
+    'Flight Number',
+    'Check-In Counter',
+    'Ticket Issuance',
+    'Baggage Check-In',
+    'Departure Gate',
+  ];
+  const [activeButtonIndex, setActiveButtonIndex] = useState<number>(0);
+
+  const BUTTONS_2 = ['Queue Length', 'Waiting Time', 'Throughput', 'Facility Efficiency'];
+  const [activeButtonIndex2, setActiveButtonIndex2] = useState<number>(0);
+
   return (
     <div className="my-[30px]">
       <div className="flex justify-between">
+        <dl className="flex flex-col gap-2.5">
+          <dt className="text-xl font-semibold leading-none text-default-800">
+            Number of people excluded from analysis
+          </dt>
+          <dd className="font-medium leading-none text-default-600">
+            Number of passengers who used mobile Check-In and did not use Baggage Check-In service at the
+            airport during the analysis period.
+          </dd>
+        </dl>
+
+        <p className="text-xl font-semibold text-default-900">0 Pax (0% of the total)</p>
+      </div>
+
+      <div className="mt-8 flex justify-between">
         <dl className="flex flex-col gap-2.5">
           <dt className="text-xl font-semibold leading-none text-default-800">
             Check-In Counter Zone Top View
@@ -43,12 +64,8 @@ function FacilityPassengerAnalysis() {
         </dl>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
-            text="Color Criteria"
-            onClick={handleColorClick}
-          />
+          {/* Color Criteria */}
+          {/* <Button />
           <Menu
             anchorEl={colorAnchorEl}
             open={Boolean(colorAnchorEl)}
@@ -57,13 +74,13 @@ function FacilityPassengerAnalysis() {
               className: 'sub-menu !w-150',
             }}
           >
-            <MenuItem onClick={() => {}}>Airline</MenuItem>
-            <MenuItem onClick={() => {}}>Age</MenuItem>
-            <MenuItem onClick={() => {}}>Sex</MenuItem>
-            <MenuItem onClick={() => {}}>Destination</MenuItem>
-            <MenuItem onClick={() => {}}>Nationality</MenuItem>
-            <MenuItem onClick={() => {}}>Flight Number</MenuItem>
-          </Menu>
+            <MenuItem>Airline</MenuItem>
+            <MenuItem>Age</MenuItem>
+            <MenuItem>Sex</MenuItem>
+            <MenuItem>Destination</MenuItem>
+            <MenuItem>Nationality</MenuItem>
+            <MenuItem>Flight Number</MenuItem>
+          </Menu> */}
         </div>
       </div>
 
@@ -161,21 +178,7 @@ function FacilityPassengerAnalysis() {
             </div>
           </div>
 
-          <div className="mt-5 flex justify-between">
-            <dl className="flex flex-col gap-2.5">
-              <dt className="text-xl font-semibold leading-none text-default-800">
-                Number of people excluded from analysis
-              </dt>
-              <dd className="font-medium leading-none text-default-600">
-                Number of passengers who used mobile Check-In and did not use Baggage Check-In service at the
-                airport during the analysis period.
-              </dd>
-            </dl>
-
-            <p className="text-xl font-semibold text-default-900">0 Pax (0% of the total)</p>
-          </div>
-
-          <div className="mt-2.5">
+          <div>
             <Slider defaultValue={[50]} />
           </div>
         </div>
@@ -194,66 +197,27 @@ function FacilityPassengerAnalysis() {
       </div>
 
       <div className="mt-10 rounded-md border border-default-200 p-5">
-        <div className="flex items-center">
-          <Button
-            className="btn-default active"
-            icon={<Image width={20} height={20} src="/image/ico-dot-accent.svg" alt="" />}
-            text="Airline"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-orange.svg" alt="" />}
-            text="Destination"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Flight Number"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Check-In Counter"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Ticket Issuance"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Baggage Check-In"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Departure Gate"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Apron Number"
-            onClick={() => {}}
-          />
-        </div>
+        <ButtonGroup>
+          {BUTTONS_1.map((text, idx) => (
+            <Button
+              className={cn(activeButtonIndex === idx ? 'bg-gray-50' : '', 'px-4 py-2')}
+              variant="outline"
+              key={idx}
+              onClick={() => setActiveButtonIndex(idx)}
+            >
+              {activeButtonIndex === idx && <CircleSmall fill="#111" className="!h-2.5 !w-2.5" />}
+              {text}
+            </Button>
+          ))}
+        </ButtonGroup>
 
-        <div className="mt-mb-10 mb-10 text-xl font-semibold text-default-900">
-          Total Queue Length: 15,681 Pax
-        </div>
+        <div className="my-10 text-xl font-semibold text-default-900">Total Queue Length: 15,681 Pax</div>
 
-        <div className="gap-90 flex items-end justify-between">
-          <div className="">API AREA</div>
+        <div className="flex border border-rose-600">
+          <div>API AREA</div>
 
-          <div className="overflow-hidden rounded-md border border-default-300" style={{ maxWidth: '50%' }}>
-            <table className="">
+          <div className="rounded-md border border-default-300">
+            <table>
               <colgroup>
                 <col className="w-90" />
                 <col className="w-auto" />
@@ -297,13 +261,7 @@ function FacilityPassengerAnalysis() {
         </dl>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
-            text="Color Criteria"
-            onClick={handleColorClick}
-          />
-
+          {/* <Button />
           <Menu
             anchorEl={colorAnchorEl}
             open={Boolean(colorAnchorEl)}
@@ -312,43 +270,30 @@ function FacilityPassengerAnalysis() {
               className: 'sub-menu !w-150',
             }}
           >
-            <MenuItem onClick={() => {}}>Airline</MenuItem>
-            <MenuItem onClick={() => {}}>Age</MenuItem>
-            <MenuItem onClick={() => {}}>Sex</MenuItem>
-            <MenuItem onClick={() => {}}>Destination</MenuItem>
-            <MenuItem onClick={() => {}}>Nationality</MenuItem>
-            <MenuItem onClick={() => {}}>Flight Number</MenuItem>
-          </Menu>
+            <MenuItem>Airline</MenuItem>
+            <MenuItem>Age</MenuItem>
+            <MenuItem>Sex</MenuItem>
+            <MenuItem>Destination</MenuItem>
+            <MenuItem>Nationality</MenuItem>
+            <MenuItem>Flight Number</MenuItem>
+          </Menu> */}
         </div>
       </div>
 
       <div className="mt-10 rounded-md border border-default-200 p-5">
-        <div className="flex items-center">
-          <Button
-            className="btn-default active"
-            icon={<Image width={20} height={20} src="/image/ico-dot-accent.svg" alt="" />}
-            text="Queue Length"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-orange.svg" alt="" />}
-            text="Waiting Time"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Throughput"
-            onClick={() => {}}
-          />
-          <Button
-            className="btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-dot-green.svg" alt="" />}
-            text="Facility Efficiency"
-            onClick={() => {}}
-          />
-        </div>
+        <ButtonGroup>
+          {BUTTONS_2.map((text, idx) => (
+            <Button
+              className={cn(activeButtonIndex2 === idx ? 'bg-gray-50' : '', 'px-4 py-2')}
+              variant="outline"
+              key={idx}
+              onClick={() => setActiveButtonIndex2(idx)}
+            >
+              {activeButtonIndex2 === idx && <CircleSmall fill="#111" className="!h-2.5 !w-2.5" />}
+              {text}
+            </Button>
+          ))}
+        </ButtonGroup>
 
         <div className="rounded-md bg-white">API AREA</div>
       </div>
