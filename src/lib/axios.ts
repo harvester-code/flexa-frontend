@@ -3,12 +3,12 @@ import { createClient } from '@/utils/supabase/browser';
 
 export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 
-const api = axios.create({
+const instanceWithAuth = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use(
+instanceWithAuth.interceptors.request.use(
   async (config) => {
     const supabase = createClient();
 
@@ -27,4 +27,4 @@ api.interceptors.request.use(
   }
 );
 
-export default api;
+export { instanceWithAuth };

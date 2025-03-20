@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from '@/lib/axios';
 import { IScenarioMetadata } from '@/store/zustand/simulation';
+import { instanceWithAuth } from '@/lib/axios';
 
 export interface IConditionParams {
   name: string;
@@ -37,8 +37,10 @@ interface IScenariosDataResponse {
   user_scenario: IScenarioData[];
 }
 
+const BASE_URL = '/api/v1/simulations';
+
 export const getScenarioList = (group_id?: number) =>
-  axios.get<IScenariosDataResponse>(`/api/v1/simulations/scenario?group_id=${group_id}`);
+  instanceWithAuth.get<IScenariosDataResponse>(`${BASE_URL}/scenario?group_id=${group_id}`);
 
 export const useScenarioList = (group_id?: number) => {
   const response = useQuery({
@@ -68,22 +70,22 @@ export const createScenario = (params: {
   editor: string;
   memo: string;
   group_id: string;
-}) => axios.post('/api/v1/simulations/scenario', params);
+}) => instanceWithAuth.post(`${BASE_URL}/scenario`, params);
 
 export const modifyScenario = (params: { id: string; simulation_name?: string; memo?: string }) =>
-  axios.patch('/api/v1/simulations/scenario', params);
+  instanceWithAuth.patch(`${BASE_URL}/scenario`, params);
 
 export const deleteScenario = (params: { scenario_id: string }) =>
-  axios.patch(`/api/v1/simulations/scenario/deactivate?${new URLSearchParams(params).toString()}`);
+  instanceWithAuth.patch(`${BASE_URL}/scenario/deactivate?${new URLSearchParams(params).toString()}`);
 
 export const deleteScenarioMulti = (params: { scenario_ids: string[] }) =>
-  axios.patch(`/api/v1/simulations/scenario/deactivate/multiple`, params);
+  instanceWithAuth.patch(`${BASE_URL}/scenario/deactivate/multiple`, params);
 
 export const duplicateScenario = (params: { scenario_id: string; editor: string }) =>
-  axios.post(`/api/v1/simulations/scenario/duplicate?${new URLSearchParams(params).toString()}`);
+  instanceWithAuth.post(`${BASE_URL}/scenario/duplicate?${new URLSearchParams(params).toString()}`);
 
 export const setMasterScenario = (params: { group_id: string; scenario_id: string }) =>
-  axios.patch(`/api/v1/simulations/scenario/master?${new URLSearchParams(params).toString()}`);
+  instanceWithAuth.patch(`${BASE_URL}/scenario/master?${new URLSearchParams(params).toString()}`);
 
 interface IScenarioMetadataResponse {
   checkpoint: string;
@@ -91,12 +93,12 @@ interface IScenarioMetadataResponse {
 }
 
 export const getScenarioMetadata = (params: { simulation_id: string }) =>
-  axios.get<IScenarioMetadataResponse>(
-    `/api/v1/simulations/scenario/metadata?${new URLSearchParams(params).toString()}`
+  instanceWithAuth.get<IScenarioMetadataResponse>(
+    `${BASE_URL}/scenario/metadata?${new URLSearchParams(params).toString()}`
   );
 
 export const setScenarioMetadata = (params: Partial<Omit<IScenarioMetadata, 'id'>>) =>
-  axios.put(`/api/v1/simulations/scenario/metadata`, params);
+  instanceWithAuth.put(`${BASE_URL}/scenario/metadata`, params);
 
 export interface IFlightScheduleResponse {
   add_conditions: Array<IConditionParams>;
@@ -119,7 +121,7 @@ export const getFlightSchedule = (
     }>;
   }
 ) =>
-  axios.post<IFlightScheduleResponse>(
-    `/api/v1/simulations/flight-schedule?simulation_id=${simulation_id}`,
+  instanceWithAuth.post<IFlightScheduleResponse>(
+    `${BASE_URL}/flight-schedule?simulation_id=${simulation_id}`,
     params
   );
