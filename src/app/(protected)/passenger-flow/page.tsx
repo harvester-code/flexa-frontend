@@ -20,13 +20,11 @@ function PassengerFlowPage() {
     <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Passenger Flow" />
 
-      <div className="mt-8 text-lg">개발 진행중입니다.</div>
-
-      {/* {mapUrl ? (
+      {mapUrl ? (
         <iframe src={mapUrl} width="100%" height={800} loading="lazy" referrerPolicy="no-referrer"></iframe>
       ) : (
-        <div>Loading...</div>
-      )} */}
+        <div className="mt-8 text-lg">개발 진행중입니다.</div>
+      )}
     </div>
   );
 }
