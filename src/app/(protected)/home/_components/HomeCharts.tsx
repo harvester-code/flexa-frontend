@@ -132,7 +132,6 @@ function HomeCharts() {
             <div className="flex items-center justify-between">
               <SelectBox
                 className="!min-w-60"
-                defaultValue=""
                 options={[
                   'All Facilities',
                   'Check-in',
@@ -207,7 +206,6 @@ function HomeCharts() {
             <div className="flex items-center justify-between">
               <SelectBox
                 className="!min-w-60"
-                defaultValue=""
                 options={[
                   'All Facilities',
                   'Check-in',
@@ -279,7 +277,6 @@ function HomeCharts() {
                   <SelectBox
                     className="select-sm"
                     options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                    defaultValue=""
                   />
                 </div>
               </div>
@@ -290,7 +287,6 @@ function HomeCharts() {
                   <SelectBox
                     className="select-sm"
                     options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                    defaultValue="Old, New"
                   />
                 </div>
               </div>
@@ -301,7 +297,6 @@ function HomeCharts() {
                   <SelectBox
                     className="select-sm"
                     options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                    defaultValue="Manual, Automated"
                   />
                 </div>
               </div>

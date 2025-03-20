@@ -2,10 +2,12 @@
 
 // TODO: CSS 모듈화하기
 import '@/styles/home.css';
-import { useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useScenarios } from '@/queries/simulationQueries';
+import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
 import SimulationOverview from '@/components/popups/SimulationOverview';
 import { MultipleSlider } from '@/components/ui/MultipleSlider';
@@ -20,6 +22,36 @@ function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [range1, setRange1] = useState<number>(4);
   const [range2, setRange2] = useState<number[]>([4, 20]);
+
+  const [selectedScenario, setSelectedScenario] = useState<string[]>([]);
+  const [selectBoxOptions, setSelectBoxOptions] = useState<string[]>([]);
+
+  const { data: user } = useUser();
+  const { data: scenariosData } = useScenarios(user?.groupId);
+
+  const scenarios = useMemo(
+    () => (scenariosData ? [...scenariosData.master_scenario, ...scenariosData.user_scenario] : []),
+    [scenariosData]
+  );
+
+  // ========================================================
+  // TEMP
+  const [tempData, setTempData] = useState(false);
+  const fetchData = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setSelectBoxOptions(['Check-in', 'Security']);
+    return true;
+  };
+
+  const [isPending, startTransition] = useTransition();
+  const handleData = () => {
+    startTransition(async () => {
+      const data = await fetchData();
+      setTempData(data);
+    });
+  };
+  // ========================================================
 
   const handleTabClick = (index: number) => {
     setActiveIndex(index);
@@ -39,7 +71,14 @@ function HomePage() {
     <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Home" />
 
-      <SimulationOverview className="mt-[30px]" selectedItem={['Scenario > ICN_T2_Rev2.project']} />
+      <SimulationOverview
+        className="mt-[30px]"
+        items={scenarios}
+        selectedScenario={selectedScenario}
+        onSelectedScenario={setSelectedScenario}
+        // onFetchData={handleData}
+        // isPending={isPending}
+      />
 
       {/* ==================================================================================================== */}
 

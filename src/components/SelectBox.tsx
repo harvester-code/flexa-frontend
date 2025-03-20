@@ -7,22 +7,22 @@ import { cn } from '@/lib/utils';
 import styles from './SelectBox.module.css';
 
 interface SelectBoxProps {
-  options: string[];
   className?: string;
-  defaultValue?: string;
+  options: any[];
+  selectedOption?: any;
+  onSelectedOption?: any;
 }
 
-const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue }) => {
+const SelectBox: React.FC<SelectBoxProps> = ({ options, className, selectedOption, onSelectedOption }) => {
   const [isActive, setIsActive] = useState(false);
-  const [selectedValue, setSelectedValue] = useState(defaultValue || options[0] || '');
   const selectBoxRef = useRef<HTMLDivElement | null>(null);
 
   const toggleActive = () => {
     setIsActive(!isActive);
   };
 
-  const handleSelect = (value: string) => {
-    setSelectedValue(value);
+  const handleSelect = (value: any) => {
+    onSelectedOption(value);
     setIsActive(false);
   };
 
@@ -39,6 +39,7 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue 
     };
   }, []);
 
+  // FIXME: 컴포넌트 개선하기
   // FIXME: Tailwind css로 변경하기
   return (
     <div
@@ -46,13 +47,13 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, defaultValue 
       className={cn(styles.selectBox, isActive && styles['active'], className, className && styles[className])}
       onClick={toggleActive}
     >
-      <div className={cn(styles.selectLine)}>{selectedValue}</div>
+      <div className={cn(styles.selectLine)}>{selectedOption?.label}</div>
 
       <div className={cn(styles.selectItem)}>
         <ul className={cn(styles.selectOptionCont)}>
-          {options.map((option, index) => (
+          {options?.map((option, index) => (
             <li className={cn(styles.selectOptionItem)} key={index} onClick={() => handleSelect(option)}>
-              <button className={cn(styles.selectOptionBtn)}>{option}</button>
+              <button className={cn(styles.selectOptionBtn)}>{option.label}</button>
             </li>
           ))}
         </ul>

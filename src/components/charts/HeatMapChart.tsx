@@ -3,7 +3,7 @@ import Plotly from 'plotly.js-dist-min';
 
 interface HeatMapChartProps {
   chartData: Plotly.Data[];
-  chartLayout: Partial<Plotly.Layout>;
+  chartLayout?: Partial<Plotly.Layout>;
 }
 
 function HeatMapChart({ chartData, chartLayout }: HeatMapChartProps) {
