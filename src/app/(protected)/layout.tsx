@@ -6,7 +6,7 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     <>
       <SideNavigation />
       <main className="relative ml-[100px]">
-        <section className="min-h-[100svh]">{children}</section>
+        <section className="min-h-svh">{children}</section>
         <Footer />
       </main>
     </>
