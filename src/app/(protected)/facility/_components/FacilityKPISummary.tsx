@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { ChevronDown } from 'lucide-react';
+import { AppDropdownMenu } from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
-import SelectBox from '@/components/SelectBox';
 import AppTable from '@/components/Table';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 
@@ -33,6 +34,9 @@ function FacilityKPISummary({
   const [chartType, setChartType] = useState(false);
 
   const [activeLineCharts, setActiveLineCharts] = useState<number[]>([0]);
+
+  const KPI_FUNC = ['Average', 'Maximum', 'Top 5%', 'Total', 'Median', 'Bottom 5%', 'Minimum'];
+  const [selectedKPIFunc, setSelectedKPIFunc] = useState(KPI_FUNC[0]);
 
   const handleActiveLineCharts = (selectedButton: number) => {
     setActiveLineCharts((prevData) => {
@@ -169,8 +173,12 @@ function FacilityKPISummary({
             </dl>
 
             <div className="flex items-center gap-2.5">
-              <SelectBox
-                options={['Average', 'Maximum', 'Top 5%', 'Total', 'Median', 'Bottom 5%', 'Minimum']}
+              <AppDropdownMenu
+                className="min-w-[120px]"
+                icon={<ChevronDown />}
+                items={['Average', 'Maximum', 'Top 5%', 'Total', 'Median', 'Bottom 5%', 'Minimum']}
+                label={selectedKPIFunc}
+                onSelect={setSelectedKPIFunc}
               />
             </div>
           </div>
