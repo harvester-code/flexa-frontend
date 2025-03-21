@@ -31,9 +31,9 @@ function FacilityPage() {
 
   // ========================================================
   const { data: processesData } = useProcesses(selectedScenario[0]?.id);
-  const { data: kpiSummaryData } = useKPISummary(selectedOption.value, 'mean');
-  const { data: kpiLineChartData } = useKPILineChart(selectedOption.value);
-  const { data: kpiHeatMapChartData } = useKPIHeatMapChart(selectedOption.value);
+  const { data: kpiSummaryData } = useKPISummary(selectedOption.value, 'mean', selectedScenario[0]?.id);
+  const { data: kpiLineChartData } = useKPILineChart(selectedOption.value, selectedScenario[0]?.id);
+  const { data: kpiHeatMapChartData } = useKPIHeatMapChart(selectedOption.value, selectedScenario[0]?.id);
 
   // ========================================================
   useEffect(() => {

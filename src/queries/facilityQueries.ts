@@ -6,7 +6,7 @@ import {
   fetchProcesses,
 } from '@/services/facilities';
 
-const useProcesses = (scenarioId?: unknown) => {
+const useProcesses = (scenarioId: string) => {
   return useQuery({
     queryKey: ['facilities', scenarioId],
     queryFn: async () => {
@@ -17,36 +17,36 @@ const useProcesses = (scenarioId?: unknown) => {
   });
 };
 
-const useKPISummary = (process: string, func: 'mean') => {
+const useKPISummary = (process: string, func: 'mean', scenarioId: number) => {
   return useQuery({
-    queryKey: ['kpi-summary', process, func],
+    queryKey: ['kpi-summary', process, func, scenarioId],
     queryFn: async () => {
-      const { data } = await fetchKPISummary(process, func);
+      const { data } = await fetchKPISummary(process, func, scenarioId);
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId,
   });
 };
 
-const useKPILineChart = (process: string) => {
+const useKPILineChart = (process: string, scenarioId: number) => {
   return useQuery({
-    queryKey: ['kpi-line-chart', process],
+    queryKey: ['kpi-line-chart', process, scenarioId],
     queryFn: async () => {
-      const { data } = await fetchKPILineChart(process);
+      const { data } = await fetchKPILineChart(process, scenarioId);
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId,
   });
 };
 
-const useKPIHeatMapChart = (process: string) => {
+const useKPIHeatMapChart = (process: string, scenarioId: number) => {
   return useQuery({
-    queryKey: ['kpi-heat-map-chart', process],
+    queryKey: ['kpi-heat-map-chart', process, scenarioId],
     queryFn: async () => {
-      const { data } = await fetchKPIHeatMapChart(process);
+      const { data } = await fetchKPIHeatMapChart(process, scenarioId);
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId,
   });
 };
 
