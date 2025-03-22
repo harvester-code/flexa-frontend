@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-interface LineChartProps {
+interface BarChartProps {
   chartData: Plotly.Data[];
   chartLayout?: Partial<Plotly.Layout>;
 }
 
-function LineChart({ chartData, chartLayout }: LineChartProps) {
+function BarChart({ chartData, chartLayout }: BarChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -21,4 +21,4 @@ function LineChart({ chartData, chartLayout }: LineChartProps) {
   return <div ref={chartRef}></div>;
 }
 
-export default LineChart;
+export default BarChart;

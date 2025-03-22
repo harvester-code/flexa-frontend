@@ -6,47 +6,55 @@ import {
   fetchProcesses,
 } from '@/services/facilities';
 
-const useProcesses = (scenarioId: string) => {
+const useProcesses = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['facilities', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchProcesses(scenarioId);
+      const { data } = await fetchProcesses({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,
   });
 };
 
-const useKPISummary = (process: string, func: 'mean', scenarioId: number) => {
+const useKPISummary = ({
+  scenarioId,
+  process,
+  func,
+}: {
+  scenarioId?: string;
+  process?: string;
+  func: string;
+}) => {
   return useQuery({
-    queryKey: ['kpi-summary', process, func, scenarioId],
+    queryKey: ['kpi-summary', scenarioId, process, func],
     queryFn: async () => {
-      const { data } = await fetchKPISummary(process, func, scenarioId);
+      const { data } = await fetchKPISummary({ scenarioId, func, process });
       return data;
     },
-    enabled: !!scenarioId,
+    enabled: !!scenarioId && !!process,
   });
 };
 
-const useKPILineChart = (process: string, scenarioId: number) => {
+const useKPILineChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return useQuery({
-    queryKey: ['kpi-line-chart', process, scenarioId],
+    queryKey: ['kpi-line-chart', scenarioId, process],
     queryFn: async () => {
-      const { data } = await fetchKPILineChart(process, scenarioId);
+      const { data } = await fetchKPILineChart({ scenarioId, process });
       return data;
     },
-    enabled: !!scenarioId,
+    enabled: !!scenarioId && !!process,
   });
 };
 
-const useKPIHeatMapChart = (process: string, scenarioId: number) => {
+const useKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return useQuery({
-    queryKey: ['kpi-heat-map-chart', process, scenarioId],
+    queryKey: ['kpi-heat-map-chart', scenarioId, process],
     queryFn: async () => {
-      const { data } = await fetchKPIHeatMapChart(process, scenarioId);
+      const { data } = await fetchKPIHeatMapChart({ scenarioId, process });
       return data;
     },
-    enabled: !!scenarioId,
+    enabled: !!scenarioId && !!process,
   });
 };
 

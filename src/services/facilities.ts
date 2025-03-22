@@ -1,25 +1,35 @@
+import { AxiosResponse } from 'axios';
+import { Option } from '@/types/commons';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = '/api/v1/facilities';
 
 // TODO: 타입 선언하기
-const fetchProcesses = (scenario_id: string) => {
-  return instanceWithAuth.get(`${BASE_URL}/processes/scenario-id/${scenario_id}`);
+const fetchProcesses = ({ scenarioId }: { scenarioId?: string }): Promise<AxiosResponse<Option[]>> => {
+  return instanceWithAuth.get(`${BASE_URL}/processes/scenario-id/${scenarioId}`);
 };
 
-const fetchKPISummary = (process: string, func: 'mean', scenarioId: number) => {
+const fetchKPISummary = ({
+  scenarioId,
+  func,
+  process,
+}: {
+  scenarioId?: string;
+  func: string;
+  process?: string;
+}) => {
   return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/tables/kpi/scenario-id/${scenarioId}`, {
     params: { process, func },
   });
 };
 
-const fetchKPILineChart = (process: string, scenarioId: number) => {
+const fetchKPILineChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/charts/line/scenario-id/${scenarioId}`, {
     params: { process },
   });
 };
 
-const fetchKPIHeatMapChart = (process: string, scenarioId: number) => {
+const fetchKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/charts/heat-map/scenario-id/${scenarioId}`, {
     params: { process },
   });
