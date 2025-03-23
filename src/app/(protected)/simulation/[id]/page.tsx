@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import { IScenarioHistory } from '@/types/simulations';
-import { getScenarioMetadata, setScenarioMetadata } from '@/services/simulations';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
@@ -17,8 +14,11 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
+import { ScenarioHistory } from '@/types/simulations';
 
-const dummyHistoryData: IScenarioHistory[] = [
+const dummyHistoryData: ScenarioHistory[] = [
   {
     checkpoint: '2025-03-01 00:00:00',
     updated_at: '2025-03-02 10:00:00',
@@ -67,7 +67,8 @@ export default function SimulationDetail(props) {
   const { tabIndex, setTabIndex, setCheckpoint } = useSimulationStore();
 
   useEffect(() => {
-    getScenarioMetadata({ simulation_id: params?.id }).then((response) => {
+    getScenarioMetadata(params?.id).then((response) => {
+      console.log(response);
       const clientTime = dayjs();
       const serverTime = dayjs(response?.data?.checkpoint);
       setCheckpoint(response?.data?.checkpoint, clientTime.diff(serverTime, 'second'));
@@ -77,7 +78,9 @@ export default function SimulationDetail(props) {
       });
     });
   }, [params?.id]);
-
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [tabIndex])
   return (
     <div>
       <ContentsHeader text="Simulation" />
@@ -103,7 +106,9 @@ export default function SimulationDetail(props) {
             text="Save"
             onClick={() => {
               if (metadata) {
-                setScenarioMetadata(metadata).then((response) => {});
+                updateScenarioMetadata().then((response) => {
+                  console.log(response);
+                });
               }
             }}
           />
@@ -116,21 +121,13 @@ export default function SimulationDetail(props) {
         className={`mt-[40px] grid-cols-7`}
         onTabChange={(index) => setTabIndex(index)}
       />
-      {tabIndex == 0 ? (
-        <TabScenarioOverview />
-      ) : tabIndex == 1 ? (
-        <TabFlightSchedule simulationId={params?.id} />
-      ) : tabIndex == 2 ? (
-        <TabPassengerSchedule />
-      ) : tabIndex == 3 ? (
-        <TabProcessingProcedures />
-      ) : tabIndex == 4 ? (
-        <TabFacilityConnection />
-      ) : tabIndex == 5 ? (
-        <TabFacilityInformation />
-      ) : tabIndex == 6 ? (
-        <TabSimulation />
-      ) : null}
+      <TabScenarioOverview visible={tabIndex == 0} />
+      <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
+      <TabPassengerSchedule visible={tabIndex == 2} />
+      <TabProcessingProcedures visible={tabIndex == 3} />
+      <TabFacilityConnection visible={tabIndex == 4} />
+      <TabFacilityInformation visible={tabIndex == 5} />
+      <TabSimulation visible={tabIndex == 6} />
     </div>
   );
 }

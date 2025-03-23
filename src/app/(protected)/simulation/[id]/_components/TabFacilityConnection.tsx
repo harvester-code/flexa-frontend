@@ -10,74 +10,126 @@ import ContentsHeader from '@/components/ContentsHeader';
 import CustomSelectBox from '@/components/CustomSelectBox';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import Tooltip from '@/components/Tooltip';
 
-const Tooltip = (props: any) => {
-  return <div></div>;
-};
+interface NodeInfo { text: string; number?: number }
+
+const TableTypes = ['Check-box', 'Probability (%)']; // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
+
+const tableData = [
+  {
+    id: 1,
+    Airline: 'RS',
+    Method: 'RS',
+    e: 'RS',
+    f: 'RS',
+  },
+  {
+    id: 2,
+    Airline: 'TW',
+    Method: 'TW',
+    e: 'TW',
+    f: 'TW',
+  },
+  {
+    id: 3,
+    Airline: 'BX',
+    Method: 'BX',
+    e: 'BX',
+    f: 'BX',
+  },
+  {
+    id: 4,
+    Airline: 'ZE',
+    Method: 'ZE',
+    e: 'ZE',
+    f: 'ZE',
+  },
+];
+
+const attributeData = [
+  {
+    id: 1,
+    category: 'Zone A',
+    dg1: '10%',
+    dg2: '35%',
+    dg3: '55%',
+    dg4: '10%',
+    dg5: '10%',
+    dg6: '10%',
+  },
+  {
+    id: 2,
+    category: 'Zone B',
+    dg1: '10%',
+    dg2: '35%',
+    dg3: '55%',
+    dg4: '10%',
+    dg5: '10%',
+    dg6: '10%',
+  },
+  {
+    id: 3,
+    category: 'Zone C',
+    dg1: '10%',
+    dg2: '35%',
+    dg3: '55%',
+    dg4: '10%',
+    dg5: '10%',
+    dg6: '10%',
+  },
+  {
+    id: 4,
+    category: 'Zone D',
+    dg1: '10%',
+    dg2: '35%',
+    dg3: '55%',
+    dg4: '10%',
+    dg5: '10%',
+    dg6: '10%',
+  },
+];
+
+const rows: Row[] = [
+  { airline: 'OZ', checkboxes: [] },
+  { airline: '7C', checkboxes: [] },
+  { airline: 'JL', checkboxes: [] },
+  { airline: 'BX', checkboxes: [] },
+  { airline: 'RS', checkboxes: [] },
+  { airline: 'SQ', checkboxes: [] },
+  { airline: 'TG', checkboxes: [] },
+  { airline: 'VN', checkboxes: [] },
+];
 
 type Row = {
   airline: string;
   checkboxes: boolean[];
 };
 
-const FacilityConnection: React.FC = () => {
-  const [addConditions, setAddConditions] = useState(true);
-  const tabs: { text: string; number?: number }[] = [
-    { text: 'Scenario Overview' },
-    { text: 'Flight Schedule' },
-    { text: 'Passenger Schedule' },
-    { text: 'Processing Procedures' },
-    { text: 'Facility Connection', number: 2 },
-    { text: 'Facility Information' },
-    { text: 'Simulation' },
-  ];
-  const tabsSecondary: { text: string; number?: number }[] = [
-    { text: 'Check-In' },
-    { text: 'Boarding Pass', number: 2 },
-    { text: 'Security' },
-    { text: 'Passport' },
-    { text: 'Passenger Flow Check' },
-  ];
-  const tableData = [
-    {
-      id: 1,
-      Airline: 'RS',
-      Method: 'RS',
-      e: 'RS',
-      f: 'RS',
-    },
-    {
-      id: 2,
-      Airline: 'TW',
-      Method: 'TW',
-      e: 'TW',
-      f: 'TW',
-    },
-    {
-      id: 3,
-      Airline: 'BX',
-      Method: 'BX',
-      e: 'BX',
-      f: 'BX',
-    },
-    {
-      id: 4,
-      Airline: 'ZE',
-      Method: 'ZE',
-      e: 'ZE',
-      f: 'ZE',
-    },
-  ];
-  const rows: Row[] = [
-    { airline: 'OZ', checkboxes: [] },
-    { airline: '7C', checkboxes: [] },
-    { airline: 'JL', checkboxes: [] },
-    { airline: 'BX', checkboxes: [] },
-    { airline: 'RS', checkboxes: [] },
-    { airline: 'SQ', checkboxes: [] },
-    { airline: 'TG', checkboxes: [] },
-    { airline: 'VN', checkboxes: [] },
-  ];
+interface FacilityConnectionProps {
+  visible: boolean;
+}
+
+export default function FacilityConnection({ visible }: FacilityConnectionProps) {
+  const { setPassengerAttr, passenger_attr } = useSimulationMetadata();
+  const { tabIndex, setTabIndex } = useSimulationStore();
+
+  const [nodeIndex, setNodeIndex] = useState(0);
+  const [addConditionsVisible, setAddConditionsVisible] = useState(false);
+
+  const [tableType, setTableType] = useState(TableTypes[0]);
+  
+  const [loadingProcessingProcedures, setLoadingProcessingProcedures] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+
+  const nodes = [...(passenger_attr?.procedures?.map((item, index) => {
+    return {
+      text: item.name,
+    }
+  }) || []), { text: 'Passenger Flow Check' }] as NodeInfo[];
+
+  console.log(passenger_attr)
 
   const [checkboxStates, setCheckboxStates] = useState<boolean[][]>([]);
 
@@ -110,13 +162,14 @@ const FacilityConnection: React.FC = () => {
     row.checkboxes = checkboxStates[index]?.slice(1) || [];
   });
 
-  return (
+  return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Allocate Passenger Attributes to Processing Facilities</h2>
       <TabDefault
-        tabCount={5}
-        currentTab={1}
-        tabs={tabsSecondary.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
+        tabCount={nodes.length}
+        currentTab={nodeIndex}
+        tabs={nodes.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
+        onTabChange={(index) => setNodeIndex(index)}
         className={`tab-secondary mt-[25px] grid-cols-5`}
       />
       <div className="mt-[30px] flex items-center justify-center gap-[100px]">
@@ -131,8 +184,8 @@ const FacilityConnection: React.FC = () => {
         <Checkbox
           id="add-conditions"
           label=""
-          checked={addConditions}
-          onChange={() => setAddConditions(!addConditions)}
+          checked={addConditionsVisible}
+          onChange={() => setAddConditionsVisible(!addConditionsVisible)}
           className="checkbox-toggle"
         />
         <dl>
@@ -142,8 +195,10 @@ const FacilityConnection: React.FC = () => {
           </dd>
         </dl>
       </div>
-      {/* 컨디션 블럭 */}
-      <div className="conditions-block mt-[20px] flex flex-col gap-[20px] pb-[30px]">
+      {
+        addConditionsVisible ? (
+          <>
+                <div className="conditions-block mt-[20px] flex flex-col gap-[20px] pb-[30px]">
         <div className="schedule-block">
           <div className="schedule-top">
             <div className="select-grid">
@@ -153,20 +208,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -177,20 +219,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -201,20 +230,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -233,20 +249,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -257,20 +260,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -281,20 +271,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -320,20 +297,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -344,20 +308,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -368,20 +319,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -434,20 +372,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -458,20 +383,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -482,20 +394,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -514,20 +413,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -538,20 +424,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -562,20 +435,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -601,20 +461,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Criteria <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -625,20 +472,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Operator <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -649,20 +483,7 @@ const FacilityConnection: React.FC = () => {
                   <dt>
                     Value <span className="text-accent-600">*</span>
                     <button>
-                      <Tooltip
-                        title={
-                          <React.Fragment>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
-                          </React.Fragment>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                      </Tooltip>
+                      <Tooltip text={'test'} />
                     </button>
                   </dt>
                   <dd>
@@ -712,75 +533,108 @@ const FacilityConnection: React.FC = () => {
           </button>
         </div>
       </div>
-
+          </>
+        ) : null
+      }
       <div className="mt-[20px] flex items-center justify-between">
-        <p className="tex-[40px] pl-[30px] text-xl font-medium text-default-800">ELSE</p>
+        <p className="tex-[40px] pl-[30px] text-xl font-medium text-default-800">{addConditionsVisible ? 'ELSE' : ''}</p>
         <div className="w-[340px]">
-          <SelectBox options={['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload']} />
+          <SelectBox options={TableTypes} selectedOption={tableType} onSelectedOption={(val) => setTableType(val)} />
         </div>
       </div>
-      <div className="mt-[30px] flex items-center justify-center">
+      {/* <div className="mt-[30px] flex items-center justify-center">
         <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
           Hide Table
         </button>
-      </div>
+      </div> */}
       <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-        <table className="table-secondary">
-          <thead>
-            <tr>
-              <th className="w-[90px] text-left">Airline</th>
-              <th className="">A</th>
-              <th className="">B</th>
-              <th className="">C</th>
-              <th className="">D</th>
-              <th className="">E</th>
-              <th className="">F</th>
-              <th className="">G</th>
-              <th className="">H</th>
-              <th className="">I</th>
-              <th className="">J</th>
-              <th className="">K</th>
-              <th className="">L</th>
-              <th className="">M</th>
-              <th className="">N</th>
-              <th className="">Mobile</th>
-              <th className="">Self</th>
-              <th className="">CAT</th>
-              <th className="">Port</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="text-center">
-                <td>
-                  <div className="flex items-center justify-center gap-[10px]">
-                    <Checkbox
-                      label={row.airline}
-                      id={`check-all-${rowIndex}`}
-                      checked={checkboxStates[rowIndex]?.[0] || false}
-                      onChange={() => handleCheckboxChange(rowIndex, 0)}
-                      className="checkbox text-sm"
-                    />
-                  </div>
-                </td>
-                {row.checkboxes.map((_, colIndex) => (
-                  <td key={colIndex + 1}>
+        {
+          tableType == TableTypes[0] ? (
+            <table className="table-secondary">
+            <thead>
+              <tr>
+                <th className="w-[90px] text-left">Airline</th>
+                <th className="">A</th>
+                <th className="">B</th>
+                <th className="">C</th>
+                <th className="">D</th>
+                <th className="">E</th>
+                <th className="">F</th>
+                <th className="">G</th>
+                <th className="">H</th>
+                <th className="">I</th>
+                <th className="">J</th>
+                <th className="">K</th>
+                <th className="">L</th>
+                <th className="">M</th>
+                <th className="">N</th>
+                <th className="">Mobile</th>
+                <th className="">Self</th>
+                <th className="">CAT</th>
+                <th className="">Port</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="text-center">
+                  <td>
                     <div className="flex items-center justify-center gap-[10px]">
                       <Checkbox
-                        label=""
-                        id={`check-${rowIndex}-${colIndex + 1}`}
-                        checked={checkboxStates[rowIndex]?.[colIndex + 1] || false}
-                        onChange={() => handleCheckboxChange(rowIndex, colIndex + 1)}
+                        label={row.airline}
+                        id={`check-all-${rowIndex}`}
+                        checked={checkboxStates[rowIndex]?.[0] || false}
+                        onChange={() => handleCheckboxChange(rowIndex, 0)}
                         className="checkbox text-sm"
                       />
                     </div>
                   </td>
-                ))}
+                  {row.checkboxes.map((_, colIndex) => (
+                    <td key={colIndex + 1}>
+                      <div className="flex items-center justify-center gap-[10px]">
+                        <Checkbox
+                          label=""
+                          id={`check-${rowIndex}-${colIndex + 1}`}
+                          checked={checkboxStates[rowIndex]?.[colIndex + 1] || false}
+                          onChange={() => handleCheckboxChange(rowIndex, colIndex + 1)}
+                          className="checkbox text-sm"
+                        />
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          ) : tableType == TableTypes[1] ? (
+            <table className="table-secondary">
+            <thead>
+              <tr>
+                <th className="text-left">구분</th>
+                <th className="">DG1</th>
+                <th className="">DG2</th>
+                <th className="">DG3</th>
+                <th className="">DG4</th>
+                <th className="">DG5</th>
+                <th className="">DG6</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {attributeData.map((attributeData, index) => (
+                <tr key={index}>
+                  <td className="text-left">{attributeData.category}</td>
+                  <td className="text-center underline">{attributeData.dg1}</td>
+                  <td className="text-center underline">{attributeData.dg2}</td>
+                  <td className="text-center underline">{attributeData.dg3}</td>
+                  <td className="text-center underline">{attributeData.dg4}</td>
+                  <td className="text-center underline">{attributeData.dg5}</td>
+                  <td className="text-center underline">{attributeData.dg6}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          ) : null
+        }
       </div>
       <div className="mt-[20px] flex items-center justify-between pr-[20px]">
         <p className="font-medium text-warning">
@@ -801,5 +655,3 @@ const FacilityConnection: React.FC = () => {
     </div>
   );
 };
-
-export default FacilityConnection;

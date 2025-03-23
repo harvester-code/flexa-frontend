@@ -1276,6 +1276,10 @@ textarea {
 .select-default {
   @apply rounded-md border-default-200;
 }
+.select-small {
+  @apply rounded-md border-default-200 ;
+  font-size: 16px;
+}
 .tooltip-line {
   gap: 3px;
   @apply mb-[5px] flex items-center text-sm font-medium text-default-800;
@@ -1291,7 +1295,7 @@ textarea {
 .processing-wrap {
   @apply flex flex-col gap-[10px];
   .processing-item {
-    @apply flex h-[140px] items-center rounded-md border border-default-300 bg-default-100 px-[20px] pr-[400px];
+    @apply flex h-[140px] items-center rounded-md border border-default-300 bg-default-100 px-[20px];
     .item-move {
       font-size: 24px;
       @apply flex items-center justify-center text-default-300;

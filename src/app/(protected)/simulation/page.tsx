@@ -8,7 +8,6 @@ import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import {
   deleteScenario,
-  deleteScenarioMulti,
   duplicateScenario,
   modifyScenario,
   setMasterScenario,
@@ -53,13 +52,13 @@ const SimulationPage: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
 
   const { data: userInfo } = useUser();
-  const { data: scenarioList } = useScenarios(userInfo?.groupId);
+  const { scenarios } = useScenarios(userInfo?.groupId);
 
   useEffect(() => {
-    if (scenarioList?.length > 0) {
-      setSelected(Array(scenarioList?.length).fill(false));
+    if (scenarios?.length > 0) {
+      setSelected(Array(scenarios?.length).fill(false));
       setScenarioStates(
-        scenarioList.map((item) => {
+        scenarios.map((item) => {
           return {
             name: item.simulation_name,
             memo: item.memo,
@@ -71,7 +70,7 @@ const SimulationPage: React.FC = () => {
         })
       );
     }
-  }, [scenarioList]);
+  }, [scenarios]);
 
   const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(Array(10).fill(null));
   const [scenarioStates, setScenarioStates] = useState<IScenarioStates[]>([]);
@@ -99,14 +98,13 @@ const SimulationPage: React.FC = () => {
   };
 
   const onRenameEnd = (index: number) => {
-    const item = scenarioList[index];
+    const item = scenarios[index];
     handleRowChange(index, { editName: false });
     modifyScenario({
-      id: item.id,
       simulation_name: scenarioStates[index]?.name,
       memo: scenarioStates[index]?.memo,
-    }).catch(() => {
-      handleRowChange(index, { name: scenarioList[index].simulation_name });
+    }, item.id).catch(() => {
+      handleRowChange(index, { name: scenarios[index].simulation_name });
       PopupAlert.confirm('Failed to change the name');
     });
   };
@@ -120,47 +118,45 @@ const SimulationPage: React.FC = () => {
   };
 
   const oneditMemoEnd = (index: number) => {
-    const item = scenarioList[index];
+    const item = scenarios[index];
     handleRowChange(index, { editMemo: false });
     modifyScenario({
-      id: item.id,
       simulation_name: scenarioStates[index]?.name,
       memo: scenarioStates[index]?.memo,
-    }).catch(() => {
-      handleRowChange(index, { memo: scenarioList[index].memo });
+    }, item.id).catch(() => {
+      handleRowChange(index, { memo: scenarios[index].memo });
       PopupAlert.confirm('Failed to change the memo');
     });
   };
 
   const onSetMaster = (index: number) => {
-    const item = scenarioList[index];
-    setMasterScenario({
-      group_id: String(userInfo?.groupId),
-      scenario_id: item.id,
-    }).then((response) => {
-      queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+    const item = scenarios[index];
+    setMasterScenario(
+      String(userInfo?.groupId),
+      item.id
+    ).then((response) => {
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     });
   };
 
   const onDuplicate = (index: number) => {
-    const item = scenarioList[index];
+    const item = scenarios[index];
     duplicateScenario({
-      scenario_id: item.id,
       editor: userInfo?.fullName || '',
-    }).then((response) => {
-      queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+    }, item.id).then((response) => {
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     });
   };
 
   const onDelete = (index: number) => {
-    const item = scenarioList[index];
+    const item = scenarios[index];
     PopupAlert.delete(
       'Are you sure you want to delete that list?\nThe deleted list can be checked in Trash Bin.',
       'Delete',
       () => {
-        deleteScenario({ scenario_id: item.id }).then(() => {
+        deleteScenario([item.id]).then(() => {
           PopupAlert.confirm('Successfully Deleted.', 'Confirm', undefined, 'Deletion Complete');
-          queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+          queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         });
       },
       `Are you sure you want to delete ${item.simulation_name}?`
@@ -169,14 +165,14 @@ const SimulationPage: React.FC = () => {
 
   const onDeleteMulti = () => {
     const selIds: string[] = [];
-    for (let i = 0; i < selected.length; i++) if (selected[i]) selIds.push(scenarioList[i].id);
+    for (let i = 0; i < selected.length; i++) if (selected[i]) selIds.push(scenarios[i].id);
     PopupAlert.delete(
       'Are you sure you want to delete that list?\nThe deleted list can be checked in Trash Bin.',
       'Delete',
       () => {
-        deleteScenarioMulti({ scenario_ids: selIds }).then(() => {
+        deleteScenario(selIds).then(() => {
           PopupAlert.confirm('Successfully Deleted.', 'Confirm', undefined, 'Deletion Complete');
-          queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+          queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         });
       },
       `Are you sure you want to delete ${selIds.length} rows?`
@@ -201,8 +197,8 @@ const SimulationPage: React.FC = () => {
             text="New Scenario"
             onClick={() => {
               PushCreateScenarioPopup({
-                onCreate: (simulationId: string) => {
-                  queryClient.invalidateQueries({ queryKey: ['ScenarioList'] });
+                onCreate: (scenarioId: string) => {
+                  queryClient.invalidateQueries({ queryKey: ['scenarios'] });
                 },
               });
             }}
@@ -248,7 +244,7 @@ const SimulationPage: React.FC = () => {
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setSelectAll(checked);
-                    setSelected(Array(scenarioList.length).fill(checked)); // 전체 선택/해제
+                    setSelected(Array(scenarios.length).fill(checked)); // 전체 선택/해제
                   }}
                   className="checkbox text-sm"
                 />
@@ -288,8 +284,8 @@ const SimulationPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {scenarioList?.length > 0 && scenarioList?.length == scenarioStates?.length ? (
-              scenarioList?.map((item, index) =>
+            {scenarios?.length > 0 && scenarios?.length == scenarioStates?.length ? (
+              scenarios?.map((item, index) =>
                 searchKeyword?.length > 0 && item.simulation_name.indexOf(searchKeyword) < 0 ? null : (
                   <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`}>
                     <td className="text-center">

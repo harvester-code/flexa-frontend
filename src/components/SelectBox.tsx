@@ -10,7 +10,7 @@ interface SelectBoxProps {
   className?: string;
   options: any[];
   selectedOption?: any;
-  onSelectedOption?: any;
+  onSelectedOption?: (value: any) => void;
 }
 
 const SelectBox: React.FC<SelectBoxProps> = ({ options, className, selectedOption, onSelectedOption }) => {
@@ -22,7 +22,7 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, selectedOptio
   };
 
   const handleSelect = (value: any) => {
-    onSelectedOption(value);
+    if(onSelectedOption) onSelectedOption(value);
     setIsActive(false);
   };
 
@@ -47,13 +47,13 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, selectedOptio
       className={cn(styles.selectBox, isActive && styles['active'], className, className && styles[className])}
       onClick={toggleActive}
     >
-      <div className={cn(styles.selectLine)}>{selectedOption?.label}</div>
+      <div className={cn(styles.selectLine)}>{typeof selectedOption == 'string' ? selectedOption: selectedOption?.label}</div>
 
       <div className={cn(styles.selectItem)}>
         <ul className={cn(styles.selectOptionCont)}>
           {options?.map((option, index) => (
             <li className={cn(styles.selectOptionItem)} key={index} onClick={() => handleSelect(option)}>
-              <button className={cn(styles.selectOptionBtn)}>{option.label}</button>
+              <button className={cn(styles.selectOptionBtn)}>{typeof option == 'string' ? option : option.label}</button>
             </li>
           ))}
         </ul>

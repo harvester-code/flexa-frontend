@@ -1,26 +1,29 @@
-interface IConditionData {
-  logicItems: IDropdownItem[];
-  criteriaItems: IDropdownItem[];
-  operatorItems: { [criteriaId: string]: IOperatorItem[] };
-  valueItems: { [criteriaId: string]: IDropdownItem[] };
+import { TooltipData } from "./tooltip";
+
+interface ConditionData {
+  logicItems: DropdownItem[];
+  criteriaItems: DropdownItem[];
+  operatorItems: { [criteriaId: string]: OperatorItem[] };
+  valueItems: { [criteriaId: string]: DropdownItem[] };
 }
 
-interface IDropdownItem {
+interface DropdownItem {
   id: string;
   text: string;
+  tooltip?: TooltipData;
 }
 
-interface IOperatorItem extends IDropdownItem {
+interface OperatorItem extends DropdownItem {
   multiSelect: boolean;
 }
 
-interface IConditionParams {
+interface ConditionParams {
   name: string;
   operator: string[];
   value: string[];
 }
 
-interface IConditionState {
+interface ConditionState {
   criteria: string;
   operator: string;
   value: string[];
@@ -28,4 +31,4 @@ interface IConditionState {
   logicVisible?: boolean;
 }
 
-export type { IConditionData, IConditionParams, IConditionState, IDropdownItem, IOperatorItem };
+export type { ConditionData, ConditionParams, ConditionState, DropdownItem, OperatorItem };

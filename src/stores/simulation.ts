@@ -1,93 +1,105 @@
 import dayjs from 'dayjs';
 import { create } from 'zustand';
-import { IConditionState } from '@/types/conditions';
+import { ConditionState } from '@/types/conditions';
 import {
-  IChartData,
-  IFlightSchedule,
-  IScenarioHistory,
-  IScenarioMetadata,
-  IScenarioOverview,
+  ChartData,
+  FlightSchedule,
+  PassengerPatternState,
+  PassengerSchedule,
+  ProcessingProcedures,
+  ProcessingProcedureState,
+  ScenarioHistory,
+  ScenarioMetadata,
+  ScenarioOverview,
 } from '@/types/simulations';
 
-interface IScenarioMetadataZustand extends Partial<IScenarioMetadata> {
-  setMetadata: (data: IScenarioMetadata) => void;
+export const BarColors = {
+  DEFAULT: [
+    '#B9C0D4',
+    '#F4EBFF',
+    '#E9D7FE',
+    '#D6BBFB',
+    '#B692F6',
+    '#9E77ED',
+    '#7F56D9',
+    '#6941C6',
+    '#53389E',
+    '#42307D',
+  ],
+  '2': ['#D6BBFB', '#6941C6'],
+  '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
+  '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
+  '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
+};
 
-  setOverview: (overview: Partial<IScenarioOverview>, replace?: boolean) => void;
-  setFlightSchedule: (flightSchedule: Partial<IFlightSchedule>, replace?: boolean) => void;
+export const LineColors = [
+  '#42307D',
+  '#6941C6',
+  '#9E77ED',
+  '#D6BBFB',
+  '#F4EBFF',
+];
 
-  addHistoryItem: (item: IScenarioHistory) => void;
-  setHistoryItem: (item: IScenarioHistory, index: number) => void;
+interface ScenarioMetadataZustand extends Partial<ScenarioMetadata> {
+  setMetadata: (data: ScenarioMetadata) => void;
+
+  setOverview: (overview: Partial<ScenarioOverview>, replace?: boolean) => void;
+  setFlightSchedule: (flightSchedule: Partial<FlightSchedule>, replace?: boolean) => void;
+  setPassengerSchedule: (passengerSchedule: Partial<PassengerSchedule>, replace?: boolean) => void;
+  setPassengerAttr: (passengerSchedule: Partial<ProcessingProcedures>, replace?: boolean) => void;
+
+  addHistoryItem: (item: ScenarioHistory) => void;
+  setHistoryItem: (item: ScenarioHistory, index: number) => void;
 }
 
-export const useSimulationMetadata = create<IScenarioMetadataZustand>((set, get) => ({
+export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) => ({
+  scenario_id: '',
+
   setMetadata: (data) => set({ ...data }),
 
   setOverview: (overview, replace) =>
     set(
-      replace ? { overview } : { overview: { ...(get().overview || ({} as IScenarioOverview)), ...overview } }
+      replace ? { overview } : { overview: { ...(get().overview || ({} as ScenarioOverview)), ...overview } }
     ),
 
   setFlightSchedule: (flight_sch, replace) =>
     set(
       replace
         ? { flight_sch }
-        : { flight_sch: { ...(get().flight_sch || ({} as IFlightSchedule)), ...flight_sch } }
+        : { flight_sch: { ...(get().flight_sch || ({} as FlightSchedule)), ...flight_sch } }
     ),
 
-  addHistoryItem: (item: IScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
+  setPassengerSchedule: (passenger_sch, replace) =>
+    set(
+      replace
+        ? { passenger_sch }
+        : { passenger_sch: { ...(get().passenger_sch || ({} as PassengerSchedule)), ...passenger_sch } }
+    ),
 
-  setHistoryItem: (item: IScenarioHistory, index: number) =>
+  setPassengerAttr: (passenger_attr, replace) =>
+    set(
+      replace
+        ? { passenger_attr }
+        : { passenger_attr: { ...(get().passenger_attr || ({} as ProcessingProcedures)), ...passenger_attr } }
+    ),
+
+  addHistoryItem: (item: ScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
+
+  setHistoryItem: (item: ScenarioHistory, index: number) =>
     set({ history: get()?.history?.map((val, idx) => (idx == index ? item : val)) }),
 }));
 
 export const useSimulationStore = create<{
   tabIndex: number;
-  checkpoint?: { time: string; diff: number };
-
   setTabIndex: (index: number) => void;
+
+  checkpoint?: { time: string; diff: number };  
   setCheckpoint: (time: string, diff: number) => void;
 }>((set, get) => ({
   tabIndex: 0,
+  setTabIndex: (index) => set({ tabIndex: index }),
+
   checkpoint: undefined,
 
-  setTabIndex: (index) => set({ tabIndex: index }),
   setCheckpoint: (time, diff) => set({ checkpoint: { time, diff } }),
-}));
-
-export const useSimulationFlighScheduleStore = create<{
-  chartData?: { total: number; x: string[]; data: IChartData };
-  setChartData: (data: { total: number; x: string[]; data: IChartData }) => void;
-
-  selColorCriteria: string;
-  setSelColorCriteria: (selColorCriteria: string) => void;
-
-  addConditionsVisible: boolean;
-  setAddConditionsVisible: (addConditionsVisible: boolean) => void;
-
-  selDate: Date;
-  setSelDate: (selDate: Date) => void;
-
-  selAirport: string;
-  setSelAirport: (selAirport: string) => void;
-
-  selConditions: IConditionState[];
-  setSelConditions: (selConditions: IConditionState[]) => void;
-}>((set, get) => ({
-  chartData: undefined,
-  setChartData: (chartData) => set({ chartData }),
-
-  selColorCriteria: 'Airline',
-  setSelColorCriteria: (selColorCriteria) => set({ selColorCriteria }),
-
-  addConditionsVisible: false,
-  setAddConditionsVisible: (addConditionsVisible) => set({ addConditionsVisible }),
-
-  selDate: dayjs().add(-1, 'day').toDate(),
-  setSelDate: (selDate) => set({ selDate }),
-
-  selAirport: 'ICN',
-  setSelAirport: (selAirport) => set({ selAirport }),
-
-  selConditions: [],
-  setSelConditions: (selConditions) => set({ selConditions }),
 }));
