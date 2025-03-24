@@ -331,7 +331,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
         setLoadError(true);
         setLoadingPassengerSchedules(false);
       });
-  }, [selPriorities, otherPassengerState, addPrioritiesVisible]);
+  }, [selPriorities, otherPassengerState, addPrioritiesVisible, flight_sch]);
 
   const distributionData: Plotly.Data[] = [];
 
@@ -692,7 +692,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           </p>
           <dl className="mt-[25px]">
             <dt className="text-[40px] text-xl font-semibold">
-              Total: {numberWithCommas(chartData?.total)} Flights
+              Total: {numberWithCommas(chartData?.total)} Pax
             </dt>
             <dd className="text-sm">Flight(360) x Average_seats(223) x Load_factor(85.0%)</dd>
           </dl>
