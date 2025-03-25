@@ -3,20 +3,18 @@ import Plotly from 'plotly.js-dist-min';
 
 interface BarChartProps {
   chartData: Plotly.Data[];
-  chartLayout?: Partial<Plotly.Layout>;
+  chartLayout: Partial<Plotly.Layout>;
+  config?: Partial<Plotly.Config>;
 }
 
-function BarChart({ chartData, chartLayout }: BarChartProps) {
+function BarChart({ chartData, chartLayout, config }: BarChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
     if (chartRef.current) {
-      Plotly.newPlot(chartRef.current, chartData, chartLayout, {
-        autosizable: true,
-        responsive: true,
-      });
+      Plotly.newPlot(chartRef.current, chartData, chartLayout, config);
     }
-  }, [chartData, chartLayout]);
+  }, [chartData, chartLayout, config]);
 
   return <div ref={chartRef}></div>;
 }

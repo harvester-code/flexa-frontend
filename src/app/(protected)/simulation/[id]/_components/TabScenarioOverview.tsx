@@ -25,7 +25,11 @@ const OverviewTable = [
   { key: 'passport', text: 'Passport' },
 ];
 
-export default function TabScenarioOverview() {
+interface TabScenarioOverviewProps {
+  visible: boolean;
+}
+
+export default function TabScenarioOverview({ visible }: TabScenarioOverviewProps) {
   // 메모 상태 관리
   const metadata = useSimulationMetadata();
   const { tabIndex, setTabIndex } = useSimulationStore();
@@ -42,7 +46,7 @@ export default function TabScenarioOverview() {
     if (!history) return;
     metadata.setHistoryItem({ ...history[index], memo: newMemo }, index);
   };
-  return (
+  return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
       <div className="overview-wrap mt-[10px]">

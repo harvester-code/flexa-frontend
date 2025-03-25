@@ -3,10 +3,11 @@ import Plotly from 'plotly.js-dist-min';
 
 interface LineChartProps {
   chartData: Plotly.Data[];
-  chartLayout?: Partial<Plotly.Layout>;
+  chartLayout: Partial<Plotly.Layout>;
+  config?: Partial<Plotly.Config>;
 }
 
-function LineChart({ chartData, chartLayout }: LineChartProps) {
+function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -14,9 +15,10 @@ function LineChart({ chartData, chartLayout }: LineChartProps) {
       Plotly.newPlot(chartRef.current, chartData, chartLayout, {
         autosizable: true,
         responsive: true,
+        ...config,
       });
     }
-  }, [chartData, chartLayout]);
+  }, [chartData, chartLayout, config]);
 
   return <div ref={chartRef}></div>;
 }

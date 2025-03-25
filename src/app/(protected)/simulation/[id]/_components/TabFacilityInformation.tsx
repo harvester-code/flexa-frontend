@@ -17,7 +17,11 @@ import Checkbox from '@/components/Checkbox';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
 
-export default function TabFacilityInformation() {
+interface TabFacilityInformationProps {
+  visible: boolean;
+}
+
+export default function TabFacilityInformation({ visible }: TabFacilityInformationProps) {
   const [addConditions, setAddConditions] = useState(false);
   const tabsSecondary: { text: string; number?: number }[] = [
     { text: 'Check-In' },
@@ -135,7 +139,7 @@ export default function TabFacilityInformation() {
   const handleColorClose = () => {
     setColorAnchorEl(null);
   };
-  return (
+  return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Facility Information</h2>
       <TabDefault
@@ -247,7 +251,6 @@ export default function TabFacilityInformation() {
             <dd>
               <SelectBox
                 options={['10 Min', '20 Min', '30 Min', '40 Min', '50 Min', '60 Min']}
-                defaultValue=""
                 className="select-sm select-square w-[120px]"
               />
             </dd>

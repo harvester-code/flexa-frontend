@@ -4,7 +4,11 @@ import React, { useState } from 'react';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-export default function TabSimulation() {
+interface TabSimulationProps {
+  visible: boolean;
+}
+
+export default function TabSimulation({ visible }: TabSimulationProps) {
   const openData = [
     {
       id: 1,
@@ -78,7 +82,7 @@ export default function TabSimulation() {
     },
   ];
 
-  return (
+  return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Overview</h2>
       {/* 오버뷰 영역 */}

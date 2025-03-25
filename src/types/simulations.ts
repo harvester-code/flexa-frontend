@@ -1,4 +1,4 @@
-import { IConditionData, IConditionParams, IConditionState } from '@/types/conditions';
+import { ConditionData, ConditionParams, ConditionState } from '@/types/conditions';
 
 interface ScenarioData {
   created_at: string;
@@ -15,12 +15,12 @@ interface ScenarioData {
   user_id?: string;
 }
 
-interface IScenariosDataResponse {
+interface ScenariosDataResponse {
   master_scenario: ScenarioData[];
   user_scenario: ScenarioData[];
 }
 
-interface IScenarioOverview {
+interface ScenarioOverview {
   date: string;
   terminal: string;
   analysis_type: string;
@@ -35,7 +35,7 @@ interface IScenarioOverview {
   passport: string;
 }
 
-interface IScenarioHistory {
+interface ScenarioHistory {
   checkpoint: string;
   updated_at?: string;
   simulation: 'Done' | 'Yet';
@@ -43,35 +43,66 @@ interface IScenarioHistory {
   error_count: number;
 }
 
-interface IScenarioMetadata {
+interface ScenarioMetadata {
   id: number;
-  simulation_id: string;
-  overview: Partial<IScenarioOverview>;
-  flight_sch: Partial<IFlightSchedule>;
-  passenger_sch: { [key: string]: any };
-  passenger_attr: { [key: string]: any };
+  scenario_id: string;
+  overview: Partial<ScenarioOverview>;
+  flight_sch: Partial<FlightSchedule>;
+  passenger_sch: Partial<PassengerSchedule>;
+  passenger_attr: Partial<ProcessingProcedures>;
   facility_conn: { [key: string]: any };
   facility_info: { [key: string]: any };
-  history: IScenarioHistory[];
+  history: ScenarioHistory[];
 }
 
-interface IScenarioMetadataResponse {
+interface ScenarioMetadataResponse {
   checkpoint: string;
-  metadata: IScenarioMetadata;
+  metadata: ScenarioMetadata;
 }
 
-interface IFlightSchedule {
-  add_conditions: IConditionData;
-  add_priorities: IConditionData;
+interface FlightSchedule {
+  add_conditions: ConditionData;
+  add_priorities: ConditionData;
 
   color_criteria: string;
-  conditions: IConditionState[];
+  conditions: ConditionState[];
   airport: string;
   date: Date;
   conditions_visible: boolean;
+
+  params: any;
 }
 
-interface IChartData {
+interface PassengerPatternState {
+  conditions?: ConditionState[];
+  mean?: string;
+  variance?: string;  
+}
+
+interface PassengerSchedule {
+  priorities: PassengerPatternState[];
+  other_passenger_state: PassengerPatternState;
+  params: any;
+}
+
+interface ProcessingProcedureData {
+  id: string;
+  name: string;
+  nodes: string[];
+}
+
+interface ProcessingProcedureState extends ProcessingProcedureData {
+  nameText?: string;
+  nodesText?: string;
+  editable?: boolean;
+}
+
+interface ProcessingProcedures {
+  data_connection_criteria: string;
+  procedures: ProcessingProcedureData [];
+}
+
+interface ChartData {
   [name: string]: Array<{
     name: string;
     order: number;
@@ -80,22 +111,40 @@ interface IChartData {
   }>;
 }
 
-interface IFlightScheduleResponse {
-  add_conditions: Array<IConditionParams>;
-  add_priorities: Array<IConditionParams>;
+interface FlightSchedulesResponse {
+  add_conditions: Array<ConditionParams>;
+  add_priorities: Array<ConditionParams>;
   chart_x_data: string[];
-  chart_y_data: IChartData;
+  chart_y_data: ChartData;
   total: number;
 }
 
+interface PassengerScheduleResponse {
+  bar_chart_x_data: string[];
+  bar_chart_y_data: ChartData;
+  dst_chart: any;
+  total: number;
+}
+
+interface ProcessingProceduresResponse {
+  process: ProcessingProcedureData [];
+}
+
 export type {
-  IChartData,
-  IFlightSchedule,
-  IFlightScheduleResponse,
-  IScenarioHistory,
-  IScenarioMetadata,
-  IScenarioMetadataResponse,
-  IScenarioOverview,
-  IScenariosDataResponse,
+  ChartData,
+  FlightSchedule,
+  FlightSchedulesResponse,
+  PassengerPatternState,
+  PassengerSchedule,
+  PassengerScheduleResponse,
+  ProcessingProcedureData,
+  ProcessingProcedureState,
+  ProcessingProcedures,
+  ProcessingProceduresResponse,
+  ScenarioHistory,
+  ScenarioMetadata,
+  ScenarioMetadataResponse,
+  ScenarioOverview,
+  ScenariosDataResponse,
   ScenarioData,
 };

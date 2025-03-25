@@ -1,9 +1,12 @@
 import {
-  IFlightScheduleResponse,
-  IScenarioMetadata,
-  IScenarioMetadataResponse,
-  IScenariosDataResponse,
+  FlightSchedulesResponse,
+  PassengerScheduleResponse,
+  ProcessingProceduresResponse,
+  ScenarioMetadata,
+  ScenarioMetadataResponse,
+  ScenariosDataResponse,
 } from '@/types/simulations';
+import { useSimulationMetadata } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = 'api/v1/simulations';
@@ -15,53 +18,59 @@ const createScenario = (params: {
   memo: string;
   group_id: string;
 }) => {
-  return instanceWithAuth.post(`${BASE_URL}/scenario`, params);
+  return instanceWithAuth.post(`${BASE_URL}/scenarios`, params);
 };
 
 const fetchScenarios = (group_id?: number, page: number = 1) => {
-  return instanceWithAuth.get<IScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`, {
-    params: {
-      page,
-    },
+  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`, {
+    params: { page },
   });
 };
 
-const modifyScenario = (params: { id: string; simulation_name?: string; memo?: string }) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenario`, params);
+const modifyScenario = (params: { simulation_name?: string; memo?: string }, scenario_id: string) => {
+  return instanceWithAuth.patch(`${BASE_URL}/scenarios/scenario-id/${scenario_id}/edit`, params);
 };
 
-const deleteScenario = (params: { scenario_id: string }) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenario/deactivate?${new URLSearchParams(params).toString()}`);
+const deleteScenario = (scenario_ids: string[]) => {
+  return instanceWithAuth.patch(`${BASE_URL}/scenarios/deactivate`, { scenario_ids });
 };
 
-const deleteScenarioMulti = (params: { scenario_ids: string[] }) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenario/deactivate/multiple`, params);
+const duplicateScenario = (params: { editor: string }, scenario_id: string) => {
+  return instanceWithAuth.post(`${BASE_URL}/scenarios/scenario-id/${scenario_id}/duplicate`, params);
 };
 
-const duplicateScenario = (params: { scenario_id: string; editor: string }) => {
-  return instanceWithAuth.post(`${BASE_URL}/scenario/duplicate?${new URLSearchParams(params).toString()}`);
-};
-
-const setMasterScenario = (params: { group_id: string; scenario_id: string }) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenario/master?${new URLSearchParams(params).toString()}`);
-};
-
-// =======================================================================
-
-const getScenarioMetadata = (params: { simulation_id: string }) => {
-  return instanceWithAuth.get<IScenarioMetadataResponse>(
-    `${BASE_URL}/scenario/metadata?${new URLSearchParams(params).toString()}`
+const setMasterScenario = (group_id: string, scenario_id: string) => {
+  return instanceWithAuth.patch(
+    `${BASE_URL}/scenarios/masters/group-id/${group_id}/scenario-id/${scenario_id}`
   );
 };
 
-const setScenarioMetadata = (params: Partial<Omit<IScenarioMetadata, 'id'>>) => {
-  return instanceWithAuth.put(`${BASE_URL}/scenario/metadata`, params);
+// =======================================================================
+
+const getScenarioMetadata = (scenario_id: string) => {
+  return instanceWithAuth.get<ScenarioMetadataResponse>(
+    `${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`
+  );
+};
+
+const updateScenarioMetadata = () => {
+  const states = useSimulationMetadata.getState();
+  const params = {
+    overview: states.overview || {},
+    flight_sch: states.flight_sch || {},
+    passenger_sch: states.passenger_sch || {},
+    passenger_attr: states.passenger_attr || {},
+    facility_conn: states.facility_conn || {},
+    facility_info: states.facility_info || {},
+    history: states.history || {},
+  };
+  return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${states.scenario_id}`, params);
 };
 
 // =======================================================================
 
-const getFlightSchedule = (
-  simulation_id: string,
+const getFlightSchedules = (
+  scenario_id: string,
   params: {
     first_load: boolean;
     airport: string;
@@ -73,21 +82,51 @@ const getFlightSchedule = (
     }>;
   }
 ) => {
-  return instanceWithAuth.post<IFlightScheduleResponse>(
-    `${BASE_URL}/flight-schedule?simulation_id=${simulation_id}`,
+  return instanceWithAuth.post<FlightSchedulesResponse>(
+    `${BASE_URL}/flight-schedules/scenario-id/${scenario_id}`,
     params
   );
+};
+
+const getPassengerSchedules = (params: {
+  flight_schedule: {
+    first_load: boolean;
+    airport: string;
+    date: string;
+    condition: Array<{
+      criteria: string;
+      operator: string;
+      value: string[];
+    }>;
+  };
+  destribution_conditions: Array<{
+    index: number;
+    conditions: Array<{
+      criteria: string;
+      operator: string;
+      value: string[];
+    }>;
+    mean: number;
+    standard_deviation: number;
+  }>;
+}) => {
+  return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/passenger-schedules`, params);
+};
+
+const getProcessingProcedures = () => {
+  return instanceWithAuth.post<ProcessingProceduresResponse>(`${BASE_URL}/processing-procedures`);
 };
 
 export {
   createScenario,
   deleteScenario,
-  deleteScenarioMulti,
   duplicateScenario,
   fetchScenarios,
-  getFlightSchedule,
+  getFlightSchedules,
+  getPassengerSchedules,
+  getProcessingProcedures,
   getScenarioMetadata,
   modifyScenario,
   setMasterScenario,
-  setScenarioMetadata,
+  updateScenarioMetadata,
 };

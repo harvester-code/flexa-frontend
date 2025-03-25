@@ -121,8 +121,8 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                 group_id: String(userInfo?.groupId),
               })
                 .then(({ data }) => {
-                  if (data?.simulation_id) {
-                    onCreate(data?.simulation_id);
+                  if (data?.scenario_id) {
+                    onCreate(data?.scenario_id);
                     onClose?.();
                   } else PopupAlert.confirm('Failed to create the scenario.');
                 })

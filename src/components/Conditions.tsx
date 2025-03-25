@@ -2,7 +2,7 @@
 
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { IConditionData, IConditionState, IDropdownItem } from '@/types/conditions';
+import { ConditionData, ConditionState, DropdownItem } from '@/types/conditions';
 import Button from '@/components/Button';
 import {
   DropdownMenu,
@@ -13,45 +13,47 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
+import Tooltip from './Tooltip';
 
-interface IDropdownProps {
+interface DropdownProps {
   defaultId?: string | Array<string>;
-  items: IDropdownItem[];
-  onChange?: (item: IDropdownItem[]) => void;
+  items: DropdownItem[];
+  onChange?: (item: DropdownItem[]) => void;
   multiSelect?: boolean;
   disabled?: boolean;
   className?: string;
   label?: string;
 }
 
-interface IConditionItemProps extends IConditionData {
-  condition: IConditionState;
+interface ConditionItemProps extends ConditionData {
+  condition: ConditionState;
   logicVisible?: boolean;
 
   onDelete?: () => void;
-  onChange?: (states: IConditionState) => void;
+  onChange?: (states: ConditionState) => void;
 }
 
-interface IConditionsProps extends IConditionData {
-  initialValue?: IConditionState[];
+interface ConditionsProps extends ConditionData {
+  className?: string;  
+  initialValue?: ConditionState[];  
 
-  onChange?: (conditions: IConditionState[]) => void;
-  onBtnApply?: (conditions: IConditionState[]) => void;
+  onChange?: (conditions: ConditionState[]) => void;
+  onBtnApply?: (conditions: ConditionState[]) => void;
 }
 
-function Dropdown({
+export function Dropdown({
+  className = '',
   defaultId,
   items,
   onChange,
   multiSelect = false,
   disabled = false,
-  className = '',
   label,
-}: IDropdownProps) {
+}: DropdownProps) {
   const refDropdown: RefObject<HTMLDivElement | null> = useRef(null);
 
   const [initialized, setInitialized] = useState(false);
-  const [selItems, setSelItems] = useState<Array<IDropdownItem>>([]);
+  const [selItems, setSelItems] = useState<Array<DropdownItem>>([]);
 
   const { width } = useResize(refDropdown);
 
@@ -72,6 +74,7 @@ function Dropdown({
       setSelItems(items.filter((item) => item.id in selItems));
     } else {
       setSelItems([items[0]]);
+      if (onChange) onChange([items[0]]);
     }
     setInitialized(true);
   }, []);
@@ -91,7 +94,7 @@ function Dropdown({
       <DropdownMenu open={openDropdownMenu} onOpenChange={setOpenDropdownMenu}>
         <div
           ref={refDropdown}
-          className={`flex cursor-pointer flex-row items-center rounded-full border border-gray-300 bg-white px-[14px] py-[10px] ${className}`}
+          className={`flex cursor-pointer flex-row items-center rounded-full border border-gray-300 bg-white px-[14px] py-[6px] ${className}`}
           onClick={
             disabled
               ? undefined
@@ -143,7 +146,7 @@ function Dropdown({
 
         <DropdownMenuContent className="max-h-[400px] cursor-pointer overflow-y-auto bg-white">
           {label ? <DropdownMenuLabel>{label}</DropdownMenuLabel> : null}
-          {items?.map((itemCurrent: IDropdownItem, index: number) => {
+          {items?.map((itemCurrent: DropdownItem, index: number) => {
             const selItemCur = selItems?.find((item) => item.id === itemCurrent.id);
             return (
               <div key={index} className="flex flex-col">
@@ -194,10 +197,10 @@ function ConditionItem({
   criteriaItems,
   operatorItems,
   valueItems,
-}: IConditionItemProps) {
-  const [logic, setLogic] = useState<string>(condition?.logic || 'L1');
-  const [criteria, setCriteria] = useState<string>(condition?.criteria || 'C1');
-  const [operator, setOperator] = useState<string>(condition?.operator || 'O1');
+}: ConditionItemProps) {
+  const [logic, setLogic] = useState<string>(condition?.logic || logicItems?.[0]?.id);
+  const [criteria, setCriteria] = useState<string>(condition?.criteria || criteriaItems?.[0]?.id);
+  const [operator, setOperator] = useState<string>(condition?.operator || operatorItems?.[criteria]?.[0]?.id);
   const [value, setValue] = useState<string[]>(condition?.value || ['']);
   useEffect(() => {
     if (onChange)
@@ -208,6 +211,10 @@ function ConditionItem({
         value,
       });
   }, [logic, criteria, operator, value]);
+  const selLogicItem = logicItems?.find((val) => val?.id == logic);
+  const selCriteriaItem = criteriaItems?.find((val) => val?.id == criteria);
+  const selOperatorItem = operatorItems?.[criteria]?.find((val) => val?.id == operator);
+  const selValueItem = valueItems?.[criteria]?.find((val) => val?.[0]?.id == value);
   return (
     <div className="flex flex-row">
       {logicVisible ? (
@@ -215,9 +222,13 @@ function ConditionItem({
           <div className="flex flex-row">
             <span className="text-sm font-medium text-gray-800">Logic</span>
             <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-            <button>
-              <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
-            </button>
+            {selLogicItem?.tooltip?.text ? (
+              <Tooltip
+                className="ml-[2px]"
+                title={selLogicItem?.tooltip?.title}
+                text={selLogicItem?.tooltip?.text}
+              />
+            ) : null}
           </div>
           <Dropdown
             defaultId={logic}
@@ -233,9 +244,13 @@ function ConditionItem({
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Criteria</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-          <button>
-            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
-          </button>
+          {selCriteriaItem?.tooltip?.text ? (
+            <Tooltip
+              className="ml-[2px]"
+              title={selCriteriaItem?.tooltip?.title}
+              text={selCriteriaItem?.tooltip?.text}
+            />
+          ) : null}
         </div>
         <Dropdown
           defaultId={criteria}
@@ -257,9 +272,13 @@ function ConditionItem({
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Operator</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-          <button>
-            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
-          </button>
+          {selOperatorItem?.tooltip?.text ? (
+            <Tooltip
+              className="ml-[2px]"
+              title={selOperatorItem?.tooltip?.title}
+              text={selOperatorItem?.tooltip?.text}
+            />
+          ) : null}
         </div>
         <Dropdown
           key={criteria}
@@ -273,9 +292,13 @@ function ConditionItem({
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Value</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-          <button>
-            <Image width={16} height={16} className="ml-[2px]" src="/image/ico-help.svg" alt="" />
-          </button>
+          {selValueItem?.tooltip?.text ? (
+            <Tooltip
+              className="ml-[2px]"
+              title={selValueItem?.tooltip?.title}
+              text={selValueItem?.tooltip?.text}
+            />
+          ) : null}
         </div>
         <Dropdown
           key={criteria}
@@ -300,6 +323,8 @@ function ConditionItem({
 }
 
 export default function Conditions({
+  className = '',
+
   initialValue,
 
   onChange,
@@ -309,7 +334,7 @@ export default function Conditions({
   criteriaItems,
   operatorItems,
   valueItems,
-}: IConditionsProps) {
+}: ConditionsProps) {
   const defaultCriteriaId = criteriaItems[0]?.id;
   const defaultConditionItem = {
     logic: logicItems[0].id,
@@ -318,11 +343,18 @@ export default function Conditions({
     value: [valueItems[defaultCriteriaId][0].id],
   };
   const [conditionsTime, setConditionsTime] = useState(Date.now());
-  const [conditions, setConditions] = useState<IConditionState[]>(initialValue || [defaultConditionItem]);
+  const [conditions, setConditions] = useState<ConditionState[] | undefined>(initialValue);
+  useEffect(() => {
+    if(!conditions) {
+      const newConditions = [defaultConditionItem];
+      setConditions(newConditions);
+      if (onChange) onChange(newConditions);
+    }
+  }, []);
   return (
-    <div className="mt-[30px] flex flex-col rounded-lg border border-gray-200">
-      <div className="flex flex-col gap-y-[20px] border-b border-gray-200 bg-gray-200 px-[30px] pb-[14px] pt-[30px]">
-        {conditions.map((item: IConditionState, index: number) => (
+    <div className={`flex flex-col ${className}`}>
+      <div className="flex flex-col gap-y-[20px] border-b border-gray-200 bg-gray-100 px-[30px] pb-[14px] pt-[30px]">
+        {conditions?.map((item: ConditionState, index: number) => (
           <ConditionItem
             key={`${conditionsTime}_${index}`}
             condition={item}
@@ -349,7 +381,7 @@ export default function Conditions({
           <button
             className="px-[30px] py-[5px]"
             onClick={() => {
-              const newConditions = [...conditions, defaultConditionItem];
+              const newConditions = [...(conditions || []), defaultConditionItem];
               setConditions(newConditions);
               setConditionsTime(Date.now());
               if (onChange) onChange(newConditions);
@@ -359,16 +391,20 @@ export default function Conditions({
           </button>
         </div>
       </div>
-      <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
-        <Button
-          className="btn-md btn-primary"
-          iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
-          text="Apply"
-          onClick={() => {
-            if (onBtnApply) onBtnApply(conditions);
-          }}
-        />
-      </div>
+      {
+        onBtnApply ? (
+          <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
+            <Button
+              className="btn-md btn-primary"
+              iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
+              text="Apply"
+              onClick={() => {
+                if (onBtnApply) onBtnApply(conditions || []);
+              }}
+            />
+          </div>  
+        ) : null
+      }
     </div>
   );
 }
