@@ -2,10 +2,11 @@
 
 // TODO: CSS 모듈화하기
 import '@/styles/home.css';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ScenarioData } from '@/types/simulations';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -23,16 +24,11 @@ function HomePage() {
   const [range1, setRange1] = useState<number>(4);
   const [range2, setRange2] = useState<number[]>([4, 20]);
 
-  const [selectedScenario, setSelectedScenario] = useState<string[]>([]);
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioData[]>([]);
   const [selectBoxOptions, setSelectBoxOptions] = useState<string[]>([]);
 
   const { data: user } = useUser();
-  const { data: scenariosData } = useScenarios(user?.groupId);
-
-  const scenarios = useMemo(
-    () => (scenariosData ? [...scenariosData.master_scenario, ...scenariosData.user_scenario] : []),
-    [scenariosData]
-  );
+  const { data: scenarios } = useScenarios(user?.groupId);
 
   // ========================================================
   // TEMP
@@ -67,6 +63,16 @@ function HomePage() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
+  useEffect(() => {
+    if (scenarios) {
+      setSelectedScenario([scenarios[0]]);
+    }
+  }, [scenarios]);
+
+  // TODO: Skeleton UI 적용하기
+  if (!scenarios) return <div>Loading ...</div>;
+
   return (
     <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
       <ContentsHeader text="Home" />
@@ -76,8 +82,6 @@ function HomePage() {
         items={scenarios}
         selectedScenario={selectedScenario}
         onSelectedScenario={setSelectedScenario}
-        // onFetchData={handleData}
-        // isPending={isPending}
       />
 
       {/* ==================================================================================================== */}
