@@ -203,22 +203,18 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Summary */}
       <HomeAccordion title="Summary">
         <HomeSummary />
       </HomeAccordion>
 
-      {/* Alert & Issues */}
       <HomeAccordion title="Alert & Issues">
         <HomeWarning />
       </HomeAccordion>
 
-      {/* Details */}
       <HomeAccordion title="Details">
         <HomeDetails />
       </HomeAccordion>
 
-      {/* Charts */}
       <HomeAccordion title="Charts">
         <HomeCharts />
       </HomeAccordion>
