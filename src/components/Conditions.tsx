@@ -34,8 +34,8 @@ interface ConditionItemProps extends ConditionData {
 }
 
 interface ConditionsProps extends ConditionData {
-  className?: string;  
-  initialValue?: ConditionState[];  
+  className?: string;
+  initialValue?: ConditionState[];
 
   onChange?: (conditions: ConditionState[]) => void;
   onBtnApply?: (conditions: ConditionState[]) => void;
@@ -345,7 +345,7 @@ export default function Conditions({
   const [conditionsTime, setConditionsTime] = useState(Date.now());
   const [conditions, setConditions] = useState<ConditionState[] | undefined>(initialValue);
   useEffect(() => {
-    if(!conditions) {
+    if (!conditions) {
       const newConditions = [defaultConditionItem];
       setConditions(newConditions);
       if (onChange) onChange(newConditions);
@@ -391,20 +391,18 @@ export default function Conditions({
           </button>
         </div>
       </div>
-      {
-        onBtnApply ? (
-          <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
-            <Button
-              className="btn-md btn-primary"
-              iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
-              text="Apply"
-              onClick={() => {
-                if (onBtnApply) onBtnApply(conditions || []);
-              }}
-            />
-          </div>  
-        ) : null
-      }
+      {onBtnApply ? (
+        <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
+          <Button
+            className="btn-md btn-primary"
+            iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
+            text="Apply"
+            onClick={() => {
+              if (onBtnApply) onBtnApply(conditions || []);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1277,7 +1277,7 @@ textarea {
   @apply rounded-md border-default-200;
 }
 .select-small {
-  @apply rounded-md border-default-200 ;
+  @apply rounded-md border-default-200;
   font-size: 16px;
 }
 .tooltip-line {

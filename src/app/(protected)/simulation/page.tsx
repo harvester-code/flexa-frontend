@@ -6,12 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
-import {
-  deleteScenario,
-  duplicateScenario,
-  modifyScenario,
-  setMasterScenario,
-} from '@/services/simulations';
+import { deleteScenario, duplicateScenario, modifyScenario, setMasterScenario } from '@/services/simulations';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
@@ -100,10 +95,13 @@ const SimulationPage: React.FC = () => {
   const onRenameEnd = (index: number) => {
     const item = scenarios[index];
     handleRowChange(index, { editName: false });
-    modifyScenario({
-      simulation_name: scenarioStates[index]?.name,
-      memo: scenarioStates[index]?.memo,
-    }, item.id).catch(() => {
+    modifyScenario(
+      {
+        simulation_name: scenarioStates[index]?.name,
+        memo: scenarioStates[index]?.memo,
+      },
+      item.id
+    ).catch(() => {
       handleRowChange(index, { name: scenarios[index].simulation_name });
       PopupAlert.confirm('Failed to change the name');
     });
@@ -120,10 +118,13 @@ const SimulationPage: React.FC = () => {
   const oneditMemoEnd = (index: number) => {
     const item = scenarios[index];
     handleRowChange(index, { editMemo: false });
-    modifyScenario({
-      simulation_name: scenarioStates[index]?.name,
-      memo: scenarioStates[index]?.memo,
-    }, item.id).catch(() => {
+    modifyScenario(
+      {
+        simulation_name: scenarioStates[index]?.name,
+        memo: scenarioStates[index]?.memo,
+      },
+      item.id
+    ).catch(() => {
       handleRowChange(index, { memo: scenarios[index].memo });
       PopupAlert.confirm('Failed to change the memo');
     });
@@ -131,19 +132,19 @@ const SimulationPage: React.FC = () => {
 
   const onSetMaster = (index: number) => {
     const item = scenarios[index];
-    setMasterScenario(
-      String(userInfo?.groupId),
-      item.id
-    ).then((response) => {
+    setMasterScenario(String(userInfo?.groupId), item.id).then((response) => {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     });
   };
 
   const onDuplicate = (index: number) => {
     const item = scenarios[index];
-    duplicateScenario({
-      editor: userInfo?.fullName || '',
-    }, item.id).then((response) => {
+    duplicateScenario(
+      {
+        editor: userInfo?.fullName || '',
+      },
+      item.id
+    ).then((response) => {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     });
   };

@@ -9,10 +9,7 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ProcessingProcedureState } from '@/types/simulations';
 import { getProcessingProcedures } from '@/services/simulations';
-import {
-  useSimulationMetadata,
-  useSimulationStore,
-} from '@/stores/simulation';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';

@@ -8,12 +8,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionParams, ConditionState, DropdownItem, OperatorItem } from '@/types/conditions';
+import { ChartData } from '@/types/simulations';
 import { getFlightSchedules } from '@/services/simulations';
-import {
-  BarColors,
-  useSimulationMetadata,
-  useSimulationStore,
-} from '@/stores/simulation';
+import { BarColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -28,7 +25,6 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/useResize';
-import { ChartData } from '@/types/simulations';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -74,7 +70,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const refWidth = useRef(null);
   const { setFlightSchedule, flight_sch } = useSimulationMetadata();
   const { tabIndex, setTabIndex } = useSimulationStore();
-  
+
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);

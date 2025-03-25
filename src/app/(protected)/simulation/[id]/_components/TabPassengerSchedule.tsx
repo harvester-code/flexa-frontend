@@ -10,12 +10,7 @@ import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData } from '@/types/conditions';
 import { ChartData, PassengerPatternState } from '@/types/simulations';
 import { getPassengerSchedules } from '@/services/simulations';
-import {
-  BarColors,
-  LineColors,
-  useSimulationMetadata,
-  useSimulationStore,
-} from '@/stores/simulation';
+import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
@@ -297,7 +292,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       ],
     };
 
-    console.log(params)
+    console.log(params);
 
     getPassengerSchedules(params)
       .then(({ data }) => {
@@ -866,7 +861,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           <p className="title-sm" style={{ color: '#30374F' }}>
             Unable to load data
           </p>
-
         </div>
       ) : (
         <div className="h-[100px]" />
