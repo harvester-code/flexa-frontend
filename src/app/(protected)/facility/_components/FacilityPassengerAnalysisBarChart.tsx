@@ -58,7 +58,6 @@ function FacilityPassengerAnalysisBarChart({
     if (!passengerAnalysisBarChartData) return;
 
     const target = CHART_OPTIONS[activeCharts[0]].value;
-    console.log(target);
 
     const x = passengerAnalysisBarChartData[activeCriteria][target]['default_x'];
 
