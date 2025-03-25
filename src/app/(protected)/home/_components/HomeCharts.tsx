@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { SANKEY_NODE_COLORS } from '@/constants';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
 import type Plotly from 'plotly.js-dist-min';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -93,7 +93,7 @@ function HomeCharts() {
               //   width: 0.5,
               // },
               label: sanky.label,
-              color: SANKEY_NODE_COLORS,
+              color: PRIMARY_COLOR_SCALES,
             },
             link: sanky.link,
           },
