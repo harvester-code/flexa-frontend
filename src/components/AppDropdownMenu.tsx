@@ -34,7 +34,7 @@ export default function AppDropdownMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className={cn('h-10 rounded-full', className)}>
+        <Button variant="outline" className={cn('h-10 justify-between rounded-full', className)}>
           {iconDirection === 'left' && icon}
           <span>{label}</span>
           {iconDirection === 'right' && icon}
