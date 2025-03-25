@@ -18,8 +18,12 @@ const createScenario = (params: {
   return instanceWithAuth.post(`${BASE_URL}/scenario`, params);
 };
 
-const fetchScenarios = (group_id?: number) => {
-  return instanceWithAuth.get<IScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`);
+const fetchScenarios = (group_id?: number, page: number = 1) => {
+  return instanceWithAuth.get<IScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`, {
+    params: {
+      page,
+    },
+  });
 };
 
 const modifyScenario = (params: { id: string; simulation_name?: string; memo?: string }) => {

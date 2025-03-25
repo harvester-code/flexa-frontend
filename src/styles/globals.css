@@ -1696,3 +1696,7 @@ textarea {
     }
   }
 }
+
+.modebar {
+  display: none !important;
+}

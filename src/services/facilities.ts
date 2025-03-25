@@ -35,4 +35,29 @@ const fetchKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; pr
   });
 };
 
-export { fetchProcesses, fetchKPISummary, fetchKPILineChart, fetchKPIHeatMapChart };
+const fetchPassengerAnalysesBarChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/passenger-analyses/charts/bar/scenario-id/${scenarioId}`, {
+    params: { process },
+  });
+};
+
+const fetchPassengerAnalysesDonutChart = ({
+  scenarioId,
+  process,
+}: {
+  scenarioId?: string;
+  process?: string;
+}) => {
+  return instanceWithAuth.get(`${BASE_URL}/passenger-analyses/charts/pie/scenario-id/${scenarioId}`, {
+    params: { process },
+  });
+};
+
+export {
+  fetchKPISummary,
+  fetchKPILineChart,
+  fetchKPIHeatMapChart,
+  fetchPassengerAnalysesBarChart,
+  fetchPassengerAnalysesDonutChart,
+  fetchProcesses,
+};

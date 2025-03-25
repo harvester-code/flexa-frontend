@@ -3,6 +3,8 @@ import {
   fetchKPIHeatMapChart,
   fetchKPILineChart,
   fetchKPISummary,
+  fetchPassengerAnalysesBarChart,
+  fetchPassengerAnalysesDonutChart,
   fetchProcesses,
 } from '@/services/facilities';
 
@@ -58,4 +60,33 @@ const useKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; proc
   });
 };
 
-export { useKPISummary, useProcesses, useKPILineChart, useKPIHeatMapChart };
+const usePassengerAnalysesBarChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return useQuery({
+    queryKey: ['passenger-analysis-bar-chart', scenarioId, process],
+    queryFn: async () => {
+      const { data } = await fetchPassengerAnalysesBarChart({ scenarioId, process });
+      return data;
+    },
+    enabled: !!scenarioId && !!process,
+  });
+};
+
+const usePassengerAnalysesDonutChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return useQuery({
+    queryKey: ['passenger-analysis-donut-chart', scenarioId, process],
+    queryFn: async () => {
+      const { data } = await fetchPassengerAnalysesDonutChart({ scenarioId, process });
+      return data;
+    },
+    enabled: !!scenarioId && !!process,
+  });
+};
+
+export {
+  useKPISummary,
+  useProcesses,
+  useKPILineChart,
+  useKPIHeatMapChart,
+  usePassengerAnalysesBarChart,
+  usePassengerAnalysesDonutChart,
+};

@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import { useKPIHeatMapChart, useKPILineChart, useKPISummary, useProcesses } from '@/queries/facilityQueries';
+import {
+  useKPIHeatMapChart,
+  useKPILineChart,
+  useKPISummary,
+  usePassengerAnalysesBarChart,
+  usePassengerAnalysesDonutChart,
+  useProcesses,
+} from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -55,6 +62,14 @@ function FacilityPage() {
     scenarioId: selectedScenario?.[0]?.id,
     process: selectedProcess?.value,
   });
+  const { data: passengerAnalysisBarChartData } = usePassengerAnalysesBarChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
+  const { data: passengerAnalysisDonutChartData } = usePassengerAnalysesDonutChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
 
   // TODO: Skeleton UI 적용하기
   if (!scenarios || !processes) return <div>Loading ...</div>;
@@ -91,7 +106,10 @@ function FacilityPage() {
           </TabsContent>
 
           <TabsContent value="passengerAnalysis">
-            <FacilityPassengerAnalysis />
+            <FacilityPassengerAnalysis
+              passengerAnalysisDonutChartData={passengerAnalysisDonutChartData}
+              passengerAnalysisBarChartData={passengerAnalysisBarChartData}
+            />
           </TabsContent>
         </AppTabs>
       </div>
