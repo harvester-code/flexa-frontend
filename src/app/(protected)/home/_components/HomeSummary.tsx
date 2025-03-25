@@ -1,19 +1,30 @@
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Input from '@/components/Input';
-import SelectBox from '@/components/SelectBox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 // TODO: CSS 모듈화하기
 import './HomeSummary.css';
 
+const KPI_FUNCS = [
+  { label: 'Mean', value: 'mean' },
+  { label: 'Top N%', value: 'topN' },
+];
+
 function HomeSummary() {
   const [topValue, setTopValue] = useState('');
+  const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
 
   return (
     <>
       <div className="my-[14px] flex justify-end gap-4">
-        <div className="min-w-[180px]">
-          <SelectBox className="select-sm" options={['Mean', 'Top n%']} defaultValue="" />
-        </div>
+        <AppDropdownMenu
+          className="min-w-[180px] [&>*]:justify-start"
+          items={KPI_FUNCS}
+          icon={<ChevronDown />}
+          label={kpiFunc.label}
+          onSelect={(opt) => setKPIFunc(opt)}
+        />
 
         <div className="flex items-center gap-1 text-lg font-semibold">
           <span>Top</span>

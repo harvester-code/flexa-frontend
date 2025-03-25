@@ -1,29 +1,46 @@
-import SelectBox from '@/components/SelectBox';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import AppDropdownMenu from '@/components/AppDropdownMenu';
 // TODO: CSS 모듈화하기
 import './HomeWarning.css';
 
+// TODO: 동적으로 수정하기
+const FACILITY_OPTIONS = [
+  { label: 'All Facilities', value: 'All Facilities' },
+  { label: 'Check-in', value: 'Check-in' },
+  { label: 'Boardingpass Control', value: 'Boardingpass Control' },
+  { label: 'Security Control', value: 'Security Control' },
+  { label: 'Passport Control', value: 'Passport Control' },
+];
+
+const TARGET_OPTIONS = [
+  { label: 'Passenger Throughput', value: 'Passenger Throughput' },
+  { label: 'Wait Time', value: 'Wait Time' },
+  { label: 'Queue Length', value: 'Queue Length' },
+];
+
 function HomeWarning() {
+  const [selectedFacility, setSelectedFacility] = useState(FACILITY_OPTIONS[0]);
+  const [selectedTarget, setSelectedTarget] = useState(TARGET_OPTIONS[0]);
+
   return (
     <>
       <div className="my-[14px] flex justify-end gap-[14px]">
+        <AppDropdownMenu
+          className="min-w-60 [&>*]:justify-start"
+          items={FACILITY_OPTIONS}
+          icon={<ChevronDown />}
+          label={selectedFacility.label}
+          onSelect={(opt) => setSelectedFacility(opt)}
+        />
+
         <div className="min-w-60">
-          <SelectBox
-            options={[
-              'All Facilities',
-              'Check-in',
-              'Boarding Pass Control',
-              'Security Control',
-              'Passport Control',
-            ]}
-            defaultValue=""
-            className="select-sm"
-          />
-        </div>
-        <div className="min-w-60">
-          <SelectBox
-            options={['Passenger Throughput', 'Waiting Time', 'Queue Length', 'Facility Efficiency']}
-            defaultValue=""
-            className="select-sm"
+          <AppDropdownMenu
+            className="min-w-60 [&>*]:justify-start"
+            items={TARGET_OPTIONS}
+            icon={<ChevronDown />}
+            label={selectedTarget.label}
+            onSelect={(opt) => setSelectedTarget(opt)}
           />
         </div>
       </div>

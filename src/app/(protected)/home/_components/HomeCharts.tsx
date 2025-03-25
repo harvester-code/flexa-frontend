@@ -1,19 +1,85 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
-import type Plotly from 'plotly.js-dist-min';
-import Button from '@/components/Button';
+import { ChevronDown, Circle } from 'lucide-react';
+import { Option } from '@/types/commons';
+import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
-import SelectBox from '@/components/SelectBox';
+import { Button, ButtonGroup } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 // TODO: CSS 모듈화하기
 import './HomeCharts.css';
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
+// TODO: 동적으로 수정하기
+const FACILITY_OPTIONS: Option[] = [
+  { label: 'All Facilities', value: 'All Facilities' },
+  { label: 'Check-in', value: 'Check-in' },
+  { label: 'Boardingpass Control', value: 'Boardingpass Control' },
+  { label: 'Security Control', value: 'Security Control' },
+  { label: 'Passport Control', value: 'Passport Control' },
+];
+
+// TODO: 변수값 수정하기
+const SANKEY_OPTIONS: Option[] = [
+  { label: 'By Gate', value: 'byGate' },
+  { label: 'New, OLD', value: 'newOld' },
+  { label: 'Manual, Automated', value: 'manualAutomated' },
+  { label: 'Fasttrack O,Fasttrack X', value: 'fasttrackOFasttrackX' },
+];
+
+const CHART_OPTIONS: Option[] = [
+  { label: 'Queue Length', value: 'queue_length', color: '' },
+  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+  { label: 'Throughput', value: 'throughput', color: '' },
+];
+
 function HomeCharts() {
   const [chartType, setChartType] = useState(true);
+
+  // TODO: 변수명 개선하기
+  const [selectedFacility1, setSelectedFacility1] = useState(FACILITY_OPTIONS[0]);
+  const [selectedFacility2, setSelectedFacility2] = useState(FACILITY_OPTIONS[0]);
+  const [selectedSankeyOption1, setSelectedSankeyOption1] = useState(SANKEY_OPTIONS[0]);
+  const [selectedSankeyOption2, setSelectedSankeyOption2] = useState(SANKEY_OPTIONS[0]);
+  const [selectedSankeyOption3, setSelectedSankeyOption3] = useState(SANKEY_OPTIONS[0]);
+
+  // FIXME: 하드코딩 제거하기
+  const [selectedChartOption1, setSelectedChartOption1] = useState([0]);
+  const handleChartOption1 = (buttonIndex: number) => {
+    setSelectedChartOption1((prevData) => {
+      if (prevData.includes(buttonIndex)) {
+        if (prevData.length === 1) {
+          return prevData;
+        }
+        return prevData.filter((v) => v !== buttonIndex);
+      } else {
+        if (prevData.length >= 1) {
+          return [...prevData.slice(1), buttonIndex];
+        }
+        return [...prevData, buttonIndex];
+      }
+    });
+  };
+
+  const [selectedChartOption2, setSelectedChartOption2] = useState([0]);
+  const handleChartOption2 = (buttonIndex: number) => {
+    setSelectedChartOption2((prevData) => {
+      if (prevData.includes(buttonIndex)) {
+        if (prevData.length === 1) {
+          return prevData;
+        }
+        return prevData.filter((v) => v !== buttonIndex);
+      } else {
+        if (prevData.length >= 1) {
+          return [...prevData.slice(1), buttonIndex];
+        }
+        return [...prevData, buttonIndex];
+      }
+    });
+  };
 
   // FIXME: 라인차트에 날짜 데이터가 없는 상태.
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
@@ -130,42 +196,34 @@ function HomeCharts() {
         <div className="chart-item-body">
           <div className="chart-block">
             <div className="flex items-center justify-between">
-              <SelectBox
-                className="!min-w-60"
-                options={[
-                  'All Facilities',
-                  'Check-in',
-                  'Boarding Pass Control',
-                  'Security Control',
-                  'Passport Control',
-                ]}
+              <AppDropdownMenu
+                className="min-w-60 [&>*]:justify-start"
+                items={FACILITY_OPTIONS}
+                icon={<ChevronDown />}
+                label={selectedFacility1.label}
+                onSelect={(opt) => setSelectedFacility1(opt)}
               />
 
               <div className="tab-btn flex items-center">
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-violet.svg" alt="" width={10} height={10} />}
-                  text="Throughput"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
-                  text="Waiting Time"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Queue Length"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Facility Efficiency"
-                  onClick={() => {}}
-                />
+                <ButtonGroup>
+                  {CHART_OPTIONS.map((opt, idx) => (
+                    <Button
+                      className={cn(
+                        selectedChartOption1.includes(idx)
+                          ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                          : ''
+                      )}
+                      variant="outline"
+                      key={idx}
+                      onClick={() => handleChartOption1(idx)}
+                    >
+                      {selectedChartOption1.includes(idx) && (
+                        <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                      )}
+                      {opt.label}
+                    </Button>
+                  ))}
+                </ButtonGroup>
               </div>
             </div>
 
@@ -204,38 +262,37 @@ function HomeCharts() {
         <div className="chart-item-body">
           <div className="chart-block">
             <div className="flex items-center justify-between">
-              <SelectBox
-                className="!min-w-60"
-                options={[
-                  'All Facilities',
-                  'Check-in',
-                  'Boarding Pass Control',
-                  'Security Control',
-                  'Passport Control',
-                ]}
+              <AppDropdownMenu
+                className="min-w-60 [&>*]:justify-start"
+                items={FACILITY_OPTIONS}
+                icon={<ChevronDown />}
+                label={selectedFacility2.label}
+                onSelect={(opt) => setSelectedFacility2(opt)}
               />
 
               <div className="tab-btn flex items-center">
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
-                  text="Waiting Time"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Queue Length"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Facility Efficiency"
-                  onClick={() => {}}
-                />
+                <ButtonGroup>
+                  {CHART_OPTIONS.map((opt, idx) => (
+                    <Button
+                      className={cn(
+                        selectedChartOption2.includes(idx)
+                          ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                          : ''
+                      )}
+                      variant="outline"
+                      key={idx}
+                      onClick={() => handleChartOption2(idx)}
+                    >
+                      {selectedChartOption2.includes(idx) && (
+                        <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                      )}
+                      {opt.label}
+                    </Button>
+                  ))}
+                </ButtonGroup>
               </div>
             </div>
+
             <div className="mt-10 rounded-md bg-white">
               <div className="flex text-center">
                 {histogramChartData &&
@@ -273,32 +330,36 @@ function HomeCharts() {
 
               <div className="text-center">
                 <p className="mb-2 font-semibold text-default-900">Boarding pass</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
+                <AppDropdownMenu
+                  className="min-w-[200px] [&>*]:justify-start"
+                  items={SANKEY_OPTIONS}
+                  icon={<ChevronDown />}
+                  label={selectedSankeyOption1.label}
+                  onSelect={(opt) => setSelectedSankeyOption1(opt)}
+                />
               </div>
 
               <div className="text-center">
                 <p className="mb-2 font-semibold text-default-900">Security Check</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
+                <AppDropdownMenu
+                  className="min-w-[200px] [&>*]:justify-start"
+                  items={SANKEY_OPTIONS}
+                  icon={<ChevronDown />}
+                  label={selectedSankeyOption2.label}
+                  onSelect={(opt) => setSelectedSankeyOption2(opt)}
+                />
               </div>
 
               <div className="text-center">
                 <p className="mb-2 font-semibold text-default-900">Passport</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
+
+                <AppDropdownMenu
+                  className="min-w-[200px] [&>*]:justify-start"
+                  items={SANKEY_OPTIONS}
+                  icon={<ChevronDown />}
+                  label={selectedSankeyOption3.label}
+                  onSelect={(opt) => setSelectedSankeyOption3(opt)}
+                />
               </div>
 
               <div className="text-center">
