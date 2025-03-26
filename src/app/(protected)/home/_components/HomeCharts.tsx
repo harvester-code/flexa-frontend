@@ -8,8 +8,6 @@ import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-// TODO: CSS 모듈화하기
-import './HomeCharts.css';
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -154,11 +152,11 @@ function HomeCharts({ scenario }: HomeChartsProps) {
   }, [rawSankeyChartData]);
 
   return (
-    <div className="charts">
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Flow Chart</h5>
-          <div>
+    <div className="mt-5 flex flex-col gap-[35px]">
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
+          <div className="flex items-center gap-1 text-sm font-medium text-default-800">
             <span>Bar Chart</span>
             <Checkbox
               id="chart-type"
@@ -171,141 +169,140 @@ function HomeCharts({ scenario }: HomeChartsProps) {
           </div>
         </div>
 
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <div className="flex items-center justify-between">
-              <AppDropdownMenu
-                className="min-w-60 [&>*]:justify-start"
-                items={FACILITY_OPTIONS}
-                icon={<ChevronDown />}
-                label={selectedFacility1.label}
-                onSelect={(opt) => setSelectedFacility1(opt)}
-              />
-
-              <div className="tab-btn flex items-center">
-                <ButtonGroup>
-                  {CHART_OPTIONS.map((opt, idx) => (
-                    <Button
-                      className={cn(
-                        selectedChartOption1.includes(idx)
-                          ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                          : ''
-                      )}
-                      variant="outline"
-                      key={idx}
-                      onClick={() => handleChartOption1(idx)}
-                    >
-                      {selectedChartOption1.includes(idx) && (
-                        <Circle className="!size-2.5" fill="#111" stroke="transparent" />
-                      )}
-                      {opt.label}
-                    </Button>
-                  ))}
-                </ButtonGroup>
-              </div>
-            </div>
-
-            <div className="rounded-md bg-white">
-              <LineChart
-                chartData={lineChartData}
-                chartLayout={{
-                  xaxis: { showgrid: false },
-                  yaxis: {
-                    title: {
-                      text: 'Throughtput (number of people)',
-                    },
-                  },
-                  yaxis2: {
-                    title: {
-                      text: 'Waiting time',
-                    },
-                    overlaying: 'y',
-                    side: 'right',
-                    showgrid: false,
-                  },
-                  margin: { l: 60, r: 60, b: 24, t: 24 },
-                  showlegend: false,
-                }}
-              />
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <AppDropdownMenu
+              className="min-w-60 [&>*]:justify-start"
+              items={FACILITY_OPTIONS}
+              icon={<ChevronDown />}
+              label={selectedFacility1.label}
+              onSelect={(opt) => setSelectedFacility1(opt)}
+            />
+            <div className="flex items-center">
+              <ButtonGroup>
+                {CHART_OPTIONS.map((opt, idx) => (
+                  <Button
+                    className={cn(
+                      selectedChartOption1.includes(idx)
+                        ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                        : ''
+                    )}
+                    variant="outline"
+                    key={idx}
+                    onClick={() => handleChartOption1(idx)}
+                  >
+                    {selectedChartOption1.includes(idx) && (
+                      <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                    )}
+                    {opt.label}
+                  </Button>
+                ))}
+              </ButtonGroup>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Histogram</h5>
-        </div>
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <div className="flex items-center justify-between">
-              <AppDropdownMenu
-                className="min-w-60 [&>*]:justify-start"
-                items={FACILITY_OPTIONS}
-                icon={<ChevronDown />}
-                label={selectedFacility2.label}
-                onSelect={(opt) => setSelectedFacility2(opt)}
-              />
-
-              <div className="tab-btn flex items-center">
-                <ButtonGroup>
-                  {CHART_OPTIONS.map((opt, idx) => (
-                    <Button
-                      className={cn(
-                        selectedChartOption2.includes(idx)
-                          ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                          : ''
-                      )}
-                      variant="outline"
-                      key={idx}
-                      onClick={() => handleChartOption2(idx)}
-                    >
-                      {selectedChartOption2.includes(idx) && (
-                        <Circle className="!size-2.5" fill="#111" stroke="transparent" />
-                      )}
-                      {opt.label}
-                    </Button>
-                  ))}
-                </ButtonGroup>
-              </div>
-            </div>
-
-            <div className="mt-10 rounded-md bg-white">
-              <div className="flex rounded-lg text-center">
-                {histogramChartData &&
-                  histogramChartData?.map(({ label, value, color }, idx) => (
-                    <div style={{ width: `${value}%` }} key={idx}>
-                      <div
-                        className={`py-3.5 ${histogramChartData.length === 1 ? 'rounded-lg' : idx === 0 ? 'rounded-l-lg' : idx === histogramChartData.length - 1 ? 'rounded-r-lg' : ''}`}
-                        style={{ background: `${color}` }}
-                      >
-                        <p className="text-3xl font-bold text-white">{value}%</p>
-                      </div>
-                      <p className="mt-1 text-sm font-medium">{label}</p>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Sankey Chart</h5>
-          <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
-        </div>
-
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <SankeyChart
-              chartData={sankeyChartData}
+          <div className="rounded-md bg-white">
+            <LineChart
+              chartData={lineChartData}
               chartLayout={{
-                margin: { l: 80, r: 80, b: 24, t: 24 },
-                font: { size: 20 },
+                xaxis: { showgrid: false },
+                yaxis: {
+                  title: {
+                    text: 'Throughtput (number of people)',
+                  },
+                },
+                yaxis2: {
+                  title: {
+                    text: 'Waiting time',
+                  },
+                  overlaying: 'y',
+                  side: 'right',
+                  showgrid: false,
+                },
+                margin: { l: 60, r: 60, b: 24, t: 24 },
+                showlegend: false,
               }}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
+        </div>
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <AppDropdownMenu
+              className="min-w-60 [&>*]:justify-start"
+              items={FACILITY_OPTIONS}
+              icon={<ChevronDown />}
+              label={selectedFacility2.label}
+              onSelect={(opt) => setSelectedFacility2(opt)}
+            />
+            <div className="flex items-center">
+              <ButtonGroup>
+                {CHART_OPTIONS.map((opt, idx) => (
+                  <Button
+                    className={cn(
+                      selectedChartOption2.includes(idx)
+                        ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                        : ''
+                    )}
+                    variant="outline"
+                    key={idx}
+                    onClick={() => handleChartOption2(idx)}
+                  >
+                    {selectedChartOption2.includes(idx) && (
+                      <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                    )}
+                    {opt.label}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-md bg-white">
+            <div className="flex rounded-lg text-center">
+              {histogramChartData &&
+                histogramChartData?.map(({ label, value, color }, idx) => (
+                  <div style={{ width: `${value}%` }} key={idx}>
+                    <div
+                      className={`py-3.5 ${
+                        histogramChartData.length === 1
+                          ? 'rounded-lg'
+                          : idx === 0
+                            ? 'rounded-l-lg'
+                            : idx === histogramChartData.length - 1
+                              ? 'rounded-r-lg'
+                              : ''
+                      }`}
+                      style={{ background: `${color}` }}
+                    >
+                      <p className="text-3xl font-bold text-white">{value}%</p>
+                    </div>
+                    <p className="mt-1 text-sm font-medium">{label}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Sankey Chart</h5>
+          <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
+        </div>
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <SankeyChart
+            chartData={sankeyChartData}
+            chartLayout={{
+              margin: { l: 80, r: 80, b: 24, t: 24 },
+              font: { size: 20 },
+            }}
+          />
         </div>
       </div>
     </div>

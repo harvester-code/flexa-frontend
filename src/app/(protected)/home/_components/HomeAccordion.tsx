@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { cn } from '@/lib/utils';
-import styles from './HomeAccordion.module.css';
 
 interface HomeAccordionProps {
   title: string;
@@ -14,18 +13,21 @@ function HomeAccordion({ title, open = true, children }: HomeAccordionProps) {
   const [isOpened, setIsOpened] = useState<boolean>(open);
 
   return (
-    <div className={styles.slideContainer}>
-      <div className={styles.slideHead}>
+    <div className="mt-12 flex flex-col">
+      <div className="flex">
         <h3
-          className={cn(styles.slideTitle, isOpened ? '' : styles.hide)}
+          className="flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-default-100 px-5 text-2xl font-semibold text-default-900"
           onClick={() => setIsOpened(!isOpened)}
         >
           <span>{title}</span>
-          <FontAwesomeIcon className={cn(styles.tmpIcon, 'icon-lg')} icon={faAngleUp} />
+          <FontAwesomeIcon
+            className={cn('icon-lg transition-transform', isOpened ? '' : 'rotate-180')}
+            icon={faAngleUp}
+          />
         </h3>
       </div>
 
-      <div className={cn(styles.slideContents, isOpened ? '' : styles.hide)}>{children}</div>
+      <div className={cn('transition-all', isOpened ? '' : 'hidden')}>{children}</div>
     </div>
   );
 }
