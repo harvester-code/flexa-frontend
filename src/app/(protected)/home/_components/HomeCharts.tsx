@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
+import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
 import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -15,36 +16,29 @@ const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { s
 
 // TODO: 동적으로 수정하기
 const FACILITY_OPTIONS: Option[] = [
-  { label: 'All Facilities', value: 'All Facilities' },
-  { label: 'Check-in', value: 'Check-in' },
-  { label: 'Boardingpass Control', value: 'Boardingpass Control' },
-  { label: 'Security Control', value: 'Security Control' },
-  { label: 'Passport Control', value: 'Passport Control' },
-];
-
-// TODO: 변수값 수정하기
-const SANKEY_OPTIONS: Option[] = [
-  { label: 'By Gate', value: 'byGate' },
-  { label: 'New, OLD', value: 'newOld' },
-  { label: 'Manual, Automated', value: 'manualAutomated' },
-  { label: 'Fasttrack O,Fasttrack X', value: 'fasttrackOFasttrackX' },
+  { label: 'All Facilities', value: 'All Facility' },
+  { label: 'Check-in', value: 'checkin' },
+  { label: 'Departure Gate', value: 'departure_gate' },
+  { label: 'Security Control', value: 'security' },
+  { label: 'Passport Control', value: 'passport' },
 ];
 
 const CHART_OPTIONS: Option[] = [
   { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '' },
-  { label: 'Throughput', value: 'throughput', color: '' },
+  { label: 'Waiting Time', value: 'wait_time', color: '' },
+  // { label: 'Throughput', value: 'throughput', color: '' },
 ];
 
-function HomeCharts() {
+interface HomeChartsProps {
+  scenario: any;
+}
+
+function HomeCharts({ scenario }: HomeChartsProps) {
   const [chartType, setChartType] = useState(true);
 
   // TODO: 변수명 개선하기
   const [selectedFacility1, setSelectedFacility1] = useState(FACILITY_OPTIONS[0]);
   const [selectedFacility2, setSelectedFacility2] = useState(FACILITY_OPTIONS[0]);
-  const [selectedSankeyOption1, setSelectedSankeyOption1] = useState(SANKEY_OPTIONS[0]);
-  const [selectedSankeyOption2, setSelectedSankeyOption2] = useState(SANKEY_OPTIONS[0]);
-  const [selectedSankeyOption3, setSelectedSankeyOption3] = useState(SANKEY_OPTIONS[0]);
 
   // FIXME: 하드코딩 제거하기
   const [selectedChartOption1, setSelectedChartOption1] = useState([0]);
@@ -63,7 +57,7 @@ function HomeCharts() {
       }
     });
   };
-
+  // FIXME: 하드코딩 제거하기
   const [selectedChartOption2, setSelectedChartOption2] = useState([0]);
   const handleChartOption2 = (buttonIndex: number) => {
     setSelectedChartOption2((prevData) => {
@@ -81,15 +75,15 @@ function HomeCharts() {
     });
   };
 
-  // FIXME: 라인차트에 날짜 데이터가 없는 상태.
+  // TODO: 데이터 업데이트하면 수정하기
+  const { data: { flow_chart } = {} } = useLineChart({ scenarioId: scenario?.id });
+  const { data: { histogram } = [] } = useHistogramChart({ scenarioId: scenario?.id });
+  const { data: rawSankeyChartData } = useSankeyChart({ scenarioId: scenario?.id });
+
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const [histogramChartData, setHistogramChartData] = useState<
-    { label: string; value: number; color: string }[]
-  >([]);
+  const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
 
-  // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
     const fetchLineChartData = async () => {
       try {
@@ -121,62 +115,46 @@ function HomeCharts() {
   }, []);
 
   // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
-    const fetchHistogramChartData = async () => {
-      const data = [
-        { label: '00:00 - 15:00', value: 14, color: '#4400d9' },
-        { label: '15:00 - 30:00', value: 27, color: '#622bd9' },
-        { label: '30:00 - 45:00', value: 24, color: '#7f56d9' },
-        { label: '45:00 - 60:00', value: 19, color: '#9d82d9' },
-        { label: '60:00 -', value: 16, color: '#bbaed9' },
-      ];
+    if (histogram) {
+      const { data } = histogram.find((d) => d.label === selectedFacility2.value);
 
-      setHistogramChartData(data);
-    };
+      // HACK
+      const finalData = data[CHART_OPTIONS[selectedChartOption2[0]].value]
+        ?.map(({ title, value }, i) => ({
+          label: title,
+          value: Number(value.replace('%', '')),
+          color: PRIMARY_COLOR_SCALES[i],
+        }))
+        .filter(({ value }) => value > 0);
 
-    fetchHistogramChartData();
-  }, []);
+      setHistogramChartData(finalData);
+    }
+  }, [histogram, selectedFacility2, selectedChartOption2]);
 
   // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
-    const fetchSankeyChartData = async () => {
-      try {
-        const res = await fetch('/samples/data/passenger_flow_sankey_chart_data.json');
-        // FIXME: 오타 발생
-        const { sanky } = await res.json();
-
-        const data: Plotly.Data[] = [
-          {
-            type: 'sankey',
-            orientation: 'h',
-            node: {
-              pad: 15,
-              thickness: 20,
-              // line: {
-              //   color: 'black',
-              //   width: 0.5,
-              // },
-              label: sanky.label,
-              color: PRIMARY_COLOR_SCALES,
-            },
-            link: sanky.link,
+    if (rawSankeyChartData) {
+      const data: Plotly.Data[] = [
+        {
+          type: 'sankey',
+          orientation: 'h',
+          node: {
+            pad: 15,
+            thickness: 20,
+            // line: { color: 'black', width: 0.5 },
+            label: rawSankeyChartData.label,
+            color: PRIMARY_COLOR_SCALES,
           },
-        ];
-
-        setSankeyChartData(data);
-      } catch (error) {
-        console.error((error as Error).message);
-      }
-    };
-
-    fetchSankeyChartData();
-  }, []);
+          link: rawSankeyChartData.link,
+        },
+      ];
+      setSankeyChartData(data);
+    }
+  }, [rawSankeyChartData]);
 
   return (
     <div className="charts">
-      {/* Line Chart */}
       <div className="chart-item">
         <div className="chart-item-head">
           <h5>Flow Chart</h5>
@@ -254,7 +232,6 @@ function HomeCharts() {
         </div>
       </div>
 
-      {/* Histogram Chart */}
       <div className="chart-item">
         <div className="chart-item-head">
           <h5>Histogram</h5>
@@ -294,17 +271,17 @@ function HomeCharts() {
             </div>
 
             <div className="mt-10 rounded-md bg-white">
-              <div className="flex text-center">
+              <div className="flex rounded-lg text-center">
                 {histogramChartData &&
-                  histogramChartData.map((d, idx) => (
-                    <div style={{ width: `${d.value}%` }} key={idx}>
+                  histogramChartData?.map(({ label, value, color }, idx) => (
+                    <div style={{ width: `${value}%` }} key={idx}>
                       <div
-                        className={`py-3.5 ${idx === 0 ? 'rounded-l-lg' : idx === histogramChartData.length - 1 ? 'rounded-r-lg' : ''}`}
-                        style={{ background: `${d.color}` }}
+                        className={`py-3.5 ${histogramChartData.length === 1 ? 'rounded-lg' : idx === 0 ? 'rounded-l-lg' : idx === histogramChartData.length - 1 ? 'rounded-r-lg' : ''}`}
+                        style={{ background: `${color}` }}
                       >
-                        <p className="text-3xl font-bold text-white">{d.value}%</p>
+                        <p className="text-3xl font-bold text-white">{value}%</p>
                       </div>
-                      <p className="mt-1 text-sm font-medium">{d.label}</p>
+                      <p className="mt-1 text-sm font-medium">{label}</p>
                     </div>
                   ))}
               </div>
@@ -313,7 +290,6 @@ function HomeCharts() {
         </div>
       </div>
 
-      {/* Sankey Chart */}
       <div className="chart-item">
         <div className="chart-item-head">
           <h5>Sankey Chart</h5>
@@ -322,52 +298,6 @@ function HomeCharts() {
 
         <div className="chart-item-body">
           <div className="chart-block">
-            <div className="mb-6 grid grid-cols-5 gap-14">
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Check-In</p>
-                <p className="text-sm font-medium text-default-600">By Check-In Counter</p>
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Boarding pass</p>
-                <AppDropdownMenu
-                  className="min-w-[200px] [&>*]:justify-start"
-                  items={SANKEY_OPTIONS}
-                  icon={<ChevronDown />}
-                  label={selectedSankeyOption1.label}
-                  onSelect={(opt) => setSelectedSankeyOption1(opt)}
-                />
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Security Check</p>
-                <AppDropdownMenu
-                  className="min-w-[200px] [&>*]:justify-start"
-                  items={SANKEY_OPTIONS}
-                  icon={<ChevronDown />}
-                  label={selectedSankeyOption2.label}
-                  onSelect={(opt) => setSelectedSankeyOption2(opt)}
-                />
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Passport</p>
-
-                <AppDropdownMenu
-                  className="min-w-[200px] [&>*]:justify-start"
-                  items={SANKEY_OPTIONS}
-                  icon={<ChevronDown />}
-                  label={selectedSankeyOption3.label}
-                  onSelect={(opt) => setSelectedSankeyOption3(opt)}
-                />
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Boarding</p>
-                <p className="text-sm font-medium text-default-600">Eastern, Western</p>
-              </div>
-            </div>
-
             <SankeyChart
               chartData={sankeyChartData}
               chartLayout={{

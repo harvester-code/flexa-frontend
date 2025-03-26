@@ -7,11 +7,10 @@ import FacilityKPISummaryHeatMapChart from './FacilityKPISummaryHeatMapChart';
 import FacilityKPISummaryMixedChart from './FacilityKPISummaryMixedChart';
 import FacilityKPISummaryTableLoading from './FacilityKPISummaryTableLoading';
 
-const KPI_FUNCS = [
+const STATS_OPTIONS = [
   { label: 'Mean', value: 'mean' },
   { label: 'Maximum', value: 'max' },
   { label: 'Top 5%', value: 'top5' },
-  { label: 'Total', value: 'sum' },
   { label: 'Median', value: 'median' },
   { label: 'Bottom 5%', value: 'bottom5' },
   { label: 'Minimum', value: 'min' },
@@ -29,7 +28,7 @@ function FacilityKPISummary({
   kpiHeatMapChartData,
   onChange,
 }: FacilityKPISummaryProps) {
-  const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
+  const [kpiFunc, setKPIFunc] = useState(STATS_OPTIONS[0]);
 
   const handleSelectedKPIFunc = (option: Option) => {
     setKPIFunc(option);
@@ -51,7 +50,7 @@ function FacilityKPISummary({
           <AppDropdownMenu
             className="min-w-[120px]"
             icon={<ChevronDown />}
-            items={KPI_FUNCS}
+            items={STATS_OPTIONS}
             label={kpiFunc.label}
             onSelect={handleSelectedKPIFunc}
           />
@@ -59,21 +58,6 @@ function FacilityKPISummary({
       </div>
 
       {kpiSummaryData ? <AppTable data={kpiSummaryData} /> : <FacilityKPISummaryTableLoading />}
-
-      {/* ==================================================================================================== */}
-      {/* NOTE: 현재는 아래 데이터를 계산할 방법이 없음. */}
-      {/* <div className="mt-10 flex items-center justify-between">
-        <dl>
-          <dt className="text-xl font-semibold leading-8">Number of people excluded from analysis</dt>
-          <dd className="text-sm">
-            Number of passengers who used mobile Check-In and did not use Baggage Check-In service at the
-            airport during the analysis period.
-          </dd>
-        </dl>
-        <div>
-          <p className="text-xl font-semibold text-default-900">0 Pax (0% of the total)</p>
-        </div>
-      </div> */}
 
       {kpiLineChartData && <FacilityKPISummaryMixedChart kpiLineChartData={kpiLineChartData} />}
 

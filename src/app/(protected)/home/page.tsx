@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ScenarioData } from '@/types/simulations';
+import { useSummaries } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -21,6 +22,10 @@ import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const handleTabClick = (index: number) => {
+    setActiveIndex(index);
+  };
+
   const [range1, setRange1] = useState<number>(4);
   const [range2, setRange2] = useState<number[]>([4, 20]);
 
@@ -29,29 +34,6 @@ function HomePage() {
 
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
-
-  // ========================================================
-  // TEMP
-  const [tempData, setTempData] = useState(false);
-  const fetchData = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setSelectBoxOptions(['Check-in', 'Security']);
-    return true;
-  };
-
-  const [isPending, startTransition] = useTransition();
-  const handleData = () => {
-    startTransition(async () => {
-      const data = await fetchData();
-      setTempData(data);
-    });
-  };
-  // ========================================================
-
-  const handleTabClick = (index: number) => {
-    setActiveIndex(index);
-  };
 
   const handleRangeChange = (event: Event, newValue: number | number[]) => {
     setRange2(newValue as number[]);
@@ -204,19 +186,19 @@ function HomePage() {
       </div>
 
       <HomeAccordion title="Summary">
-        <HomeSummary />
+        <HomeSummary scenario={selectedScenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning />
+        <HomeWarning scenario={selectedScenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails />
+        <HomeDetails scenario={selectedScenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
-        <HomeCharts />
+        <HomeCharts scenario={selectedScenario[0]} />
       </HomeAccordion>
     </div>
   );

@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useAlertIssues } from '@/queries/homeQueries';
 import AppDropdownMenu from '@/components/AppDropdownMenu';
 // TODO: CSS 모듈화하기
 import './HomeWarning.css';
 
-// TODO: 동적으로 수정하기
-const FACILITY_OPTIONS = [
-  { label: 'All Facilities', value: 'All Facilities' },
-  { label: 'Check-in', value: 'Check-in' },
-  { label: 'Boardingpass Control', value: 'Boardingpass Control' },
-  { label: 'Security Control', value: 'Security Control' },
-  { label: 'Passport Control', value: 'Passport Control' },
+const PROCESS_OPTIONS = [
+  { label: 'All Facilities', value: 'All-Facilities' },
+  // TODO: 아래 데이터는 동적으로 달라짐
+  { label: 'Check-in', value: 'checkin' },
+  { label: 'Departure Gate', value: 'departure_gate' },
+  { label: 'Security Control', value: 'security' },
+  { label: 'Passport Control', value: 'passport' },
 ];
 
 const TARGET_OPTIONS = [
@@ -19,16 +20,22 @@ const TARGET_OPTIONS = [
   { label: 'Queue Length', value: 'Queue Length' },
 ];
 
-function HomeWarning() {
-  const [selectedFacility, setSelectedFacility] = useState(FACILITY_OPTIONS[0]);
+interface HomeWarningProps {
+  scenario: any;
+}
+
+function HomeWarning({ scenario }: HomeWarningProps) {
+  const [selectedFacility, setSelectedFacility] = useState(PROCESS_OPTIONS[0]);
   const [selectedTarget, setSelectedTarget] = useState(TARGET_OPTIONS[0]);
+
+  const { data: alertIssueData } = useAlertIssues({ scenarioId: scenario?.id });
 
   return (
     <>
       <div className="my-[14px] flex justify-end gap-[14px]">
         <AppDropdownMenu
           className="min-w-60 [&>*]:justify-start"
-          items={FACILITY_OPTIONS}
+          items={PROCESS_OPTIONS}
           icon={<ChevronDown />}
           label={selectedFacility.label}
           onSelect={(opt) => setSelectedFacility(opt)}
@@ -46,70 +53,20 @@ function HomeWarning() {
       </div>
 
       <div className="issues-list">
-        <div className="issue">
-          <dl>
-            <dt>Check-In C</dt>
-            <dd>07:30 AM</dd>
-          </dl>
-          <p className="time">41:22</p>
-          <p className="percent red">+12%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>Check-In B</dt>
-            <dd>06:50 AM</dd>
-          </dl>
-          <p className="time">39:03</p>
-          <p className="percent red">+15%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG5</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">33:21</p>
-          <p className="percent red">+15%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG5</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">33:21</p>
-          <p className="percent red">+15%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG5</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">33:21</p>
-          <p className="percent red">+15%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG2</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">39:03</p>
-          <p className="percent red">+15%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG2</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">39:03</p>
-          <p className="percent orange">+8%</p>
-        </div>
-        <div className="issue">
-          <dl>
-            <dt>DG2</dt>
-            <dd>07:00 AM</dd>
-          </dl>
-          <p className="time">20:28</p>
-          <p className="percent orange">+8%</p>
-        </div>
+        {/* FIXME: [전달 완료] 데이터 구조 개선하기 */}
+        {alertIssueData &&
+          alertIssueData['alert-issues']
+            .find((ele) => ele.label === selectedFacility.value)
+            ?.data.map((d, i) => (
+              <div className="issue" key={i}>
+                <dl>
+                  <dt>{d.location}</dt>
+                  <dd>{d.time}</dd>
+                </dl>
+                <p className="time">{d.wait_time}</p>
+                <p className="percent red">+15%</p>
+              </div>
+            ))}
       </div>
     </>
   );

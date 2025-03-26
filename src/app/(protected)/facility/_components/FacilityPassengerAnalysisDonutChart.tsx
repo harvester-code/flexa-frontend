@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Circle } from 'lucide-react';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -11,16 +12,14 @@ interface FacilityPassengerAnalysisDonutChartProps {
   passengerAnalysisDonutChartData?: any;
 }
 
-// FIXME: 백엔드랑 맞추기
 // TODO: 색깔 설정하기
 const DONUT_CHART_OPTIONS = [
+  // 아래는 고정
   { label: 'Airline', value: 'airline', color: '' },
   { label: 'Destination', value: 'destination', color: '' },
   { label: 'Flight Number', value: 'flightNumber', color: '' },
+  // 아래는 동적
   { label: 'checkin Counter', value: 'checkInCounter', color: '' },
-  // { label: 'Ticket Issuance', value: 'ticketIssuance', color: '' },
-  // { label: 'Baggage Check-In', value: 'baggageCheckIn', color: '' },
-  // { label: 'Departure Gate', value: 'departureGate', color: '' },
 ];
 
 const defaultData: any[] = [];
@@ -93,17 +92,14 @@ function FacilityPassengerAnalysisDonutChart({
       {
         type: 'pie',
         textinfo: 'none',
-        marker: {
-          // colors: ['#7F56D9', '#9E77ED', '#B692F6', '#D6BBFB', '#E9D7FE', '#E4E7EC'],
-          colors: ['#7F56D9', '#9E77ED', '#B692F6', '#D6BBFB', '#E4E7EC'],
-        },
+        marker: { colors: PRIMARY_COLOR_SCALES.slice(0, 5) },
         direction: 'clockwise',
         hole: 0.5,
         labels: passengerAnalysisDonutChartData?.pie_result[key].labels,
         values: passengerAnalysisDonutChartData?.pie_result[key].values,
       },
     ]);
-    // FIXME: 백엔드 데이터 수정 요청
+    // FIXME: [전달 완료] 백엔드 데이터 수정 요청
     setTableData(
       passengerAnalysisDonutChartData?.table_result[key].body.map((d) => {
         const [text, count] = d.values[0].split(' ');

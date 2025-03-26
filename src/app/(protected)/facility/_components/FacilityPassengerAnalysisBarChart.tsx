@@ -20,19 +20,17 @@ const CHART_OPTIONS: Option[] = [
 ];
 
 const CRITERIA_OPTIONS = [
+  // 아래는 고정
   { label: 'Airline', value: 'airline' },
   { label: 'Destination', value: 'destination' },
   { label: 'Flight Number', value: 'flightNumber' },
+  // 아래는 동적
   { label: 'checkin Counter', value: 'checkinCounter' },
-  // { label: 'Age', value: 'age' },
-  // { label: 'Sex', value: 'sex' },
-  // { label: 'Nationality', value: 'nationality' },
 ];
 
 function FacilityPassengerAnalysisBarChart({
   passengerAnalysisBarChartData,
 }: FacilityPassengerAnalysisBarChartProps) {
-  // FIXME: 백엔드와 KEY값 맞추기
   const [activeCriteria, setActiveCriteria] = useState(CRITERIA_OPTIONS[0].label);
 
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
