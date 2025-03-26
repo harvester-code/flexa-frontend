@@ -12,7 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -65,7 +66,7 @@
     "embla-carousel-react": "^8.5.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.477.0",
-    "next": "15.2.1",
+    "next": "15.2.4",
     "next-themes": "^0.4.4",
     "plotly.js": "^3.0.1",
     "plotly.js-dist-min": "^3.0.1",
@@ -92,7 +93,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.2.1",
+    "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "^10.0.1",
     "postcss": "^8",
     "prettier": "^3.5.0",
