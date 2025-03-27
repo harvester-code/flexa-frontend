@@ -54,7 +54,7 @@ const tabs: { text: string; number?: number }[] = [
   { text: 'Flight Schedule' },
   { text: 'Passenger Schedule' },
   { text: 'Processing Procedures' },
-  { text: 'Facility Connection', number: 22 },
+  { text: 'Facility Connection' },
   { text: 'Facility Information' },
   { text: 'Simulation' },
 ];
@@ -64,16 +64,17 @@ export default function SimulationDetail(props) {
   const router = useRouter();
   const metadata = useSimulationMetadata();
 
-  const { tabIndex, setTabIndex, setCheckpoint } = useSimulationStore();
+  const { tabIndex, setTabIndex, availableTabIndex, setCheckpoint, setScenarioInfo } = useSimulationStore();
 
   useEffect(() => {
-    getScenarioMetadata(params?.id).then((response) => {
-      console.log(response);
+    getScenarioMetadata(params?.id).then(({ data }) => {
+      console.log(data)
       const clientTime = dayjs();
-      const serverTime = dayjs(response?.data?.checkpoint);
-      setCheckpoint(response?.data?.checkpoint, clientTime.diff(serverTime, 'second'));
+      const serverTime = dayjs(data?.checkpoint);
+      setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'second'));
+      setScenarioInfo(data?.scenario_info);
       metadata.setMetadata({
-        ...response?.data?.metadata,
+        ...data?.metadata,
         history: dummyHistoryData,
       });
     });
@@ -117,9 +118,10 @@ export default function SimulationDetail(props) {
       <TabDefault
         tabCount={tabs.length}
         currentTab={tabIndex}
+        availableTabs={availableTabIndex}
         tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
-        className={`mt-[40px] grid-cols-7`}
-        onTabChange={(index) => setTabIndex(index)}
+        className={`mt-[40px]`}
+        onTabChange={(index) => index > availableTabIndex ? null : setTabIndex(index)}
       />
       <TabScenarioOverview visible={tabIndex == 0} />
       <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />

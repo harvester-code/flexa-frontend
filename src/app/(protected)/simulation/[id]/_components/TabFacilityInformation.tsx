@@ -1,7 +1,8 @@
 'use client';
 
 // import { Menu, MenuItem } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import {
   faAngleDown,
@@ -12,229 +13,364 @@ import {
   faPen,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
+import { Dropdown } from '@/components/Conditions';
+import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
+import { useResize } from '@/hooks/useResize';
+import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
+
+const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
+
+interface NodeInfo {
+  text: string;
+  number?: number;
+}
+
+const DefaultTimeUnit = 10;
+
+interface TableData {
+  title?: string;
+  header: GridTableHeader[];
+  data: GridTableRow[];
+}
 
 interface TabFacilityInformationProps {
   visible: boolean;
 }
 
-export default function TabFacilityInformation({ visible }: TabFacilityInformationProps) {
-  const [addConditions, setAddConditions] = useState(false);
-  const tabsSecondary: { text: string; number?: number }[] = [
-    { text: 'Check-In' },
-    { text: 'Boarding Pass', number: 2 },
-    { text: 'Security' },
-    { text: 'Passport' },
-    { text: 'Direct Upload' },
-  ];
-  const openData = [
-    {
-      id: 1,
-      time: '00:00',
-      sc01: '0',
-      sc02: '0',
-      sc03: '0',
-      sc04: '0',
-      sc05: '0',
-      sc06: '0',
-      sc07: '0',
-      sc08: '0',
-      sc09: '0',
-      sc10: '0',
-    },
-    {
-      id: 2,
-      time: '01:00',
-      sc01: '0',
-      sc02: '0',
-      sc03: '0',
-      sc04: '0',
-      sc05: '0',
-      sc06: '0',
-      sc07: '0',
-      sc08: '0',
-      sc09: '0',
-      sc10: '0',
-    },
-    {
-      id: 3,
-      time: '02:00',
-      sc01: '0',
-      sc02: '0',
-      sc03: '0',
-      sc04: '0',
-      sc05: '0',
-      sc06: '0',
-      sc07: '0',
-      sc08: '0',
-      sc09: '0',
-      sc10: '0',
-    },
-    {
-      id: 4,
-      time: '03:00',
-      sc01: '30',
-      sc02: '30',
-      sc03: '30',
-      sc04: '30',
-      sc05: '30',
-      sc06: '30',
-      sc07: '30',
-      sc08: '30',
-      sc09: '30',
-      sc10: '30',
-    },
-    {
-      id: 5,
-      time: '04:00',
-      sc01: '30',
-      sc02: '30',
-      sc03: '30',
-      sc04: '30',
-      sc05: '30',
-      sc06: '30',
-      sc07: '30',
-      sc08: '30',
-      sc09: '30',
-      sc10: '30',
-    },
-  ];
-
-  type Row = {
-    time: string;
-    checkboxes: boolean[];
+interface FacilitySettings {
+  numberOfEachDevices: number;
+  maximumQueuesAllowedPer: number;
+  defaultTableData?: TableData;
+  automaticInput?: boolean;
+  timeUnit?: number;
+  openingHoursTableData?: TableData;
+  chartData?: {
+    x: string[];
+    y: number[];
   };
-  const rows: Row[] = [
-    { time: '00:00', checkboxes: Array(10).fill(false) },
-    { time: '01:00', checkboxes: Array(10).fill(false) },
-    { time: '02:00', checkboxes: Array(10).fill(false) },
-    { time: '03:00', checkboxes: Array(10).fill(false) },
-    { time: '04:00', checkboxes: Array(10).fill(false) },
-    { time: '05:00', checkboxes: Array(10).fill(false) },
-  ];
-  const [checkboxStates, setCheckboxStates] = useState<boolean[][]>([]);
-  useEffect(() => {
-    const initialCheckboxStates = Array.from({ length: rows.length }, () => Array(10).fill(false));
-    setCheckboxStates(initialCheckboxStates);
-  }, [rows.length]);
+}
 
-  const handleCheckboxChange = (rowIndex: number, colIndex: number) => {
-    setCheckboxStates((prevStates) => {
-      const newStates = prevStates.map((row, rIndex) => {
-        if (rIndex === rowIndex) {
-          return row.map((col, cIndex) => (cIndex === colIndex ? !col : col));
-        }
-        return row;
-      });
-      return newStates;
+const facilitySettingsDefaults = [
+  { name: 'Processing time (sec)', value: 60 },
+  { name: 'Maximum Allowed Queue (persons)', value: 200 },
+];
+
+export default function TabFacilityInformation({ visible }: TabFacilityInformationProps) {
+  const refWidth = useRef(null);
+  const refSetOpeningHours = useRef(null);
+  const { passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
+  const { tabIndex, setTabIndex, priorities, scenarioInfo } = useSimulationStore();
+
+  const openingHoursArea = useResize(refSetOpeningHours);
+
+  const [loaded, setLoaded] = useState(false);
+  const [procedureIndex, setProcedureIndex] = useState(0);
+  const [nodeIndex, setNodeIndex] = useState<number[]>([]);
+  const [availableProcedureIndex, setAvailableProcedureIndex] = useState(0);
+  const [barChartVisible, setBarChartVisible] = useState(false);
+
+  const { width } = useResize(refWidth);
+
+  const id = `${procedureIndex}_${nodeIndex}`;
+  const [facilitySettings, _setFacilitySettings] = useState<{
+    [id: string]: FacilitySettings;
+  }>({});
+  const facilitySettingsCurrent = facilitySettings[id] || {};
+  const setFacilitySettings = (data: FacilitySettings) => {
+    const defaultTableData =
+      data.numberOfEachDevices != facilitySettingsCurrent.numberOfEachDevices ||
+      data.maximumQueuesAllowedPer != facilitySettingsCurrent.maximumQueuesAllowedPer
+        ? {
+            header: Array(data.numberOfEachDevices)
+              .fill(0)
+              .map((_, index) => {
+                return {
+                  name: `F${String(index + 1).padStart(2, '0')}`,
+                  style: { background: '#F9F9FB' },
+                  minWidth: 80,
+                };
+              }),
+            data: facilitySettingsDefaults.map((item, index) => {
+              return {
+                name: item.name,
+                values: Array(data.numberOfEachDevices).fill(
+                  String(index == 0 ? item.value : data.maximumQueuesAllowedPer)
+                ),
+                style: { background: '#FFFFFF' },
+              };
+            }),
+          }
+        : facilitySettingsCurrent.defaultTableData;
+
+    _setFacilitySettings({ ...facilitySettings, [id]: { ...data, defaultTableData } });
+  };
+
+  const defaultTableData = facilitySettingsCurrent.defaultTableData;
+  const setDefaultTableData = (defaultTableData: TableData) => {
+    _setFacilitySettings({
+      ...facilitySettings,
+      [id]: {
+        ...facilitySettingsCurrent,
+        defaultTableData: { ...facilitySettingsCurrent.defaultTableData, ...defaultTableData },
+      },
     });
   };
-  const [colorAnchorEl, setColorAnchorEl] = useState<HTMLElement | null>(null);
-  const handleColorClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setColorAnchorEl(event.currentTarget);
+
+  const openingHoursTableData = facilitySettingsCurrent.openingHoursTableData;
+  const setOpeningHoursTableData = (openingHoursTableData: TableData) => {
+    _setFacilitySettings({
+      ...facilitySettings,
+      [id]: {
+        ...facilitySettingsCurrent,
+        openingHoursTableData: { ...facilitySettingsCurrent.openingHoursTableData, ...openingHoursTableData },
+      },
+    });
   };
-  const handleColorClose = () => {
-    setColorAnchorEl(null);
+
+  useEffect(() => {
+    if (!facilitySettingsCurrent || !facilitySettingsCurrent.defaultTableData) {
+      setFacilitySettings({
+        numberOfEachDevices: 5,
+        maximumQueuesAllowedPer: 200,
+      });
+    }
+  }, [id]);
+
+  const chartDataCurrent = [...(facilitySettingsCurrent.openingHoursTableData?.data || [])].reverse();
+
+  const procedures = [
+    ...(passenger_attr?.procedures?.map((item, index) => {
+      return {
+        text: item.name,
+      };
+    }) || []),
+  ] as NodeInfo[];
+
+  useEffect(() => {
+    if (visible && !loaded) {
+      setLoaded(true);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (nodeIndex.length < 1 && passenger_attr?.procedures) {
+      setNodeIndex(Array(passenger_attr?.procedures.length).fill(0));
+    }
+  }, [passenger_attr?.procedures]);
+
+  const onSetOpeningHoursTableData = () => {
+    const timeUnit = facilitySettingsCurrent.timeUnit || DefaultTimeUnit;
+    const times: Array<string> = [];
+    for (let timeCur = 0; timeCur < 1440; timeCur += timeUnit) {
+      times.push(
+        `${String(Math.floor(timeCur / 60)).padStart(2, '0')}:${String(timeCur % 60).padStart(2, '0')}`
+      );
+    }
+    setFacilitySettings({
+      ...facilitySettingsCurrent,
+      timeUnit: timeUnit,
+      openingHoursTableData: {
+        header: Array(facilitySettingsCurrent.numberOfEachDevices)
+          .fill(0)
+          .map((_, index) => {
+            return {
+              name: `F${String(index).padStart(2, '0')}`,
+              style: { background: '#F9F9FB' },
+              minWidth: 80,
+            };
+          }),
+        data: times.map((time, index) => {
+          return {
+            name: time,
+            values: Array(facilitySettingsCurrent.numberOfEachDevices)
+              .fill(0)
+              .map((_, cidx) => String(facilitySettingsCurrent.defaultTableData?.data[0].values[cidx])),
+            style: { background: '#FFFFFF' },
+            height: 50,
+            checkToNumber: facilitySettingsCurrent.defaultTableData?.data[0].values,
+          } as GridTableRow;
+        }),
+      },
+    });
   };
+
+  useEffect(() => {
+    if(facilitySettingsCurrent.chartData) {
+      onSetChartData();
+    }
+  }, [facilitySettingsCurrent.openingHoursTableData?.data]);
+
+  const onSetChartData = () => {
+    const x: string [] = [];
+    const y: number [] = [];
+    [...(facilitySettingsCurrent.openingHoursTableData?.data || [])].map((val, index) => {
+      if(index % 6 == 0) {
+        x.push(val.name);
+        y.push(val.values.reduce((acc, current) => acc + Number(current), 0));
+      }
+    });      
+    setFacilitySettings({
+      ...facilitySettingsCurrent,
+      chartData: {
+        y,
+        x,
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (openingHoursArea?.height > 0) {
+      setBarChartVisible(true);
+    }
+  }, [openingHoursArea]);
+
   return !visible ? null : (
-    <div>
+    <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Facility Information</h2>
       <TabDefault
-        tabCount={5}
-        currentTab={1}
-        tabs={tabsSecondary.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
-        className={`tab-secondary mt-[25px] grid-cols-5`}
+        tabCount={procedures.length}
+        currentTab={procedureIndex}
+        availableTabs={availableProcedureIndex}
+        tabs={procedures.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
+        onTabChange={(index) => {
+          if (index > availableProcedureIndex) return;
+          setProcedureIndex(index);
+        }}
+        className={`tab-secondary mt-[25px]`}
       />
-      <ul className="gate-list">
-        <li>
-          <button>Gate 1</button>
-        </li>
-        <li>
-          <button>Gate 2</button>
-        </li>
-        <li>
-          <button>Gate 3</button>
-        </li>
-        <li>
-          <button>Gate 4</button>
-        </li>
-        <li className="active">
-          <button>
-            Gate 5 <span>2</span>
-          </button>
-        </li>
-        <li>
-          <button>Gate 6</button>
-        </li>
+      <ul className="gate-list grid-cols-5">
+        {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
+          <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
+            <button>{text}</button>
+          </li>
+        ))}
       </ul>
       <div className="mt-[30px] flex items-center justify-between">
         <h2 className="title-sm">Facility Default Settings</h2>
-        <div className="flex items-center gap-[10px]">
-          <Button
-            className="btn-md btn-default"
-            icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faPen} />}
-            text="Edit Facilities"
-            onClick={() => {}}
-          />
-        </div>
       </div>
-      <div className="table-container mt-[20px]">
-        <table className="table-tertiary">
-          <thead>
-            <tr>
-              <th className="w-[250px] text-left">Category</th>
-              <th className="">DG5_NEW_SC01</th>
-              <th className="">DG5_NEW_SC02</th>
-              <th className="">DG5_NEW_SC03</th>
-              <th className="">DG5_NEW_SC04</th>
-              <th className="">DG5_NEW_SC05</th>
-              <th className="">DG5_NEW_SC06</th>
-              <th className="">DG5_NEW_SC07</th>
-              <th className="">DG5_NEW_SC08</th>
-              <th className="">DG5_NEW_SC09</th>
-              <th className="">DG5_NEW_SC10</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th>Processing Time (sec)</th>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-              <td className="text-center underline">35</td>
-            </tr>
-            <tr>
-              <th className="">Maximum Allowed Queue (persons)</th>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-              <td className="text-center underline">200</td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="process-item-content mt-[17px] rounded-lg border border-default-300 bg-gray-100 p-[20px]">
+        <div className="flex justify-between gap-[20px]">
+          <dl className="flex flex-grow flex-col gap-[5px]">
+            <dt>
+              <h4 className="pl-[10px] text-sm font-semibold">Number of each devices in Check-In</h4>
+            </dt>
+            <dd>
+              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+                <button
+                  onClick={() => {
+                    if (facilitySettingsCurrent.numberOfEachDevices > 0) {
+                      setFacilitySettings({
+                        ...facilitySettingsCurrent,
+                        numberOfEachDevices: facilitySettingsCurrent.numberOfEachDevices - 1,
+                      });
+                    }
+                  }}
+                >
+                  <img src="/image/ico-num-minus.svg" alt="-" />
+                </button>
+                <Input
+                  type="text"
+                  placeholder=""
+                  value={String(facilitySettingsCurrent.numberOfEachDevices)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      numberOfEachDevices: Number(e.target.value),
+                    });
+                  }}
+                  className="!border-0 text-center focus:!outline-none"
+                />
+                <button
+                  onClick={() => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      numberOfEachDevices: facilitySettingsCurrent.numberOfEachDevices + 1,
+                    });
+                  }}
+                >
+                  <img src="/image/ico-num-plus.svg" alt="+" />
+                </button>
+              </div>
+            </dd>
+          </dl>
+          <dl className="flex flex-grow flex-col gap-[5px]">
+            <dt>
+              <h4 className="pl-[10px] text-sm font-semibold">Maximum queues allowed per Check-In</h4>
+            </dt>
+            <dd>
+              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+                <button
+                  onClick={() => {
+                    if (facilitySettingsCurrent.maximumQueuesAllowedPer > 0) {
+                      setFacilitySettings({
+                        ...facilitySettingsCurrent,
+                        maximumQueuesAllowedPer: facilitySettingsCurrent.maximumQueuesAllowedPer - 1,
+                      });
+                    }
+                  }}
+                >
+                  <img src="/image/ico-num-minus.svg" alt="-" />
+                </button>
+                <Input
+                  type="text"
+                  placeholder=""
+                  value={String(facilitySettingsCurrent.maximumQueuesAllowedPer)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      maximumQueuesAllowedPer: Number(e.target.value),
+                    });
+                  }}
+                  className="!border-0 text-center focus:!outline-none"
+                />
+                <button
+                  onClick={() => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      maximumQueuesAllowedPer: facilitySettingsCurrent.maximumQueuesAllowedPer + 1,
+                    });
+                  }}
+                >
+                  <img src="/image/ico-num-plus.svg" alt="+" />
+                </button>
+              </div>
+            </dd>
+          </dl>
+        </div>
+        <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Device operation details adjustment</h4>
+        {!facilitySettingsCurrent?.defaultTableData ? null : (
+          <div>
+            <GridTable
+              type={'text'}
+              titleWidth={120}
+              header={facilitySettingsCurrent.defaultTableData.header}
+              data={facilitySettingsCurrent.defaultTableData.data}
+              onDataChange={(data) => {
+                setDefaultTableData({
+                  ...defaultTableData,
+                  data,
+                } as TableData);
+              }}
+            />
+          </div>
+        )}
       </div>
       <p className="mt-[20px] flex justify-end">
-        <Button
-          className="btn-md btn-tertiary"
-          text="Applied"
-          iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-          onClick={() => {}}
-        />
+        {facilitySettingsCurrent?.openingHoursTableData ? (
+          <Button
+            className="btn-md btn-tertiary"
+            iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
+            text="Applied"
+            onClick={() => onSetOpeningHoursTableData()}
+          />
+        ) : (
+          <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetOpeningHoursTableData()} />
+        )}
       </p>
       <div className="mt-[30px] flex items-center justify-between">
         <h2 className="title-sm">Set Opening Hours</h2>
@@ -242,165 +378,191 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
           <Checkbox
             id="Automatic"
             label="Automatic Input"
-            checked={addConditions}
-            onChange={() => setAddConditions(!addConditions)}
+            checked={!!facilitySettingsCurrent.automaticInput}
+            onChange={() =>
+              setFacilitySettings({
+                ...facilitySettingsCurrent,
+                automaticInput: !facilitySettingsCurrent.automaticInput,
+              })
+            }
             className="checkbox-toggle"
           />
           <dl className="flex items-center gap-[10px]">
             <dt>Time Unit</dt>
             <dd>
-              <SelectBox
-                options={['10 Min', '20 Min', '30 Min', '40 Min', '50 Min', '60 Min']}
-                className="select-sm select-square w-[120px]"
+              <Dropdown
+                items={[{ id: '10', text: '10 Min' }]}
+                defaultId={'10'}
+                className="min-w-[200px]"
+                onChange={(items) => {
+                  setFacilitySettings({ ...facilitySettingsCurrent, timeUnit: Number(items[0].id) });
+                }}
               />
             </dd>
           </dl>
         </div>
       </div>
-      <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-        <table className="table-secondary">
-          <thead>
-            <tr className="text-left">
-              <th className="w-[100px]">
-                Opening <br /> Time
-              </th>
-              <th className="">
-                DG5_ <br />
-                NEW_SC01
-              </th>
-              <th className="">DG5_ NEW_SC02</th>
-              <th className="">DG5_ NEW_SC03</th>
-              <th className="">DG5_ NEW_SC04</th>
-              <th className="">DG5_ NEW_SC05</th>
-              <th className="">DG5_ NEW_SC06</th>
-              <th className="">DG5_ NEW_SC07</th>
-              <th className="">DG5_ NEW_SC08</th>
-              <th className="">DG5_ NEW_SC09</th>
-              <th className="">DG5_ NEW_SC10</th>
-            </tr>
-          </thead>
-          <tbody>
-            {openData.map((open) => (
-              <tr key={open.id} className="text-center">
-                <td className="">{open.time}</td>
-                <td className="underline">{open.sc01}</td>
-                <td className="underline">{open.sc02}</td>
-                <td className="underline">{open.sc03}</td>
-                <td className="underline">{open.sc04}</td>
-                <td className="underline">{open.sc05}</td>
-                <td className="underline">{open.sc06}</td>
-                <td className="underline">{open.sc07}</td>
-                <td className="underline">{open.sc08}</td>
-                <td className="underline">{open.sc09}</td>
-                <td className="underline">{open.sc10}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-        <table className="table-secondary">
-          <thead>
-            <tr className="text-left">
-              <th className="w-[100px]">
-                Opening <br /> Time
-              </th>
-              <th className="">
-                DG5_ <br />
-                NEW_SC01
-              </th>
-              <th className="">DG5_ NEW_SC02</th>
-              <th className="">DG5_ NEW_SC03</th>
-              <th className="">DG5_ NEW_SC04</th>
-              <th className="">DG5_ NEW_SC05</th>
-              <th className="">DG5_ NEW_SC06</th>
-              <th className="">DG5_ NEW_SC07</th>
-              <th className="">DG5_ NEW_SC08</th>
-              <th className="">DG5_ NEW_SC09</th>
-              <th className="">DG5_ NEW_SC10</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="text-center">
-                <td>{row.time}</td>
-                {row.checkboxes.map((_, colIndex) => (
-                  <td key={colIndex}>
-                    <Checkbox
-                      label=""
-                      id={`check-${rowIndex}-${colIndex}`}
-                      checked={checkboxStates[rowIndex]?.[colIndex] || false}
-                      onChange={() => handleCheckboxChange(rowIndex, colIndex)}
-                      className="checkbox text-sm"
+      <div className="table-wrap mt-[10px] overflow-hidden rounded-md">
+        <div className={`relative h-[600px] overflow-auto pr-[400px]`}>
+          <div ref={refSetOpeningHours} className="h-[7254px]">
+            {!facilitySettingsCurrent?.openingHoursTableData ? null : (
+              <>
+                <GridTable
+                  className={``}
+                  type={facilitySettingsCurrent.automaticInput ? 'checkbox' : 'text'}
+                  title="Opening Time"
+                  titleWidth={92}
+                  headerHeight={52}
+                  header={facilitySettingsCurrent.openingHoursTableData.header}
+                  data={facilitySettingsCurrent.openingHoursTableData.data}
+                  onDataChange={(data) => {
+                    setOpeningHoursTableData({
+                      ...openingHoursTableData,
+                      data,
+                    } as TableData);
+                  }}
+                />
+                {barChartVisible ? (
+                  <div className={`absolute bottom-0 right-0 top-0`}>
+                    <BarChart
+                      chartData={[
+                        {
+                          x: chartDataCurrent.map((val) =>
+                            val.values.reduce((acc, current) => acc + Number(current), 0)
+                          ),
+                          y: chartDataCurrent.map((val) => `${val.name}  `),
+                          // name: item.name,
+                          type: 'bar',
+                          marker: {
+                            color: '#6941C6',
+                            opacity: 1,
+                            // @ts-expect-error ....
+                            cornerradius: 7,
+                          },
+                          orientation: 'h',
+                        },
+                      ]}
+                      chartLayout={{
+                        width: 390,
+                        height: openingHoursArea?.height + 7,
+                        margin: {
+                          l: 50,
+                          r: 0,
+                          t: 66,
+                          b: 0,
+                        },
+                        barmode: 'overlay',
+                        bargap: 0.4,
+                        showlegend: false,
+                      }}
+                      config={{
+                        displayModeBar: false,
+                      }}
                     />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="mt-[30px] flex h-[360px] items-center justify-center rounded-md bg-white">API AREA</div>
-      <p className="mt-[20px] flex justify-end">
-        <Button
-          className="btn-md btn-tertiary"
-          text="Applied"
-          iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-          onClick={() => {}}
-        />
-      </p>
-      <div className="mt-[40px] flex items-center justify-center">
-        <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
-          Hide Overview Charts
-        </button>
-      </div>
-      <hr />
-      <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
-      <h3 className="title-sm">Check Generated Passenger Data</h3>
-      <div className="mt-[20px] flex items-center justify-between">
-        <p className="text-[40px] text-xl font-semibold">Total: 1.001 Pax</p>
-        <p>
+      <p className="mt-[38px] flex justify-end">
+        {facilitySettingsCurrent?.chartData ? (
           <Button
-            className="btn-md btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
-            text="Color Criteria"
-            onClick={handleColorClick}
+            className="btn-md btn-tertiary"
+            iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
+            text="Applied"
+            onClick={() => onSetChartData()}
           />
-          {/* <Menu
-            anchorEl={colorAnchorEl}
-            open={Boolean(colorAnchorEl)}
-            onClose={handleColorClose}
-            PaperProps={{
-              className: 'sub-menu !w-[150px]',
-            }}
-          >
-            <MenuItem onClick={() => {}}>Airline</MenuItem>
-            <MenuItem onClick={() => {}}>Age</MenuItem>
-            <MenuItem onClick={() => {}}>Sex</MenuItem>
-            <MenuItem onClick={() => {}}>Destination</MenuItem>
-            <MenuItem onClick={() => {}}>Nationality</MenuItem>
-            <MenuItem onClick={() => {}}>Flight Number</MenuItem>
-          </Menu> */}
-        </p>
-      </div>
-      <div className="mt-[15px] flex justify-end">
-        <ul className="chart-info">
-          <li>
-            <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
-          </li>
-          <li>
-            <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
-          </li>
-        </ul>
-      </div>
-      <div className="mt-[15px] flex h-[360px] items-center justify-center rounded-md bg-white">API AREA</div>
+        ) : (
+          <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetChartData()} />
+        )}
+      </p>
+      {facilitySettingsCurrent.chartData ? (
+        <>
+          <div className="mt-[40px] flex items-center justify-center">
+            <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
+              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
+              Hide Overview Charts
+            </button>
+          </div>
+          <hr />
+          <div className="mt-[34px] flex flex-row justify-between">
+            <h3 className="title-sm">Check Generated Passenger Data</h3>
+            <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
+          </div>
+          <div className="mt-[20px] flex items-center justify-between">
+            <p className="text-[40px] text-xl font-semibold">Total: 1.001 Pax</p>
+            <p>
+              <Button
+                className="btn-md btn-default"
+                icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
+                text="Color Criteria"
+                onClick={() => {}}
+              />
+            </p>
+          </div>
+          <div>
+            <div className="mt-[15px] flex justify-end">
+              <ul className="chart-info">
+                <li>
+                  <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
+                </li>
+                <li>
+                  <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
+                </li>
+              </ul>
+            </div>
+            <BarChart
+              chartData={[
+                {
+                  y: facilitySettingsCurrent.chartData.y,
+                  x: facilitySettingsCurrent.chartData.x,
+                  // name: item.name,
+                  type: 'bar',
+                  marker: {
+                    color: '#6941C6',
+                    opacity: 1,
+                    // @ts-expect-error ....
+                    cornerradius: 7,
+                  },
+                  orientation: 'v',
+                },
+              ]}
+              chartLayout={{
+                width,
+                height: 390,
+                margin: {
+                  l: 30,
+                  r: 10,
+                  t: 0,
+                  b: 30,
+                },
+                barmode: 'overlay',
+                bargap: 0.4,
+                showlegend: false,
+              }}
+              config={{
+                displayModeBar: false,
+              }}
+            />
+          </div>
+        </>
+      ) : null}
+
       <div className="mt-[30px] flex justify-between">
-        <button className="btn-md btn-default btn-rounded w-[210px] justify-between">
+        <button
+          className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          onClick={() => setTabIndex(tabIndex - 1)}
+        >
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
         </button>
-        <button className="btn-md btn-default btn-rounded w-[210px] justify-between" disabled>
+        <button
+          className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          onClick={() => setTabIndex(tabIndex + 1)}
+          disabled={procedureIndex < procedures.length - 1}
+        >
           <span className="flex flex-grow items-center justify-center">Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
         </button>

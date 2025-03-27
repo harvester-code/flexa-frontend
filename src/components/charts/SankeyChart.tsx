@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-function SankeyChart({ chartData, chartLayout }) {
+interface SankeyChartProps {
+  chartData: Plotly.Data[];
+  chartLayout: Partial<Plotly.Layout>;
+  config?: Partial<Plotly.Config>;
+}
+
+function SankeyChart({ chartData, chartLayout, config }: SankeyChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -9,6 +15,7 @@ function SankeyChart({ chartData, chartLayout }) {
       Plotly.newPlot(chartRef.current, chartData, chartLayout, {
         autosizable: true,
         responsive: true,
+        ...config,
       });
     }
   }, [chartData, chartLayout]);

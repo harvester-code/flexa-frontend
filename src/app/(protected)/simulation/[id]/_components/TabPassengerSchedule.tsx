@@ -189,7 +189,7 @@ interface PrioritiesProps {
   className?: string;
   conditions: ConditionData;
   defaultValues?: PassengerPatternState;
-  onChange?: (PassengerPatternState) => void;
+  onChange?: (state: PassengerPatternState) => void;
 }
 
 function Priorities({ className, conditions, defaultValues, onChange }: PrioritiesProps) {
@@ -250,9 +250,10 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
 
 export default function TabPassengerSchedule({ visible }: TabPassengerScheduleProps) {
   const refWidth = useRef(null);
-  const { setPassengerSchedule, flight_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex } = useSimulationStore();
+  const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
+  const { tabIndex, setTabIndex, priorities } = useSimulationStore();
 
+  const [loaded, setLoaded] = useState(false);
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addPrioritiesVisible, setAddPrioritiesVisible] = useState(false);
@@ -274,7 +275,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       ? BarColors[String(chartDataCurrent?.length)]
       : BarColors.DEFAULT;
 
-  const conditions = flight_sch?.add_priorities;
+  const conditions = priorities;
 
   const prioritiesItems = selPriorities && selPriorities?.length > 0 ? selPriorities : [undefined];
   const loadPassengerSchedules = useCallback(() => {
@@ -297,15 +298,10 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       ],
     };
 
-    console.log(params)
-
     getPassengerSchedules(params)
       .then(({ data }) => {
         const passengerSchedule = { params };
-
         setPassengerSchedule(passengerSchedule);
-
-        console.log(data);
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
           for (const criteriaCur in data?.bar_chart_y_data) {
             const criteriaDataCur = data?.bar_chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
@@ -332,6 +328,31 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
         setLoadingPassengerSchedules(false);
       });
   }, [selPriorities, otherPassengerState, addPrioritiesVisible, flight_sch]);
+
+  useEffect(() => {
+    if(visible && !loaded && passenger_sch?.params) {
+      setLoaded(true);
+      const conditions = passenger_sch?.params?.destribution_conditions;
+      if(conditions.length > 1) {
+        const priorities: PassengerPatternState[] = [];
+        for(let i = 0; i < conditions.length - 1; i++) {
+          const itemCur = conditions[i];
+          priorities.push({
+            mean: itemCur.mean,
+            variance: itemCur.standard_deviation,
+            conditions: itemCur.conditions,
+          });
+        }
+        setSelPriorities(priorities);
+        setAddPrioritiesVisible(true);
+      }
+      const otherCondition = conditions[conditions.length - 1];
+      setOtherPassengerState({
+        mean: otherCondition.mean,
+        variance: otherCondition.standard_deviation
+      });
+    }
+  }, [visible]);
 
   const distributionData: Plotly.Data[] = [];
 
@@ -842,22 +863,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               </tbody>
             </table>
           </div> */}
-          <div className="mt-[30px] flex justify-between">
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              onClick={() => setTabIndex(tabIndex - 1)}
-            >
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-              <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
-            </button>
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              onClick={() => setTabIndex(tabIndex + 1)}
-            >
-              <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-            </button>
-          </div>
         </>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
@@ -869,8 +874,25 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
         </div>
       ) : (
-        <div className="h-[100px]" />
+        <div className="h-[10px]" />
       )}
+      <div className="mt-[30px] flex justify-between">
+        <button
+          className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          onClick={() => setTabIndex(tabIndex - 1)}
+        >
+          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
+          <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
+        </button>
+        <button
+          className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          disabled={!chartData}
+          onClick={() => setTabIndex(tabIndex + 1)}
+        >
+          <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
+          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
+        </button>
+      </div>
     </div>
   );
 }

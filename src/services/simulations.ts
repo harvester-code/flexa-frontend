@@ -1,4 +1,5 @@
 import {
+  FacilityConnectionResponse,
   FlightSchedulesResponse,
   PassengerScheduleResponse,
   ProcessingProceduresResponse,
@@ -6,8 +7,8 @@ import {
   ScenarioMetadataResponse,
   ScenariosDataResponse,
 } from '@/types/simulations';
-import { instanceWithAuth } from '@/lib/axios';
 import { useSimulationMetadata } from '@/stores/simulation';
+import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = 'api/v1/simulations';
 
@@ -60,8 +61,9 @@ const updateScenarioMetadata = () => {
     passenger_attr: states.passenger_attr || {},
     facility_conn: states.facility_conn || {},
     facility_info: states.facility_info || {},
-    history: states.history || {},
+    history: states.history || [],
   };
+  console.log(JSON.stringify(params))
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${states.scenario_id}`, params);
 };
 
@@ -96,7 +98,7 @@ const getPassengerSchedules = (params: {
       operator: string;
       value: string[];
     }>;
-  },
+  };
   destribution_conditions: Array<{
     index: number;
     conditions: Array<{
@@ -106,14 +108,65 @@ const getPassengerSchedules = (params: {
     }>;
     mean: number;
     standard_deviation: number;
-  }>
+  }>;
 }) => {
   return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/passenger-schedules`, params);
 };
 
 const getProcessingProcedures = () => {
   return instanceWithAuth.post<ProcessingProceduresResponse>(`${BASE_URL}/processing-procedures`);
-}
+};
+
+const getFacilityConns = (params: {
+  flight_schedule: {
+    first_load: boolean;
+    airport: string;
+    date: string;
+    condition: Array<{
+      criteria: string;
+      operator: string;
+      value: string[];
+    }>;
+  };
+  destribution_conditions: Array<{
+    index: number;
+    conditions: Array<{
+      criteria: string;
+      operator: string;
+      value: string[];
+    }>;
+    mean: number;
+    standard_deviation: number;
+  }>;
+  processes: {
+    [index: string]: {
+      name: string;
+      nodes: string[];
+      source?: string;
+      destination?: string;
+      wait_time: number;
+      default_matrix?: {
+        [row: string]: {
+          [col: string]: number;
+        };
+      };
+      priority_matrix?: Array<{
+        condition: Array<{
+          criteria: string;
+          operator: string;
+          value: string[];
+        }>;
+        matrix: {
+          [row: string]: {
+            [col: string]: number;
+          };
+        };
+      }>;
+    };
+  };
+}) => {
+  return instanceWithAuth.post<FacilityConnectionResponse>(`${BASE_URL}/facility-conns`, params);
+};
 
 export {
   createScenario,
@@ -123,6 +176,7 @@ export {
   getFlightSchedules,
   getPassengerSchedules,
   getProcessingProcedures,
+  getFacilityConns,
   getScenarioMetadata,
   modifyScenario,
   setMasterScenario,

@@ -7,7 +7,7 @@ import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
-import { ConditionParams, ConditionState, DropdownItem, OperatorItem } from '@/types/conditions';
+import { ConditionData, ConditionParams, ConditionState, DropdownItem, OperatorItem } from '@/types/conditions';
 import { getFlightSchedules } from '@/services/simulations';
 import {
   BarColors,
@@ -43,7 +43,7 @@ interface TabFlightScheduleProps {
   visible: boolean;
 }
 
-const parseConditions = (conditionData: ConditionParams[]) => {
+const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
   const logicItems: DropdownItem[] = [{ id: 'AND', text: 'AND' }];
   const criteriaItems: DropdownItem[] = [];
 
@@ -54,10 +54,10 @@ const parseConditions = (conditionData: ConditionParams[]) => {
     const idCur = criteriaCur.name;
 
     criteriaItems.push({ id: idCur, text: criteriaCur.name });
-    criteriaCur.operator.map((val, index) => {
-      if (val === '=') operatorItems[idCur] = [{ id: `O${index + 1}`, text: '=', multiSelect: false }];
+    criteriaCur.operator.map((val) => {
+      if (val === '=') operatorItems[idCur] = [{ id: val, text: val, multiSelect: false }];
       else if (val === 'is in')
-        operatorItems[idCur] = [{ id: `O${index + 1}`, text: 'is in', multiSelect: true }];
+        operatorItems[idCur] = [{ id: val, text: val, multiSelect: true }];
     });
 
     valueItems[idCur] = [];
@@ -73,8 +73,9 @@ const parseConditions = (conditionData: ConditionParams[]) => {
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
   const { setFlightSchedule, flight_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities } = useSimulationStore();
   
+  const [loaded, setLoaded] = useState(false);
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
@@ -97,8 +98,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       ? BarColors[String(chartDataCurrent?.length)]
       : BarColors.DEFAULT;
 
-  const conditions = flight_sch?.add_conditions;
-
   const loadFlightSchedule = useCallback(
     (first_load: boolean = true) => {
       if (!simulationId) return;
@@ -116,20 +115,22 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         .then(({ data }) => {
           const flightSchedule = { params };
           if (data?.add_conditions) {
-            flightSchedule['add_conditions'] = parseConditions(data?.add_conditions);
-            for (const keyCur in flightSchedule['add_conditions']) {
-              if (Array.isArray(flightSchedule['add_conditions'][keyCur]))
-                for (const rowCur of flightSchedule['add_conditions'][keyCur])
+            const conditions = parseConditions(data?.add_conditions);
+            for (const keyCur in conditions) {
+              if (Array.isArray(conditions[keyCur]))
+                for (const rowCur of conditions[keyCur])
                   rowCur.tooltip = { title: 'title', text: 'test' };
             }
+            setConditions(conditions);
           }
           if (data?.add_priorities) {
-            flightSchedule['add_priorities'] = parseConditions(data?.add_priorities);
-            for (const keyCur in flightSchedule['add_priorities']) {
-              if (Array.isArray(flightSchedule['add_priorities'][keyCur]))
-                for (const rowCur of flightSchedule['add_priorities'][keyCur])
+            const priorities = parseConditions(data?.add_priorities);
+            for (const keyCur in priorities) {
+              if (Array.isArray(priorities[keyCur]))
+                for (const rowCur of priorities[keyCur])
                   rowCur.tooltip = { title: 'title', text: 'test' };
             }
+            setPriorities(priorities);
           }
           setFlightSchedule(flightSchedule);
           if (data?.chart_x_data && data?.chart_y_data) {
@@ -164,6 +165,19 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
     if (chartData) loadFlightSchedule(false);
   }, [selConditions, selAirport, selDate]);
 
+  useEffect(() => {
+    if(visible && !loaded && flight_sch?.params) {
+      setLoaded(true);
+      const params = flight_sch?.params;
+      setSelAirport(params.airport);
+      setSelDate(params.date);
+      if(params.condition?.length > 0) {
+        setSelConditions(params.condition);
+        setAddConditionsVisible(true);
+      }
+    }
+  }, [visible]);
+
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Flight Schedule</h2>
@@ -172,7 +186,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         tabCount={tabsSecondary.length}
         currentTab={tabSecondary}
         tabs={tabsSecondary.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
-        className={`tab-secondary mt-[25px] grid-cols-3`}
+        className={`tab-secondary mt-[25px]`}
         // onTabChange={(tabIndex) => setTabSecondary(tabIndex)}
       />
 
@@ -254,7 +268,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               valueItems={conditions.valueItems}
               initialValue={selConditions}
               onBtnApply={(conditions) => {
-                console.log(conditions);
                 setSelConditions(conditions);
               }}
             />
@@ -372,7 +385,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           </p>
         </div>
       ) : (
-        <div className="h-[100px]" />
+        <div className="h-[50px]" />
       )}
 
       <div className="mt-[30px] flex justify-between">
@@ -386,6 +399,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          disabled={!chartData}
           onClick={() => setTabIndex(tabIndex + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>
