@@ -57,6 +57,7 @@
     "@tanstack/react-query-devtools": "^5.67.3",
     "@tanstack/react-table": "^8.21.2",
     "@types/react-beautiful-dnd": "^13.1.8",
+    "@vis.gl/react-google-maps": "^1.5.2",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
