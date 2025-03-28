@@ -847,7 +847,7 @@ textarea {
     @apply bg-white;
     tr {
       td {
-        padding: 16px 14px;
+        padding: 16px 4px;
         line-height: 20px;
         @apply h-[60px] border-t border-default-200 font-medium text-default-600;
         &:first-of-type {
@@ -907,13 +907,13 @@ textarea {
 
 .tab-default {
   border-bottom: 1px solid var(--default-100);
-  @apply grid items-center justify-center gap-[10px] px-[10px];
+  @apply flex flex-grow items-center justify-center gap-[10px] px-[10px];
   button {
     border-bottom: 3px solid transparent;
     padding-bottom: 13px;
     line-height: 100%;
     height: 40px;
-    @apply pt-[4px] text-sm font-medium text-default-400;
+    @apply pt-[4px] text-sm font-medium text-default-400 flex-1;
     &:hover {
       @apply text-accent-700;
     }
@@ -1311,9 +1311,9 @@ textarea {
 }
 
 .gate-list {
-  width: calc(100% + 60px);
-  @apply -ml-[30px] flex justify-between gap-[20px] bg-default-100 px-[40px] py-[10px];
-  li {
+  width: calc(100%);
+  @apply flex grid justify-between gap-x-[20px] gap-y-[10px] bg-gray-100 flex-row px-[40px] py-[10px];
+  li { 
     @apply flex flex-grow;
     button {
       @apply flex h-[40px] flex-grow items-center justify-center gap-[8px] rounded-full border border-default-200 bg-white text-default-400;

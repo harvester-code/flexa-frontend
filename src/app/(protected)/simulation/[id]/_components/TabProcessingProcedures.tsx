@@ -14,6 +14,7 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import Tooltip from '@/components/Tooltip';
+import { replaceAll } from '@/lib/utils';
 
 interface TabProcessingProceduresProps {
   visible: boolean;
@@ -25,6 +26,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const { setPassengerAttr, passenger_attr } = useSimulationMetadata();
   const { tabIndex, setTabIndex } = useSimulationStore();
 
+  const [loaded, setLoaded] = useState(false);
   const [dataConnectionCriteria, setDataConnectionCriteria] = useState('');
   const [procedures, setProcedures] = useState<ProcessingProcedureState[]>([]);
 
@@ -64,15 +66,47 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   };
 
   useEffect(() => {
-    if (!dataConnectionCriteria && visible) {
+    if (visible && !loaded) {
+      setLoaded(true);
       if (passenger_attr?.data_connection_criteria && passenger_attr?.procedures) {
         setDataConnectionCriteria(passenger_attr?.data_connection_criteria);
-        setProcedures(passenger_attr?.procedures);
+        if(passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
+          const newProcedures = passenger_attr?.procedures?.map((item, index) => {
+            return {
+              ...item,
+              id: item.id,
+              nameText: item.name,
+              nodesText: item.nodes.join(','),
+              editable: false,
+            };
+          });
+          setProcedures(newProcedures);
+        }
       } else {
         loadData();
       }
     }
   }, [visible]);
+
+  // useEffect(() => {
+  //   if(passenger_attr) {
+  //     if(passenger_attr.data_connection_criteria) {
+  //       setDataConnectionCriteria(passenger_attr.data_connection_criteria);
+  //       if(passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
+  //         const newProcedures = passenger_attr?.procedures?.map((item, index) => {
+  //           return {
+  //             ...item,
+  //             id: item.id,
+  //             nameText: item.name,
+  //             nodesText: item.nodes.join(','),
+  //             editable: false,
+  //           };
+  //         });
+  //         setProcedures(newProcedures);
+  //       }
+  //     }
+  //   }
+  // }, [passenger_attr]);
 
   const onBtnAdd = () => {
     setProcedures([...procedures, { id: String(procedures.length), name: '', nodes: [], editable: true }]);
@@ -89,15 +123,16 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             ?.split(',')
             .map((item) => item.trim())
             .filter((item) => item.length > 0) || [];
-        return { id: val.id, name: val.nameText || val.name, nodes };
+        const name = val.nameText || val.name;
+        const id = val.name.toLowerCase().replace(/[\s-]+/g, '_');
+        return { id, name, nodes };
       }),
     };
-    console.log(newMetadata);
     setPassengerAttr(newMetadata);
     const newProcedures = newMetadata?.procedures.map((item, index) => {
       return {
         ...item,
-        id: String(index),
+        id: item.id,
         nameText: item.name,
         nodesText: item.nodes.join(','),
         editable: false,
@@ -110,7 +145,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const onDragEnd = (result) => {
     const { source, destination } = result;
 
-    // 드래그가 끝난 위치가 유효한지 확인
     if (!destination) return;
 
     const reorderedItems = Array.from(procedures);
@@ -120,186 +154,189 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
     setProcedures(reorderedItems);
   };
 
-  return !visible ? null : (
+  return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="mt-[25px] flex justify-between">
-        <div>
-          <h2 className="title-sm">Processing Procedures</h2>
-          <p className="text-sm text-default-500">
-            You can check and modify the current airport procedures. <br />
-            Match processing procedures according to airport operations and needs using this input.
-          </p>
-        </div>
-        <p className="flex gap-[10px]">
-          {/* <Button
+      <div className={`${visible ? '' : 'hidden'}`}>
+        <div className="mt-[25px] flex justify-between">
+          <div>
+            <h2 className="title-sm">Processing Procedures</h2>
+            <p className="text-sm text-default-500">
+              You can check and modify the current airport procedures. <br />
+              Match processing procedures according to airport operations and needs using this input.
+            </p>
+          </div>
+          <p className="flex gap-[10px]">
+            {/* <Button
             className="btn-md btn-default"
             icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
             text="Edit Procedures"
             onClick={() => {}}
           /> */}
-          {/* <Button
+            {/* <Button
             className="btn-md btn-primary"
             icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
             text="Confirm"
             onClick={() => {}}
           /> */}
-        </p>
-      </div>
-      {loadingProcessingProcedures ? (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+          </p>
         </div>
-      ) : dataConnectionCriteria ? (
-        <>
-          <dl className="mt-[40px]">
-            <dt className="tooltip-line">
-              Data connection criteria <span className="text-accent-600">*</span>
-              <button>
-                <Tooltip text={'test'} />
-              </button>
-            </dt>
-            <dd>
-              <SelectBox
-                options={DataConnectionCriterias}
-                selectedOption={dataConnectionCriteria}
-                onSelectedOption={(val) => setDataConnectionCriteria(val)}
-                className="select-default"
-              />
-            </dd>
-          </dl>
-          <div className="processing-wrap mt-[10px]">
-            <Droppable
-              droppableId="droppable"
-              isDropDisabled={false}
-              isCombineEnabled={true}
-              ignoreContainerClipping={true}
-              direction={'vertical'}
-            >
-              {(provided) => (
-                <ul ref={provided.innerRef} {...provided.droppableProps}>
-                  {procedures.map((item, index) => (
-                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                      {(provided) => (
-                        <li
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{ ...provided.draggableProps.style, marginTop: index > 0 ? 10 : 0 }}
-                        >
-                          <div key={item.id} className="processing-item bg-red-500 overflow-hidden">
-                            <button className="item-move">
-                              <FontAwesomeIcon size="sm" icon={faEquals} />
-                            </button>
-                            <p className="item-name">
-                              <Input
-                                className={`${item.editable ? '' : 'hidden'} text-2xl`}
-                                type="text"
-                                value={item.nameText || ''}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                  setProcedures(
-                                    procedures.map((item, idx) =>
-                                      index == idx ? { ...item, nameText: e.target.value } : item
-                                    )
-                                  )
-                                }
-                              />
-                              {item.editable ? null : (
-                                <span className="break-all leading-[1.1]">{item.nameText}</span>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setProcedures(
-                                    procedures.map((item, idx) =>
-                                      index == idx ? { ...item, editable: !item.editable } : item
-                                    )
-                                  );
-                                }}
-                              >
-                                {item.editable ? (
-                                  <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
-                                ) : (
-                                  <Image width={30} height={30} src="/image/ico-write.svg" alt="modify" />
-                                )}
+        {loadingProcessingProcedures ? (
+          <div className="flex min-h-[200px] flex-1 items-center justify-center">
+            <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+          </div>
+        ) : dataConnectionCriteria ? (
+          <>
+            <dl className="mt-[40px]">
+              <dt className="tooltip-line">
+                Data connection criteria <span className="text-accent-600">*</span>
+                <button>
+                  <Tooltip text={'test'} />
+                </button>
+              </dt>
+              <dd>
+                <SelectBox
+                  options={DataConnectionCriterias}
+                  selectedOption={dataConnectionCriteria}
+                  onSelectedOption={(val) => setDataConnectionCriteria(val)}
+                  className="select-default"
+                />
+              </dd>
+            </dl>
+            <div className="processing-wrap mt-[10px]">
+              <Droppable
+                droppableId="droppable"
+                isDropDisabled={false}
+                isCombineEnabled={true}
+                ignoreContainerClipping={true}
+                direction={'vertical'}
+              >
+                {(provided) => (
+                  <ul ref={provided.innerRef} {...provided.droppableProps}>
+                    {procedures.map((item, index) => (
+                      <Draggable key={`${item.id}_${index}`} draggableId={item.id} index={index}>
+                        {(provided) => (
+                          <li
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            style={{ ...provided.draggableProps.style, marginTop: index > 0 ? 10 : 0 }}
+                          >
+                            <div key={item.id} className="processing-item bg-red-500 overflow-hidden">
+                              <button className="item-move">
+                                <FontAwesomeIcon size="sm" icon={faEquals} />
                               </button>
-                            </p>
-                            <dl className="ml-[40px] mr-[300px] flex-grow">
-                              <dt className="tooltip-line">
-                                Enter the {item.name} desks <span className="text-accent-600">*</span>
-                                <button>
-                                  <Tooltip text={'test'} />
-                                </button>
-                              </dt>
-                              <dd>
+                              <p className="item-name">
                                 <Input
+                                  className={`${item.editable ? '' : 'hidden'} text-2xl`}
                                   type="text"
-                                  value={item.nodesText || ''}
+                                  value={item.nameText || ''}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     setProcedures(
                                       procedures.map((item, idx) =>
-                                        index == idx ? { ...item, nodesText: e.target.value } : item
+                                        index == idx ? { ...item, nameText: e.target.value } : item
                                       )
                                     )
                                   }
                                 />
-                              </dd>
-                            </dl>
-                            <button onClick={() => onBtnDelete(index)}>
-                              <Image width={30} height={30} src="/image/ico-delete-line.svg" alt="" />
-                            </button>
-                          </div>
-                        </li>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
+                                {item.editable ? null : (
+                                  <span className="break-all leading-[1.1]">{item.nameText}</span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setProcedures(
+                                      procedures.map((item, idx) =>
+                                        index == idx ? { ...item, editable: !item.editable } : item
+                                      )
+                                    );
+                                  }}
+                                >
+                                  {item.editable ? (
+                                    <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
+                                  ) : (
+                                    <Image width={30} height={30} src="/image/ico-write.svg" alt="modify" />
+                                  )}
+                                </button>
+                              </p>
+                              <dl className="ml-[40px] mr-[300px] flex-grow">
+                                <dt className="tooltip-line">
+                                  Enter the {item.name} desks <span className="text-accent-600">*</span>
+                                  <button>
+                                    <Tooltip text={'test'} />
+                                  </button>
+                                </dt>
+                                <dd>
+                                  <Input
+                                    type="text"
+                                    value={item.nodesText || ''}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                      setProcedures(
+                                        procedures.map((item, idx) =>
+                                          index == idx ? { ...item, nodesText: e.target.value } : item
+                                        )
+                                      )
+                                    }
+                                  />
+                                </dd>
+                              </dl>
+                              <button onClick={() => onBtnDelete(index)}>
+                                <Image width={30} height={30} src="/image/ico-delete-line.svg" alt="" />
+                              </button>
+                            </div>
+                          </li>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </ul>
+                )}
+              </Droppable>
+            </div>
+            <p className="add-item">
+              <button onClick={() => onBtnAdd()}>
+                <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
+              </button>
+            </p>
+            <p className="flex justify-end gap-[10px] px-[20px]">
+              {applied ? (
+                <Button
+                  className="btn-md btn-tertiary"
+                  iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
+                  text="Applied"
+                  onClick={() => onBtnApply()}
+                />
+              ) : (
+                <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onBtnApply()} />
               )}
-            </Droppable>
+            </p>
+            <div className="mt-[30px] flex justify-between">
+              <button
+                className="btn-md btn-default btn-rounded w-[210px] justify-between"
+                onClick={() => setTabIndex(tabIndex - 1)}
+              >
+                <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
+                <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
+              </button>
+              <button
+                className="btn-md btn-default btn-rounded w-[210px] justify-between"
+                onClick={() => setTabIndex(tabIndex + 1)}
+                disabled={!applied}
+              >
+                <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
+                <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
+              </button>
+            </div>
+          </>
+        ) : loadError ? (
+          <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
+            <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+            <p className="title-sm" style={{ color: '#30374F' }}>
+              Unable to load data
+            </p>
           </div>
-          <p className="add-item">
-            <button onClick={() => onBtnAdd()}>
-              <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
-            </button>
-          </p>
-          <p className="flex justify-end gap-[10px] px-[20px]">
-            {applied ? (
-              <Button
-                className="btn-md btn-tertiary"
-                iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-                text="Applied"
-                onClick={() => onBtnApply()}
-              />
-            ) : (
-              <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onBtnApply()} />
-            )}
-          </p>
-          <div className="mt-[30px] flex justify-between">
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              onClick={() => setTabIndex(tabIndex - 1)}
-            >
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-              <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
-            </button>
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              onClick={() => setTabIndex(tabIndex + 1)}
-            >
-              <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-            </button>
-          </div>
-        </>
-      ) : loadError ? (
-        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
-          <p className="title-sm" style={{ color: '#30374F' }}>
-            Unable to load data
-          </p>
-        </div>
-      ) : (
-        <div className="h-[100px]" />
-      )}
+        ) : (
+          <div className="h-[100px]" />
+        )}
+      </div>
     </DragDropContext>
   );
 }

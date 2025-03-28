@@ -2,6 +2,7 @@ import React from 'react';
 
 interface TabDefaultProps {
   currentTab: number; // 현재 페이지
+  availableTabs?: number; // 0 ~ availableTabs 까지 탭 버튼 활성화
   // number: number;
   className?: string;
   tabs: {
@@ -12,14 +13,15 @@ interface TabDefaultProps {
   onTabChange?: (tabIndex: number) => void;
 }
 
-export default function TabDefault({ currentTab, className, tabs, tabCount, onTabChange }: TabDefaultProps) {
+export default function TabDefault({ currentTab, availableTabs, className, tabs, tabCount, onTabChange }: TabDefaultProps) {
   return (
-    <div className={`tab-default grid w-full ${className}`}>
+    <div className={`tab-default ${className}`}>
       {tabs.slice(0, tabCount).map((tab, index) => (
         <button
           key={index}
-          className={`${currentTab === index ? 'active' : ''} w-full`}
+          className={`${currentTab === index ? 'active' : ''} ${availableTabs != null && index > availableTabs ? 'opacity-50' : ''}`}
           onClick={() => {
+            if(availableTabs && index > availableTabs) return;
             if (onTabChange) onTabChange(index);
           }}
         >

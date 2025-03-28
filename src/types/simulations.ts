@@ -1,3 +1,4 @@
+import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
 import { ConditionData, ConditionParams, ConditionState } from '@/types/conditions';
 
 interface ScenarioData {
@@ -50,14 +51,22 @@ interface ScenarioMetadata {
   flight_sch: Partial<FlightSchedule>;
   passenger_sch: Partial<PassengerSchedule>;
   passenger_attr: Partial<ProcessingProcedures>;
-  facility_conn: { [key: string]: any };
-  facility_info: { [key: string]: any };
+  facility_conn: Partial<FacilityConnection>;
+  facility_info: Partial<FacilityInformation>;
   history: ScenarioHistory[];
+}
+
+interface ScenarioInfo {
+  editor: string;
+  memo: string;
+  simulation_name: string;
+  terminal: string;
 }
 
 interface ScenarioMetadataResponse {
   checkpoint: string;
   metadata: ScenarioMetadata;
+  scenario_info: ScenarioInfo;
 }
 
 interface FlightSchedule {
@@ -126,9 +135,54 @@ interface PassengerScheduleResponse {
   total: number;
 }
 
+interface FacilityConnection {
+  params: any;
+ 
+  snapshot: any;
+}
+
+interface FacilityInformation {
+  params: any;
+}
+
+interface FacilityConnectionResponse {
+  capacity: {
+    bar_chart_x_data: string[];
+    bar_chart_y_data: ChartData;  
+  };
+  matric: Array<{
+    name: string;
+    value: string;
+  }>;
+  sanky: {
+    label: string [];
+    link: {
+      source: number[];
+      target: number[];
+      value: number[];
+    }
+  }
+}
+
 interface ProcessingProceduresResponse {
   process: ProcessingProcedureData[];
 }
+
+
+interface ConditionTableData {
+  title?: string;
+  header: GridTableHeader[];
+  data: GridTableRow[];
+  hidden?: boolean;
+}
+
+interface FacilitiesConnectionState {
+  sourceConditions?: ConditionState[];
+  ifConditions?: ConditionState[];
+  destConditions?: ConditionState[];
+  tableData?: ConditionTableData;
+}
+
 
 export type {
   ChartData,
@@ -141,10 +195,16 @@ export type {
   ProcessingProcedureState,
   ProcessingProcedures,
   ProcessingProceduresResponse,
+  ConditionTableData,
+  FacilitiesConnectionState,
+  FacilityConnection,
+  FacilityConnectionResponse,
+  FacilityInformation,
   ScenarioHistory,
   ScenarioMetadata,
   ScenarioMetadataResponse,
   ScenarioOverview,
   ScenariosDataResponse,
   ScenarioData,
+  ScenarioInfo,
 };
