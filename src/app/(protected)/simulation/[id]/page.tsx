@@ -4,6 +4,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
+import { ScenarioHistory } from '@/types/simulations';
+import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
@@ -14,9 +17,6 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
-import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
-import { ScenarioHistory } from '@/types/simulations';
 
 const dummyHistoryData: ScenarioHistory[] = [
   {
@@ -80,7 +80,7 @@ export default function SimulationDetail(props) {
   }, [params?.id]);
   useEffect(() => {
     window.scrollTo({ top: 0 });
-  }, [tabIndex])
+  }, [tabIndex]);
   return (
     <div>
       <ContentsHeader text="Simulation" />

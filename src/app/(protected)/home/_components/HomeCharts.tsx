@@ -1,29 +1,87 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { SANKEY_NODE_COLORS } from '@/constants';
-import type Plotly from 'plotly.js-dist-min';
-import Button from '@/components/Button';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
+import { ChevronDown, Circle } from 'lucide-react';
+import { Option } from '@/types/commons';
+import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
+import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
-import SelectBox from '@/components/SelectBox';
-// TODO: CSS 모듈화하기
-import './HomeCharts.css';
+import { Button, ButtonGroup } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
-function HomeCharts() {
+// TODO: 동적으로 수정하기
+const FACILITY_OPTIONS: Option[] = [
+  { label: 'All Facilities', value: 'All Facility' },
+  { label: 'Check-in', value: 'checkin' },
+  { label: 'Departure Gate', value: 'departure_gate' },
+  { label: 'Security Control', value: 'security' },
+  { label: 'Passport Control', value: 'passport' },
+];
+
+const CHART_OPTIONS: Option[] = [
+  { label: 'Queue Length', value: 'queue_length', color: '' },
+  { label: 'Waiting Time', value: 'wait_time', color: '' },
+  // { label: 'Throughput', value: 'throughput', color: '' },
+];
+
+interface HomeChartsProps {
+  scenario: any;
+}
+
+function HomeCharts({ scenario }: HomeChartsProps) {
   const [chartType, setChartType] = useState(true);
 
-  // FIXME: 라인차트에 날짜 데이터가 없는 상태.
+  // TODO: 변수명 개선하기
+  const [selectedFacility1, setSelectedFacility1] = useState(FACILITY_OPTIONS[0]);
+  const [selectedFacility2, setSelectedFacility2] = useState(FACILITY_OPTIONS[0]);
+
+  // FIXME: 하드코딩 제거하기
+  const [selectedChartOption1, setSelectedChartOption1] = useState([0]);
+  const handleChartOption1 = (buttonIndex: number) => {
+    setSelectedChartOption1((prevData) => {
+      if (prevData.includes(buttonIndex)) {
+        if (prevData.length === 1) {
+          return prevData;
+        }
+        return prevData.filter((v) => v !== buttonIndex);
+      } else {
+        if (prevData.length >= 1) {
+          return [...prevData.slice(1), buttonIndex];
+        }
+        return [...prevData, buttonIndex];
+      }
+    });
+  };
+  // FIXME: 하드코딩 제거하기
+  const [selectedChartOption2, setSelectedChartOption2] = useState([0]);
+  const handleChartOption2 = (buttonIndex: number) => {
+    setSelectedChartOption2((prevData) => {
+      if (prevData.includes(buttonIndex)) {
+        if (prevData.length === 1) {
+          return prevData;
+        }
+        return prevData.filter((v) => v !== buttonIndex);
+      } else {
+        if (prevData.length >= 1) {
+          return [...prevData.slice(1), buttonIndex];
+        }
+        return [...prevData, buttonIndex];
+      }
+    });
+  };
+
+  // TODO: 데이터 업데이트하면 수정하기
+  const { data: { flow_chart } = {} } = useLineChart({ scenarioId: scenario?.id });
+  const { data: { histogram } = [] } = useHistogramChart({ scenarioId: scenario?.id });
+  const { data: rawSankeyChartData } = useSankeyChart({ scenarioId: scenario?.id });
+
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const [histogramChartData, setHistogramChartData] = useState<
-    { label: string; value: number; color: string }[]
-  >([]);
+  const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
 
-  // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
     const fetchLineChartData = async () => {
       try {
@@ -55,66 +113,50 @@ function HomeCharts() {
   }, []);
 
   // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
-    const fetchHistogramChartData = async () => {
-      const data = [
-        { label: '00:00 - 15:00', value: 14, color: '#4400d9' },
-        { label: '15:00 - 30:00', value: 27, color: '#622bd9' },
-        { label: '30:00 - 45:00', value: 24, color: '#7f56d9' },
-        { label: '45:00 - 60:00', value: 19, color: '#9d82d9' },
-        { label: '60:00 -', value: 16, color: '#bbaed9' },
-      ];
+    if (histogram) {
+      const { data } = histogram.find((d) => d.label === selectedFacility2.value);
 
-      setHistogramChartData(data);
-    };
+      // HACK
+      const finalData = data[CHART_OPTIONS[selectedChartOption2[0]].value]
+        ?.map(({ title, value }, i) => ({
+          label: title,
+          value: Number(value.replace('%', '')),
+          color: PRIMARY_COLOR_SCALES[i],
+        }))
+        .filter(({ value }) => value > 0);
 
-    fetchHistogramChartData();
-  }, []);
+      setHistogramChartData(finalData);
+    }
+  }, [histogram, selectedFacility2, selectedChartOption2]);
 
   // ================================================================================
-  // TODO: 실제 API로 교체하기
   useEffect(() => {
-    const fetchSankeyChartData = async () => {
-      try {
-        const res = await fetch('/samples/data/passenger_flow_sankey_chart_data.json');
-        // FIXME: 오타 발생
-        const { sanky } = await res.json();
-
-        const data: Plotly.Data[] = [
-          {
-            type: 'sankey',
-            orientation: 'h',
-            node: {
-              pad: 15,
-              thickness: 20,
-              // line: {
-              //   color: 'black',
-              //   width: 0.5,
-              // },
-              label: sanky.label,
-              color: SANKEY_NODE_COLORS,
-            },
-            link: sanky.link,
+    if (rawSankeyChartData) {
+      const data: Plotly.Data[] = [
+        {
+          type: 'sankey',
+          orientation: 'h',
+          node: {
+            pad: 15,
+            thickness: 20,
+            // line: { color: 'black', width: 0.5 },
+            label: rawSankeyChartData.label,
+            color: PRIMARY_COLOR_SCALES,
           },
-        ];
-
-        setSankeyChartData(data);
-      } catch (error) {
-        console.error((error as Error).message);
-      }
-    };
-
-    fetchSankeyChartData();
-  }, []);
+          link: rawSankeyChartData.link,
+        },
+      ];
+      setSankeyChartData(data);
+    }
+  }, [rawSankeyChartData]);
 
   return (
-    <div className="charts">
-      {/* Line Chart */}
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Flow Chart</h5>
-          <div>
+    <div className="mt-5 flex flex-col gap-[35px]">
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
+          <div className="flex items-center gap-1 text-sm font-medium text-default-800">
             <span>Bar Chart</span>
             <Checkbox
               id="chart-type"
@@ -127,194 +169,140 @@ function HomeCharts() {
           </div>
         </div>
 
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <div className="flex items-center justify-between">
-              <SelectBox
-                className="!min-w-60"
-                options={[
-                  'All Facilities',
-                  'Check-in',
-                  'Boarding Pass Control',
-                  'Security Control',
-                  'Passport Control',
-                ]}
-              />
-
-              <div className="tab-btn flex items-center">
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-violet.svg" alt="" width={10} height={10} />}
-                  text="Throughput"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
-                  text="Waiting Time"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Queue Length"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Facility Efficiency"
-                  onClick={() => {}}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-md bg-white">
-              <LineChart
-                chartData={lineChartData}
-                chartLayout={{
-                  xaxis: { showgrid: false },
-                  yaxis: {
-                    title: {
-                      text: 'Throughtput (number of people)',
-                    },
-                  },
-                  yaxis2: {
-                    title: {
-                      text: 'Waiting time',
-                    },
-                    overlaying: 'y',
-                    side: 'right',
-                    showgrid: false,
-                  },
-                  margin: { l: 60, r: 60, b: 24, t: 24 },
-                  showlegend: false,
-                }}
-              />
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <AppDropdownMenu
+              className="min-w-60 [&>*]:justify-start"
+              items={FACILITY_OPTIONS}
+              icon={<ChevronDown />}
+              label={selectedFacility1.label}
+              onSelect={(opt) => setSelectedFacility1(opt)}
+            />
+            <div className="flex items-center">
+              <ButtonGroup>
+                {CHART_OPTIONS.map((opt, idx) => (
+                  <Button
+                    className={cn(
+                      selectedChartOption1.includes(idx)
+                        ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                        : ''
+                    )}
+                    variant="outline"
+                    key={idx}
+                    onClick={() => handleChartOption1(idx)}
+                  >
+                    {selectedChartOption1.includes(idx) && (
+                      <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                    )}
+                    {opt.label}
+                  </Button>
+                ))}
+              </ButtonGroup>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Histogram Chart */}
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Histogram</h5>
-        </div>
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <div className="flex items-center justify-between">
-              <SelectBox
-                className="!min-w-60"
-                options={[
-                  'All Facilities',
-                  'Check-in',
-                  'Boarding Pass Control',
-                  'Security Control',
-                  'Passport Control',
-                ]}
-              />
-
-              <div className="tab-btn flex items-center">
-                <Button
-                  className="btn-md btn-default active"
-                  icon={<Image src="/image/ico-dot-orange.svg" alt="" width={10} height={10} />}
-                  text="Waiting Time"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Queue Length"
-                  onClick={() => {}}
-                />
-                <Button
-                  className="btn-md btn-default"
-                  icon={<Image src="/image/ico-dot-green.svg" alt="" width={10} height={10} />}
-                  text="Facility Efficiency"
-                  onClick={() => {}}
-                />
-              </div>
-            </div>
-            <div className="mt-10 rounded-md bg-white">
-              <div className="flex text-center">
-                {histogramChartData &&
-                  histogramChartData.map((d, idx) => (
-                    <div style={{ width: `${d.value}%` }} key={idx}>
-                      <div
-                        className={`py-3.5 ${idx === 0 ? 'rounded-l-lg' : idx === histogramChartData.length - 1 ? 'rounded-r-lg' : ''}`}
-                        style={{ background: `${d.color}` }}
-                      >
-                        <p className="text-3xl font-bold text-white">{d.value}%</p>
-                      </div>
-                      <p className="mt-1 text-sm font-medium">{d.label}</p>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sankey Chart */}
-      <div className="chart-item">
-        <div className="chart-item-head">
-          <h5>Sankey Chart</h5>
-          <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
-        </div>
-
-        <div className="chart-item-body">
-          <div className="chart-block">
-            <div className="mb-6 grid grid-cols-5 gap-14">
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Check-In</p>
-                <p className="text-sm font-medium text-default-600">By Check-In Counter</p>
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Boarding pass</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Security Check</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Passport</p>
-                <div className="w-full">
-                  <SelectBox
-                    className="select-sm"
-                    options={['By Gate', 'New, OLD', 'Manual, Automated', 'Fasttrack O,Fasttrack X']}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="mb-2 font-semibold text-default-900">Boarding</p>
-                <p className="text-sm font-medium text-default-600">Eastern, Western</p>
-              </div>
-            </div>
-
-            <SankeyChart
-              chartData={sankeyChartData}
+          <div className="rounded-md bg-white">
+            <LineChart
+              chartData={lineChartData}
               chartLayout={{
-                margin: { l: 80, r: 80, b: 24, t: 24 },
-                font: { size: 20 },
+                xaxis: { showgrid: false },
+                yaxis: {
+                  title: {
+                    text: 'Throughtput (number of people)',
+                  },
+                },
+                yaxis2: {
+                  title: {
+                    text: 'Waiting time',
+                  },
+                  overlaying: 'y',
+                  side: 'right',
+                  showgrid: false,
+                },
+                margin: { l: 60, r: 60, b: 24, t: 24 },
+                showlegend: false,
               }}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
+        </div>
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <AppDropdownMenu
+              className="min-w-60 [&>*]:justify-start"
+              items={FACILITY_OPTIONS}
+              icon={<ChevronDown />}
+              label={selectedFacility2.label}
+              onSelect={(opt) => setSelectedFacility2(opt)}
+            />
+            <div className="flex items-center">
+              <ButtonGroup>
+                {CHART_OPTIONS.map((opt, idx) => (
+                  <Button
+                    className={cn(
+                      selectedChartOption2.includes(idx)
+                        ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                        : ''
+                    )}
+                    variant="outline"
+                    key={idx}
+                    onClick={() => handleChartOption2(idx)}
+                  >
+                    {selectedChartOption2.includes(idx) && (
+                      <Circle className="!size-2.5" fill="#111" stroke="transparent" />
+                    )}
+                    {opt.label}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-md bg-white">
+            <div className="flex rounded-lg text-center">
+              {histogramChartData &&
+                histogramChartData?.map(({ label, value, color }, idx) => (
+                  <div style={{ width: `${value}%` }} key={idx}>
+                    <div
+                      className={`py-3.5 ${
+                        histogramChartData.length === 1
+                          ? 'rounded-lg'
+                          : idx === 0
+                            ? 'rounded-l-lg'
+                            : idx === histogramChartData.length - 1
+                              ? 'rounded-r-lg'
+                              : ''
+                      }`}
+                      style={{ background: `${color}` }}
+                    >
+                      <p className="text-3xl font-bold text-white">{value}%</p>
+                    </div>
+                    <p className="mt-1 text-sm font-medium">{label}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between pl-5">
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Sankey Chart</h5>
+          <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
+        </div>
+        <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+          <SankeyChart
+            chartData={sankeyChartData}
+            chartLayout={{
+              margin: { l: 80, r: 80, b: 24, t: 24 },
+              font: { size: 20 },
+            }}
+          />
         </div>
       </div>
     </div>

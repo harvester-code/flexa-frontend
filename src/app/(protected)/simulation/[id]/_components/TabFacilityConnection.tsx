@@ -134,7 +134,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
 
   const [tableType, setTableType] = useState(TableTypes[0]);
   const [tableData, setTableData] =
-    useState<Array<{ title?: string; header: string[]; data: ProcedureTableRow[]; waitTime: string; }>>();
+    useState<Array<{ title?: string; header: string[]; data: ProcedureTableRow[]; waitTime: string }>>();
 
   useEffect(() => {
     if (passenger_attr?.procedures) {
@@ -190,24 +190,31 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         </p>
         <p className="text-[40px] text-xl font-semibold text-default-800">{procedures[procedureIndex].text}</p>
       </div>
-      {
-        !tableData?.[procedureIndex] || procedureIndex < 1 ? null : (
-          <div className="add-time mt-[30px]">
-            <p className="flex items-center gap-[10px]">
-              <span>Add a wait time after completing the previous step *</span>
-              <button>
-                <Tooltip text={'test'} />
-              </button>
-            </p>
-            <div className="relative mt-[10px]">
-              <Input
-                type="number"
-                placeholder=""
-                value={tableData[procedureIndex].waitTime || '0'}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTableData(tableData.map((val, idx) => (idx == procedureIndex ? { ...val, waitTime: Math.max(Number(e.target.value), 0).toString() } : val)))}
-                className="input-rounded"
-              />
-              {/* <p className="absolute right-[0px] top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[20px]">
+      {!tableData?.[procedureIndex] || procedureIndex < 1 ? null : (
+        <div className="add-time mt-[30px]">
+          <p className="flex items-center gap-[10px]">
+            <span>Add a wait time after completing the previous step *</span>
+            <button>
+              <Tooltip text={'test'} />
+            </button>
+          </p>
+          <div className="relative mt-[10px]">
+            <Input
+              type="number"
+              placeholder=""
+              value={tableData[procedureIndex].waitTime || '0'}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setTableData(
+                  tableData.map((val, idx) =>
+                    idx == procedureIndex
+                      ? { ...val, waitTime: Math.max(Number(e.target.value), 0).toString() }
+                      : val
+                  )
+                )
+              }
+              className="input-rounded"
+            />
+            {/* <p className="absolute right-[0px] top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[20px]">
                 <button className="text-default-500">
                   <FontAwesomeIcon className="nav-icon" size="sm" icon={faMinus} />
                 </button>
@@ -215,10 +222,9 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
                   <FontAwesomeIcon className="nav-icon" size="sm" icon={faPlus} />
                 </button>
               </p> */}
-            </div>
-          </div>  
-        )
-      }
+          </div>
+        </div>
+      )}
       <div className="mt-[30px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"

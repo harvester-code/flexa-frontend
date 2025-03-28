@@ -110,7 +110,7 @@ function SimulationOverview({
               selectedScenario.map((item, idx) => (
                 <li className="flex items-center gap-2.5" key={idx}>
                   <span className="flex h-6 items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-                    {item.simulation_name}
+                    {item?.simulation_name}
                   </span>
                 </li>
               ))}

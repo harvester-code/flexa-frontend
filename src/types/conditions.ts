@@ -1,4 +1,4 @@
-import { TooltipData } from "./tooltip";
+import { TooltipData } from './tooltip';
 
 interface ConditionData {
   logicItems: DropdownItem[];

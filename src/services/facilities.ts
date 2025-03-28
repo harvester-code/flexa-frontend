@@ -1,39 +1,63 @@
+import { AxiosResponse } from 'axios';
+import { Option } from '@/types/commons';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = '/api/v1/facilities';
 
 // TODO: 타입 선언하기
-const fetchProcesses = (scenario_id: unknown) => {
-  return instanceWithAuth.get(BASE_URL + '/processes', {
-    params: {
-      scenario_id: scenario_id,
-    },
+const fetchProcesses = ({ scenarioId }: { scenarioId?: string }): Promise<AxiosResponse<Option[]>> => {
+  return instanceWithAuth.get(`${BASE_URL}/processes/scenario-id/${scenarioId}`);
+};
+
+const fetchKPISummary = ({
+  scenarioId,
+  func,
+  process,
+}: {
+  scenarioId?: string;
+  func: string;
+  process?: string;
+}) => {
+  return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/tables/kpi/scenario-id/${scenarioId}`, {
+    params: { process, func },
   });
 };
 
-const fetchKPISummary = (process: string, func: 'mean') => {
-  return instanceWithAuth.get(BASE_URL + '/kpis', {
-    params: {
-      process: process,
-      func: func,
-    },
+const fetchKPILineChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/charts/line/scenario-id/${scenarioId}`, {
+    params: { process },
   });
 };
 
-const fetchKPILineChart = (process: string) => {
-  return instanceWithAuth.get(BASE_URL + '/ks-charts', {
-    params: {
-      process: process,
-    },
+const fetchKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/charts/heat-map/scenario-id/${scenarioId}`, {
+    params: { process },
   });
 };
 
-const fetchKPIHeatMapChart = (process: string) => {
-  return instanceWithAuth.get(BASE_URL + '/heat-maps', {
-    params: {
-      process: process,
-    },
+const fetchPassengerAnalysesBarChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/passenger-analyses/charts/bar/scenario-id/${scenarioId}`, {
+    params: { process },
   });
 };
 
-export { fetchProcesses, fetchKPISummary, fetchKPILineChart, fetchKPIHeatMapChart };
+const fetchPassengerAnalysesDonutChart = ({
+  scenarioId,
+  process,
+}: {
+  scenarioId?: string;
+  process?: string;
+}) => {
+  return instanceWithAuth.get(`${BASE_URL}/passenger-analyses/charts/pie/scenario-id/${scenarioId}`, {
+    params: { process },
+  });
+};
+
+export {
+  fetchKPISummary,
+  fetchKPILineChart,
+  fetchKPIHeatMapChart,
+  fetchPassengerAnalysesBarChart,
+  fetchPassengerAnalysesDonutChart,
+  fetchProcesses,
+};

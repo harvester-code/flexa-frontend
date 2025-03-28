@@ -1,11 +1,11 @@
 'use client';
 
-// TODO: CSS 모듈화하기
-import '@/styles/home.css';
-import { useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ScenarioData } from '@/types/simulations';
+import { useSummaries } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -20,42 +20,18 @@ import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [range1, setRange1] = useState<number>(4);
-  const [range2, setRange2] = useState<number[]>([4, 20]);
-
-  const [selectedScenario, setSelectedScenario] = useState<string[]>([]);
-  const [selectBoxOptions, setSelectBoxOptions] = useState<string[]>([]);
-
-  const { data: user } = useUser();
-  const { data: scenariosData } = useScenarios(user?.groupId);
-
-  const scenarios = useMemo(
-    () => (scenariosData ? [...scenariosData.master_scenario, ...scenariosData.user_scenario] : []),
-    [scenariosData]
-  );
-
-  // ========================================================
-  // TEMP
-  const [tempData, setTempData] = useState(false);
-  const fetchData = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setSelectBoxOptions(['Check-in', 'Security']);
-    return true;
-  };
-
-  const [isPending, startTransition] = useTransition();
-  const handleData = () => {
-    startTransition(async () => {
-      const data = await fetchData();
-      setTempData(data);
-    });
-  };
-  // ========================================================
-
   const handleTabClick = (index: number) => {
     setActiveIndex(index);
   };
+
+  const [range1, setRange1] = useState<number>(4);
+  const [range2, setRange2] = useState<number[]>([4, 20]);
+
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioData[]>([]);
+  const [selectBoxOptions, setSelectBoxOptions] = useState<string[]>([]);
+
+  const { data: user } = useUser();
+  const { data: scenarios } = useScenarios(user?.groupId);
 
   const handleRangeChange = (event: Event, newValue: number | number[]) => {
     setRange2(newValue as number[]);
@@ -67,128 +43,67 @@ function HomePage() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
+  useEffect(() => {
+    if (scenarios) {
+      setSelectedScenario([scenarios[0]]);
+    }
+  }, [scenarios]);
+
+  // TODO: Skeleton UI 적용하기
+  if (!scenarios) return <div>Loading ...</div>;
+
   return (
-    <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
+    <div className="mx-auto max-w-[1340px] px-8 pb-24">
       <ContentsHeader text="Home" />
 
       <SimulationOverview
-        className="mt-[30px]"
+        className="mt-8"
         items={scenarios}
         selectedScenario={selectedScenario}
         onSelectedScenario={setSelectedScenario}
-        // onFetchData={handleData}
-        // isPending={isPending}
       />
 
-      {/* ==================================================================================================== */}
-
-      <div className="mt-30 flex items-center justify-between">
-        <h2 className="title-sm">Terminal Overview</h2>
-        <div className="main-tab flex items-center gap-2.5">
-          <button className={activeIndex === 0 ? 'active' : ''} onClick={() => handleTabClick(0)}>
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Terminal Overview</h2>
+        <div className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-gray-100 p-1 shadow-inner">
+          <button
+            className={`h-10 w-44 rounded-full px-5 font-medium ${
+              activeIndex === 0 ? 'bg-white text-gray-800 shadow' : 'text-gray-600'
+            }`}
+            onClick={() => handleTabClick(0)}
+          >
             Time Stamp
           </button>
-          <button className={activeIndex === 1 ? 'active' : ''} onClick={() => handleTabClick(1)}>
+          <button
+            className={`h-10 w-44 rounded-full px-5 font-medium ${
+              activeIndex === 1 ? 'bg-white text-gray-800 shadow' : 'text-gray-600'
+            }`}
+            onClick={() => handleTabClick(1)}
+          >
             Time Span
           </button>
         </div>
       </div>
 
-      {/* ==================================================================================================== */}
+      <div className="mt-5 flex flex-col">
+        <div className={`${activeIndex === 0 ? '' : 'hidden'} flex flex-col gap-2`}>
+          <div className="relative flex aspect-[1280/600] flex-grow items-center justify-center rounded-md"></div>
 
-      <div className="overview-container mt-20">
-        <div className={`overview-block ${activeIndex === 0 ? '' : 'hide'}`}>
-          <div className="map-block">
-            <Image src="/image/thumb/@img-main-02.png" alt="map" width={1280} height={600} />
-            <div className="map-zoom">
-              <button className="btn-zoom-in">
-                <FontAwesomeIcon className="nav-icon" icon={faPlus} />
-              </button>
-              <button className="btn-zoom-out">
-                <FontAwesomeIcon className="nav-icon" icon={faMinus} />
-              </button>
-            </div>
-            <div className="map-menu">
-              <p className="map-head">Pax ID 5132438</p>
-              <div className="scroll-list">
-                <div className="map-menu-item">
-                  <dl>
-                    <dt>Nationality</dt>
-                    <dd>South Korea</dd>
-                  </dl>
-                  <dl>
-                    <dt>Sex</dt>
-                    <dd>Male</dd>
-                  </dl>
-                  <dl>
-                    <dt>Age</dt>
-                    <dd>40s</dd>
-                  </dl>
-                </div>
-                <div className="map-menu-item">
-                  <dl>
-                    <dt>Airline</dt>
-                    <dd>Asiana Airlines(OZ)</dd>
-                  </dl>
-                  <dl>
-                    <dt>Flight Num</dt>
-                    <dd>OZ521</dd>
-                  </dl>
-                  <dl>
-                    <dt>Destination</dt>
-                    <dd>LHR</dd>
-                  </dl>
-                </div>
-                <div className="map-menu-item">
-                  <p className="menu-sub-title">
-                    <button>Check-In</button>
-                  </p>
-                  <dl>
-                    <dt>Zone</dt>
-                    <dd>C</dd>
-                  </dl>
-                  <dl>
-                    <dt>Counter</dt>
-                    <dd>33</dd>
-                  </dl>
-                  <dl>
-                    <dt>Queue Length</dt>
-                    <dd>37</dd>
-                  </dl>
-                  <dl>
-                    <dt>Waiting Time</dt>
-                    <dd>09:13</dd>
-                  </dl>
-                </div>
-                <div className="map-menu-item">
-                  <p className="menu-sub-title">
-                    <button>Boarding Pass</button>
-                  </p>
-                  <p className="menu-sub-title">
-                    <button>Security</button>
-                  </p>
-                  <p className="menu-sub-title">
-                    <button>Passport</button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="select-alone mt-8">
+          <div className="relative mt-8 h-24 flex-grow pt-2.5">
             <Slider defaultValue={[50]} />
           </div>
         </div>
 
-        <div className={`overview-block ${activeIndex === 1 ? '' : 'hide'}`}>
-          <div className="map-block">
+        <div className={`${activeIndex === 1 ? '' : 'hidden'} flex flex-col gap-2`}>
+          <div className="relative flex aspect-[1280/600] flex-grow items-center justify-center rounded-md">
             <Image src="/image/thumb/@img-main-01.png" alt="map" width={1280} height={600} />
-            <div className="map-zoom">
-              <button className="btn-zoom-in">
-                <FontAwesomeIcon className="nav-icon" icon={faPlus} />
+            <div className="absolute left-2.5 top-2.5 z-10 flex flex-col overflow-hidden rounded-md border border-gray-300">
+              <button className="h-11 w-11 border-b border-gray-300 bg-white hover:text-purple-600">
+                <FontAwesomeIcon icon={faPlus} />
               </button>
-              <button className="btn-zoom-out">
-                <FontAwesomeIcon className="nav-icon" icon={faMinus} />
+              <button className="h-11 w-11 bg-white hover:text-purple-600">
+                <FontAwesomeIcon icon={faMinus} />
               </button>
             </div>
           </div>
@@ -199,24 +114,20 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Summary */}
       <HomeAccordion title="Summary">
-        <HomeSummary />
+        <HomeSummary scenario={selectedScenario[0]} />
       </HomeAccordion>
 
-      {/* Alert & Issues */}
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning />
+        <HomeWarning scenario={selectedScenario[0]} />
       </HomeAccordion>
 
-      {/* Details */}
       <HomeAccordion title="Details">
-        <HomeDetails />
+        <HomeDetails scenario={selectedScenario[0]} />
       </HomeAccordion>
 
-      {/* Charts */}
       <HomeAccordion title="Charts">
-        <HomeCharts />
+        <HomeCharts scenario={selectedScenario[0]} />
       </HomeAccordion>
     </div>
   );

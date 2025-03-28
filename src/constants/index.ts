@@ -1,31 +1,14 @@
-// 노드 색상 배열 (10개 이상의 색상)
-const SANKEY_NODE_COLORS = [
-  '#7649ad',
-  '#744ca6',
-  '#714d9d',
-  '#6d528e',
-  '#6a5486',
-  '#67557d',
-  '#655876',
-  '#635a6e',
-  '#ad9ab1',
-  '#a695a9',
-  '#9d8ea1',
-  '#958898',
-  '#91848e',
-  '#877d85',
-  '#ee81c0',
-  '#f19acd',
-  '#f5b3d9',
-  '#f8cde6',
-  '#fad9ec',
-  '#fce6f2',
-  '#8760f2',
-  '#c3aff9',
-  '#c786e8',
-  '#e7cbf5',
-  '#86534e',
-  '#9e7571',
+const PRIMARY_COLOR_SCALES = [
+  '#42307D',
+  '#53389E',
+  '#6941C6',
+  '#7F56D9',
+  '#9E77ED',
+  '#B692F6',
+  '#D6BBFB',
+  '#E9D7FE',
+  '#F4EBFF',
+  '#F9F5FF',
 ];
 
-export { SANKEY_NODE_COLORS };
+export { PRIMARY_COLOR_SCALES };

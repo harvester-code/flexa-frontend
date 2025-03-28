@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-interface LineChartProps {
+interface DonutChartProps {
   chartData: Plotly.Data[];
-  chartLayout: Partial<Plotly.Layout>;
-  config?: Partial<Plotly.Config>;
+  chartLayout?: Partial<Plotly.Layout>;
+  className?: string;
 }
 
-function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
+function DonutChart({ chartData, chartLayout, className }: DonutChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -15,12 +15,11 @@ function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
       Plotly.newPlot(chartRef.current, chartData, chartLayout, {
         autosizable: true,
         responsive: true,
-        ...config,
       });
     }
-  }, [chartData, chartLayout, config]);
+  }, [chartData, chartLayout]);
 
-  return <div ref={chartRef}></div>;
+  return <div ref={chartRef} className={className}></div>;
 }
 
-export default LineChart;
+export default DonutChart;

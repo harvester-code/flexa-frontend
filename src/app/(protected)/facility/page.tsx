@@ -1,46 +1,78 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useKPIHeatMapChart, useKPILineChart, useKPISummary, useProcesses } from '@/queries/facilityQueries';
+import { useEffect, useState } from 'react';
+import { Option } from '@/types/commons';
+import { ScenarioData } from '@/types/simulations';
+import {
+  useKPIHeatMapChart,
+  useKPILineChart,
+  useKPISummary,
+  usePassengerAnalysesBarChart,
+  usePassengerAnalysesDonutChart,
+  useProcesses,
+} from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
-import SelectBox from '@/components/SelectBox';
 import AppTabs from '@/components/Tabs';
 import SimulationOverview from '@/components/popups/SimulationOverview';
 import { TabsContent } from '@/components/ui/Tabs';
+import FacilityDropdownMenu from './_components/FacilityDropdownMenu';
 import FacilityKPISummary from './_components/FacilityKPISummary';
 import FacilityPassengerAnalysis from './_components/FacilityPassengerAnalysis';
 
-const TABS: { label: string; value: string }[] = [
+const TABS: Option[] = [
   { label: 'KPI Summary', value: 'kpiSummary' },
   { label: 'Passenger Analysis', value: 'passengerAnalysis' },
 ];
 
 function FacilityPage() {
-  const [selectedScenario, setSelectedScenario] = useState<any[]>([]);
-  const [selectedOption, setSelectedOption] = useState<any>({});
-
   const { data: user } = useUser();
-  const { data: scenariosData } = useScenarios(user?.groupId);
+  const { data: scenarios } = useScenarios(user?.groupId);
+  const { data: processes } = useProcesses({ scenarioId: scenarios?.[0].id });
 
-  const scenarios = useMemo(
-    () => (scenariosData ? [...scenariosData.master_scenario, ...scenariosData.user_scenario] : []),
-    [scenariosData]
-  );
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioData[]>([]);
+  const [selectedProcess, setSelectedProcess] = useState<Option>();
+  const [selectedFunc, setSelectedFunc] = useState('min');
 
-  // ========================================================
-  const { data: processesData } = useProcesses(selectedScenario[0]?.id);
-  const { data: kpiSummaryData } = useKPISummary(selectedOption.value, 'mean');
-  const { data: kpiLineChartData } = useKPILineChart(selectedOption.value);
-  const { data: kpiHeatMapChartData } = useKPIHeatMapChart(selectedOption.value);
-
-  // ========================================================
+  // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
-    if (processesData && processesData.length > 0) {
-      setSelectedOption(processesData[0]);
+    if (scenarios) {
+      setSelectedScenario([scenarios[0]]);
     }
-  }, [processesData]);
+  }, [scenarios]);
+
+  // NOTE: 선택된 SCENARIO의 첫번째 PROCESS가 선택됨.
+  useEffect(() => {
+    if (processes) {
+      setSelectedProcess(processes[0]);
+    }
+  }, [processes]);
+
+  const { data: kpiSummaryData } = useKPISummary({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+    func: selectedFunc,
+  });
+  const { data: kpiLineChartData } = useKPILineChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
+  const { data: kpiHeatMapChartData } = useKPIHeatMapChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
+  const { data: passengerAnalysisBarChartData } = usePassengerAnalysesBarChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
+  const { data: passengerAnalysisDonutChartData } = usePassengerAnalysesDonutChart({
+    scenarioId: selectedScenario?.[0]?.id,
+    process: selectedProcess?.value,
+  });
+
+  // TODO: Skeleton UI 적용하기
+  if (!scenarios || !processes) return <div>Loading ...</div>;
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
@@ -53,39 +85,34 @@ function FacilityPage() {
         onSelectedScenario={setSelectedScenario}
       />
 
-      {selectedScenario.length > 0 ? (
-        <>
-          <div className="relative mt-[30px] flex-1">
-            <div className="rounded-md border px-5 py-7">
-              <SelectBox
-                className="selectCheckin"
-                options={processesData}
-                selectedOption={selectedOption}
-                onSelectedOption={setSelectedOption}
-              />
-            </div>
-
-            <AppTabs className="mt-[30px]" tabs={TABS}>
-              <TabsContent value="kpiSummary">
-                <FacilityKPISummary
-                  key={selectedOption.value}
-                  kpiSummaryData={kpiSummaryData}
-                  kpiLineChartData={kpiLineChartData}
-                  kpiHeatMapChartData={kpiHeatMapChartData}
-                />
-              </TabsContent>
-
-              <TabsContent value="passengerAnalysis">
-                <FacilityPassengerAnalysis />
-              </TabsContent>
-            </AppTabs>
-          </div>
-        </>
-      ) : (
-        <div className="mt-8 flex flex-1 items-center justify-center bg-slate-100 text-3xl">
-          시나리오를 선택해주세요.
+      {/* TODO: Skeleton UI 적용하기 */}
+      <div className="relative mt-[30px] flex-1">
+        <div className="rounded-md border bg-default-50 px-5 py-7">
+          <FacilityDropdownMenu
+            items={processes}
+            label={selectedProcess?.label ?? ''}
+            onSelect={(item) => setSelectedProcess(item)}
+          />
         </div>
-      )}
+
+        <AppTabs className="mt-[30px]" tabs={TABS}>
+          <TabsContent value="kpiSummary">
+            <FacilityKPISummary
+              kpiSummaryData={kpiSummaryData}
+              kpiLineChartData={kpiLineChartData}
+              kpiHeatMapChartData={kpiHeatMapChartData}
+              onChange={setSelectedFunc}
+            />
+          </TabsContent>
+
+          <TabsContent value="passengerAnalysis">
+            <FacilityPassengerAnalysis
+              passengerAnalysisDonutChartData={passengerAnalysisDonutChartData}
+              passengerAnalysisBarChartData={passengerAnalysisBarChartData}
+            />
+          </TabsContent>
+        </AppTabs>
+      </div>
     </div>
   );
 }

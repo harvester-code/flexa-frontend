@@ -6,8 +6,8 @@ import {
   ScenarioMetadataResponse,
   ScenariosDataResponse,
 } from '@/types/simulations';
-import { instanceWithAuth } from '@/lib/axios';
 import { useSimulationMetadata } from '@/stores/simulation';
+import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = 'api/v1/simulations';
 
@@ -21,8 +21,10 @@ const createScenario = (params: {
   return instanceWithAuth.post(`${BASE_URL}/scenarios`, params);
 };
 
-const fetchScenarios = (group_id?: number) => {
-  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`);
+const fetchScenarios = (group_id?: number, page: number = 1) => {
+  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`, {
+    params: { page },
+  });
 };
 
 const modifyScenario = (params: { simulation_name?: string; memo?: string }, scenario_id: string) => {
@@ -96,7 +98,7 @@ const getPassengerSchedules = (params: {
       operator: string;
       value: string[];
     }>;
-  },
+  };
   destribution_conditions: Array<{
     index: number;
     conditions: Array<{
@@ -106,14 +108,14 @@ const getPassengerSchedules = (params: {
     }>;
     mean: number;
     standard_deviation: number;
-  }>
+  }>;
 }) => {
   return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/passenger-schedules`, params);
 };
 
 const getProcessingProcedures = () => {
   return instanceWithAuth.post<ProcessingProceduresResponse>(`${BASE_URL}/processing-procedures`);
-}
+};
 
 export {
   createScenario,

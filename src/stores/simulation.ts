@@ -6,8 +6,8 @@ import {
   FlightSchedule,
   PassengerPatternState,
   PassengerSchedule,
-  ProcessingProcedures,
   ProcessingProcedureState,
+  ProcessingProcedures,
   ScenarioHistory,
   ScenarioMetadata,
   ScenarioOverview,
@@ -32,13 +32,7 @@ export const BarColors = {
   '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
 };
 
-export const LineColors = [
-  '#42307D',
-  '#6941C6',
-  '#9E77ED',
-  '#D6BBFB',
-  '#F4EBFF',
-];
+export const LineColors = ['#42307D', '#6941C6', '#9E77ED', '#D6BBFB', '#F4EBFF'];
 
 interface ScenarioMetadataZustand extends Partial<ScenarioMetadata> {
   setMetadata: (data: ScenarioMetadata) => void;
@@ -93,7 +87,7 @@ export const useSimulationStore = create<{
   tabIndex: number;
   setTabIndex: (index: number) => void;
 
-  checkpoint?: { time: string; diff: number };  
+  checkpoint?: { time: string; diff: number };
   setCheckpoint: (time: string, diff: number) => void;
 }>((set, get) => ({
   tabIndex: 0,

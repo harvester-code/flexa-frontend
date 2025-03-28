@@ -1,57 +1,21 @@
-import React, { useState } from 'react';
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { CircleSmall } from 'lucide-react';
-import { Button, ButtonGroup } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
-import { cn } from '@/lib/utils';
+import FacilityPassengerAnalysisBarChart from './FacilityPassengerAnalysisBarChart';
+import FacilityPassengerAnalysisDonutChart from './FacilityPassengerAnalysisDonutChart';
 
-function FacilityPassengerAnalysis() {
-  const formatTime = (value: number) => {
-    const hours = Math.floor(value);
-    const minutes = Math.round((value % 1) * 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
+interface FacilityPassengerAnalysisProps {
+  passengerAnalysisBarChartData?: any;
+  passengerAnalysisDonutChartData?: any;
+}
 
-  const tableData = [
-    { id: 1, Airline: 'Korean Air(KE)', Pax: '7,233' },
-    { id: 2, Airline: 'Asiana Airlines(OZ)', Pax: '7,233' },
-    { id: 3, Airline: 'Jin Air(JL)', Pax: '7,233' },
-    { id: 4, Airline: 'EASTAR JET(ZE)', Pax: '33' },
-    { id: 5, Airline: 'Jeju Air(7C)', Pax: '33' },
-  ];
-
-  const BUTTONS_1 = [
-    'Airline',
-    'Destination',
-    'Flight Number',
-    'Check-In Counter',
-    'Ticket Issuance',
-    'Baggage Check-In',
-    'Departure Gate',
-  ];
-  const [activeButtonIndex, setActiveButtonIndex] = useState<number>(0);
-
-  const BUTTONS_2 = ['Queue Length', 'Waiting Time', 'Throughput', 'Facility Efficiency'];
-  const [activeButtonIndex2, setActiveButtonIndex2] = useState<number>(0);
-
+function FacilityPassengerAnalysis({
+  passengerAnalysisBarChartData,
+  passengerAnalysisDonutChartData,
+}: FacilityPassengerAnalysisProps) {
   return (
     <div className="my-[30px]">
-      <div className="flex justify-between">
-        <dl className="flex flex-col gap-2.5">
-          <dt className="text-xl font-semibold leading-none text-default-800">
-            Number of people excluded from analysis
-          </dt>
-          <dd className="font-medium leading-none text-default-600">
-            Number of passengers who used mobile Check-In and did not use Baggage Check-In service at the
-            airport during the analysis period.
-          </dd>
-        </dl>
-
-        <p className="text-xl font-semibold text-default-900">0 Pax (0% of the total)</p>
-      </div>
-
       <div className="mt-8 flex justify-between">
         <dl className="flex flex-col gap-2.5">
           <dt className="text-xl font-semibold leading-none text-default-800">
@@ -62,26 +26,6 @@ function FacilityPassengerAnalysis() {
             changed through the upper right filter.
           </dd>
         </dl>
-
-        <div className="flex items-center gap-2.5">
-          {/* Color Criteria */}
-          {/* <Button />
-          <Menu
-            anchorEl={colorAnchorEl}
-            open={Boolean(colorAnchorEl)}
-            onClose={handleColorClose}
-            PaperProps={{
-              className: 'sub-menu !w-150',
-            }}
-          >
-            <MenuItem>Airline</MenuItem>
-            <MenuItem>Age</MenuItem>
-            <MenuItem>Sex</MenuItem>
-            <MenuItem>Destination</MenuItem>
-            <MenuItem>Nationality</MenuItem>
-            <MenuItem>Flight Number</MenuItem>
-          </Menu> */}
-        </div>
       </div>
 
       <div className="relative mt-8 flex flex-col">
@@ -98,7 +42,6 @@ function FacilityPassengerAnalysis() {
               </button>
             </div>
 
-            {/* FLOATING MAP */}
             <div className="absolute right-2.5 top-2.5 w-[260px] max-w-[calc(100%-20px)] rounded-md border-b border-default-200 bg-white pb-2.5 pl-2.5 pr-1">
               <p className="px-[15px] pb-2.5 pt-2.5 text-sm font-semibold text-default-900">Pax ID 5132438</p>
 
@@ -184,119 +127,9 @@ function FacilityPassengerAnalysis() {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <dl className="flex flex-col gap-2.5">
-          <dt className="text-xl font-semibold leading-none text-default-800">
-            Passenger Processing Analysis Chart
-          </dt>
-          <dd className="font-medium leading-none text-default-600">
-            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can
-            select up to two indicators.
-          </dd>
-        </dl>
-      </div>
+      <FacilityPassengerAnalysisDonutChart passengerAnalysisDonutChartData={passengerAnalysisDonutChartData} />
 
-      <div className="mt-10 rounded-md border border-default-200 p-5">
-        <ButtonGroup>
-          {BUTTONS_1.map((text, idx) => (
-            <Button
-              className={cn(activeButtonIndex === idx ? 'bg-gray-50' : '', 'px-4 py-2')}
-              variant="outline"
-              key={idx}
-              onClick={() => setActiveButtonIndex(idx)}
-            >
-              {activeButtonIndex === idx && <CircleSmall fill="#111" className="!h-2.5 !w-2.5" />}
-              {text}
-            </Button>
-          ))}
-        </ButtonGroup>
-
-        <div className="my-10 text-xl font-semibold text-default-900">Total Queue Length: 15,681 Pax</div>
-
-        <div className="flex border border-rose-600">
-          <div>API AREA</div>
-
-          <div className="rounded-md border border-default-300">
-            <table>
-              <colgroup>
-                <col className="w-90" />
-                <col className="w-auto" />
-              </colgroup>
-
-              <thead>
-                <tr>
-                  <th colSpan={2} className="text-md !border-r-0 text-left !font-medium">
-                    Airline TOP 5
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {tableData.map((airline) => (
-                  <tr key={airline.id}>
-                    <td className="text-left font-medium !text-default-800">{airline.id}</td>
-                    <td>
-                      <div className="flex items-center justify-between gap-2.5">
-                        <span className="text-md !font-medium text-default-800">{airline.Airline}</span>
-                        <span className="text-sm !font-medium text-default-600">{airline.Pax}Pax</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-10 flex justify-between">
-        <dl className="flex flex-col gap-2.5">
-          <dt className="text-xl font-semibold leading-none text-default-800">
-            Passenger Processing Analysis Chart
-          </dt>
-          <dd className="font-medium leading-none text-default-600">
-            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can
-            select up to two indicators.
-          </dd>
-        </dl>
-
-        <div className="flex items-center gap-2.5">
-          {/* <Button />
-          <Menu
-            anchorEl={colorAnchorEl}
-            open={Boolean(colorAnchorEl)}
-            onClose={handleColorClose}
-            PaperProps={{
-              className: 'sub-menu !w-150',
-            }}
-          >
-            <MenuItem>Airline</MenuItem>
-            <MenuItem>Age</MenuItem>
-            <MenuItem>Sex</MenuItem>
-            <MenuItem>Destination</MenuItem>
-            <MenuItem>Nationality</MenuItem>
-            <MenuItem>Flight Number</MenuItem>
-          </Menu> */}
-        </div>
-      </div>
-
-      <div className="mt-10 rounded-md border border-default-200 p-5">
-        <ButtonGroup>
-          {BUTTONS_2.map((text, idx) => (
-            <Button
-              className={cn(activeButtonIndex2 === idx ? 'bg-gray-50' : '', 'px-4 py-2')}
-              variant="outline"
-              key={idx}
-              onClick={() => setActiveButtonIndex2(idx)}
-            >
-              {activeButtonIndex2 === idx && <CircleSmall fill="#111" className="!h-2.5 !w-2.5" />}
-              {text}
-            </Button>
-          ))}
-        </ButtonGroup>
-
-        <div className="rounded-md bg-white">API AREA</div>
-      </div>
+      <FacilityPassengerAnalysisBarChart passengerAnalysisBarChartData={passengerAnalysisBarChartData} />
     </div>
   );
 }

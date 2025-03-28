@@ -1277,7 +1277,7 @@ textarea {
   @apply rounded-md border-default-200;
 }
 .select-small {
-  @apply rounded-md border-default-200 ;
+  @apply rounded-md border-default-200;
   font-size: 16px;
 }
 .tooltip-line {
@@ -1699,4 +1699,8 @@ textarea {
       @apply flex h-[40px] w-full items-center justify-center gap-[5px] rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
     }
   }
+}
+
+.modebar {
+  display: none !important;
 }

@@ -3,51 +3,90 @@ import {
   fetchKPIHeatMapChart,
   fetchKPILineChart,
   fetchKPISummary,
+  fetchPassengerAnalysesBarChart,
+  fetchPassengerAnalysesDonutChart,
   fetchProcesses,
 } from '@/services/facilities';
 
-const useProcesses = (scenarioId?: unknown) => {
+const useProcesses = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['facilities', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchProcesses(scenarioId);
+      const { data } = await fetchProcesses({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,
   });
 };
 
-const useKPISummary = (process: string, func: 'mean') => {
+const useKPISummary = ({
+  scenarioId,
+  process,
+  func,
+}: {
+  scenarioId?: string;
+  process?: string;
+  func: string;
+}) => {
   return useQuery({
-    queryKey: ['kpi-summary', process, func],
+    queryKey: ['kpi-summary', scenarioId, process, func],
     queryFn: async () => {
-      const { data } = await fetchKPISummary(process, func);
+      const { data } = await fetchKPISummary({ scenarioId, func, process });
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId && !!process,
   });
 };
 
-const useKPILineChart = (process: string) => {
+const useKPILineChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return useQuery({
-    queryKey: ['kpi-line-chart', process],
+    queryKey: ['kpi-line-chart', scenarioId, process],
     queryFn: async () => {
-      const { data } = await fetchKPILineChart(process);
+      const { data } = await fetchKPILineChart({ scenarioId, process });
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId && !!process,
   });
 };
 
-const useKPIHeatMapChart = (process: string) => {
+const useKPIHeatMapChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return useQuery({
-    queryKey: ['kpi-heat-map-chart', process],
+    queryKey: ['kpi-heat-map-chart', scenarioId, process],
     queryFn: async () => {
-      const { data } = await fetchKPIHeatMapChart(process);
+      const { data } = await fetchKPIHeatMapChart({ scenarioId, process });
       return data;
     },
-    enabled: !!process,
+    enabled: !!scenarioId && !!process,
   });
 };
 
-export { useKPISummary, useProcesses, useKPILineChart, useKPIHeatMapChart };
+const usePassengerAnalysesBarChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return useQuery({
+    queryKey: ['passenger-analysis-bar-chart', scenarioId, process],
+    queryFn: async () => {
+      const { data } = await fetchPassengerAnalysesBarChart({ scenarioId, process });
+      return data;
+    },
+    enabled: !!scenarioId && !!process,
+  });
+};
+
+const usePassengerAnalysesDonutChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
+  return useQuery({
+    queryKey: ['passenger-analysis-donut-chart', scenarioId, process],
+    queryFn: async () => {
+      const { data } = await fetchPassengerAnalysesDonutChart({ scenarioId, process });
+      return data;
+    },
+    enabled: !!scenarioId && !!process,
+  });
+};
+
+export {
+  useKPISummary,
+  useProcesses,
+  useKPILineChart,
+  useKPIHeatMapChart,
+  usePassengerAnalysesBarChart,
+  usePassengerAnalysesDonutChart,
+};

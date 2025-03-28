@@ -76,7 +76,7 @@ interface FlightSchedule {
 interface PassengerPatternState {
   conditions?: ConditionState[];
   mean?: string;
-  variance?: string;  
+  variance?: string;
 }
 
 interface PassengerSchedule {
@@ -99,7 +99,7 @@ interface ProcessingProcedureState extends ProcessingProcedureData {
 
 interface ProcessingProcedures {
   data_connection_criteria: string;
-  procedures: ProcessingProcedureData [];
+  procedures: ProcessingProcedureData[];
 }
 
 interface ChartData {
@@ -127,7 +127,7 @@ interface PassengerScheduleResponse {
 }
 
 interface ProcessingProceduresResponse {
-  process: ProcessingProcedureData [];
+  process: ProcessingProcedureData[];
 }
 
 export type {
