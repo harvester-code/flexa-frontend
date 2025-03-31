@@ -20,7 +20,7 @@ const useSummaries = ({
   return useQuery({
     queryKey: ['summaries', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchSummaries({ calculate_type, percentile, scenarioId });
+      const { data: { data } = {} } = await fetchSummaries({ calculate_type, percentile, scenarioId });
       return data;
     },
     enabled: !!scenarioId,
@@ -31,7 +31,7 @@ const useAlertIssues = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['alert-issues', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchAlertIssues({ scenarioId });
+      const { data: { data } = {} } = await fetchAlertIssues({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,
@@ -50,7 +50,7 @@ const useFacilityDetails = ({
   return useQuery({
     queryKey: ['facility-details', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchFacilityDetails({ calculate_type, percentile, scenarioId });
+      const { data: { data } = {} } = await fetchFacilityDetails({ calculate_type, percentile, scenarioId });
       return data;
     },
     enabled: !!scenarioId,
@@ -72,7 +72,7 @@ const useHistogramChart = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['home-histogram-chart', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchHistogram({ scenarioId });
+      const { data: { data } = {} } = await fetchHistogram({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,
@@ -83,7 +83,7 @@ const useSankeyChart = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['home-sankey-chart', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchSankeyChart({ scenarioId });
+      const { data: { data } = {} } = await fetchSankeyChart({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,

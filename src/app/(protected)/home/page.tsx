@@ -27,8 +27,8 @@ function HomePage() {
   const [range1, setRange1] = useState<number>(4);
   const [range2, setRange2] = useState<number[]>([4, 20]);
 
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioData[]>([]);
-  const [selectBoxOptions, setSelectBoxOptions] = useState<string[]>([]);
+  const [scenario, setScenario] = useState<ScenarioData[]>([]);
+  const [boxOptions, setBoxOptions] = useState<string[]>([]);
 
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
@@ -46,7 +46,7 @@ function HomePage() {
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
     if (scenarios) {
-      setSelectedScenario([scenarios[0]]);
+      setScenario([scenarios[0]]);
     }
   }, [scenarios]);
 
@@ -60,8 +60,8 @@ function HomePage() {
       <SimulationOverview
         className="mt-8"
         items={scenarios}
-        selectedScenario={selectedScenario}
-        onSelectedScenario={setSelectedScenario}
+        selectedScenario={scenario}
+        onSelectedScenario={setScenario}
       />
 
       <div className="mt-8 flex items-center justify-between">
@@ -115,19 +115,19 @@ function HomePage() {
       </div>
 
       <HomeAccordion title="Summary">
-        <HomeSummary scenario={selectedScenario[0]} />
+        <HomeSummary scenario={scenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning scenario={selectedScenario[0]} />
+        <HomeWarning scenario={scenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails scenario={selectedScenario[0]} />
+        <HomeDetails scenario={scenario[0]} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
-        <HomeCharts scenario={selectedScenario[0]} />
+        <HomeCharts scenario={scenario[0]} />
       </HomeAccordion>
     </div>
   );

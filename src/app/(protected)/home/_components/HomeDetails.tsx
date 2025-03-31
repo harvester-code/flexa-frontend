@@ -11,9 +11,9 @@ interface HomeDetailsProps {
 }
 
 function HomeDetails({ scenario }: HomeDetailsProps) {
-  const { data: { details } = [] } = useFacilityDetails({
-    // TODO: 아래 값은 Summary에서 받아와야한다.
-    calculate_type: 'mean',
+  // FIXME: 병하대리님께 재수정 요청
+  const { data: { data: details } = [] } = useFacilityDetails({
+    calculate_type: 'mean', // TODO: 아래 값은 Summary에서 받아와야한다.
     percentile: 0,
     //
     scenarioId: scenario?.id,
