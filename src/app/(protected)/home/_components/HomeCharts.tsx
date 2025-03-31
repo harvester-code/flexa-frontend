@@ -17,14 +17,18 @@ const FACILITY_OPTIONS: Option[] = [
   { label: 'All Facilities', value: 'All Facility' },
   { label: 'Check-in', value: 'checkin' },
   { label: 'Departure Gate', value: 'departure_gate' },
-  { label: 'Security Control', value: 'security' },
-  { label: 'Passport Control', value: 'passport' },
+  { label: 'Security', value: 'security' },
+  { label: 'Passport', value: 'passport' },
 ];
 
 const CHART_OPTIONS: Option[] = [
   { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'wait_time', color: '' },
-  // { label: 'Throughput', value: 'throughput', color: '' },
+  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+];
+const CHART_OPTIONS2: Option[] = [
+  { label: 'Queue Length', value: 'queue_length', color: '' },
+  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+  { label: 'Throughput', value: 'throughput', color: '' },
 ];
 
 interface HomeChartsProps {
@@ -73,10 +77,10 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     });
   };
 
-  // TODO: 데이터 업데이트하면 수정하기
+  // FIXME: 병하대리님께 재수정 요청
   const { data: { flow_chart } = {} } = useLineChart({ scenarioId: scenario?.id });
-  const { data: { histogram } = [] } = useHistogramChart({ scenarioId: scenario?.id });
-  const { data: rawSankeyChartData } = useSankeyChart({ scenarioId: scenario?.id });
+  const { data: { data: histogram } = [] } = useHistogramChart({ scenarioId: scenario?.id });
+  const { data: { data: rawSankeyChartData } = {} } = useSankeyChart({ scenarioId: scenario?.id });
 
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
   const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
@@ -113,42 +117,43 @@ function HomeCharts({ scenario }: HomeChartsProps) {
   }, []);
 
   // ================================================================================
+  // FIXME: 병하대리님께 재수정 요청
   useEffect(() => {
-    if (histogram) {
-      const { data } = histogram.find((d) => d.label === selectedFacility2.value);
+    if (!histogram) return;
 
-      // HACK
-      const finalData = data[CHART_OPTIONS[selectedChartOption2[0]].value]
-        ?.map(({ title, value }, i) => ({
-          label: title,
-          value: Number(value.replace('%', '')),
-          color: PRIMARY_COLOR_SCALES[i],
-        }))
-        .filter(({ value }) => value > 0);
+    const data = histogram.find((data) => Object.hasOwn(data, selectedFacility2.value));
+    const target = CHART_OPTIONS[selectedChartOption2[0]].value;
+    const finalData = data[selectedFacility2.value][target]
+      ?.map(({ title, value }, i) => ({
+        label: title,
+        value: Number(value.replace('%', '')),
+        color: PRIMARY_COLOR_SCALES[i],
+      }))
+      .filter(({ value }) => value > 0);
 
-      setHistogramChartData(finalData);
-    }
+    setHistogramChartData(finalData);
   }, [histogram, selectedFacility2, selectedChartOption2]);
 
   // ================================================================================
+  // FIXME: 병하대리님께 재수정 요청
   useEffect(() => {
-    if (rawSankeyChartData) {
-      const data: Plotly.Data[] = [
-        {
-          type: 'sankey',
-          orientation: 'h',
-          node: {
-            pad: 15,
-            thickness: 20,
-            // line: { color: 'black', width: 0.5 },
-            label: rawSankeyChartData.label,
-            color: PRIMARY_COLOR_SCALES,
-          },
-          link: rawSankeyChartData.link,
+    if (!rawSankeyChartData) return;
+
+    const data: Plotly.Data[] = [
+      {
+        type: 'sankey',
+        orientation: 'h',
+        node: {
+          pad: 15,
+          thickness: 20,
+          // line: { color: 'black', width: 0.5 },
+          label: rawSankeyChartData.label,
+          color: PRIMARY_COLOR_SCALES,
         },
-      ];
-      setSankeyChartData(data);
-    }
+        link: rawSankeyChartData.link,
+      },
+    ];
+    setSankeyChartData(data);
   }, [rawSankeyChartData]);
 
   return (

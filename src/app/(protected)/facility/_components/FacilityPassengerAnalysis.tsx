@@ -6,14 +6,13 @@ import FacilityPassengerAnalysisBarChart from './FacilityPassengerAnalysisBarCha
 import FacilityPassengerAnalysisDonutChart from './FacilityPassengerAnalysisDonutChart';
 
 interface FacilityPassengerAnalysisProps {
-  passengerAnalysisBarChartData?: any;
-  passengerAnalysisDonutChartData?: any;
+  // passengerAnalysisBarChartData?: any;
+  // passengerAnalysisDonutChartData?: any;
+  process?: string;
+  scenarioId: string;
 }
 
-function FacilityPassengerAnalysis({
-  passengerAnalysisBarChartData,
-  passengerAnalysisDonutChartData,
-}: FacilityPassengerAnalysisProps) {
+function FacilityPassengerAnalysis({ process, scenarioId }: FacilityPassengerAnalysisProps) {
   return (
     <div className="my-[30px]">
       <div className="mt-8 flex justify-between">
@@ -127,9 +126,9 @@ function FacilityPassengerAnalysis({
         </div>
       </div>
 
-      <FacilityPassengerAnalysisDonutChart passengerAnalysisDonutChartData={passengerAnalysisDonutChartData} />
+      <FacilityPassengerAnalysisDonutChart process={process} scenarioId={scenarioId} />
 
-      <FacilityPassengerAnalysisBarChart passengerAnalysisBarChartData={passengerAnalysisBarChartData} />
+      <FacilityPassengerAnalysisBarChart process={process} scenarioId={scenarioId} />
     </div>
   );
 }

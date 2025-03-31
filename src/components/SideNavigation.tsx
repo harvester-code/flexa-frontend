@@ -120,7 +120,7 @@ export default function SideNavigation() {
               <a href="#">Request Management</a>
             </li>
             <li>
-              <a href="#">Operation Settings</a>
+              <Link href="/setting/operation">Operation Settings</Link>
             </li>
           </ul>
         </li>

@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Circle } from 'lucide-react';
+import { capitalCase } from 'change-case';
+import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
+import { useKPILineChart } from '@/queries/facilityQueries';
+import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -16,17 +19,30 @@ const MIXED_CHART_OPTIONS = [
 ] as const;
 
 interface FacilityKPISummaryMixedChartProps {
-  kpiLineChartData: {
-    queue_length: any;
-    throughput: any;
-    waiting_time: any;
-  };
+  process?: string;
+  scenarioId: string;
 }
 
-function FacilityKPISummaryMixedChart({ kpiLineChartData }: FacilityKPISummaryMixedChartProps) {
+function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummaryMixedChartProps) {
+  const { data: kpiLineChartData } = useKPILineChart({ process, scenarioId });
+
+  const chartKeyOptions = useMemo(() => {
+    if (!kpiLineChartData) {
+      return [];
+    }
+    return Object.keys(kpiLineChartData)
+      .sort()
+      .map((key) => ({ label: capitalCase(key), value: key }));
+  }, [kpiLineChartData]);
+
+  const [chartKeyOption, setChartKeyOption] = useState<Option>();
+
+  useEffect(() => {
+    if (chartKeyOptions.length > 0) setChartKeyOption(chartKeyOptions[0]);
+  }, [chartKeyOptions]);
+
   const [chartType, setChartType] = useState(true);
 
-  // =================================================================================
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
   const handleActiveCharts = (buttonIndex: number) => {
     setActiveCharts((prevData) => {
@@ -44,92 +60,87 @@ function FacilityKPISummaryMixedChart({ kpiLineChartData }: FacilityKPISummaryMi
     });
   };
 
-  // =================================================================================
   const [chartLayout, setChartLayout] = useState<Partial<Plotly.Layout>>({
     margin: { l: 60, r: 60, b: 24, t: 24 },
     showlegend: false,
     xaxis: { showgrid: false },
   });
   const handleChartLayout = useCallback((option: Option, yaxis: null | string) => {
-    setChartLayout((prevData) => {
+    setChartLayout((prev) => {
       if (yaxis) {
         return {
-          ...prevData,
+          ...prev,
           yaxis2: { title: { text: option.label }, overlaying: 'y', side: 'right', showgrid: false },
         };
       }
 
-      return { ...prevData, yaxis: { title: { text: option.label } } };
+      return { ...prev, yaxis: { title: { text: option.label } } };
     });
   }, []);
 
-  // =================================================================================
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const handleLineChartData = useCallback(
-    (option: Option, yaxis: null | string) => {
-      const MAX_DATA_LENGTH = 2;
+  const handleLineChartData = useCallback((data, option: Option, yaxis: null | string) => {
+    const MAX_DATA_LENGTH = 2;
 
-      setLineChartData((prevData) => {
-        if (prevData.some((data) => data.name === option.value)) {
-          return prevData;
-        }
-
-        const newData: Plotly.Data = {
-          ...kpiLineChartData[option.value],
-          name: option.value,
-          line: { color: option.color },
-          yaxis,
-        };
-
-        const updatedData = [...prevData, newData];
-        return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
-      });
-    },
-    [kpiLineChartData]
-  );
-
-  // =================================================================================
-  const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
-  const handleBarChartData = useCallback(
-    (option: Option, yaxis: null | string) => {
-      const MAX_DATA_LENGTH = 2;
-
-      setBarChartData((prevData) => {
-        if (prevData.some((data) => data.name === option.value)) {
-          return prevData;
-        }
-
-        const newData: Plotly.Data = {
-          ...kpiLineChartData[option.value],
-          type: 'bar',
-          name: option.value,
-          offsetgroup: yaxis ? 1 : 2,
-          marker: {
-            color: option.color,
-            opacity: 0.9,
-          },
-          yaxis,
-        };
-
-        const updatedData = [...prevData, newData];
-        return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
-      });
-    },
-    [kpiLineChartData]
-  );
-
-  // =================================================================================
-  useEffect(() => {
-    setBarChartData([]);
-    setLineChartData([]);
-
-    const yaxis = [null, 'y2'];
-    activeCharts.forEach((activeIndex, i) => {
-      handleChartLayout(MIXED_CHART_OPTIONS[activeIndex], yaxis[i]);
-      handleBarChartData(MIXED_CHART_OPTIONS[activeIndex], yaxis[i]);
-      handleLineChartData(MIXED_CHART_OPTIONS[activeIndex], yaxis[i]);
+    setLineChartData((prevData) => {
+      const newData: Plotly.Data = {
+        ...data[option.value],
+        name: option.value,
+        line: { color: option.color },
+        yaxis,
+      };
+      const updatedData = [...prevData, newData];
+      return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
     });
-  }, [activeCharts, handleChartLayout, handleBarChartData, handleLineChartData]);
+  }, []);
+
+  const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
+  const handleBarChartData = useCallback((data, option: Option, yaxis: null | string) => {
+    const MAX_DATA_LENGTH = 2;
+
+    setBarChartData((prevData) => {
+      const newData: Plotly.Data = {
+        ...data[option.value],
+        type: 'bar',
+        name: option.value,
+        offsetgroup: yaxis ? 1 : 2,
+        marker: {
+          color: option.color,
+          opacity: 0.9,
+        },
+        yaxis,
+      };
+      const updatedData = [...prevData, newData];
+      return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!kpiLineChartData || !chartKeyOption) return;
+
+    const chartData = kpiLineChartData[chartKeyOption.value];
+
+    if (chartData) {
+      setBarChartData([]);
+      setLineChartData([]);
+
+      const yaxis = [null, 'y2'];
+      activeCharts.forEach((activeIndex, i) => {
+        const option = MIXED_CHART_OPTIONS[activeIndex];
+
+        handleChartLayout(option, yaxis[i]);
+        handleBarChartData(chartData, option, yaxis[i]);
+        handleLineChartData(chartData, option, yaxis[i]);
+      });
+    }
+  }, [
+    activeCharts,
+    chartKeyOption,
+    kpiLineChartData,
+    handleChartLayout,
+    handleBarChartData,
+    handleLineChartData,
+  ]);
 
   return (
     <>
@@ -156,25 +167,39 @@ function FacilityKPISummaryMixedChart({ kpiLineChartData }: FacilityKPISummaryMi
       </div>
 
       <div className="rounded-md border border-default-200 p-5">
-        <ButtonGroup className="justify-end">
-          {MIXED_CHART_OPTIONS.map((option, idx) => (
-            <Button
-              className={cn(
-                activeCharts.includes(idx)
-                  ? 'bg-default-200 shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                  : ''
-              )}
-              variant="outline"
-              key={option.value}
-              onClick={() => handleActiveCharts(idx)}
-            >
-              {activeCharts.includes(idx) && (
-                <Circle className="!size-2.5" fill={option.color} stroke="transparent" />
-              )}
-              <span>{option.label}</span>
-            </Button>
-          ))}
-        </ButtonGroup>
+        <div className="mb-4 flex items-center justify-between">
+          {chartKeyOption ? (
+            <AppDropdownMenu
+              className="min-w-[120px]"
+              icon={<ChevronDown />}
+              items={chartKeyOptions}
+              label={chartKeyOption.label}
+              onSelect={setChartKeyOption}
+            />
+          ) : (
+            <div>Loading...</div>
+          )}
+
+          <ButtonGroup className="justify-end">
+            {MIXED_CHART_OPTIONS.map((option, idx) => (
+              <Button
+                className={cn(
+                  activeCharts.includes(idx)
+                    ? 'bg-default-200 shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                    : ''
+                )}
+                variant="outline"
+                key={option.value}
+                onClick={() => handleActiveCharts(idx)}
+              >
+                {activeCharts.includes(idx) && (
+                  <Circle className="!size-2.5" fill={option.color} stroke="transparent" />
+                )}
+                <span>{option.label}</span>
+              </Button>
+            ))}
+          </ButtonGroup>
+        </div>
 
         <div className="min-h-96 bg-white">
           {chartType ? (

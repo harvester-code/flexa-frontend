@@ -1,11 +1,9 @@
-import { AxiosResponse } from 'axios';
-import { Option } from '@/types/commons';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = '/api/v1/facilities';
 
 // TODO: 타입 선언하기
-const fetchProcesses = ({ scenarioId }: { scenarioId?: string }): Promise<AxiosResponse<Option[]>> => {
+const fetchProcesses = ({ scenarioId }: { scenarioId?: string }) => {
   return instanceWithAuth.get(`${BASE_URL}/processes/scenario-id/${scenarioId}`);
 };
 

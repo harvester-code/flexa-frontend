@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { AlignLeft, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
+import { usePassengerAnalysesBarChart } from '@/queries/facilityQueries';
 import AppDropdownMenu from '@/components/AppDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -10,7 +11,8 @@ import { cn } from '@/lib/utils';
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
 interface FacilityPassengerAnalysisBarChartProps {
-  passengerAnalysisBarChartData?: any;
+  process?: string;
+  scenarioId: string;
 }
 
 const CHART_OPTIONS: Option[] = [
@@ -23,16 +25,17 @@ const CRITERIA_OPTIONS = [
   // 아래는 고정
   { label: 'Airline', value: 'airline' },
   { label: 'Destination', value: 'destination' },
-  { label: 'Flight Number', value: 'flightNumber' },
+  { label: 'Flight Number', value: 'flight_number' },
   // 아래는 동적
-  { label: 'checkin Counter', value: 'checkinCounter' },
+  // { label: 'checkin Counter', value: 'checkinCounter' },
 ];
 
-function FacilityPassengerAnalysisBarChart({
-  passengerAnalysisBarChartData,
-}: FacilityPassengerAnalysisBarChartProps) {
-  const [activeCriteria, setActiveCriteria] = useState(CRITERIA_OPTIONS[0].label);
+function FacilityPassengerAnalysisBarChart({ process, scenarioId }: FacilityPassengerAnalysisBarChartProps) {
+  const { data: passengerAnalysisBarChartData } = usePassengerAnalysesBarChart({ scenarioId, process });
 
+  const [chartData, setChartData] = useState<Plotly.Data[]>([]);
+
+  const [activeCriteria, setActiveCriteria] = useState(CRITERIA_OPTIONS[0].value);
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
   const handleActiveCharts = (buttonIndex: number) => {
     setActiveCharts((prevData) => {
@@ -49,8 +52,6 @@ function FacilityPassengerAnalysisBarChart({
       }
     });
   };
-
-  const [chartData, setChartData] = useState<Plotly.Data[]>([]);
 
   useEffect(() => {
     if (!passengerAnalysisBarChartData) return;
@@ -96,7 +97,7 @@ function FacilityPassengerAnalysisBarChart({
             items={CRITERIA_OPTIONS}
             icon={<AlignLeft />}
             iconDirection="left"
-            onSelect={(opt) => setActiveCriteria(opt.label)}
+            onSelect={(opt) => setActiveCriteria(opt.value)}
           />
         </div>
       </div>

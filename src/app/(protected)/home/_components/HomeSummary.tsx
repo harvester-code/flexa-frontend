@@ -20,7 +20,8 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
   const [topValue, setTopValue] = useState(0);
   const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
 
-  const { data: summaryData } = useSummaries({
+  // FIXME: 병하대리님께 재수정 요청
+  const { data: { data: summaryData } = {} } = useSummaries({
     calculate_type: kpiFunc.value,
     percentile: topValue,
     scenarioId: scenario?.id,
@@ -57,18 +58,15 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
 
       <div className="summary-block">
         <div className="summary-left">
-          {
-            // FIXME: [전달 완료] 아래 데이터 구조 개선 이야기하기
-            summaryData &&
-              summaryData.summary[0].data.map((d, idx) => (
-                <div className="summary" key={idx}>
-                  <dl>
-                    <dt>{d.title}</dt>
-                    <dd>{d.value}</dd>
-                  </dl>
-                </div>
-              ))
-          }
+          {summaryData &&
+            summaryData[0].normal.map((d, idx) => (
+              <div className="summary" key={idx}>
+                <dl>
+                  <dt>{d.title}</dt>
+                  <dd>{d.value}</dd>
+                </dl>
+              </div>
+            ))}
           {/* <div className="summary">
             <dl>
               <dt>Departure Flights</dt>
@@ -107,7 +105,7 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
           <p>KPI</p>
           <div>
             {summaryData &&
-              summaryData.summary[1].data.map((d, i) => (
+              summaryData[1].KPI.map((d, i) => (
                 <dl key={i}>
                   <dt>
                     <TooltipProvider delayDuration={100}>
@@ -115,7 +113,6 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
                         <TooltipTrigger asChild>
                           <button>{d.title}</button>
                         </TooltipTrigger>
-                        {/* TODO: [전달 완료] 아래 Description에 대한 데이터 필요 */}
                         <TooltipContent side="right">
                           <p>
                             <strong>Tool-tip Title</strong>
