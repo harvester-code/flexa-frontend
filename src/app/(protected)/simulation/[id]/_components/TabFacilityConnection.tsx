@@ -17,7 +17,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData, OperatorItem } from '@/types/conditions';
-import { FacilitiesConnectionState, FacilityConnectionResponse } from '@/types/simulations';
+import { FacilitiesConnectionState, FacilityConnectionResponse, ProcedureInfo } from '@/types/simulations';
 import { getFacilityConns } from '@/services/simulations';
 import { SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
@@ -30,14 +30,9 @@ import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
 import Tooltip from '@/components/Tooltip';
 import { useResize } from '@/hooks/useResize';
-import GridTable, { GridTableHeader, GridTableRow, checkValidRows } from './GridTable';
+import GridTable, { GridTableHeader, GridTableRow, checkNotEmptyRows } from './GridTable';
 
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
-
-interface NodeInfo {
-  text: string;
-  number?: number;
-}
 
 const TableTypes = ['Check-box', 'Probability (%)']; // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
 
@@ -197,7 +192,7 @@ function Conditions({
                     title={tableData.title}
                     header={tableData.header}
                     data={tableData.data}
-                    errorMessage={checkValidRows(tableData?.data) ? '' : '● Please make sure to fill in all fields without leaving any blank rows!'}
+                    errorMessage={checkNotEmptyRows(tableData?.data) ? '' : '● Please make sure to fill in all fields without leaving any blank rows!'}
                     onDataChange={(data) => {
                       setTableData({ ...tableData, data });
                     }}
@@ -227,7 +222,7 @@ function Conditions({
 export default function FacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, scenarioInfo } = useSimulationStore();
+  const { tabIndex, setTabIndex, priorities, scenarioInfo, setFacilityConnCapacity, overviews, setOverviews } = useSimulationStore();
 
   const { width } = useResize(refWidth);
 
@@ -354,14 +349,14 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
       };
     }) || []),
     { text: 'Passenger Flow Check' },
-  ] as NodeInfo[];
+  ] as ProcedureInfo[];
 
   const checkTablesValid = (pIndex: number) => {
-    if (!checkValidRows(tableData?.[pIndex]?.data)) return false;
+    if (!checkNotEmptyRows(tableData?.[pIndex]?.data)) return false;
     if (addConditionsVisible?.[pIndex]) {
       if (!selConditions?.[pIndex]) return false;
       for (const conditionCur of selConditions?.[pIndex]) {
-        if (!checkValidRows(conditionCur?.tableData?.data)) return false;
+        if (!checkNotEmptyRows(conditionCur?.tableData?.data)) return false;
       }
     }
     return true;
@@ -494,9 +489,11 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
 
     getFacilityConns(params)
       .then(({ data }) => {
+        setFacilityConnCapacity(data?.capacity);
+        setOverviews(data?.matric);
         const facilityConnection = { ...facility_conn, params };
         setFacilityConnection(facilityConnection);
-        setPassengerFlowData(data);
+        setPassengerFlowData({ sanky: data.sanky });
         setLoadingFacilityConnection(false);
       })
       .catch(() => {
@@ -680,7 +677,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
                 title={tableData[procedureIndex].title}
                 header={tableData[procedureIndex].header}
                 data={tableData[procedureIndex].data}
-                errorMessage={applyButtonEnable ? '' : '● Please make sure to fill in all fields without leaving any blank rows!22'}
+                errorMessage={applyButtonEnable ? '' : '● Please make sure to fill in all fields without leaving any blank rows!'}
                 onDataChange={(data) => {
                   setTableData(tableData.map((val, idx) => (idx == procedureIndex ? { ...val, data } : val)));
                 }}
@@ -726,13 +723,12 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
             </div>
           ) : passengerFlowData ? (
             <>
-              {/* 오버뷰 영역 */}
               <div className="overview-wrap mt-[10px]">
-                {passengerFlowData.matric?.map((item, index) => (
+                {overviews?.map((item, index) => (
                   <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
                     <dl>
-                      <dt>{item.name}</dt>
-                      <dd>{item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}</dd>
+                      <dt className='text-left'>{item.name}</dt>
+                      <dd className='text-right'>{item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}</dd>
                     </dl>
                   </a>
                 ))}
@@ -794,7 +790,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}
-          disabled={procedureIndex < procedures.length - 1}
+          disabled={procedureIndex < procedures.length - 1 || loadingFacilityConnection || loadError}
         >
           <span className="flex flex-grow items-center justify-center">Facility Information</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

@@ -8,6 +8,8 @@ const instanceWithAuth = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+let _token: string = '';
+
 instanceWithAuth.interceptors.request.use(
   async (config) => {
     const supabase = createClient();
@@ -18,6 +20,7 @@ instanceWithAuth.interceptors.request.use(
 
     const token = session?.access_token;
     if (token) {
+      _token = token;
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
@@ -27,4 +30,6 @@ instanceWithAuth.interceptors.request.use(
   }
 );
 
-export { instanceWithAuth };
+const getLastAccessToken = () => _token;
+
+export { instanceWithAuth, getLastAccessToken };

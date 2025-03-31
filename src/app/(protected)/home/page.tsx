@@ -31,7 +31,7 @@ function HomePage() {
   const [boxOptions, setBoxOptions] = useState<string[]>([]);
 
   const { data: user } = useUser();
-  const { data: scenarios } = useScenarios(user?.groupId);
+  const { scenarios } = useScenarios(user?.groupId);
 
   const handleRangeChange = (event: Event, newValue: number | number[]) => {
     setRange2(newValue as number[]);

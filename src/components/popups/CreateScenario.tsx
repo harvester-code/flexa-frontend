@@ -115,6 +115,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
               }
               createScenario({
                 simulation_name: scenarioName,
+                airport: locationAirport,
                 terminal,
                 memo: scenarioMemo,
                 editor: userInfo?.fullName || '',

@@ -13,6 +13,7 @@ import {
   faPen,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { getFacilityInfoLineChartData } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -21,14 +22,11 @@ import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
 import { useResize } from '@/hooks/useResize';
+import { numberWithCommas } from '@/lib/utils';
 import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
+import { ProcedureInfo } from '@/types/simulations';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
-
-interface NodeInfo {
-  text: string;
-  number?: number;
-}
 
 const DefaultTimeUnit = 10;
 
@@ -49,43 +47,72 @@ interface FacilitySettings {
   automaticInput?: boolean;
   timeUnit?: number;
   openingHoursTableData?: TableData;
-  chartData?: {
+  lineChartData?: {
     x: string[];
     y: number[];
   };
+  overviewChartVisible?: boolean;
 }
 
 const facilitySettingsDefaults = [
   { name: 'Processing time (sec)', value: 60 },
-  { name: 'Maximum Allowed Queue (persons)', value: 200 },
+  // { name: 'Maximum Allowed Queue (persons)', value: 200 },
 ];
+
+const tableHeaderHeight = 52;
+const tableCellHeight = 36;
+
 
 export default function TabFacilityInformation({ visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
-  const refSetOpeningHours = useRef(null);
-  const { passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, scenarioInfo } = useSimulationStore();
-
-  const openingHoursArea = useResize(refSetOpeningHours);
+  const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
+  const { tabIndex, setTabIndex, facilityConnCapacity } = useSimulationStore();
 
   const [loaded, setLoaded] = useState(false);
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
-  const [availableProcedureIndex, setAvailableProcedureIndex] = useState(0);
-  const [barChartVisible, setBarChartVisible] = useState(false);
+  const [availableProcedureIndex, setAvailableProcedureIndex] = useState(1);
 
   const { width } = useResize(refWidth);
 
-  const id = `${procedureIndex}_${nodeIndex}`;
+  const id = `${procedureIndex}_${nodeIndex[procedureIndex] || 0}`;
   const [facilitySettings, _setFacilitySettings] = useState<{
     [id: string]: FacilitySettings;
   }>({});
+
+  const saveSnapshot = () => {
+    const snapshot: any = {
+      procedureIndex,
+      nodeIndex,
+      availableProcedureIndex,
+      facilitySettings,
+    };
+    setFacilityInformation({ ...facility_info, snapshot });
+  };
+
+  const restoreSnapshot = () => {
+    if (facility_info?.snapshot) {
+      const snapshot = facility_info?.snapshot;
+      setProcedureIndex(snapshot.procedureIndex);
+      setNodeIndex(snapshot.nodeIndex);
+      setAvailableProcedureIndex(snapshot.availableProcedureIndex);
+      _setFacilitySettings(snapshot.facilitySettings);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && !loaded && facility_info?.snapshot) {
+      setLoaded(true);
+      restoreSnapshot();
+    }
+  }, [visible]);
+
   const facilitySettingsCurrent = facilitySettings[id] || {};
   const setFacilitySettings = (data: FacilitySettings) => {
     const defaultTableData =
-      data.numberOfEachDevices != facilitySettingsCurrent.numberOfEachDevices ||
-      data.maximumQueuesAllowedPer != facilitySettingsCurrent.maximumQueuesAllowedPer
-        ? {
+      data.numberOfEachDevices != facilitySettingsCurrent.numberOfEachDevices
+        ? // || data.maximumQueuesAllowedPer != facilitySettingsCurrent.maximumQueuesAllowedPer
+          {
             header: Array(data.numberOfEachDevices)
               .fill(0)
               .map((_, index) => {
@@ -137,6 +164,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
       setFacilitySettings({
         numberOfEachDevices: 5,
         maximumQueuesAllowedPer: 200,
+        overviewChartVisible: true,
       });
     }
   }, [id]);
@@ -149,7 +177,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
         text: item.name,
       };
     }) || []),
-  ] as NodeInfo[];
+  ] as ProcedureInfo[];
 
   useEffect(() => {
     if (visible && !loaded) {
@@ -179,7 +207,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
           .fill(0)
           .map((_, index) => {
             return {
-              name: `F${String(index).padStart(2, '0')}`,
+              name: `F${String(index + 1).padStart(2, '0')}`,
               style: { background: '#F9F9FB' },
               minWidth: 80,
             };
@@ -191,7 +219,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
               .fill(0)
               .map((_, cidx) => String(facilitySettingsCurrent.defaultTableData?.data[0].values[cidx])),
             style: { background: '#FFFFFF' },
-            height: 50,
+            height: tableCellHeight,
             checkToNumber: facilitySettingsCurrent.defaultTableData?.data[0].values,
           } as GridTableRow;
         }),
@@ -200,34 +228,151 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
   };
 
   useEffect(() => {
-    if(facilitySettingsCurrent.chartData) {
+    if (facilitySettingsCurrent.lineChartData) {
       onSetChartData();
     }
-  }, [facilitySettingsCurrent.openingHoursTableData?.data]);
+  }, [facilitySettingsCurrent.openingHoursTableData?.data, facilitySettingsCurrent.timeUnit]);
 
   const onSetChartData = () => {
-    const x: string [] = [];
-    const y: number [] = [];
-    [...(facilitySettingsCurrent.openingHoursTableData?.data || [])].map((val, index) => {
-      if(index % 6 == 0) {
-        x.push(val.name);
-        y.push(val.values.reduce((acc, current) => acc + Number(current), 0));
-      }
-    });      
-    setFacilitySettings({
-      ...facilitySettingsCurrent,
-      chartData: {
-        y,
-        x,
-      },
+    const params = {
+      time_unit: facilitySettingsCurrent.timeUnit || DefaultTimeUnit,
+      facility_schedules: facilitySettingsCurrent.openingHoursTableData?.data.map((item) => {
+        return item.values.map((val) => {
+          if (val.length < 1) return 0;
+          const num = Number(val);
+          return num == 0 ? 0.0000000001 : num;
+        });
+      }),
+    };
+
+    getFacilityInfoLineChartData(params).then(({ data }) => {
+      setFacilitySettings({ ...facilitySettingsCurrent, lineChartData: data });
     });
   };
 
-  useEffect(() => {
-    if (openingHoursArea?.height > 0) {
-      setBarChartVisible(true);
+  const onBtnNext = () => {
+    const nodeCount = passenger_attr?.procedures?.[procedureIndex]?.nodes?.length || 0;
+    if(nodeIndex[procedureIndex] + 1 < nodeCount) {
+      setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? val + 1 : val)));
+    } else if(procedureIndex + 1 < procedures.length) {
+      setProcedureIndex(procedureIndex + 1);
+      setAvailableProcedureIndex(procedureIndex + 1);
     }
-  }, [openingHoursArea]);
+    saveSnapshot();
+  };
+
+  let simulationAvairable = true;
+
+  for(let p = 0; p < procedures.length; p++) {
+    const nodeCount = passenger_attr?.procedures?.[p]?.nodes?.length || 0;
+    for(let n = 0; n < nodeCount; n++) {
+      if(!facilitySettings?.[`${p}_${n}`]?.lineChartData) {
+        simulationAvairable = false;
+        break;
+      }
+    }
+  }
+
+  const onSimulation = () => {
+    if(!simulationAvairable) return;
+    let nodeIdCur = 0;
+    const components: any [] = [];
+    const params = { ...facility_conn?.params, components };
+    for(let p = 0; p < procedures.length; p++) {
+      const componentCur = procedures[p];
+      const nodes: any [] = [];      
+      const nodeCount = passenger_attr?.procedures?.[p]?.nodes?.length || 0;
+      for(let n = 0; n < nodeCount; n++) {
+        const idCur = `${p}_${n}`;
+        const facilitySettingsCurrent = facilitySettings[idCur];
+        const nodeName = passenger_attr?.procedures?.[p]?.nodes[n];
+        nodes.push({
+          id: nodeIdCur++,
+          name: nodeName,
+          max_queue_length: facilitySettingsCurrent.maximumQueuesAllowedPer,
+          facility_count: facilitySettingsCurrent.numberOfEachDevices,
+          facility_schedules: facilitySettingsCurrent.openingHoursTableData?.data.map((item) => {
+            return item.values.map((val) => {
+              if (val.length < 1) return 0;
+              const num = Number(val);
+              return num == 0 ? 0.0000000001 : num;
+            });
+          }),
+        });
+      }
+      components.push({
+        name: componentCur?.text?.toLowerCase().replace(/[\s-]+/g, '_'),
+        nodes,
+      });
+    }
+
+    saveSnapshot();
+
+    setFacilityInformation({ ...facility_info, params });
+
+    setTabIndex(tabIndex + 1);
+  };
+
+  const tableHeight = facilitySettingsCurrent?.openingHoursTableData?.data ?  facilitySettingsCurrent?.openingHoursTableData?.data?.length * tableCellHeight + tableHeaderHeight + 2 : 0;
+  const vChartTop = facilitySettingsCurrent.lineChartData ? 1 : 0;
+  const vChartHeight = facilitySettingsCurrent.lineChartData ? tableHeight + 544 : tableHeight + 8;
+  const vChartMarginTop = facilitySettingsCurrent.lineChartData ? -270 : 0;
+  const vChartParentHeight = facilitySettingsCurrent.lineChartData ? tableHeight + 280 : tableHeight;
+  const nodeName = passenger_attr?.procedures?.[procedureIndex]?.nodes?.[nodeIndex[procedureIndex]];
+
+  const chartData: Plotly.Data [] = [];
+  const chartDataOverview: Plotly.Data [] = [];
+
+  if(procedureIndex == 0 && nodeName) {
+    chartData.push({
+      x: [...(facilityConnCapacity?.bar_chart_y_data[nodeName]?.y || [])].reverse(),
+      y: chartDataCurrent.map((val) => `${val.name}  `),
+      // name: item.name,
+      type: 'bar',
+      marker: {
+        color: '#6941C6',
+        opacity: 1,
+        // @ts-expect-error 바 별 radius 추가
+        cornerradius: 7,
+      },
+      orientation: 'h',
+    });
+    chartDataOverview.push({
+      x: [...chartDataCurrent].reverse().map((val) => `${val.name}  `),
+      y: facilityConnCapacity?.bar_chart_y_data[nodeName]?.y,
+      type: 'bar',
+      marker: {
+        color: '#6941C6',
+        opacity: 1,
+        // @ts-expect-error 바 별 radius 추가
+        cornerradius: 7,
+      },
+    });
+  }
+
+  if(facilitySettingsCurrent.lineChartData) {
+    chartData.push({
+      x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
+      y: chartDataCurrent.map((val) => `${val.name}  `),
+      type: 'scatter',
+      mode: 'lines',
+      marker: {
+        color: '#FF0000',
+        opacity: 1,
+      },
+      orientation: 'h',
+    });
+    chartDataOverview.push({
+      x: [...chartDataCurrent].reverse().map((val) => `${val.name}  `),
+      y: facilitySettingsCurrent.lineChartData?.y,
+      type: 'scatter',
+      mode: 'lines',
+      marker: {
+        color: '#FF0000',
+        opacity: 1,
+      },
+    });
+  }
 
   return !visible ? null : (
     <div ref={refWidth}>
@@ -245,8 +390,14 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
       />
       <ul className="gate-list grid-cols-5">
         {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
-          <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
-            <button>{text}</button>
+          <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : facilitySettings?.[`${procedureIndex}_${index}`]?.lineChartData ? 'check' : ''}`}>
+            <button
+              onClick={() => {
+                setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
+              }}
+            >
+              {text}
+            </button>
           </li>
         ))}
       </ul>
@@ -372,184 +523,205 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
           <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetOpeningHoursTableData()} />
         )}
       </p>
-      <div className="mt-[30px] flex items-center justify-between">
-        <h2 className="title-sm">Set Opening Hours</h2>
-        <div className="flex items-center gap-[20px]">
-          <Checkbox
-            id="Automatic"
-            label="Automatic Input"
-            checked={!!facilitySettingsCurrent.automaticInput}
-            onChange={() =>
-              setFacilitySettings({
-                ...facilitySettingsCurrent,
-                automaticInput: !facilitySettingsCurrent.automaticInput,
-              })
-            }
-            className="checkbox-toggle"
-          />
-          <dl className="flex items-center gap-[10px]">
-            <dt>Time Unit</dt>
-            <dd>
-              <Dropdown
-                items={[{ id: '10', text: '10 Min' }]}
-                defaultId={'10'}
-                className="min-w-[200px]"
-                onChange={(items) => {
-                  setFacilitySettings({ ...facilitySettingsCurrent, timeUnit: Number(items[0].id) });
-                }}
-              />
-            </dd>
-          </dl>
-        </div>
-      </div>
-      <div className="table-wrap mt-[10px] overflow-hidden rounded-md">
-        <div className={`relative h-[600px] overflow-auto pr-[400px]`}>
-          <div ref={refSetOpeningHours} className="h-[7254px]">
-            {!facilitySettingsCurrent?.openingHoursTableData ? null : (
-              <>
-                <GridTable
-                  className={``}
-                  type={facilitySettingsCurrent.automaticInput ? 'checkbox' : 'text'}
-                  title="Opening Time"
-                  titleWidth={92}
-                  headerHeight={52}
-                  header={facilitySettingsCurrent.openingHoursTableData.header}
-                  data={facilitySettingsCurrent.openingHoursTableData.data}
-                  onDataChange={(data) => {
-                    setOpeningHoursTableData({
-                      ...openingHoursTableData,
-                      data,
-                    } as TableData);
+      <div className={`${facilitySettingsCurrent?.openingHoursTableData ? '' : 'hidden'}`}>
+        <div className={`mt-[30px] flex items-center justify-between`}>
+          <h2 className="title-sm">Set Opening Hours</h2>
+          <div className="flex items-center gap-[20px]">
+            <Checkbox
+              id="Automatic"
+              label="Automatic Input"
+              checked={!!facilitySettingsCurrent.automaticInput}
+              onChange={() =>
+                setFacilitySettings({
+                  ...facilitySettingsCurrent,
+                  automaticInput: !facilitySettingsCurrent.automaticInput,
+                })
+              }
+              className="checkbox-toggle"
+            />
+            <dl className="flex items-center gap-[10px]">
+              <dt>Time Unit</dt>
+              <dd>
+                <Dropdown
+                  items={[{ id: '10', text: '10 Min' }]}
+                  defaultId={'10'}
+                  className="min-w-[200px]"
+                  onChange={(items) => {
+                    setFacilitySettings({ ...facilitySettingsCurrent, timeUnit: Number(items[0].id) });
                   }}
                 />
-                {barChartVisible ? (
-                  <div className={`absolute bottom-0 right-0 top-0`}>
-                    <BarChart
-                      chartData={[
-                        {
-                          x: chartDataCurrent.map((val) =>
-                            val.values.reduce((acc, current) => acc + Number(current), 0)
-                          ),
-                          y: chartDataCurrent.map((val) => `${val.name}  `),
-                          // name: item.name,
-                          type: 'bar',
-                          marker: {
-                            color: '#6941C6',
-                            opacity: 1,
-                            // @ts-expect-error ....
-                            cornerradius: 7,
-                          },
-                          orientation: 'h',
-                        },
-                      ]}
-                      chartLayout={{
-                        width: 390,
-                        height: openingHoursArea?.height + 7,
-                        margin: {
-                          l: 50,
-                          r: 0,
-                          t: 66,
-                          b: 0,
-                        },
-                        barmode: 'overlay',
-                        bargap: 0.4,
-                        showlegend: false,
-                      }}
-                      config={{
-                        displayModeBar: false,
-                      }}
-                    />
-                  </div>
-                ) : null}
-              </>
-            )}
+              </dd>
+            </dl>
           </div>
         </div>
+        <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
+          <div className={`relative h-[600px] overflow-auto pr-[400px]`}>
+            <div 
+            // className={`h-[${tableHeight}px]`}
+            >
+              {facilitySettingsCurrent?.openingHoursTableData && nodeName ? (
+                <>
+                  <GridTable
+                    className={``}
+                    type={facilitySettingsCurrent.automaticInput ? 'checkbox' : 'text'}
+                    title="Opening Time"
+                    titleWidth={92}
+                    headerHeight={tableHeaderHeight}
+                    stickyTopRows={1}
+                    header={facilitySettingsCurrent.openingHoursTableData.header}
+                    data={facilitySettingsCurrent.openingHoursTableData.data}
+                    onDataChange={(data) => {
+                      setOpeningHoursTableData({
+                        ...openingHoursTableData,
+                        data,
+                      } as TableData);
+                    }}
+                  />
+                  <div style={{ marginTop: vChartMarginTop, top: vChartTop, right: 0, position: 'absolute' }}>
+                    <div style={{ overflow: 'hidden', height: vChartParentHeight }} >
+                      {
+                        chartData?.length > 0 ? (
+                          <BarChart
+                            chartData={chartData}
+                            chartLayout={{
+                              width: 390,
+                              height: vChartHeight,
+                              margin: {
+                                l: 50,
+                                r: 0,
+                                t: 64,
+                                b: 0,
+                              },
+                              barmode: 'overlay',
+                              bargap: 0.4,
+                              showlegend: false,
+                              yaxis: {
+                                dtick: 1,
+                              },
+                            }}
+                            config={{
+                              displayModeBar: false,
+                            }}
+                          />  
+                        ) : null
+                      }
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        <p className="mt-[38px] flex justify-end">
+          {facilitySettingsCurrent?.lineChartData && nodeName ? (
+            <Button
+              className="btn-md btn-tertiary"
+              iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
+              text="Applied"
+              onClick={() => onSetChartData()}
+            />
+          ) : (
+            <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetChartData()} />
+          )}
+        </p>
       </div>
-      <p className="mt-[38px] flex justify-end">
-        {facilitySettingsCurrent?.chartData ? (
-          <Button
-            className="btn-md btn-tertiary"
-            iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-            text="Applied"
-            onClick={() => onSetChartData()}
-          />
-        ) : (
-          <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetChartData()} />
-        )}
-      </p>
-      {facilitySettingsCurrent.chartData ? (
+      {nodeName && facilitySettingsCurrent.lineChartData ? (
         <>
           <div className="mt-[40px] flex items-center justify-center">
-            <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
-              Hide Overview Charts
-            </button>
+            {facilitySettingsCurrent.overviewChartVisible ? (
+              <button
+                className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700"
+                onClick={() => {
+                  setFacilitySettings({ ...facilitySettingsCurrent, overviewChartVisible: false });
+                }}
+              >
+                <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
+                Hide Overview Charts
+              </button>
+            ) : (
+              <button
+                className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700"
+                onClick={() => {
+                  setFacilitySettings({ ...facilitySettingsCurrent, overviewChartVisible: true });
+                }}
+              >
+                <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleDown} />
+                Show Overview Charts
+              </button>
+            )}
           </div>
-          <hr />
-          <div className="mt-[34px] flex flex-row justify-between">
-            <h3 className="title-sm">Check Generated Passenger Data</h3>
-            <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
-          </div>
-          <div className="mt-[20px] flex items-center justify-between">
-            <p className="text-[40px] text-xl font-semibold">Total: 1.001 Pax</p>
-            <p>
-              <Button
-                className="btn-md btn-default"
-                icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
-                text="Color Criteria"
-                onClick={() => {}}
-              />
-            </p>
-          </div>
-          <div>
-            <div className="mt-[15px] flex justify-end">
-              <ul className="chart-info">
-                <li>
-                  <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
-                </li>
-                <li>
-                  <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
-                </li>
-              </ul>
+          {facilitySettingsCurrent.overviewChartVisible ? (
+            <div>
+              <hr />
+              <div className="mt-[34px] flex flex-row justify-between">
+                <h3 className="title-sm">Check Generated Passenger Data</h3>
+                <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
+              </div>
+              <div className="mt-[20px] flex items-center justify-between">
+                <p className="text-[40px] text-xl font-semibold">
+                  Total: {numberWithCommas(facilityConnCapacity?.bar_chart_y_data[nodeName]?.total || 0)} Pax
+                </p>
+                <p>
+                  <Button
+                    className="btn-md btn-default"
+                    icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
+                    text="Color Criteria"
+                    onClick={() => {}}
+                  />
+                </p>
+              </div>
+              <div>
+                <div className="mt-[15px] flex justify-end">
+                  <ul className="chart-info">
+                    <li>
+                      <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
+                    </li>
+                    <li>
+                      <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
+                    </li>
+                  </ul>
+                </div>
+                <BarChart
+                  chartData={chartDataOverview}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 60,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    showlegend: false,
+                    xaxis: {
+                      dtick: 6,
+                    }
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />
+              </div>
+              {
+                !simulationAvairable ? (
+                  <p className="mt-[20px] flex justify-end">
+                    <Button className="btn-md btn-tertiary" text="Next" onClick={() => onBtnNext()} />
+                  </p>  
+                ) : null
+              }
             </div>
-            <BarChart
-              chartData={[
-                {
-                  y: facilitySettingsCurrent.chartData.y,
-                  x: facilitySettingsCurrent.chartData.x,
-                  // name: item.name,
-                  type: 'bar',
-                  marker: {
-                    color: '#6941C6',
-                    opacity: 1,
-                    // @ts-expect-error ....
-                    cornerradius: 7,
-                  },
-                  orientation: 'v',
-                },
-              ]}
-              chartLayout={{
-                width,
-                height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
-                barmode: 'overlay',
-                bargap: 0.4,
-                showlegend: false,
-              }}
-              config={{
-                displayModeBar: false,
-              }}
-            />
-          </div>
+          ) : null}
         </>
       ) : null}
-
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -560,8 +732,8 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
         </button>
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setTabIndex(tabIndex + 1)}
-          disabled={procedureIndex < procedures.length - 1}
+          onClick={() => onSimulation()}
+          disabled={!simulationAvairable}
         >
           <span className="flex flex-grow items-center justify-center">Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

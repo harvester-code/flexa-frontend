@@ -1,5 +1,5 @@
-import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
 import { ConditionData, ConditionParams, ConditionState } from '@/types/conditions';
+import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
 
 interface ScenarioData {
   created_at: string;
@@ -18,7 +18,10 @@ interface ScenarioData {
 
 interface ScenariosDataResponse {
   master_scenario: ScenarioData[];
+  page: number;
+  total_count: number;
   user_scenario: ScenarioData[];
+  scenarios?: ScenarioData[];
 }
 
 interface ScenarioOverview {
@@ -133,41 +136,45 @@ interface PassengerScheduleResponse {
   bar_chart_y_data: ChartData;
   dst_chart: any;
   total: number;
+  total_sub: string;
 }
 
 interface FacilityConnection {
   params: any;
- 
+
   snapshot: any;
 }
 
 interface FacilityInformation {
   params: any;
+
+  snapshot: any;
 }
 
 interface FacilityConnectionResponse {
-  capacity: {
-    bar_chart_x_data: string[];
-    bar_chart_y_data: ChartData;  
-  };
-  matric: Array<{
+  capacity?: Capacity;
+  matric?: Array<{
     name: string;
     value: string;
   }>;
   sanky: {
-    label: string [];
+    label: string[];
     link: {
       source: number[];
       target: number[];
       value: number[];
-    }
-  }
+    };
+  };
+}
+
+interface FacilityInfoLineChartResponse {
+  x: string[];
+  y: number[];
 }
 
 interface ProcessingProceduresResponse {
   process: ProcessingProcedureData[];
 }
-
 
 interface ConditionTableData {
   title?: string;
@@ -183,6 +190,63 @@ interface FacilitiesConnectionState {
   tableData?: ConditionTableData;
 }
 
+interface Capacity {
+  bar_chart_x_data: string[];
+  bar_chart_y_data: { [name: string]: { total: number; y: number[] } };
+}
+interface Overview {
+  name: string;
+  value: string;
+}
+
+interface ProcedureInfo {
+  text: string;
+  number?: number;
+}
+
+interface SimulationResponse {
+  simulation_completed: Array<{
+    title: string;
+    value: number;
+  }>;
+  chart: Array<{
+    node: string;
+    process: string;
+    inbound: {
+      chart_x_data: string[];
+      chart_y_data: ChartData;
+    };
+    outbound: {
+      chart_x_data: string[];
+      chart_y_data: ChartData;
+    };
+    queing: {
+      chart_x_data: string[];
+      chart_y_data: ChartData;
+    };
+    waiting: {
+      chart_x_data: string[];
+      chart_y_data: ChartData;
+    };
+  }>;
+  kpi: Array<{
+    node: string;
+    process: string;
+    kpi: Array<{
+      title: string;
+      value: number;
+      unit?: string;
+    }>;
+  }>;
+  sankey: {
+    label: string[];
+    link: {
+      source: number[];
+      target: number[];
+      value: number[];
+    };
+  };
+}
 
 export type {
   ChartData,
@@ -200,6 +264,11 @@ export type {
   FacilityConnection,
   FacilityConnectionResponse,
   FacilityInformation,
+  FacilityInfoLineChartResponse,
+  Capacity,
+  Overview,
+  ProcedureInfo,
+  SimulationResponse,
   ScenarioHistory,
   ScenarioMetadata,
   ScenarioMetadataResponse,
