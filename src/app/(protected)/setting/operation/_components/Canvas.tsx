@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Hand, LandPlot, MousePointer2 } from 'lucide-react';
-import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Circle, Image, Layer, Rect, Stage, Transformer } from 'react-konva';
 import useImage from 'use-image';
-import { cn } from '@/lib/utils';
+import CanvasController from './CanvasController';
+import CanvasInputs from './CanvasInputs';
 
 const CURSOR_MAP = { view: 'auto', grab: 'grab', draw: 'crosshair' } as const;
 
@@ -26,10 +26,17 @@ const Canvas = () => {
   const prevModeRef = useRef<'view' | 'grab' | 'draw'>('view');
   const [mode, setMode] = useState<'view' | 'grab' | 'draw'>('view');
 
-  const [rectangles, setRectangles] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  const [rectangles, setRectangles] = useState<any[]>([]);
   const [newRectangle, setNewRectangle] = useState<any | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const [nodes, setNodes] = useState([
+    { title: 'Zone A', passengerCount: 350, lineCount: 10, circleSize: 1 },
+    { title: 'Zone B', passengerCount: 350, lineCount: 10, circleSize: 1 },
+    { title: 'Zone C', passengerCount: 350, lineCount: 10, circleSize: 1 },
+  ]);
 
   const handleScreenSize = () => {
     const container = canvasContainerRef.current;
@@ -139,6 +146,8 @@ const Canvas = () => {
     }
 
     if (mode === 'draw') {
+      setIsDrawing(true);
+
       const pointer = stage.getPointerPosition();
       const scale = stage.scaleX();
       const position = stage.position();
@@ -148,8 +157,15 @@ const Canvas = () => {
         y: (pointer.y - position.y) / scale,
       };
 
-      setIsDrawing(true);
-      setNewRectangle({ x: adjustedPointer.x, y: adjustedPointer.y, width: 0, height: 0 });
+      // NOTE: 필요한 추가 속성이 있다면 여기에 추가하면 된다.
+      setNewRectangle({
+        x: adjustedPointer.x,
+        y: adjustedPointer.y,
+        width: 0,
+        height: 0,
+        rotation: 0,
+        childs: [],
+      });
     } else if (mode === 'grab') {
       stage.container().style.cursor = 'grabbing';
     } else {
@@ -160,27 +176,28 @@ const Canvas = () => {
   const handleMouseMove = (e) => {
     e.evt.preventDefault();
 
-    if (!isDrawing || mode !== 'draw') return;
+    if (mode === 'draw' || isDrawing) {
+      const stage = canvasStageRef.current;
 
-    const stage = canvasStageRef.current;
+      const pointer = stage.getPointerPosition();
+      const scale = stage.scaleX();
+      const position = stage.position();
 
-    const pointer = stage.getPointerPosition();
-    const scale = stage.scaleX();
-    const position = stage.position();
+      const adjustedPointer = {
+        x: (pointer.x - position.x) / scale,
+        y: (pointer.y - position.y) / scale,
+      };
 
-    const adjustedPointer = {
-      x: (pointer.x - position.x) / scale,
-      y: (pointer.y - position.y) / scale,
-    };
+      if (newRectangle) {
+        let width = adjustedPointer.x - newRectangle.x;
+        let height = adjustedPointer.y - newRectangle.y;
 
-    if (newRectangle) {
-      let width = adjustedPointer.x - newRectangle.x;
-      width = width !== 0 ? width : adjustedPointer.x > newRectangle.x ? 1 : -1;
+        // 마우스의 이동이 좌측에서 시작되는지 우측에서 시작되는지 판단하는 코드
+        width = width !== 0 ? width : adjustedPointer.x > newRectangle.x ? 1 : -1;
+        height = height !== 0 ? height : adjustedPointer.y > newRectangle.y ? 1 : -1;
 
-      let height = adjustedPointer.y - newRectangle.y;
-      height = height !== 0 ? height : adjustedPointer.y > newRectangle.y ? 1 : -1;
-
-      setNewRectangle({ ...newRectangle, width, height });
+        setNewRectangle({ ...newRectangle, width, height });
+      }
     }
   };
 
@@ -263,9 +280,49 @@ const Canvas = () => {
     }
   }, [selectedId]);
 
+  const drawLines = (index: number) => {
+    const { passengerCount, lineCount } = nodes[index];
+    const { x, y, width, height, rotation } = rectangles[index];
+
+    const passengersPerLine = Math.ceil(passengerCount / lineCount);
+
+    const subWidth = width / lineCount;
+    const subHeight = height / passengersPerLine;
+
+    // degree → radian 변환
+    const rad = (Math.PI / 180) * rotation;
+
+    const childPositions: any[] = [];
+
+    for (let i = 0; i < lineCount; i++) {
+      for (let j = 0; j < passengersPerLine; j++) {
+        // 사각형 좌측 상단이 원점이라고 생각하고
+        // 직사각형 내부에서의 상대 좌표(dx, dy)를 구한다.
+        const dx = subWidth * (i + 0.5);
+        const dy = subHeight * (j + 0.5);
+
+        // (dx, dy)를 rotation만큼 회전한 뒤,
+        // 다시 원래 사각형의 좌측 상단 위치 (x, y)만큼 평행 이동
+        const rotatedX = x + dx * Math.cos(rad) - dy * Math.sin(rad);
+        const rotatedY = y + dx * Math.sin(rad) + dy * Math.cos(rad);
+
+        childPositions.push({ x: rotatedX, y: rotatedY });
+      }
+    }
+
+    setRectangles((prev) => {
+      const updatedRectangles = [...prev];
+      updatedRectangles[index] = { ...updatedRectangles[index], childs: childPositions };
+      return updatedRectangles;
+    });
+  };
+
   return (
     <>
-      <div ref={canvasContainerRef} className="relative h-[800px] w-full overflow-hidden bg-gray-200">
+      <div
+        ref={canvasContainerRef}
+        className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-gray-200"
+      >
         <Stage
           draggable={mode === 'grab'}
           ref={canvasStageRef}
@@ -289,43 +346,70 @@ const Canvas = () => {
               />
             )}
             {rectangles.map((rect, index) => (
-              <Rect
-                key={index}
-                id={`rect-${index}`}
-                x={rect.x}
-                y={rect.y}
-                width={rect.width}
-                height={rect.height}
-                fill="rgba(0, 0, 255, 0.4)"
-                draggable={mode === 'view'}
-                onMouseDown={() => {
-                  if (mode === 'view') setSelectedId(index);
-                }}
-                onDragEnd={(e) => {
-                  const newRects = rectangles.slice(); // for immutable
-                  newRects[index] = {
-                    ...newRects[index],
-                    x: e.target.x(),
-                    y: e.target.y(),
-                  };
-                  setRectangles(newRects);
-                }}
-                onTransformEnd={(e) => {
-                  const node = e.target;
-                  const newRects = rectangles.slice(); // for immutable
-                  newRects[index] = {
-                    ...newRects[index],
-                    x: node.x(),
-                    y: node.y(),
-                    width: node.width() * node.scaleX(),
-                    height: node.height() * node.scaleY(),
-                  };
-                  node.scaleX(1);
-                  node.scaleY(1);
-                  setRectangles(newRects);
-                }}
-              />
+              <React.Fragment key={index}>
+                <Rect
+                  draggable
+                  id={`rect-${index}`}
+                  x={rect.x}
+                  y={rect.y}
+                  width={rect.width}
+                  height={rect.height}
+                  fill="rgba(0, 0, 255, 0.4)"
+                  onMouseDown={() => {
+                    setSelectedId(index);
+                  }}
+                  onDragStart={() => {
+                    setRectangles((prev) => {
+                      const updated = [...prev];
+                      updated[index] = { ...updated[index], childs: [] };
+                      return updated;
+                    });
+                  }}
+                  onDragEnd={(e) => {
+                    const newRects = [...rectangles];
+                    newRects[index] = { ...newRects[index], x: e.target.x(), y: e.target.y() };
+                    setRectangles(newRects);
+                  }}
+                  onTransformStart={() => {
+                    setRectangles((prev) => {
+                      const updated = [...prev];
+                      updated[index] = { ...updated[index], childs: [] };
+                      return updated;
+                    });
+                  }}
+                  onTransformEnd={(e) => {
+                    const node = e.target;
+
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+
+                    const newRects = [...rectangles];
+                    newRects[index] = {
+                      ...newRects[index],
+                      x: node.x(),
+                      y: node.y(),
+                      width: node.width() * scaleX,
+                      height: node.height() * scaleY,
+                      rotation: node.rotation(),
+                      scaleX,
+                      scaleY,
+                    };
+
+                    node.scaleX(1);
+                    node.scaleY(1);
+
+                    setRectangles(newRects);
+                  }}
+                />
+                {rect.childs.length > 0 &&
+                  rect.childs.map((child, idx) => {
+                    return (
+                      <Circle key={idx} x={child.x} y={child.y} radius={nodes[index].circleSize} fill="green" />
+                    );
+                  })}
+              </React.Fragment>
             ))}
+
             {newRectangle && (
               <Rect
                 x={newRectangle.x}
@@ -335,50 +419,35 @@ const Canvas = () => {
                 fill="rgba(0, 0, 255, 0.3)"
               />
             )}
+
             <Transformer ref={transformerRef} keepRatio={false} flipEnabled={false} />
           </Layer>
         </Stage>
 
-        {/* NOTE: 실제로는 어떤 UI에서 어떻게 사용될지 모르니 여기서 힘쓰지 말자. */}
-        <div className="absolute bottom-3 left-0 right-0 mx-auto flex w-fit justify-center">
-          <div className="flex gap-2 rounded-lg bg-default-300 p-2">
-            <div
-              className={cn(
-                'rounded p-1 hover:bg-default-200',
-                mode === 'view' && 'bg-default-100 hover:bg-default-100'
-              )}
-              onClick={() => setMode('view')}
-            >
-              <MousePointer2 />
-            </div>
-
-            <div
-              className={cn(
-                'rounded p-1 hover:bg-default-200',
-                mode === 'grab' && 'bg-default-100 hover:bg-default-100'
-              )}
-              onClick={() => {
-                prevModeRef.current = 'grab';
-                setMode('grab');
-              }}
-            >
-              <Hand />
-            </div>
-
-            <div
-              className={cn(
-                'rounded p-1 hover:bg-default-200',
-                mode === 'draw' && 'bg-default-100 hover:bg-default-100'
-              )}
-              onClick={() => setMode('draw')}
-            >
-              <LandPlot />
-            </div>
-          </div>
-        </div>
+        <CanvasController
+          mode={mode}
+          prevModeRef={prevModeRef}
+          rectangles={rectangles}
+          nodes={nodes}
+          setMode={setMode}
+        />
       </div>
 
-      <input type="file" accept="image/*" onChange={handleImageChange} />
+      <div className="mx-auto mt-6 flex w-[1280px] justify-between overflow-hidden bg-gray-200 p-4">
+        <input className="border border-rose-500" type="file" accept="image/*" onChange={handleImageChange} />
+
+        <button className="pr-8" onClick={() => console.log(rectangles)}>
+          Save
+        </button>
+      </div>
+
+      <CanvasInputs
+        nodes={nodes}
+        setNodes={setNodes}
+        rectangles={rectangles}
+        setRectangles={setRectangles}
+        drawLines={drawLines}
+      />
     </>
   );
 };
