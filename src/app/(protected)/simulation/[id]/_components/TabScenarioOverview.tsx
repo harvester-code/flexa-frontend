@@ -53,8 +53,8 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
         {OverviewTable.map((item) => (
           <a key={item.key} href="#" className="overview-item">
             <dl>
-              <dt>{item.text}</dt>
-              <dd>{overview?.[item.key] || '-'}</dd>
+              <dt className="text-left">{item.text}</dt>
+              <dd className="text-right">{overview?.[item.key] || '-'}</dd>
             </dl>
           </a>
         ))}

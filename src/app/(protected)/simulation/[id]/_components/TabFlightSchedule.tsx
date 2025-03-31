@@ -208,10 +208,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                 />
               </div>
             </PopoverTrigger>
-
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
-                toDate={new Date('2025-03-05')}
                 mode="single"
                 selected={selDate}
                 onSelect={(date) => {
@@ -220,7 +218,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               />
             </PopoverContent>
           </Popover>
-
           <Button
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-find.svg" alt="" />}
@@ -330,7 +327,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                 width,
                 height: 390,
                 margin: {
-                  l: 20,
+                  l: 30,
                   r: 10,
                   t: 0,
                   b: 30,

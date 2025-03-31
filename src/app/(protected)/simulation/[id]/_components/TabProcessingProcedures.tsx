@@ -70,7 +70,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
       setLoaded(true);
       if (passenger_attr?.data_connection_criteria && passenger_attr?.procedures) {
         setDataConnectionCriteria(passenger_attr?.data_connection_criteria);
-        if(passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
+        if (passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
           const newProcedures = passenger_attr?.procedures?.map((item, index) => {
             return {
               ...item,
@@ -291,7 +291,8 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                 )}
               </Droppable>
             </div>
-            <p className="add-item">
+            {procedures.length < 1 ? <div className="h-[30px]" /> : null}
+            <p className={`add-item`}>
               <button onClick={() => onBtnAdd()}>
                 <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
               </button>

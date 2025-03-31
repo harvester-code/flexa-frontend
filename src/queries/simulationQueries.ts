@@ -1,30 +1,33 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScenarioData } from '@/types/simulations';
+import { ScenarioData, ScenariosDataResponse } from '@/types/simulations';
 import { fetchScenarios } from '@/services/simulations';
 
-const useScenarios = (groupId?: number) => {
+const useScenarios = (groupId?: number, page: number = 1) => {
   const response = useQuery({
-    queryKey: ['scenarios', groupId],
-    // queryFn: async () => {
-    //   const { data } = await fetchScenarios(groupId);
-    //   return [...data.master_scenario, ...data.user_scenario];
-    // },
+    queryKey: ['scenarios', groupId, page],
     queryFn: () =>
-      fetchScenarios(groupId).then<ScenarioData[]>((response) => {
+      fetchScenarios(groupId, page).then<ScenariosDataResponse>(({ data }) => {
         const masterScenarios = {};
-        for (const rowCur of response?.data?.master_scenario || [])
+        for (const rowCur of data?.master_scenario || [])
           if (rowCur?.id) masterScenarios[rowCur.id] = rowCur;
-        return [
-          ...(response?.data?.master_scenario.filter((val) => val != null) || []),
-          ...(response?.data?.user_scenario?.filter((val) => val.id in masterScenarios == false) || []),
-        ];
+        return {
+          ...data,
+          scenarios: [
+            ...(data?.master_scenario.filter((val) => val != null) || []),
+            ...(data?.user_scenario?.filter((val) => val.id in masterScenarios == false) || []),
+          ]
+        };
       }),
     enabled: !!groupId,
   });
 
+  console.log(response)
+
   return {
     ...response,
-    scenarios: response?.data || [],
+    page: response?.data?.page || 1,
+    totalCount: response?.data?.total_count || 0,
+    scenarios: response?.data?.scenarios || [],
   };
 };
 

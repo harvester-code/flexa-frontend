@@ -2,10 +2,12 @@ import dayjs from 'dayjs';
 import { create } from 'zustand';
 import { ConditionData, ConditionState } from '@/types/conditions';
 import {
+  Capacity,
   ChartData,
   FacilityConnection,
   FacilityInformation,
   FlightSchedule,
+  Overview,
   PassengerPatternState,
   PassengerSchedule,
   ProcessingProcedureState,
@@ -35,13 +37,7 @@ export const BarColors = {
   '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
 };
 
-export const LineColors = [
-  '#42307D',
-  '#6941C6',
-  '#9E77ED',
-  '#D6BBFB',
-  '#F4EBFF',
-];
+export const LineColors = ['#42307D', '#6941C6', '#9E77ED', '#D6BBFB', '#F4EBFF'];
 
 export const SankeyColors = [
   '#F9F5FF',
@@ -107,7 +103,7 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
         ? { facility_conn }
         : { facility_conn: { ...(get().facility_conn || ({} as FacilityConnection)), ...facility_conn } }
     ),
-  
+
   setFacilityInformation: (facility_info, replace) =>
     set(
       replace
@@ -139,11 +135,20 @@ export const useSimulationStore = create<{
 
   priorities?: ConditionData;
   setPriorities: (priorities: ConditionData) => void;
+
+  facilityConnCapacity?: Capacity;
+  setFacilityConnCapacity: (capacity?: Capacity) => void;
+
+  overviews?: Overview[];
+  setOverviews: (overviews?: Overview[]) => void;
+
 }>((set, get) => ({
   tabIndex: 0,
-  setTabIndex: (index) => { set({ tabIndex: index, availableTabIndex: Math.max(index, get().availableTabIndex) }) },
+  setTabIndex: (index) => {
+    set({ tabIndex: index, availableTabIndex: Math.max(index, get().availableTabIndex) });
+  },
 
-  availableTabIndex: 10,
+  availableTabIndex: 1,
   setAvailableTabIndex: (index) => set({ availableTabIndex: index }),
 
   checkpoint: undefined,
@@ -157,4 +162,10 @@ export const useSimulationStore = create<{
 
   priorities: undefined,
   setPriorities: (priorities) => set({ priorities }),
+
+  facilityConnCapacity: undefined,
+  setFacilityConnCapacity: (capacity) => set({ facilityConnCapacity: capacity }),
+
+  overviews: undefined,
+  setOverviews: (overviews) => set({ overviews }),
 }));

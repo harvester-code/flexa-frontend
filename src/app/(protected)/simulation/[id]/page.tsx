@@ -83,7 +83,7 @@ export default function SimulationDetail(props) {
     window.scrollTo({ top: 0 });
   }, [tabIndex]);
   return (
-    <div>
+    <div className='mx-auto max-w-[1340px] px-[30px]'>
       <ContentsHeader text="Simulation" />
       <div className="mt-[15px] flex justify-between">
         <dl className="sub-title">
@@ -129,7 +129,7 @@ export default function SimulationDetail(props) {
       <TabProcessingProcedures visible={tabIndex == 3} />
       <TabFacilityConnection visible={tabIndex == 4} />
       <TabFacilityInformation visible={tabIndex == 5} />
-      <TabSimulation visible={tabIndex == 6} />
+      <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
     </div>
   );
 }

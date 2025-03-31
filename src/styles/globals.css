@@ -1327,6 +1327,11 @@ textarea {
         @apply bg-default-900 text-white;
       }
     }
+    &.check {
+      button {
+        @apply bg-gray-200 text-black;
+      }
+    }
   }
 }
 

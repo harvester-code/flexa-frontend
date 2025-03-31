@@ -33,6 +33,8 @@ interface IScenarioStates {
   refMemo: React.Ref<HTMLInputElement>;
 }
 
+const PAGE_ROW_COUNT = 11;
+
 const SimulationPage: React.FC = () => {
   const queryClient = useQueryClient();
 
@@ -46,8 +48,12 @@ const SimulationPage: React.FC = () => {
   const [selected, setSelected] = useState<boolean[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
 
+  const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(Array(10).fill(null));
+  const [scenarioStates, setScenarioStates] = useState<IScenarioStates[]>([]);
+  const [page, setPage] = useState(1);
+
   const { data: userInfo } = useUser();
-  const { scenarios } = useScenarios(userInfo?.groupId);
+  const { scenarios, totalCount } = useScenarios(userInfo?.groupId, page);
 
   useEffect(() => {
     if (scenarios?.length > 0) {
@@ -66,10 +72,6 @@ const SimulationPage: React.FC = () => {
       );
     }
   }, [scenarios]);
-
-  const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(Array(10).fill(null));
-  const [scenarioStates, setScenarioStates] = useState<IScenarioStates[]>([]);
-  const [page, setPage] = useState(1);
 
   let selRowCount = 0;
 
@@ -411,7 +413,7 @@ const SimulationPage: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <Paging currentPage={page} totalPage={30} onChangePage={(page) => setPage(page)} />
+      <Paging currentPage={page} totalPage={Math.ceil(totalCount / PAGE_ROW_COUNT)} onChangePage={(page) => setPage(page)} />
     </div>
   );
 };

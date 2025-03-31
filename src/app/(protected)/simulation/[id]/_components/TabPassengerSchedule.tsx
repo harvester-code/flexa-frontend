@@ -32,112 +32,6 @@ import { numberWithCommas } from '@/lib/utils';
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
-const attributeData = [
-  {
-    id: 1,
-    category: 'Asiana Airlines',
-    yes: '10%',
-    no: '90%',
-  },
-  {
-    id: 2,
-    category: 'Jeju Airlines',
-    yes: '10%',
-    no: '90%',
-  },
-  {
-    id: 3,
-    category: 'Tway Airlines',
-    yes: '10%',
-    no: '90%',
-  },
-  {
-    id: 4,
-    category: 'Singapore Airlines',
-    yes: '10%',
-    no: '90%',
-  },
-];
-const flightData = [
-  {
-    id: 1,
-    tml: 'T1',
-    aln: 'OZ',
-    flt: 'OZ0011',
-    date: '2025-01-01',
-    depTime: '18:30',
-    gate: '12',
-    senior: 'O',
-    ckOn: '...',
-  },
-  {
-    id: 2,
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-  {
-    id: 3,
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-  {
-    id: 4,
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-  {
-    id: 5,
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-  {
-    id: '...',
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-  {
-    id: '54,201',
-    tml: '...',
-    aln: '...',
-    flt: '...',
-    date: '...',
-    depTime: '...',
-    gate: '...',
-    senior: '...',
-    ckOn: '...',
-  },
-];
-
 interface TabPassengerScheduleProps {
   visible: boolean;
 }
@@ -182,12 +76,13 @@ const DropdownLists = {
 
 interface PrioritiesProps {
   className?: string;
+  conditionId?: number;
   conditions: ConditionData;
   defaultValues?: PassengerPatternState;
   onChange?: (state: PassengerPatternState) => void;
 }
 
-function Priorities({ className, conditions, defaultValues, onChange }: PrioritiesProps) {
+function Priorities({ className, conditionId, conditions, defaultValues, onChange }: PrioritiesProps) {
   const [states, _setStates] = useState<PassengerPatternState | undefined>(defaultValues);
   const setStates = (newStates: PassengerPatternState) => {
     _setStates(newStates);
@@ -249,7 +144,8 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const { tabIndex, setTabIndex, priorities } = useSimulationStore();
 
   const [loaded, setLoaded] = useState(false);
-  const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
+  const [applied, setApplied] = useState(false);
+  const [chartData, setChartData] = useState<{ total: number; total_sub: string; x: string[]; data: ChartData }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addPrioritiesVisible, setAddPrioritiesVisible] = useState(false);
   const [selPriorities, setSelPriorities] = useState<PassengerPatternState[]>();
@@ -295,6 +191,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
     getPassengerSchedules(params)
       .then(({ data }) => {
+        console.log(data)
         const passengerSchedule = { params };
         setPassengerSchedule(passengerSchedule);
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
@@ -311,9 +208,11 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           }
           setChartData({
             total: data?.total,
+            total_sub: data?.total_sub,
             x: data?.bar_chart_x_data,
             data: data?.bar_chart_y_data,
           });
+          setApplied(true);
         }
 
         setLoadingPassengerSchedules(false);
@@ -359,7 +258,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
   for (const itemCur of prioritiesList) {
     const minCur = Number(itemCur?.mean) * -1 - Math.max(Number(itemCur?.variance) / 2, 20);
-    const maxCur = Number(itemCur?.mean) * -1 + Math.max(Number(itemCur?.variance) / 2, 20);
+    const maxCur = Math.max(Number(itemCur?.mean) * -1 + Math.max(Number(itemCur?.variance) / 2, 20), 5);
     if (minCur < minMaxMean.min) minMaxMean.min = minCur;
     if (maxCur > minMaxMean.max) minMaxMean.max = maxCur;
   }
@@ -378,12 +277,25 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       y: y,
       type: 'scatter',
       mode: 'lines',
-      name: index == prioritiesList.length - 1 ? 'ELSE' : `IF ${index + 1}`,
+      name: `Condition${index + 1}`,
       line: {
         color: index < LineColors.length ? LineColors[index] : 'blue',
         width: 2,
       },
     });
+  });
+
+  distributionData.push({
+    name: 'flight',
+    x: [0],
+    y: [0],
+    mode: 'markers',
+    type: 'scatter',
+    marker: {
+      symbol: 'circle',
+      size: 16,
+      color: '#53389e',
+    }
   });
 
   return !visible ? null : (
@@ -410,6 +322,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           {prioritiesItems.map((item, index) => (
             <Priorities
               key={index}
+              conditionId={index + 1}
               conditions={conditions}
               defaultValues={item}
               onChange={(states) => {
@@ -422,6 +335,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
               onClick={() => {
                 setSelPriorities([...prioritiesItems, undefined] as PassengerPatternState[]);
+                setApplied(false);
               }}
             >
               + Add ELSE IF
@@ -494,8 +408,8 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       <p className="mt-[20px] flex justify-end px-[20px]">
         <Button
           className="btn-md btn-tertiary"
-          iconRight={chartData ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}
-          text={chartData ? 'Applied' : 'Apply'}
+          iconRight={applied ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}
+          text={applied ? 'Applied' : 'Apply'}
           onClick={() => loadPassengerSchedules()}
         />
       </p>
@@ -710,7 +624,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
             <dt className="text-[40px] text-xl font-semibold">
               Total: {numberWithCommas(chartData?.total)} Pax
             </dt>
-            <dd className="text-sm">Flight(360) x Average_seats(223) x Load_factor(85.0%)</dd>
+            <dd className="text-sm">{chartData.total_sub}</dd>
           </dl>
           <div className="mt-[10px] flex h-[210px] items-center justify-center rounded-md bg-white">
             <LineChart

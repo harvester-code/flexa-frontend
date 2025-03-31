@@ -1,24 +1,29 @@
 import {
   FacilityConnectionResponse,
+  FacilityInfoLineChartResponse,
   FlightSchedulesResponse,
   PassengerScheduleResponse,
   ProcessingProceduresResponse,
   ScenarioMetadata,
   ScenarioMetadataResponse,
   ScenariosDataResponse,
+  SimulationResponse,
 } from '@/types/simulations';
 import { useSimulationMetadata } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = 'api/v1/simulations';
 
-const createScenario = (params: {
+interface CreateScenarioParams {
   simulation_name: string;
+  airport: string;
   terminal: string;
   editor: string;
   memo: string;
   group_id: string;
-}) => {
+}
+
+const createScenario = (params: CreateScenarioParams) => {
   return instanceWithAuth.post(`${BASE_URL}/scenarios`, params);
 };
 
@@ -65,24 +70,25 @@ const updateScenarioMetadata = () => {
     facility_info: states.facility_info || {},
     history: states.history || [],
   };
-  console.log(JSON.stringify(params))
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${states.scenario_id}`, params);
 };
 
 // =======================================================================
 
+interface FlightSchedulesParams {
+  first_load: boolean;
+  airport: string;
+  date: string;
+  condition: Array<{
+    criteria: string;
+    operator: string;
+    value: string[];
+  }>;
+}
+
 const getFlightSchedules = (
   scenario_id: string,
-  params: {
-    first_load: boolean;
-    airport: string;
-    date: string;
-    condition: Array<{
-      criteria: string;
-      operator: string;
-      value: string[];
-    }>;
-  }
+  params: FlightSchedulesParams,
 ) => {
   return instanceWithAuth.post<FlightSchedulesResponse>(
     `${BASE_URL}/flight-schedules/scenario-id/${scenario_id}`,
@@ -90,17 +96,8 @@ const getFlightSchedules = (
   );
 };
 
-const getPassengerSchedules = (params: {
-  flight_schedule: {
-    first_load: boolean;
-    airport: string;
-    date: string;
-    condition: Array<{
-      criteria: string;
-      operator: string;
-      value: string[];
-    }>;
-  };
+interface PassengerSchedulesParams {
+  flight_schedule: FlightSchedulesParams;
   destribution_conditions: Array<{
     index: number;
     conditions: Array<{
@@ -110,8 +107,10 @@ const getPassengerSchedules = (params: {
     }>;
     mean: number;
     standard_deviation: number;
-  }>;
-}) => {
+  }>
+}
+
+const getPassengerSchedules = (params: PassengerSchedulesParams) => {
   return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/passenger-schedules`, params);
 };
 
@@ -119,27 +118,7 @@ const getProcessingProcedures = () => {
   return instanceWithAuth.post<ProcessingProceduresResponse>(`${BASE_URL}/processing-procedures`);
 };
 
-const getFacilityConns = (params: {
-  flight_schedule: {
-    first_load: boolean;
-    airport: string;
-    date: string;
-    condition: Array<{
-      criteria: string;
-      operator: string;
-      value: string[];
-    }>;
-  };
-  destribution_conditions: Array<{
-    index: number;
-    conditions: Array<{
-      criteria: string;
-      operator: string;
-      value: string[];
-    }>;
-    mean: number;
-    standard_deviation: number;
-  }>;
+interface FacilityConnsParams extends PassengerSchedulesParams {
   processes: {
     [index: string]: {
       name: string;
@@ -165,9 +144,36 @@ const getFacilityConns = (params: {
         };
       }>;
     };
-  };
-}) => {
+  }
+}
+
+const getFacilityConns = (params: FacilityConnsParams) => {
   return instanceWithAuth.post<FacilityConnectionResponse>(`${BASE_URL}/facility-conns`, params);
+};
+
+const getFacilityInfoLineChartData = (params: {
+  time_unit?: number;
+  facility_schedules?: number [][];
+}) => {
+  return instanceWithAuth.post<FacilityInfoLineChartResponse>(`${BASE_URL}/facility-info/charts/line`, params);
+};
+
+interface SimulationParams extends FacilityConnsParams {
+  scenario_id: string;
+  components: Array<{
+    name: string;
+    nodes: Array<{
+      id: number;
+      name: string;
+      facility_count: number;
+      max_queue_length: number;
+      facility_schedules: number[][];
+    }>;
+  }>;
+}
+
+const runSimulation = (params: SimulationParams) => {
+  return instanceWithAuth.post<SimulationResponse>(`${BASE_URL}/run-simulation/temp`, params);
 };
 
 export {
@@ -179,7 +185,9 @@ export {
   getPassengerSchedules,
   getProcessingProcedures,
   getFacilityConns,
+  getFacilityInfoLineChartData,
   getScenarioMetadata,
+  runSimulation,
   modifyScenario,
   setMasterScenario,
   updateScenarioMetadata,
