@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
+import { useKPIHeatMapChart } from '@/queries/facilityQueries';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -14,15 +15,13 @@ const HEAT_MAP_CHART_OPTIONS = [
 ] as const;
 
 interface FacilityKPISummaryHeatMapChartProps {
-  kpiHeatMapChartData: {
-    queue_length: any;
-    throughput: any;
-    waiting_time: any;
-  };
+  process?: string;
+  scenarioId: string;
 }
 
-function FacilityKPISummaryHeatMapChart({ kpiHeatMapChartData }: FacilityKPISummaryHeatMapChartProps) {
-  // =================================================================================
+function FacilityKPISummaryHeatMapChart({ process, scenarioId }: FacilityKPISummaryHeatMapChartProps) {
+  const { data: kpiHeatMapChartData } = useKPIHeatMapChart({ scenarioId, process });
+
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
   const handleActiveCharts = (buttonIndex: number) => {
     setActiveCharts((prevData) => {

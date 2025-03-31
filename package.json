@@ -61,6 +61,7 @@
     "@vis.gl/react-google-maps": "^1.5.2",
     "axios": "^1.7.9",
     "canvas": "^3.0.0-rc3",
+    "change-case": "^5.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

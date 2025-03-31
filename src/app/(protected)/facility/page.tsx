@@ -3,14 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import {
-  useKPIHeatMapChart,
-  useKPILineChart,
-  useKPISummary,
-  usePassengerAnalysesBarChart,
-  usePassengerAnalysesDonutChart,
-  useProcesses,
-} from '@/queries/facilityQueries';
+import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import ContentsHeader from '@/components/ContentsHeader';
@@ -31,48 +24,25 @@ function FacilityPage() {
   const { data: scenarios } = useScenarios(user?.groupId);
   const { data: processes } = useProcesses({ scenarioId: scenarios?.[0].id });
 
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioData[]>([]);
-  const [selectedProcess, setSelectedProcess] = useState<Option>();
-  const [selectedFunc, setSelectedFunc] = useState('min');
+  const [scenario, setScenario] = useState<ScenarioData[]>([]);
+  const [process, setProcess] = useState<Option>();
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
     if (scenarios) {
-      setSelectedScenario([scenarios[0]]);
+      setScenario([scenarios[0]]);
     }
   }, [scenarios]);
 
   // NOTE: 선택된 SCENARIO의 첫번째 PROCESS가 선택됨.
   useEffect(() => {
     if (processes) {
-      setSelectedProcess(processes[0]);
+      setProcess(processes[0]);
     }
   }, [processes]);
 
-  const { data: kpiSummaryData } = useKPISummary({
-    scenarioId: selectedScenario?.[0]?.id,
-    process: selectedProcess?.value,
-    func: selectedFunc,
-  });
-  const { data: kpiLineChartData } = useKPILineChart({
-    scenarioId: selectedScenario?.[0]?.id,
-    process: selectedProcess?.value,
-  });
-  const { data: kpiHeatMapChartData } = useKPIHeatMapChart({
-    scenarioId: selectedScenario?.[0]?.id,
-    process: selectedProcess?.value,
-  });
-  const { data: passengerAnalysisBarChartData } = usePassengerAnalysesBarChart({
-    scenarioId: selectedScenario?.[0]?.id,
-    process: selectedProcess?.value,
-  });
-  const { data: passengerAnalysisDonutChartData } = usePassengerAnalysesDonutChart({
-    scenarioId: selectedScenario?.[0]?.id,
-    process: selectedProcess?.value,
-  });
-
   // TODO: Skeleton UI 적용하기
-  if (!scenarios || !processes) return <div>Loading ...</div>;
+  if (!scenarios || !process) return <div>Loading ...</div>;
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
@@ -81,8 +51,8 @@ function FacilityPage() {
       <SimulationOverview
         className="mt-[30px]"
         items={scenarios}
-        selectedScenario={selectedScenario}
-        onSelectedScenario={setSelectedScenario}
+        selectedScenario={scenario}
+        onSelectedScenario={setScenario}
       />
 
       {/* TODO: Skeleton UI 적용하기 */}
@@ -90,26 +60,18 @@ function FacilityPage() {
         <div className="rounded-md border bg-default-50 px-5 py-7">
           <FacilityDropdownMenu
             items={processes}
-            label={selectedProcess?.label ?? ''}
-            onSelect={(item) => setSelectedProcess(item)}
+            label={process.label ?? ''}
+            onSelect={(item) => setProcess(item)}
           />
         </div>
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
           <TabsContent value="kpiSummary">
-            <FacilityKPISummary
-              kpiSummaryData={kpiSummaryData}
-              kpiLineChartData={kpiLineChartData}
-              kpiHeatMapChartData={kpiHeatMapChartData}
-              onChange={setSelectedFunc}
-            />
+            <FacilityKPISummary process={process.value} scenarioId={scenario[0].id} />
           </TabsContent>
 
           <TabsContent value="passengerAnalysis">
-            <FacilityPassengerAnalysis
-              passengerAnalysisDonutChartData={passengerAnalysisDonutChartData}
-              passengerAnalysisBarChartData={passengerAnalysisBarChartData}
-            />
+            <FacilityPassengerAnalysis process={process.value} scenarioId={scenario[0].id} />
           </TabsContent>
         </AppTabs>
       </div>

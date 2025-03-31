@@ -3,13 +3,15 @@ import dynamic from 'next/dynamic';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Circle } from 'lucide-react';
+import { usePassengerAnalysesDonutChart } from '@/queries/facilityQueries';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 const DonutChart = dynamic(() => import('@/components/charts/DonutChart'), { ssr: false });
 
 interface FacilityPassengerAnalysisDonutChartProps {
-  passengerAnalysisDonutChartData?: any;
+  process?: string;
+  scenarioId: string;
 }
 
 // TODO: 색깔 설정하기
@@ -17,9 +19,9 @@ const DONUT_CHART_OPTIONS = [
   // 아래는 고정
   { label: 'Airline', value: 'airline', color: '' },
   { label: 'Destination', value: 'destination', color: '' },
-  { label: 'Flight Number', value: 'flightNumber', color: '' },
+  { label: 'Flight Number', value: 'flight_number', color: '' },
   // 아래는 동적
-  { label: 'checkin Counter', value: 'checkInCounter', color: '' },
+  // { label: 'checkin Counter', value: 'checkInCounter', color: '' },
 ];
 
 const defaultData: any[] = [];
@@ -27,8 +29,11 @@ const defaultData: any[] = [];
 const columnHelper = createColumnHelper<any>();
 
 function FacilityPassengerAnalysisDonutChart({
-  passengerAnalysisDonutChartData,
+  process,
+  scenarioId,
 }: FacilityPassengerAnalysisDonutChartProps) {
+  const { data: passengerAnalysisDonutChartData } = usePassengerAnalysesDonutChart({ scenarioId, process });
+
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
   const handleActiveCharts = (buttonIndex: number) => {
     setActiveCharts((prevData) => {
@@ -55,7 +60,7 @@ function FacilityPassengerAnalysisDonutChart({
       columnHelper.group({
         id: 'top5',
         // HACK: activeCharts 수정하기
-        header: () => <span className="capitalize">{DONUT_CHART_OPTIONS[activeCharts[0]].label} TOP 5</span>,
+        header: () => <span className="capitalize">{DONUT_CHART_OPTIONS[activeCharts[0]].label}</span>,
         columns: [
           columnHelper.accessor('rank', {
             header: undefined,
@@ -84,27 +89,26 @@ function FacilityPassengerAnalysisDonutChart({
   useEffect(() => {
     if (!passengerAnalysisDonutChartData) return;
 
-    // HACK: activeCharts 수정하기
-    const key = DONUT_CHART_OPTIONS[activeCharts[0]].label;
+    const key = DONUT_CHART_OPTIONS[activeCharts[0]].value;
 
-    setTotalQueueLength(passengerAnalysisDonutChartData?.total_queue_length[key]);
+    setTotalQueueLength(passengerAnalysisDonutChartData.total_queue_length[key]);
     setChartData([
       {
         type: 'pie',
         textinfo: 'none',
-        marker: { colors: PRIMARY_COLOR_SCALES.slice(0, 5) },
+        marker: { colors: PRIMARY_COLOR_SCALES.slice(0, 6) },
         direction: 'clockwise',
         hole: 0.5,
-        labels: passengerAnalysisDonutChartData?.pie_result[key].labels,
-        values: passengerAnalysisDonutChartData?.pie_result[key].values,
+        labels: passengerAnalysisDonutChartData.pie_result[key].labels,
+        values: passengerAnalysisDonutChartData.pie_result[key].values,
       },
     ]);
-    // FIXME: [전달 완료] 백엔드 데이터 수정 요청
     setTableData(
-      passengerAnalysisDonutChartData?.table_result[key].body.map((d) => {
-        const [text, count] = d.values[0].split(' ');
-        return { rank: d.label, text, count };
-      })
+      passengerAnalysisDonutChartData.table_result[key].map((d) => ({
+        rank: d.rank,
+        text: d.title,
+        count: d.value,
+      }))
     );
   }, [activeCharts, passengerAnalysisDonutChartData]);
 
