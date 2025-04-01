@@ -21,8 +21,9 @@ const TABS: Option[] = [
 
 function FacilityPage() {
   const { data: user } = useUser();
-  const { scenarios } = useScenarios(user?.groupId);
-  const { data: processes } = useProcesses({ scenarioId: scenarios?.[0].id });
+
+  const { data: scenarios } = useScenarios(user?.groupId);
+  const { data: processes } = useProcesses({ scenarioId: scenarios?.master_scenario?.[0].id });
 
   const [scenario, setScenario] = useState<ScenarioData[]>([]);
   const [process, setProcess] = useState<Option>();
@@ -30,7 +31,8 @@ function FacilityPage() {
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
     if (scenarios) {
-      setScenario([scenarios[0]]);
+      // FIXME: 여기 고치기
+      setScenario([[...scenarios.scenarios!, ...scenarios?.master_scenario][0]]);
     }
   }, [scenarios]);
 
@@ -50,7 +52,8 @@ function FacilityPage() {
 
       <SimulationOverview
         className="mt-[30px]"
-        items={scenarios}
+        // FIXME: 여기 고치기
+        items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
         selectedScenario={scenario}
         onSelectedScenario={setScenario}
       />
@@ -67,11 +70,14 @@ function FacilityPage() {
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
           <TabsContent value="kpiSummary">
-            <FacilityKPISummary process={process.value} scenarioId={scenario[0].id} />
+            <FacilityKPISummary process={process.value} scenarioId={scenarios?.master_scenario?.[0].id} />
           </TabsContent>
 
           <TabsContent value="passengerAnalysis">
-            <FacilityPassengerAnalysis process={process.value} scenarioId={scenario[0].id} />
+            <FacilityPassengerAnalysis
+              process={process.value}
+              scenarioId={scenarios?.master_scenario?.[0].id}
+            />
           </TabsContent>
         </AppTabs>
       </div>

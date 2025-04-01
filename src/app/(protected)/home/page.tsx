@@ -19,10 +19,8 @@ import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const handleTabClick = (index: number) => {
-    setActiveIndex(index);
-  };
+  const [activeIndex, setActiveIndex] = useState(1);
+  const handleTabClick = (index: number) => setActiveIndex(index);
 
   const [range1, setRange1] = useState<number>(4);
   const [range2, setRange2] = useState<number[]>([4, 20]);
@@ -31,7 +29,7 @@ function HomePage() {
   const [boxOptions, setBoxOptions] = useState<string[]>([]);
 
   const { data: user } = useUser();
-  const { scenarios } = useScenarios(user?.groupId);
+  const { data: scenarios } = useScenarios(user?.groupId);
 
   const handleRangeChange = (event: Event, newValue: number | number[]) => {
     setRange2(newValue as number[]);
@@ -46,7 +44,8 @@ function HomePage() {
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
     if (scenarios) {
-      setScenario([scenarios[0]]);
+      // FIXME: 여기 고치기
+      setScenario([[...scenarios.scenarios!, ...scenarios?.master_scenario][0]]);
     }
   }, [scenarios]);
 
@@ -59,7 +58,8 @@ function HomePage() {
 
       <SimulationOverview
         className="mt-8"
-        items={scenarios}
+        // FIXME: 여기 고치기
+        items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
         selectedScenario={scenario}
         onSelectedScenario={setScenario}
       />

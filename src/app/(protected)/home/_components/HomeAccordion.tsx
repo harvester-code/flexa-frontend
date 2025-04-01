@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
