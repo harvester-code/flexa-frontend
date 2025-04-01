@@ -11,9 +11,9 @@ import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
-import ContentsHeader from '@/components/ContentsHeader';
 import Paging from '@/components/Paging';
 import Search from '@/components/Search';
+import TheContentHeader from '@/components/TheContentHeader';
 import { PushCreateScenarioPopup } from '@/components/popups/CreateScenario';
 import { PopupAlert } from '@/components/popups/PopupAlert';
 import {
@@ -184,7 +184,7 @@ const SimulationPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-[1340px] px-[30px] pb-24">
-      <ContentsHeader text="Simulation" />
+      <TheContentHeader text="Simulation" />
       <div className="mt-[30px] flex justify-between">
         <h2 className="title-sm">Scenario List</h2>
         <div className="flex items-center gap-[10px]">
@@ -413,7 +413,11 @@ const SimulationPage: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <Paging currentPage={page} totalPage={Math.ceil(totalCount / PAGE_ROW_COUNT)} onChangePage={(page) => setPage(page)} />
+      <Paging
+        currentPage={page}
+        totalPage={Math.ceil(totalCount / PAGE_ROW_COUNT)}
+        onChangePage={(page) => setPage(page)}
+      />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
-import ContentsHeader from '@/components/ContentsHeader';
+import TheContentHeader from '@/components/TheContentHeader';
 import SimulationOverview from '@/components/popups/SimulationOverview';
 import { MultipleSlider } from '@/components/ui/MultipleSlider';
 import { Slider } from '@/components/ui/Slider';
@@ -54,7 +54,7 @@ function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1340px] px-8 pb-24">
-      <ContentsHeader text="Home" />
+      <TheContentHeader text="Home" />
 
       <SimulationOverview
         className="mt-8"

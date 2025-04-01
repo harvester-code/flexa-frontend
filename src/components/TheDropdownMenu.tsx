@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
 
-export interface AppDropdownMenuProps {
+export interface TheDropdownMenuProps {
   className?: string;
   icon?: React.ReactNode;
   iconDirection?: 'right' | 'left';
@@ -17,14 +17,14 @@ export interface AppDropdownMenuProps {
   onSelect?: (item: Option) => void;
 }
 
-export default function AppDropdownMenu({
+export default function TheDropdownMenu({
   className,
   icon,
   iconDirection = 'right',
   items,
   label,
   onSelect,
-}: AppDropdownMenuProps) {
+}: TheDropdownMenuProps) {
   const handleSelect = (item: Option) => {
     if (onSelect) {
       onSelect(item);

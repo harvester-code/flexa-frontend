@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useAlertIssues } from '@/queries/homeQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 
 const PROCESS_OPTIONS = [
   { label: 'All Facilities', value: 'all_facilities' },
@@ -44,7 +44,7 @@ function HomeWarning({ scenario }: HomeWarningProps) {
   return (
     <>
       <div className="my-3.5 flex justify-end gap-3.5">
-        <AppDropdownMenu
+        <TheDropdownMenu
           className="min-w-60 [&>*]:justify-start"
           items={PROCESS_OPTIONS}
           icon={<ChevronDown />}
@@ -53,7 +53,7 @@ function HomeWarning({ scenario }: HomeWarningProps) {
         />
 
         <div className="min-w-60">
-          <AppDropdownMenu
+          <TheDropdownMenu
             className="min-w-60 [&>*]:justify-start"
             items={TARGET_OPTIONS}
             icon={<ChevronDown />}

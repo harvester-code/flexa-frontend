@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useKPISummary } from '@/queries/facilityQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
 import AppTable from '@/components/Table';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import FacilityKPISummaryTableLoading from './FacilityKPISummaryTableLoading';
 
 const STATS_OPTIONS = [
@@ -44,7 +44,7 @@ function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTabl
         </dl>
 
         <div className="flex items-center gap-2.5">
-          <AppDropdownMenu
+          <TheDropdownMenu
             className="min-w-[120px]"
             icon={<ChevronDown />}
             items={STATS_OPTIONS}

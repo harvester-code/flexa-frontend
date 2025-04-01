@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   description: 'Make your airport wait-free',
 };
 
-// FIXME: 레이아웃 통일하기
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <Providers>

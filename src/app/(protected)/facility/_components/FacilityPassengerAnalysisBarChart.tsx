@@ -4,7 +4,7 @@ import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { AlignLeft, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { usePassengerAnalysesBarChart } from '@/queries/facilityQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -91,7 +91,7 @@ function FacilityPassengerAnalysisBarChart({ process, scenarioId }: FacilityPass
         </dl>
 
         <div className="flex items-center gap-2.5">
-          <AppDropdownMenu
+          <TheDropdownMenu
             className="!w-[150px] rounded-md"
             label="Color Criteria"
             items={CRITERIA_OPTIONS}

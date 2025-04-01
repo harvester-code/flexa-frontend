@@ -6,8 +6,8 @@ import { ScenarioData } from '@/types/simulations';
 import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
-import ContentsHeader from '@/components/ContentsHeader';
 import AppTabs from '@/components/Tabs';
+import TheContentHeader from '@/components/TheContentHeader';
 import SimulationOverview from '@/components/popups/SimulationOverview';
 import { TabsContent } from '@/components/ui/Tabs';
 import FacilityDropdownMenu from './_components/FacilityDropdownMenu';
@@ -48,7 +48,7 @@ function FacilityPage() {
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
-      <ContentsHeader text="Detailed Facilities" />
+      <TheContentHeader text="Detailed Facilities" />
 
       <SimulationOverview
         className="mt-[30px]"

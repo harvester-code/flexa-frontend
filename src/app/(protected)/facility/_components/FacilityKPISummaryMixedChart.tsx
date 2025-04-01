@@ -4,8 +4,8 @@ import { capitalCase } from 'change-case';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { useKPILineChart } from '@/queries/facilityQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -169,7 +169,7 @@ function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummar
       <div className="rounded-md border border-default-200 p-5">
         <div className="mb-4 flex items-center justify-between">
           {chartKeyOption ? (
-            <AppDropdownMenu
+            <TheDropdownMenu
               className="min-w-[120px]"
               icon={<ChevronDown />}
               items={chartKeyOptions}

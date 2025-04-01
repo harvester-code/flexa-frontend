@@ -8,8 +8,8 @@ import { ScenarioHistory } from '@/types/simulations';
 import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
-import ContentsHeader from '@/components/ContentsHeader';
 import TabDefault from '@/components/TabDefault';
+import TheContentHeader from '@/components/TheContentHeader';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -68,7 +68,7 @@ export default function SimulationDetail(props) {
 
   useEffect(() => {
     getScenarioMetadata(params?.id).then(({ data }) => {
-      console.log(data)
+      console.log(data);
       const clientTime = dayjs();
       const serverTime = dayjs(data?.checkpoint);
       setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'second'));
@@ -83,8 +83,8 @@ export default function SimulationDetail(props) {
     window.scrollTo({ top: 0 });
   }, [tabIndex]);
   return (
-    <div className='mx-auto max-w-[1340px] px-[30px]'>
-      <ContentsHeader text="Simulation" />
+    <div className="mx-auto max-w-[1340px] px-[30px]">
+      <TheContentHeader text="Simulation" />
       <div className="mt-[15px] flex justify-between">
         <dl className="sub-title">
           <dt>Simulation for ICN T1 Peak Day (2025).</dt>
@@ -121,7 +121,7 @@ export default function SimulationDetail(props) {
         availableTabs={availableTabIndex}
         tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
         className={`mt-[40px]`}
-        onTabChange={(index) => index > availableTabIndex ? null : setTabIndex(index)}
+        onTabChange={(index) => (index > availableTabIndex ? null : setTabIndex(index))}
       />
       <TabScenarioOverview visible={tabIndex == 0} />
       <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />

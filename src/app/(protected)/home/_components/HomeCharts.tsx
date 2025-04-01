@@ -6,8 +6,8 @@ import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Checkbox from '@/components/Checkbox';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -178,7 +178,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
 
         <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
           <div className="flex items-center justify-between">
-            <AppDropdownMenu
+            <TheDropdownMenu
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
@@ -240,7 +240,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         </div>
         <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
           <div className="flex items-center justify-between">
-            <AppDropdownMenu
+            <TheDropdownMenu
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}

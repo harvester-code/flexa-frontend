@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useSummaries } from '@/queries/homeQueries';
-import AppDropdownMenu from '@/components/AppDropdownMenu';
 import Input from '@/components/Input';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 // TODO: CSS 모듈화하기
 import './HomeSummary.css';
@@ -32,7 +32,7 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
   return (
     <>
       <div className="my-[14px] flex justify-end gap-4">
-        <AppDropdownMenu
+        <TheDropdownMenu
           className="min-w-[180px] [&>*]:justify-start"
           items={KPI_FUNCS}
           icon={<ChevronDown />}

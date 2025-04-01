@@ -23,11 +23,11 @@ import { SankeyColors, useSimulationMetadata, useSimulationStore } from '@/store
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ConditionsBase, { Dropdown } from '@/components/Conditions';
-import ContentsHeader from '@/components/ContentsHeader';
 import CustomSelectBox from '@/components/CustomSelectBox';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
+import TheContentHeader from '@/components/TheContentHeader';
 import Tooltip from '@/components/Tooltip';
 import { useResize } from '@/hooks/useResize';
 import GridTable, { GridTableHeader, GridTableRow, checkNotEmptyRows } from './GridTable';
@@ -192,7 +192,11 @@ function Conditions({
                     title={tableData.title}
                     header={tableData.header}
                     data={tableData.data}
-                    errorMessage={checkNotEmptyRows(tableData?.data) ? '' : '● Please make sure to fill in all fields without leaving any blank rows!'}
+                    errorMessage={
+                      checkNotEmptyRows(tableData?.data)
+                        ? ''
+                        : '● Please make sure to fill in all fields without leaving any blank rows!'
+                    }
                     onDataChange={(data) => {
                       setTableData({ ...tableData, data });
                     }}
@@ -222,7 +226,8 @@ function Conditions({
 export default function FacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, scenarioInfo, setFacilityConnCapacity, overviews, setOverviews } = useSimulationStore();
+  const { tabIndex, setTabIndex, priorities, scenarioInfo, setFacilityConnCapacity, overviews, setOverviews } =
+    useSimulationStore();
 
   const { width } = useResize(refWidth);
 
@@ -677,7 +682,11 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
                 title={tableData[procedureIndex].title}
                 header={tableData[procedureIndex].header}
                 data={tableData[procedureIndex].data}
-                errorMessage={applyButtonEnable ? '' : '● Please make sure to fill in all fields without leaving any blank rows!'}
+                errorMessage={
+                  applyButtonEnable
+                    ? ''
+                    : '● Please make sure to fill in all fields without leaving any blank rows!'
+                }
                 onDataChange={(data) => {
                   setTableData(tableData.map((val, idx) => (idx == procedureIndex ? { ...val, data } : val)));
                 }}
@@ -727,8 +736,10 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
                 {overviews?.map((item, index) => (
                   <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
                     <dl>
-                      <dt className='text-left'>{item.name}</dt>
-                      <dd className='text-right'>{item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}</dd>
+                      <dt className="text-left">{item.name}</dt>
+                      <dd className="text-right">
+                        {item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                      </dd>
                     </dl>
                   </a>
                 ))}

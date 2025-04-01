@@ -14,11 +14,11 @@ import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
-import ContentsHeader from '@/components/ContentsHeader';
 import CustomSelectBox from '@/components/CustomSelectBox';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
+import TheContentHeader from '@/components/TheContentHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -145,7 +145,12 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
   const [loaded, setLoaded] = useState(false);
   const [applied, setApplied] = useState(false);
-  const [chartData, setChartData] = useState<{ total: number; total_sub: string; x: string[]; data: ChartData }>();
+  const [chartData, setChartData] = useState<{
+    total: number;
+    total_sub: string;
+    x: string[];
+    data: ChartData;
+  }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addPrioritiesVisible, setAddPrioritiesVisible] = useState(false);
   const [selPriorities, setSelPriorities] = useState<PassengerPatternState[]>();
@@ -191,7 +196,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
     getPassengerSchedules(params)
       .then(({ data }) => {
-        console.log(data)
+        console.log(data);
         const passengerSchedule = { params };
         setPassengerSchedule(passengerSchedule);
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
@@ -224,12 +229,12 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   }, [selPriorities, otherPassengerState, addPrioritiesVisible, flight_sch]);
 
   useEffect(() => {
-    if(visible && !loaded && passenger_sch?.params) {
+    if (visible && !loaded && passenger_sch?.params) {
       setLoaded(true);
       const conditions = passenger_sch?.params?.destribution_conditions;
-      if(conditions.length > 1) {
+      if (conditions.length > 1) {
         const priorities: PassengerPatternState[] = [];
-        for(let i = 0; i < conditions.length - 1; i++) {
+        for (let i = 0; i < conditions.length - 1; i++) {
           const itemCur = conditions[i];
           priorities.push({
             mean: itemCur.mean,
@@ -243,7 +248,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       const otherCondition = conditions[conditions.length - 1];
       setOtherPassengerState({
         mean: otherCondition.mean,
-        variance: otherCondition.standard_deviation
+        variance: otherCondition.standard_deviation,
       });
     }
   }, [visible]);
@@ -295,7 +300,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       symbol: 'circle',
       size: 16,
       color: '#53389e',
-    }
+    },
   });
 
   return !visible ? null : (
