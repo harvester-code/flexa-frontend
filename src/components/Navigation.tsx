@@ -31,7 +31,7 @@ const Navigation: React.FC = () => {
     >
       <h1>
         <Link href="/">
-          <Image width={100} height={100} src="/image/img-logo-nav.svg" alt="flexa" />
+          <Image priority width={100} height={100} src="/image/img-logo-nav.svg" alt="flexa" />
         </Link>
       </h1>
       <div className={`search-box ${isInputFocused ? 'active' : ''}`}>

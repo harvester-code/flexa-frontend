@@ -6,7 +6,7 @@ const FooterComponent: React.FC = () => (
   <footer className="bg-default-100 px-12 text-center">
     <div className="flex items-center justify-between py-[70px]">
       <div className="flex items-center gap-20">
-        <Image src="/image/img-logo-nav.svg" alt="Flexa" width={110} height={32} />
+        <Image priority src="/image/img-logo-nav.svg" alt="Flexa" width={110} height={32} />
         <nav className="flex gap-[30px] text-xl font-semibold">
           <Link className="text-default-600" href="#">
             Contact

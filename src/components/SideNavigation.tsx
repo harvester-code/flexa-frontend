@@ -42,7 +42,7 @@ export default function SideNavigation() {
     >
       <h1>
         <Link href="/home">
-          <Image src="/image/img-logo-nav.svg" alt="flexa" width={100} height={100} />
+          <Image priority src="/image/img-logo-nav.svg" alt="flexa" width={100} height={100} />
         </Link>
       </h1>
 

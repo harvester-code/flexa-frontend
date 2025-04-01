@@ -19,7 +19,7 @@ import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
-  const [activeIndex, setActiveIndex] = useState(1);
+  const [activeIndex, setActiveIndex] = useState(0);
   const handleTabClick = (index: number) => setActiveIndex(index);
 
   const [range1, setRange1] = useState<number>(4);
