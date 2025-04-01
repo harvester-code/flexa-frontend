@@ -20,6 +20,8 @@ import {
 import { useResize } from '@/hooks/useResize';
 import { getLastAccessToken } from '@/lib/axios';
 import { numberWithCommas } from '@/lib/utils';
+import { popModal, pushModal } from '@/app/provider';
+import AnalysisPopup from '@/components/popups/Analysis';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -28,6 +30,13 @@ interface TabSimulationProps {
   simulationId: string;
   visible: boolean;
 }
+
+const GROUP_CRITERIAS = [
+  { id: 'throughput', text: 'Throughput(pax)' }, 
+  { id: 'max_delay', text: 'Max_delay(min)' }, 
+  { id: 'average_delay', text: 'Average_delay(min)' },
+  { id: 'total_delay', text: 'Total_delay(min)' }
+];
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
@@ -44,6 +53,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
+  const [selGroupCriteria, setSelGroupCriteria] = useState(GROUP_CRITERIAS[0].id);
 
   const { width } = useResize(refWidth);
 
@@ -53,6 +63,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         text: item.name,
       };
     }) || []),
+    { text: 'Total' },
   ] as ProcedureInfo[];
 
   useEffect(() => {
@@ -92,6 +103,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
     runSimulation(params)
       .then(({ data }) => {
+        console.log(data)
         const chartKeys = ['inbound', 'outbound', 'queing', 'waiting'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
@@ -121,7 +133,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       });
   };
 
-  const kpiDataCurrent = simulationData?.kpi?.find(
+  const kpiDataCurrent =  simulationData?.kpi?.find(
     (item) =>
       item.process == procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_') &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
@@ -218,7 +230,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           <div 
             // className='sticky top-0 z-[100] bg-white pb-[10px]'
             >
-            <h2 className="title-sm mt-[60px]">Facility Information</h2>
+            <h2 className="title-sm mt-[60px]">Passenger by Facility</h2>
             <TabDefault
               tabCount={procedures.length}
               currentTab={procedureIndex}
@@ -228,325 +240,415 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               }}
               className={`tab-secondary mt-[25px]`}
             />
-            <ul className="gate-list grid-cols-5">
-              {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
-                <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
-                  <button
-                    onClick={() => {
-                      setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
-                    }}
-                  >
-                    {text}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <div className="indicator mt-[20px]">
-              <h4 className="text-lg font-semibold">KPI Indicators</h4>
-              <ul className="indicator-list grid-cols-3 gap-[20px]">
-                {
-                  kpiDataCurrent?.kpi?.map((item, index) => (
-                    <li key={index}>
-                      <dl>
-                        <dt className="text-left">{item.title}</dt>
-                        <dd className="text-right mt-[10px]">{item.value}{item.unit || ''}</dd>
-                      </dl>
+            {
+              procedureIndex < procedures.length - 1 ? (
+                <ul className="gate-list grid-cols-5">
+                  {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
+                    <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
+                      <button
+                        onClick={() => {
+                          setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
+                        }}
+                      >
+                        {text}
+                      </button>
                     </li>
-                  ))
-                }
-              </ul>
-            </div>
-            <div className="mt-[40px] flex items-center justify-between">
-              <p className="text-40 text-xl font-semibold">Passenger Processing Graphs</p>
-              <div className="flex flex-col">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className="flex h-[30px] flex-row items-center pb-[10px]">
-                      <Button
-                        className="btn-lg btn-default text-sm"
-                        icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                        text="Color Criteria"
-                        onClick={() => {}}
-                      />
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="cursor-pointer bg-white">
-                    {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data).map((text, index) => (
-                      <div key={index} className="flex flex-col">
-                        <DropdownMenuItem
-                          className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
-                          style={{ width: 143 }}
-                          onClick={() => setSelColorCriteria(text)}
-                        >
-                          <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
-                        </DropdownMenuItem>
-                      </div>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  ))}
+                </ul>
+              ) : (
+                <>
+                </>
+              )
+            }
+          </div>
+          {
+            procedureIndex < procedures.length - 1 ? (
+              <div>
+                <div className="indicator mt-[20px]">
+                  <h4 className="text-lg font-semibold">KPI Indicators</h4>
+                  <ul className="indicator-list grid-cols-3 gap-[20px]">
+                    {
+                      kpiDataCurrent?.kpi?.map((item, index) => (
+                        <li key={index}>
+                          <dl>
+                            <dt className="text-left">{item.title}</dt>
+                            <dd className="text-right mt-[10px]">{item.value}{item.unit || ''}</dd>
+                          </dl>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+                <div className="mt-[40px] flex items-center justify-between">
+                  <p className="text-40 text-xl font-semibold">Passenger Processing Graphs</p>
+                  <div className="flex flex-col">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="flex h-[30px] flex-row items-center pb-[10px]">
+                          <Button
+                            className="btn-lg btn-default text-sm"
+                            icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
+                            text="Color Criteria"
+                            onClick={() => {}}
+                          />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="cursor-pointer bg-white">
+                        {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data).map((text, index) => (
+                          <div key={index} className="flex flex-col">
+                            <DropdownMenuItem
+                              className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
+                              style={{ width: 143 }}
+                              onClick={() => setSelColorCriteria(text)}
+                            >
+                              <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
+                            </DropdownMenuItem>
+                          </div>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <div className="mb-[20px] mt-[30px] flex justify-between">
+                  <p className="text-sm font-medium text-default-600">Inbound Processing Volume Graph</p>
+                </div>
+                <BarChart
+                  chartData={[
+                    ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]
+                      .sort((a, b) => b.order - a.order)
+                      .map((item, index) => {
+                        return {
+                          x: chartDataCurrent?.inbound?.chart_x_data,
+                          y: item.acc_y,
+                          name: item.name,
+                          type: 'bar',
+                          marker: {
+                            color: (String(chartDataCurrent?.inbound?.chart_x_data?.length) in BarColors
+                              ? BarColors[String(chartDataCurrent?.inbound?.chart_x_data?.length)]
+                              : BarColors.DEFAULT)[index],
+                            opacity: 1,
+                            cornerradius: 7,
+                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                          },
+                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                        };
+                      }) as Plotly.Data[]),
+                    // {
+                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
+                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
+                    //   type: 'scatter',
+                    //   mode: 'lines',
+                    //   marker: {
+                    //     color: '#FF0000',
+                    //     opacity: 1,
+                    //   },
+                    //   orientation: 'h',
+                    // }
+                  ]}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 30,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1.1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    // barcornerradius: 7,
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />
+                <div className="mb-[20px] mt-[50px] flex justify-between">
+                  <p className="text-sm font-medium text-default-600">Outbound Processing Volume Graph</p>
+                </div>
+                <BarChart
+                  chartData={[
+                    ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]
+                      .sort((a, b) => b.order - a.order)
+                      .map((item, index) => {
+                        return {
+                          x: chartDataCurrent?.outbound?.chart_x_data,
+                          y: item.acc_y,
+                          name: item.name,
+                          type: 'bar',
+                          marker: {
+                            color: (String(chartDataCurrent?.outbound?.chart_x_data?.length) in BarColors
+                              ? BarColors[String(chartDataCurrent?.outbound?.chart_x_data?.length)]
+                              : BarColors.DEFAULT)[index],
+                            opacity: 1,
+                            cornerradius: 7,
+                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                          },
+                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                        };
+                      }) as Plotly.Data[]),
+                    // {
+                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
+                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
+                    //   type: 'scatter',
+                    //   mode: 'lines',
+                    //   marker: {
+                    //     color: '#FF0000',
+                    //     opacity: 1,
+                    //   },
+                    //   orientation: 'h',
+                    // }
+                  ]}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 30,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1.1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    // barcornerradius: 7,
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />
+                <div className="mb-[20px] mt-[50px] flex justify-between">
+                  <p className="text-sm font-medium text-default-600">Queing Processing Volume Graph</p>
+                </div>
+                <BarChart
+                  chartData={[
+                    ...(chartDataCurrent?.queing?.chart_y_data[selColorCriteria]
+                      .sort((a, b) => b.order - a.order)
+                      .map((item, index) => {
+                        return {
+                          x: chartDataCurrent?.queing?.chart_x_data,
+                          y: item.acc_y,
+                          name: item.name,
+                          type: 'bar',
+                          marker: {
+                            color: (String(chartDataCurrent?.queing?.chart_x_data?.length) in BarColors
+                              ? BarColors[String(chartDataCurrent?.queing?.chart_x_data?.length)]
+                              : BarColors.DEFAULT)[index],
+                            opacity: 1,
+                            cornerradius: 7,
+                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                          },
+                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                        };
+                      }) as Plotly.Data[]),
+                    // {
+                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
+                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
+                    //   type: 'scatter',
+                    //   mode: 'lines',
+                    //   marker: {
+                    //     color: '#FF0000',
+                    //     opacity: 1,
+                    //   },
+                    //   orientation: 'h',
+                    // }
+                  ]}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 30,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1.1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    // barcornerradius: 7,
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />
+                <div className="mb-[20px] mt-[50px] flex justify-between">
+                  <p className="text-sm font-medium text-default-600">Waiting Processing Volume Graph</p>
+                </div>
+                <BarChart
+                  chartData={[
+                    ...(chartDataCurrent?.waiting?.chart_y_data[selColorCriteria]
+                      .sort((a, b) => b.order - a.order)
+                      .map((item, index) => {
+                        return {
+                          x: chartDataCurrent?.waiting?.chart_x_data,
+                          y: item.acc_y,
+                          name: item.name,
+                          type: 'bar',
+                          marker: {
+                            color: (String(chartDataCurrent?.waiting?.chart_x_data?.length) in BarColors
+                              ? BarColors[String(chartDataCurrent?.waiting?.chart_x_data?.length)]
+                              : BarColors.DEFAULT)[index],
+                            opacity: 1,
+                            cornerradius: 7,
+                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                          },
+                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                        };
+                      }) as Plotly.Data[]),
+                    // {
+                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
+                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
+                    //   type: 'scatter',
+                    //   mode: 'lines',
+                    //   marker: {
+                    //     color: '#FF0000',
+                    //     opacity: 1,
+                    //   },
+                    //   orientation: 'h',
+                    // }
+                  ]}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 30,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1.1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    // barcornerradius: 7,
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />            
               </div>
-            </div>
-            <div className="mb-[20px] mt-[30px] flex justify-between">
-              <p className="text-sm font-medium text-default-600">Inbound Processing Volume Graph</p>
-            </div>
-            <BarChart
-              chartData={[
-                ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]
-                  .sort((a, b) => b.order - a.order)
-                  .map((item, index) => {
-                    return {
-                      x: chartDataCurrent?.inbound?.chart_x_data,
-                      y: item.acc_y,
-                      name: item.name,
+            ) : (
+              <>
+                <div className="mt-[40px] flex items-center justify-between">
+                  <p className="text-40 text-xl font-semibold mb-[10px]">Total</p>
+                  <div className="flex flex-col">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="flex h-[30px] flex-row items-center pb-[10px]">
+                          <Button
+                            className="btn-lg btn-default text-sm"
+                            icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
+                            text="Group Criteria"
+                            onClick={() => {}}
+                          />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="cursor-pointer bg-white">
+                        {GROUP_CRITERIAS.map((item, index) => (
+                          <div key={index} className="flex flex-col">
+                            <DropdownMenuItem
+                              className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
+                              style={{ width: 200 }}
+                              onClick={() => setSelGroupCriteria(item.id)}
+                            >
+                              <span className="ml-[10px] text-base font-medium text-gray-800">{item.text}</span>
+                            </DropdownMenuItem>
+                          </div>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <BarChart
+                  chartData={[
+                    {
+                      x: simulationData?.total?.defalut_x,
+                      y: simulationData?.total?.[selGroupCriteria],
+                      name: 'Total',
                       type: 'bar',
                       marker: {
-                        color: (String(chartDataCurrent?.inbound?.chart_x_data?.length) in BarColors
-                          ? BarColors[String(chartDataCurrent?.inbound?.chart_x_data?.length)]
-                          : BarColors.DEFAULT)[index],
+                        color: '#9E77ED',
                         opacity: 1,
+                        // @ts-expect-error ...
                         cornerradius: 7,
                         // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
                       },
-                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                    };
-                  }) as Plotly.Data[]),
-                // {
-                //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                //   type: 'scatter',
-                //   mode: 'lines',
-                //   marker: {
-                //     color: '#FF0000',
-                //     opacity: 1,
-                //   },
-                //   orientation: 'h',
-                // }
-              ]}
-              chartLayout={{
-                width,
-                height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
-                barmode: 'overlay',
-                legend: {
-                  x: 1,
-                  y: 1.1,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
-                bargap: 0.4,
-                // barcornerradius: 7,
-              }}
-              config={{
-                displayModeBar: false,
-              }}
-            />
-            <div className="mb-[20px] mt-[50px] flex justify-between">
-              <p className="text-sm font-medium text-default-600">Outbound Processing Volume Graph</p>
-            </div>
-            <BarChart
-              chartData={[
-                ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]
-                  .sort((a, b) => b.order - a.order)
-                  .map((item, index) => {
-                    return {
-                      x: chartDataCurrent?.outbound?.chart_x_data,
-                      y: item.acc_y,
-                      name: item.name,
-                      type: 'bar',
-                      marker: {
-                        color: (String(chartDataCurrent?.outbound?.chart_x_data?.length) in BarColors
-                          ? BarColors[String(chartDataCurrent?.outbound?.chart_x_data?.length)]
-                          : BarColors.DEFAULT)[index],
-                        opacity: 1,
-                        cornerradius: 7,
-                        // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                      },
-                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                    };
-                  }) as Plotly.Data[]),
-                // {
-                //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                //   type: 'scatter',
-                //   mode: 'lines',
-                //   marker: {
-                //     color: '#FF0000',
-                //     opacity: 1,
-                //   },
-                //   orientation: 'h',
-                // }
-              ]}
-              chartLayout={{
-                width,
-                height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
-                barmode: 'overlay',
-                legend: {
-                  x: 1,
-                  y: 1.1,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
-                bargap: 0.4,
-                // barcornerradius: 7,
-              }}
-              config={{
-                displayModeBar: false,
-              }}
-            />
-            <div className="mb-[20px] mt-[50px] flex justify-between">
-              <p className="text-sm font-medium text-default-600">Queing Processing Volume Graph</p>
-            </div>
-            <BarChart
-              chartData={[
-                ...(chartDataCurrent?.queing?.chart_y_data[selColorCriteria]
-                  .sort((a, b) => b.order - a.order)
-                  .map((item, index) => {
-                    return {
-                      x: chartDataCurrent?.queing?.chart_x_data,
-                      y: item.acc_y,
-                      name: item.name,
-                      type: 'bar',
-                      marker: {
-                        color: (String(chartDataCurrent?.queing?.chart_x_data?.length) in BarColors
-                          ? BarColors[String(chartDataCurrent?.queing?.chart_x_data?.length)]
-                          : BarColors.DEFAULT)[index],
-                        opacity: 1,
-                        cornerradius: 7,
-                        // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                      },
-                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                    };
-                  }) as Plotly.Data[]),
-                // {
-                //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                //   type: 'scatter',
-                //   mode: 'lines',
-                //   marker: {
-                //     color: '#FF0000',
-                //     opacity: 1,
-                //   },
-                //   orientation: 'h',
-                // }
-              ]}
-              chartLayout={{
-                width,
-                height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
-                barmode: 'overlay',
-                legend: {
-                  x: 1,
-                  y: 1.1,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
-                bargap: 0.4,
-                // barcornerradius: 7,
-              }}
-              config={{
-                displayModeBar: false,
-              }}
-            />
-            <div className="mb-[20px] mt-[50px] flex justify-between">
-              <p className="text-sm font-medium text-default-600">Waiting Processing Volume Graph</p>
-            </div>
-            <BarChart
-              chartData={[
-                ...(chartDataCurrent?.waiting?.chart_y_data[selColorCriteria]
-                  .sort((a, b) => b.order - a.order)
-                  .map((item, index) => {
-                    return {
-                      x: chartDataCurrent?.waiting?.chart_x_data,
-                      y: item.acc_y,
-                      name: item.name,
-                      type: 'bar',
-                      marker: {
-                        color: (String(chartDataCurrent?.waiting?.chart_x_data?.length) in BarColors
-                          ? BarColors[String(chartDataCurrent?.waiting?.chart_x_data?.length)]
-                          : BarColors.DEFAULT)[index],
-                        opacity: 1,
-                        cornerradius: 7,
-                        // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                      },
-                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                    };
-                  }) as Plotly.Data[]),
-                // {
-                //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                //   type: 'scatter',
-                //   mode: 'lines',
-                //   marker: {
-                //     color: '#FF0000',
-                //     opacity: 1,
-                //   },
-                //   orientation: 'h',
-                // }
-              ]}
-              chartLayout={{
-                width,
-                height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
-                barmode: 'overlay',
-                legend: {
-                  x: 1,
-                  y: 1.1,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
-                bargap: 0.4,
-                // barcornerradius: 7,
-              }}
-              config={{
-                displayModeBar: false,
-              }}
-            />            
-            <div className="chart-btn mt-[60px]">
-              <button>
-                <img src="/image/ico-chart-result-01.svg" alt="" />
-                Analyze Results
-              </button>
-              <button>
-                <img src="/image/ico-chart-result-02.svg" alt="" />
-                Save Results
-              </button>
-              <button>
-                <img src="/image/ico-chart-result-03.svg" alt="" />
-                Share Results
-              </button>
-              <button>
-                <img src="/image/ico-chart-result-04.svg" alt="" />
-                View Recommendations
-                <span>Beta</span>
-              </button>
-            </div>
+                    }
+                  ]}
+                  chartLayout={{
+                    width,
+                    height: 390,
+                    margin: {
+                      l: 30,
+                      r: 10,
+                      t: 0,
+                      b: 30,
+                    },
+                    barmode: 'overlay',
+                    legend: {
+                      x: 1,
+                      y: 1.1,
+                      xanchor: 'right',
+                      yanchor: 'top',
+                      orientation: 'h',
+                    },
+                    bargap: 0.4,
+                    // barcornerradius: 7,
+                  }}
+                  config={{
+                    displayModeBar: false,
+                  }}
+                />              
+              </>
+            )
+          }
+          <div className="chart-btn mt-[60px]">
+            <button onClick={() => {
+              const popupId = pushModal({
+                component: <AnalysisPopup open={true} onClose={() => {
+                  popModal(popupId);
+                }} />,
+              })
+            }}>
+              <img src="/image/ico-chart-result-01.svg" alt="" />
+              Analyze Results
+            </button>
+            <button>
+              <img src="/image/ico-chart-result-02.svg" alt="" />
+              Save Results
+            </button>
+            <button>
+              <img src="/image/ico-chart-result-03.svg" alt="" />
+              Share Results
+            </button>
+            <button>
+              <img src="/image/ico-chart-result-04.svg" alt="" />
+              View Recommendations
+              <span>Beta</span>
+            </button>
           </div>
         </div>
       ) : loadError ? (

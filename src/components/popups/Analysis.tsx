@@ -8,7 +8,7 @@ interface LogOutProps {
   onClose: () => void;
 }
 
-const PopupContent: React.FC<LogOutProps> = ({ open, onClose }) => {
+const AnalysisPopup: React.FC<LogOutProps> = ({ open, onClose }) => {
   const [activeButton, setActiveButton] = useState('Home');
 
   const handleButtonClick = (buttonName: string) => {
@@ -90,4 +90,4 @@ const PopupContent: React.FC<LogOutProps> = ({ open, onClose }) => {
   );
 };
 
-export default PopupContent;
+export default AnalysisPopup;

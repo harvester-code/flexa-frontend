@@ -246,6 +246,9 @@ interface SimulationResponse {
       value: number[];
     };
   };
+  total: {
+    [id: string]: number[];
+  }
 }
 
 export type {

@@ -406,7 +406,7 @@ button:disabled {
   }
 }
 .btn-more {
-  @apply inline-flex h-[30px] w-[30px] items-center gap-[2px] rounded-full;
+  @apply inline-flex h-[30px] w-[30px] flex-col justify-center items-center gap-[2px] rounded-full;
   svg {
     margin-top: 2px;
     width: 11px;
@@ -1685,6 +1685,17 @@ textarea {
       border-bottom: 2px solid var(--accent-600);
     }
   }
+
+  &.tab-black {
+    .tab {
+      @apply text-default-400;
+
+      &.active {
+        @apply text-default-900;
+        border-bottom: 2px solid var(--default-900);
+      }
+    }
+  }
 }
 
 .process-list {
@@ -1706,6 +1717,34 @@ textarea {
   }
 }
 
+.setting-process-list {
+  @apply mt-[30px] flex flex-col gap-[10px];
+  .process-item {
+    @apply flex flex-col;
+    .process-item-title {
+      @apply flex items-center justify-between rounded-md bg-default-100 px-[15px] py-[10px] text-lg font-semibold text-default-800;
+      button {
+        @apply ml-auto flex h-[20px] w-[20px] items-center justify-center;
+      }
+    }
+    .process-item-content {
+      @apply my-[15px] flex flex-col rounded-md border border-default-200 bg-default-100 p-[20px];
+    }
+  }
+}
+
 .modebar {
   display: none !important;
+}
+
+dl.process-item-title {
+  @apply flex flex-col gap-[10px];
+
+  dt {
+    @apply text-xl font-semibold leading-none text-default-800;
+  }
+
+  dd {
+    @apply text-sm font-medium leading-none text-default-600;
+  }
 }
