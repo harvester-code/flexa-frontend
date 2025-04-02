@@ -6,6 +6,7 @@ interface InputProps {
   placeholder?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
   className?: string;
   readOnly?: boolean;
   disabled?: boolean;
@@ -17,6 +18,7 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   value,
   onChange,
+  onBlur,
   className,
   readOnly,
   disabled,
@@ -28,6 +30,7 @@ const Input: React.FC<InputProps> = ({
       placeholder={placeholder}
       value={value}
       onChange={readOnly || disabled ? undefined : onChange}
+      onBlur={onBlur}
       readOnly={readOnly}
       disabled={disabled}
       style={{

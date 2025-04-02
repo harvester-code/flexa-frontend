@@ -22,6 +22,7 @@ import { getLastAccessToken } from '@/lib/axios';
 import { numberWithCommas } from '@/lib/utils';
 import { popModal, pushModal } from '@/app/provider';
 import AnalysisPopup from '@/components/popups/Analysis';
+import dayjs from 'dayjs';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -40,7 +41,7 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const { passenger_attr, facility_info } = useSimulationMetadata();
+  const { passenger_attr, facility_info, setSimulation } = useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo, overviews } = useSimulationStore();
 
   const [socket, setSocket] = useState<WebSocket>();
@@ -103,7 +104,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
     runSimulation(params)
       .then(({ data }) => {
-        console.log(data)
+        setSimulation(data);
         const chartKeys = ['inbound', 'outbound', 'queing', 'waiting'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
@@ -133,17 +134,24 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       });
   };
 
+  const processCurrent = procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_');
+
   const kpiDataCurrent =  simulationData?.kpi?.find(
     (item) =>
-      item.process == procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_') &&
+      item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
   const chartDataCurrent = simulationData?.chart?.find(
     (item) =>
-      item.process == procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_') &&
+      item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
-
+  const lineChartDataCurrent = simulationData?.line_chart?.find(
+    (item) =>
+      item.process == processCurrent &&
+      passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
+  );
+  const lineChartDate = dayjs().add(-1, 'day').format('YYYY-MM-DD');
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
@@ -333,17 +341,18 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                           hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                         };
                       }) as Plotly.Data[]),
-                    // {
-                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                    //   type: 'scatter',
-                    //   mode: 'lines',
-                    //   marker: {
-                    //     color: '#FF0000',
-                    //     opacity: 1,
-                    //   },
-                    //   orientation: 'h',
-                    // }
+                    {
+                      x: chartDataCurrent?.inbound?.chart_x_data.filter((val) => val.indexOf(lineChartDate) == 0),
+                      y: lineChartDataCurrent?.y,
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: 'Capacity',
+                      marker: {
+                        color: '#FF0000',
+                        opacity: 1,
+                      },
+                      orientation: 'h',
+                    }
                   ]}
                   chartLayout={{
                     width,
@@ -393,17 +402,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                           hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                         };
                       }) as Plotly.Data[]),
-                    // {
-                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                    //   type: 'scatter',
-                    //   mode: 'lines',
-                    //   marker: {
-                    //     color: '#FF0000',
-                    //     opacity: 1,
-                    //   },
-                    //   orientation: 'h',
-                    // }
                   ]}
                   chartLayout={{
                     width,
@@ -453,17 +451,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                           hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                         };
                       }) as Plotly.Data[]),
-                    // {
-                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                    //   type: 'scatter',
-                    //   mode: 'lines',
-                    //   marker: {
-                    //     color: '#FF0000',
-                    //     opacity: 1,
-                    //   },
-                    //   orientation: 'h',
-                    // }
                   ]}
                   chartLayout={{
                     width,
@@ -513,17 +500,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                           hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                         };
                       }) as Plotly.Data[]),
-                    // {
-                    //   x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
-                    //   y: chartDataCurrent.map((val) => `${val.name}  `),
-                    //   type: 'scatter',
-                    //   mode: 'lines',
-                    //   marker: {
-                    //     color: '#FF0000',
-                    //     opacity: 1,
-                    //   },
-                    //   orientation: 'h',
-                    // }
                   ]}
                   chartLayout={{
                     width,
