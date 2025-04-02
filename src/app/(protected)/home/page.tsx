@@ -43,25 +43,22 @@ function HomePage() {
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
-    if (scenarios) {
-      // FIXME: 여기 고치기
-      setScenario([[...scenarios.scenarios!, ...scenarios?.master_scenario][0]]);
-    }
+    if (scenarios) setScenario(scenarios.master_scenario[0]);
   }, [scenarios]);
 
   // TODO: Skeleton UI 적용하기
-  if (!scenarios) return <div>Loading ...</div>;
+  if (!scenarios || !scenario) return <div>Loading ...</div>;
 
   return (
-    <div className="mx-auto max-w-[1340px] px-8 pb-24">
+    <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
       <TheContentHeader text="Home" />
 
       <SimulationOverview
         className="mt-8"
         // FIXME: 여기 고치기
         items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
-        selectedScenario={scenario}
-        onSelectedScenario={setScenario}
+        scenario={scenario}
+        onSelectScenario={setScenario}
       />
 
       <div className="mt-8 flex items-center justify-between">
@@ -115,19 +112,19 @@ function HomePage() {
       </div>
 
       <HomeAccordion title="Summary">
-        <HomeSummary scenario={scenario[0]} />
+        <HomeSummary scenario={scenario} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning scenario={scenario[0]} />
+        <HomeWarning scenario={scenario} />
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails scenario={scenario[0]} />
+        <HomeDetails scenario={scenario} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
-        <HomeCharts scenario={scenario[0]} />
+        <HomeCharts scenario={scenario} />
       </HomeAccordion>
     </div>
   );

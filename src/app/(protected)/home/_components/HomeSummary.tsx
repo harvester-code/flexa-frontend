@@ -2,32 +2,32 @@
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
 import Input from '@/components/Input';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
-// TODO: CSS 모듈화하기
-import './HomeSummary.css';
-
-interface HomeSummaryProps {
-  scenario: any;
-}
 
 const KPI_FUNCS = [
   { label: 'Mean', value: 'mean' },
   { label: 'Top N%', value: 'topN' },
 ];
 
+interface HomeSummaryProps {
+  scenario: ScenarioData;
+}
+
 function HomeSummary({ scenario }: HomeSummaryProps) {
   const [topValue, setTopValue] = useState(0);
   const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
 
-  // FIXME: 병하대리님께 재수정 요청
-  const { data: { data: summaryData } = {} } = useSummaries({
+  const { data: summaries } = useSummaries({
     calculate_type: kpiFunc.value,
     percentile: topValue,
     scenarioId: scenario?.id,
   });
+
+  if (!summaries) return <div>Loading...</div>;
 
   return (
     <>
@@ -58,62 +58,79 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
         )}
       </div>
 
-      <div className="summary-block">
-        <div className="summary-left">
-          {summaryData &&
-            summaryData[0].normal.map((d, idx) => (
-              <div className="summary" key={idx}>
-                <dl>
-                  <dt>{d.title}</dt>
-                  <dd>{d.value}</dd>
-                </dl>
-              </div>
-            ))}
-          {/* <div className="summary">
-            <dl>
-              <dt>Departure Flights</dt>
-              <dd>306</dd>
-            </dl>
-            <dl>
-              <dt>Arrival Flights</dt>
-              <dd>311</dd>
-            </dl>
+      <div className="flex overflow-auto">
+        <div className="flex flex-1 flex-col gap-y-5">
+          <div className="flex h-full">
+            <div className="flex w-[25rem] rounded-lg border border-default-200 p-4">
+              <dl className="w-full">
+                <dt>{summaries.normal[0].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {Number(summaries.normal[0].value).toLocaleString()}
+                </dd>
+              </dl>
+
+              <div className="mx-5 h-full w-0.5 bg-default-200"></div>
+
+              <dl className="w-full">
+                <dt>{summaries.normal[1].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {Number(summaries.normal[1].value).toLocaleString()}
+                </dd>
+              </dl>
+            </div>
+
+            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 p-4">
+              <dl>
+                <dt>{summaries.normal[2].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {summaries.normal[2].value[0]} / {summaries.normal[2].value[1]}
+                </dd>
+              </dl>
+            </div>
           </div>
-          <div className="summary">
-            <dl>
-              <dt>Delay / Return</dt>
-              <dd>41 / 3</dd>
-            </dl>
+
+          <div className="flex h-full">
+            <div className="flex w-[25rem] rounded-lg border border-default-200 p-4">
+              <dl className="w-full">
+                <dt>{summaries.normal[3].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {Number(summaries.normal[3].value).toLocaleString()}
+                </dd>
+              </dl>
+
+              <div className="mx-5 h-full w-0.5 bg-default-200"></div>
+
+              <dl className="w-full">
+                <dt>{summaries.normal[4].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {Number(summaries.normal[4].value).toLocaleString()}
+                </dd>
+              </dl>
+            </div>
+
+            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 p-4">
+              <dl>
+                <dt>{summaries.normal[5].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem]">
+                  {Number(summaries.normal[5].value).toLocaleString()}
+                </dd>
+              </dl>
+            </div>
           </div>
-          <div className="summary">
-            <dl>
-              <dt>Departure Passengers</dt>
-              <dd>41,357</dd>
-            </dl>
-            <dl>
-              <dt>Arrival Passengers</dt>
-              <dd>44,386</dd>
-            </dl>
-          </div>
-          <div className="summary">
-            <dl>
-              <dt>Transfer Passengers</dt>
-              <dd className="text-default-300">N/A</dd>
-            </dl>
-          </div> */}
         </div>
 
-        <div className="summary-right">
-          <p>KPI</p>
-          <div>
-            {summaryData &&
-              summaryData[1].KPI.map((d, i) => (
-                <dl key={i}>
+        <div className="min-w-fit flex-1 rounded-lg border border-accent-300 bg-accent-50 px-5 py-3">
+          <p className="mb-2.5 text-xl font-semibold">KPI</p>
+          <div className="grid grid-cols-2 grid-rows-2 gap-5">
+            {summaries &&
+              summaries.kpi.map(({ title, value }, i) => (
+                <dl className="rounded-lg bg-white p-4" key={i}>
                   <dt>
+                    {/* TODO: Tooltip 마무리하기 */}
                     <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button>{d.title}</button>
+                          <button className="text-lg">{title}</button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
                           <p>
@@ -126,7 +143,7 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
                       </Tooltip>
                     </TooltipProvider>
                   </dt>
-                  <dd>{d.value}</dd>
+                  <dd className="mt-10 text-[2.5rem]">{value}</dd>
                 </dl>
               ))}
           </div>
