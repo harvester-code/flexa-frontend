@@ -24,7 +24,7 @@ import TabDefault from '@/components/TabDefault';
 import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
 import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
-import { ProcedureInfo } from '@/types/simulations';
+import { FacilityInformation, ProcedureInfo } from '@/types/simulations';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -80,14 +80,14 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
     [id: string]: FacilitySettings;
   }>({});
 
-  const saveSnapshot = () => {
+  const saveSnapshot = (params?: Partial<FacilityInformation>) => {
     const snapshot: any = {
       procedureIndex,
       nodeIndex,
       availableProcedureIndex,
       facilitySettings,
     };
-    setFacilityInformation({ ...facility_info, snapshot });
+    setFacilityInformation({ ...facility_info, snapshot, ...(params || {}) });
   };
 
   const restoreSnapshot = () => {
@@ -306,9 +306,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
       });
     }
 
-    saveSnapshot();
-
-    setFacilityInformation({ ...facility_info, params });
+    saveSnapshot(params);
 
     setTabIndex(tabIndex + 1);
   };

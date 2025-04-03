@@ -4,13 +4,15 @@ import {
   FlightSchedulesResponse,
   PassengerScheduleResponse,
   ProcessingProceduresResponse,
+  ScenarioHistory,
   ScenarioMetadata,
   ScenarioMetadataResponse,
   ScenariosDataResponse,
   SimulationResponse,
 } from '@/types/simulations';
-import { useSimulationMetadata } from '@/stores/simulation';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
+import dayjs from 'dayjs';
 
 const BASE_URL = 'api/v1/simulations';
 
@@ -59,8 +61,20 @@ const getScenarioMetadata = (scenario_id: string) => {
   );
 };
 
-const updateScenarioMetadata = () => {
+const updateScenarioMetadata = (addHistory: boolean = true) => {
+  const store = useSimulationStore.getState();
   const states = useSimulationMetadata.getState();
+  const checkpoint = dayjs().add((store.checkpoint?.diff || 0) * -1, 'millisecond').format('YYYY-MM-DD HH:mm:ss Z');
+
+  const historyItem: ScenarioHistory = {
+    checkpoint,
+    error_count: 0,
+    memo: '',
+    simulation: states?.simulation?.chart ? 'Done' : 'Yet',
+  };
+
+  const history = addHistory ? [...(states.history || []), historyItem] : states.history || [];
+
   const params = {
     overview: states.overview || {},
     flight_sch: states.flight_sch || {},
@@ -68,8 +82,9 @@ const updateScenarioMetadata = () => {
     passenger_attr: states.passenger_attr || {},
     facility_conn: states.facility_conn || {},
     facility_info: states.facility_info || {},
-    history: states.history || [],
+    history,
   };
+  if(addHistory) states.addHistoryItem(historyItem);
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${states.scenario_id}`, params);
 };
 

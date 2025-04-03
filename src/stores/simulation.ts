@@ -16,6 +16,7 @@ import {
   ScenarioInfo,
   ScenarioMetadata,
   ScenarioOverview,
+  SimulationResponse,
 } from '@/types/simulations';
 
 export const BarColors = {
@@ -61,6 +62,7 @@ interface ScenarioMetadataZustand extends Partial<ScenarioMetadata> {
   setPassengerAttr: (passenger_attr: Partial<ProcessingProcedures>, replace?: boolean) => void;
   setFacilityConnection: (facility_conn: Partial<FacilityConnection>, replace?: boolean) => void;
   setFacilityInformation: (facility_info: Partial<FacilityInformation>, replace?: boolean) => void;
+  setSimulation: (simulation: Partial<SimulationResponse>, replace?: boolean) => void;
 
   addHistoryItem: (item: ScenarioHistory) => void;
   setHistoryItem: (item: ScenarioHistory, index: number) => void;
@@ -111,6 +113,13 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
         : { facility_info: { ...(get().facility_info || ({} as FacilityConnection)), ...facility_info } }
     ),
 
+  setSimulation: (simulation, replace) =>
+    set(
+      replace
+        ? { simulation }
+        : { simulation: { ...(get().simulation || ({} as SimulationResponse)), ...simulation } }
+    ),
+  
   addHistoryItem: (item: ScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
 
   setHistoryItem: (item: ScenarioHistory, index: number) =>

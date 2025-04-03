@@ -18,37 +18,6 @@ import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
 
-const dummyHistoryData: ScenarioHistory[] = [
-  {
-    checkpoint: '2025-03-01 00:00:00',
-    updated_at: '2025-03-02 10:00:00',
-    simulation: 'Done',
-    memo: 'Optimized security che',
-    error_count: 0,
-  },
-  {
-    checkpoint: '2025-03-02 00:00:00',
-    updated_at: '2025-03-03 10:00:00',
-    simulation: 'Done',
-    memo: 'Optimized security check workload and opening times',
-    error_count: 0,
-  },
-  {
-    checkpoint: '2025-03-03 00:00:00',
-    updated_at: '2025-03-04 10:00:00',
-    simulation: 'Yet',
-    memo: 'Optimized security check workload and opening times',
-    error_count: 1,
-  },
-  {
-    checkpoint: '2025-03-04 00:00:00',
-    updated_at: '2025-03-05 10:00:00',
-    simulation: 'Done',
-    memo: 'Optimized security che',
-    error_count: 2,
-  },
-];
-
 const tabs: { text: string; number?: number }[] = [
   { text: 'Scenario Overview' },
   { text: 'Flight Schedule' },
@@ -71,12 +40,9 @@ export default function SimulationDetail(props) {
       console.log(data);
       const clientTime = dayjs();
       const serverTime = dayjs(data?.checkpoint);
-      setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'second'));
+      setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'millisecond'));
       setScenarioInfo(data?.scenario_info);
-      metadata.setMetadata({
-        ...data?.metadata,
-        history: dummyHistoryData,
-      });
+      metadata.setMetadata(data?.metadata);
     });
   }, [params?.id]);
   useEffect(() => {
@@ -108,7 +74,7 @@ export default function SimulationDetail(props) {
             onClick={() => {
               if (metadata) {
                 updateScenarioMetadata().then((response) => {
-                  console.log(response);
+                  // console.log(response);
                 });
               }
             }}

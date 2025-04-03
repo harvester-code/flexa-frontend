@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Input from '@/components/Input';
+import { updateScenarioMetadata } from '@/services/simulations';
 
 const PageRowAmount = 10;
 
@@ -46,6 +47,9 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     if (!history) return;
     metadata.setHistoryItem({ ...history[index], memo: newMemo }, index);
   };
+  const handleUpdateMemo = () => {
+    updateScenarioMetadata(false);
+  };
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
@@ -74,18 +78,18 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           <tbody>
             {history?.map((item, index) => {
               const checkpoint = dayjs(item.checkpoint);
-              const updatedAt = dayjs(item.updated_at);
+              const updatedAt = dayjs(item.checkpoint);
               const minutes = dayjs().diff(updatedAt, 'minute');
               const hours = minutes / 60;
               const days = hours / 24;
               const months = days / 30;
               const years = days / 365;
               const selDiff = [
-                [Math.floor(years), 'year'],
-                [Math.floor(months), 'month'],
-                [Math.floor(days), 'day'],
-                [Math.floor(hours), 'hour'],
-                [Math.floor(minutes), 'minute'],
+                [Math.floor(years), ' year'],
+                [Math.floor(months), ' month'],
+                [Math.floor(days), ' day'],
+                [Math.floor(hours), ' hour'],
+                [Math.floor(minutes), ' minute'],
               ].find((val) => Number(val[0]) >= 1);
 
               return index >= historyPageData.start && index < historyPageData.end ? (
@@ -109,6 +113,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                       value={history[index].memo}
                       className="!border-none bg-transparent !text-default-700"
                       onChange={(e) => handleMemoChange(index, e.target.value)}
+                      onBlur={() => handleUpdateMemo()}
                       // disabled={true}
                     />
                   </td>
@@ -125,7 +130,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
       </div>
       <div className="pagingFraction mt-[20px] flex items-center justify-end gap-[20px]">
         <p className="text-sm font-medium">
-          Page {historyPage + 1} of {historyPageData.lastPage}
+          Page {historyPageData.lastPage > 0 ? historyPage + 1 : 0} of {historyPageData.lastPage}
         </p>
         <p className="flex gap-[10px]">
           <button

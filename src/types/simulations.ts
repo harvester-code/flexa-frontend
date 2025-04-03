@@ -56,6 +56,7 @@ interface ScenarioMetadata {
   passenger_attr: Partial<ProcessingProcedures>;
   facility_conn: Partial<FacilityConnection>;
   facility_info: Partial<FacilityInformation>;
+  simulation: Partial<SimulationResponse>;
   history: ScenarioHistory[];
 }
 
@@ -246,6 +247,14 @@ interface SimulationResponse {
       value: number[];
     };
   };
+  total: {
+    [id: string]: number[];
+  };
+  line_chart: Array<{
+    node: string;
+    process: string;
+    y: number[];  
+  }>;
 }
 
 export type {
