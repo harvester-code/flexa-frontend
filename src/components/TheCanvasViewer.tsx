@@ -1,18 +1,33 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Image, Layer, Stage } from 'react-konva';
 import useImage from 'use-image';
+import { Position } from '@/types/commons';
+import { cn } from '@/lib/utils';
 
-interface CanvasProps {
-  snapshot: any;
-  dataLength: any;
+interface TheCanvasViewerProps {
+  snapshot: {
+    stage: {
+      zoom: { scaleX: number; scaleY: number };
+      position: Position;
+    };
+    backgroundImage: {
+      src: string;
+      zoom: number;
+      position: Position;
+    };
+    markers: Position[][];
+  };
+  minScale?: number;
+  maxScale?: number;
+  className?: string;
 }
 
-const url =
-  'https://flexa-dev-ap-northeast-2-data-storage.s3.ap-northeast-2.amazonaws.com/maps/icn-indoor-map.svg';
-
-const Canvas = ({ snapshot, dataLength }: CanvasProps) => {
+function TheCanvasViewer({
+  snapshot: { backgroundImage, markers, stage },
+  minScale = 1.0,
+  maxScale = 6.0,
+  className,
+}: TheCanvasViewerProps) {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasStageRef = useRef<any>(null);
 
@@ -21,23 +36,7 @@ const Canvas = ({ snapshot, dataLength }: CanvasProps) => {
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
 
-  const [image] = useImage(url, 'anonymous');
-  const [imageScale, setImageScale] = useState(0);
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-  const [stageZoom, setStageZoom] = useState({ scaleX: 0, scaleY: 0 });
-  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
-
-  const [markers, setMarkers] = useState<any[]>([]);
-
-  useEffect(() => {
-    setImageScale(snapshot.image.zoom);
-    setImagePosition(snapshot.image.position);
-
-    setStageZoom(snapshot.stage.zoom);
-    setStagePosition(snapshot.stage.position);
-
-    setMarkers(snapshot.markers);
-  }, [snapshot]);
+  const [image] = useImage(backgroundImage.src, 'anonymous');
 
   const prevModeRef = useRef<'view' | 'grab' | 'draw'>('view');
   const [mode, setMode] = useState<'view' | 'grab' | 'draw'>('view');
@@ -101,8 +100,6 @@ const Canvas = ({ snapshot, dataLength }: CanvasProps) => {
     e.evt.stopImmediatePropagation();
 
     const scaleBy = 1.05;
-    const minScale = 1.0; // Set the minimum scale limit
-    const maxScale = 6.0; // Set the minimum scale limit
 
     const stage = canvasStageRef.current;
     const oldScale = stage.scaleX() || 1;
@@ -137,32 +134,31 @@ const Canvas = ({ snapshot, dataLength }: CanvasProps) => {
     stage.batchDraw();
   };
 
+  const dataLength = [50, 80, 40];
+
   return (
     <>
-      <div
-        ref={canvasContainerRef}
-        className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-gray-200"
-      >
+      <div ref={canvasContainerRef} className={cn('overflow-hidden', className)}>
         <Stage
           draggable={mode === 'grab'}
           ref={canvasStageRef}
           width={width}
           height={height}
-          scaleX={stageZoom.scaleX}
-          scaleY={stageZoom.scaleY}
-          x={stagePosition.x}
-          y={stagePosition.y}
+          scaleX={stage.zoom.scaleX}
+          scaleY={stage.zoom.scaleY}
+          x={stage.position.x}
+          y={stage.position.y}
           onWheel={handleWheel}
         >
           <Layer>
             {image && (
               <Image
-                image={image}
-                x={imagePosition.x}
-                y={imagePosition.y}
-                scaleX={imageScale}
-                scaleY={imageScale}
                 alt="Airport Map"
+                image={image}
+                x={backgroundImage.position.x}
+                y={backgroundImage.position.y}
+                scaleX={backgroundImage.zoom}
+                scaleY={backgroundImage.zoom}
               />
             )}
             {markers &&
@@ -178,6 +174,6 @@ const Canvas = ({ snapshot, dataLength }: CanvasProps) => {
       </div>
     </>
   );
-};
+}
 
-export default Canvas;
+export default TheCanvasViewer;
