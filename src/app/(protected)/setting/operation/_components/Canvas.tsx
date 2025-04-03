@@ -436,7 +436,25 @@ const Canvas = () => {
       <div className="mx-auto mt-6 flex w-[1280px] justify-between overflow-hidden bg-gray-200 p-4">
         <input className="border border-rose-500" type="file" accept="image/*" onChange={handleImageChange} />
 
-        <button className="pr-8" onClick={() => console.log(rectangles)}>
+        <button
+          className="pr-8"
+          onClick={() => {
+            const stage = canvasStageRef.current;
+            if (stage) {
+              const scaleX = stage.scaleX();
+              const scaleY = stage.scaleY();
+              const position = stage.position();
+
+              const snapshot = {
+                stage: { zoom: { scaleX, scaleY }, position },
+                image: { zoom: imageScale, position: imagePosition },
+                markers: rectangles.map((rect) => rect.childs),
+              };
+
+              console.log(snapshot);
+            }
+          }}
+        >
           Save
         </button>
       </div>

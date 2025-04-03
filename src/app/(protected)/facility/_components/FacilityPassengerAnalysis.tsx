@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Slider } from '@/components/ui/Slider';
+import TheSlider from '@/components/TheSlider';
 import FacilityPassengerAnalysisBarChart from './FacilityPassengerAnalysisBarChart';
 import FacilityPassengerAnalysisDonutChart from './FacilityPassengerAnalysisDonutChart';
 
@@ -121,7 +121,7 @@ function FacilityPassengerAnalysis({ process, scenarioId }: FacilityPassengerAna
           </div>
 
           <div>
-            <Slider defaultValue={[50]} />
+            <TheSlider defaultValue={[50]} />
           </div>
         </div>
       </div>

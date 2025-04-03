@@ -9,3 +9,8 @@ export interface Coordinate {
   lat: number;
   lng: number;
 }
+
+export interface Position {
+  x: number;
+  y: number;
+}
