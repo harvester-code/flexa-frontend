@@ -28,20 +28,15 @@ import { cn } from '@/lib/utils';
 interface SimulationOverviewProps {
   className?: string;
   items: ScenarioData[];
-  selectedScenario: any[];
-  onSelectedScenario: Dispatch<SetStateAction<any[]>>;
+  scenario: ScenarioData;
+  onSelectScenario: Dispatch<SetStateAction<any>>;
 }
 
 const columnHelper = createColumnHelper<ScenarioData>();
 
 const fallbackData: ScenarioData[] = [];
 
-function SimulationOverview({
-  className,
-  items,
-  selectedScenario,
-  onSelectedScenario,
-}: SimulationOverviewProps) {
+function SimulationOverview({ className, items, scenario, onSelectScenario }: SimulationOverviewProps) {
   const [isOpened, setIsOpened] = useState(false);
 
   const columns = useMemo(
@@ -52,7 +47,7 @@ function SimulationOverview({
           <p
             className="flex cursor-pointer items-center gap-2.5 hover:font-bold"
             onClick={() => {
-              onSelectedScenario([info.row.original]);
+              onSelectScenario([info.row.original]);
               setIsOpened(false);
             }}
           >
@@ -85,7 +80,7 @@ function SimulationOverview({
         footer: (info) => info.column.id,
       }),
     ],
-    [onSelectedScenario]
+    [onSelectScenario]
   );
 
   const table = useReactTable({
@@ -106,14 +101,13 @@ function SimulationOverview({
 
         <dd>
           <ul className="flex flex-wrap items-center gap-2.5">
-            {selectedScenario &&
-              selectedScenario.map((item, idx) => (
-                <li className="flex items-center gap-2.5" key={idx}>
-                  <span className="flex h-6 items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-                    {item?.simulation_name}
-                  </span>
-                </li>
-              ))}
+            {scenario && (
+              <li className="flex items-center gap-2.5">
+                <span className="flex h-6 items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+                  {scenario?.simulation_name}
+                </span>
+              </li>
+            )}
           </ul>
         </dd>
       </dl>

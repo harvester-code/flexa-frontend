@@ -9,9 +9,9 @@ import { useSummaries } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import TheContentHeader from '@/components/TheContentHeader';
+import TheMultipleSlider from '@/components/TheMultipleSlider';
+import TheSlider from '@/components/TheSlider';
 import SimulationOverview from '@/components/popups/SimulationOverview';
-import { MultipleSlider } from '@/components/ui/MultipleSlider';
-import { Slider } from '@/components/ui/Slider';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -22,24 +22,11 @@ function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const handleTabClick = (index: number) => setActiveIndex(index);
 
-  const [range1, setRange1] = useState<number>(4);
-  const [range2, setRange2] = useState<number[]>([4, 20]);
-
-  const [scenario, setScenario] = useState<ScenarioData[]>([]);
+  const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [boxOptions, setBoxOptions] = useState<string[]>([]);
 
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
-
-  const handleRangeChange = (event: Event, newValue: number | number[]) => {
-    setRange2(newValue as number[]);
-  };
-
-  const formatTime = (value: number) => {
-    const hours = Math.floor(value);
-    const minutes = Math.round((value % 1) * 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
@@ -83,12 +70,12 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col">
+      {/* <div className="mt-5 flex flex-col">
         <div className={`${activeIndex === 0 ? '' : 'hidden'} flex flex-col gap-2`}>
           <div className="relative flex aspect-[1280/600] flex-grow items-center justify-center rounded-md"></div>
 
           <div className="relative mt-8 h-24 flex-grow pt-2.5">
-            <Slider defaultValue={[50]} />
+            <TheSlider defaultValue={[50]} />
           </div>
         </div>
 
@@ -106,10 +93,10 @@ function HomePage() {
           </div>
 
           <div className="mb-2 mt-8">
-            <MultipleSlider defaultValue={[0, 80]} />
+            <TheMultipleSlider defaultValue={[0, 80]} />
           </div>
         </div>
-      </div>
+      </div> */}
 
       <HomeAccordion title="Summary">
         <HomeSummary scenario={scenario} />
