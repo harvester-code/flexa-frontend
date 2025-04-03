@@ -20,31 +20,25 @@ const TABS: Option[] = [
 ];
 
 function FacilityPage() {
-  const { data: user } = useUser();
+  const [scenario, setScenario] = useState<ScenarioData | null>(null);
+  const [process, setProcess] = useState<Option>();
 
+  const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
   const { data: processes } = useProcesses({ scenarioId: scenarios?.master_scenario?.[0].id });
 
-  const [scenario, setScenario] = useState<ScenarioData[]>([]);
-  const [process, setProcess] = useState<Option>();
-
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
-    if (scenarios) {
-      // FIXME: 여기 고치기
-      setScenario([[...scenarios.scenarios!, ...scenarios?.master_scenario][0]]);
-    }
+    if (scenarios) if (scenarios) setScenario(scenarios.master_scenario[0]);
   }, [scenarios]);
 
   // NOTE: 선택된 SCENARIO의 첫번째 PROCESS가 선택됨.
   useEffect(() => {
-    if (processes) {
-      setProcess(processes[0]);
-    }
+    if (processes) setProcess(processes[0]);
   }, [processes]);
 
   // TODO: Skeleton UI 적용하기
-  if (!scenarios || !process) return <div>Loading ...</div>;
+  if (!scenarios || !scenario || !process) return <div>Loading ...</div>;
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
@@ -54,8 +48,8 @@ function FacilityPage() {
         className="mt-[30px]"
         // FIXME: 여기 고치기
         items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
-        selectedScenario={scenario}
-        onSelectedScenario={setScenario}
+        scenario={scenario}
+        onSelectScenario={setScenario}
       />
 
       {/* TODO: Skeleton UI 적용하기 */}
