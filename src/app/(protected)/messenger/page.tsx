@@ -5,7 +5,6 @@ import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Divider, Menu, MenuItem, Typography } from '@mui/material';
 import Input from '@/components/Input';
-import Navigation from '@/components/Navigation';
 import AddPeople from '@/components/popups/addPeople';
 import './styles.css';
 
@@ -44,8 +43,6 @@ const MessengerPage: React.FC = () => {
 
   return (
     <>
-      <Navigation />
-
       <div id="container">
         <section id="messenger">
           <div className="messenger-header">
