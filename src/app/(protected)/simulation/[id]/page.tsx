@@ -17,6 +17,7 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
+import { timeToRelativeTime } from '@/lib/utils';
 
 const tabs: { text: string; number?: number }[] = [
   { text: 'Scenario Overview' },
@@ -33,7 +34,11 @@ export default function SimulationDetail(props) {
   const router = useRouter();
   const metadata = useSimulationMetadata();
 
-  const { tabIndex, setTabIndex, availableTabIndex, setCheckpoint, setScenarioInfo } = useSimulationStore();
+  const { tabIndex, setTabIndex, availableTabIndex, setAvailableTabIndex, setCheckpoint, scenarioInfo, setScenarioInfo } = useSimulationStore();
+
+  const simulationId = params?.id;
+  
+  const lastHistory = metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
 
   useEffect(() => {
     getScenarioMetadata(params?.id).then(({ data }) => {
@@ -48,17 +53,25 @@ export default function SimulationDetail(props) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [tabIndex]);
+  useEffect(() => {
+    setAvailableTabIndex(1);
+    setTabIndex(0);
+  }, [simulationId]);
   return (
     <div className="mx-auto max-w-[1340px] px-[30px]">
       <TheContentHeader text="Simulation" />
       <div className="mt-[15px] flex justify-between">
         <dl className="sub-title">
-          <dt>Simulation for ICN T1 Peak Day (2025).</dt>
           <dd>
-            ICN_T1_Scenario_Rev2.project <span>2hours before</span>
+            {scenarioInfo?.simulation_name || ''}
+            {
+              lastHistory?.checkpoint ? (
+                <span>{timeToRelativeTime(lastHistory?.checkpoint)}</span>
+              ) : null
+            }
           </dd>
         </dl>
-        <div className="mt-[15px] flex items-center gap-[10px]">
+        <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-arrow-left.svg" alt="" />}
@@ -89,13 +102,15 @@ export default function SimulationDetail(props) {
         className={`mt-[40px]`}
         onTabChange={(index) => (index > availableTabIndex ? null : setTabIndex(index))}
       />
-      <TabScenarioOverview visible={tabIndex == 0} />
-      <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
-      <TabPassengerSchedule visible={tabIndex == 2} />
-      <TabProcessingProcedures visible={tabIndex == 3} />
-      <TabFacilityConnection visible={tabIndex == 4} />
-      <TabFacilityInformation visible={tabIndex == 5} />
-      <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
+      <React.Fragment key={simulationId}>
+        <TabScenarioOverview visible={tabIndex == 0} />
+        <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
+        <TabPassengerSchedule visible={tabIndex == 2} />
+        <TabProcessingProcedures visible={tabIndex == 3} />
+        <TabFacilityConnection visible={tabIndex == 4} />
+        <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
+        <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
+      </React.Fragment>
     </div>
   );
 }

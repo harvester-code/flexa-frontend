@@ -186,7 +186,7 @@ export function Dropdown({
                   ) : (
                     <div className="h-[8px] w-[8px]" />
                   )}
-                  <span className="ml-[10px] text-base font-medium text-gray-800">{itemCurrent.text}</span>
+                  <span className="ml-[10px] text-base font-medium text-gray-800">{itemCurrent.fullText || itemCurrent.text}</span>
                 </DropdownMenuItem>
               </div>
             );
@@ -425,10 +425,10 @@ export default function Conditions({
         )}
       </div>
       {onBtnApply ? (
-        <div className="pb=20 flex flex-row justify-end px-[30px] py-[20px]">
+        <div className="pb=20 flex flex-row justify-end py-[20px]">
           <Button
             className="btn-md btn-primary"
-            iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
+            // iconRight={<Image width={20} height={20} src="/image/ico-check.svg" alt="" />}
             text="Apply"
             onClick={() => {
               if (onBtnApply) onBtnApply(conditions || []);

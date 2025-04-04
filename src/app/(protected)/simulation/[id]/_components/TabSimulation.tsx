@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
-import { ChartData, ProcedureInfo, SimulationResponse } from '@/types/simulations';
-import { runSimulation } from '@/services/simulations';
+import { ChartData, ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
+import { getSimulationOverview, runSimulation } from '@/services/simulations';
 import { BarColors, SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
@@ -23,6 +23,7 @@ import { numberWithCommas } from '@/lib/utils';
 import { popModal, pushModal } from '@/app/provider';
 import AnalysisPopup from '@/components/popups/Analysis';
 import dayjs from 'dayjs';
+import LineChart from '@/components/charts/LineChart';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -41,12 +42,13 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const { passenger_attr, facility_info, setSimulation } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, scenarioInfo, overviews } = useSimulationStore();
+  const { passenger_attr, facility_info, setSimulation, overview, setOverview } = useSimulationMetadata();
+  const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
 
   const [socket, setSocket] = useState<WebSocket>();
   const [loaded, setLoaded] = useState(false);
 
+  const [overviewData, setOverviewData] = useState<SimulationOverviewResponse>();
   const [simulationData, setSimulationData] = useState<SimulationResponse>();
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -73,8 +75,24 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
   }, [passenger_attr?.procedures]);
 
+  useEffect(() => {
+    if(visible) {
+      const params = { ...facility_info?.params };
+      setLoadingSimulation(true);
+      getSimulationOverview(params).then(({ data }) => {
+        setOverviewData(data);
+        setOverview({ ...overview, matric: data?.matric });
+        setLoadingSimulation(false);
+      }).catch(() => {
+        setLoadError(true);
+        setLoadingSimulation(false);
+      });  
+  
+    }
+  }, [visible]);
+
   const onRunSimulation = () => {
-    const params = { ...facility_info?.params, scenario_id: simulationId };
+    const params = { ...facility_info?.params };
 
     // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
 
@@ -104,8 +122,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
     runSimulation(params)
       .then(({ data }) => {
-        setSimulation(data);
-        const chartKeys = ['inbound', 'outbound', 'queing', 'waiting'];
+        console.log(data)
+        const chartKeys = ['inbound', 'outbound', 'queing'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
             const chartCur = chartGroupCur[chartKeyCur] as {
@@ -125,10 +143,12 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             }
           }
         }
+        setSimulation(data);
         setSimulationData(data);
         setLoadingSimulation(false);
       })
-      .catch(() => {
+      .catch((e) => {
+        console.log(e)
         setLoadError(true);
         setLoadingSimulation(false);
       });
@@ -155,18 +175,22 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
-      <div className="overview-wrap mt-[10px]">
-        {overviews?.map((item, index) => (
-          <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
-            <dl>
-              <dt className="text-left">{item.name}</dt>
-              <dd className="text-right">
-                {item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
-              </dd>
-            </dl>
-          </a>
-        ))}
-      </div>
+      {
+        overviewData ? (
+          <div className="overview-wrap mt-[10px]">
+            {overviewData?.matric?.map((item, index) => (
+              <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
+                <dl>
+                  <dt className="text-left">{item.name}</dt>
+                  <dd className="text-right whitespace-pre">
+                    {(Array.isArray(item.value) ? item.value.join('\n') : item.value) || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                  </dd>
+                </dl>
+              </a>
+            ))}
+          </div>  
+        ) : null
+      }
       {loadingSimulation ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
@@ -179,7 +203,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               <img src="/image/ico-check-green.svg" alt="" />
               <dl className="flex flex-col gap-[8px]">
                 <dt className="text-2xl font-semibold text-default-800">
-                  {numberWithCommas(simulationData.simulation_completed[0].value)} Passengers
+                  {simulationData.simulation_completed[0].value} Passengers
                 </dt>
                 <dd className="text-xl text-default-500">completed passengers</dd>
               </dl>
@@ -188,13 +212,13 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               <img src="/image/ico-check-red.png" alt="" />
               <dl className="flex flex-col gap-[8px]">
                 <dt className="text-2xl font-semibold text-default-800">
-                  {numberWithCommas(simulationData.simulation_completed[1].value)} Passengers
+                  {simulationData.simulation_completed[1].value} Passengers
                 </dt>
                 <dd className="text-xl text-default-500">incomplete passengers</dd>
               </dl>
             </div>
           </div>
-          <h2 className="title-sm mt-[44px]">Passenger Flow</h2>
+          <h2 className="title-sm mt-[44px]">Passenger Flow {simulationData.simulation_completed[0].value} Passengers</h2>
           <div className="mt-[40px] flex h-[570px] items-center justify-center rounded-md bg-white">
             <SankeyChart
               chartData={[
@@ -288,7 +312,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   </ul>
                 </div>
                 <div className="mt-[40px] flex items-center justify-between">
-                  <p className="text-40 text-xl font-semibold">Passenger Processing Graphs</p>
+                  <p className="text-40 text-xl font-semibold">Graphs</p>
                   <div className="flex flex-col">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -296,7 +320,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                           <Button
                             className="btn-lg btn-default text-sm"
                             icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                            text="Color Criteria"
+                            text={`Color by : ${selColorCriteria}`}
                             onClick={() => {}}
                           />
                         </div>
@@ -318,7 +342,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   </div>
                 </div>
                 <div className="mb-[20px] mt-[30px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Inbound Processing Volume Graph</p>
+                  <p className="text-sm font-medium text-default-600">Number of arrival passengers by hours</p>
                 </div>
                 <BarChart
                   chartData={[
@@ -379,7 +403,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   }}
                 />
                 <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Outbound Processing Volume Graph</p>
+                  <p className="text-sm font-medium text-default-600">Number of processed passengers</p>
                 </div>
                 <BarChart
                   chartData={[
@@ -428,7 +452,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   }}
                 />
                 <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Queing Processing Volume Graph</p>
+                  <p className="text-sm font-medium text-default-600">Number of queuing passengers</p>
                 </div>
                 <BarChart
                   chartData={[
@@ -477,29 +501,21 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   }}
                 />
                 <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Waiting Processing Volume Graph</p>
+                  <p className="text-sm font-medium text-default-600">Average waiting time</p>
                 </div>
-                <BarChart
+                <LineChart
                   chartData={[
-                    ...(chartDataCurrent?.waiting?.chart_y_data[selColorCriteria]
-                      .sort((a, b) => b.order - a.order)
-                      .map((item, index) => {
-                        return {
-                          x: chartDataCurrent?.waiting?.chart_x_data,
-                          y: item.acc_y,
-                          name: item.name,
-                          type: 'bar',
-                          marker: {
-                            color: (String(chartDataCurrent?.waiting?.chart_x_data?.length) in BarColors
-                              ? BarColors[String(chartDataCurrent?.waiting?.chart_x_data?.length)]
-                              : BarColors.DEFAULT)[index],
-                            opacity: 1,
-                            cornerradius: 7,
-                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                          },
-                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                        };
-                      }) as Plotly.Data[]),
+                    {
+                      x: chartDataCurrent?.waiting?.chart_x_data,
+                      y: chartDataCurrent?.waiting?.chart_y_data,
+                      type: 'scatter',
+                      mode: 'lines',
+                      marker: {
+                        color: '#FF0000',
+                        opacity: 1,
+                      },
+                      orientation: 'h',
+                    },                    
                   ]}
                   chartLayout={{
                     width,
@@ -651,7 +667,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
           onClick={() => onRunSimulation()}
         >
-          <span className="flex flex-grow items-center justify-center">Simulation Run</span>
+          <span className="flex flex-grow items-center justify-center">Run Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
         </button>
       </div>

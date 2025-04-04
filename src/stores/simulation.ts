@@ -1,41 +1,27 @@
 import dayjs from 'dayjs';
 import { create } from 'zustand';
 import { ConditionData, ConditionState } from '@/types/conditions';
-import {
-  Capacity,
-  ChartData,
-  FacilityConnection,
-  FacilityInformation,
-  FlightSchedule,
-  Overview,
-  PassengerPatternState,
-  PassengerSchedule,
-  ProcessingProcedureState,
-  ProcessingProcedures,
-  ScenarioHistory,
-  ScenarioInfo,
-  ScenarioMetadata,
-  ScenarioOverview,
-  SimulationResponse,
-} from '@/types/simulations';
+import { Capacities, FacilityConnection, FacilityInformation, FlightSchedule, Overview, PassengerPatternState, PassengerSchedule, ProcessingProcedureState, ProcessingProcedures, ScenarioHistory, ScenarioInfo, ScenarioMetadata, ScenarioOverview, SimulationResponse } from '@/types/simulations';
+
 
 export const BarColors = {
   DEFAULT: [
-    '#B9C0D4',
-    '#F4EBFF',
-    '#E9D7FE',
-    '#D6BBFB',
-    '#B692F6',
-    '#9E77ED',
-    '#7F56D9',
-    '#6941C6',
-    '#53389E',
-    '#42307D',
+    ...[
+      "#B48CF2",
+"#5C3C9F",
+"#69D6D6",
+"#1F2C93",
+"#6E55E0",
+"#65AFFF",
+"#545CA1",
+"#042440",
+    ],
+"#4C84BC",
   ],
-  '2': ['#D6BBFB', '#6941C6'],
-  '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
-  '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
-  '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
+  // '2': ['#D6BBFB', '#6941C6'],
+  // '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
+  // '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
+  // '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
 };
 
 export const LineColors = ['#42307D', '#6941C6', '#9E77ED', '#D6BBFB', '#F4EBFF'];
@@ -145,11 +131,8 @@ export const useSimulationStore = create<{
   priorities?: ConditionData;
   setPriorities: (priorities: ConditionData) => void;
 
-  facilityConnCapacity?: Capacity;
-  setFacilityConnCapacity: (capacity?: Capacity) => void;
-
-  overviews?: Overview[];
-  setOverviews: (overviews?: Overview[]) => void;
+  facilityConnCapacities?: Capacities;
+  setFacilityConnCapacities: (capacities?: Capacities) => void;
 
 }>((set, get) => ({
   tabIndex: 0,
@@ -172,9 +155,7 @@ export const useSimulationStore = create<{
   priorities: undefined,
   setPriorities: (priorities) => set({ priorities }),
 
-  facilityConnCapacity: undefined,
-  setFacilityConnCapacity: (capacity) => set({ facilityConnCapacity: capacity }),
+  facilityConnCapacities: undefined,
+  setFacilityConnCapacities: (capacities) => set({ facilityConnCapacities: capacities }),
 
-  overviews: undefined,
-  setOverviews: (overviews) => set({ overviews }),
 }));

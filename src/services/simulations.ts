@@ -8,6 +8,7 @@ import {
   ScenarioMetadata,
   ScenarioMetadataResponse,
   ScenariosDataResponse,
+  SimulationOverviewResponse,
   SimulationResponse,
 } from '@/types/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
@@ -187,6 +188,11 @@ interface SimulationParams extends FacilityConnsParams {
   }>;
 }
 
+const getSimulationOverview = (params: SimulationParams) => {
+  return instanceWithAuth.post<SimulationOverviewResponse>(`${BASE_URL}/run-simulation/overview`, params);
+};
+
+
 const runSimulation = (params: SimulationParams) => {
   return instanceWithAuth.post<SimulationResponse>(`${BASE_URL}/run-simulation/temp`, params);
 };
@@ -202,6 +208,7 @@ export {
   getFacilityConns,
   getFacilityInfoLineChartData,
   getScenarioMetadata,
+  getSimulationOverview,
   runSimulation,
   modifyScenario,
   setMasterScenario,

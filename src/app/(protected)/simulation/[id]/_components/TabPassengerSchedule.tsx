@@ -14,20 +14,15 @@ import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
-import CustomSelectBox from '@/components/CustomSelectBox';
-import Input from '@/components/Input';
-import SelectBox from '@/components/SelectBox';
-import TabDefault from '@/components/TabDefault';
-import TheContentHeader from '@/components/TheContentHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
+import Tooltip from '@/components/Tooltip';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -76,13 +71,15 @@ const DropdownLists = {
 
 interface PrioritiesProps {
   className?: string;
-  conditionId?: number;
   conditions: ConditionData;
   defaultValues?: PassengerPatternState;
   onChange?: (state: PassengerPatternState) => void;
 }
 
-function Priorities({ className, conditionId, conditions, defaultValues, onChange }: PrioritiesProps) {
+let _priorityIdCurrent = 0;
+
+function Priorities({ className, conditions, defaultValues, onChange }: PrioritiesProps) {
+  const [id] = useState(++_priorityIdCurrent);
   const [states, _setStates] = useState<PassengerPatternState | undefined>(defaultValues);
   const setStates = (newStates: PassengerPatternState) => {
     _setStates(newStates);
@@ -114,21 +111,31 @@ function Priorities({ className, conditionId, conditions, defaultValues, onChang
           </p>
           <div className="flex items-center gap-[10px] text-xl">
             normally distributed with mean
-            <div className="w-[100px]">
-              <Dropdown
-                items={DropdownLists.Mean}
-                defaultId={states?.mean}
-                onChange={(items) => setStates({ ...states, mean: items?.[0]?.id })}
-              />
-            </div>
+            <input
+              id={`priority-mean-${id}`}
+              className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+              type="number"
+              defaultValue={states?.mean}
+              onBlur={(e) => {
+                const val = Math.max(Math.min(Number(e.target.value), 999), 20);
+                setStates({ ...states, mean: String(val) });
+                const element = document.getElementById(`priority-mean-${id}`) as HTMLInputElement;
+                if(element) element.value = String(val);
+              }}
+            />  
             variance
-            <div className="w-[100px]">
-              <Dropdown
-                items={DropdownLists.Variance}
-                defaultId={states?.variance}
-                onChange={(items) => setStates({ ...states, variance: items?.[0]?.id })}
-              />
-            </div>
+            <input
+              id={`priority-variance-${id}`}
+              className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+              type="number"
+              defaultValue={states?.variance}
+              onBlur={(e) => {
+                const val = Math.max(Math.min(Number(e.target.value), 500), 1);
+                setStates({ ...states, variance: String(val) });
+                const element = document.getElementById(`priority-variance-${id}`) as HTMLInputElement;
+                if(element) element.value = String(val);
+              }}
+            />  
             minutes
           </div>
           <p className="text-xl">before the flight departure.</p>
@@ -144,7 +151,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const { tabIndex, setTabIndex, priorities } = useSimulationStore();
 
   const [loaded, setLoaded] = useState(false);
-  const [applied, setApplied] = useState(false);
   const [chartData, setChartData] = useState<{
     total: number;
     total_sub: string;
@@ -217,7 +223,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
             x: data?.bar_chart_x_data,
             data: data?.bar_chart_y_data,
           });
-          setApplied(true);
         }
 
         setLoadingPassengerSchedules(false);
@@ -327,7 +332,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           {prioritiesItems.map((item, index) => (
             <Priorities
               key={index}
-              conditionId={index + 1}
               conditions={conditions}
               defaultValues={item}
               onChange={(states) => {
@@ -340,7 +344,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
               onClick={() => {
                 setSelPriorities([...prioritiesItems, undefined] as PassengerPatternState[]);
-                setApplied(false);
               }}
             >
               + Add ELSE IF
@@ -356,23 +359,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                 <dl>
                   <dt>
                     Logic <span className="text-accent-600">*</span>
-                    <button>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                          </TooltipTrigger>
-                          <TooltipContent side="right" align="center">
-                            <React.Fragment>
-                              <strong>Tool-tip Title</strong>
-                              <br />
-                              The average or top n% of the total queue count experienced by one passenger across
-                              all processes.
-                            </React.Fragment>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </button>
+                    <Tooltip title={'test'} text={'test'}/>
                   </dt>
                   <dd className="pl-[10px]">
                     <Dropdown items={[{ id: 'ELSE', text: 'ELSE' }]} defaultId={'ELSE'} />
@@ -387,23 +374,31 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
             <p className="font-semibold text-default-900">Other passengers arrive at the airport</p>
             <div className="flex items-center gap-[10px] text-xl">
               normally distributed with mean
-              <div className="w-[100px]">
-                <Dropdown
-                  items={DropdownLists.Mean}
-                  defaultId={otherPassengerState?.mean}
-                  onChange={(items) => setOtherPassengerState({ ...otherPassengerState, mean: items?.[0]?.id })}
-                />
-              </div>
+              <input
+                id='other-passenger-mean'
+                className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+                type="number"
+                defaultValue={otherPassengerState.mean}
+                onBlur={(e) => {
+                  const val = Math.max(Math.min(Number(e.target.value), 999), 20);
+                  setOtherPassengerState({ ...otherPassengerState, mean: String(val) });
+                  const element = document.getElementById('other-passenger-mean') as HTMLInputElement;
+                  if(element) element.value = String(val);
+                }}
+              />
               variance
-              <div className="w-[100px]">
-                <Dropdown
-                  items={DropdownLists.Variance}
-                  defaultId={otherPassengerState?.variance}
-                  onChange={(items) =>
-                    setOtherPassengerState({ ...otherPassengerState, variance: items?.[0]?.id })
-                  }
-                />
-              </div>
+              <input
+                id='other-passenger-variance'
+                className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+                type="number"
+                defaultValue={otherPassengerState.variance}
+                onBlur={(e) => {
+                  const val = Math.max(Math.min(Number(e.target.value), 500), 1);
+                  setOtherPassengerState({ ...otherPassengerState, variance: String(val) });
+                  const element = document.getElementById('other-passenger-variance') as HTMLInputElement;
+                  if(element) element.value = String(val);
+                }}
+              />
               minutes
             </div>
             <p className="text-xl">before the flight departure.</p>
@@ -413,8 +408,9 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       <p className="mt-[20px] flex justify-end px-[20px]">
         <Button
           className="btn-md btn-tertiary"
-          iconRight={applied ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}
-          text={applied ? 'Applied' : 'Apply'}
+          // iconRight={applied ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}
+          disabled={loadingPassengerSchedules}
+          text={'Apply'}
           onClick={() => loadPassengerSchedules()}
         />
       </p>
@@ -424,204 +420,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
         </div>
       ) : chartData ? (
         <>
-          {/* <div className="mt-[20px] flex items-center justify-end">
-            <Button
-              className="btn-md btn-primary"
-              icon={<Image width={16} height={16} src="/image/ico-write-w.svg" alt="" />}
-              text="Input Passenger Attributes"
-              onClick={() => {}}
-            />
-          </div>
-          <h2 className="title-sm mt-[25px]">Input Passenger Attributes</h2>
-          <div className="attribute-wrap">
-            <div className="attribute-item">
-              <h3 className="title-sm gap-[15px]">
-                <span>PRM Status</span>
-                <button>
-                  <Image width={16} height={16} src="/image/ico-write.svg" alt="edit title" />
-                </button>
-              </h3>
-              <div className="mt-[20px] flex items-end justify-between gap-[15px]">
-                <div className="grid flex-grow grid-cols-2 gap-[25px]">
-                  <dl className="select-block">
-                    <dt>
-                      Rows <span className="text-accent-600">*</span>
-                      <button>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right" align="center">
-                              <React.Fragment>
-                                <strong>Tool-tip Title</strong>
-                                <br />
-                                The average or top n% of the total queue count experienced by one passenger
-                                across all processes.
-                              </React.Fragment>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </button>
-                    </dt>
-                    <dd>
-                      <SelectBox options={['Operating_Carrier_Name', 'Operating_Carrier_Code']} />
-                    </dd>
-                  </dl>
-                  <dl className="select-block">
-                    <dt>
-                      Coulmns <span className="text-accent-600">*</span>
-                      <button>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right" align="center">
-                              <React.Fragment>
-                                <strong>Tool-tip Title</strong>
-                                <br />
-                                The average or top n% of the total queue count experienced by one passenger
-                                across all processes.
-                              </React.Fragment>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </button>
-                    </dt>
-                    <dd>
-                      <Input
-                        type="text"
-                        placeholder=""
-                        value={columValue}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setColumValue(e.target.value)}
-                        className="input-rounded"
-                      />
-                    </dd>
-                  </dl>
-                </div>
-                <Button className="btn-md btn-tertiary" text="Apply" onClick={() => {}} />
-              </div>
-              <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-                <table className="table-secondary">
-                  <thead>
-                    <tr>
-                      <th className="text-left">Category</th>
-                      <th className="">Yes</th>
-                      <th className="">No</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attributeData.map((attributeData, index) => (
-                      <tr key={index}>
-                        <td className="text-left">{attributeData.category}</td>
-                        <td className="text-center underline">{attributeData.yes}</td>
-                        <td className="text-center underline">{attributeData.no}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="attribute-item">
-              <h3 className="title-sm gap-[15px]">
-                <span>Attribute 2</span>
-                <button>
-                  <Image width={16} height={16} src="/image/ico-write.svg" alt="edit title" />
-                </button>
-              </h3>
-              <div className="mt-[20px] flex items-end justify-between gap-[15px]">
-                <div className="grid flex-grow grid-cols-2 gap-[25px]">
-                  <dl className="select-block">
-                    <dt>
-                      Rows <span className="text-accent-600">*</span>
-                      <button>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right" align="center">
-                              <React.Fragment>
-                                <strong>Tool-tip Title</strong>
-                                <br />
-                                The average or top n% of the total queue count experienced by one passenger
-                                across all processes.
-                              </React.Fragment>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </button>
-                    </dt>
-                    <dd>
-                      <SelectBox options={['Operating_Carrier_Name', 'Operating_Carrier_Code']} />
-                    </dd>
-                  </dl>
-                  <dl className="select-block">
-                    <dt>
-                      Coulmns <span className="text-accent-600">*</span>
-                      <button>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Image width={16} height={16} src="/image/ico-help.svg" alt="tooltip" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right" align="center">
-                              <React.Fragment>
-                                <strong>Tool-tip Title</strong>
-                                <br />
-                                The average or top n% of the total queue count experienced by one passenger
-                                across all processes.
-                              </React.Fragment>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </button>
-                    </dt>
-                    <dd>
-                      <Input
-                        type="text"
-                        placeholder=""
-                        value={columValue}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setColumValue(e.target.value)}
-                        className="input-rounded"
-                      />
-                    </dd>
-                  </dl>
-                </div>
-                <Button className="btn-md btn-tertiary" text="Apply" onClick={() => {}} />
-              </div>
-              <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-                <table className="table-secondary">
-                  <thead>
-                    <tr>
-                      <th className="text-left">Category</th>
-                      <th className="">Yes</th>
-                      <th className="">No</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attributeData.map((attributeData, index) => (
-                      <tr key={index}>
-                        <td className="text-left">{attributeData.category}</td>
-                        <td className="text-center underline">{attributeData.yes}</td>
-                        <td className="text-center underline">{attributeData.no}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <p className="relative mt-[25px] flex justify-center after:absolute after:top-1/2 after:block after:h-1 after:w-full after:-translate-y-1/2 after:bg-default-200 after:content-['']">
-            <button className="relative z-10">
-              <Image width={16} height={16} src="/image/ico-add-item.svg" alt="" />
-            </button>
-          </p>
-          <div className="mt-[40px] flex items-center justify-end gap-[10px]">
-            <Button className="btn-md btn-default" text="Cancel" onClick={() => {}} />
-            <Button className="btn-md btn-primary w-[120px]" text="Save" onClick={() => {}} />
-          </div> */}
           <p className="mt-[20px] text-[40px] text-xl font-semibold text-default-800">
             Check Generated Passenger Data
           </p>
@@ -671,7 +469,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                       <Button
                         className="btn-lg btn-default text-sm"
                         icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                        text="Color Criteria"
+                        text={`Color by : ${selColorCriteria}`}
                         onClick={() => {}}
                       />
                     </div>
@@ -737,46 +535,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               />
             </div>
           </div>
-          {/* <div className="mt-[25px] flex items-center justify-center">
-            <button className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700">
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
-              Hide Table
-            </button>
-          </div>
-          <div className="table-wrap mt-[10px] overflow-hidden rounded-md border border-default-300">
-            <table className="table-secondary">
-              <thead>
-                <tr>
-                  <th className="w-[165px] text-left">#</th>
-                  <th className="">TML</th>
-                  <th className="">ALN</th>
-                  <th className="">FLT</th>
-                  <th className="">DATE</th>
-                  <th className="">DEP_TIME</th>
-                  <th className="">GATE</th>
-                  <th className="">SENIOR</th>
-                  <th className="">...</th>
-                  <th className="">CK_ON</th>
-                </tr>
-              </thead>
-              <tbody>
-                {flightData.map((flight) => (
-                  <tr key={flight.id}>
-                    <td className="text-left">{flight.id}</td>
-                    <td className="text-center underline">{flight.tml}</td>
-                    <td className="text-center underline">{flight.aln}</td>
-                    <td className="text-center underline">{flight.flt}</td>
-                    <td className="text-center underline">{flight.date}</td>
-                    <td className="text-center underline">{flight.depTime}</td>
-                    <td className="text-center underline">{flight.gate}</td>
-                    <td className="text-center underline">{flight.senior}</td>
-                    <td className="text-center underline">...</td>
-                    <td className="text-center underline">{flight.ckOn}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div> */}
         </>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">

@@ -226,10 +226,8 @@ function Conditions({
 export default function FacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, scenarioInfo, setFacilityConnCapacity, overviews, setOverviews } =
+  const { tabIndex, setTabIndex, priorities, scenarioInfo, facilityConnCapacities, setFacilityConnCapacities } =
     useSimulationStore();
-
-  const { width } = useResize(refWidth);
 
   const [loaded, setLoaded] = useState(false);
   const [procedureIndex, setProcedureIndex] = useState(0);
@@ -241,7 +239,6 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   const [selConditions, setSelConditions] = useState<FacilitiesConnectionState[][]>();
   const [ifConditions, setIfConfitions] = useState<ConditionData>();
   const [conditionsTime, setConditionsTime] = useState(Date.now());
-  const [passengerFlowData, setPassengerFlowData] = useState<FacilityConnectionResponse>();
 
   const saveSnapshot = () => {
     const snapshot: any = {
@@ -251,7 +248,6 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
       selConditions,
       ifConditions,
       conditionsTime,
-      passengerFlowData,
     };
     setFacilityConnection({ ...facility_conn, snapshot });
   };
@@ -265,7 +261,6 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
       setSelConditions(snapshot.selConditions);
       setIfConfitions(snapshot.ifConditions);
       setConditionsTime(snapshot.conditionsTime);
-      setPassengerFlowData(snapshot.passengerFlowData);
     }
   };
 
@@ -341,6 +336,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
       );
       setSelConditions(Array(passenger_attr?.procedures!.length).fill([undefined]));
       setAddConditionsVisible(Array(passenger_attr?.procedures!.length).fill(false));
+      setProcedureIndex(0);
     }
   }, [passenger_attr]);
 
@@ -353,7 +349,6 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         text: item.name,
       };
     }) || []),
-    { text: 'Passenger Flow Check' },
   ] as ProcedureInfo[];
 
   const checkTablesValid = (pIndex: number) => {
@@ -368,7 +363,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   };
 
   const checkTablesValidAll = () => {
-    for (let i = 0; i < procedures.length - 1; i++) {
+    for (let i = 0; i < procedures.length; i++) {
       if (!checkTablesValid(i)) return false;
     }
     return true;
@@ -378,7 +373,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   const passengerFlowCheckButtonEnable = checkTablesValidAll();
 
   const onBtnApply = () => {
-    if (procedureIndex < procedures.length - 2) {
+    if (procedureIndex < procedures.length - 1) {
       saveSnapshot();
       setAvailableProcedureIndex(availableProcedureIndex + 1);
       setProcedureIndex(procedureIndex + 1);
@@ -386,7 +381,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   };
 
   const onBtnPassengerFlowCheck = () => {
-    for (let i = 0; i < procedures.length - 1; i++) {
+    for (let i = 0; i < procedures.length; i++) {
       if (!checkTablesValid(i)) return;
     }
     saveSnapshot();
@@ -403,7 +398,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
       },
     };
 
-    for (let i = 0; i < procedures.length - 1; i++) {
+    for (let i = 0; i < procedures.length; i++) {
       const proceduresCur = passenger_attr?.procedures?.[i];
       const conditionsCur = selConditions?.[i];
       const tableDataCur = tableData?.[i];
@@ -426,7 +421,7 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         name: proceduresCur?.id,
         nodes: proceduresCur?.nodes,
         source: String(i),
-        destination: i < procedures.length - 2 ? String(i + 2) : null,
+        destination: i < procedures.length - 1 ? String(i + 2) : null,
         wait_time: Number(tableDataCur?.waitTime),
         default_matrix: defaultMatrix,
         priority_matrix: priorityMatrix,
@@ -485,23 +480,18 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
 
     params.processes = processes;
 
-    if (procedureIndex == procedures.length - 2) {
-      setAvailableProcedureIndex(availableProcedureIndex + 1);
-      setProcedureIndex(procedureIndex + 1);
-    }
-
     setLoadingFacilityConnection(true);
-
+    setFacilityConnection({ params: undefined });
     getFacilityConns(params)
       .then(({ data }) => {
-        setFacilityConnCapacity(data?.capacity);
-        setOverviews(data?.matric);
+        setFacilityConnCapacities({ ...data });
         const facilityConnection = { ...facility_conn, params };
         setFacilityConnection(facilityConnection);
-        setPassengerFlowData({ sanky: data.sanky });
         setLoadingFacilityConnection(false);
       })
       .catch(() => {
+        console.log('error');
+
         setLoadError(true);
         setLoadingFacilityConnection(false);
       });
@@ -528,7 +518,14 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         }}
         className={`tab-secondary mt-[25px]`}
       />
-      {procedureIndex < procedures.length - 1 ? (
+      {loadError ? (
+        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
+          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+          <p className="title-sm" style={{ color: '#30374F' }}>
+            Unable to load data
+          </p>
+        </div>
+      ) : (
         <div>
           <div className="mt-[30px] flex items-center justify-center gap-[100px]">
             <p className="text-[40px] text-xl font-semibold text-default-800">
@@ -698,98 +695,25 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
             <p className="font-medium text-warning">
               {/* ● Please make sure to fill in all fields without leaving any blank rows! */}
             </p>
-            {procedureIndex == procedures.length - 2 ? (
-              <Button
-                className="btn-md btn-tertiary"
-                text="Go to Passenger Flow Check"
-                iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-                disabled={!passengerFlowCheckButtonEnable}
-                onClick={() => onBtnPassengerFlowCheck()}
-              />
-            ) : (
-              <Button
-                className="btn-md btn-tertiary"
-                text="Apply"
-                disabled={!applyButtonEnable}
-                onClick={() => onBtnApply()}
-              />
-            )}
+            <Button
+              className="btn-md btn-tertiary"
+              text="Apply"
+              disabled={loadingFacilityConnection || !applyButtonEnable}
+              onClick={() =>
+                procedureIndex == procedures.length - 1 ? onBtnPassengerFlowCheck() : onBtnApply()
+              }
+            />
+          </div>
+          <div>
+            {loadingFacilityConnection ? (
+              <div className="flex min-h-[200px] flex-1 items-center justify-center">
+                <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : (
-        <div>
-          <h3 className="title-sm mt-[25px]">Passenger Flow Check</h3>
-          {loadingFacilityConnection ? (
-            <div className="flex min-h-[200px] flex-1 items-center justify-center">
-              <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-            </div>
-          ) : loadError ? (
-            <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-              <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
-              <p className="title-sm" style={{ color: '#30374F' }}>
-                Unable to load data
-              </p>
-            </div>
-          ) : passengerFlowData ? (
-            <>
-              <div className="overview-wrap mt-[10px]">
-                {overviews?.map((item, index) => (
-                  <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
-                    <dl>
-                      <dt className="text-left">{item.name}</dt>
-                      <dd className="text-right">
-                        {item.value || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
-                      </dd>
-                    </dl>
-                  </a>
-                ))}
-              </div>
-              <div className="mt-[40px] flex h-[570px] items-center justify-center rounded-md bg-white">
-                <SankeyChart
-                  chartData={[
-                    {
-                      type: 'sankey',
-                      orientation: 'h',
-                      node: {
-                        pad: 15,
-                        thickness: 20,
-                        line: {
-                          color: 'black',
-                          width: 0.5,
-                        },
-                        label: passengerFlowData?.sanky.label,
-                        color: passengerFlowData?.sanky.label.map(
-                          (_, index) => SankeyColors[index % SankeyColors.length]
-                        ),
-                      },
-                      link: passengerFlowData?.sanky.link,
-                    },
-                  ]}
-                  chartLayout={{
-                    title: 'Sankey Diagram',
-                    font: {
-                      size: 10,
-                    },
-                    width,
-                    height: 570,
-                    margin: {
-                      l: 100,
-                      r: 100,
-                      t: 0,
-                      b: 0,
-                    },
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="h-[100px]" />
-          )}
-        </div>
       )}
+
       <div className="mt-[40px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -801,7 +725,11 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}
-          disabled={procedureIndex < procedures.length - 1 || loadingFacilityConnection || loadError}
+          disabled={
+            facilityConnCapacities
+              ? false
+              : procedureIndex < procedures.length || loadingFacilityConnection || loadError
+          }
         >
           <span className="flex flex-grow items-center justify-center">Facility Information</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

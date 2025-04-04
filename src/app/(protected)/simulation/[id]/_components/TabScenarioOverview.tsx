@@ -8,8 +8,9 @@ import dayjs from 'dayjs';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Input from '@/components/Input';
 import { updateScenarioMetadata } from '@/services/simulations';
+import { timeToRelativeTime } from '@/lib/utils';
 
-const PageRowAmount = 10;
+const PageRowAmount = 5;
 
 const OverviewTable = [
   { key: 'date', text: 'Date' },
@@ -35,7 +36,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   const metadata = useSimulationMetadata();
   const { tabIndex, setTabIndex } = useSimulationStore();
   const overview = metadata?.overview;
-  const history = metadata?.history;
+  const history = [ ...(metadata?.history || []) ].reverse();
   const router = useRouter();
   const [historyPage, setHistoryPage] = useState(0);
   const historyPageData = {
@@ -54,14 +55,31 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
       <div className="overview-wrap mt-[10px]">
-        {OverviewTable.map((item) => (
-          <a key={item.key} href="#" className="overview-item">
-            <dl>
-              <dt className="text-left">{item.text}</dt>
-              <dd className="text-right">{overview?.[item.key] || '-'}</dd>
-            </dl>
-          </a>
-        ))}
+        {
+          overview?.matric && overview?.matric?.length > 0 ? (
+            <div className="overview-wrap mt-[10px]">
+              {overview?.matric?.map((item, index) => (
+                <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
+                  <dl>
+                    <dt className="text-left">{item?.name}</dt>
+                    <dd className="text-right whitespace-pre">
+                      {Array.isArray(item?.value) ? item.value.join('\n') : item?.value}
+                    </dd>
+                  </dl>
+                </a>
+              ))}
+            </div>  
+          ) : (
+            OverviewTable.map((item) => (
+              <a key={item.key} href="#" className="overview-item">
+                <dl>
+                  <dt className="text-left">{item.text}</dt>
+                  <dd className="text-right">{overview?.[item.key] || '-'}</dd>
+                </dl>
+              </a>
+            ))
+          )
+        }
       </div>
       <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
       <div className="table-wrap mt-[10px]">
@@ -78,20 +96,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           <tbody>
             {history?.map((item, index) => {
               const checkpoint = dayjs(item.checkpoint);
-              const updatedAt = dayjs(item.checkpoint);
-              const minutes = dayjs().diff(updatedAt, 'minute');
-              const hours = minutes / 60;
-              const days = hours / 24;
-              const months = days / 30;
-              const years = days / 365;
-              const selDiff = [
-                [Math.floor(years), ' year'],
-                [Math.floor(months), ' month'],
-                [Math.floor(days), ' day'],
-                [Math.floor(hours), ' hour'],
-                [Math.floor(minutes), ' minute'],
-              ].find((val) => Number(val[0]) >= 1);
-
+              const relTime = timeToRelativeTime(item.checkpoint);
               return index >= historyPageData.start && index < historyPageData.end ? (
                 <tr key={index} className="border-b">
                   <td className="">
@@ -99,7 +104,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                     <span className="ml-[5px] font-normal">{checkpoint.format('hh:mm:ss')}</span>
                   </td>
                   <td className="">
-                    {selDiff ? `${selDiff[0]}${selDiff[1]}${selDiff[0] == 1 ? '' : 's'}` : 'a few minutes'} ago
+                    {relTime} ago
                   </td>
                   <td className="text-center">
                     <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>

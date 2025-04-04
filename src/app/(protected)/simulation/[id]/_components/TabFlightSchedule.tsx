@@ -59,7 +59,11 @@ const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
     valueItems[idCur] = [];
 
     for (const valueCur of criteriaCur.value) {
-      valueItems[idCur].push({ id: valueCur, text: valueCur });
+      if(typeof valueCur == 'object' && valueCur['iata']) {
+        valueItems[idCur].push({ id: valueCur['iata'], text: valueCur['iata'], fullText: `${valueCur['iata']} : ${valueCur['name']}` });
+      } else {
+        valueItems[idCur].push({ id: valueCur, text: valueCur });
+      }
     }
   }
 
@@ -75,7 +79,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
-  const [selDate, setSelDate] = useState<Date>(dayjs().add(-1, 'day').toDate());
+  const [selDate, setSelDate] = useState<Date>(dayjs().toDate());
   const [selAirport, setSelAirport] = useState('ICN');
   const [selConditions, setSelConditions] = useState<ConditionState[]>();
   const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
@@ -218,13 +222,12 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               />
             </PopoverContent>
           </Popover>
-          <Button
+          {/* <Button
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-find.svg" alt="" />}
             text="Find Peak Day"
             onClick={() => {}}
-          />
-
+          /> */}
           <Button
             className="btn-md btn-primary"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
@@ -282,7 +285,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     <Button
                       className="btn-lg btn-default text-sm"
                       icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                      text="Color Criteria"
+                      text={`Color by : ${selColorCriteria}`}
                       onClick={() => {}}
                     />
                   </div>
@@ -315,7 +318,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     name: item.name,
                     type: 'bar',
                     marker: {
-                      color: barColorsCurrent[index],
+                      color: item.name.toLowerCase() == 'etc' ? barColorsCurrent[barColorsCurrent.length - 1] : barColorsCurrent[index],
                       opacity: 1,
                       cornerradius: 7,
                       // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
@@ -348,12 +351,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               }}
             />
           </div>
-          {/* <div className="flex items-center justify-center">
-            <button className="flex h-[50px] w-full items-center justify-center gap-[10px] border-b border-default-200 text-lg font-medium text-default-300 hover:text-default-700">
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleDown} />
-              Show Table
-            </button>
-          </div> */}
         </>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">

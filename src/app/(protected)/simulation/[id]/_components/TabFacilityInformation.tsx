@@ -37,11 +37,13 @@ interface TableData {
 }
 
 interface TabFacilityInformationProps {
+  simulationId: string;
   visible: boolean;
 }
 
 interface FacilitySettings {
   numberOfEachDevices: number;
+  processingTime: number;
   maximumQueuesAllowedPer: number;
   defaultTableData?: TableData;
   automaticInput?: boolean;
@@ -63,10 +65,10 @@ const tableHeaderHeight = 52;
 const tableCellHeight = 36;
 
 
-export default function TabFacilityInformation({ visible }: TabFacilityInformationProps) {
+export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
   const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, facilityConnCapacity } = useSimulationStore();
+  const { tabIndex, setTabIndex, facilityConnCapacities } = useSimulationStore();
 
   const [loaded, setLoaded] = useState(false);
   const [procedureIndex, setProcedureIndex] = useState(0);
@@ -117,7 +119,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
               .fill(0)
               .map((_, index) => {
                 return {
-                  name: `F${String(index + 1).padStart(2, '0')}`,
+                  name: `Desk ${String(index + 1).padStart(2, '0')}`,
                   style: { background: '#F9F9FB' },
                   minWidth: 80,
                 };
@@ -148,6 +150,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
     });
   };
 
+
   const openingHoursTableData = facilitySettingsCurrent.openingHoursTableData;
   const setOpeningHoursTableData = (openingHoursTableData: TableData) => {
     _setFacilitySettings({
@@ -163,6 +166,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
     if (!facilitySettingsCurrent || !facilitySettingsCurrent.defaultTableData) {
       setFacilitySettings({
         numberOfEachDevices: 5,
+        processingTime: 60,
         maximumQueuesAllowedPer: 200,
         overviewChartVisible: true,
       });
@@ -186,7 +190,8 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
   }, [visible]);
 
   useEffect(() => {
-    if (nodeIndex.length < 1 && passenger_attr?.procedures) {
+    if (passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
+      setProcedureIndex(0);
       setNodeIndex(Array(passenger_attr?.procedures.length).fill(0));
     }
   }, [passenger_attr?.procedures]);
@@ -207,7 +212,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
           .fill(0)
           .map((_, index) => {
             return {
-              name: `F${String(index + 1).padStart(2, '0')}`,
+              name: `Desk ${String(index + 1).padStart(2, '0')}`,
               style: { background: '#F9F9FB' },
               minWidth: 80,
             };
@@ -228,12 +233,11 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
   };
 
   useEffect(() => {
-    if (facilitySettingsCurrent.lineChartData) {
-      onSetChartData();
-    }
+    onSetChartData();
   }, [facilitySettingsCurrent.openingHoursTableData?.data, facilitySettingsCurrent.timeUnit]);
 
   const onSetChartData = () => {
+    if(!facilitySettingsCurrent.openingHoursTableData) return;
     const params = {
       time_unit: facilitySettingsCurrent.timeUnit || DefaultTimeUnit,
       facility_schedules: facilitySettingsCurrent.openingHoursTableData?.data.map((item) => {
@@ -277,7 +281,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
     if(!simulationAvairable) return;
     let nodeIdCur = 0;
     const components: any [] = [];
-    const params = { ...facility_conn?.params, components };
+    const params = { ...facility_conn?.params, components, scenario_id: simulationId };
     for(let p = 0; p < procedures.length; p++) {
       const componentCur = procedures[p];
       const nodes: any [] = [];      
@@ -308,6 +312,8 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
 
     saveSnapshot(params);
 
+    setFacilityInformation({ ...facility_info, params });
+
     setTabIndex(tabIndex + 1);
   };
 
@@ -316,14 +322,15 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
   const vChartHeight = facilitySettingsCurrent.lineChartData ? tableHeight + 544 : tableHeight + 8;
   const vChartMarginTop = facilitySettingsCurrent.lineChartData ? -270 : 0;
   const vChartParentHeight = facilitySettingsCurrent.lineChartData ? tableHeight + 280 : tableHeight;
+  const procedureId = procedures[procedureIndex]?.text?.toLowerCase()?.replace(/[\s-]+/g, '_');
   const nodeName = passenger_attr?.procedures?.[procedureIndex]?.nodes?.[nodeIndex[procedureIndex]];
 
   const chartData: Plotly.Data [] = [];
   const chartDataOverview: Plotly.Data [] = [];
 
-  if(procedureIndex == 0 && nodeName) {
+  if(procedureId && nodeName && facilitySettingsCurrent.lineChartData) {
     chartData.push({
-      x: [...(facilityConnCapacity?.bar_chart_y_data[nodeName]?.y || [])].reverse(),
+      x: [...(facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.y || [])].reverse(),
       y: chartDataCurrent.map((val) => `${val.name}  `),
       // name: item.name,
       type: 'bar',
@@ -337,7 +344,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
     });
     chartDataOverview.push({
       x: [...chartDataCurrent].reverse().map((val) => `${val.name}  `),
-      y: facilityConnCapacity?.bar_chart_y_data[nodeName]?.y,
+      y: facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.y,
       type: 'bar',
       marker: {
         color: '#6941C6',
@@ -346,9 +353,6 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
         cornerradius: 7,
       },
     });
-  }
-
-  if(facilitySettingsCurrent.lineChartData) {
     chartData.push({
       x: [...(facilitySettingsCurrent.lineChartData?.y || [])].reverse(),
       y: chartDataCurrent.map((val) => `${val.name}  `),
@@ -371,6 +375,20 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
       },
     });
   }
+
+  useEffect(() => {
+    if(defaultTableData && facilitySettingsCurrent?.processingTime) {
+      setDefaultTableData({
+        ...defaultTableData,
+        data: defaultTableData.data.map((item, index) => {
+          return item.name == 'Processing time (sec)' ? {
+            ...item,
+            values: Array(item.values.length).fill(String(facilitySettingsCurrent.processingTime)),
+          } : item;
+        }),
+      });
+    }
+  }, [facilitySettingsCurrent?.processingTime]);
 
   return !visible ? null : (
     <div ref={refWidth}>
@@ -406,7 +424,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
         <div className="flex justify-between gap-[20px]">
           <dl className="flex flex-grow flex-col gap-[5px]">
             <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">Number of each devices in Check-In</h4>
+              <h4 className="pl-[10px] text-sm font-semibold">{procedures[procedureIndex].text} desks</h4>
             </dt>
             <dd>
               <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
@@ -449,7 +467,50 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
           </dl>
           <dl className="flex flex-grow flex-col gap-[5px]">
             <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">Maximum queues allowed per Check-In</h4>
+              <h4 className="pl-[10px] text-sm font-semibold">Processing time (sec)</h4>
+            </dt>
+            <dd>
+              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+                <button
+                  onClick={() => {
+                    if (facilitySettingsCurrent.processingTime > 0) {
+                      setFacilitySettings({
+                        ...facilitySettingsCurrent,
+                        processingTime: facilitySettingsCurrent.processingTime - 1,
+                      });
+                    }
+                  }}
+                >
+                  <img src="/image/ico-num-minus.svg" alt="-" />
+                </button>
+                <Input
+                  type="text"
+                  placeholder=""
+                  value={String(facilitySettingsCurrent.processingTime)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      processingTime: Number(e.target.value),
+                    });
+                  }}
+                  className="!border-0 text-center focus:!outline-none"
+                />
+                <button
+                  onClick={() => {
+                    setFacilitySettings({
+                      ...facilitySettingsCurrent,
+                      processingTime: facilitySettingsCurrent.processingTime + 1,
+                    });
+                  }}
+                >
+                  <img src="/image/ico-num-plus.svg" alt="+" />
+                </button>
+              </div>
+            </dd>
+          </dl>
+          <dl className="flex flex-grow flex-col gap-[5px]">
+            <dt>
+              <h4 className="pl-[10px] text-sm font-semibold">Maximum queues allowed per desks</h4>
             </dt>
             <dd>
               <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
@@ -491,7 +552,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
             </dd>
           </dl>
         </div>
-        <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Device operation details adjustment</h4>
+        <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Desks details</h4>
         {!facilitySettingsCurrent?.defaultTableData ? null : (
           <div>
             <GridTable
@@ -510,16 +571,7 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
         )}
       </div>
       <p className="mt-[20px] flex justify-end">
-        {facilitySettingsCurrent?.openingHoursTableData ? (
-          <Button
-            className="btn-md btn-tertiary"
-            iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-            text="Applied"
-            onClick={() => onSetOpeningHoursTableData()}
-          />
-        ) : (
-          <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetOpeningHoursTableData()} />
-        )}
+        <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetOpeningHoursTableData()} />
       </p>
       <div className={`${facilitySettingsCurrent?.openingHoursTableData ? '' : 'hidden'}`}>
         <div className={`mt-[30px] flex items-center justify-between`}>
@@ -610,20 +662,11 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
             </div>
           </div>
         </div>
-        <p className="mt-[38px] flex justify-end">
-          {facilitySettingsCurrent?.lineChartData && nodeName ? (
-            <Button
-              className="btn-md btn-tertiary"
-              iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-              text="Applied"
-              onClick={() => onSetChartData()}
-            />
-          ) : (
-            <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetChartData()} />
-          )}
-        </p>
+        {/* <p className="mt-[38px] flex justify-end">
+          <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onSetChartData()} />
+        </p> */}
       </div>
-      {nodeName && facilitySettingsCurrent.lineChartData ? (
+      {procedureId && nodeName && facilitySettingsCurrent.lineChartData ? (
         <>
           <div className="mt-[40px] flex items-center justify-center">
             {facilitySettingsCurrent.overviewChartVisible ? (
@@ -657,16 +700,16 @@ export default function TabFacilityInformation({ visible }: TabFacilityInformati
               </div>
               <div className="mt-[20px] flex items-center justify-between">
                 <p className="text-[40px] text-xl font-semibold">
-                  Total: {numberWithCommas(facilityConnCapacity?.bar_chart_y_data[nodeName]?.total || 0)} Pax
+                  Total: {numberWithCommas(facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.total || 0)} Pax
                 </p>
-                <p>
+                {/* <p>
                   <Button
                     className="btn-md btn-default"
                     icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="filter" />}
                     text="Color Criteria"
                     onClick={() => {}}
                   />
-                </p>
+                </p> */}
               </div>
               <div>
                 <div className="mt-[15px] flex justify-end">

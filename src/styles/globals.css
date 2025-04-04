@@ -956,9 +956,9 @@ textarea {
   .overview-item {
     border: 1px solid var(--default-200);
     aspect-ratio: 200/120;
-    @apply flex w-full flex-col rounded-md bg-white p-[10px];
+    @apply flex w-full flex-col rounded-md bg-white p-[10px] cursor-default;
     dl {
-      @apply flex flex-col gap-[8px];
+      @apply flex flex-col gap-[8px] flex-1;
       dt {
         line-height: 30px;
         @apply h-[30px] font-semibold text-default-500;
@@ -966,12 +966,15 @@ textarea {
       dd {
         line-height: 30px;
         font-size: 24px;
-        @apply font-medium text-default-900;
+        @apply font-medium text-default-900 flex-1 whitespace-pre break-words text-wrap;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: flex;
+        justify-content: end;
+        align-items: end;
       }
     }
   }
@@ -1329,7 +1332,8 @@ textarea {
     }
     &.check {
       button {
-        @apply bg-gray-200 text-black;
+        background-color: #f9f5ff;
+        @apply text-black;
       }
     }
   }

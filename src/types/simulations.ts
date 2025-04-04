@@ -25,18 +25,7 @@ interface ScenariosDataResponse {
 }
 
 interface ScenarioOverview {
-  date: string;
-  terminal: string;
-  analysis_type: string;
-  data_source: string;
-  flights: string;
-  passengers: string;
-  passengers_pattern: string;
-  generation_method: string;
-  check_in: string;
-  boarding_pass: string;
-  security: string;
-  passport: string;
+  matric: Overview[];
 }
 
 interface ScenarioHistory {
@@ -153,19 +142,7 @@ interface FacilityInformation {
 }
 
 interface FacilityConnectionResponse {
-  capacity?: Capacity;
-  matric?: Array<{
-    name: string;
-    value: string;
-  }>;
-  sanky: {
-    label: string[];
-    link: {
-      source: number[];
-      target: number[];
-      value: number[];
-    };
-  };
+  [procedure: string]: Capacity
 }
 
 interface FacilityInfoLineChartResponse {
@@ -195,6 +172,11 @@ interface Capacity {
   bar_chart_x_data: string[];
   bar_chart_y_data: { [name: string]: { total: number; y: number[] } };
 }
+
+interface Capacities {
+  [procedure: string]: Capacity
+}
+
 interface Overview {
   name: string;
   value: string;
@@ -227,7 +209,7 @@ interface SimulationResponse {
     };
     waiting: {
       chart_x_data: string[];
-      chart_y_data: ChartData;
+      chart_y_data: number[];
     };
   }>;
   kpi: Array<{
@@ -257,6 +239,18 @@ interface SimulationResponse {
   }>;
 }
 
+interface SimulationOverviewResponse {
+  sankey: {
+    label: string[];
+    link: {
+      source: number[];
+      target: number[];
+      value: number[];
+    };
+  };
+  matric: Array<Overview>;
+}
+
 export type {
   ChartData,
   FlightSchedule,
@@ -275,9 +269,11 @@ export type {
   FacilityInformation,
   FacilityInfoLineChartResponse,
   Capacity,
+  Capacities,
   Overview,
   ProcedureInfo,
   SimulationResponse,
+  SimulationOverviewResponse,
   ScenarioHistory,
   ScenarioMetadata,
   ScenarioMetadataResponse,

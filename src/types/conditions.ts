@@ -10,6 +10,7 @@ interface ConditionData {
 interface DropdownItem {
   id: string;
   text: string;
+  fullText?: string;
   tooltip?: TooltipData;
 }
 

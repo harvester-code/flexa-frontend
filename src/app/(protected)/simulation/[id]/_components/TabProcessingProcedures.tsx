@@ -24,7 +24,7 @@ const DataConnectionCriterias = ['I/D', 'Airline', 'Country', 'Region'];
 
 export default function TabProcessingProcedures({ visible }: TabProcessingProceduresProps) {
   const { setPassengerAttr, passenger_attr } = useSimulationMetadata();
-  const { tabIndex, setTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, setAvailableTabIndex } = useSimulationStore();
 
   const [loaded, setLoaded] = useState(false);
   const [dataConnectionCriteria, setDataConnectionCriteria] = useState('');
@@ -140,6 +140,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
     });
     setProcedures(newProcedures);
     setLastProcedures(newProcedures);
+    setAvailableTabIndex(tabIndex + 1);
   };
 
   const onDragEnd = (result) => {
@@ -298,16 +299,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
               </button>
             </p>
             <p className="flex justify-end gap-[10px] px-[20px]">
-              {applied ? (
-                <Button
-                  className="btn-md btn-tertiary"
-                  iconRight={<FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} />}
-                  text="Applied"
-                  onClick={() => onBtnApply()}
-                />
-              ) : (
-                <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onBtnApply()} />
-              )}
+              <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onBtnApply()} />
             </p>
             <div className="mt-[30px] flex justify-between">
               <button

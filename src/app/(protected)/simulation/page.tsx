@@ -276,7 +276,7 @@ const SimulationPage: React.FC = () => {
                   <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
                 </button>
               </th>
-              <th className="w-[130px] text-left">
+              <th className="w-[150px] text-left">
                 <button className="inline-flex items-center gap-[2px]">
                   Edit Date
                   <Image width={16} height={16} src="/image/ico-sort.svg" alt="" />
@@ -310,6 +310,7 @@ const SimulationPage: React.FC = () => {
                       <Image width={16} height={16} src={item.imagePath} alt="" />
                     </span> */}
                         <div
+                          className={`cursor-pointer`}
                           onClick={() => {
                             if (!scenarioStates[index].editName) router.push(`${pathname}/${item.id}`);
                           }}
@@ -334,13 +335,10 @@ const SimulationPage: React.FC = () => {
                     <td className="text-center">{item.terminal}</td>
                     <td className="">{item.editor}</td>
                     <td className="">
-                      {item?.simulation_date ? dayjs(item?.simulation_date).format('MM DD YYYY') : null}
+                      {item?.simulation_date ? dayjs(item?.simulation_date).format('MMM-DD-YYYY') : null}
                     </td>
                     <td className="">
-                      {dayjs(item?.updated_at).format('MM DD YYYY')} <br />{' '}
-                      <span className="font-normal text-default-500">
-                        {dayjs(item?.updated_at).format('hh:mm')}
-                      </span>
+                      {dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}
                     </td>
                     <td className="">
                       <input
