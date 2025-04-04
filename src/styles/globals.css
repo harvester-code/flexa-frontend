@@ -1,6 +1,4 @@
-/* FIXME: 글로벌 / 모듈 CSS 구분 제대로 변경하기 */
 @import '@/styles/custom-popup.css';
-@import '@/styles/navigation.css';
 
 @font-face {
   font-family: 'Pretendard';
@@ -406,7 +404,7 @@ button:disabled {
   }
 }
 .btn-more {
-  @apply inline-flex h-[30px] w-[30px] flex-col justify-center items-center gap-[2px] rounded-full;
+  @apply inline-flex h-[30px] w-[30px] flex-col items-center justify-center gap-[2px] rounded-full;
   svg {
     margin-top: 2px;
     width: 11px;
@@ -913,7 +911,7 @@ textarea {
     padding-bottom: 13px;
     line-height: 100%;
     height: 40px;
-    @apply pt-[4px] text-sm font-medium text-default-400 flex-1;
+    @apply flex-1 pt-[4px] text-sm font-medium text-default-400;
     &:hover {
       @apply text-accent-700;
     }
@@ -1315,8 +1313,8 @@ textarea {
 
 .gate-list {
   width: calc(100%);
-  @apply flex grid justify-between gap-x-[20px] gap-y-[10px] bg-gray-100 flex-row px-[40px] py-[10px];
-  li { 
+  @apply flex grid flex-row justify-between gap-x-[20px] gap-y-[10px] bg-gray-100 px-[40px] py-[10px];
+  li {
     @apply flex flex-grow;
     button {
       @apply flex h-[40px] flex-grow items-center justify-center gap-[8px] rounded-full border border-default-200 bg-white text-default-400;

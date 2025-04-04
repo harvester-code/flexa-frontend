@@ -18,6 +18,7 @@ import {
   SearchIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
+import './AppSidebar.css';
 
 function AppSidebar() {
   const pathname = usePathname();
