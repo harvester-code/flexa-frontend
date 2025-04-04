@@ -5,7 +5,7 @@ import { Circle, Image, Layer, Stage } from 'react-konva';
 import useImage from 'use-image';
 import { ScenarioData } from '@/types/simulations';
 import { usePassengerPoints } from '@/queries/homeQueries';
-import TheSlider from '@/components/TheSlider';
+import TheTimeSlider from '@/components/TheTimeSlider';
 
 interface CanvasProps {
   scenario: ScenarioData;
@@ -42,8 +42,8 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
   };
 
   const handleWheel = (e) => {
-    // const isZoomKeyPressed = e.evt.ctrlKey || e.evt.metaKey;
-    // if (!isZoomKeyPressed) return;
+    const isZoomKeyPressed = e.evt.ctrlKey || e.evt.metaKey;
+    if (!isZoomKeyPressed) return;
 
     e.evt.preventDefault();
     e.evt.stopImmediatePropagation();
@@ -144,7 +144,7 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
 
       <div
         ref={canvasContainerRef}
-        className="relative mx-auto mt-5 h-[480px] w-[1280px] overflow-hidden rounded-lg bg-[#5B5B5B]"
+        className="relative mx-auto mt-5 h-[480px] w-[1280px] overflow-hidden rounded-lg bg-[#ededf4]"
       >
         <Stage
           draggable
@@ -202,8 +202,8 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
       </div>
 
       {markers && (
-        <TheSlider
-          className="mt-8"
+        <TheTimeSlider
+          className="mt-8 pb-4"
           max={maxMarker}
           defaultValue={markers}
           value={markers}

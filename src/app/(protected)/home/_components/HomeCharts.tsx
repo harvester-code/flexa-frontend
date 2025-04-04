@@ -46,6 +46,22 @@ function HomeCharts({ scenario }: HomeChartsProps) {
   // TODO: 변수명 개선하기
   const [selectedFacility1, setSelectedFacility1] = useState(FACILITY_OPTIONS[0]);
   const [selectedFacility2, setSelectedFacility2] = useState(FACILITY_OPTIONS[0]);
+  const handleSelectFacility1 = useCallback(
+    (item: Option) => {
+      if (item.value !== selectedFacility1.value) {
+        setSelectedFacility1(item);
+      }
+    },
+    [selectedFacility1]
+  );
+  const handleSelectFacility2 = useCallback(
+    (item: Option) => {
+      if (item.value !== selectedFacility2.value) {
+        setSelectedFacility2(item);
+      }
+    },
+    [selectedFacility2]
+  );
 
   // FIXME: 하드코딩 제거하기
   const [selectedChartOption1, setSelectedChartOption1] = useState([0]);
@@ -150,18 +166,18 @@ function HomeCharts({ scenario }: HomeChartsProps) {
 
     const chartData = flowChart[selectedFacility1.value];
 
-    if (chartData) {
-      setBarChartData([]);
-      setLineChartData([]);
-      const yaxis = [null, 'y2'];
+    if (!chartData) return;
 
-      selectedChartOption1.forEach((activeIndex, i) => {
-        const option = CHART_OPTIONS[activeIndex];
-        handleChartLayout(option, yaxis[i]);
-        handleBarChartData(chartData, option, yaxis[i]);
-        handleLineChartData(chartData, option, yaxis[i]);
-      });
-    }
+    setBarChartData([]);
+    setLineChartData([]);
+    const yaxis = [null, 'y2'];
+
+    selectedChartOption1.forEach((activeIndex, i) => {
+      const option = CHART_OPTIONS[activeIndex];
+      handleChartLayout(option, yaxis[i]);
+      handleBarChartData(chartData, option, yaxis[i]);
+      handleLineChartData(chartData, option, yaxis[i]);
+    });
   }, [
     selectedChartOption1,
     selectedFacility1,
@@ -209,8 +225,8 @@ function HomeCharts({ scenario }: HomeChartsProps) {
       },
     ];
 
-    // setSankeyChartData(data);
-    // setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
+    setSankeyChartData(data);
+    setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
   }, [sankey]);
 
   return (
@@ -240,7 +256,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
               label={selectedFacility1.label}
-              onSelect={(opt) => setSelectedFacility1(opt)}
+              onSelect={handleSelectFacility1}
             />
             <div className="flex items-center">
               {/* HACK: 하드코딩 제거하기 */}
@@ -289,7 +305,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
               label={selectedFacility2.label}
-              onSelect={(opt) => setSelectedFacility2(opt)}
+              onSelect={handleSelectFacility2}
             />
             <div className="flex items-center">
               <ButtonGroup>
@@ -354,7 +370,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
           <SankeyChart
             chartData={sankeyChartData}
             chartLayout={{
-              margin: { l: 80, r: 80, b: 24, t: 24 },
+              margin: { l: 8, r: 8, b: 8, t: 8 },
               font: { size: 20 },
             }}
           />

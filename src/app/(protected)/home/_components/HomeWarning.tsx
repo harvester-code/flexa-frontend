@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { pascalCase } from 'change-case';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ChevronDown } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
+
+dayjs.extend(customParseFormat);
 
 const PROCESS_OPTIONS = [
   { label: 'All Facilities', value: 'all_facilities' },
@@ -56,25 +61,50 @@ function HomeWarning({ scenario }: HomeWarningProps) {
 
       <div className="grid grid-cols-4 gap-4 rounded-md bg-default-50 p-5">
         {alertIssueData &&
-          alertIssueData[facility.value]?.map(({ node, time, waiting_time, queue_length }, i) => (
-            <div
-              className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3"
-              key={i}
-            >
-              <dl>
-                <dt className="text-xl font-semibold text-default-700">{node}</dt>
-                <dd className="font-medium text-default-500">{time}</dd>
-              </dl>
-              {/* HACK: 추후에 데이터 구조를 바꿔야함 */}
-              <p className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
-                {target.value === 'waiting_time'
-                  ? waiting_time
-                  : target.value === 'queue_length'
-                    ? queue_length
-                    : 'Error'}
-              </p>
-            </div>
-          ))}
+          alertIssueData[facility.value]?.map(({ node, time, waiting_time, queue_length }, i) => {
+            const parts = node.split('_');
+            // NOTE: 코드 순서가 중요
+            const facility = parts.pop();
+            const zone = parts.join('_');
+
+            const [minutes, seconds] = waiting_time.split(':');
+
+            return (
+              <div
+                className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3"
+                key={i}
+              >
+                <dl className="flex justify-between">
+                  <dt className="font-semibold text-default-700">
+                    {pascalCase(zone)} {facility} · {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
+                  </dt>
+                </dl>
+                {/* HACK: 추후에 데이터 구조를 바꿔야함 */}
+                <div className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
+                  {target.value === 'waiting_time' ? (
+                    <p>
+                      <span>
+                        {minutes}
+                        <span className="text-2xl">m</span>
+                      </span>
+
+                      <span className="ml-1">
+                        {seconds}
+                        <span className="text-2xl">s</span>
+                      </span>
+                    </p>
+                  ) : target.value === 'queue_length' ? (
+                    <p>
+                      {queue_length}
+                      <span className="text-2xl"> pax</span>
+                    </p>
+                  ) : (
+                    'Error'
+                  )}
+                </div>
+              </div>
+            );
+          })}
       </div>
     </>
   );

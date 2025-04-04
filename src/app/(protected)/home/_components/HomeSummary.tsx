@@ -6,12 +6,25 @@ import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
 import Input from '@/components/Input';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
+import {
+  Tooltip,
+  TooltipArrow,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/Tooltip';
 
 const KPI_FUNCS = [
   { label: 'Mean', value: 'mean' },
-  { label: 'Top N%', value: 'topN' },
+  // { label: 'Top N%', value: 'topN' },
 ];
+
+const TOOLTIP_MAP = {
+  'Passenger Throughput': 'The number of all passengers processed in a day',
+  'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
+  'Queue Length': 'Average (or top n%) queue experienced by passengers across all checkpoints',
+  'Facility Utilization': 'Percentage of time during the day that the facility is operational',
+};
 
 interface HomeSummaryProps {
   scenario: ScenarioData;
@@ -118,24 +131,29 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
               summaries?.kpi.map(({ title, value }, i) => (
                 <dl className="rounded-lg bg-white p-4" key={i}>
                   <dt>
-                    {/* TODO: Tooltip 마무리하기 */}
+                    {/* TODO: Tooltip 컴포넌트 개선하기 */}
                     <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button className="text-lg font-medium leading-5">{title}</button>
                         </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <p>
-                            <strong>Tool-tip Title</strong>
-                            <br />
-                            The average or top n% of the total queue count experienced by one passenger across
-                            all processes.
+                        <TooltipContent
+                          side="right"
+                          className="max-w-56 border border-default-200 bg-white px-2 py-4 text-black"
+                        >
+                          <p className="mb-2">
+                            <strong>{title}</strong>
                           </p>
+                          <p>{TOOLTIP_MAP[title]}</p>
+                          <TooltipArrow
+                            className="-my-px border-none fill-[#fff] drop-shadow-[0_1px_0_var(--default-200)]"
+                            aria-hidden="true"
+                          />
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </dt>
-                  <dd className="pt-8 text-[2.5rem] font-semibold leading-[2.75rem]">{value}</dd>
+                  <dd className="pt-8 text-end text-[2.5rem] font-semibold leading-[2.75rem]">{value}</dd>
                 </dl>
               ))}
           </div>

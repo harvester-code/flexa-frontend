@@ -2,7 +2,7 @@
   @apply mt-5 flex flex-col gap-10;
 
   .detail-item {
-    @apply flex flex-col rounded-md border border-default-200 bg-default-100 px-5 py-2;
+    @apply flex flex-col rounded-md border border-default-200 bg-default-100 px-5 pb-2 pt-4;
 
     .detail-head {
       @apply mb-[14px] flex max-h-6 items-center justify-between;
@@ -38,7 +38,7 @@
             }
 
             dd {
-              color: #ff9500;
+              /* color: #ff9500; */
             }
           }
 
@@ -51,7 +51,7 @@
 
             dd {
               @apply text-xl font-medium;
-              color: #34c759;
+              /* color: #34c759; */
             }
           }
         }
@@ -102,13 +102,13 @@
                   }
                   dd {
                     @apply text-sm font-semibold;
-                    color: #34c759;
+                    /* color: #34c759; */
                   }
                 }
 
                 &:last-child {
                   dd {
-                    color: #ff9500;
+                    /* color: #ff9500; */
                   }
                 }
               }

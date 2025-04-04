@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { faAngleUp } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HomeAccordionProps {
@@ -22,10 +21,7 @@ function HomeAccordion({ title, open = true, children }: HomeAccordionProps) {
           onClick={() => setIsOpened(!isOpened)}
         >
           <span>{title}</span>
-          <FontAwesomeIcon
-            className={cn('icon-lg transition-transform', isOpened ? '' : 'rotate-180')}
-            icon={faAngleUp}
-          />
+          <ChevronUp className={cn('transition-transform', isOpened ? '' : 'rotate-180')} />
         </h3>
       </div>
 
