@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
+import { updateScenarioMetadata } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Input from '@/components/Input';
-import { updateScenarioMetadata } from '@/services/simulations';
 import { timeToRelativeTime } from '@/lib/utils';
 
 const PageRowAmount = 5;
@@ -34,9 +34,11 @@ interface TabScenarioOverviewProps {
 export default function TabScenarioOverview({ visible }: TabScenarioOverviewProps) {
   // 메모 상태 관리
   const metadata = useSimulationMetadata();
-  const { tabIndex, setTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, scenarioInfo, setConditions, setPriorities, availableTabIndex, setAvailableTabIndex } =
+    useSimulationStore();
   const overview = metadata?.overview;
-  const history = [ ...(metadata?.history || []) ].reverse();
+  const flight_sch = metadata?.flight_sch;
+  const history = [...(metadata?.history || [])].reverse();
   const router = useRouter();
   const [historyPage, setHistoryPage] = useState(0);
   const historyPageData = {
@@ -44,6 +46,34 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     end: historyPage * PageRowAmount + PageRowAmount,
     lastPage: history ? Math.ceil(history.length / PageRowAmount) : 1,
   };
+
+  const [loaded, setLoaded] = useState(false);
+  const restoreSnapshot = () => {
+    if (overview?.snapshot) {
+      const snapshot = overview?.snapshot;
+      if (snapshot?.availableTabIndex) setAvailableTabIndex(snapshot?.availableTabIndex);
+    }
+    if (flight_sch?.snapshot) {
+      const snapshot = flight_sch?.snapshot;
+      if (snapshot?.conditions) setConditions(snapshot?.conditions);
+      if (snapshot?.priorities) setPriorities(snapshot?.priorities);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && !loaded && (overview?.snapshot || flight_sch?.snapshot)) {
+      restoreSnapshot();
+      setLoaded(true);
+    }
+  }, [visible, overview?.snapshot, flight_sch?.snapshot]);
+
+  useEffect(() => {
+    if (!visible && loaded) {
+      console.log(availableTabIndex)
+      metadata?.setOverview({ snapshot: { ...(overview?.snapshot || {}), availableTabIndex } });
+    }
+  }, [availableTabIndex]);
+
   const handleMemoChange = (index: number, newMemo: string) => {
     if (!history) return;
     metadata.setHistoryItem({ ...history[index], memo: newMemo }, index);
@@ -54,33 +84,31 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
-      <div className="overview-wrap mt-[10px]">
-        {
-          overview?.matric && overview?.matric?.length > 0 ? (
-            <div className="overview-wrap mt-[10px]">
-              {overview?.matric?.map((item, index) => (
-                <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
-                  <dl>
-                    <dt className="text-left">{item?.name}</dt>
-                    <dd className="text-right whitespace-pre">
-                      {Array.isArray(item?.value) ? item.value.join('\n') : item?.value}
-                    </dd>
-                  </dl>
-                </a>
-              ))}
-            </div>  
-          ) : (
-            OverviewTable.map((item) => (
-              <a key={item.key} href="#" className="overview-item">
-                <dl>
-                  <dt className="text-left">{item.text}</dt>
-                  <dd className="text-right">{overview?.[item.key] || '-'}</dd>
-                </dl>
-              </a>
-            ))
-          )
-        }
-      </div>
+      {overview?.matric && overview?.matric?.length > 0 ? (
+        <div className="overview-wrap mt-[10px]">
+          {overview?.matric?.map((item, index) => (
+            <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
+              <dl>
+                <dt className="text-left">{item?.name}</dt>
+                <dd className="whitespace-pre text-right">
+                  {(Array.isArray(item?.value) ? item.value.join('\n') : item?.value) || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                </dd>
+              </dl>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className="overview-wrap mt-[10px]">
+          {OverviewTable.map((item) => (
+            <a key={item.key} href="#" className="overview-item">
+              <dl>
+                <dt className="text-left">{item.text}</dt>
+                <dd className="text-right">{overview?.[item.key] || '-'}</dd>
+              </dl>
+            </a>
+          ))}
+        </div>
+      )}
       <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
       <div className="table-wrap mt-[10px]">
         <table className="table-default">
@@ -103,9 +131,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                     <span className="font-semibold">{checkpoint.format('YYYY-MM-DD')}</span>
                     <span className="ml-[5px] font-normal">{checkpoint.format('hh:mm:ss')}</span>
                   </td>
-                  <td className="">
-                    {relTime} ago
-                  </td>
+                  <td className="">{relTime} ago</td>
                   <td className="text-center">
                     <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>
                       {item.simulation}

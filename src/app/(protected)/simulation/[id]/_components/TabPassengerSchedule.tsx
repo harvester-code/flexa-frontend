@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData } from '@/types/conditions';
-import { ChartData, PassengerPatternState } from '@/types/simulations';
+import { ChartData, PassengerPatternState, PassengerSchedule } from '@/types/simulations';
 import { getPassengerSchedules } from '@/services/simulations';
 import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
@@ -148,9 +148,8 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
 export default function TabPassengerSchedule({ visible }: TabPassengerScheduleProps) {
   const refWidth = useRef(null);
   const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities } = useSimulationStore();
+  const { tabIndex, setTabIndex, priorities, availableTabIndex } = useSimulationStore();
 
-  const [loaded, setLoaded] = useState(false);
   const [chartData, setChartData] = useState<{
     total: number;
     total_sub: string;
@@ -166,8 +165,43 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   });
   const [loadingPassengerSchedules, setLoadingPassengerSchedules] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [timestamp, setTimestamp] = useState(Date.now());
 
   const { width } = useResize(refWidth);
+
+  const [loaded, setLoaded] = useState(false);
+
+  const saveSnapshot = (params?: Partial<PassengerSchedule>, snapshot: any = {}) => {
+    const newSnapshot: any = {
+      chartData,
+      selColorCriteria,
+      addPrioritiesVisible,
+      selPriorities,
+      otherPassengerState,
+      ...snapshot,
+    };
+    setPassengerSchedule({ ...passenger_sch, ...(params || {}), snapshot: newSnapshot });
+  };
+
+  const restoreSnapshot = () => {
+    if (passenger_sch?.snapshot) {
+      const snapshot = passenger_sch?.snapshot;
+      if(snapshot.chartData) setChartData(snapshot.chartData);
+      if(snapshot.selColorCriteria) setSelColorCriteria(snapshot.selColorCriteria);
+      if(snapshot.addPrioritiesVisible) setAddPrioritiesVisible(snapshot.addPrioritiesVisible);
+      if(snapshot.selPriorities) setSelPriorities(snapshot.selPriorities);
+      if(snapshot.otherPassengerState) setOtherPassengerState(snapshot.otherPassengerState);
+      setTimestamp(Date.now());
+    }
+  };
+
+  useEffect(() => {
+    if (visible && !loaded && passenger_sch?.snapshot) {
+      restoreSnapshot();
+      setLoaded(true);
+    }
+  }, [visible]);
+
 
   const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
 
@@ -203,8 +237,8 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
     getPassengerSchedules(params)
       .then(({ data }) => {
         console.log(data);
-        const passengerSchedule = { params };
-        setPassengerSchedule(passengerSchedule);
+        const passengerSchedule: Partial<PassengerSchedule> = { params };
+        const snapshotData: any = {};
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
           for (const criteriaCur in data?.bar_chart_y_data) {
             const criteriaDataCur = data?.bar_chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
@@ -217,15 +251,17 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               }
             }
           }
-          setChartData({
+          const newChartData = {
             total: data?.total,
             total_sub: data?.total_sub,
             x: data?.bar_chart_x_data,
             data: data?.bar_chart_y_data,
-          });
+          };
+          setChartData(newChartData);
+          snapshotData.chartData = newChartData;
         }
-
         setLoadingPassengerSchedules(false);
+        saveSnapshot(passengerSchedule, snapshotData);
       })
       .catch(() => {
         setLoadError(true);
@@ -370,7 +406,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           </div>
         ) : null}
         <div className="schedule-bottom">
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-[10px]" key={timestamp}>
             <p className="font-semibold text-default-900">Other passengers arrive at the airport</p>
             <div className="flex items-center gap-[10px] text-xl">
               normally distributed with mean

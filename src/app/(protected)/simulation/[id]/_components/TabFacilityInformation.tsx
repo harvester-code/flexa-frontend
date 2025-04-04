@@ -68,9 +68,8 @@ const tableCellHeight = 36;
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
   const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, facilityConnCapacities } = useSimulationStore();
+  const { tabIndex, setTabIndex, facilityConnCapacities, setFacilityConnCapacities } = useSimulationStore();
 
-  const [loaded, setLoaded] = useState(false);
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
   const [availableProcedureIndex, setAvailableProcedureIndex] = useState(1);
@@ -82,24 +81,32 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     [id: string]: FacilitySettings;
   }>({});
 
-  const saveSnapshot = (params?: Partial<FacilityInformation>) => {
-    const snapshot: any = {
+  const [loaded, setLoaded] = useState(false);
+
+  const saveSnapshot = (params?: Partial<FacilityInformation>, snapshot: any = {}) => {
+    const newSnapshot: any = {
       procedureIndex,
       nodeIndex,
       availableProcedureIndex,
       facilitySettings,
+      ...snapshot,
     };
-    setFacilityInformation({ ...facility_info, snapshot, ...(params || {}) });
+    setFacilityInformation({ ...facility_info, ...(params || {}), snapshot: newSnapshot });
   };
 
   const restoreSnapshot = () => {
     if (facility_info?.snapshot) {
       const snapshot = facility_info?.snapshot;
-      setProcedureIndex(snapshot.procedureIndex);
-      setNodeIndex(snapshot.nodeIndex);
-      setAvailableProcedureIndex(snapshot.availableProcedureIndex);
-      _setFacilitySettings(snapshot.facilitySettings);
+      if(snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
+      if(snapshot.nodeIndex) setNodeIndex(snapshot.nodeIndex);
+      if(snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
+      if(snapshot.facilitySettings) _setFacilitySettings(snapshot.facilitySettings);
     }
+    if (facility_conn?.snapshot) {
+      const snapshot = facility_conn?.snapshot;
+      if(snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
+    }
+
   };
 
   useEffect(() => {
@@ -110,7 +117,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }, [visible]);
 
   const facilitySettingsCurrent = facilitySettings[id] || {};
-  const setFacilitySettings = (data: FacilitySettings) => {
+  const setFacilitySettings = (data: FacilitySettings, snapshot: boolean = false) => {
     const defaultTableData =
       data.numberOfEachDevices != facilitySettingsCurrent.numberOfEachDevices
         ? // || data.maximumQueuesAllowedPer != facilitySettingsCurrent.maximumQueuesAllowedPer
@@ -136,7 +143,9 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           }
         : facilitySettingsCurrent.defaultTableData;
 
-    _setFacilitySettings({ ...facilitySettings, [id]: { ...data, defaultTableData } });
+    const newFacilitySettings = { ...facilitySettings, [id]: { ...data, defaultTableData } };
+    _setFacilitySettings(newFacilitySettings);
+    if(snapshot) saveSnapshot({}, { facilitySettings: newFacilitySettings });
   };
 
   const defaultTableData = facilitySettingsCurrent.defaultTableData;
@@ -229,7 +238,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           } as GridTableRow;
         }),
       },
-    });
+    }, true);
   };
 
   useEffect(() => {
@@ -250,19 +259,21 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     };
 
     getFacilityInfoLineChartData(params).then(({ data }) => {
-      setFacilitySettings({ ...facilitySettingsCurrent, lineChartData: data });
+      setFacilitySettings({ ...facilitySettingsCurrent, lineChartData: data }, true);
     });
   };
 
   const onBtnNext = () => {
     const nodeCount = passenger_attr?.procedures?.[procedureIndex]?.nodes?.length || 0;
     if(nodeIndex[procedureIndex] + 1 < nodeCount) {
-      setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? val + 1 : val)));
+      const newNodeIndex = nodeIndex.map((val, idx) => (idx == procedureIndex ? val + 1 : val));
+      setNodeIndex(newNodeIndex);
+      saveSnapshot({}, { nodeIndex: newNodeIndex });
     } else if(procedureIndex + 1 < procedures.length) {
       setProcedureIndex(procedureIndex + 1);
       setAvailableProcedureIndex(procedureIndex + 1);
+      saveSnapshot({}, { procedureIndex: procedureIndex + 1, availableProcedureIndex: procedureIndex + 1  });
     }
-    saveSnapshot();
   };
 
   let simulationAvairable = true;
@@ -311,9 +322,6 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     }
 
     saveSnapshot(params);
-
-    setFacilityInformation({ ...facility_info, params });
-
     setTabIndex(tabIndex + 1);
   };
 

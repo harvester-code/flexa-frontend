@@ -24,9 +24,10 @@ interface ScenariosDataResponse {
   scenarios?: ScenarioData[];
 }
 
-interface ScenarioOverview {
+type ScenarioOverview = {
   matric: Overview[];
-}
+  snapshot: any;
+};
 
 interface ScenarioHistory {
   checkpoint: string;
@@ -63,16 +64,8 @@ interface ScenarioMetadataResponse {
 }
 
 interface FlightSchedule {
-  add_conditions: ConditionData;
-  add_priorities: ConditionData;
-
-  color_criteria: string;
-  conditions: ConditionState[];
-  airport: string;
-  date: Date;
-  conditions_visible: boolean;
-
   params: any;
+  snapshot: any;
 }
 
 interface PassengerPatternState {
@@ -82,9 +75,8 @@ interface PassengerPatternState {
 }
 
 interface PassengerSchedule {
-  priorities: PassengerPatternState[];
-  other_passenger_state: PassengerPatternState;
   params: any;
+  snapshot: any;
 }
 
 interface ProcessingProcedureData {
@@ -102,6 +94,7 @@ interface ProcessingProcedureState extends ProcessingProcedureData {
 interface ProcessingProcedures {
   data_connection_criteria: string;
   procedures: ProcessingProcedureData[];
+  snapshot: any;
 }
 
 interface ChartData {
@@ -131,13 +124,11 @@ interface PassengerScheduleResponse {
 
 interface FacilityConnection {
   params: any;
-
   snapshot: any;
 }
 
 interface FacilityInformation {
   params: any;
-
   snapshot: any;
 }
 

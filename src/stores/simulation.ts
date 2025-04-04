@@ -1,22 +1,27 @@
 import dayjs from 'dayjs';
 import { create } from 'zustand';
 import { ConditionData, ConditionState } from '@/types/conditions';
-import { Capacities, FacilityConnection, FacilityInformation, FlightSchedule, Overview, PassengerPatternState, PassengerSchedule, ProcessingProcedureState, ProcessingProcedures, ScenarioHistory, ScenarioInfo, ScenarioMetadata, ScenarioOverview, SimulationResponse } from '@/types/simulations';
-
+import {
+  Capacities,
+  FacilityConnection,
+  FacilityInformation,
+  FlightSchedule,
+  Overview,
+  PassengerPatternState,
+  PassengerSchedule,
+  ProcessingProcedureState,
+  ProcessingProcedures,
+  ScenarioHistory,
+  ScenarioInfo,
+  ScenarioMetadata,
+  ScenarioOverview,
+  SimulationResponse,
+} from '@/types/simulations';
 
 export const BarColors = {
   DEFAULT: [
-    ...[
-      "#B48CF2",
-"#5C3C9F",
-"#69D6D6",
-"#1F2C93",
-"#6E55E0",
-"#65AFFF",
-"#545CA1",
-"#042440",
-    ],
-"#4C84BC",
+    ...['#B48CF2', '#5C3C9F', '#69D6D6', '#1F2C93', '#6E55E0', '#65AFFF', '#545CA1', '#042440'],
+    '#4C84BC',
   ],
   // '2': ['#D6BBFB', '#6941C6'],
   // '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
@@ -105,7 +110,7 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
         ? { simulation }
         : { simulation: { ...(get().simulation || ({} as SimulationResponse)), ...simulation } }
     ),
-  
+
   addHistoryItem: (item: ScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
 
   setHistoryItem: (item: ScenarioHistory, index: number) =>
@@ -133,7 +138,6 @@ export const useSimulationStore = create<{
 
   facilityConnCapacities?: Capacities;
   setFacilityConnCapacities: (capacities?: Capacities) => void;
-
 }>((set, get) => ({
   tabIndex: 0,
   setTabIndex: (index) => {
@@ -157,5 +161,4 @@ export const useSimulationStore = create<{
 
   facilityConnCapacities: undefined,
   setFacilityConnCapacities: (capacities) => set({ facilityConnCapacities: capacities }),
-
 }));

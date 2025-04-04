@@ -18,6 +18,7 @@ import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
 import { timeToRelativeTime } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 const tabs: { text: string; number?: number }[] = [
   { text: 'Scenario Overview' },
@@ -33,6 +34,7 @@ export default function SimulationDetail(props) {
   const params: { id: string } = React.use(props?.params);
   const router = useRouter();
   const metadata = useSimulationMetadata();
+  const { toast } = useToast();
 
   const { tabIndex, setTabIndex, availableTabIndex, setAvailableTabIndex, setCheckpoint, scenarioInfo, setScenarioInfo } = useSimulationStore();
 
@@ -42,7 +44,7 @@ export default function SimulationDetail(props) {
 
   useEffect(() => {
     getScenarioMetadata(params?.id).then(({ data }) => {
-      console.log(data);
+      // console.log(data);
       const clientTime = dayjs();
       const serverTime = dayjs(data?.checkpoint);
       setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'millisecond'));
@@ -87,7 +89,11 @@ export default function SimulationDetail(props) {
             onClick={() => {
               if (metadata) {
                 updateScenarioMetadata().then((response) => {
-                  // console.log(response);
+                  toast({
+                    variant: 'default',
+                    title: 'Saved successfully.',
+                    duration: 3000,
+                  });
                 });
               }
             }}

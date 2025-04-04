@@ -18,8 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
-import { getLastAccessToken } from '@/lib/axios';
-import { numberWithCommas } from '@/lib/utils';
 import { popModal, pushModal } from '@/app/provider';
 import AnalysisPopup from '@/components/popups/Analysis';
 import dayjs from 'dayjs';
@@ -45,8 +43,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   const { passenger_attr, facility_info, setSimulation, overview, setOverview } = useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
 
-  const [socket, setSocket] = useState<WebSocket>();
-  const [loaded, setLoaded] = useState(false);
+  // const [socket, setSocket] = useState<WebSocket>();
+  // const [loaded, setLoaded] = useState(false);
 
   const [overviewData, setOverviewData] = useState<SimulationOverviewResponse>();
   const [simulationData, setSimulationData] = useState<SimulationResponse>();
@@ -83,7 +81,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         setOverviewData(data);
         setOverview({ ...overview, matric: data?.matric });
         setLoadingSimulation(false);
-      }).catch(() => {
+      }).catch((e) => {
+        console.log(e)
         setLoadError(true);
         setLoadingSimulation(false);
       });  
@@ -122,7 +121,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
     runSimulation(params)
       .then(({ data }) => {
-        console.log(data)
         const chartKeys = ['inbound', 'outbound', 'queing'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
@@ -148,7 +146,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         setLoadingSimulation(false);
       })
       .catch((e) => {
-        console.log(e)
         setLoadError(true);
         setLoadingSimulation(false);
       });

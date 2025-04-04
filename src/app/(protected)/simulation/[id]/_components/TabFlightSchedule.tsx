@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData, ConditionParams, ConditionState, DropdownItem, OperatorItem } from '@/types/conditions';
-import { ChartData } from '@/types/simulations';
+import { ChartData, FlightSchedule } from '@/types/simulations';
 import { getFlightSchedules } from '@/services/simulations';
 import { BarColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { useUser } from '@/queries/userQueries';
@@ -72,23 +72,57 @@ const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
 
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
-  const { setFlightSchedule, flight_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities } = useSimulationStore();
+  const { overview, setFlightSchedule, flight_sch } = useSimulationMetadata();
+  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities, availableTabIndex } = useSimulationStore();
   
-  const [loaded, setLoaded] = useState(false);
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
-  const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
-  const [selDate, setSelDate] = useState<Date>(dayjs().toDate());
-  const [selAirport, setSelAirport] = useState('ICN');
-  const [selConditions, setSelConditions] = useState<ConditionState[]>();
+  const [selColorCriteria, setSelColorCriteria] = useState(flight_sch?.snapshot?.selColorCriteria || 'Airline');
+  const [selDate, setSelDate] = useState<Date>(flight_sch?.snapshot?.selDate || dayjs().toDate());
+  const [selAirport, setSelAirport] = useState(flight_sch?.snapshot?.selAirport || 'ICN');
+  const [selConditions, setSelConditions] = useState<ConditionState[]>(flight_sch?.snapshot?.selConditions);
+
   const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [tabSecondary, setTabSecondary] = useState(0);
+  const [tabSecondary, setTabSecondary] = useState(flight_sch?.snapshot?.tabSecondary || 0);
 
   const { width } = useResize(refWidth);
 
   const { data: userInfo } = useUser();
+
+  const [loaded, setLoaded] = useState(false);
+
+  const saveSnapshot = (params?: Partial<FlightSchedule>, snapshot: any = {}) => {
+    const newSnapshot: any = {
+      chartData,
+      selColorCriteria,
+      addConditionsVisible,
+      selDate,
+      selAirport,
+      selConditions,
+      tabSecondary,
+      conditions,
+      priorities,
+      ...snapshot,
+    };
+    setFlightSchedule({ ...flight_sch, ...(params || {}), snapshot: newSnapshot });
+  };
+
+  const restoreSnapshot = () => {
+    if (flight_sch?.snapshot) {
+      const snapshot = flight_sch?.snapshot;
+      if(snapshot.chartData) setChartData(snapshot.chartData);
+      if(snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && !loaded && flight_sch?.snapshot) {
+      restoreSnapshot();
+      setLoaded(true);
+    }
+  }, [visible, flight_sch?.snapshot]);
+
 
   const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
 
@@ -113,7 +147,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
       getFlightSchedules(simulationId, params)
         .then(({ data }) => {
-          const flightSchedule = { params };
+          const flightSchedule: Partial<FlightSchedule> = { params };
+          const snapshotData: any = {};
           if (data?.add_conditions) {
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
@@ -122,6 +157,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                   rowCur.tooltip = { title: 'title', text: 'test' };
             }
             setConditions(conditions);
+            snapshotData.conditions = conditions;
           }
           if (data?.add_priorities) {
             const priorities = parseConditions(data?.add_priorities);
@@ -131,8 +167,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                   rowCur.tooltip = { title: 'title', text: 'test' };
             }
             setPriorities(priorities);
+            snapshotData.priorities = priorities;
           }
-          setFlightSchedule(flightSchedule);
           if (data?.chart_x_data && data?.chart_y_data) {
             for (const criteriaCur in data?.chart_y_data) {
               const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
@@ -145,13 +181,16 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                 }
               }
             }
-            setChartData({
+            const newChartData = {
               total: data?.total,
               x: data?.chart_x_data,
               data: data?.chart_y_data,
-            });
+            };
+            setChartData(newChartData);
+            snapshotData.chartData = newChartData;
           }
           setLoadingFlightSchedule(false);
+          saveSnapshot(flightSchedule, snapshotData);
         })
         .catch(() => {
           setLoadError(true);
@@ -164,19 +203,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   useEffect(() => {
     if (chartData) loadFlightSchedule(false);
   }, [selConditions, selAirport, selDate]);
-
-  useEffect(() => {
-    if(visible && !loaded && flight_sch?.params) {
-      setLoaded(true);
-      const params = flight_sch?.params;
-      setSelAirport(params.airport);
-      setSelDate(params.date);
-      if(params.condition?.length > 0) {
-        setSelConditions(params.condition);
-        setAddConditionsVisible(true);
-      }
-    }
-  }, [visible]);
 
   return !visible ? null : (
     <div ref={refWidth}>
@@ -318,7 +344,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     name: item.name,
                     type: 'bar',
                     marker: {
-                      color: item.name.toLowerCase() == 'etc' ? barColorsCurrent[barColorsCurrent.length - 1] : barColorsCurrent[index],
+                      color: chartDataCurrent.length - index - 1 < barColorsCurrent.length ? barColorsCurrent[chartDataCurrent.length - index - 1] : undefined,
                       opacity: 1,
                       cornerradius: 7,
                       // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.

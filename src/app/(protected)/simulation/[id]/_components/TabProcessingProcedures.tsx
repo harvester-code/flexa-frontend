@@ -67,7 +67,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
   useEffect(() => {
     if (visible && !loaded) {
-      setLoaded(true);
       if (passenger_attr?.data_connection_criteria && passenger_attr?.procedures) {
         setDataConnectionCriteria(passenger_attr?.data_connection_criteria);
         if (passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
@@ -81,32 +80,14 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             };
           });
           setProcedures(newProcedures);
+          setLastProcedures(newProcedures);
         }
       } else {
         loadData();
       }
+      setLoaded(true);
     }
   }, [visible]);
-
-  // useEffect(() => {
-  //   if(passenger_attr) {
-  //     if(passenger_attr.data_connection_criteria) {
-  //       setDataConnectionCriteria(passenger_attr.data_connection_criteria);
-  //       if(passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
-  //         const newProcedures = passenger_attr?.procedures?.map((item, index) => {
-  //           return {
-  //             ...item,
-  //             id: item.id,
-  //             nameText: item.name,
-  //             nodesText: item.nodes.join(','),
-  //             editable: false,
-  //           };
-  //         });
-  //         setProcedures(newProcedures);
-  //       }
-  //     }
-  //   }
-  // }, [passenger_attr]);
 
   const onBtnAdd = () => {
     setProcedures([...procedures, { id: String(procedures.length), name: '', nodes: [], editable: true }]);

@@ -17,7 +17,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData, OperatorItem } from '@/types/conditions';
-import { FacilitiesConnectionState, FacilityConnectionResponse, ProcedureInfo } from '@/types/simulations';
+import { FacilitiesConnectionState, FacilityConnection, FacilityConnectionResponse, ProcedureInfo } from '@/types/simulations';
 import { getFacilityConns } from '@/services/simulations';
 import { SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
@@ -84,7 +84,7 @@ function Conditions({
   const lastStates = useRef(Array(1).fill(defaultValues)).current;
   const setStates = (states: FacilitiesConnectionState) => {
     const valueLength = states.destConditions?.[0]?.value.length;
-    const tableData = {
+    const tableData = states?.tableData || {
       title: sourceName,
       header:
         states.destConditions?.[0]?.value.map((val, index) => {
@@ -223,13 +223,12 @@ function Conditions({
   );
 }
 
-export default function FacilityConnection({ visible }: FacilityConnectionProps) {
+export default function TabFacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
   const { tabIndex, setTabIndex, priorities, scenarioInfo, facilityConnCapacities, setFacilityConnCapacities } =
     useSimulationStore();
 
-  const [loaded, setLoaded] = useState(false);
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [availableProcedureIndex, setAvailableProcedureIndex] = useState(0);
   const [addConditionsVisible, setAddConditionsVisible] = useState<Array<boolean>>();
@@ -240,29 +239,44 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   const [ifConditions, setIfConfitions] = useState<ConditionData>();
   const [conditionsTime, setConditionsTime] = useState(Date.now());
 
-  const saveSnapshot = () => {
-    const snapshot: any = {
+  const [loaded, setLoaded] = useState(false);
+
+  const saveSnapshot = (params?: Partial<FacilityConnection>, snapshot: any = {}) => {
+    const newSnapshot: any = {
+      facilityConnCapacities,
+      procedureIndex,
+      availableProcedureIndex,
       addConditionsVisible,
       tableType,
       tableData,
       selConditions,
       ifConditions,
-      conditionsTime,
+      ...snapshot,
     };
-    setFacilityConnection({ ...facility_conn, snapshot });
+    setFacilityConnection({ ...facility_conn, ...(params || {}), snapshot: newSnapshot });
   };
 
   const restoreSnapshot = () => {
     if (facility_conn?.snapshot) {
       const snapshot = facility_conn?.snapshot;
-      setAddConditionsVisible(snapshot.addConditionsVisible);
-      setTableType(snapshot.tableType);
-      setTableData(snapshot.tableData);
-      setSelConditions(snapshot.selConditions);
-      setIfConfitions(snapshot.ifConditions);
-      setConditionsTime(snapshot.conditionsTime);
+      if(snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
+      if(snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
+      if(snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
+      if(snapshot.tableType) setTableType(snapshot.tableType);
+      if(snapshot.tableData) setTableData(snapshot.tableData);
+      if(snapshot.selConditions) setSelConditions(snapshot.selConditions);
+      if(snapshot.ifConditions) setIfConfitions(snapshot.ifConditions);
+      if(snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
+      setConditionsTime(Date.now());
     }
   };
+
+  useEffect(() => {
+    if (visible && !loaded && facility_conn?.snapshot) {
+      restoreSnapshot();
+      setLoaded(true);
+    }
+  }, [visible, facility_conn?.snapshot]);
 
   const conditionsItems =
     selConditions && selConditions?.length > 0 ? selConditions[procedureIndex] : [undefined];
@@ -370,21 +384,17 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
   };
 
   const applyButtonEnable = checkTablesValid(procedureIndex);
-  const passengerFlowCheckButtonEnable = checkTablesValidAll();
 
   const onBtnApply = () => {
     if (procedureIndex < procedures.length - 1) {
-      saveSnapshot();
       setAvailableProcedureIndex(availableProcedureIndex + 1);
       setProcedureIndex(procedureIndex + 1);
+      saveSnapshot({}, { availableProcedureIndex: availableProcedureIndex + 1, procedureIndex: procedureIndex + 1 });
     }
   };
 
   const onBtnPassengerFlowCheck = () => {
-    for (let i = 0; i < procedures.length; i++) {
-      if (!checkTablesValid(i)) return;
-    }
-    saveSnapshot();
+    if(!checkTablesValidAll()) return;
     const params = { ...passenger_sch?.params };
     const processes = {
       '0': {
@@ -485,24 +495,17 @@ export default function FacilityConnection({ visible }: FacilityConnectionProps)
     getFacilityConns(params)
       .then(({ data }) => {
         setFacilityConnCapacities({ ...data });
-        const facilityConnection = { ...facility_conn, params };
+        const facilityConnection: Partial<FacilityConnection> = { ...facility_conn, params };
+        const snapshotData: any = { facilityConnCapacities: { ...data } };
         setFacilityConnection(facilityConnection);
         setLoadingFacilityConnection(false);
+        saveSnapshot(facilityConnection, snapshotData);
       })
       .catch(() => {
-        console.log('error');
-
         setLoadError(true);
         setLoadingFacilityConnection(false);
       });
   };
-
-  useEffect(() => {
-    if (visible && !loaded && facility_conn?.snapshot) {
-      setLoaded(true);
-      restoreSnapshot();
-    }
-  }, [visible]);
 
   return !visible ? null : (
     <div ref={refWidth}>
