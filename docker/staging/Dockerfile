@@ -30,8 +30,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Development 환경변수
-COPY .env.development .env.production
+# Staging 환경변수
+COPY .env.staging .env.production
 RUN npm run build
 
 # ==============================================================================

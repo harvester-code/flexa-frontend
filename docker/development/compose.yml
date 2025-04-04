@@ -1,8 +1,9 @@
 services:
-  flexa-waitfree-next-development:
+  nextjs:
+    image: flexa-waitfree-next-development
+    container_name: flexa-waitfree-next-development
     build:
       context: ../../
       dockerfile: docker/development/Dockerfile
-    image: flexa-waitfree-next-development
     ports:
-      - 3001:3000
+      - 3000:3000
