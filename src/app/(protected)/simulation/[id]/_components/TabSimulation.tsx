@@ -23,10 +23,10 @@ import { numberWithCommas } from '@/lib/utils';
 import { popModal, pushModal } from '@/app/provider';
 import AnalysisPopup from '@/components/popups/Analysis';
 import dayjs from 'dayjs';
-import LineChart from '@/components/charts/LineChart';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
+const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
 interface TabSimulationProps {
   simulationId: string;
