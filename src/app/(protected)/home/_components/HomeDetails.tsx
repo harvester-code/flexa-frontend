@@ -3,36 +3,40 @@
 import Image from 'next/image';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
 import { cn } from '@/lib/utils';
 // TODO: CSS 모듈화하기
 import './HomeDetails.css';
 
 interface HomeDetailsProps {
-  scenario: any;
+  scenario: ScenarioData;
 }
 
 function HomeDetails({ scenario }: HomeDetailsProps) {
-  // FIXME: 병하대리님께 재수정 요청
-  const { data: { data: details } = [] } = useFacilityDetails({
-    calculate_type: 'mean', // TODO: 아래 값은 Summary에서 받아와야한다.
+  const { data: details = [] } = useFacilityDetails({
+    // TODO: 아래 값은 Summary에서 받아와야한다.
+    calculate_type: 'mean',
     percentile: 0,
     //
     scenarioId: scenario?.id,
   });
 
+  if (!details) return <div>Loading...</div>;
+
   // TODO: 기준 정해서 색깔 적용하기
   return (
     <div className="detail-list">
       {details &&
-        details.map(({ category, overview, components }, i) => (
+        details?.map(({ category, overview, components }, i) => (
           <div className="detail-item" key={i}>
             <div className="detail-head">
               <h4>{category}</h4>
-              <a href="#">
+
+              {/* <a href="#">
                 <span>Details</span>
                 <FontAwesomeIcon style={{ fontSize: '14px' }} icon={faArrowRight} />
-              </a>
+              </a> */}
             </div>
 
             <div className="detail-body">

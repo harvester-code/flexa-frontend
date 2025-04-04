@@ -25,7 +25,9 @@ function HomePage() {
     if (scenarios) setScenario(scenarios.master_scenario[0]);
   }, [scenarios]);
 
-  if (!scenarios || !scenario) return <div>Loading ...</div>;
+  if (!scenarios || !scenario) {
+    return <div className="py-10 text-center">Loading...</div>;
+  }
 
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">

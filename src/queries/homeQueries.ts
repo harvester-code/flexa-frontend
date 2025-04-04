@@ -73,7 +73,7 @@ const useLineChart = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['home-line-chart', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchLineChart({ scenarioId });
+      const { data: { data } = {} } = await fetchLineChart({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,

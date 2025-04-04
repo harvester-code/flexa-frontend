@@ -59,78 +59,70 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
       </div>
 
       <div className="flex overflow-auto">
-        <div className="flex flex-1 flex-col gap-y-5">
+        {/* NOTE: NORMAL */}
+        <div className="flex flex-1 flex-col gap-y-5 font-medium">
           <div className="flex h-full">
-            <div className="flex w-[25rem] rounded-lg border border-default-200 p-4">
-              <dl className="w-full">
-                <dt>{summaries.normal[0].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {Number(summaries.normal[0].value).toLocaleString()}
-                </dd>
+            <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
+              <dl className="flex w-1/2 flex-col justify-between">
+                <dt>{summaries?.normal[0].title}</dt>
+                <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[0].value}</dd>
               </dl>
 
-              <div className="mx-5 h-full w-0.5 bg-default-200"></div>
+              <div className="mx-5 w-0.5 bg-default-200"></div>
 
-              <dl className="w-full">
-                <dt>{summaries.normal[1].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {Number(summaries.normal[1].value).toLocaleString()}
-                </dd>
+              <dl className="flex w-1/2 flex-col justify-between">
+                <dt>{summaries?.normal[1].title}</dt>
+                <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[1].value}</dd>
               </dl>
             </div>
 
-            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 p-4">
-              <dl>
-                <dt>{summaries.normal[2].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {summaries.normal[2].value[0]} / {summaries.normal[2].value[1]}
+            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 px-4 py-5">
+              <dl className="flex h-full flex-col justify-between">
+                <dt>{summaries?.normal[2].title}</dt>
+                <dd className="text-end text-[2.5rem] font-semibold">
+                  {summaries?.normal[2].value[0]} / {summaries?.normal[2].value[1]}
                 </dd>
               </dl>
             </div>
           </div>
 
           <div className="flex h-full">
-            <div className="flex w-[25rem] rounded-lg border border-default-200 p-4">
-              <dl className="w-full">
-                <dt>{summaries.normal[3].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {Number(summaries.normal[3].value).toLocaleString()}
-                </dd>
+            <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
+              <dl className="flex w-1/2 flex-col justify-between">
+                <dt>{summaries?.normal[3].title}</dt>
+                <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[3].value}</dd>
               </dl>
 
-              <div className="mx-5 h-full w-0.5 bg-default-200"></div>
+              <div className="mx-5 w-0.5 bg-default-200"></div>
 
-              <dl className="w-full">
-                <dt>{summaries.normal[4].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {Number(summaries.normal[4].value).toLocaleString()}
-                </dd>
+              <dl className="flex w-1/2 flex-col justify-between">
+                <dt>{summaries?.normal[4].title}</dt>
+                <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[4].value}</dd>
               </dl>
             </div>
 
-            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 p-4">
-              <dl>
-                <dt>{summaries.normal[5].title}</dt>
-                <dd className="mt-14 text-end text-[2.5rem]">
-                  {Number(summaries.normal[5].value).toLocaleString()}
-                </dd>
+            <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 px-4 py-5">
+              <dl className="flex h-full flex-col justify-between">
+                <dt>{summaries?.normal[5].title}</dt>
+                <dd className="mt-14 text-end text-[2.5rem] font-semibold">{summaries?.normal[5].value}</dd>
               </dl>
             </div>
           </div>
         </div>
 
+        {/* NOTE: KPI */}
         <div className="min-w-fit flex-1 rounded-lg border border-accent-300 bg-accent-50 px-5 py-3">
-          <p className="mb-2.5 text-xl font-semibold">KPI</p>
+          <p className="mb-2.5 text-xl font-semibold leading-6">KPI</p>
           <div className="grid grid-cols-2 grid-rows-2 gap-5">
             {summaries &&
-              summaries.kpi.map(({ title, value }, i) => (
+              summaries?.kpi.map(({ title, value }, i) => (
                 <dl className="rounded-lg bg-white p-4" key={i}>
                   <dt>
                     {/* TODO: Tooltip 마무리하기 */}
                     <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button className="text-lg">{title}</button>
+                          <button className="text-lg font-medium leading-5">{title}</button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
                           <p>
@@ -143,7 +135,7 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
                       </Tooltip>
                     </TooltipProvider>
                   </dt>
-                  <dd className="mt-10 text-[2.5rem]">{value}</dd>
+                  <dd className="pt-8 text-[2.5rem] font-semibold leading-[2.75rem]">{value}</dd>
                 </dl>
               ))}
           </div>
