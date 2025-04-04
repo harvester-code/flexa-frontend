@@ -26,7 +26,7 @@ package.json의 scripts 참조
 
 ```bash
 src/
-├── api/
+├── actions/
 ├── app/
 │   ├── home/
 │   │   ├── _components/ # 해당 페이지에서만 사용하는 컴포넌트
@@ -39,14 +39,18 @@ src/
 │       │   └── TabPassword.tsx
 │       └── page.tsx
 ├── components/ # 전역에서 사용하는 컴포넌트
-│   ├── Charts/
-│   ├── Icons/
-│   ├── Popups/
-│   └── UIs/
+│   ├── charts/
+│   ├── icons/
+│   ├── popups/
+│   └── uis/
+├── constants/
 ├── hooks/
 ├── lib/
-├── store/
-└── styles/
+├── queries/
+├── services/
+├── stores/
+├── types/
+└── utils/
 ```
 
 ### 이후에는 `기능 분할 설계(Feature-Sliced Design, FSD)` 구조를 사용할 예정
