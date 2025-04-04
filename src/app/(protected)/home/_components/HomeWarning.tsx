@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 
@@ -15,29 +16,19 @@ const PROCESS_OPTIONS = [
 ];
 
 const TARGET_OPTIONS = [
-  { label: 'Passenger Throughput', value: 'Passenger Throughput' },
-  { label: 'Wait Time', value: 'Wait Time' },
-  { label: 'Queue Length', value: 'Queue Length' },
+  { label: 'Wait Time', value: 'waiting_time' },
+  { label: 'Queue Length', value: 'queue_length' },
 ];
 
 interface HomeWarningProps {
-  scenario: any;
+  scenario: ScenarioData;
 }
 
 function HomeWarning({ scenario }: HomeWarningProps) {
-  // FIXME: 병하대리님께 재수정 요청
-  const { data: { data: alertIssueData } = {} } = useAlertIssues({ scenarioId: scenario?.id });
+  const { data: alertIssueData = {} } = useAlertIssues({ scenarioId: scenario?.id });
 
-  const [target, setTarget] = useState(TARGET_OPTIONS[0]);
   const [facility, setFacility] = useState(PROCESS_OPTIONS[0]);
-  const [tmpData, setTmpData] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!alertIssueData) return;
-    // FIXME: 병하대리님께 재수정 요청
-    const result = alertIssueData.find((data) => Object.hasOwn(data, facility.value));
-    setTmpData(result[facility.value]);
-  }, [facility, alertIssueData]);
+  const [target, setTarget] = useState(TARGET_OPTIONS[0]);
 
   if (!alertIssueData) return <div>Loading...</div>;
 
@@ -64,18 +55,24 @@ function HomeWarning({ scenario }: HomeWarningProps) {
       </div>
 
       <div className="grid grid-cols-4 gap-4 rounded-md bg-default-50 p-5">
-        {/* FIXME: 병하대리님께 재수정 요청 */}
-        {tmpData &&
-          tmpData.map((d, i) => (
+        {alertIssueData &&
+          alertIssueData[facility.value]?.map(({ node, time, waiting_time, queue_length }, i) => (
             <div
               className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3"
               key={i}
             >
               <dl>
-                <dt className="text-xl font-semibold text-default-700">{d.node}</dt>
-                <dd className="font-medium text-default-500">{d.time}</dd>
+                <dt className="text-xl font-semibold text-default-700">{node}</dt>
+                <dd className="font-medium text-default-500">{time}</dd>
               </dl>
-              <p className="mt-2 flex justify-end text-4xl font-semibold text-default-900">{d.waiting_time}</p>
+              {/* HACK: 추후에 데이터 구조를 바꿔야함 */}
+              <p className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
+                {target.value === 'waiting_time'
+                  ? waiting_time
+                  : target.value === 'queue_length'
+                    ? queue_length
+                    : 'Error'}
+              </p>
             </div>
           ))}
       </div>

@@ -2,6 +2,10 @@ import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = '/api/v1/homes';
 
+const fetchPassengerPoints = ({ scenarioId }: { scenarioId?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/line-queue/${scenarioId}`);
+};
+
 const fetchSummaries = ({
   calculate_type,
   percentile,
@@ -57,6 +61,7 @@ export {
   fetchFacilityDetails,
   fetchHistogram,
   fetchLineChart,
+  fetchPassengerPoints,
   fetchSankeyChart,
   fetchSummaries,
 };

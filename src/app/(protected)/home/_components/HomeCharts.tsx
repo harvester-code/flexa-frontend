@@ -1,22 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
+import { ScenarioData } from '@/types/simulations';
 import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
 import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
+const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
 // TODO: 동적으로 수정하기
 const FACILITY_OPTIONS: Option[] = [
-  { label: 'All Facilities', value: 'All Facility' },
+  { label: 'All Facilities', value: 'all_facilities' },
   { label: 'Check-in', value: 'checkin' },
   { label: 'Departure Gate', value: 'departure_gate' },
   { label: 'Security', value: 'security' },
@@ -26,15 +28,16 @@ const FACILITY_OPTIONS: Option[] = [
 const CHART_OPTIONS: Option[] = [
   { label: 'Queue Length', value: 'queue_length', color: '' },
   { label: 'Waiting Time', value: 'waiting_time', color: '' },
-];
-const CHART_OPTIONS2: Option[] = [
-  { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '' },
   { label: 'Throughput', value: 'throughput', color: '' },
 ];
 
+const CHART_OPTIONS2: Option[] = [
+  { label: 'Queue Length', value: 'queue_length', color: '' },
+  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+];
+
 interface HomeChartsProps {
-  scenario: any;
+  scenario: ScenarioData;
 }
 
 function HomeCharts({ scenario }: HomeChartsProps) {
@@ -54,7 +57,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         }
         return prevData.filter((v) => v !== buttonIndex);
       } else {
-        if (prevData.length >= 1) {
+        if (prevData.length >= 2) {
           return [...prevData.slice(1), buttonIndex];
         }
         return [...prevData, buttonIndex];
@@ -79,67 +82,117 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     });
   };
 
-  // FIXME: 병하대리님께 재수정 요청
-  const { data: { flow_chart } = {} } = useLineChart({ scenarioId: scenario?.id });
-  const { data: { data: histogram } = [] } = useHistogramChart({ scenarioId: scenario?.id });
-  const { data: { data: rawSankeyChartData } = {} } = useSankeyChart({ scenarioId: scenario?.id });
+  const { data: flowChart = {} } = useLineChart({ scenarioId: scenario?.id });
+  const { data: histogram = {} } = useHistogramChart({ scenarioId: scenario?.id });
+  const { data: sankey = {} } = useSankeyChart({ scenarioId: scenario?.id });
+
+  const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
+
+  const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
+  const [totalPassengers, setTotalPassengers] = useState(0);
 
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
-  const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
+  const handleLineChartData = useCallback((data, option: Option, yaxis: null | string) => {
+    const MAX_DATA_LENGTH = 2;
 
-  useEffect(() => {
-    const fetchLineChartData = async () => {
-      try {
-        const res = await fetch('/samples/data/line_chart_data.json');
-        const data = await res.json();
-
-        const [throughput, waitingTime] = data.line_chart_data;
-
-        const trace1: Plotly.Data = {
-          ...throughput,
-          name: 'Throughtput',
-          line: { color: '#53389e' },
-        };
-        const trace2: Plotly.Data = {
-          ...waitingTime,
-          name: 'Waiting time',
-          yaxis: 'y2',
-          // TODO: HEX CODE 확인해보기
-          line: { color: 'orange' },
-        };
-
-        setLineChartData([trace1, trace2]);
-      } catch (error) {
-        console.error((error as Error).message);
-      }
-    };
-
-    fetchLineChartData();
+    setLineChartData((prevData) => {
+      const newData: Plotly.Data = {
+        ...data[option.value],
+        name: option.value,
+        line: { color: option.color },
+        yaxis,
+      };
+      const updatedData = [...prevData, newData];
+      return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
+    });
   }, []);
 
+  const [chartLayout, setChartLayout] = useState<Partial<Plotly.Layout>>({
+    margin: { l: 60, r: 60, b: 24, t: 24 },
+    showlegend: false,
+    xaxis: { showgrid: false },
+  });
+  const handleChartLayout = useCallback((option: Option, yaxis: null | string) => {
+    setChartLayout((prev) => {
+      if (yaxis) {
+        return {
+          ...prev,
+          yaxis2: { title: { text: option.label }, overlaying: 'y', side: 'right', showgrid: false },
+        };
+      }
+
+      return { ...prev, yaxis: { title: { text: option.label } } };
+    });
+  }, []);
+  const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
+  const handleBarChartData = useCallback((data, option: Option, yaxis: null | string) => {
+    const MAX_DATA_LENGTH = 2;
+
+    setBarChartData((prevData) => {
+      const newData: Plotly.Data = {
+        ...data[option.value],
+        type: 'bar',
+        name: option.value,
+        offsetgroup: yaxis ? 1 : 2,
+        marker: {
+          color: option.color,
+          opacity: 0.9,
+        },
+        yaxis,
+      };
+      const updatedData = [...prevData, newData];
+      return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!flowChart) return;
+
+    const chartData = flowChart[selectedFacility1.value];
+
+    if (chartData) {
+      setBarChartData([]);
+      setLineChartData([]);
+      const yaxis = [null, 'y2'];
+
+      selectedChartOption1.forEach((activeIndex, i) => {
+        const option = CHART_OPTIONS[activeIndex];
+        handleChartLayout(option, yaxis[i]);
+        handleBarChartData(chartData, option, yaxis[i]);
+        handleLineChartData(chartData, option, yaxis[i]);
+      });
+    }
+  }, [
+    selectedChartOption1,
+    selectedFacility1,
+    flowChart,
+    handleChartLayout,
+    handleBarChartData,
+    handleLineChartData,
+  ]);
+
   // ================================================================================
-  // FIXME: 병하대리님께 재수정 요청
   useEffect(() => {
     if (!histogram) return;
+    const facility = selectedFacility2.value;
 
-    const data = histogram.find((data) => Object.hasOwn(data, selectedFacility2.value));
-    const target = CHART_OPTIONS[selectedChartOption2[0]].value;
-    const finalData = data[selectedFacility2.value][target]
-      ?.map(({ title, value }, i) => ({
-        label: title,
+    if (!histogram[facility]) return;
+    const option = CHART_OPTIONS[selectedChartOption2[0]].value;
+
+    const data = histogram[facility][option]
+      .map(({ title, value }, i) => ({
+        title,
         value: Number(value.replace('%', '')),
         color: PRIMARY_COLOR_SCALES[i],
       }))
       .filter(({ value }) => value > 0);
 
-    setHistogramChartData(finalData);
+    setHistogramChartData(data);
   }, [histogram, selectedFacility2, selectedChartOption2]);
 
   // ================================================================================
-  // FIXME: 병하대리님께 재수정 요청
   useEffect(() => {
-    if (!rawSankeyChartData) return;
+    if (!sankey) return;
 
     const data: Plotly.Data[] = [
       {
@@ -149,28 +202,32 @@ function HomeCharts({ scenario }: HomeChartsProps) {
           pad: 15,
           thickness: 20,
           // line: { color: 'black', width: 0.5 },
-          label: rawSankeyChartData.label,
+          label: sankey.label,
           color: PRIMARY_COLOR_SCALES,
         },
-        link: rawSankeyChartData.link,
+        link: sankey.link,
       },
     ];
-    setSankeyChartData(data);
-  }, [rawSankeyChartData]);
+
+    // setSankeyChartData(data);
+    // setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
+  }, [sankey]);
 
   return (
     <div className="mt-5 flex flex-col gap-[35px]">
+      {/* ============================================================================= */}
+      {/* NOTE: MIXED CHARTS */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
-          <div className="flex items-center gap-1 text-sm font-medium text-default-800">
+          <div className="mb-4 mt-8 flex items-center justify-end gap-1 text-sm">
             <span>Bar Chart</span>
             <Checkbox
               id="chart-type"
+              className="checkbox-toggle"
               label=""
               checked={chartType}
               onChange={() => setChartType(!chartType)}
-              className="checkbox-toggle"
             />
             <span>Line Chart</span>
           </div>
@@ -186,19 +243,20 @@ function HomeCharts({ scenario }: HomeChartsProps) {
               onSelect={(opt) => setSelectedFacility1(opt)}
             />
             <div className="flex items-center">
+              {/* HACK: 하드코딩 제거하기 */}
               <ButtonGroup>
-                {CHART_OPTIONS.map((opt, idx) => (
+                {CHART_OPTIONS.map((opt, i) => (
                   <Button
                     className={cn(
-                      selectedChartOption1.includes(idx)
+                      selectedChartOption1.includes(i)
                         ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                         : ''
                     )}
                     variant="outline"
-                    key={idx}
-                    onClick={() => handleChartOption1(idx)}
+                    key={i}
+                    onClick={() => handleChartOption1(i)}
                   >
-                    {selectedChartOption1.includes(idx) && (
+                    {selectedChartOption1.includes(i) && (
                       <Circle className="!size-2.5" fill="#111" stroke="transparent" />
                     )}
                     {opt.label}
@@ -208,32 +266,18 @@ function HomeCharts({ scenario }: HomeChartsProps) {
             </div>
           </div>
 
-          <div className="rounded-md bg-white">
-            <LineChart
-              chartData={lineChartData}
-              chartLayout={{
-                xaxis: { showgrid: false },
-                yaxis: {
-                  title: {
-                    text: 'Throughtput (number of people)',
-                  },
-                },
-                yaxis2: {
-                  title: {
-                    text: 'Waiting time',
-                  },
-                  overlaying: 'y',
-                  side: 'right',
-                  showgrid: false,
-                },
-                margin: { l: 60, r: 60, b: 24, t: 24 },
-                showlegend: false,
-              }}
-            />
+          <div className="min-h-96 bg-white">
+            {chartType ? (
+              <LineChart chartData={lineChartData} chartLayout={chartLayout} />
+            ) : (
+              <BarChart chartData={barChartData} chartLayout={chartLayout} />
+            )}
           </div>
         </div>
       </div>
 
+      {/* ============================================================================= */}
+      {/* NOTE: HISTOGRAM */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
@@ -249,7 +293,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
             />
             <div className="flex items-center">
               <ButtonGroup>
-                {CHART_OPTIONS.map((opt, idx) => (
+                {CHART_OPTIONS2.map((opt, idx) => (
                   <Button
                     className={cn(
                       selectedChartOption2.includes(idx)
@@ -273,7 +317,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
           <div className="mt-10 rounded-md bg-white">
             <div className="flex rounded-lg text-center">
               {histogramChartData &&
-                histogramChartData?.map(({ label, value, color }, idx) => (
+                histogramChartData?.map(({ title, value, color }, idx) => (
                   <div style={{ width: `${value}%` }} key={idx}>
                     <div
                       className={`py-3.5 ${
@@ -289,7 +333,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
                     >
                       <p className="text-3xl font-bold text-white">{value}%</p>
                     </div>
-                    <p className="mt-1 text-sm font-medium">{label}</p>
+                    <p className="mt-1 text-sm font-medium">{title}</p>
                   </div>
                 ))}
             </div>
@@ -297,10 +341,14 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         </div>
       </div>
 
+      {/* ============================================================================= */}
+      {/* NOTE: SANKEY */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Sankey Chart</h5>
-          <p className="text-sm font-medium">Total Passengers Processed: 1,568 pax</p>
+          <p className="text-sm font-medium">
+            Total Passengers Processed: {Number(totalPassengers).toLocaleString()} pax
+          </p>
         </div>
         <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
           <SankeyChart

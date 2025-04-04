@@ -4,9 +4,21 @@ import {
   fetchFacilityDetails,
   fetchHistogram,
   fetchLineChart,
+  fetchPassengerPoints,
   fetchSankeyChart,
   fetchSummaries,
 } from '@/services/homes';
+
+const usePassengerPoints = ({ scenarioId }: { scenarioId?: string }) => {
+  return useQuery({
+    queryKey: ['passenger-points', scenarioId],
+    queryFn: async () => {
+      const { data: { data } = {} } = await fetchPassengerPoints({ scenarioId });
+      return data;
+    },
+    enabled: !!scenarioId,
+  });
+};
 
 const useSummaries = ({
   calculate_type,
@@ -61,7 +73,7 @@ const useLineChart = ({ scenarioId }: { scenarioId?: string }) => {
   return useQuery({
     queryKey: ['home-line-chart', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchLineChart({ scenarioId });
+      const { data: { data } = {} } = await fetchLineChart({ scenarioId });
       return data;
     },
     enabled: !!scenarioId,
@@ -90,4 +102,12 @@ const useSankeyChart = ({ scenarioId }: { scenarioId?: string }) => {
   });
 };
 
-export { useSummaries, useAlertIssues, useFacilityDetails, useLineChart, useHistogramChart, useSankeyChart };
+export {
+  useAlertIssues,
+  useFacilityDetails,
+  useHistogramChart,
+  useLineChart,
+  usePassengerPoints,
+  useSankeyChart,
+  useSummaries,
+};
