@@ -1,8 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { Trash2 } from 'lucide-react';
 
 interface TerminalLayoutProps {
   open: boolean;
@@ -36,7 +35,7 @@ const TerminalLayout: React.FC<TerminalLayoutProps> = ({ open, onClose }) => {
             </div>
 
             <button>
-              <Image width={20} height={20} src="/image/ico-trash.svg" alt="trash" />
+              <Trash2 className="size-5" />
             </button>
           </div>
           <div className="progress-bar !mt-[20px]">

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useState } from 'react';
+import Image from 'next/image';
 import { Divider, Menu, MenuItem, Typography } from '@mui/material';
+import { Download, EllipsisVertical, Paperclip, Plus, Search, Smile, SquarePen, Trash2, X } from 'lucide-react';
 import Input from '@/components/Input';
 import AddPeople from '@/components/popups/addPeople';
 import './styles.css';
@@ -51,7 +51,7 @@ const MessengerPage: React.FC = () => {
                 Messages <span>40</span>
               </h2>
               <button>
-                <img src="/image/ico-edit.svg" alt="edit" />
+                <SquarePen className="size-5" />
               </button>
             </div>
             <div className="search-msg">
@@ -62,7 +62,7 @@ const MessengerPage: React.FC = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchValue(e.target.value)}
               />
               <button onClick={() => {}}>
-                <img src="/image/ico-search.svg" alt="search" />
+                <Search className="ml-2 size-6" />
               </button>
             </div>
             <div className="chat-list">
@@ -231,10 +231,10 @@ const MessengerPage: React.FC = () => {
               </div>
               <div className="chat-menu">
                 <button onClick={handleClick1}>
-                  <img src="/image/ico-users-plus.svg" alt="add user" />
+                  <Image src="/image/ico-users-plus.svg" alt="add users" width={20} height={20} />
                 </button>
                 <button className="btn-more" onClick={handleClick2}>
-                  <img src="/image/ico-dot-menu.svg" alt="more" />
+                  <EllipsisVertical className="!size-4" />
                 </button>
                 <Menu
                   anchorEl={anchorEl1}
@@ -254,7 +254,7 @@ const MessengerPage: React.FC = () => {
                       <dt>danny@datamarketing.co.kr</dt>
                     </dl>
                     <button>
-                      <FontAwesomeIcon icon={faXmark} />
+                      <X className="size-4" />
                     </button>
                   </MenuItem>
                   <MenuItem>
@@ -264,7 +264,7 @@ const MessengerPage: React.FC = () => {
                       <dd>YOU</dd>
                     </dl>
                     <button>
-                      <FontAwesomeIcon icon={faXmark} />
+                      <X className="size-4" />
                     </button>
                   </MenuItem>
                   <MenuItem>
@@ -273,7 +273,7 @@ const MessengerPage: React.FC = () => {
                       <dt>danny@datamarketing.co.kr</dt>
                     </dl>
                     <button>
-                      <FontAwesomeIcon icon={faXmark} />
+                      <X className="size-4" />
                     </button>
                   </MenuItem>
                   <Divider className="!mb-5 !mt-5" />
@@ -282,7 +282,7 @@ const MessengerPage: React.FC = () => {
                       className="flex h-40 w-full items-center justify-start gap-5 px-20 text-sm text-default-700 hover:bg-default-100"
                       onClick={() => handleOpen('AddPeople')}
                     >
-                      <FontAwesomeIcon icon={faPlus} />
+                      <Plus />
                       Add another account
                     </button>
                   </Typography>
@@ -300,11 +300,11 @@ const MessengerPage: React.FC = () => {
                   </Typography>
                   <Divider />
                   <MenuItem onClick={() => {}}>
-                    <img src="/image/ico-download.svg" alt="" />
+                    <Download className="size-4" />
                     Leave
                   </MenuItem>
                   <MenuItem onClick={() => {}} className="item-red">
-                    <img src="/image/ico-trash-r.svg" alt="" />
+                    <Trash2 className="size-4" />
                     Delete
                   </MenuItem>
                 </Menu>
@@ -350,7 +350,7 @@ const MessengerPage: React.FC = () => {
                     </dl>
                     <div className="msg">
                       <a href="#" className="file-add">
-                        <img src="/image/ico-file-csv.png" alt="file" />
+                        <Image src="/image/ico-file-csv.png" alt="file" width={40} height={40} />
                         <dl>
                           <dt>requirements.csv</dt>
                           <dd>1.2MB</dd>
@@ -419,10 +419,10 @@ const MessengerPage: React.FC = () => {
                 />
                 <div className="mt-auto flex items-center gap-2">
                   <button>
-                    <img src="/image/ico-smile.svg" alt="smile" />
+                    <Smile className="size-4" />
                   </button>
                   <button>
-                    <img src="/image/ico-clip.svg" alt="file" />
+                    <Paperclip className="size-4" />
                   </button>
                   <button className="btn-send">Send</button>
                 </div>

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { faCaretDown } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import styles from './SelectBox.module.css';
 
@@ -64,7 +63,7 @@ const SelectBox: React.FC<SelectBoxProps> = ({ options, className, selectedOptio
       </div>
 
       <button className={cn(styles.selectBtn)}>
-        <FontAwesomeIcon className={cn(styles['nav-icon'])} size="sm" icon={faCaretDown} />
+        <ChevronDown className="size-4" />
       </button>
     </div>
   );

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { EllipsisVertical, Trash2 } from 'lucide-react';
 import { OrbitProgress } from 'react-loading-indicators';
 import { deleteScenario, duplicateScenario, modifyScenario, setMasterScenario } from '@/services/simulations';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -359,7 +360,7 @@ const SimulationPage: React.FC = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger>
                           <div className="btn-more mt-[5px]">
-                            <Image width={16} height={16} src="/image/ico-dot-menu.svg" alt="more" />
+                            <EllipsisVertical className="!size-4" />
                           </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="pr-[20px]">
@@ -390,7 +391,7 @@ const SimulationPage: React.FC = () => {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red" onClick={() => onDelete(index)}>
-                            <Image width={16} height={16} src="/image/ico-trash-r.svg" alt="" />
+                            <Trash2 className="size-4" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { X } from 'lucide-react';
 import Input from '@/components/Input';
 
 interface ProcessProps {
@@ -19,7 +17,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
   return (
     <Dialog open={open} onClose={onClose}>
       <IconButton aria-label="close" onClick={onClose} className="ico-popup-close">
-        <CloseIcon />
+        <X />
       </IconButton>
 
       <DialogContent>
