@@ -18,7 +18,7 @@ function SankeyChart({ chartData, chartLayout, config }: SankeyChartProps) {
         ...config,
       });
     }
-  }, [chartData, chartLayout]);
+  }, [chartData, chartLayout, config]);
 
   return <div ref={chartRef}></div>;
 }
