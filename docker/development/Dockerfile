@@ -21,7 +21,7 @@ RUN npm ci --force
 COPY . .
 COPY .env .env
 
-RUN npm run build && npm prune --production
+RUN npm run build
 
 # ----------------------
 # 2) 런타임 스테이지
@@ -41,7 +41,6 @@ ENV NODE_ENV=production
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-COPY --from=build-deps /app/node_modules ./node_modules
 COPY --from=build-deps /app/public ./public
 COPY --from=build-deps --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build-deps --chown=nextjs:nodejs /app/.next/static ./.next/static
