@@ -18,24 +18,6 @@ $ npm run dev
 
 package.json의 scripts 참조
 
-## 도커 빌드 및 푸시 (ECR 기준)
-
-필요에 따라 아래 명령어에서 태그(예: v0.1.0-rc.1)를 변경해서 사용합니다.
-
-```shell
-# AWS ECR Login
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com
-
-# Docker build
-docker build --platform linux/amd64 --provenance false -t coop/flexa-waitfree-next:release-0.1.0 -f docker/production/Dockerfile .
-
-# Docker tag
-docker tag coop/flexa-waitfree-next:release-0.1.0 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:release-0.1.0
-
-# Docker push
-docker push 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:release-0.1.0
-```
-
 ## 폴더 구조:
 
 ### 1차 배포시까지 활용 구조

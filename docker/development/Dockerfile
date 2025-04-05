@@ -1,7 +1,9 @@
-FROM node:20-alpine AS base
+# ----------------------
+# 1) 빌드 스테이지
+# ----------------------
+FROM node:20-alpine AS build-deps
 
-RUN apk add --no-cache \
-    libc6-compat \
+RUN apk add --no-cache libc6-compat \
     python3 \
     build-base \
     pkgconfig \
@@ -13,53 +15,40 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# ==============================================================================
-FROM base AS deps
-
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
-
-RUN \
-    if [ -f yarn.lock ]; then yarn --frozen-lockfile --force; \
-    elif [ -f package-lock.json ]; then npm ci --force; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --force; \
-    else echo "Lockfile not found." && exit 1; \
-    fi
-
-# ==============================================================================
-FROM base AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* .npmrc* ./
+RUN npm ci --force
 
 COPY . .
 
-# 개발 환경변수 복사 → 프로덕션용으로 사용
-COPY .env.development .env.production
+RUN npm run build
 
-# 앱 빌드
-RUN \
-    if [ -f yarn.lock ]; then yarn run build; \
-    elif [ -f package-lock.json ]; then npm run build; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-    else echo "Lockfile not found." && exit 1; \
-    fi
-
-# ==============================================================================
-FROM base AS runner
+# ----------------------
+# 2) 런타임 스테이지
+# ----------------------
+FROM node:20-alpine AS runner
+RUN apk add --no-cache \
+    libc6-compat \
+    cairo \
+    pango \
+    jpeg \
+    giflib \
+    librsvg
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs \ 
-    && adduser --system --uid 1001 nextjs
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=build-deps /app/node_modules ./node_modules
+COPY --from=build-deps /app/public ./public
+COPY --from=build-deps --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=build-deps --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 3000
+
 ENV PORT=3000
 
 ENV HOSTNAME="0.0.0.0"

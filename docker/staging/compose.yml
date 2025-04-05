@@ -1,9 +1,0 @@
-services:
-  nextjs:
-    image: flexa-waitfree-next-staging:v0.1.0-rc.1
-    container_name: flexa-waitfree-next-staging
-    build:
-      context: ../../
-      dockerfile: docker/staging/Dockerfile
-    ports:
-      - 3010:3000
