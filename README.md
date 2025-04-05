@@ -18,6 +18,18 @@ $ npm run dev
 
 package.json의 scripts 참조
 
+## 도커 빌드 및 ECR 푸시하기
+
+```shell
+IMAGE_TAG=${IMAGE_TAG}     # 직접 입력 필요
+ENVIRONMENT=${ENVIRONMENT} # 직접 입력 필요
+
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com
+docker build --platform linux/amd64 --provenance false -t coop/flexa-waitfree-next:${IMAGE_TAG} -f docker/${ENVIRONMENT}/Dockerfile .
+docker tag coop/flexa-waitfree-next:${IMAGE_TAG} 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:${IMAGE_TAG}
+docker push 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:${IMAGE_TAG}
+```
+
 ## 폴더 구조:
 
 ### 1차 배포시까지 활용 구조
