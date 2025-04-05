@@ -25,20 +25,28 @@ function FacilityPage() {
 
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
-  const { data: processes } = useProcesses({ scenarioId: scenarios?.master_scenario?.[0].id });
+  const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
-    if (scenarios) if (scenarios) setScenario(scenarios.master_scenario[0]);
+    if (!scenarios || !scenarios.scenarios) return;
+
+    if (scenarios.scenarios.length > 0) {
+      setScenario(scenarios.scenarios[0]);
+    }
   }, [scenarios]);
 
   // NOTE: 선택된 SCENARIO의 첫번째 PROCESS가 선택됨.
   useEffect(() => {
-    if (processes) setProcess(processes[0]);
+    if (!processes) return;
+
+    setProcess(processes[0]);
   }, [processes]);
 
   // TODO: Skeleton UI 적용하기
-  if (!scenarios || !scenario || !process) return <div>Loading ...</div>;
+  if (!scenarios || !scenario || !processes || !process) {
+    return <div className="py-10 text-center">Loading...</div>;
+  }
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
@@ -46,9 +54,8 @@ function FacilityPage() {
 
       <SimulationOverview
         className="mt-[30px]"
-        // FIXME: 여기 고치기
-        items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
-        scenario={scenario}
+        items={scenarios.scenarios ?? []}
+        scenario={scenario ?? {}}
         onSelectScenario={setScenario}
       />
 
@@ -64,14 +71,13 @@ function FacilityPage() {
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
           <TabsContent value="kpiSummary">
-            <FacilityKPISummary process={process.value} scenarioId={scenarios?.master_scenario?.[0].id} />
+            {/* HACK: key: scenario.id */}
+            <FacilityKPISummary key={scenario.id} process={process.value} scenarioId={scenario.id} />
           </TabsContent>
 
           <TabsContent value="passengerAnalysis">
-            <FacilityPassengerAnalysis
-              process={process.value}
-              scenarioId={scenarios?.master_scenario?.[0].id}
-            />
+            {/* HACK: key: scenario.id */}
+            <FacilityPassengerAnalysis key={scenario.id} process={process.value} scenarioId={scenario.id} />
           </TabsContent>
         </AppTabs>
       </div>

@@ -35,7 +35,10 @@ function HomeWarning({ scenario }: HomeWarningProps) {
   const [facility, setFacility] = useState(PROCESS_OPTIONS[0]);
   const [target, setTarget] = useState(TARGET_OPTIONS[0]);
 
-  if (!alertIssueData) return <div>Loading...</div>;
+  // HACK: 임시방편
+  if (!Object.keys(alertIssueData).length) {
+    return <div className="py-10 text-center">Loading...</div>;
+  }
 
   return (
     <>

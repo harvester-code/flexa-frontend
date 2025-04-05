@@ -22,7 +22,9 @@ function HomePage() {
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
-    if (scenarios) setScenario(scenarios.master_scenario[0]);
+    if (scenarios?.scenarios?.[0]) {
+      setScenario(scenarios.scenarios[0]);
+    }
   }, [scenarios]);
 
   if (!scenarios || !scenario) {
@@ -35,9 +37,8 @@ function HomePage() {
 
       <SimulationOverview
         className="mt-8"
-        // FIXME: 여기 고치기
-        items={[...scenarios.scenarios!, ...scenarios?.master_scenario]}
-        scenario={scenario}
+        items={scenarios.scenarios ?? []}
+        scenario={scenario ?? {}}
         onSelectScenario={setScenario}
       />
 

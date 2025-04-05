@@ -47,7 +47,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
           <p
             className="flex cursor-pointer items-center gap-2.5 hover:font-bold"
             onClick={() => {
-              onSelectScenario([info.row.original]);
+              onSelectScenario(info.row.original);
               setIsOpened(false);
             }}
           >

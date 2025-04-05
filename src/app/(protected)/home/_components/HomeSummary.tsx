@@ -40,7 +40,9 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
     scenarioId: scenario?.id,
   });
 
-  if (!summaries) return <div>Loading...</div>;
+  if (!summaries) {
+    return <div className="py-10 text-center">Loading...</div>;
+  }
 
   return (
     <>

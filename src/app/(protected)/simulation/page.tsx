@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { EllipsisVertical, Trash2 } from 'lucide-react';
+import { EllipsisVertical, ListFilterIcon, Trash2 } from 'lucide-react';
 import { OrbitProgress } from 'react-loading-indicators';
 import { deleteScenario, duplicateScenario, modifyScenario, setMasterScenario } from '@/services/simulations';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -191,7 +191,7 @@ const SimulationPage: React.FC = () => {
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-filter.svg" alt="" />}
+            icon={<ListFilterIcon className="size-5" />}
             text="More Fliters"
             onClick={() => {}}
           />
@@ -338,9 +338,7 @@ const SimulationPage: React.FC = () => {
                     <td className="">
                       {item?.simulation_date ? dayjs(item?.simulation_date).format('MMM-DD-YYYY') : null}
                     </td>
-                    <td className="">
-                      {dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}
-                    </td>
+                    <td className="">{dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}</td>
                     <td className="">
                       <input
                         ref={scenarioStates[index].refMemo}
