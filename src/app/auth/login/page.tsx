@@ -56,14 +56,14 @@ export default async function LoginPage() {
             <SubmitButton formAction={signInAction}>Sign In</SubmitButton>
           </form>
 
-          <div className="mt-[30px] flex justify-center">
+          {/* <div className="mt-[30px] flex justify-center">
             <p className="flex gap-[10px] text-sm">
               Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="font-semibold text-brand underline">
                 Sign Up
               </Link>
             </p>
-          </div>
+          </div> */}
         </div>
         <p className="copyright mt-auto">© Flexa all rights reserved</p>
       </div>
