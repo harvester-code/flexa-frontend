@@ -19,8 +19,9 @@ COPY package.json package-lock.json* .npmrc* ./
 RUN npm ci --force
 
 COPY . .
+COPY .env .env
 
-RUN npm run build
+RUN npm run build && npm prune --production
 
 # ----------------------
 # 2) 런타임 스테이지
