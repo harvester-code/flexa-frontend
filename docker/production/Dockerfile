@@ -34,7 +34,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 개발 환경변수 복사 → 프로덕션용으로 사용
-COPY .env.development .env.production
+COPY .env.production .env.production
 
 # 앱 빌드
 RUN \
