@@ -13,7 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write src/",
-    "clean": "rm -rf .next node_modules"
+    "clean": "rm -rf .next node_modules package-lock.json"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
