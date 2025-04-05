@@ -9,10 +9,7 @@ definitions:
 
           - env | grep '^NEXT_PUBLIC_' > .env
 
-          - docker build \
-            -t $IMAGE_NAME:$IMAGE_TAG \
-            -f docker/${BITBUCKET_DEPLOYMENT_ENVIRONMENT}/Dockerfile \
-            .
+          - docker build -t $IMAGE_NAME:$IMAGE_TAG -f docker/${BITBUCKET_DEPLOYMENT_ENVIRONMENT}/Dockerfile .
 
           - pipe: atlassian/aws-ecr-push-image:2.5.0
             variables:
