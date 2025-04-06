@@ -16,7 +16,7 @@ const HEAT_MAP_CHART_OPTIONS = [
 
 interface FacilityKPISummaryHeatMapChartProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 function FacilityKPISummaryHeatMapChart({ process, scenarioId }: FacilityKPISummaryHeatMapChartProps) {

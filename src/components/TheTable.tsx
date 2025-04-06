@@ -4,15 +4,15 @@ import Tooltip from '@mui/material/Tooltip';
 
 // TODO: 색상 추가하기
 // TODO: 타입 선언하기
-function AppTable({ data }) {
+function TheTable({ data }) {
   return (
     <div className="overflow-hidden overflow-x-auto whitespace-nowrap rounded-t-lg pb-6">
       <table className="w-max [&_td]:border-b [&_td]:border-r [&_td]:border-default-200 [&_th]:border-b [&_th]:border-r [&_th]:border-default-200">
         <thead className="bg-default-50 text-left leading-4">
           {/* --------------------------- */}
           <tr>
-            {data.header.columns &&
-              data.header.columns.map((col, idx) => (
+            {data?.header.columns &&
+              data?.header.columns.map((col, idx) => (
                 <th
                   className="w-[250px] px-5 py-3 [&:not(:last-child)]:h-20"
                   rowSpan={col.rowSpan}
@@ -25,18 +25,16 @@ function AppTable({ data }) {
           </tr>
 
           {/* --------------------------- */}
-          {data.header.subColumns && (
+          {data?.header.subColumns && (
             <tr className="[&>*]:h-10 [&>*]:w-[172px] [&>*]:px-5 [&>*]:py-3">
-              {data.header.subColumns.map((subCol, idx) => (
-                <th key={idx}>{subCol.label}</th>
-              ))}
+              {data?.header.subColumns.map((subCol, idx) => <th key={idx}>{subCol.label}</th>)}
             </tr>
           )}
         </thead>
 
         <tbody className="[&>*>*]:px-6 [&>*>*]:py-4">
-          {data.body &&
-            data.body.map((row, i) => (
+          {data?.body &&
+            data?.body.map((row, i) => (
               <tr key={i}>
                 {/* --------------------------- */}
                 <td className="flex gap-1">
@@ -76,4 +74,4 @@ function AppTable({ data }) {
   );
 }
 
-export default AppTable;
+export default TheTable;

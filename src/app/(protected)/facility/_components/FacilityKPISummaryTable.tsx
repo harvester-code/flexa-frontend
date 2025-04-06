@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useKPISummary } from '@/queries/facilityQueries';
-import AppTable from '@/components/Table';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
-import FacilityKPISummaryTableLoading from './FacilityKPISummaryTableLoading';
+import TheTable from '@/components/TheTable';
+import HomeLoading from '../../home/_components/HomeLoading';
+import HomeNoData from '../../home/_components/HomeNoData';
+import HomeNoScenario from '../../home/_components/HomeNoScenario';
 
 const STATS_OPTIONS = [
   { label: 'Top 5%', value: 'top5' },
@@ -16,20 +18,26 @@ const STATS_OPTIONS = [
 
 interface FacilityKPISummaryTableProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTableProps) {
   const [kpiFunc, setKPIFunc] = useState(STATS_OPTIONS[0]);
 
-  const { data: kpiSummaryData } = useKPISummary({
+  const { data: kpiSummaryData, isLoading } = useKPISummary({
     scenarioId,
     process,
     func: kpiFunc.value,
   });
 
-  if (!kpiSummaryData) {
-    return <FacilityKPISummaryTableLoading />;
+  console.log(scenarioId);
+
+  if (!scenarioId) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
   }
 
   return (
@@ -53,7 +61,8 @@ function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTabl
           />
         </div>
       </div>
-      <AppTable data={kpiSummaryData} />
+
+      {kpiSummaryData ? <TheTable data={kpiSummaryData} /> : <HomeNoData />}
     </>
   );
 }

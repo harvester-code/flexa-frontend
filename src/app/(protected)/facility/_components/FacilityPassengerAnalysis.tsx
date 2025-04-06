@@ -3,14 +3,13 @@ import FacilityPassengerAnalysisDonutChart from './FacilityPassengerAnalysisDonu
 
 interface FacilityPassengerAnalysisProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 function FacilityPassengerAnalysis({ process, scenarioId }: FacilityPassengerAnalysisProps) {
   return (
     <div className="my-[30px]">
       <FacilityPassengerAnalysisDonutChart process={process} scenarioId={scenarioId} />
-
       <FacilityPassengerAnalysisBarChart process={process} scenarioId={scenarioId} />
     </div>
   );

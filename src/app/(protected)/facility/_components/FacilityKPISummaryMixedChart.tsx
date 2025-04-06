@@ -20,7 +20,7 @@ const MIXED_CHART_OPTIONS = [
 
 interface FacilityKPISummaryMixedChartProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummaryMixedChartProps) {
@@ -168,17 +168,13 @@ function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummar
 
       <div className="rounded-md border border-default-200 p-5">
         <div className="mb-4 flex items-center justify-between">
-          {chartKeyOption ? (
-            <TheDropdownMenu
-              className="min-w-[120px]"
-              icon={<ChevronDown />}
-              items={chartKeyOptions}
-              label={chartKeyOption.label}
-              onSelect={setChartKeyOption}
-            />
-          ) : (
-            <div>Loading...</div>
-          )}
+          <TheDropdownMenu
+            className="min-w-[120px]"
+            icon={<ChevronDown />}
+            items={chartKeyOptions}
+            label={chartKeyOption?.label ?? ''}
+            onSelect={setChartKeyOption}
+          />
 
           <ButtonGroup className="justify-end">
             {MIXED_CHART_OPTIONS.map((option, idx) => (

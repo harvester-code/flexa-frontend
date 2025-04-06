@@ -38,15 +38,19 @@ export default function FacilityDropdownMenu({ items, label, onSelect }: Facilit
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="center" className={cn('min-w-64')}>
-        {items?.map((item) => (
-          <DropdownMenuItem
-            key={item.value}
-            className="cursor-pointer justify-start hover:bg-accent-100"
-            onClick={() => handleSelect(item)}
-          >
-            {item.label}
-          </DropdownMenuItem>
-        ))}
+        {items?.length > 0 ? (
+          items?.map((item) => (
+            <DropdownMenuItem
+              key={item.value}
+              className="cursor-pointer justify-start hover:bg-accent-100"
+              onClick={() => handleSelect(item)}
+            >
+              {item.label}
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <DropdownMenuItem>Select scenario</DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

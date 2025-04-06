@@ -20,12 +20,12 @@ const TABS: Option[] = [
 ];
 
 function FacilityPage() {
-  const [scenario, setScenario] = useState<ScenarioData | null>(null);
-  const [process, setProcess] = useState<Option>();
-
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
   const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
+
+  const [scenario, setScenario] = useState<ScenarioData | null>(null);
+  const [process, setProcess] = useState<Option>();
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
@@ -43,41 +43,33 @@ function FacilityPage() {
     setProcess(processes[0]);
   }, [processes]);
 
-  // TODO: Skeleton UI 적용하기
-  if (!scenarios || !scenario || !processes || !process) {
-    return <div className="py-10 text-center">Loading...</div>;
-  }
-
   return (
     <div className="mx-auto flex min-h-svh max-w-[1340px] flex-col px-[30px] pb-8">
       <TheContentHeader text="Detailed Facilities" />
 
       <SimulationOverview
         className="mt-[30px]"
-        items={scenarios.scenarios ?? []}
-        scenario={scenario ?? {}}
+        items={scenarios?.scenarios ?? []}
+        scenario={scenario}
         onSelectScenario={setScenario}
       />
 
-      {/* TODO: Skeleton UI 적용하기 */}
       <div className="relative mt-[30px] flex-1">
         <div className="rounded-md border bg-default-50 px-5 py-7">
           <FacilityDropdownMenu
             items={processes}
-            label={process.label ?? ''}
+            label={process?.label ?? 'Select scenario'}
             onSelect={(item) => setProcess(item)}
           />
         </div>
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
           <TabsContent value="kpiSummary">
-            {/* HACK: key: scenario.id */}
-            <FacilityKPISummary key={scenario.id} process={process.value} scenarioId={scenario.id} />
+            <FacilityKPISummary key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
           </TabsContent>
 
           <TabsContent value="passengerAnalysis">
-            {/* HACK: key: scenario.id */}
-            <FacilityPassengerAnalysis key={scenario.id} process={process.value} scenarioId={scenario.id} />
+            <FacilityPassengerAnalysis key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
           </TabsContent>
         </AppTabs>
       </div>

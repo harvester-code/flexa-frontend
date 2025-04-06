@@ -11,7 +11,7 @@ const DonutChart = dynamic(() => import('@/components/charts/DonutChart'), { ssr
 
 interface FacilityPassengerAnalysisDonutChartProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 // TODO: 색깔 설정하기

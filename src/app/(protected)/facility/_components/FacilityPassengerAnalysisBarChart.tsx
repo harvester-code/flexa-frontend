@@ -12,7 +12,7 @@ const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: fa
 
 interface FacilityPassengerAnalysisBarChartProps {
   process?: string;
-  scenarioId: string;
+  scenarioId?: string;
 }
 
 const CHART_OPTIONS: Option[] = [
