@@ -8,13 +8,16 @@ import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
 import { cn } from '@/lib/utils';
 import './HomeDetails.css';
+import HomeLoading from './HomeLoading';
+import HomeNoData from './HomeNoData';
+import HomeNoScenario from './HomeNoScenario';
 
 interface HomeDetailsProps {
-  scenario: ScenarioData;
+  scenario: ScenarioData | null;
 }
 
 function HomeDetails({ scenario }: HomeDetailsProps) {
-  const { data: details = [] } = useFacilityDetails({
+  const { data: details, isLoading } = useFacilityDetails({
     // TODO: 아래 값은 Summary에서 받아와야한다.
     calculate_type: 'mean',
     percentile: 0,
@@ -22,7 +25,17 @@ function HomeDetails({ scenario }: HomeDetailsProps) {
     scenarioId: scenario?.id,
   });
 
-  if (!details) return <div>Loading...</div>;
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
+  }
+
+  if (!details) {
+    return <HomeNoData />;
+  }
 
   return (
     <div className="detail-list">

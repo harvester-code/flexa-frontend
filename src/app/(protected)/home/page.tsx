@@ -15,10 +15,10 @@ import HomeWarning from './_components/HomeWarning';
 import { snapshot } from './samples';
 
 function HomePage() {
-  const [scenario, setScenario] = useState<ScenarioData | null>(null);
-
   const { data: user } = useUser();
-  const { data: scenarios } = useScenarios(user?.groupId);
+  const { data: scenarios, isLoading: isScenariosLoading } = useScenarios(user?.groupId);
+
+  const [scenario, setScenario] = useState<ScenarioData | null>(null);
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
@@ -27,18 +27,14 @@ function HomePage() {
     }
   }, [scenarios]);
 
-  if (!scenarios || !scenario) {
-    return <div className="py-10 text-center">Loading...</div>;
-  }
-
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
       <TheContentHeader text="Home" />
 
       <SimulationOverview
         className="mt-8"
-        items={scenarios.scenarios ?? []}
-        scenario={scenario ?? {}}
+        items={scenarios?.scenarios ?? []}
+        scenario={scenario}
         onSelectScenario={setScenario}
       />
 

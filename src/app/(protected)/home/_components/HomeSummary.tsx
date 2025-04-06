@@ -13,6 +13,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/Tooltip';
+import HomeLoading from './HomeLoading';
+import HomeNoData from './HomeNoData';
+import HomeNoScenario from './HomeNoScenario';
 
 const KPI_FUNCS = [
   { label: 'Mean', value: 'mean' },
@@ -27,21 +30,29 @@ const TOOLTIP_MAP = {
 };
 
 interface HomeSummaryProps {
-  scenario: ScenarioData;
+  scenario: ScenarioData | null;
 }
 
 function HomeSummary({ scenario }: HomeSummaryProps) {
   const [topValue, setTopValue] = useState(0);
   const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
 
-  const { data: summaries } = useSummaries({
+  const { data: summaries, isLoading } = useSummaries({
     calculate_type: kpiFunc.value,
     percentile: topValue,
     scenarioId: scenario?.id,
   });
 
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
+  }
+
   if (!summaries) {
-    return <div className="py-10 text-center">Loading...</div>;
+    return <HomeNoData />;
   }
 
   return (

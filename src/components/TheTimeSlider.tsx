@@ -43,8 +43,14 @@ const TheTimeSlider = React.forwardRef<
                 style={{ clipPath: 'none' }}
               >
                 <div className="min-w-16 text-center">
-                  <p>{date}</p>
-                  <p>{hour}</p>
+                  {form ? (
+                    <>
+                      <p>{date}</p>
+                      <p>{hour}</p>
+                    </>
+                  ) : (
+                    <div>No scenario</div>
+                  )}
                 </div>
               </div>
             </SliderPrimitive.Thumb>

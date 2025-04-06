@@ -8,7 +8,7 @@ import { usePassengerPoints } from '@/queries/homeQueries';
 import TheTimeSlider from '@/components/TheTimeSlider';
 
 interface CanvasProps {
-  scenario: ScenarioData;
+  scenario: ScenarioData | null;
   snapshot: any;
 }
 
@@ -142,10 +142,7 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
         <h2 className="text-2xl font-semibold">Terminal Overview</h2>
       </div>
 
-      <div
-        ref={canvasContainerRef}
-        className="relative mx-auto mt-5 h-[480px] w-[1280px] overflow-hidden rounded-lg bg-[#ededf4]"
-      >
+      <div ref={canvasContainerRef} className="mx-auto mt-5 h-[480px] w-full rounded-lg bg-[#ededf4]">
         <Stage
           draggable
           className="cursor-grab"
@@ -181,7 +178,7 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
                 alt="Airport Map"
               />
             )}
-            {dots &&
+            {dots.length > 0 &&
               dots.map(({ title, circles }, i) =>
                 circles.map((circle, j) => {
                   if (!markers) return;
@@ -192,7 +189,7 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
                       x={circle.x}
                       y={circle.y}
                       radius={0.7}
-                      fill={processedData[markers[0]].queues[title] > j ? 'green' : 'transparent'}
+                      fill={processedData[markers[0]]?.queues[title] > j ? 'green' : 'transparent'}
                     />
                   );
                 })
@@ -201,16 +198,14 @@ const HomeCanvas = ({ scenario, snapshot }: CanvasProps) => {
         </Stage>
       </div>
 
-      {markers && (
-        <TheTimeSlider
-          className="mt-8 pb-4"
-          max={maxMarker}
-          defaultValue={markers}
-          value={markers}
-          form={processedData[markers[0]]?.timestamp}
-          onValueChange={setMarkers}
-        />
-      )}
+      <TheTimeSlider
+        className="mt-8 pb-12"
+        max={maxMarker ?? 100}
+        defaultValue={markers ?? [50]}
+        value={markers ?? [50]}
+        form={markers ? processedData[markers[0]]?.timestamp : undefined}
+        onValueChange={setMarkers}
+      />
     </>
   );
 };

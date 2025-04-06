@@ -8,6 +8,9 @@ import { ChevronDown } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
+import HomeLoading from './HomeLoading';
+import HomeNoData from './HomeNoData';
+import HomeNoScenario from './HomeNoScenario';
 
 dayjs.extend(customParseFormat);
 
@@ -26,18 +29,25 @@ const TARGET_OPTIONS = [
 ];
 
 interface HomeWarningProps {
-  scenario: ScenarioData;
+  scenario: ScenarioData | null;
 }
 
 function HomeWarning({ scenario }: HomeWarningProps) {
-  const { data: alertIssueData = {} } = useAlertIssues({ scenarioId: scenario?.id });
+  const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
 
   const [facility, setFacility] = useState(PROCESS_OPTIONS[0]);
   const [target, setTarget] = useState(TARGET_OPTIONS[0]);
 
-  // HACK: 임시방편
-  if (!Object.keys(alertIssueData).length) {
-    return <div className="py-10 text-center">Loading...</div>;
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
+  }
+
+  if (!alertIssueData) {
+    return <HomeNoData />;
   }
 
   return (

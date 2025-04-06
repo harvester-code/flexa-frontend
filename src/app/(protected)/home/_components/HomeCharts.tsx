@@ -11,6 +11,9 @@ import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import HomeLoading from './HomeLoading';
+import HomeNoData from './HomeNoData';
+import HomeNoScenario from './HomeNoScenario';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -37,7 +40,7 @@ const CHART_OPTIONS2: Option[] = [
 ];
 
 interface HomeChartsProps {
-  scenario: ScenarioData;
+  scenario: ScenarioData | null;
 }
 
 function HomeCharts({ scenario }: HomeChartsProps) {
@@ -98,9 +101,9 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     });
   };
 
-  const { data: flowChart = {} } = useLineChart({ scenarioId: scenario?.id });
-  const { data: histogram = {} } = useHistogramChart({ scenarioId: scenario?.id });
-  const { data: sankey = {} } = useSankeyChart({ scenarioId: scenario?.id });
+  const { data: flowChart, isLoading: isFlowChartLoading } = useLineChart({ scenarioId: scenario?.id });
+  const { data: histogram, isLoading: isHistogramLoading } = useHistogramChart({ scenarioId: scenario?.id });
+  const { data: sankey, isLoading: isSankeyChartLoading } = useSankeyChart({ scenarioId: scenario?.id });
 
   const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
 
@@ -229,6 +232,14 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
   }, [sankey]);
 
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isFlowChartLoading || isHistogramLoading || isSankeyChartLoading) {
+    return <HomeLoading />;
+  }
+
   return (
     <div className="mt-5 flex flex-col gap-[35px]">
       {/* ============================================================================= */}
@@ -250,7 +261,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         </div>
 
         <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-stretch justify-between gap-4 xl:flex-row xl:items-center">
             <TheDropdownMenu
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
@@ -299,7 +310,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
         </div>
         <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-stretch justify-between gap-4 xl:flex-row xl:items-center">
             <TheDropdownMenu
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
