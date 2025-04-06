@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
+// TODO: 로그인 에러에 대해서 사용자에게 안내하는 UI 필요
 export default async function LoginPage() {
   const savedEmail = await getSavedEmail();
 
@@ -36,12 +37,7 @@ export default async function LoginPage() {
         }}
       >
         <div>
-          <h2
-            className="mb-2 text-[2.5rem] font-bold text-brand"
-            style={{
-              lineHeight: '100%',
-            }}
-          >
+          <h2 className="mb-2 text-[2.5rem] font-bold text-brand" style={{ lineHeight: '100%' }}>
             Log in
           </h2>
 
@@ -74,7 +70,7 @@ export default async function LoginPage() {
             <div className="flex justify-between text-sm">
               <div className="flex items-center gap-1">
                 <Checkbox className="size-4" id="rememberMe" name="rememberMe" defaultChecked={!!savedEmail} />
-                <Label htmlFor="rememberMe" className="text-brand">
+                <Label htmlFor="rememberMe" className="cursor-pointer text-brand">
                   Save Account
                 </Label>
               </div>

@@ -14,11 +14,12 @@ export async function getSavedEmail() {
 
 export const signInAction = async (formData: FormData) => {
   if (!formData.get('email') || !formData.get('password')) {
-    return redirect('/?error-message=Email and password are required');
+    return redirect('/auth/login?error-message=email-and-password-are-required');
   }
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const rememberMe = formData.get('rememberMe') === 'on';
+
   const supabase = await createClient();
   const cookieStore = await cookies();
 
@@ -35,23 +36,27 @@ export const signInAction = async (formData: FormData) => {
   // 이메일 형식 검증
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return redirect('/?error-message=Invalid email format');
+    return redirect('/auth/login?error-message=invalid-email-format');
   }
   // 비밀번호 최소 길이 검증
   if (password.length < 6) {
-    return redirect('/?error-message=Password must be at least 6 characters');
+    return redirect('/auth/login?error-message=password-must-be-at-least-6-characters');
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  // TODO: 에러 케이스에 따른 핸들링 추가하기
   if (error) {
-    console.error(error.code + ' ' + error.message);
-    redirect('/?error-message=' + error.message);
-  } else {
-    redirect('/home');
+    console.log('===== 로그인 에러 =====');
+    console.log(`error.code = ${error.code}`);
+    console.log(`error.message = ${error.message}`);
+    console.log(`error.name = ${error.name}`);
+    console.log(`error.status = ${error.status}`);
+    console.log('===== 로그인 에러 =====');
+    return redirect('/auth/login?error-message=login-failed');
   }
+
+  return redirect('/home');
 };
 
 export const signUpAction = async (formData: FormData) => {
