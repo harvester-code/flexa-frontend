@@ -954,9 +954,9 @@ textarea {
   .overview-item {
     border: 1px solid var(--default-200);
     aspect-ratio: 200/120;
-    @apply flex w-full flex-col rounded-md bg-white p-[10px] cursor-default;
+    @apply flex w-full cursor-default flex-col rounded-md bg-white p-[10px];
     dl {
-      @apply flex flex-col gap-[8px] flex-1;
+      @apply flex flex-1 flex-col gap-[8px];
       dt {
         line-height: 30px;
         @apply h-[30px] font-semibold text-default-500;
@@ -964,7 +964,7 @@ textarea {
       dd {
         line-height: 30px;
         font-size: 24px;
-        @apply font-medium text-default-900 flex-1 whitespace-pre break-words text-wrap;
+        @apply flex-1 whitespace-pre text-wrap break-words font-medium text-default-900;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -1527,32 +1527,6 @@ textarea {
         width: 1140px;
         margin: 0 auto;
       }
-    }
-  }
-}
-
-/* errorPage */
-.errorPage {
-  height: 100vh;
-  @apply flex w-full flex-col items-center justify-center bg-default-25 text-center;
-  .errorImg {
-    font-size: 30px;
-    @apply flex flex-col items-center justify-center gap-[15px] font-medium text-default-300;
-  }
-  .errorBlock {
-    @apply flex flex-col items-center justify-center;
-    .error-code {
-      font-size: 160px;
-      line-height: normal;
-      @apply text-center font-semibold text-accent-700;
-    }
-    h1 {
-      font-size: 48px;
-      line-height: normal;
-      @apply mt-[5px] text-center font-semibold text-default-600;
-    }
-    .error-desc {
-      @apply mt-[5px] text-xl font-medium text-default-700;
     }
   }
 }
