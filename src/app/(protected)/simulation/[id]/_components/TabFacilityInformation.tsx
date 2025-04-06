@@ -321,7 +321,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       });
     }
 
-    saveSnapshot(params);
+    saveSnapshot({ params });
     setTabIndex(tabIndex + 1);
   };
 

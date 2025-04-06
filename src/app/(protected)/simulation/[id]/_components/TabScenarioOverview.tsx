@@ -69,7 +69,6 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
 
   useEffect(() => {
     if (!visible && loaded) {
-      console.log(availableTabIndex)
       metadata?.setOverview({ snapshot: { ...(overview?.snapshot || {}), availableTabIndex } });
     }
   }, [availableTabIndex]);

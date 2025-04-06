@@ -75,7 +75,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   useEffect(() => {
     if(visible) {
-      const params = { ...facility_info?.params };
+      const params = { ...facility_info?.params, scenario_id: simulationId };
       setLoadingSimulation(true);
       getSimulationOverview(params).then(({ data }) => {
         setOverviewData(data);
@@ -91,7 +91,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [visible]);
 
   const onRunSimulation = () => {
-    const params = { ...facility_info?.params };
+    const params = { ...facility_info?.params, scenario_id: simulationId };
 
     // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
 

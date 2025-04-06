@@ -441,7 +441,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           </div>
         </div>
       </div>
-      <p className="mt-[20px] flex justify-end px-[20px]">
+      <p className="mt-[20px] flex justify-end">
         <Button
           className="btn-md btn-tertiary"
           // iconRight={applied ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}

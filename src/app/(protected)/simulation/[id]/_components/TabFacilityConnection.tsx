@@ -694,7 +694,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
             </div>
           )}
 
-          <div className="mt-[20px] flex items-center justify-between pr-[20px]">
+          <div className="mt-[20px] flex items-center justify-between">
             <p className="font-medium text-warning">
               {/* ● Please make sure to fill in all fields without leaving any blank rows! */}
             </p>

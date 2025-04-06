@@ -73,7 +73,7 @@ const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
   const { overview, setFlightSchedule, flight_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities, availableTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities, setAvailableTabIndex, availableTabIndex } = useSimulationStore();
   
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
@@ -85,6 +85,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [tabSecondary, setTabSecondary] = useState(flight_sch?.snapshot?.tabSecondary || 0);
+  const [applied, setApplied] = useState(true);
 
   const { width } = useResize(refWidth);
 
@@ -103,6 +104,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       tabSecondary,
       conditions,
       priorities,
+      applied,
       ...snapshot,
     };
     setFlightSchedule({ ...flight_sch, ...(params || {}), snapshot: newSnapshot });
@@ -137,7 +139,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       if (!simulationId) return;
 
       setLoadingFlightSchedule(true);
-
+      setAvailableTabIndex(1);
       const params = {
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
@@ -148,7 +150,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       getFlightSchedules(simulationId, params)
         .then(({ data }) => {
           const flightSchedule: Partial<FlightSchedule> = { params };
-          const snapshotData: any = {};
+          const snapshotData: any = { applied: true };
           if (data?.add_conditions) {
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
@@ -189,6 +191,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             setChartData(newChartData);
             snapshotData.chartData = newChartData;
           }
+          setApplied(true);
           setLoadingFlightSchedule(false);
           saveSnapshot(flightSchedule, snapshotData);
         })
@@ -291,6 +294,10 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               initialValue={selConditions}
               onBtnApply={(conditions) => {
                 setSelConditions(conditions);
+              }}
+              onChange={() => {
+                setAvailableTabIndex(1);
+                setApplied(false);
               }}
             />
           ) : null}
@@ -415,7 +422,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={!chartData}
+          disabled={!applied || !chartData}
           onClick={() => setTabIndex(tabIndex + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>

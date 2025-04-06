@@ -279,7 +279,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                 <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
               </button>
             </p>
-            <p className="flex justify-end gap-[10px] px-[20px]">
+            <p className="flex justify-end gap-[10px]">
               <Button className="btn-md btn-tertiary" text="Apply" onClick={() => onBtnApply()} />
             </p>
             <div className="mt-[30px] flex justify-between">
@@ -295,7 +295,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                 onClick={() => setTabIndex(tabIndex + 1)}
                 disabled={!applied}
               >
-                <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
+                <span className="flex flex-grow items-center justify-center">Facility Connection</span>
                 <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
               </button>
             </div>
