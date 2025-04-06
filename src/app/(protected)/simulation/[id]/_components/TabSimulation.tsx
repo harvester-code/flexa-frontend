@@ -666,6 +666,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           <span className="flex flex-grow items-center justify-center">Previous</span>
         </button>
 
+        {/* FIXME: [25.04.07] ADD CONDITIONS가 있을 때 데이터가 제대로 안 나오는 현상 발생 */}
         <button
           className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
           onClick={() => onRunSimulation()}
