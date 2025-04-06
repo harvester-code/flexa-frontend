@@ -15,17 +15,31 @@ import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions from '@/components/Conditions';
+import selectBoxStyles from '@/components/SelectBox.module.css';
 import TabDefault from '@/components/TabDefault';
 import { Calendar } from '@/components/ui/Calendar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/useResize';
 import { deepCompare } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import _jsonAirport from '../_json/airport_constants.json';
+
+const jsonAirportObj = {};
+const jsonAirport = _jsonAirport.map((item) => {
+  jsonAirportObj[item.iata] = item.name;
+  return {
+    iata: item.iata,
+    name: item.name,
+    searchText: `${item.iata}/${item.name}`.toUpperCase(),
+  };
+});
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -92,8 +106,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
   const [selColorCriteria, setSelColorCriteria] = useState(flight_sch?.snapshot?.selColorCriteria || 'Airline');
   const [selDate, setSelDate] = useState<Date>(flight_sch?.snapshot?.selDate || dayjs().toDate());
-  const [selAirport, setSelAirport] = useState(flight_sch?.snapshot?.selAirport || 'ICN');
-  const [selConditions, setSelConditions] = useState<ConditionState[]>(flight_sch?.snapshot?.selConditions);
+  const [selAirport, setSelAirport] = useState('ICN');
+  const [selConditions, setSelConditions] = useState<ConditionState[]>();
 
   const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -131,8 +145,12 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const restoreSnapshot = () => {
     if (flight_sch?.snapshot) {
       const snapshot = flight_sch?.snapshot;
-      if (snapshot.chartData) setChartData(snapshot.chartData);
       if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
+      if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
+      if (snapshot.selAirport) setSelAirport(snapshot.selAirport);
+      setTimeout(() => {
+        if (snapshot.chartData) setChartData(snapshot.chartData);
+      }, 10);
     }
   };
 
@@ -224,6 +242,17 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
   const conditionChanged = !applied || flight_sch?.snapshot.addConditionsVisible != addConditionsVisible;
 
+  const [inputAirport, setInputAirport] = useState(false);
+
+  const [inputAirportText, setInputAirportText] = useState('');
+
+  const airportList =
+    inputAirportText?.length > 2
+      ? jsonAirport.filter((item) => item?.searchText?.indexOf(inputAirportText.toUpperCase()) >= 0)
+      : [];
+
+  const airportFullName = jsonAirportObj[selAirport] || '';
+
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Flight Schedule</h2>
@@ -235,18 +264,67 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         className={`tab-secondary mt-[25px]`}
         // onTabChange={(tabIndex) => setTabSecondary(tabIndex)}
       />
-
       <div className="mt-[40px] flex items-center justify-between">
         <p className="text-xl font-semibold text-default-800">Load Flight Schedule Data</p>
 
         <div className="flex items-center gap-[10px]">
-          <Button
-            className="btn-md btn-default"
-            icon={<Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />}
-            text="ICN"
-            textSub="Incheon Airport"
-            onClick={() => {}}
-          />
+          {inputAirport ? (
+            <div className="relative">
+              <div className="relative">
+                <input
+                  id='input-airport'
+                  type="text"
+                  placeholder=""
+                  value={inputAirportText}
+                  className="btn-md btn-default !w-[314px] !pl-[40px]"
+                  onChange={(e) => setInputAirportText(e.target.value)}
+                  onBlur={() => {
+                    if(inputAirportText.length < 3) {
+                      setInputAirport(false);
+                    }
+                  }}
+                />
+                <div className="absolute bottom-0 left-[14px] top-0 flex flex-col justify-center">
+                  <Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />
+                </div>
+              </div>
+              {airportList.length > 0 ? (
+                <div
+                  className={cn(selectBoxStyles.selectBox, airportList.length > 0 && selectBoxStyles['active'], `!rounded-none !border-none !py-0 !h-0 top-[-40px]`)}
+                >
+                  <div className={cn(selectBoxStyles.selectItem, `max-h-[400px]`)}>
+                    <ul className={cn(selectBoxStyles.selectOptionCont)}>
+                      {airportList?.map((item, index) => (
+                        <li className={cn(selectBoxStyles.selectOptionItem)} key={index} onClick={() => {
+                          setSelAirport(item.iata);
+                          setInputAirportText('');
+                          setInputAirport(false);
+                        }}>
+                          <button className={cn(selectBoxStyles.selectOptionBtn, `text-left`)}>
+                            <span>{item.iata}</span>
+                            <span className='ml-[10px] text-default-500'>{item.name}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <Button
+              className="btn-md btn-default"
+              icon={<Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />}
+              text={selAirport}
+              textSub={airportFullName}
+              onClick={() => {
+                setInputAirport(true);
+                setTimeout(() => {
+                  document.getElementById('input-airport')?.focus();
+                }, 50);
+              }}
+            />
+          )}
           <Popover>
             <PopoverTrigger asChild>
               <div>
@@ -364,7 +442,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             </div>
           </div>
 
-          <div className="mt-[10px] flex items-center justify-center rounded-md bg-white">
+          <div className="z-10 mt-[10px] flex items-center justify-center rounded-md bg-white">
             <BarChart
               chartData={chartDataCurrent
                 .sort((a, b) => b.order - a.order)
