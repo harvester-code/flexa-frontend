@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useResize } from '@/hooks/useResize';
+import { deepCompare } from '@/lib/utils';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -39,7 +40,7 @@ interface TabFlightScheduleProps {
   visible: boolean;
 }
 
-const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
+const parseConditions = (conditionData: ConditionParams[]): ConditionData => {
   const logicItems: DropdownItem[] = [{ id: 'AND', text: 'AND' }];
   const criteriaItems: DropdownItem[] = [];
 
@@ -52,15 +53,18 @@ const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
     criteriaItems.push({ id: idCur, text: criteriaCur.name });
     criteriaCur.operator.map((val) => {
       if (val === '=') operatorItems[idCur] = [{ id: val, text: val, multiSelect: false }];
-      else if (val === 'is in')
-        operatorItems[idCur] = [{ id: val, text: val, multiSelect: true }];
+      else if (val === 'is in') operatorItems[idCur] = [{ id: val, text: val, multiSelect: true }];
     });
 
     valueItems[idCur] = [];
 
     for (const valueCur of criteriaCur.value) {
-      if(typeof valueCur == 'object' && valueCur['iata']) {
-        valueItems[idCur].push({ id: valueCur['iata'], text: valueCur['iata'], fullText: `${valueCur['iata']} : ${valueCur['name']}` });
+      if (typeof valueCur == 'object' && valueCur['iata']) {
+        valueItems[idCur].push({
+          id: valueCur['iata'],
+          text: valueCur['iata'],
+          fullText: `${valueCur['iata']} : ${valueCur['name']}`,
+        });
       } else {
         valueItems[idCur].push({ id: valueCur, text: valueCur });
       }
@@ -73,8 +77,17 @@ const parseConditions = (conditionData: ConditionParams[]) : ConditionData => {
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
   const { overview, setFlightSchedule, flight_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, conditions, setConditions, priorities, setPriorities, setAvailableTabIndex, availableTabIndex } = useSimulationStore();
-  
+  const {
+    tabIndex,
+    setTabIndex,
+    conditions,
+    setConditions,
+    priorities,
+    setPriorities,
+    setAvailableTabIndex,
+    availableTabIndex,
+  } = useSimulationStore();
+
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
   const [selColorCriteria, setSelColorCriteria] = useState(flight_sch?.snapshot?.selColorCriteria || 'Airline');
@@ -94,13 +107,18 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const [loaded, setLoaded] = useState(false);
 
   const saveSnapshot = (params?: Partial<FlightSchedule>, snapshot: any = {}) => {
+    const paramsCur = params?.params;
     const newSnapshot: any = {
       chartData,
       selColorCriteria,
-      addConditionsVisible,
-      selDate,
-      selAirport,
-      selConditions,
+      addConditionsVisible: paramsCur
+        ? paramsCur?.condition?.length > 0
+          ? true
+          : false
+        : addConditionsVisible,
+      selDate: paramsCur?.date || selDate,
+      selAirport: paramsCur?.airport || selAirport,
+      selConditions: paramsCur?.condition?.length > 0 ? paramsCur?.condition : selConditions,
       tabSecondary,
       conditions,
       priorities,
@@ -113,8 +131,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const restoreSnapshot = () => {
     if (flight_sch?.snapshot) {
       const snapshot = flight_sch?.snapshot;
-      if(snapshot.chartData) setChartData(snapshot.chartData);
-      if(snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
+      if (snapshot.chartData) setChartData(snapshot.chartData);
+      if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
     }
   };
 
@@ -124,7 +142,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       setLoaded(true);
     }
   }, [visible, flight_sch?.snapshot]);
-
 
   const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
 
@@ -155,8 +172,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
               if (Array.isArray(conditions[keyCur]))
-                for (const rowCur of conditions[keyCur])
-                  rowCur.tooltip = { title: 'title', text: 'test' };
+                for (const rowCur of conditions[keyCur]) rowCur.tooltip = { title: 'title', text: 'test' };
             }
             setConditions(conditions);
             snapshotData.conditions = conditions;
@@ -165,8 +181,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             const priorities = parseConditions(data?.add_priorities);
             for (const keyCur in priorities) {
               if (Array.isArray(priorities[keyCur]))
-                for (const rowCur of priorities[keyCur])
-                  rowCur.tooltip = { title: 'title', text: 'test' };
+                for (const rowCur of priorities[keyCur]) rowCur.tooltip = { title: 'title', text: 'test' };
             }
             setPriorities(priorities);
             snapshotData.priorities = priorities;
@@ -206,6 +221,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   useEffect(() => {
     if (chartData) loadFlightSchedule(false);
   }, [selConditions, selAirport, selDate]);
+
+  const conditionChanged = !applied || flight_sch?.snapshot.addConditionsVisible != addConditionsVisible;
 
   return !visible ? null : (
     <div ref={refWidth}>
@@ -273,7 +290,11 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               id="add-conditions"
               label=""
               checked={addConditionsVisible}
-              onChange={() => setAddConditionsVisible(!addConditionsVisible)}
+              onChange={() => {
+                const nextState = !addConditionsVisible;
+                setAddConditionsVisible(nextState);
+                loadFlightSchedule(false);
+              }}
               className="checkbox-toggle"
               disabled={!conditions}
             />
@@ -295,9 +316,12 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               onBtnApply={(conditions) => {
                 setSelConditions(conditions);
               }}
-              onChange={() => {
-                setAvailableTabIndex(1);
-                setApplied(false);
+              onChange={(conitions) => {
+                if (deepCompare(flight_sch?.snapshot.selConditions, conitions)) {
+                  if (!applied) setApplied(true);
+                } else {
+                  if (applied) setApplied(false);
+                }
               }}
             />
           ) : null}
@@ -351,7 +375,10 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     name: item.name,
                     type: 'bar',
                     marker: {
-                      color: chartDataCurrent.length - index - 1 < barColorsCurrent.length ? barColorsCurrent[chartDataCurrent.length - index - 1] : undefined,
+                      color:
+                        chartDataCurrent.length - index - 1 < barColorsCurrent.length
+                          ? barColorsCurrent[chartDataCurrent.length - index - 1]
+                          : undefined,
                       opacity: 1,
                       cornerradius: 7,
                       // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
@@ -422,7 +449,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={!applied || !chartData}
+          disabled={conditionChanged || !chartData}
           onClick={() => setTabIndex(tabIndex + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>
