@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getSavedEmail, signInAction } from '@/actions/auth';
 import { SubmitButton } from '@/components/SubmitButton';
@@ -9,51 +10,86 @@ export default async function LoginPage() {
   const savedEmail = await getSavedEmail();
 
   return (
-    <div className="loginContainer">
-      <div className="loginImg"></div>
-      <div className="loginBlock">
+    <div
+      className="relative flex min-h-svh items-center justify-center xl:justify-between"
+      style={{
+        background: 'linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff',
+      }}
+    >
+      <div className="-mt-16 hidden flex-1 xl:block">
+        <div className="mb-16 flex justify-center">
+          <Image src="/image/img-logo.svg" alt="logo" width={120} height={100} />
+        </div>
+
+        <video autoPlay muted playsInline loop className="mx-auto w-full max-w-[90%] rounded-lg shadow">
+          <source src="/videos/flexa-hero-video-long.webm" type="video/webm" />
+          <source src="/videos/flexa-hero-video-long.mp4" type="video/mp4" />
+          Your browser does not support video.
+        </video>
+      </div>
+
+      <div
+        className="rounded-lg px-10 pb-28 pt-14 shadow-md xl:flex xl:min-h-svh xl:w-full xl:max-w-[35rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-white xl:px-20 xl:shadow-none"
+        style={{
+          background: 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(45px)',
+        }}
+      >
         <div>
-          <h2 className="login-title">Log in</h2>
-          <p className="mt-[10px] whitespace-nowrap">Enter your login information to access the solution.</p>
+          <h2
+            className="mb-2 text-[2.5rem] font-bold text-brand"
+            style={{
+              lineHeight: '100%',
+            }}
+          >
+            Log in
+          </h2>
+
+          <p className="mb-10 whitespace-nowrap">Enter your login information to access the solution.</p>
+
           <form>
-            <Label htmlFor="email" className="mt-[60px] flex text-sm">
+            <Label htmlFor="email" className="mb-1 block text-sm">
               Email
             </Label>
             <Input
-              className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md bg-default-50 pl-[10px]"
+              className="mb-4 h-10 whitespace-nowrap rounded-md bg-default-50"
               name="email"
               defaultValue={savedEmail}
               placeholder="Enter your Email"
               required
             />
-            <Label htmlFor="password" className="mt-[20px] flex text-sm">
+
+            <Label htmlFor="password" className="mb-1 block text-sm">
               Password
             </Label>
             <Input
-              className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md bg-default-50 pl-[10px]"
+              className="mb-4 h-10 whitespace-nowrap rounded-md bg-default-50"
               type="password"
               name="password"
               placeholder="Enter your password"
               minLength={6}
               required
             />
-            <div className="mt-[25px] flex justify-between">
-              <div className="flex items-center gap-[2px]">
-                <Checkbox
-                  id="rememberMe"
-                  name="rememberMe"
-                  defaultChecked={!!savedEmail}
-                  className="h-[15px] w-[15px]"
-                />
-                <Label htmlFor="rememberMe" className="pl-[5px] text-sm">
+
+            <div className="flex justify-between text-sm">
+              <div className="flex items-center gap-1">
+                <Checkbox className="size-4" id="rememberMe" name="rememberMe" defaultChecked={!!savedEmail} />
+                <Label htmlFor="rememberMe" className="text-brand">
                   Save Account
                 </Label>
               </div>
-              <Link href="/auth/forgot-password" className="text-sm font-semibold text-brand underline">
+
+              <Link
+                href="/auth/forgot-password"
+                className="font-semibold text-brand underline underline-offset-2"
+              >
                 Forgot Password?
               </Link>
             </div>
-            <SubmitButton formAction={signInAction}>Sign In</SubmitButton>
+
+            <SubmitButton className="mt-10" formAction={signInAction}>
+              Sign In
+            </SubmitButton>
           </form>
 
           {/* <div className="mt-[30px] flex justify-center">
@@ -65,7 +101,10 @@ export default async function LoginPage() {
             </p>
           </div> */}
         </div>
-        <p className="copyright mt-auto">© Flexa all rights reserved</p>
+
+        <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-secondary">
+          © Flexa all rights reserved
+        </p>
       </div>
     </div>
   );
