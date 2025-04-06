@@ -5,12 +5,15 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ChartData, ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
+import { popModal, pushModal } from '@/app/provider';
 import { getSimulationOverview, runSimulation } from '@/services/simulations';
 import { BarColors, SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
+import AnalysisPopup from '@/components/popups/Analysis';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +21,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
-import { popModal, pushModal } from '@/app/provider';
-import AnalysisPopup from '@/components/popups/Analysis';
-import dayjs from 'dayjs';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -32,10 +32,10 @@ interface TabSimulationProps {
 }
 
 const GROUP_CRITERIAS = [
-  { id: 'throughput', text: 'Throughput(pax)' }, 
-  { id: 'max_delay', text: 'Max_delay(min)' }, 
+  { id: 'throughput', text: 'Throughput(pax)' },
+  { id: 'max_delay', text: 'Max_delay(min)' },
   { id: 'average_delay', text: 'Average_delay(min)' },
-  { id: 'total_delay', text: 'Total_delay(min)' }
+  { id: 'total_delay', text: 'Total_delay(min)' },
 ];
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
@@ -74,19 +74,20 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [passenger_attr?.procedures]);
 
   useEffect(() => {
-    if(visible) {
+    if (visible) {
       const params = { ...facility_info?.params, scenario_id: simulationId };
       setLoadingSimulation(true);
-      getSimulationOverview(params).then(({ data }) => {
-        setOverviewData(data);
-        setOverview({ ...overview, matric: data?.matric });
-        setLoadingSimulation(false);
-      }).catch((e) => {
-        console.log(e)
-        setLoadError(true);
-        setLoadingSimulation(false);
-      });  
-  
+      getSimulationOverview(params)
+        .then(({ data }) => {
+          setOverviewData(data);
+          setOverview({ ...overview, matric: data?.matric });
+          setLoadingSimulation(false);
+        })
+        .catch((e) => {
+          console.log(e);
+          setLoadError(true);
+          setLoadingSimulation(false);
+        });
     }
   }, [visible]);
 
@@ -153,7 +154,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   const processCurrent = procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_');
 
-  const kpiDataCurrent =  simulationData?.kpi?.find(
+  const kpiDataCurrent = simulationData?.kpi?.find(
     (item) =>
       item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
@@ -172,22 +173,21 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
-      {
-        overviewData ? (
-          <div className="overview-wrap mt-[10px]">
-            {overviewData?.matric?.map((item, index) => (
-              <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
-                <dl>
-                  <dt className="text-left">{item.name}</dt>
-                  <dd className="text-right whitespace-pre">
-                    {(Array.isArray(item.value) ? item.value.join('\n') : item.value) || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
-                  </dd>
-                </dl>
-              </a>
-            ))}
-          </div>  
-        ) : null
-      }
+      {overviewData ? (
+        <div className="overview-wrap mt-[10px]">
+          {overviewData?.matric?.map((item, index) => (
+            <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
+              <dl>
+                <dt className="text-left">{item.name}</dt>
+                <dd className="whitespace-pre text-right">
+                  {(Array.isArray(item.value) ? item.value.join('\n') : item.value) ||
+                    (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                </dd>
+              </dl>
+            </a>
+          ))}
+        </div>
+      ) : null}
       {loadingSimulation ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
@@ -215,7 +215,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               </dl>
             </div>
           </div>
-          <h2 className="title-sm mt-[44px]">Passenger Flow {simulationData.simulation_completed[0].value} Passengers</h2>
+          <h2 className="title-sm mt-[44px]">
+            Passenger Flow {simulationData.simulation_completed[0].value} Passengers
+          </h2>
           <div className="mt-[40px] flex h-[570px] items-center justify-center rounded-md bg-white">
             <SankeyChart
               chartData={[
@@ -256,9 +258,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               }}
             />
           </div>
-          <div 
-            // className='sticky top-0 z-[100] bg-white pb-[10px]'
-            >
+          <div
+          // className='sticky top-0 z-[100] bg-white pb-[10px]'
+          >
             <h2 className="title-sm mt-[60px]">Passenger by Facility</h2>
             <TabDefault
               tabCount={procedures.length}
@@ -269,359 +271,362 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               }}
               className={`tab-secondary mt-[25px]`}
             />
-            {
-              procedureIndex < procedures.length - 1 ? (
-                <ul className="gate-list grid-cols-5">
-                  {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
-                    <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
-                      <button
-                        onClick={() => {
-                          setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
-                        }}
-                      >
-                        {text}
-                      </button>
+            {procedureIndex < procedures.length - 1 ? (
+              <ul className="gate-list grid-cols-5">
+                {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
+                  <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
+                    <button
+                      onClick={() => {
+                        setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
+                      }}
+                    >
+                      {text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <></>
+            )}
+          </div>
+          {procedureIndex < procedures.length - 1 ? (
+            <div>
+              <div className="indicator mt-[20px]">
+                <h4 className="text-lg font-semibold">KPI Indicators</h4>
+                <ul className="indicator-list grid-cols-3 gap-[20px]">
+                  {kpiDataCurrent?.kpi?.map((item, index) => (
+                    <li key={index}>
+                      <dl>
+                        <dt className="text-left">{item.title}</dt>
+                        <dd className="mt-[10px] text-right">
+                          {item.value}
+                          {item.unit || ''}
+                        </dd>
+                      </dl>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <>
-                </>
-              )
-            }
-          </div>
-          {
-            procedureIndex < procedures.length - 1 ? (
-              <div>
-                <div className="indicator mt-[20px]">
-                  <h4 className="text-lg font-semibold">KPI Indicators</h4>
-                  <ul className="indicator-list grid-cols-3 gap-[20px]">
-                    {
-                      kpiDataCurrent?.kpi?.map((item, index) => (
-                        <li key={index}>
-                          <dl>
-                            <dt className="text-left">{item.title}</dt>
-                            <dd className="text-right mt-[10px]">{item.value}{item.unit || ''}</dd>
-                          </dl>
-                        </li>
-                      ))
-                    }
-                  </ul>
-                </div>
-                <div className="mt-[40px] flex items-center justify-between">
-                  <p className="text-40 text-xl font-semibold">Graphs</p>
-                  <div className="flex flex-col">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div className="flex h-[30px] flex-row items-center pb-[10px]">
-                          <Button
-                            className="btn-lg btn-default text-sm"
-                            icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                            text={`Color by : ${selColorCriteria}`}
-                            onClick={() => {}}
-                          />
-                        </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="cursor-pointer bg-white">
-                        {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data).map((text, index) => (
-                          <div key={index} className="flex flex-col">
-                            <DropdownMenuItem
-                              className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
-                              style={{ width: 143 }}
-                              onClick={() => setSelColorCriteria(text)}
-                            >
-                              <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
-                            </DropdownMenuItem>
-                          </div>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-                <div className="mb-[20px] mt-[30px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Number of arrival passengers by hours</p>
-                </div>
-                <BarChart
-                  chartData={[
-                    ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]
-                      .sort((a, b) => b.order - a.order)
-                      .map((item, index) => {
-                        return {
-                          x: chartDataCurrent?.inbound?.chart_x_data,
-                          y: item.acc_y,
-                          name: item.name,
-                          type: 'bar',
-                          marker: {
-                            color: (String(chartDataCurrent?.inbound?.chart_x_data?.length) in BarColors
-                              ? BarColors[String(chartDataCurrent?.inbound?.chart_x_data?.length)]
-                              : BarColors.DEFAULT)[index],
-                            opacity: 1,
-                            cornerradius: 7,
-                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                          },
-                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                        };
-                      }) as Plotly.Data[]),
-                    {
-                      x: chartDataCurrent?.inbound?.chart_x_data.filter((val) => val.indexOf(lineChartDate) == 0),
-                      y: lineChartDataCurrent?.y,
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: 'Capacity',
-                      marker: {
-                        color: '#FF0000',
-                        opacity: 1,
-                      },
-                      orientation: 'h',
-                    }
-                  ]}
-                  chartLayout={{
-                    width,
-                    height: 390,
-                    margin: {
-                      l: 30,
-                      r: 10,
-                      t: 0,
-                      b: 30,
-                    },
-                    barmode: 'overlay',
-                    legend: {
-                      x: 1,
-                      y: 1.1,
-                      xanchor: 'right',
-                      yanchor: 'top',
-                      orientation: 'h',
-                    },
-                    bargap: 0.4,
-                    // barcornerradius: 7,
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />
-                <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Number of processed passengers</p>
-                </div>
-                <BarChart
-                  chartData={[
-                    ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]
-                      .sort((a, b) => b.order - a.order)
-                      .map((item, index) => {
-                        return {
-                          x: chartDataCurrent?.outbound?.chart_x_data,
-                          y: item.acc_y,
-                          name: item.name,
-                          type: 'bar',
-                          marker: {
-                            color: (String(chartDataCurrent?.outbound?.chart_x_data?.length) in BarColors
-                              ? BarColors[String(chartDataCurrent?.outbound?.chart_x_data?.length)]
-                              : BarColors.DEFAULT)[index],
-                            opacity: 1,
-                            cornerradius: 7,
-                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                          },
-                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                        };
-                      }) as Plotly.Data[]),
-                  ]}
-                  chartLayout={{
-                    width,
-                    height: 390,
-                    margin: {
-                      l: 30,
-                      r: 10,
-                      t: 0,
-                      b: 30,
-                    },
-                    barmode: 'overlay',
-                    legend: {
-                      x: 1,
-                      y: 1.1,
-                      xanchor: 'right',
-                      yanchor: 'top',
-                      orientation: 'h',
-                    },
-                    bargap: 0.4,
-                    // barcornerradius: 7,
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />
-                <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Number of queuing passengers</p>
-                </div>
-                <BarChart
-                  chartData={[
-                    ...(chartDataCurrent?.queing?.chart_y_data[selColorCriteria]
-                      .sort((a, b) => b.order - a.order)
-                      .map((item, index) => {
-                        return {
-                          x: chartDataCurrent?.queing?.chart_x_data,
-                          y: item.acc_y,
-                          name: item.name,
-                          type: 'bar',
-                          marker: {
-                            color: (String(chartDataCurrent?.queing?.chart_x_data?.length) in BarColors
-                              ? BarColors[String(chartDataCurrent?.queing?.chart_x_data?.length)]
-                              : BarColors.DEFAULT)[index],
-                            opacity: 1,
-                            cornerradius: 7,
-                            // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                          },
-                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                        };
-                      }) as Plotly.Data[]),
-                  ]}
-                  chartLayout={{
-                    width,
-                    height: 390,
-                    margin: {
-                      l: 30,
-                      r: 10,
-                      t: 0,
-                      b: 30,
-                    },
-                    barmode: 'overlay',
-                    legend: {
-                      x: 1,
-                      y: 1.1,
-                      xanchor: 'right',
-                      yanchor: 'top',
-                      orientation: 'h',
-                    },
-                    bargap: 0.4,
-                    // barcornerradius: 7,
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />
-                <div className="mb-[20px] mt-[50px] flex justify-between">
-                  <p className="text-sm font-medium text-default-600">Average waiting time</p>
-                </div>
-                <LineChart
-                  chartData={[
-                    {
-                      x: chartDataCurrent?.waiting?.chart_x_data,
-                      y: chartDataCurrent?.waiting?.chart_y_data,
-                      type: 'scatter',
-                      mode: 'lines',
-                      marker: {
-                        color: '#FF0000',
-                        opacity: 1,
-                      },
-                      orientation: 'h',
-                    },                    
-                  ]}
-                  chartLayout={{
-                    width,
-                    height: 390,
-                    margin: {
-                      l: 30,
-                      r: 10,
-                      t: 0,
-                      b: 30,
-                    },
-                    barmode: 'overlay',
-                    legend: {
-                      x: 1,
-                      y: 1.1,
-                      xanchor: 'right',
-                      yanchor: 'top',
-                      orientation: 'h',
-                    },
-                    bargap: 0.4,
-                    // barcornerradius: 7,
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />            
               </div>
-            ) : (
-              <>
-                <div className="mt-[40px] flex items-center justify-between">
-                  <p className="text-40 text-xl font-semibold mb-[10px]">Total</p>
-                  <div className="flex flex-col">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div className="flex h-[30px] flex-row items-center pb-[10px]">
-                          <Button
-                            className="btn-lg btn-default text-sm"
-                            icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                            text="Group Criteria"
-                            onClick={() => {}}
-                          />
+              <div className="mt-[40px] flex items-center justify-between">
+                <p className="text-40 text-xl font-semibold">Graphs</p>
+                <div className="flex flex-col">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className="flex h-[30px] flex-row items-center pb-[10px]">
+                        <Button
+                          className="btn-lg btn-default text-sm"
+                          icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
+                          text={`Color by : ${selColorCriteria}`}
+                          onClick={() => {}}
+                        />
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="cursor-pointer bg-white">
+                      {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data).map((text, index) => (
+                        <div key={index} className="flex flex-col">
+                          <DropdownMenuItem
+                            className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
+                            style={{ width: 143 }}
+                            onClick={() => setSelColorCriteria(text)}
+                          >
+                            <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
+                          </DropdownMenuItem>
                         </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="cursor-pointer bg-white">
-                        {GROUP_CRITERIAS.map((item, index) => (
-                          <div key={index} className="flex flex-col">
-                            <DropdownMenuItem
-                              className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
-                              style={{ width: 200 }}
-                              onClick={() => setSelGroupCriteria(item.id)}
-                            >
-                              <span className="ml-[10px] text-base font-medium text-gray-800">{item.text}</span>
-                            </DropdownMenuItem>
-                          </div>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <BarChart
-                  chartData={[
-                    {
-                      x: simulationData?.total?.defalut_x,
-                      y: simulationData?.total?.[selGroupCriteria],
-                      name: 'Total',
-                      type: 'bar',
-                      marker: {
-                        color: '#9E77ED',
-                        opacity: 1,
-                        // @ts-expect-error ...
-                        cornerradius: 7,
-                        // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                      },
-                    }
-                  ]}
-                  chartLayout={{
-                    width,
-                    height: 390,
-                    margin: {
-                      l: 30,
-                      r: 10,
-                      t: 0,
-                      b: 30,
+              </div>
+              <div className="mb-[20px] mt-[30px] flex justify-between">
+                <p className="text-sm font-medium text-default-600">Number of arrival passengers by hours</p>
+              </div>
+              <BarChart
+                chartData={[
+                  ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]
+                    .sort((a, b) => b.order - a.order)
+                    .map((item, index) => {
+                      return {
+                        x: chartDataCurrent?.inbound?.chart_x_data,
+                        y: item.acc_y,
+                        name: item.name,
+                        type: 'bar',
+                        marker: {
+                          color: (String(chartDataCurrent?.inbound?.chart_x_data?.length) in BarColors
+                            ? BarColors[String(chartDataCurrent?.inbound?.chart_x_data?.length)]
+                            : BarColors.DEFAULT)[index],
+                          opacity: 1,
+                          cornerradius: 7,
+                          // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                        },
+                        hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                      };
+                    }) as Plotly.Data[]),
+                  {
+                    x: chartDataCurrent?.inbound?.chart_x_data.filter((val) => val.indexOf(lineChartDate) == 0),
+                    y: lineChartDataCurrent?.y,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Capacity',
+                    marker: {
+                      color: '#FF0000',
+                      opacity: 1,
                     },
-                    barmode: 'overlay',
-                    legend: {
-                      x: 1,
-                      y: 1.1,
-                      xanchor: 'right',
-                      yanchor: 'top',
-                      orientation: 'h',
+                    orientation: 'h',
+                  },
+                ]}
+                chartLayout={{
+                  width,
+                  height: 390,
+                  margin: {
+                    l: 30,
+                    r: 10,
+                    t: 0,
+                    b: 30,
+                  },
+                  barmode: 'overlay',
+                  legend: {
+                    x: 1,
+                    y: 1.1,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    orientation: 'h',
+                  },
+                  bargap: 0.4,
+                  // barcornerradius: 7,
+                }}
+                config={{
+                  displayModeBar: false,
+                }}
+              />
+              <div className="mb-[20px] mt-[50px] flex justify-between">
+                <p className="text-sm font-medium text-default-600">Number of processed passengers</p>
+              </div>
+              <BarChart
+                chartData={[
+                  ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]
+                    .sort((a, b) => b.order - a.order)
+                    .map((item, index) => {
+                      return {
+                        x: chartDataCurrent?.outbound?.chart_x_data,
+                        y: item.acc_y,
+                        name: item.name,
+                        type: 'bar',
+                        marker: {
+                          color: (String(chartDataCurrent?.outbound?.chart_x_data?.length) in BarColors
+                            ? BarColors[String(chartDataCurrent?.outbound?.chart_x_data?.length)]
+                            : BarColors.DEFAULT)[index],
+                          opacity: 1,
+                          cornerradius: 7,
+                          // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                        },
+                        hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                      };
+                    }) as Plotly.Data[]),
+                ]}
+                chartLayout={{
+                  width,
+                  height: 390,
+                  margin: {
+                    l: 30,
+                    r: 10,
+                    t: 0,
+                    b: 30,
+                  },
+                  barmode: 'overlay',
+                  legend: {
+                    x: 1,
+                    y: 1.1,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    orientation: 'h',
+                  },
+                  bargap: 0.4,
+                  // barcornerradius: 7,
+                }}
+                config={{
+                  displayModeBar: false,
+                }}
+              />
+              <div className="mb-[20px] mt-[50px] flex justify-between">
+                <p className="text-sm font-medium text-default-600">Number of queuing passengers</p>
+              </div>
+              <BarChart
+                chartData={[
+                  ...(chartDataCurrent?.queing?.chart_y_data[selColorCriteria]
+                    .sort((a, b) => b.order - a.order)
+                    .map((item, index) => {
+                      return {
+                        x: chartDataCurrent?.queing?.chart_x_data,
+                        y: item.acc_y,
+                        name: item.name,
+                        type: 'bar',
+                        marker: {
+                          color: (String(chartDataCurrent?.queing?.chart_x_data?.length) in BarColors
+                            ? BarColors[String(chartDataCurrent?.queing?.chart_x_data?.length)]
+                            : BarColors.DEFAULT)[index],
+                          opacity: 1,
+                          cornerradius: 7,
+                          // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                        },
+                        hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                      };
+                    }) as Plotly.Data[]),
+                ]}
+                chartLayout={{
+                  width,
+                  height: 390,
+                  margin: {
+                    l: 30,
+                    r: 10,
+                    t: 0,
+                    b: 30,
+                  },
+                  barmode: 'overlay',
+                  legend: {
+                    x: 1,
+                    y: 1.1,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    orientation: 'h',
+                  },
+                  bargap: 0.4,
+                  // barcornerradius: 7,
+                }}
+                config={{
+                  displayModeBar: false,
+                }}
+              />
+              <div className="mb-[20px] mt-[50px] flex justify-between">
+                <p className="text-sm font-medium text-default-600">Average waiting time</p>
+              </div>
+              <LineChart
+                chartData={[
+                  {
+                    x: chartDataCurrent?.waiting?.chart_x_data,
+                    y: chartDataCurrent?.waiting?.chart_y_data,
+                    type: 'scatter',
+                    mode: 'lines',
+                    marker: {
+                      color: '#FF0000',
+                      opacity: 1,
                     },
-                    bargap: 0.4,
-                    // barcornerradius: 7,
-                  }}
-                  config={{
-                    displayModeBar: false,
-                  }}
-                />              
-              </>
-            )
-          }
+                    orientation: 'h',
+                  },
+                ]}
+                chartLayout={{
+                  width,
+                  height: 390,
+                  margin: {
+                    l: 30,
+                    r: 10,
+                    t: 0,
+                    b: 30,
+                  },
+                  barmode: 'overlay',
+                  legend: {
+                    x: 1,
+                    y: 1.1,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    orientation: 'h',
+                  },
+                  bargap: 0.4,
+                  // barcornerradius: 7,
+                }}
+                config={{
+                  displayModeBar: false,
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="mt-[40px] flex items-center justify-between">
+                <p className="text-40 mb-[10px] text-xl font-semibold">Total</p>
+                <div className="flex flex-col">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className="flex h-[30px] flex-row items-center pb-[10px]">
+                        <Button
+                          className="btn-lg btn-default text-sm"
+                          icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
+                          text="Group Criteria"
+                          onClick={() => {}}
+                        />
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="cursor-pointer bg-white">
+                      {GROUP_CRITERIAS.map((item, index) => (
+                        <div key={index} className="flex flex-col">
+                          <DropdownMenuItem
+                            className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
+                            style={{ width: 200 }}
+                            onClick={() => setSelGroupCriteria(item.id)}
+                          >
+                            <span className="ml-[10px] text-base font-medium text-gray-800">{item.text}</span>
+                          </DropdownMenuItem>
+                        </div>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              <BarChart
+                chartData={[
+                  {
+                    x: simulationData?.total?.defalut_x,
+                    y: simulationData?.total?.[selGroupCriteria],
+                    name: 'Total',
+                    type: 'bar',
+                    marker: {
+                      color: '#9E77ED',
+                      opacity: 1,
+                      // @ts-expect-error ...
+                      cornerradius: 7,
+                      // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
+                    },
+                  },
+                ]}
+                chartLayout={{
+                  width,
+                  height: 390,
+                  margin: {
+                    l: 30,
+                    r: 10,
+                    t: 0,
+                    b: 30,
+                  },
+                  barmode: 'overlay',
+                  legend: {
+                    x: 1,
+                    y: 1.1,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    orientation: 'h',
+                  },
+                  bargap: 0.4,
+                  // barcornerradius: 7,
+                }}
+                config={{
+                  displayModeBar: false,
+                }}
+              />
+            </>
+          )}
           <div className="chart-btn mt-[60px]">
-            <button onClick={() => {
-              const popupId = pushModal({
-                component: <AnalysisPopup open={true} onClose={() => {
-                  popModal(popupId);
-                }} />,
-              })
-            }}>
+            <button
+              onClick={() => {
+                const popupId = pushModal({
+                  component: (
+                    <AnalysisPopup
+                      open={true}
+                      onClose={() => {
+                        popModal(popupId);
+                      }}
+                    />
+                  ),
+                });
+              }}
+            >
               <img src="/image/ico-chart-result-01.svg" alt="" />
               Analyze Results
             </button>
@@ -660,6 +665,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Previous</span>
         </button>
+
         <button
           className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
           onClick={() => onRunSimulation()}

@@ -186,6 +186,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         .then(({ data }) => {
           const flightSchedule: Partial<FlightSchedule> = { params };
           const snapshotData: any = { applied: true };
+
           if (data?.add_conditions) {
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
@@ -195,6 +196,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             setConditions(conditions);
             snapshotData.conditions = conditions;
           }
+
           if (data?.add_priorities) {
             const priorities = parseConditions(data?.add_priorities);
             for (const keyCur in priorities) {
@@ -204,26 +206,32 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             setPriorities(priorities);
             snapshotData.priorities = priorities;
           }
+
           if (data?.chart_x_data && data?.chart_y_data) {
             for (const criteriaCur in data?.chart_y_data) {
               const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
               const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
+
               for (const itemCur of criteriaDataCur) {
                 itemCur.acc_y = Array(itemCur.y.length).fill(0);
+
                 for (let i = 0; i < itemCur.y.length; i++) {
                   acc_y[i] += itemCur.y[i];
                   itemCur.acc_y[i] = Number(acc_y[i]);
                 }
               }
             }
+
             const newChartData = {
               total: data?.total,
               x: data?.chart_x_data,
               data: data?.chart_y_data,
             };
+
             setChartData(newChartData);
             snapshotData.chartData = newChartData;
           }
+
           setApplied(true);
           setLoadingFlightSchedule(false);
           saveSnapshot(flightSchedule, snapshotData);
@@ -240,7 +248,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
     if (chartData) loadFlightSchedule(false);
   }, [selConditions, selAirport, selDate]);
 
-  const conditionChanged = !applied || flight_sch?.snapshot.addConditionsVisible != addConditionsVisible;
+  const conditionChanged = !applied || flight_sch?.snapshot?.addConditionsVisible != addConditionsVisible;
 
   const [inputAirport, setInputAirport] = useState(false);
 
@@ -264,6 +272,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         className={`tab-secondary mt-[25px]`}
         // onTabChange={(tabIndex) => setTabSecondary(tabIndex)}
       />
+
       <div className="mt-[40px] flex items-center justify-between">
         <p className="text-xl font-semibold text-default-800">Load Flight Schedule Data</p>
 
@@ -272,14 +281,14 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             <div className="relative">
               <div className="relative">
                 <input
-                  id='input-airport'
+                  id="input-airport"
                   type="text"
                   placeholder=""
                   value={inputAirportText}
                   className="btn-md btn-default !w-[314px] !pl-[40px]"
                   onChange={(e) => setInputAirportText(e.target.value)}
                   onBlur={() => {
-                    if(inputAirportText.length < 3) {
+                    if (inputAirportText.length < 3) {
                       setInputAirport(false);
                     }
                   }}
@@ -288,23 +297,32 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                   <Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />
                 </div>
               </div>
+
               {airportList.length > 0 ? (
                 <div
-                  className={cn(selectBoxStyles.selectBox, airportList.length > 0 && selectBoxStyles['active'], `!rounded-none !border-none !py-0 !h-0 top-[-40px]`)}
+                  className={cn(
+                    selectBoxStyles.selectBox,
+                    airportList.length > 0 && selectBoxStyles['active'],
+                    `top-[-40px] !h-0 !rounded-none !border-none !py-0`
+                  )}
                 >
                   <div className={cn(selectBoxStyles.selectItem, `max-h-[400px]`)}>
                     <ul className={cn(selectBoxStyles.selectOptionCont)}>
                       {airportList?.map((item, index) => (
-                        <li className={cn(selectBoxStyles.selectOptionItem)} key={index} onClick={() => {
-                          setAddConditionsVisible(false);
-                          setSelConditions(undefined);       
-                          setSelAirport(item.iata);
-                          setInputAirportText('');
-                          setInputAirport(false);
-                        }}>
+                        <li
+                          className={cn(selectBoxStyles.selectOptionItem)}
+                          key={index}
+                          onClick={() => {
+                            setAddConditionsVisible(false);
+                            setSelConditions(undefined);
+                            setSelAirport(item.iata);
+                            setInputAirportText('');
+                            setInputAirport(false);
+                          }}
+                        >
                           <button className={cn(selectBoxStyles.selectOptionBtn, `text-left`)}>
                             <span>{item.iata}</span>
-                            <span className='ml-[10px] text-default-500'>{item.name}</span>
+                            <span className="ml-[10px] text-default-500">{item.name}</span>
                           </button>
                         </li>
                       ))}
@@ -352,12 +370,14 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               />
             </PopoverContent>
           </Popover>
+
           {/* <Button
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-find.svg" alt="" />}
             text="Find Peak Day"
             onClick={() => {}}
           /> */}
+
           <Button
             className="btn-md btn-primary"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
@@ -366,6 +386,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           />
         </div>
       </div>
+
       {chartData ? (
         <>
           <p className="mt-[20px] text-xl font-semibold">Flight Schedule Data Filtering</p>
@@ -411,6 +432,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           ) : null}
         </>
       ) : null}
+
       {loadingFlightSchedule ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />

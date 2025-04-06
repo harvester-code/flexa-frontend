@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import {
   FacilityConnectionResponse,
   FacilityInfoLineChartResponse,
@@ -13,7 +14,6 @@ import {
 } from '@/types/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
-import dayjs from 'dayjs';
 
 const BASE_URL = 'api/v1/simulations';
 
@@ -65,7 +65,9 @@ const getScenarioMetadata = (scenario_id: string) => {
 const updateScenarioMetadata = (addHistory: boolean = true) => {
   const store = useSimulationStore.getState();
   const states = useSimulationMetadata.getState();
-  const checkpoint = dayjs().add((store.checkpoint?.diff || 0) * -1, 'millisecond').format('YYYY-MM-DD HH:mm:ss Z');
+  const checkpoint = dayjs()
+    .add((store.checkpoint?.diff || 0) * -1, 'millisecond')
+    .format('YYYY-MM-DD HH:mm:ss Z');
 
   const historyItem: ScenarioHistory = {
     checkpoint,
@@ -85,7 +87,7 @@ const updateScenarioMetadata = (addHistory: boolean = true) => {
     facility_info: states.facility_info || {},
     history,
   };
-  if(addHistory) states.addHistoryItem(historyItem);
+  if (addHistory) states.addHistoryItem(historyItem);
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${states.scenario_id}`, params);
 };
 
@@ -102,10 +104,7 @@ interface FlightSchedulesParams {
   }>;
 }
 
-const getFlightSchedules = (
-  scenario_id: string,
-  params: FlightSchedulesParams,
-) => {
+const getFlightSchedules = (scenario_id: string, params: FlightSchedulesParams) => {
   return instanceWithAuth.post<FlightSchedulesResponse>(
     `${BASE_URL}/flight-schedules/scenario-id/${scenario_id}`,
     params
@@ -123,7 +122,7 @@ interface PassengerSchedulesParams {
     }>;
     mean: number;
     standard_deviation: number;
-  }>
+  }>;
 }
 
 const getPassengerSchedules = (params: PassengerSchedulesParams) => {
@@ -160,17 +159,14 @@ interface FacilityConnsParams extends PassengerSchedulesParams {
         };
       }>;
     };
-  }
+  };
 }
 
 const getFacilityConns = (params: FacilityConnsParams) => {
   return instanceWithAuth.post<FacilityConnectionResponse>(`${BASE_URL}/facility-conns`, params);
 };
 
-const getFacilityInfoLineChartData = (params: {
-  time_unit?: number;
-  facility_schedules?: number [][];
-}) => {
+const getFacilityInfoLineChartData = (params: { time_unit?: number; facility_schedules?: number[][] }) => {
   return instanceWithAuth.post<FacilityInfoLineChartResponse>(`${BASE_URL}/facility-info/charts/line`, params);
 };
 
@@ -191,7 +187,6 @@ interface SimulationParams extends FacilityConnsParams {
 const getSimulationOverview = (params: SimulationParams) => {
   return instanceWithAuth.post<SimulationOverviewResponse>(`${BASE_URL}/run-simulation/overview`, params);
 };
-
 
 const runSimulation = (params: SimulationParams) => {
   return instanceWithAuth.post<SimulationResponse>(`${BASE_URL}/run-simulation/temp`, params);
