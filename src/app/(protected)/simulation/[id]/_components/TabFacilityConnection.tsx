@@ -475,7 +475,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
           const mergedConditions = [
             ...conditionStates.sourceConditions!,
             ...conditionStates.ifConditions!,
-            ...conditionStates.destConditions!,
+            // ...conditionStates.destConditions!,
           ];
           for (const conditionCur of mergedConditions) {
             paramsCur.condition.push({
