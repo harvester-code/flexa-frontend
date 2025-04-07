@@ -1,6 +1,5 @@
 'use client';
 
-// import Tooltip from '@mui/material/Tooltip';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-solid-svg-icons';
@@ -14,7 +13,6 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import Tooltip from '@/components/Tooltip';
-import { replaceAll } from '@/lib/utils';
 
 interface TabProcessingProceduresProps {
   visible: boolean;
@@ -38,11 +36,14 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
   const loadData = () => {
     setLoadingProcessingProcedures(true);
+
     getProcessingProcedures()
       .then(({ data }) => {
         if (data?.process) {
           setProcedures(
             data?.process.map((item, index) => {
+              console.log('index', index);
+
               return {
                 ...item,
                 id: String(index),
@@ -55,11 +56,20 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
         } else {
           setLoadError(true);
         }
-        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]);
+
+        if (!dataConnectionCriteria)
+          setDataConnectionCriteria(
+            DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]
+          );
+
         setLoadingProcessingProcedures(false);
       })
       .catch((e) => {
-        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]);
+        if (!dataConnectionCriteria)
+          setDataConnectionCriteria(
+            DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]
+          );
+
         setLoadError(true);
         setLoadingProcessingProcedures(false);
       });
@@ -69,11 +79,12 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
     if (visible && !loaded) {
       if (passenger_attr?.data_connection_criteria && passenger_attr?.procedures) {
         setDataConnectionCriteria(passenger_attr?.data_connection_criteria);
+
         if (passenger_attr?.procedures && passenger_attr?.procedures?.length > 0) {
           const newProcedures = passenger_attr?.procedures?.map((item, index) => {
             return {
               ...item,
-              id: item.id,
+              id: String(index), // id: item.id,
               nameText: item.name,
               nodesText: item.nodes.join(','),
               editable: false,
@@ -149,17 +160,17 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
           </div>
           <p className="flex gap-[10px]">
             {/* <Button
-            className="btn-md btn-default"
-            icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
-            text="Edit Procedures"
-            onClick={() => {}}
-          /> */}
-            {/* <Button
-            className="btn-md btn-primary"
-            icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
-            text="Confirm"
-            onClick={() => {}}
-          /> */}
+              className="btn-md btn-default"
+              icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
+              text="Edit Procedures"
+              onClick={() => {}}
+            />
+            <Button
+              className="btn-md btn-primary"
+              icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
+              text="Confirm"
+              onClick={() => {}}
+            /> */}
           </p>
         </div>
         {loadingProcessingProcedures ? (
@@ -194,80 +205,99 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
               >
                 {(provided) => (
                   <ul ref={provided.innerRef} {...provided.droppableProps}>
-                    {procedures.map((item, index) => (
-                      <Draggable key={`${item.id}_${index}`} draggableId={item.id} index={index}>
-                        {(provided) => (
-                          <li
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{ ...provided.draggableProps.style, marginTop: index > 0 ? 10 : 0 }}
-                          >
-                            <div key={item.id} className="processing-item bg-red-500 overflow-hidden">
-                              <button className="item-move">
-                                <FontAwesomeIcon size="sm" icon={faEquals} />
-                              </button>
-                              <p className="item-name">
-                                <Input
-                                  className={`${item.editable ? '' : 'hidden'} text-2xl`}
-                                  type="text"
-                                  value={item.nameText || ''}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                    setProcedures(
-                                      procedures.map((item, idx) =>
-                                        index == idx ? { ...item, nameText: e.target.value } : item
-                                      )
-                                    )
-                                  }
-                                />
-                                {item.editable ? null : (
-                                  <span className="break-all leading-[1.1]">{item.nameText}</span>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    setProcedures(
-                                      procedures.map((item, idx) =>
-                                        index == idx ? { ...item, editable: !item.editable } : item
-                                      )
-                                    );
-                                  }}
-                                >
-                                  {item.editable ? (
-                                    <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
-                                  ) : (
-                                    <Image width={30} height={30} src="/image/ico-write.svg" alt="modify" />
-                                  )}
+                    {procedures.map((item, index) => {
+                      return (
+                        <Draggable key={`${item.id}_${index}`} index={index} draggableId={item.id}>
+                          {(provided) => (
+                            <li
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              style={{ ...provided.draggableProps.style, marginTop: index > 0 ? 10 : 0 }}
+                            >
+                              <div key={item.id} className="processing-item bg-red-500 overflow-hidden">
+                                <button className="item-move">
+                                  <FontAwesomeIcon size="sm" icon={faEquals} />
                                 </button>
-                              </p>
-                              <dl className="ml-[40px] mr-[300px] flex-grow">
-                                <dt className="tooltip-line">
-                                  Enter the {item.name} desks <span className="text-accent-600">*</span>
-                                  <button>
-                                    <Tooltip text={'test'} />
-                                  </button>
-                                </dt>
-                                <dd>
+
+                                <p className="item-name">
                                   <Input
+                                    className={`${item.editable ? '' : 'hidden'} text-2xl`}
                                     type="text"
-                                    value={item.nodesText || ''}
+                                    value={item.nameText || ''}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                      setProcedures(
-                                        procedures.map((item, idx) =>
-                                          index == idx ? { ...item, nodesText: e.target.value } : item
+                                      setProcedures((prevItem) =>
+                                        prevItem.map((item, i) =>
+                                          i === index
+                                            ? {
+                                                ...item,
+                                                name: e.target.value,
+                                                nameText: e.target.value,
+                                              }
+                                            : item
                                         )
                                       )
                                     }
                                   />
-                                </dd>
-                              </dl>
-                              <button onClick={() => onBtnDelete(index)}>
-                                <Image width={30} height={30} src="/image/ico-delete-line.svg" alt="" />
-                              </button>
-                            </div>
-                          </li>
-                        )}
-                      </Draggable>
-                    ))}
+
+                                  {item.editable ? null : (
+                                    <span className="break-all leading-[1.1]">{item.nameText}</span>
+                                  )}
+
+                                  <button
+                                    onClick={() =>
+                                      setProcedures((prevItem) =>
+                                        prevItem.map((item, i) =>
+                                          i === index
+                                            ? {
+                                                ...item,
+                                                editable: !item.editable,
+                                              }
+                                            : item
+                                        )
+                                      )
+                                    }
+                                  >
+                                    {item.editable ? (
+                                      <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
+                                    ) : (
+                                      <Image width={30} height={30} src="/image/ico-write.svg" alt="modify" />
+                                    )}
+                                  </button>
+                                </p>
+
+                                <dl className="ml-[40px] mr-[300px] flex-grow">
+                                  <dt className="tooltip-line">
+                                    Enter the {item.name} desks <span className="text-accent-600">*</span>
+                                    <button>
+                                      <Tooltip text={'test'} />
+                                    </button>
+                                  </dt>
+
+                                  <dd>
+                                    <Input
+                                      type="text"
+                                      value={item.nodesText || ''}
+                                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        setProcedures(
+                                          procedures.map((item, idx) =>
+                                            index == idx ? { ...item, nodesText: e.target.value } : item
+                                          )
+                                        )
+                                      }
+                                    />
+                                  </dd>
+                                </dl>
+
+                                <button onClick={() => onBtnDelete(index)}>
+                                  <Image width={30} height={30} src="/image/ico-delete-line.svg" alt="" />
+                                </button>
+                              </div>
+                            </li>
+                          )}
+                        </Draggable>
+                      );
+                    })}
                     {provided.placeholder}
                   </ul>
                 )}
