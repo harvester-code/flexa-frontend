@@ -401,7 +401,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               onChange={() => {
                 const nextState = !addConditionsVisible;
                 setAddConditionsVisible(nextState);
-                loadFlightSchedule(false);
+                if(!nextState) loadFlightSchedule(false);
               }}
               className="checkbox-toggle"
               disabled={!conditions}
