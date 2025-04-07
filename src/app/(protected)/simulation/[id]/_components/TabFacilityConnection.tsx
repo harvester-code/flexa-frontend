@@ -272,7 +272,20 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
       if (snapshot.tableType) setTableType(snapshot.tableType);
       if (snapshot.tableData) setTableData(snapshot.tableData);
       if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
-      if (snapshot.ifConditions) setIfConfitions(snapshot.ifConditions);
+      if (snapshot.ifConditions) {
+        const ifConditionsCur = { ...snapshot.ifConditions };
+        if(ifConditionsCur?.operatorItems.Time) {
+          for(const rowCur of ifConditionsCur?.operatorItems.Time) {
+            rowCur.multiSelect = false;
+          }
+        }
+        // Time 중복 들어간 경우 임시 처리. 추후에 삭제해도 됨. 시작
+        if(ifConditionsCur?.criteriaItems?.length >= 6 && ifConditionsCur?.criteriaItems[5].id == 'Time') {
+          ifConditionsCur?.criteriaItems.splice(5, 1);
+        }
+        // Time 중복 들어간 경우 임시 처리. 추후에 삭제해도 됨. 끝
+        setIfConfitions({ ...ifConditionsCur, });
+      }
       if (snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
       setConditionsTime(Date.now());
     }
@@ -291,20 +304,19 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   useEffect(() => {
     if (passenger_attr?.procedures && passenger_attr?.data_connection_criteria && priorities) {
       const ifConditions = { ...priorities };
-      console.log(ifConditions)
       if (!ifConditions.criteriaItems.find((val) => val.id == 'Time')) {
         ifConditions.criteriaItems.push({ id: 'Time', text: 'Time' });
-        ifConditions.operatorItems['Time'] = [
-          { id: 'start', text: 'start', multiSelect: true },
-          { id: 'end', text: 'end', multiSelect: true },
-        ];
-        ifConditions.valueItems['Time'] = Array(24)
-          .fill(0)
-          .map((_, index) => {
-            const id = `${String(index).padStart(2, '0')}:00`;
-            return { id, text: id };
-          }) as OperatorItem[];
       }
+      ifConditions.operatorItems['Time'] = [
+        { id: 'start', text: 'start', multiSelect: false },
+        { id: 'end', text: 'end', multiSelect: false },
+      ];
+      ifConditions.valueItems['Time'] = Array(24)
+        .fill(0)
+        .map((_, index) => {
+          const id = `${String(index).padStart(2, '0')}:00`;
+          return { id, text: id };
+        }) as OperatorItem[];
       setIfConfitions(ifConditions);
       setTableData(
         passenger_attr?.procedures?.map((procedure, index) => {
