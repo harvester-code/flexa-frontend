@@ -296,6 +296,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     <ul className={cn(selectBoxStyles.selectOptionCont)}>
                       {airportList?.map((item, index) => (
                         <li className={cn(selectBoxStyles.selectOptionItem)} key={index} onClick={() => {
+                          setAddConditionsVisible(false);
+                          setSelConditions(undefined);       
                           setSelAirport(item.iata);
                           setInputAirportText('');
                           setInputAirport(false);
@@ -341,7 +343,11 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                 mode="single"
                 selected={selDate}
                 onSelect={(date) => {
-                  if (date) setSelDate(date);
+                  if (date) {
+                    setAddConditionsVisible(false);
+                    setSelConditions(undefined);
+                    setSelDate(date);
+                  }
                 }}
               />
             </PopoverContent>

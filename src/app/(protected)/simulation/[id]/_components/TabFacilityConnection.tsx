@@ -84,7 +84,7 @@ function Conditions({
   const lastStates = useRef(Array(1).fill(defaultValues)).current;
   const setStates = (states: FacilitiesConnectionState) => {
     const valueLength = states.destConditions?.[0]?.value.length;
-    const tableData = states?.tableData || {
+    const tableData = states?.tableData?.header && states?.tableData?.header?.length > 0 && states?.tableData?.data?.length > 0 ? states?.tableData : {
       title: sourceName,
       header:
         states.destConditions?.[0]?.value.map((val, index) => {
@@ -113,6 +113,7 @@ function Conditions({
     if (onChange) onChange(newStates);
   };
   const tableData = states?.tableData;
+  console.log(tableData)
   return (
     <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <ConditionsBase
