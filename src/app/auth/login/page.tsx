@@ -17,12 +17,8 @@ export default async function LoginPage() {
         background: 'linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff',
       }}
     >
-      <div className="-mt-16 hidden flex-1 xl:block">
-        <div className="mb-16 flex justify-center">
-          <Image src="/image/img-logo.svg" alt="logo" width={120} height={100} />
-        </div>
-
-        <video autoPlay muted playsInline loop className="mx-auto w-full max-w-[90%] rounded-lg shadow">
+      <div className="hidden xl:block">
+        <video autoPlay muted playsInline loop className="min-h-svh w-full object-cover">
           <source
             src="https://flexa-dev-ap-northeast-2-data-storage.s3.ap-northeast-2.amazonaws.com/videos/flexa-hero-video-long.webm"
             type="video/webm"
@@ -36,7 +32,7 @@ export default async function LoginPage() {
       </div>
 
       <div
-        className="rounded-lg px-10 pb-28 pt-14 shadow-md xl:flex xl:min-h-svh xl:w-full xl:max-w-[35rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-white xl:px-20 xl:shadow-none"
+        className="rounded-lg px-10 pb-28 pt-14 shadow-md xl:flex xl:min-h-svh xl:w-full xl:max-w-[30rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-white xl:px-10 xl:shadow-none"
         style={{
           background: 'rgba(255, 255, 255, 0.4)',
           backdropFilter: 'blur(45px)',
