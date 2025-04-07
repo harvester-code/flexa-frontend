@@ -186,7 +186,9 @@ export function Dropdown({
                   ) : (
                     <div className="h-[8px] w-[8px]" />
                   )}
-                  <span className="ml-[10px] text-base font-medium text-gray-800">{itemCurrent.fullText || itemCurrent.text}</span>
+                  <span className="ml-[10px] text-base font-medium text-gray-800">
+                    {itemCurrent.fullText || itemCurrent.text}
+                  </span>
                 </DropdownMenuItem>
               </div>
             );

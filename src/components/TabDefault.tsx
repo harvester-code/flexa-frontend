@@ -13,7 +13,14 @@ interface TabDefaultProps {
   onTabChange?: (tabIndex: number) => void;
 }
 
-export default function TabDefault({ currentTab, availableTabs, className, tabs, tabCount, onTabChange }: TabDefaultProps) {
+export default function TabDefault({
+  currentTab,
+  availableTabs,
+  className,
+  tabs,
+  tabCount,
+  onTabChange,
+}: TabDefaultProps) {
   return (
     <div className={`tab-default ${className}`}>
       {tabs.slice(0, tabCount).map((tab, index) => (
@@ -21,7 +28,7 @@ export default function TabDefault({ currentTab, availableTabs, className, tabs,
           key={index}
           className={`${currentTab === index ? 'active' : ''} ${availableTabs != null && index > availableTabs ? 'opacity-50' : ''}`}
           onClick={() => {
-            if(availableTabs && index > availableTabs) return;
+            if (availableTabs && index > availableTabs) return;
             if (onTabChange) onTabChange(index);
           }}
         >

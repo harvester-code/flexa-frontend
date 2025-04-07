@@ -3,9 +3,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { faAngleDown, faAngleLeft, faAngleRight, faAngleUp, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData } from '@/types/conditions';
 import { ChartData, PassengerPatternState, PassengerSchedule } from '@/types/simulations';
@@ -14,6 +13,7 @@ import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
+import Tooltip from '@/components/Tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
-import Tooltip from '@/components/Tooltip';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -113,29 +112,29 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
             normally distributed with mean
             <input
               id={`priority-mean-${id}`}
-              className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
               type="number"
               defaultValue={states?.mean}
               onBlur={(e) => {
                 const val = Math.max(Math.min(Number(e.target.value), 999), 20);
                 setStates({ ...states, mean: String(val) });
                 const element = document.getElementById(`priority-mean-${id}`) as HTMLInputElement;
-                if(element) element.value = String(val);
+                if (element) element.value = String(val);
               }}
-            />  
+            />
             variance
             <input
               id={`priority-variance-${id}`}
-              className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
               type="number"
               defaultValue={states?.variance}
               onBlur={(e) => {
                 const val = Math.max(Math.min(Number(e.target.value), 500), 1);
                 setStates({ ...states, variance: String(val) });
                 const element = document.getElementById(`priority-variance-${id}`) as HTMLInputElement;
-                if(element) element.value = String(val);
+                if (element) element.value = String(val);
               }}
-            />  
+            />
             minutes
           </div>
           <p className="text-xl">before the flight departure.</p>
@@ -186,11 +185,11 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const restoreSnapshot = () => {
     if (passenger_sch?.snapshot) {
       const snapshot = passenger_sch?.snapshot;
-      if(snapshot.chartData) setChartData(snapshot.chartData);
-      if(snapshot.selColorCriteria) setSelColorCriteria(snapshot.selColorCriteria);
-      if(snapshot.addPrioritiesVisible) setAddPrioritiesVisible(snapshot.addPrioritiesVisible);
-      if(snapshot.selPriorities) setSelPriorities(snapshot.selPriorities);
-      if(snapshot.otherPassengerState) setOtherPassengerState(snapshot.otherPassengerState);
+      if (snapshot.chartData) setChartData(snapshot.chartData);
+      if (snapshot.selColorCriteria) setSelColorCriteria(snapshot.selColorCriteria);
+      if (snapshot.addPrioritiesVisible) setAddPrioritiesVisible(snapshot.addPrioritiesVisible);
+      if (snapshot.selPriorities) setSelPriorities(snapshot.selPriorities);
+      if (snapshot.otherPassengerState) setOtherPassengerState(snapshot.otherPassengerState);
       setTimestamp(Date.now());
     }
   };
@@ -201,7 +200,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       setLoaded(true);
     }
   }, [visible]);
-
 
   const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
 
@@ -395,7 +393,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                 <dl>
                   <dt>
                     Logic <span className="text-accent-600">*</span>
-                    <Tooltip title={'test'} text={'test'}/>
+                    <Tooltip title={'test'} text={'test'} />
                   </dt>
                   <dd className="pl-[10px]">
                     <Dropdown items={[{ id: 'ELSE', text: 'ELSE' }]} defaultId={'ELSE'} />
@@ -411,28 +409,28 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
             <div className="flex items-center gap-[10px] text-xl">
               normally distributed with mean
               <input
-                id='other-passenger-mean'
-                className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+                id="other-passenger-mean"
+                className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
                 type="number"
                 defaultValue={otherPassengerState.mean}
                 onBlur={(e) => {
                   const val = Math.max(Math.min(Number(e.target.value), 999), 20);
                   setOtherPassengerState({ ...otherPassengerState, mean: String(val) });
                   const element = document.getElementById('other-passenger-mean') as HTMLInputElement;
-                  if(element) element.value = String(val);
+                  if (element) element.value = String(val);
                 }}
               />
               variance
               <input
-                id='other-passenger-variance'
-                className='w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px] text-md'
+                id="other-passenger-variance"
+                className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
                 type="number"
                 defaultValue={otherPassengerState.variance}
                 onBlur={(e) => {
                   const val = Math.max(Math.min(Number(e.target.value), 500), 1);
                   setOtherPassengerState({ ...otherPassengerState, variance: String(val) });
                   const element = document.getElementById('other-passenger-variance') as HTMLInputElement;
-                  if(element) element.value = String(val);
+                  if (element) element.value = String(val);
                 }}
               />
               minutes
