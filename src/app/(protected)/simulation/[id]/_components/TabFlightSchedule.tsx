@@ -182,9 +182,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         condition: addConditionsVisible ? selConditions || [] : [],
       };
 
-      // FIXME: [25.04.07] Load 버튼을 누를 때만 변화시킬 수 있는가요?
-      // 현재는 Add conditions를 클릭할 때마다 데이터가 불러와집니다.
-      // 추가적으로 한 번 Condition에서 조건값을 선택하면 이후에 수정이 불가합니다.
       getFlightSchedules(simulationId, params)
         .then(({ data }) => {
           const flightSchedule: Partial<FlightSchedule> = { params };

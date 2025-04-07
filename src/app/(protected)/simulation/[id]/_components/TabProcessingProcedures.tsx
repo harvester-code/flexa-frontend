@@ -55,11 +55,11 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
         } else {
           setLoadError(true);
         }
-        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias[0]);
+        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]);
         setLoadingProcessingProcedures(false);
       })
       .catch((e) => {
-        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias[0]);
+        if (!dataConnectionCriteria) setDataConnectionCriteria(DataConnectionCriterias.find((val) => val == 'Airline') ? 'Airline' : DataConnectionCriterias[0]);
         setLoadError(true);
         setLoadingProcessingProcedures(false);
       });
