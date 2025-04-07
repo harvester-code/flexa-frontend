@@ -17,7 +17,12 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData, OperatorItem } from '@/types/conditions';
-import { FacilitiesConnectionState, FacilityConnection, FacilityConnectionResponse, ProcedureInfo } from '@/types/simulations';
+import {
+  FacilitiesConnectionState,
+  FacilityConnection,
+  FacilityConnectionResponse,
+  ProcedureInfo,
+} from '@/types/simulations';
 import { getFacilityConns } from '@/services/simulations';
 import { SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
@@ -31,8 +36,6 @@ import TheContentHeader from '@/components/TheContentHeader';
 import Tooltip from '@/components/Tooltip';
 import { useResize } from '@/hooks/useResize';
 import GridTable, { GridTableHeader, GridTableRow, checkNotEmptyRows } from './GridTable';
-
-const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
 const TableTypes = ['Check-box', 'Probability (%)']; // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
 
@@ -84,23 +87,27 @@ function Conditions({
   const lastStates = useRef(Array(1).fill(defaultValues)).current;
   const setStates = (states: FacilitiesConnectionState) => {
     const valueLength = states.destConditions?.[0]?.value.length;
-    const tableData = states?.tableData?.header && states?.tableData?.header?.length > 0 && states?.tableData?.data?.length > 0 ? states?.tableData : {
-      title: sourceName,
-      header:
-        states.destConditions?.[0]?.value.map((val, index) => {
-          return {
-            name: val,
+    const tableData =
+      states?.tableData?.header?.length == states.destConditions?.[0]?.value?.length &&
+      states?.tableData?.data?.length == states.sourceConditions?.[0]?.value?.length
+        ? states?.tableData
+        : {
+            title: sourceName,
+            header:
+              states.destConditions?.[0]?.value.map((val, index) => {
+                return {
+                  name: val,
+                };
+              }) || [],
+            data:
+              states.sourceConditions?.[0]?.value.map((val, index) => {
+                return {
+                  name: val,
+                  values: Array(valueLength).fill(0),
+                };
+              }) || [],
+            hidden: false,
           };
-        }) || [],
-      data:
-        states.sourceConditions?.[0]?.value.map((val, index) => {
-          return {
-            name: val,
-            values: Array(valueLength).fill(0),
-          };
-        }) || [],
-      hidden: false,
-    };
     const newStates = { ...states, tableData };
     _setStates(newStates);
     lastStates[0] = { ...newStates };
@@ -113,7 +120,6 @@ function Conditions({
     if (onChange) onChange(newStates);
   };
   const tableData = states?.tableData;
-  console.log(tableData)
   return (
     <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <ConditionsBase
@@ -260,14 +266,14 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   const restoreSnapshot = () => {
     if (facility_conn?.snapshot) {
       const snapshot = facility_conn?.snapshot;
-      if(snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
-      if(snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
-      if(snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
-      if(snapshot.tableType) setTableType(snapshot.tableType);
-      if(snapshot.tableData) setTableData(snapshot.tableData);
-      if(snapshot.selConditions) setSelConditions(snapshot.selConditions);
-      if(snapshot.ifConditions) setIfConfitions(snapshot.ifConditions);
-      if(snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
+      if (snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
+      if (snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
+      if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
+      if (snapshot.tableType) setTableType(snapshot.tableType);
+      if (snapshot.tableData) setTableData(snapshot.tableData);
+      if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
+      if (snapshot.ifConditions) setIfConfitions(snapshot.ifConditions);
+      if (snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
       setConditionsTime(Date.now());
     }
   };
@@ -285,17 +291,20 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   useEffect(() => {
     if (passenger_attr?.procedures && passenger_attr?.data_connection_criteria && priorities) {
       const ifConditions = { ...priorities };
-      ifConditions.criteriaItems.push({ id: 'Time', text: 'Time' });
-      ifConditions.operatorItems['Time'] = [
-        { id: 'start', text: 'start', multiSelect: true },
-        { id: 'end', text: 'end', multiSelect: true },
-      ];
-      ifConditions.valueItems['Time'] = Array(24)
-        .fill(0)
-        .map((_, index) => {
-          const id = `${String(index).padStart(2, '0')}:00`;
-          return { id, text: id };
-        }) as OperatorItem[];
+      console.log(ifConditions)
+      if (!ifConditions.criteriaItems.find((val) => val.id == 'Time')) {
+        ifConditions.criteriaItems.push({ id: 'Time', text: 'Time' });
+        ifConditions.operatorItems['Time'] = [
+          { id: 'start', text: 'start', multiSelect: true },
+          { id: 'end', text: 'end', multiSelect: true },
+        ];
+        ifConditions.valueItems['Time'] = Array(24)
+          .fill(0)
+          .map((_, index) => {
+            const id = `${String(index).padStart(2, '0')}:00`;
+            return { id, text: id };
+          }) as OperatorItem[];
+      }
       setIfConfitions(ifConditions);
       setTableData(
         passenger_attr?.procedures?.map((procedure, index) => {
@@ -390,12 +399,15 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
     if (procedureIndex < procedures.length - 1) {
       setAvailableProcedureIndex(availableProcedureIndex + 1);
       setProcedureIndex(procedureIndex + 1);
-      saveSnapshot({}, { availableProcedureIndex: availableProcedureIndex + 1, procedureIndex: procedureIndex + 1 });
+      saveSnapshot(
+        {},
+        { availableProcedureIndex: availableProcedureIndex + 1, procedureIndex: procedureIndex + 1 }
+      );
     }
   };
 
   const onBtnPassengerFlowCheck = () => {
-    if(!checkTablesValidAll()) return;
+    if (!checkTablesValidAll()) return;
     const params = { ...passenger_sch?.params };
     const processes = {
       '0': {
@@ -519,6 +531,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
         onTabChange={(index) => {
           if (index > availableProcedureIndex) return;
           setProcedureIndex(index);
+          setLoadError(false);
         }}
         className={`tab-secondary mt-[25px]`}
       />
