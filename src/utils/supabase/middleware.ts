@@ -32,9 +32,7 @@ export const updateSession = async (request: NextRequest) => {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // HACK: videos를 이렇게 넣는게 맞는지 확인하자.
-    const isPublicRoute =
-      request.nextUrl.pathname.startsWith('/auth') || request.nextUrl.pathname.startsWith('/videos');
+    const isPublicRoute = request.nextUrl.pathname.startsWith('/auth');
 
     if (!isPublicRoute && !user) {
       return NextResponse.redirect(new URL('/auth/login', request.nextUrl));
