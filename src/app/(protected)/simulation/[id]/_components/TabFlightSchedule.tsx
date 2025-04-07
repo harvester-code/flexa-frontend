@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { faAngleDown, faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
+import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
@@ -22,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
@@ -398,7 +397,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               onChange={() => {
                 const nextState = !addConditionsVisible;
                 setAddConditionsVisible(nextState);
-                if(!nextState) loadFlightSchedule(false);
+                if (!nextState) loadFlightSchedule(false);
               }}
               className="checkbox-toggle"
               disabled={!conditions}

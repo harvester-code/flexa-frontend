@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { sources } from 'next/dist/compiled/webpack/webpack';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import {
   faAngleDown,
@@ -10,31 +8,20 @@ import {
   faAngleRight,
   faAngleUp,
   faArrowRight,
-  faCheck,
-  faMinus,
-  faPlus,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ConditionData, OperatorItem } from '@/types/conditions';
-import {
-  FacilitiesConnectionState,
-  FacilityConnection,
-  FacilityConnectionResponse,
-  ProcedureInfo,
-} from '@/types/simulations';
+import { FacilitiesConnectionState, FacilityConnection, ProcedureInfo } from '@/types/simulations';
 import { getFacilityConns } from '@/services/simulations';
-import { SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
-import ConditionsBase, { Dropdown } from '@/components/Conditions';
-import CustomSelectBox from '@/components/CustomSelectBox';
+import ConditionsBase from '@/components/Conditions';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
-import TheContentHeader from '@/components/TheContentHeader';
 import Tooltip from '@/components/Tooltip';
-import { useResize } from '@/hooks/useResize';
 import GridTable, { GridTableHeader, GridTableRow, checkNotEmptyRows } from './GridTable';
 
 const TableTypes = ['Check-box', 'Probability (%)']; // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
@@ -274,17 +261,17 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
       if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
       if (snapshot.ifConditions) {
         const ifConditionsCur = { ...snapshot.ifConditions };
-        if(ifConditionsCur?.operatorItems.Time) {
-          for(const rowCur of ifConditionsCur?.operatorItems.Time) {
+        if (ifConditionsCur?.operatorItems.Time) {
+          for (const rowCur of ifConditionsCur?.operatorItems.Time) {
             rowCur.multiSelect = false;
           }
         }
         // Time 중복 들어간 경우 임시 처리. 추후에 삭제해도 됨. 시작
-        if(ifConditionsCur?.criteriaItems?.length >= 6 && ifConditionsCur?.criteriaItems[5].id == 'Time') {
+        if (ifConditionsCur?.criteriaItems?.length >= 6 && ifConditionsCur?.criteriaItems[5].id == 'Time') {
           ifConditionsCur?.criteriaItems.splice(5, 1);
         }
         // Time 중복 들어간 경우 임시 처리. 추후에 삭제해도 됨. 끝
-        setIfConfitions({ ...ifConditionsCur, });
+        setIfConfitions({ ...ifConditionsCur });
       }
       if (snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
       setConditionsTime(Date.now());

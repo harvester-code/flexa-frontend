@@ -34,8 +34,15 @@ interface TabScenarioOverviewProps {
 export default function TabScenarioOverview({ visible }: TabScenarioOverviewProps) {
   // 메모 상태 관리
   const metadata = useSimulationMetadata();
-  const { tabIndex, setTabIndex, scenarioInfo, setConditions, setPriorities, availableTabIndex, setAvailableTabIndex } =
-    useSimulationStore();
+  const {
+    tabIndex,
+    setTabIndex,
+    scenarioInfo,
+    setConditions,
+    setPriorities,
+    availableTabIndex,
+    setAvailableTabIndex,
+  } = useSimulationStore();
   const overview = metadata?.overview;
   const flight_sch = metadata?.flight_sch;
   const history = [...(metadata?.history || [])].reverse();
@@ -90,7 +97,8 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
               <dl>
                 <dt className="text-left">{item?.name}</dt>
                 <dd className="whitespace-pre text-right">
-                  {(Array.isArray(item?.value) ? item.value.join('\n') : item?.value) || (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                  {(Array.isArray(item?.value) ? item.value.join('\n') : item?.value) ||
+                    (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
                 </dd>
               </dl>
             </a>

@@ -133,7 +133,7 @@ interface FacilityInformation {
 }
 
 interface FacilityConnectionResponse {
-  [procedure: string]: Capacity
+  [procedure: string]: Capacity;
 }
 
 interface FacilityInfoLineChartResponse {
@@ -165,7 +165,7 @@ interface Capacity {
 }
 
 interface Capacities {
-  [procedure: string]: Capacity
+  [procedure: string]: Capacity;
 }
 
 interface Overview {
@@ -226,7 +226,7 @@ interface SimulationResponse {
   line_chart: Array<{
     node: string;
     process: string;
-    y: number[];  
+    y: number[];
   }>;
 }
 

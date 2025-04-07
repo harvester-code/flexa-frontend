@@ -1,6 +1,7 @@
 @charset "UTF-8";
 
-.rg-celleditor-input, .rg-celleditor .rg-input {
+.rg-celleditor-input,
+.rg-celleditor .rg-input {
   width: 100%;
   height: 100%;
   border: 0;
@@ -108,7 +109,7 @@
   background-color: #3579f8;
 }
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell span:after {
-  content: "";
+  content: '';
   position: absolute;
   display: none;
 }
@@ -149,7 +150,7 @@
   align-items: center;
 }
 .reactgrid-content .rg-pane .rg-cell.rg-dropdown-cell .rg-dropdown-option.selected::before {
-  content: "✓";
+  content: '✓';
   padding-right: 0.2em;
 }
 .reactgrid-content .rg-pane .rg-cell.rg-dropdown-cell .rg-dropdown-option.focused {
@@ -172,7 +173,10 @@
   align-items: flex-start;
   color: #000000;
 }
-.reactgrid-content .rg-pane.rg-pane-top, .reactgrid-content .rg-pane.rg-pane-bottom, .reactgrid-content .rg-pane.rg-pane-left, .reactgrid-content .rg-pane.rg-pane-right {
+.reactgrid-content .rg-pane.rg-pane-top,
+.reactgrid-content .rg-pane.rg-pane-bottom,
+.reactgrid-content .rg-pane.rg-pane-left,
+.reactgrid-content .rg-pane.rg-pane-right {
   position: sticky;
   position: -webkit-sticky;
   background-color: #ffffff;
@@ -270,7 +274,7 @@
   cursor: crosshair;
   top: 50%;
   left: 50%;
-  transform: translate(calc(-50% - (1px/ 2)), calc(-50% - (1px/ 2)));
+  transform: translate(calc(-50% - (1px / 2)), calc(-50% - (1px / 2)));
   width: 6.5px;
   height: 6.5px;
   background-color: #3579f8;

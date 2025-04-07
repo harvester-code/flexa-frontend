@@ -23,8 +23,14 @@ export default async function LoginPage() {
         </div>
 
         <video autoPlay muted playsInline loop className="mx-auto w-full max-w-[90%] rounded-lg shadow">
-          <source src="/videos/flexa-hero-video-long.webm" type="video/webm" />
-          <source src="/videos/flexa-hero-video-long.mp4" type="video/mp4" />
+          <source
+            src="https://flexa-dev-ap-northeast-2-data-storage.s3.ap-northeast-2.amazonaws.com/videos/flexa-hero-video-long.webm"
+            type="video/webm"
+          />
+          <source
+            src="https://flexa-dev-ap-northeast-2-data-storage.s3.ap-northeast-2.amazonaws.com/videos/flexa-hero-video-long.mp4"
+            type="video/mp4"
+          />
           Your browser does not support video.
         </video>
       </div>

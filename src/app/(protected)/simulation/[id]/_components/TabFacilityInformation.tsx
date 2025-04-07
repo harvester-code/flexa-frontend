@@ -1,30 +1,20 @@
 'use client';
 
-// import { Menu, MenuItem } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import {
-  faAngleDown,
-  faAngleLeft,
-  faAngleRight,
-  faAngleUp,
-  faCheck,
-  faPen,
-} from '@fortawesome/free-solid-svg-icons';
+import { faAngleDown, faAngleLeft, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FacilityInformation, ProcedureInfo } from '@/types/simulations';
 import { getFacilityInfoLineChartData } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
-import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
 import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
 import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
-import { FacilityInformation, ProcedureInfo } from '@/types/simulations';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -64,7 +54,6 @@ const facilitySettingsDefaults = [
 const tableHeaderHeight = 52;
 const tableCellHeight = 36;
 
-
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
   const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
@@ -97,16 +86,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const restoreSnapshot = () => {
     if (facility_info?.snapshot) {
       const snapshot = facility_info?.snapshot;
-      if(snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
-      if(snapshot.nodeIndex) setNodeIndex(snapshot.nodeIndex);
-      if(snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
-      if(snapshot.facilitySettings) _setFacilitySettings(snapshot.facilitySettings);
+      if (snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
+      if (snapshot.nodeIndex) setNodeIndex(snapshot.nodeIndex);
+      if (snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
+      if (snapshot.facilitySettings) _setFacilitySettings(snapshot.facilitySettings);
     }
     if (facility_conn?.snapshot) {
       const snapshot = facility_conn?.snapshot;
-      if(snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
+      if (snapshot.facilityConnCapacities) setFacilityConnCapacities(snapshot.facilityConnCapacities);
     }
-
   };
 
   useEffect(() => {
@@ -145,7 +133,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
     const newFacilitySettings = { ...facilitySettings, [id]: { ...data, defaultTableData } };
     _setFacilitySettings(newFacilitySettings);
-    if(snapshot) saveSnapshot({}, { facilitySettings: newFacilitySettings });
+    if (snapshot) saveSnapshot({}, { facilitySettings: newFacilitySettings });
   };
 
   const defaultTableData = facilitySettingsCurrent.defaultTableData;
@@ -158,7 +146,6 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       },
     });
   };
-
 
   const openingHoursTableData = facilitySettingsCurrent.openingHoursTableData;
   const setOpeningHoursTableData = (openingHoursTableData: TableData) => {
@@ -213,32 +200,35 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         `${String(Math.floor(timeCur / 60)).padStart(2, '0')}:${String(timeCur % 60).padStart(2, '0')}`
       );
     }
-    setFacilitySettings({
-      ...facilitySettingsCurrent,
-      timeUnit: timeUnit,
-      openingHoursTableData: {
-        header: Array(facilitySettingsCurrent.numberOfEachDevices)
-          .fill(0)
-          .map((_, index) => {
+    setFacilitySettings(
+      {
+        ...facilitySettingsCurrent,
+        timeUnit: timeUnit,
+        openingHoursTableData: {
+          header: Array(facilitySettingsCurrent.numberOfEachDevices)
+            .fill(0)
+            .map((_, index) => {
+              return {
+                name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                style: { background: '#F9F9FB' },
+                minWidth: 80,
+              };
+            }),
+          data: times.map((time, index) => {
             return {
-              name: `Desk ${String(index + 1).padStart(2, '0')}`,
-              style: { background: '#F9F9FB' },
-              minWidth: 80,
-            };
+              name: time,
+              values: Array(facilitySettingsCurrent.numberOfEachDevices)
+                .fill(0)
+                .map((_, cidx) => String(facilitySettingsCurrent.defaultTableData?.data[0].values[cidx])),
+              style: { background: '#FFFFFF' },
+              height: tableCellHeight,
+              checkToNumber: facilitySettingsCurrent.defaultTableData?.data[0].values,
+            } as GridTableRow;
           }),
-        data: times.map((time, index) => {
-          return {
-            name: time,
-            values: Array(facilitySettingsCurrent.numberOfEachDevices)
-              .fill(0)
-              .map((_, cidx) => String(facilitySettingsCurrent.defaultTableData?.data[0].values[cidx])),
-            style: { background: '#FFFFFF' },
-            height: tableCellHeight,
-            checkToNumber: facilitySettingsCurrent.defaultTableData?.data[0].values,
-          } as GridTableRow;
-        }),
+        },
       },
-    }, true);
+      true
+    );
   };
 
   useEffect(() => {
@@ -246,7 +236,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }, [facilitySettingsCurrent.openingHoursTableData?.data, facilitySettingsCurrent.timeUnit]);
 
   const onSetChartData = () => {
-    if(!facilitySettingsCurrent.openingHoursTableData) return;
+    if (!facilitySettingsCurrent.openingHoursTableData) return;
     const params = {
       time_unit: facilitySettingsCurrent.timeUnit || DefaultTimeUnit,
       facility_schedules: facilitySettingsCurrent.openingHoursTableData?.data.map((item) => {
@@ -265,23 +255,23 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
   const onBtnNext = () => {
     const nodeCount = passenger_attr?.procedures?.[procedureIndex]?.nodes?.length || 0;
-    if(nodeIndex[procedureIndex] + 1 < nodeCount) {
+    if (nodeIndex[procedureIndex] + 1 < nodeCount) {
       const newNodeIndex = nodeIndex.map((val, idx) => (idx == procedureIndex ? val + 1 : val));
       setNodeIndex(newNodeIndex);
       saveSnapshot({}, { nodeIndex: newNodeIndex });
-    } else if(procedureIndex + 1 < procedures.length) {
+    } else if (procedureIndex + 1 < procedures.length) {
       setProcedureIndex(procedureIndex + 1);
       setAvailableProcedureIndex(procedureIndex + 1);
-      saveSnapshot({}, { procedureIndex: procedureIndex + 1, availableProcedureIndex: procedureIndex + 1  });
+      saveSnapshot({}, { procedureIndex: procedureIndex + 1, availableProcedureIndex: procedureIndex + 1 });
     }
   };
 
   let simulationAvairable = true;
 
-  for(let p = 0; p < procedures.length; p++) {
+  for (let p = 0; p < procedures.length; p++) {
     const nodeCount = passenger_attr?.procedures?.[p]?.nodes?.length || 0;
-    for(let n = 0; n < nodeCount; n++) {
-      if(!facilitySettings?.[`${p}_${n}`]?.lineChartData) {
+    for (let n = 0; n < nodeCount; n++) {
+      if (!facilitySettings?.[`${p}_${n}`]?.lineChartData) {
         simulationAvairable = false;
         break;
       }
@@ -289,15 +279,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }
 
   const onSimulation = () => {
-    if(!simulationAvairable) return;
+    if (!simulationAvairable) return;
     let nodeIdCur = 0;
-    const components: any [] = [];
+    const components: any[] = [];
     const params = { ...facility_conn?.params, components, scenario_id: simulationId };
-    for(let p = 0; p < procedures.length; p++) {
+    for (let p = 0; p < procedures.length; p++) {
       const componentCur = procedures[p];
-      const nodes: any [] = [];      
+      const nodes: any[] = [];
       const nodeCount = passenger_attr?.procedures?.[p]?.nodes?.length || 0;
-      for(let n = 0; n < nodeCount; n++) {
+      for (let n = 0; n < nodeCount; n++) {
         const idCur = `${p}_${n}`;
         const facilitySettingsCurrent = facilitySettings[idCur];
         const nodeName = passenger_attr?.procedures?.[p]?.nodes[n];
@@ -325,7 +315,9 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     setTabIndex(tabIndex + 1);
   };
 
-  const tableHeight = facilitySettingsCurrent?.openingHoursTableData?.data ?  facilitySettingsCurrent?.openingHoursTableData?.data?.length * tableCellHeight + tableHeaderHeight + 2 : 0;
+  const tableHeight = facilitySettingsCurrent?.openingHoursTableData?.data
+    ? facilitySettingsCurrent?.openingHoursTableData?.data?.length * tableCellHeight + tableHeaderHeight + 2
+    : 0;
   const vChartTop = facilitySettingsCurrent.lineChartData ? 1 : 0;
   const vChartHeight = facilitySettingsCurrent.lineChartData ? tableHeight + 544 : tableHeight + 8;
   const vChartMarginTop = facilitySettingsCurrent.lineChartData ? -270 : 0;
@@ -333,10 +325,10 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const procedureId = procedures[procedureIndex]?.text?.toLowerCase()?.replace(/[\s-]+/g, '_');
   const nodeName = passenger_attr?.procedures?.[procedureIndex]?.nodes?.[nodeIndex[procedureIndex]];
 
-  const chartData: Plotly.Data [] = [];
-  const chartDataOverview: Plotly.Data [] = [];
+  const chartData: Plotly.Data[] = [];
+  const chartDataOverview: Plotly.Data[] = [];
 
-  if(procedureId && nodeName && facilitySettingsCurrent.lineChartData) {
+  if (procedureId && nodeName && facilitySettingsCurrent.lineChartData) {
     chartData.push({
       x: [...(facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.y || [])].reverse(),
       y: chartDataCurrent.map((val) => `${val.name}  `),
@@ -385,14 +377,16 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }
 
   useEffect(() => {
-    if(defaultTableData && facilitySettingsCurrent?.processingTime) {
+    if (defaultTableData && facilitySettingsCurrent?.processingTime) {
       setDefaultTableData({
         ...defaultTableData,
         data: defaultTableData.data.map((item, index) => {
-          return item.name == 'Processing time (sec)' ? {
-            ...item,
-            values: Array(item.values.length).fill(String(facilitySettingsCurrent.processingTime)),
-          } : item;
+          return item.name == 'Processing time (sec)'
+            ? {
+                ...item,
+                values: Array(item.values.length).fill(String(facilitySettingsCurrent.processingTime)),
+              }
+            : item;
         }),
       });
     }
@@ -414,7 +408,10 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       />
       <ul className="gate-list grid-cols-5">
         {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
-          <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : facilitySettings?.[`${procedureIndex}_${index}`]?.lineChartData ? 'check' : ''}`}>
+          <li
+            key={index}
+            className={`${index == nodeIndex[procedureIndex] ? 'active' : facilitySettings?.[`${procedureIndex}_${index}`]?.lineChartData ? 'check' : ''}`}
+          >
             <button
               onClick={() => {
                 setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
@@ -614,7 +611,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         </div>
         <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
           <div className={`relative h-[600px] overflow-auto pr-[400px]`}>
-            <div 
+            <div
             // className={`h-[${tableHeight}px]`}
             >
               {facilitySettingsCurrent?.openingHoursTableData && nodeName ? (
@@ -636,33 +633,31 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     }}
                   />
                   <div style={{ marginTop: vChartMarginTop, top: vChartTop, right: 0, position: 'absolute' }}>
-                    <div style={{ overflow: 'hidden', height: vChartParentHeight }} >
-                      {
-                        chartData?.length > 0 ? (
-                          <BarChart
-                            chartData={chartData}
-                            chartLayout={{
-                              width: 390,
-                              height: vChartHeight,
-                              margin: {
-                                l: 50,
-                                r: 0,
-                                t: 64,
-                                b: 0,
-                              },
-                              barmode: 'overlay',
-                              bargap: 0.4,
-                              showlegend: false,
-                              yaxis: {
-                                dtick: 1,
-                              },
-                            }}
-                            config={{
-                              displayModeBar: false,
-                            }}
-                          />  
-                        ) : null
-                      }
+                    <div style={{ overflow: 'hidden', height: vChartParentHeight }}>
+                      {chartData?.length > 0 ? (
+                        <BarChart
+                          chartData={chartData}
+                          chartLayout={{
+                            width: 390,
+                            height: vChartHeight,
+                            margin: {
+                              l: 50,
+                              r: 0,
+                              t: 64,
+                              b: 0,
+                            },
+                            barmode: 'overlay',
+                            bargap: 0.4,
+                            showlegend: false,
+                            yaxis: {
+                              dtick: 1,
+                            },
+                          }}
+                          config={{
+                            displayModeBar: false,
+                          }}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </>
@@ -708,7 +703,11 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               </div>
               <div className="mt-[20px] flex items-center justify-between">
                 <p className="text-[40px] text-xl font-semibold">
-                  Total: {numberWithCommas(facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.total || 0)} Pax
+                  Total:{' '}
+                  {numberWithCommas(
+                    facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.total || 0
+                  )}{' '}
+                  Pax
                 </p>
                 {/* <p>
                   <Button
@@ -753,20 +752,18 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     showlegend: false,
                     xaxis: {
                       dtick: 6,
-                    }
+                    },
                   }}
                   config={{
                     displayModeBar: false,
                   }}
                 />
               </div>
-              {
-                !simulationAvairable ? (
-                  <p className="mt-[20px] flex justify-end">
-                    <Button className="btn-md btn-tertiary" text="Next" onClick={() => onBtnNext()} />
-                  </p>  
-                ) : null
-              }
+              {!simulationAvairable ? (
+                <p className="mt-[20px] flex justify-end">
+                  <Button className="btn-md btn-tertiary" text="Next" onClick={() => onBtnNext()} />
+                </p>
+              ) : null}
             </div>
           ) : null}
         </>

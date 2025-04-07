@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import { ScenarioHistory } from '@/types/simulations';
 import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
 import TheContentHeader from '@/components/TheContentHeader';
+import { useToast } from '@/hooks/useToast';
+import { timeToRelativeTime } from '@/lib/utils';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -17,8 +18,6 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
-import { timeToRelativeTime } from '@/lib/utils';
-import { useToast } from '@/hooks/useToast';
 
 const tabs: { text: string; number?: number }[] = [
   { text: 'Scenario Overview' },
@@ -36,11 +35,20 @@ export default function SimulationDetail(props) {
   const metadata = useSimulationMetadata();
   const { toast } = useToast();
 
-  const { tabIndex, setTabIndex, availableTabIndex, setAvailableTabIndex, setCheckpoint, scenarioInfo, setScenarioInfo } = useSimulationStore();
+  const {
+    tabIndex,
+    setTabIndex,
+    availableTabIndex,
+    setAvailableTabIndex,
+    setCheckpoint,
+    scenarioInfo,
+    setScenarioInfo,
+  } = useSimulationStore();
 
   const simulationId = params?.id;
-  
-  const lastHistory = metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
+
+  const lastHistory =
+    metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
 
   useEffect(() => {
     getScenarioMetadata(params?.id).then(({ data }) => {
@@ -66,11 +74,7 @@ export default function SimulationDetail(props) {
         <dl className="sub-title">
           <dd>
             {scenarioInfo?.simulation_name || ''}
-            {
-              lastHistory?.checkpoint ? (
-                <span>{timeToRelativeTime(lastHistory?.checkpoint)}</span>
-              ) : null
-            }
+            {lastHistory?.checkpoint ? <span>{timeToRelativeTime(lastHistory?.checkpoint)}</span> : null}
           </dd>
         </dl>
         <div className="flex items-center gap-[10px]">
