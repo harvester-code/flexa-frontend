@@ -220,7 +220,7 @@ function Conditions({
 export default function TabFacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, scenarioInfo, facilityConnCapacities, setFacilityConnCapacities } =
+  const { tabIndex, setTabIndex, priorities, processingProcedureTime, facilityConnCapacities, setFacilityConnCapacities, setAvailableTabIndex } =
     useSimulationStore();
 
   const [procedureIndex, setProcedureIndex] = useState(0);
@@ -253,6 +253,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   const restoreSnapshot = () => {
     if (facility_conn?.snapshot) {
       const snapshot = facility_conn?.snapshot;
+      if (snapshot.params) setFacilityConnection({ ...facility_conn, params: snapshot.params });
       if (snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
       if (snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
       if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
@@ -279,8 +280,10 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   };
 
   useEffect(() => {
-    if (visible && !loaded && facility_conn?.snapshot) {
-      restoreSnapshot();
+    if(visible && !loaded) {
+      if (!processingProcedureTime && facility_conn?.snapshot) {
+        restoreSnapshot();
+      }  
       setLoaded(true);
     }
   }, [visible, facility_conn?.snapshot]);
@@ -394,6 +397,12 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
 
   const applyButtonEnable = checkTablesValid(procedureIndex);
 
+  useEffect(() => {
+    if(!applyButtonEnable) {
+      setAvailableTabIndex(tabIndex);
+    }
+  }, [applyButtonEnable]);
+
   const onBtnApply = () => {
     if (procedureIndex < procedures.length - 1) {
       setAvailableProcedureIndex(availableProcedureIndex + 1);
@@ -408,6 +417,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   const onBtnPassengerFlowCheck = () => {
     if (!checkTablesValidAll()) return;
     const params = { ...passenger_sch?.params };
+
     const processes = {
       '0': {
         name: passenger_attr?.data_connection_criteria,
@@ -589,11 +599,12 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
                 id="add-conditions"
                 label=""
                 checked={addConditionsVisible?.[procedureIndex] || false}
-                onChange={() =>
+                onChange={() => {
+                  setAvailableTabIndex(tabIndex);
                   setAddConditionsVisible(
                     addConditionsVisible?.map((val, index) => (index == procedureIndex ? !val : val))
-                  )
-                }
+                  );
+                }}
                 className="checkbox-toggle"
               />
               <dl>
@@ -742,6 +753,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}
           disabled={
+            !applyButtonEnable ? true :
             facilityConnCapacities
               ? false
               : procedureIndex < procedures.length || loadingFacilityConnection || loadError

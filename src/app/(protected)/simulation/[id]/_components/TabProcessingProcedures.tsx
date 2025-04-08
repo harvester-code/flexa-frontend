@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,18 +22,25 @@ const DataConnectionCriterias = ['I/D', 'Airline', 'Country', 'Region'];
 
 export default function TabProcessingProcedures({ visible }: TabProcessingProceduresProps) {
   const { setPassengerAttr, passenger_attr } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, setAvailableTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, setAvailableTabIndex, setProcessingProcedureTime, flightScheduleTime } = useSimulationStore();
+
+  const refPassengerScheduleTime = useRef(Array(1).fill(0)).current;
 
   const [loaded, setLoaded] = useState(false);
-  const [dataConnectionCriteria, setDataConnectionCriteria] = useState('');
+  const [dataConnectionCriteria, setDataConnectionCriteria] = useState('Airline');
   const [procedures, setProcedures] = useState<ProcessingProcedureState[]>([]);
 
   const [loadingProcessingProcedures, setLoadingProcessingProcedures] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [lastProcedures, setLastProcedures] = useState<ProcessingProcedureState[]>();
 
-  const applied = lastProcedures == procedures;
+  const applied = lastProcedures == procedures && ((!refPassengerScheduleTime[0] && !flightScheduleTime) || (refPassengerScheduleTime[0] == flightScheduleTime));
 
+  useEffect(() => {
+    if(!applied) {
+      setAvailableTabIndex(tabIndex);
+    }
+  }, [applied]);
   const loadData = () => {
     setLoadingProcessingProcedures(true);
 
@@ -42,8 +49,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
         if (data?.process) {
           setProcedures(
             data?.process.map((item, index) => {
-              console.log('index', index);
-
               return {
                 ...item,
                 id: String(index),
@@ -91,7 +96,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             };
           });
           setProcedures(newProcedures);
-          setLastProcedures(newProcedures);
+          if(!flightScheduleTime && !refPassengerScheduleTime[0]) setLastProcedures(newProcedures);
         }
       } else {
         loadData();
@@ -130,6 +135,8 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
         editable: false,
       };
     });
+    refPassengerScheduleTime[0] = flightScheduleTime;
+    setProcessingProcedureTime(Date.now());
     setProcedures(newProcedures);
     setLastProcedures(newProcedures);
     setAvailableTabIndex(tabIndex + 1);
@@ -225,19 +232,20 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     className={`${item.editable ? '' : 'hidden'} text-2xl`}
                                     type="text"
                                     value={item.nameText || ''}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                      const newText = e.target.value.replace(/[^A-Za-z0-9-_ ]/g, '');
                                       setProcedures((prevItem) =>
                                         prevItem.map((item, i) =>
                                           i === index
                                             ? {
                                                 ...item,
-                                                name: e.target.value,
-                                                nameText: e.target.value,
+                                                name: newText,
+                                                nameText: newText,
                                               }
                                             : item
                                         )
-                                      )
-                                    }
+                                      );
+                                    }}
                                   />
 
                                   {item.editable ? null : (
@@ -278,12 +286,14 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     <Input
                                       type="text"
                                       value={item.nodesText || ''}
-                                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const newText = e.target.value.replace(/[^A-Za-z0-9,]/g, '');
                                         setProcedures(
                                           procedures.map((item, idx) =>
-                                            index == idx ? { ...item, nodesText: e.target.value } : item
+                                            index == idx ? { ...item, nodesText: newText } : item
                                           )
                                         )
+                                      }
                                       }
                                     />
                                   </dd>

@@ -147,7 +147,9 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
 export default function TabPassengerSchedule({ visible }: TabPassengerScheduleProps) {
   const refWidth = useRef(null);
   const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, availableTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, priorities, flightScheduleTime, setFlightScheduleTime, setAvailableTabIndex } = useSimulationStore();
+
+  const refFlightScheduleTime = useRef(Array(1).fill(0)).current;
 
   const [chartData, setChartData] = useState<{
     total: number;
@@ -185,6 +187,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const restoreSnapshot = () => {
     if (passenger_sch?.snapshot) {
       const snapshot = passenger_sch?.snapshot;
+      if (snapshot.params) setPassengerSchedule({ ...passenger_sch, params: snapshot.params });
       if (snapshot.chartData) setChartData(snapshot.chartData);
       if (snapshot.selColorCriteria) setSelColorCriteria(snapshot.selColorCriteria);
       if (snapshot.addPrioritiesVisible) setAddPrioritiesVisible(snapshot.addPrioritiesVisible);
@@ -195,9 +198,13 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   };
 
   useEffect(() => {
-    if (visible && !loaded && passenger_sch?.snapshot) {
-      restoreSnapshot();
+    if(visible && !loaded) {
+      if (!flightScheduleTime && passenger_sch?.snapshot) {
+        restoreSnapshot();
+      }  
       setLoaded(true);
+    } else if(visible && loaded && refFlightScheduleTime[0] != flightScheduleTime) {
+      setChartData(undefined);
     }
   }, [visible]);
 
@@ -214,7 +221,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const prioritiesItems = selPriorities && selPriorities?.length > 0 ? selPriorities : [undefined];
   const loadPassengerSchedules = useCallback(() => {
     setLoadingPassengerSchedules(true);
-
+    setAvailableTabIndex(tabIndex);
     const params = {
       flight_schedule: flight_sch?.params,
       destribution_conditions: [
@@ -234,7 +241,6 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
     getPassengerSchedules(params)
       .then(({ data }) => {
-        console.log(data);
         const passengerSchedule: Partial<PassengerSchedule> = { params };
         const snapshotData: any = {};
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
@@ -258,6 +264,8 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           setChartData(newChartData);
           snapshotData.chartData = newChartData;
         }
+        refFlightScheduleTime[0] = Date.now();
+        setFlightScheduleTime(refFlightScheduleTime[0]);
         setLoadingPassengerSchedules(false);
         saveSnapshot(passengerSchedule, snapshotData);
       })
@@ -351,7 +359,11 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           id="add-conditions"
           label=""
           checked={addPrioritiesVisible}
-          onChange={() => setAddPrioritiesVisible(!addPrioritiesVisible)}
+          onChange={() => {
+            setChartData(undefined);
+            setAddPrioritiesVisible(!addPrioritiesVisible);
+            setAvailableTabIndex(tabIndex);
+          }}
           className="checkbox-toggle"
         />
         <dl>

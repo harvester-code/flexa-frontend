@@ -57,7 +57,7 @@ const tableCellHeight = 36;
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
   const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, facilityConnCapacities, setFacilityConnCapacities } = useSimulationStore();
+  const { tabIndex, setTabIndex, facilityConnCapacities, setFacilityConnCapacities, flightScheduleTime, processingProcedureTime } = useSimulationStore();
 
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
@@ -86,6 +86,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const restoreSnapshot = () => {
     if (facility_info?.snapshot) {
       const snapshot = facility_info?.snapshot;
+      if (snapshot.params) setFacilityInformation({ ...facility_info, params: snapshot.params });
       if (snapshot.procedureIndex) setProcedureIndex(snapshot.procedureIndex);
       if (snapshot.nodeIndex) setNodeIndex(snapshot.nodeIndex);
       if (snapshot.availableProcedureIndex) setAvailableProcedureIndex(snapshot.availableProcedureIndex);
@@ -98,9 +99,11 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   };
 
   useEffect(() => {
-    if (visible && !loaded && facility_info?.snapshot) {
+    if(visible && !loaded) {
+      if (!flightScheduleTime && !processingProcedureTime && facility_info?.snapshot) {
+        restoreSnapshot();
+      }  
       setLoaded(true);
-      restoreSnapshot();
     }
   }, [visible]);
 

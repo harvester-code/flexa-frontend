@@ -20,7 +20,26 @@ import {
 
 export const BarColors = {
   DEFAULT: [
-    ...['#B48CF2', '#5C3C9F', '#69D6D6', '#1F2C93', '#6E55E0', '#65AFFF', '#545CA1', '#042440'],
+    ...[
+      "#6E55E0",
+      "#4C84BC",
+      "#B48CF2",
+      "#042440",
+      "#69D6D6",
+      "#545CA1",
+      "#65AFFF",
+      "#FF5C7A",
+      "#1F2C93",
+      "#F2789F",
+      "#5C3C9F",
+      "#FFA600",
+      "#4CAF50",
+      "#FF6E40",
+      "#C0CA33",
+      "#00B8D4",
+      "#D3D3D3",
+      "#7A7A7A",
+    ],
     '#4C84BC',
   ],
   // '2': ['#D6BBFB', '#6941C6'],
@@ -138,6 +157,13 @@ export const useSimulationStore = create<{
 
   facilityConnCapacities?: Capacities;
   setFacilityConnCapacities: (capacities?: Capacities) => void;
+
+  flightScheduleTime: number;
+  setFlightScheduleTime: (time: number) => void;
+
+  processingProcedureTime: number;
+  setProcessingProcedureTime: (time: number) => void;
+
 }>((set, get) => ({
   tabIndex: 0,
   setTabIndex: (index) => {
@@ -161,4 +187,10 @@ export const useSimulationStore = create<{
 
   facilityConnCapacities: undefined,
   setFacilityConnCapacities: (capacities) => set({ facilityConnCapacities: capacities }),
+
+  flightScheduleTime: 0,
+  setFlightScheduleTime: (time) => set({ flightScheduleTime: time }),
+
+  processingProcedureTime: 0,
+  setProcessingProcedureTime: (time) => set({ processingProcedureTime: time }),
 }));

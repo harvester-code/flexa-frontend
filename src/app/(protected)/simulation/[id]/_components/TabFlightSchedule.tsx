@@ -99,6 +99,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
     setPriorities,
     setAvailableTabIndex,
     availableTabIndex,
+    setFlightScheduleTime,
   } = useSimulationStore();
 
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
@@ -135,7 +136,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       tabSecondary,
       conditions,
       priorities,
-      applied,
+      applied,      
       ...snapshot,
     };
     setFlightSchedule({ ...flight_sch, ...(params || {}), snapshot: newSnapshot });
@@ -144,6 +145,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const restoreSnapshot = () => {
     if (flight_sch?.snapshot) {
       const snapshot = flight_sch?.snapshot;
+      if (snapshot.params) setFlightSchedule({ ...flight_sch, params: snapshot.params });
       if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
       if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
       if (snapshot.selAirport) setSelAirport(snapshot.selAirport);
@@ -169,16 +171,16 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       : BarColors.DEFAULT;
 
   const loadFlightSchedule = useCallback(
-    (first_load: boolean = true) => {
+    (first_load: boolean, useCondition: boolean) => {
       if (!simulationId) return;
 
       setLoadingFlightSchedule(true);
-      setAvailableTabIndex(1);
+      setAvailableTabIndex(tabIndex);
       const params = {
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
         airport: selAirport,
-        condition: addConditionsVisible ? selConditions || [] : [],
+        condition: useCondition ? selConditions || [] : [],
       };
 
       getFlightSchedules(simulationId, params)
@@ -231,6 +233,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             snapshotData.chartData = newChartData;
           }
 
+          setFlightScheduleTime(Date.now());
           setApplied(true);
           setLoadingFlightSchedule(false);
           saveSnapshot(flightSchedule, snapshotData);
@@ -240,11 +243,11 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           setLoadingFlightSchedule(false);
         });
     },
-    [userInfo?.id, selDate, selAirport, selConditions, simulationId, addConditionsVisible]
+    [userInfo?.id, selDate, selAirport, selConditions, simulationId]
   );
 
   useEffect(() => {
-    if (chartData) loadFlightSchedule(false);
+    if (chartData) loadFlightSchedule(false, addConditionsVisible);
   }, [selConditions, selAirport, selDate]);
 
   const conditionChanged = !applied || flight_sch?.snapshot?.addConditionsVisible != addConditionsVisible;
@@ -381,7 +384,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             className="btn-md btn-primary"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             text="Load"
-            onClick={() => loadFlightSchedule()}
+            onClick={() => loadFlightSchedule(false, addConditionsVisible)}
           />
         </div>
       </div>
@@ -396,8 +399,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               checked={addConditionsVisible}
               onChange={() => {
                 const nextState = !addConditionsVisible;
-                setAddConditionsVisible(nextState);
-                if (!nextState) loadFlightSchedule(false);
+                setAddConditionsVisible(nextState);                
+                if (!nextState) loadFlightSchedule(false, false);
               }}
               className="checkbox-toggle"
               disabled={!conditions}

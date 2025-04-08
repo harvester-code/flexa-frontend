@@ -131,8 +131,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             };
             for (const criteriaCur in chartCur?.chart_y_data) {
               const criteriaDataCur = chartCur?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
-              const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
-              for (const itemCur of criteriaDataCur) {
+              const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
+              for (const itemCur of (criteriaDataCur || [])) {
                 itemCur.acc_y = Array(itemCur.y.length).fill(0);
                 for (let i = 0; i < itemCur.y.length; i++) {
                   acc_y[i] += itemCur.y[i];
@@ -147,6 +147,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         setLoadingSimulation(false);
       })
       .catch((e) => {
+        console.error(e);
         setLoadError(true);
         setLoadingSimulation(false);
       });
@@ -169,7 +170,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
-  const lineChartDate = dayjs().add(-1, 'day').format('YYYY-MM-DD');
+
+  const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
