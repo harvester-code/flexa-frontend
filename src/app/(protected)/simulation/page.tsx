@@ -110,7 +110,7 @@ const SimulationPage: React.FC = () => {
     });
   };
 
-  const oneditMemo = (index: number) => {
+  const onEditMemo = (index: number) => {
     const item = scenarioStates[index];
     handleRowChange(index, { editMemo: true });
     setTimeout(() => {
@@ -118,7 +118,7 @@ const SimulationPage: React.FC = () => {
     }, 400);
   };
 
-  const oneditMemoEnd = (index: number) => {
+  const onEditMemoEnd = (index: number) => {
     const item = scenarios[index];
     handleRowChange(index, { editMemo: false });
     modifyScenario(
@@ -348,9 +348,9 @@ const SimulationPage: React.FC = () => {
                         className="!border-none bg-transparent py-[8px] !text-default-700"
                         onChange={(e) => handleRowChange(index, { memo: e.target.value })}
                         disabled={scenarioStates[index].editMemo ? false : true}
-                        onBlur={() => oneditMemoEnd(index)}
+                        onBlur={() => onEditMemoEnd(index)}
                         onKeyDown={(e) => {
-                          if (e.key == 'Enter') oneditMemoEnd(index);
+                          if (e.key == 'Enter') onEditMemoEnd(index);
                         }}
                       />
                     </td>
@@ -375,7 +375,7 @@ const SimulationPage: React.FC = () => {
                             <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Rename
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => oneditMemo(index)}>
+                          <DropdownMenuItem onClick={() => onEditMemo(index)}>
                             <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Edit Memo
                           </DropdownMenuItem>

@@ -28,7 +28,7 @@ export const PushCreateScenarioPopup = (props: PopupProps) => {
 
 const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
   const [scenarioName, setScenarioName] = useState('');
-  const [scenarioMemo, setScenarioMemo] = useState('');
+  // const [scenarioMemo, setScenarioMemo] = useState('');
   const [locationAirport, setLocationAirport] = useState('');
   const [terminal, setTerminal] = useState('');
   const { data: userInfo } = useUser();
@@ -58,7 +58,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                 />
               </dd>
             </dl>
-            <dl>
+            {/* <dl>
               <dt className="mb-[5px] pl-[10px] text-sm font-normal"> Memo</dt>
               <dd>
                 <Input
@@ -69,7 +69,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                   className="input-rounded"
                 />
               </dd>
-            </dl>
+            </dl> */}
             <dl>
               <dt className="mb-[5px] pl-[10px] text-sm font-normal">Simaulation location(Airport Level)</dt>
               <dd>
@@ -85,11 +85,18 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
             <dl>
               <dt className="mb-[5px] pl-[10px] text-sm font-normal">Simulation location(Terminal Level)</dt>
               <dd>
-                <select name="" id="" className="select w-full" onChange={(e) => setTerminal(e.target.value)}>
+                <Input
+                  type="text"
+                  placeholder="e.g. T1"
+                  value={terminal}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTerminal(e.target.value)}
+                  className="input-rounded"
+                />
+                {/* <select name="" id="" className="select w-full" onChange={(e) => setTerminal(e.target.value)}>
                   <option value="">Terminal</option>
                   <option value="T1">T1</option>
                   <option value="T2">T2</option>
-                </select>
+                </select> */}
               </dd>
             </dl>
           </form>
@@ -109,15 +116,15 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                 PopupAlert.confirm('Please select the simulation location.');
                 return;
               }
-              if (!scenarioMemo) {
-                PopupAlert.confirm('Please enter the memo.');
-                return;
-              }
+              // if (!scenarioMemo) {
+              //   PopupAlert.confirm('Please enter the memo.');
+              //   return;
+              // }
               createScenario({
                 simulation_name: scenarioName,
                 airport: locationAirport,
                 terminal,
-                memo: scenarioMemo,
+                memo: '', //scenarioMemo,
                 editor: userInfo?.fullName || '',
                 group_id: String(userInfo?.groupId),
               })

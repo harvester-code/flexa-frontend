@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -11,6 +11,7 @@ import TabDefault from '@/components/TabDefault';
 import TheContentHeader from '@/components/TheContentHeader';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
+import { OrbitProgress } from 'react-loading-indicators';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -34,6 +35,7 @@ export default function SimulationDetail(props) {
   const router = useRouter();
   const metadata = useSimulationMetadata();
   const { toast } = useToast();
+  const [loaded, setLoaded] = useState(false);
 
   const {
     tabIndex,
@@ -51,22 +53,21 @@ export default function SimulationDetail(props) {
     metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
 
   useEffect(() => {
+    setLoaded(false);
+    setAvailableTabIndex(1);
+    setTabIndex(0);
     getScenarioMetadata(params?.id).then(({ data }) => {
-      // console.log(data);
       const clientTime = dayjs();
       const serverTime = dayjs(data?.checkpoint);
       setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'millisecond'));
       setScenarioInfo(data?.scenario_info);
       metadata.setMetadata(data?.metadata);
+      setLoaded(true);
     });
   }, [params?.id]);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [tabIndex]);
-  useEffect(() => {
-    setAvailableTabIndex(1);
-    setTabIndex(0);
-  }, [simulationId]);
   return (
     <div className="mx-auto max-w-[1340px] px-[30px]">
       <TheContentHeader text="Simulation" />
@@ -107,20 +108,28 @@ export default function SimulationDetail(props) {
       <TabDefault
         tabCount={tabs.length}
         currentTab={tabIndex}
-        availableTabs={availableTabIndex}
+        availableTabs={loaded ? availableTabIndex : 0}
         tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
         className={`mt-[40px]`}
-        onTabChange={(index) => (index > availableTabIndex ? null : setTabIndex(index))}
+        onTabChange={(index) => (!loaded || index > availableTabIndex ? null : setTabIndex(index))}        
       />
-      <React.Fragment key={simulationId}>
-        <TabScenarioOverview visible={tabIndex == 0} />
-        <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
-        <TabPassengerSchedule visible={tabIndex == 2} />
-        <TabProcessingProcedures visible={tabIndex == 3} />
-        <TabFacilityConnection visible={tabIndex == 4} />
-        <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
-        <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
-      </React.Fragment>
+      {
+        loaded ? (
+          <React.Fragment key={simulationId}>
+            <TabScenarioOverview visible={tabIndex == 0} />
+            <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
+            <TabPassengerSchedule visible={tabIndex == 2} />
+            <TabProcessingProcedures visible={tabIndex == 3} />
+            <TabFacilityConnection visible={tabIndex == 4} />
+            <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
+            <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
+          </React.Fragment>  
+        ) : (
+          <div className="flex min-h-[200px] flex-1 items-center justify-center">
+            <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+          </div>
+        )
+      }
     </div>
   );
 }

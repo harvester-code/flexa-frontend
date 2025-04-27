@@ -398,10 +398,10 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   const applyButtonEnable = checkTablesValid(procedureIndex);
 
   useEffect(() => {
-    if(!applyButtonEnable) {
+    if(loaded && !applyButtonEnable) {
       setAvailableTabIndex(tabIndex);
     }
-  }, [applyButtonEnable]);
+  }, [applyButtonEnable, loaded]);
 
   const onBtnApply = () => {
     if (procedureIndex < procedures.length - 1) {
@@ -679,7 +679,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
               />
             </div>
           </div>
-          {!tableData?.[procedureIndex] ? null : (
+          {/* {!tableData?.[procedureIndex] ? null : (
             <div className="mt-[10px] flex items-center justify-center">
               <button
                 className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700"
@@ -698,7 +698,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
               </button>
             </div>
           )}
-
+ */}
           {!tableData?.[procedureIndex] || tableData[procedureIndex].hidden ? null : (
             <div>
               <GridTable

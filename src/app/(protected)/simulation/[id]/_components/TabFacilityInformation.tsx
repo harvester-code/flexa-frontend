@@ -13,7 +13,7 @@ import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
 import { useResize } from '@/hooks/useResize';
-import { numberWithCommas } from '@/lib/utils';
+import { deepCompare, numberWithCommas } from '@/lib/utils';
 import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -675,7 +675,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       {procedureId && nodeName && facilitySettingsCurrent.lineChartData ? (
         <>
           <div className="mt-[40px] flex items-center justify-center">
-            {facilitySettingsCurrent.overviewChartVisible ? (
+            {/* {facilitySettingsCurrent.overviewChartVisible ? (
               <button
                 className="flex h-[50px] w-full items-center justify-center gap-[10px] text-lg font-medium text-default-300 hover:text-default-700"
                 onClick={() => {
@@ -695,7 +695,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                 <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleDown} />
                 Show Overview Charts
               </button>
-            )}
+            )} */}
           </div>
           {facilitySettingsCurrent.overviewChartVisible ? (
             <div>

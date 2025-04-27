@@ -227,7 +227,8 @@ function ConditionItem({
   const selLogicItem = logicItems?.find((val) => val?.id == logic);
   const selCriteriaItem = criteriaItems?.find((val) => val?.id == criteria);
   const selOperatorItem = operatorItems?.[criteria]?.find((val) => val?.id == operator);
-  const selValueItem = valueItems?.[criteria]?.find((val) => val?.[0]?.id == value);
+  const valueItemsCur = valueItems?.[criteria]?.sort((a, b) => a.id.localeCompare(b.id, 'en', { sensitivity: 'base' })); 
+  const selValueItem = valueItemsCur?.find((val) => val?.[0]?.id == value);
   return (
     <div className="flex flex-row">
       {logicVisible ? (
@@ -279,7 +280,7 @@ function ConditionItem({
               setCriteria(criteriaId);
               setOperator(operatorItems[criteriaId][0].id);
               setValue(
-                operatorItems[criteriaId][0].multiSelect === false ? [valueItems[criteriaId][0].id] : []
+                operatorItems[criteriaId][0].multiSelect === false ? [valueItemsCur[0].id] : []
               );
             }
           }}
@@ -320,7 +321,7 @@ function ConditionItem({
         <Dropdown
           key={criteria}
           defaultId={value}
-          items={valueItems[criteria]}
+          items={valueItemsCur}
           className="mt-[6px] flex-1"
           multiSelect={operatorItems[criteria]?.find((val) => val.id == operator)?.multiSelect === true}
           onChange={(items) => setValue(items.map((val) => val?.id))}

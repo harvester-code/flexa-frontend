@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
+import { deepCompare } from '@/lib/utils';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -40,12 +41,13 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const { passenger_attr, facility_info, setSimulation, overview, setOverview } = useSimulationMetadata();
+  const { passenger_attr, facility_info, setFacilityInformation, simulation, setSimulation, overview, setOverview } = useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
 
   // const [socket, setSocket] = useState<WebSocket>();
   // const [loaded, setLoaded] = useState(false);
 
+  const [simulationParams, setSimulationParams] = useState();
   const [overviewData, setOverviewData] = useState<SimulationOverviewResponse>();
   const [simulationData, setSimulationData] = useState<SimulationResponse>();
   const [loadingSimulation, setLoadingSimulation] = useState(false);
@@ -53,8 +55,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
+
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [selGroupCriteria, setSelGroupCriteria] = useState(GROUP_CRITERIAS[0].id);
+
+  const [loaded, setLoaded] = useState(false);
 
   const { width } = useResize(refWidth);
 
@@ -67,20 +72,54 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     { text: 'Total' },
   ] as ProcedureInfo[];
 
+  const saveSnapshot = (params: any, overviewData?: Partial<SimulationOverviewResponse>, simulationData?: Partial<SimulationResponse>) => {
+    const newSnapshot: any = {
+      ...(overview?.snapshot || {}),
+      params,
+      overview: overviewData,
+      simulation: simulationData,
+    };
+    setOverview({ ...overview, snapshot: newSnapshot });
+  };
+
+  const restoreSnapshot = () => {
+    let facilityInfoParams = facility_info?.params;
+    if (!facility_info?.params && facility_info?.snapshot) {
+      const snapshot = facility_info?.snapshot;
+      if (snapshot.params) {
+        setFacilityInformation({ ...facility_info, params: snapshot.params });
+        facilityInfoParams = snapshot.params;
+      }
+    }
+    if (overview?.snapshot) {
+      const snapshot = overview?.snapshot;
+      if (snapshot.params && snapshot.overview && deepCompare(snapshot.params, facilityInfoParams)) {
+        setSimulationParams(snapshot.params);
+        setOverviewData(snapshot.overview);
+        if(snapshot.simulation) setSimulationData(snapshot.simulation);
+      }
+    }
+  };
+
   useEffect(() => {
     if (nodeIndex.length < 1 && passenger_attr?.procedures) {
       setNodeIndex(Array(passenger_attr?.procedures.length).fill(0));
     }
   }, [passenger_attr?.procedures]);
 
-  useEffect(() => {
-    if (visible) {
-      const params = { ...facility_info?.params, scenario_id: simulationId };
+  const loadOverview = () => {
+    if(loaded && !deepCompare(facility_info?.params, simulationParams)) {
+      const params = { ...(facility_info?.params || simulationParams), scenario_id: simulationId };
       setLoadingSimulation(true);
+      setOverviewData(undefined);
+      setSimulationData(undefined);
+      setSimulationParams(params);
       getSimulationOverview(params)
         .then(({ data }) => {
           setOverviewData(data);
           setOverview({ ...overview, matric: data?.matric });
+          setSimulationData(undefined);
+          saveSnapshot(params, data);
           setLoadingSimulation(false);
         })
         .catch((e) => {
@@ -89,11 +128,33 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           setLoadingSimulation(false);
         });
     }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      if(!loaded) {
+        restoreSnapshot();
+        setLoaded(true);
+      } 
+      else {
+        loadOverview();
+      }
+    }
   }, [visible]);
 
-  const onRunSimulation = () => {
-    const params = { ...facility_info?.params, scenario_id: simulationId };
+  useEffect(() => {
+    if(loaded) {
+      loadOverview();
+    }
+  }, [loaded]);
 
+  const onRunSimulation = () => {
+    const params = simulationParams;
+
+    if(!params) {
+      console.error('run simulation - param error');
+      return;
+    }
     // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
 
     // ws.onopen = () => {
@@ -120,8 +181,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
     setLoadingSimulation(true);
 
+    // console.log(params)
     runSimulation(params)
       .then(({ data }) => {
+        console.log(data)
         const chartKeys = ['inbound', 'outbound', 'queing'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
@@ -142,12 +205,13 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             }
           }
         }
-        setSimulation(data);
         setSimulationData(data);
+        saveSnapshot(params, overviewData, data);
         setLoadingSimulation(false);
       })
       .catch((e) => {
         console.error(e);
+        setSimulationData(undefined);
         setLoadError(true);
         setLoadingSimulation(false);
       });
@@ -171,7 +235,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
 
-  const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
+  // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
@@ -364,7 +428,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                       };
                     }) as Plotly.Data[]),
                   {
-                    x: chartDataCurrent?.inbound?.chart_x_data.filter((val) => val.indexOf(lineChartDate) == 0),
+                    x: chartDataCurrent?.inbound?.chart_x_data,
                     y: lineChartDataCurrent?.y,
                     type: 'scatter',
                     mode: 'lines',
@@ -424,6 +488,18 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                         hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                       };
                     }) as Plotly.Data[]),
+                    {
+                      x: chartDataCurrent?.outbound?.chart_x_data,
+                      y: lineChartDataCurrent?.y,
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: 'Capacity',
+                      marker: {
+                        color: '#FF0000',
+                        opacity: 1,
+                      },
+                      orientation: 'h',
+                    },
                 ]}
                 chartLayout={{
                   width,
@@ -665,7 +741,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           onClick={() => setTabIndex(tabIndex - 1)}
         >
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Previous</span>
+          <span className="flex flex-grow items-center justify-center">Facility Information</span>
         </button>
 
         {/* FIXME: [25.04.07] ADD CONDITIONS가 있을 때 데이터가 제대로 안 나오는 현상 발생 */}

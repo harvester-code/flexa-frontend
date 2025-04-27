@@ -71,7 +71,7 @@ interface FlightSchedule {
 interface PassengerPatternState {
   conditions?: ConditionState[];
   mean?: string;
-  variance?: string;
+  stddev?: string;
 }
 
 interface PassengerSchedule {
@@ -119,7 +119,11 @@ interface PassengerScheduleResponse {
   bar_chart_y_data: ChartData;
   dst_chart: any;
   total: number;
-  total_sub: string;
+  total_sub_obj: Array<{
+    title: string;
+    value: string;
+    unit?: string;
+  }>;
 }
 
 interface FacilityConnection {

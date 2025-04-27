@@ -46,6 +46,7 @@ export const BarColors = {
   // '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
   // '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
   // '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
+  ETC: "#7A7A7A"
 };
 
 export const LineColors = ['#42307D', '#6941C6', '#9E77ED', '#D6BBFB', '#F4EBFF'];

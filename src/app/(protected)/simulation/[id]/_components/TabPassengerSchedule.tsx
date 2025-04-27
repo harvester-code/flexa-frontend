@@ -30,14 +30,14 @@ interface TabPassengerScheduleProps {
   visible: boolean;
 }
 
-function normalDistributionPDF(x: number, mean: number, stdDev: number) {
-  const exponent = -0.5 * Math.pow((x - mean) / stdDev, 2);
-  return (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
+function gaussian(x: number, mean: number, stddev: number) {
+  const exponent = -((x - mean) ** 2) / (2 * stddev ** 2);
+  return (1 / (stddev * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
 }
 
 function generateNormalDistributionLineChart(
   mean: number,
-  variance: number,
+  stddev: number,
   start: number,
   end: number,
   step: number
@@ -47,7 +47,7 @@ function generateNormalDistributionLineChart(
 
   for (let x = start; x <= end; x += step) {
     xValues.push(x);
-    yValues.push(normalDistributionPDF(x, mean, Math.sqrt(variance)));
+    yValues.push(gaussian(x, mean, stddev));
   }
 
   return { x: xValues, y: yValues };
@@ -60,7 +60,7 @@ const DropdownLists = {
       const id = String(50 + index);
       return { id, text: id };
     }),
-  Variance: Array(61)
+  stddev: Array(61)
     .fill(0)
     .map((_, index) => {
       const id = String(30 + index);
@@ -89,7 +89,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
       setStates({
         conditions: undefined,
         mean: DropdownLists.Mean[0].id,
-        variance: DropdownLists.Variance[0].id,
+        stddev: DropdownLists.stddev[0].id,
       });
   }, []);
   return (
@@ -122,16 +122,16 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
                 if (element) element.value = String(val);
               }}
             />
-            variance
+            standard deviation
             <input
-              id={`priority-variance-${id}`}
+              id={`priority-stddev-${id}`}
               className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
               type="number"
-              defaultValue={states?.variance}
+              defaultValue={states?.stddev}
               onBlur={(e) => {
                 const val = Math.max(Math.min(Number(e.target.value), 500), 1);
-                setStates({ ...states, variance: String(val) });
-                const element = document.getElementById(`priority-variance-${id}`) as HTMLInputElement;
+                setStates({ ...states, stddev: String(val) });
+                const element = document.getElementById(`priority-stddev-${id}`) as HTMLInputElement;
                 if (element) element.value = String(val);
               }}
             />
@@ -153,7 +153,11 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
   const [chartData, setChartData] = useState<{
     total: number;
-    total_sub: string;
+    total_sub_obj: Array<{
+      title: string;
+      value: string;
+      unit?: string;
+    }>;
     x: string[];
     data: ChartData;
   }>();
@@ -162,7 +166,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   const [selPriorities, setSelPriorities] = useState<PassengerPatternState[]>();
   const [otherPassengerState, setOtherPassengerState] = useState<PassengerPatternState>({
     mean: DropdownLists.Mean[0].id,
-    variance: DropdownLists.Variance[0].id,
+    stddev: DropdownLists.stddev[0].id,
   });
   const [loadingPassengerSchedules, setLoadingPassengerSchedules] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -227,13 +231,13 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       destribution_conditions: [
         ...(addPrioritiesVisible
           ? prioritiesItems?.map((item, index) => {
-              return { index, conditions: item.conditions, mean: item.mean, standard_deviation: item.variance };
+              return { index, conditions: item.conditions, mean: item.mean, standard_deviation: item.stddev };
             }) || []
           : []),
         {
           index: addPrioritiesVisible ? prioritiesItems.length : 0,
           mean: otherPassengerState.mean,
-          standard_deviation: otherPassengerState.variance,
+          standard_deviation: otherPassengerState.stddev,
           conditions: [],
         },
       ],
@@ -257,7 +261,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           }
           const newChartData = {
             total: data?.total,
-            total_sub: data?.total_sub,
+            total_sub_obj: data?.total_sub_obj,
             x: data?.bar_chart_x_data,
             data: data?.bar_chart_y_data,
           };
@@ -285,7 +289,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           const itemCur = conditions[i];
           priorities.push({
             mean: itemCur.mean,
-            variance: itemCur.standard_deviation,
+            stddev: itemCur.standard_deviation,
             conditions: itemCur.conditions,
           });
         }
@@ -295,12 +299,14 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       const otherCondition = conditions[conditions.length - 1];
       setOtherPassengerState({
         mean: otherCondition.mean,
-        variance: otherCondition.standard_deviation,
+        stddev: otherCondition.standard_deviation,
       });
     }
   }, [visible]);
 
   const distributionData: Plotly.Data[] = [];
+
+  const vlineData: Array<{ x: number, minY: number, maxY: number, color: string }> = [];
 
   const minMaxMean = { min: Number(otherPassengerState.mean) * -1, max: Number(otherPassengerState.mean) * -1 };
 
@@ -309,8 +315,8 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
     : [otherPassengerState];
 
   for (const itemCur of prioritiesList) {
-    const minCur = Number(itemCur?.mean) * -1 - Math.max(Number(itemCur?.variance) / 2, 20);
-    const maxCur = Math.max(Number(itemCur?.mean) * -1 + Math.max(Number(itemCur?.variance) / 2, 20), 5);
+    const minCur = Number(itemCur?.mean) * -1 - Number(itemCur?.stddev) * 4;
+    const maxCur = Math.max(Number(itemCur?.mean) * -1 + Number(itemCur?.stddev) * 4, 5);
     if (minCur < minMaxMean.min) minMaxMean.min = minCur;
     if (maxCur > minMaxMean.max) minMaxMean.max = maxCur;
   }
@@ -318,11 +324,20 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   prioritiesList.map((item, index) => {
     if (!item) return null;
     const mean = Number(item?.mean) * -1;
+    const stddev = Number(item?.stddev);
     const start = minMaxMean.min;
     const end = minMaxMean.max;
     const step = 0.1;
 
-    const { x, y } = generateNormalDistributionLineChart(mean, Number(item?.variance), start, end, step);
+    const { x, y } = generateNormalDistributionLineChart(mean, stddev, start, end, step);
+
+    const minY = Math.min(...y);
+    const maxY = Math.max(...y);
+
+    const lineColor = index < LineColors.length ? LineColors[index] : 'blue';
+
+    vlineData.push({ x: mean - stddev, minY, maxY, color: lineColor });
+    vlineData.push({ x: mean + stddev, minY, maxY, color: lineColor });
 
     distributionData.push({
       x: x,
@@ -331,7 +346,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       mode: 'lines',
       name: `Condition${index + 1}`,
       line: {
-        color: index < LineColors.length ? LineColors[index] : 'blue',
+        color: lineColor,
         width: 2,
       },
     });
@@ -367,7 +382,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
           className="checkbox-toggle"
         />
         <dl>
-          <dt className="font-semibold">Add Priorities</dt>
+          <dt className="font-semibold">Add Conditions</dt>
           <dd className="text-sm font-medium text-default-400">
             Enable the option to set conditions for filtering passenger data.
           </dd>
@@ -432,16 +447,16 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                   if (element) element.value = String(val);
                 }}
               />
-              variance
+              standard deviation
               <input
-                id="other-passenger-variance"
+                id="other-passenger-stddev"
                 className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
                 type="number"
-                defaultValue={otherPassengerState.variance}
+                defaultValue={otherPassengerState.stddev}
                 onBlur={(e) => {
                   const val = Math.max(Math.min(Number(e.target.value), 500), 1);
-                  setOtherPassengerState({ ...otherPassengerState, variance: String(val) });
-                  const element = document.getElementById('other-passenger-variance') as HTMLInputElement;
+                  setOtherPassengerState({ ...otherPassengerState, stddev: String(val) });
+                  const element = document.getElementById('other-passenger-stddev') as HTMLInputElement;
                   if (element) element.value = String(val);
                 }}
               />
@@ -473,7 +488,23 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
             <dt className="text-[40px] text-xl font-semibold">
               Total: {numberWithCommas(chartData?.total)} Pax
             </dt>
-            <dd className="text-sm">{chartData.total_sub}</dd>
+            <dd className="text-[40px] text-xl font-semibold">
+              {chartData?.total_sub_obj?.map((textItem, index) => {
+              return (
+                <React.Fragment key={`value_${index}`}>
+                  {textItem.value}{textItem.unit || ''}
+                  <span className='text-sm'>{` ${textItem.title}`}</span>
+                </React.Fragment>
+              );
+            }).map((textcompo, index) => {
+              return (
+                <React.Fragment key={`compo_${index}`}>
+                  {index > 0 ? ' × ' : ''}
+                  {textcompo}
+                </React.Fragment>
+              )
+            })}
+            </dd>
           </dl>
           <div className="mt-[10px] flex h-[210px] items-center justify-center rounded-md bg-white">
             <LineChart
@@ -500,6 +531,20 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                 yaxis: {
                   showticklabels: false,
                 },
+                shapes: vlineData.map((vline) => {
+                  return {
+                    type: 'line',
+                    x0: vline.x,
+                    x1: vline.x,
+                    y0: vline.minY,
+                    y1: vline.maxY,
+                    line: {
+                      color: vline.color,
+                      width: 1,
+                      dash: 'dot',
+                    },
+                  };
+                })
               }}
               config={{
                 displayModeBar: false,
@@ -559,7 +604,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                   width,
                   height: 390,
                   margin: {
-                    l: 20,
+                    l: 40,
                     r: 10,
                     t: 0,
                     b: 30,

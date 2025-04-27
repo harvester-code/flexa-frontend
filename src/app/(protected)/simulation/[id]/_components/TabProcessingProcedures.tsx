@@ -37,10 +37,10 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const applied = lastProcedures == procedures && ((!refPassengerScheduleTime[0] && !flightScheduleTime) || (refPassengerScheduleTime[0] == flightScheduleTime));
 
   useEffect(() => {
-    if(!applied) {
+    if(loaded && !applied) {
       setAvailableTabIndex(tabIndex);
     }
-  }, [applied]);
+  }, [applied, loaded]);
   const loadData = () => {
     setLoadingProcessingProcedures(true);
 
@@ -229,6 +229,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
                                 <p className="item-name">
                                   <Input
+                                    id={`${item.id}_${index}_input_name`}
                                     className={`${item.editable ? '' : 'hidden'} text-2xl`}
                                     type="text"
                                     value={item.nameText || ''}
@@ -246,14 +247,28 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                         )
                                       );
                                     }}
+                                    onKeyDown={(e) => {
+                                      if(e.key == 'Enter') {
+                                        setProcedures((prevItem) =>
+                                          prevItem.map((item, i) =>
+                                            i === index
+                                              ? {
+                                                  ...item,
+                                                  editable: !item.editable,
+                                                }
+                                              : item
+                                          )
+                                        );
+                                        document.getElementById(`${item.id}_${index}_input_name`)?.blur();
+                                      }
+                                    }}
                                   />
 
                                   {item.editable ? null : (
                                     <span className="break-all leading-[1.1]">{item.nameText}</span>
                                   )}
-
                                   <button
-                                    onClick={() =>
+                                    onClick={() => {
                                       setProcedures((prevItem) =>
                                         prevItem.map((item, i) =>
                                           i === index
@@ -263,8 +278,13 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                               }
                                             : item
                                         )
-                                      )
-                                    }
+                                      );
+                                      if(!item.editable) {
+                                        setTimeout(() => {
+                                          document.getElementById(`${item.id}_${index}_input_name`)?.focus();
+                                        }, 50);
+                                      }
+                                    }}
                                   >
                                     {item.editable ? (
                                       <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
@@ -273,7 +293,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     )}
                                   </button>
                                 </p>
-
                                 <dl className="ml-[40px] mr-[300px] flex-grow">
                                   <dt className="tooltip-line">
                                     Enter the {item.name} desks <span className="text-accent-600">*</span>
@@ -281,7 +300,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                       <Tooltip text={'test'} />
                                     </button>
                                   </dt>
-
                                   <dd>
                                     <Input
                                       type="text"
@@ -293,8 +311,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                             index == idx ? { ...item, nodesText: newText } : item
                                           )
                                         )
-                                      }
-                                      }
+                                      }}
                                     />
                                   </dd>
                                 </dl>

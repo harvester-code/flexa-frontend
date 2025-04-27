@@ -6,7 +6,7 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     <>
       <AppSidebar />
       <main className="relative ml-[100px]">
-        <section className="mb-[20px] min-h-svh">{children}</section>
+        <section className="mb-[20px]">{children}</section>
         <AppFooter />
       </main>
     </>

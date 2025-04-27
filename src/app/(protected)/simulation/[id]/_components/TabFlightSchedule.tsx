@@ -114,6 +114,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const [tabSecondary, setTabSecondary] = useState(flight_sch?.snapshot?.tabSecondary || 0);
   const [applied, setApplied] = useState(true);
 
+  const prevStates = useRef({ selConditions, selAirport, selDate });
+
   const { width } = useResize(refWidth);
 
   const { data: userInfo } = useUser();
@@ -247,7 +249,14 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   );
 
   useEffect(() => {
-    if (chartData) loadFlightSchedule(false, addConditionsVisible);
+    if(prevStates.current.selAirport != selAirport || prevStates.current.selDate != selDate) {
+      setAddConditionsVisible(false);
+      setSelConditions(undefined);
+      setChartData(undefined);
+    } else {
+      if (chartData) loadFlightSchedule(false, addConditionsVisible);
+    }    
+    prevStates.current = { selConditions, selAirport, selDate };
   }, [selConditions, selAirport, selDate]);
 
   const conditionChanged = !applied || flight_sch?.snapshot?.addConditionsVisible != addConditionsVisible;
@@ -485,7 +494,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     marker: {
                       color:
                         chartDataCurrent.length - index - 1 < barColorsCurrent.length
-                          ? barColorsCurrent[chartDataCurrent.length - index - 1]
+                          ? (item.name == 'etc' ? BarColors.ETC : barColorsCurrent[chartDataCurrent.length - index - 1])
                           : undefined,
                       opacity: 1,
                       cornerradius: 7,

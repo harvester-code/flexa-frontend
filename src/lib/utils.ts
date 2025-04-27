@@ -64,7 +64,7 @@ export const timeToRelativeTime = (time?: string | Dayjs) => {
     [Math.floor(hours), ' hour'],
     [Math.floor(minutes), ' minute'],
   ].find((val) => Number(val[0]) >= 1);
-  return (selDiff ? `${selDiff[0]}${selDiff[1]}${selDiff[0] == 1 ? '' : 's'}` : 'a few minutes') + ' ago';
+  return (selDiff ? `${selDiff[0]}${selDiff[1]}${selDiff[0] == 1 ? '' : 's'}` : '1 minute') + ' ago';
 };
 
 export const deepCompare = (obj1: any, obj2: any) => {
