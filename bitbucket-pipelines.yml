@@ -1,0 +1,39 @@
+definitions:
+  steps:
+    - step: &build-step
+        name: Build with Docker
+        size: 2x
+        script:
+          - IMAGE_NAME=coop/flexa-waitfree-next
+          - IMAGE_TAG=${BITBUCKET_TAG:-latest-${BITBUCKET_COMMIT:0:7}}
+
+          - env | grep '^NEXT_PUBLIC_' > .env
+
+          - docker build -t $IMAGE_NAME:$IMAGE_TAG -f docker/${BITBUCKET_DEPLOYMENT_ENVIRONMENT}/Dockerfile .
+
+          - pipe: atlassian/aws-ecr-push-image:2.5.0
+            variables:
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+              IMAGE_NAME: $IMAGE_NAME
+              TAGS: $IMAGE_TAG
+        services:
+          - docker
+        caches:
+          - docker
+
+pipelines:
+  tags:
+    'v*.*.*-beta.*':
+      - step:
+          <<: *build-step
+          deployment: development
+    'v*.*.*-rc.*':
+      - step:
+          <<: *build-step
+          deployment: staging
+    'release-*.*.*':
+      - step:
+          <<: *build-step
+          deployment: production

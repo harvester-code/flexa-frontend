@@ -1,7 +1,5 @@
-export default function Home() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <h1 className="text-3xl font-bold underline">Hello Flexa!</h1>
-    </div>
-  );
+import { redirect } from 'next/navigation';
+
+export default function Page() {
+  return redirect('/auth/login');
 }

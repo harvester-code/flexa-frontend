@@ -1,0 +1,236 @@
+#messenger {
+  @apply flex h-dvh w-full flex-grow overflow-hidden;
+  .messenger-header {
+    width: 360px;
+    box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.1);
+    @apply relative z-10 flex flex-none flex-col border-r border-gray-200 bg-white;
+    .messges {
+      padding: 20px 16px 20px 24px;
+      @apply flex items-center justify-between;
+      h2 {
+        @apply flex h-[50px] items-center gap-[8px] text-lg font-semibold leading-none text-default-900;
+        span {
+          height: 24px;
+          padding: 0 6px;
+          @apply flex items-center justify-center rounded-md bg-accent-100 text-xs leading-none text-accent-700;
+        }
+      }
+      button {
+        @apply flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 text-xs leading-none text-default-700;
+      }
+    }
+    .search-msg {
+      @apply flex items-center border-b border-gray-200 px-[15px] py-[10px];
+    }
+    .chat-list {
+      @apply flex h-full flex-grow flex-col overflow-auto;
+      .chat-list-item {
+        @apply relative flex flex-col gap-[15px] border-b border-gray-200 p-[15px];
+        .item-header {
+          @apply flex items-center;
+          .bulit {
+            @apply flex h-[20px] w-[20px] items-center;
+            .chat {
+              @apply flex h-[8px] w-[8px] rounded-full bg-accent-700;
+            }
+          }
+          .user-photo {
+            @apply relative flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
+            .online {
+              width: 14px;
+              height: 14px;
+              border: 2px solid #fff;
+              @apply absolute -bottom-[2px] -right-[2px] flex rounded-full bg-green-600;
+            }
+          }
+          .user-name {
+            margin-left: 12px;
+            @apply flex flex-col gap-[5px];
+            dt {
+              @apply font-semibold leading-none text-default-900;
+            }
+            dd {
+              @apply text-sm leading-none text-default-600;
+            }
+          }
+          .time {
+            @apply ml-auto self-start text-xs text-default-600;
+          }
+        }
+        .last-chat {
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          @apply cursor-pointer pl-[20px] text-sm text-gray-600;
+        }
+        &.active {
+          @apply bg-accent-50;
+        }
+        &.active::after {
+          content: '';
+          width: 3px;
+          height: 100%;
+          @apply absolute left-0 top-0 bg-accent-700;
+        }
+      }
+    }
+    .chat-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .chat-list::-webkit-scrollbar-track {
+      @apply bg-white;
+    }
+    .chat-list::-webkit-scrollbar-thumb {
+      @apply rounded-full bg-default-200;
+    }
+  }
+  .messenger-body {
+    @apply flex flex-grow flex-col bg-default-50;
+    .chat-box-header {
+      box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.1);
+      @apply relative z-10 flex items-center justify-between border-b border-gray-200 bg-white px-[25px];
+      .user-info {
+        @apply flex h-[100px] items-center gap-[15px];
+        .photo {
+          @apply flex h-[60px] w-[60px] items-center justify-center rounded-full border border-default-300 bg-default-25 text-lg font-semibold leading-none;
+        }
+        .name {
+          @apply flex flex-col gap-[10px];
+          dt {
+            @apply flex items-center text-xl font-semibold leading-none text-default-900;
+            span {
+              @apply ml-[8px] flex items-center text-xs leading-none text-default-600;
+              &.online {
+                @apply text-green-700;
+                &::before {
+                  content: '';
+                  width: 5px;
+                  height: 5px;
+                  @apply mx-[4px] inline-block rounded-full bg-green-500;
+                }
+              }
+            }
+          }
+          dd {
+            @apply text-sm leading-none text-default-600;
+          }
+        }
+      }
+      .chat-menu {
+        @apply flex items-center gap-[10px];
+      }
+    }
+    .chat-box-body {
+      @apply flex flex-grow flex-col overflow-auto px-[25px] pb-[65px] pt-[20px];
+      .starting-msg {
+        @apply flex flex-grow flex-col items-center justify-center gap-[15px];
+        h3 {
+          font-size: 24px;
+          @apply font-semibold leading-none text-default-600;
+        }
+        p {
+          @apply text-xl leading-none text-default-400;
+        }
+      }
+    }
+    .chat-box-footer {
+      @apply p-[25px];
+      .chat-block {
+        padding: 12px 15px;
+        @apply flex h-[100px] flex-col items-end rounded-md border border-gray-300 bg-white;
+        input[type='text'] {
+          @apply !border-none !p-0;
+          &:focus {
+            @apply !outline-none;
+          }
+        }
+        button {
+          @apply flex h-[35px] w-[35px] items-center justify-center;
+          &.btn-send {
+            box-shadow:
+              0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
+              0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
+              0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+            @apply ml-[8px] flex h-[40px] w-[70px] items-center justify-center rounded-md bg-accent-600 text-sm text-white;
+          }
+        }
+      }
+    }
+  }
+}
+
+.chating-list {
+  @apply flex flex-col gap-[15px];
+  .chating-item {
+    gap: 12px;
+    @apply flex;
+    &.me {
+      @apply ml-auto;
+      .msg-box {
+        .msg {
+          border-radius: 8px 0 8px 8px;
+          @apply bg-accent-600 text-white;
+        }
+      }
+    }
+    .photo {
+      @apply relative flex h-[40px] w-[40px] items-center justify-center rounded-full border border-default-300 bg-default-25 font-semibold leading-none;
+      span {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #fff;
+        @apply absolute -bottom-[2px] -right-[2px] flex rounded-full bg-green-600;
+      }
+    }
+    .msg-box {
+      @apply flex flex-col gap-[5px];
+      .msg-info {
+        @apply flex h-[20px] items-center justify-between;
+        dt {
+          @apply text-sm font-semibold leading-none text-default-800;
+        }
+        dd {
+          @apply text-xs leading-none text-default-600;
+        }
+      }
+      .msg {
+        padding: 10px 14px;
+        line-height: 24px;
+        border-radius: 0 8px 8px 8px;
+        @apply w-fit min-w-[200px] max-w-[500px] border border-gray-200 bg-white text-default-900;
+      }
+      .emoji {
+        @apply mt-[5px] flex items-center justify-end leading-none;
+      }
+    }
+  }
+}
+
+.file-add {
+  gap: 12px;
+  @apply flex items-center;
+  dl {
+    @apply flex flex-col gap-[8px];
+    dt {
+      @apply text-sm font-semibold leading-none text-default-900;
+    }
+    dd {
+      @apply text-sm font-medium leading-none text-default-600;
+    }
+  }
+}
+.date-line {
+  @apply relative flex justify-center py-[10px];
+  p {
+    @apply relative z-10 flex h-[20px] items-center bg-default-50 px-[10px] text-sm leading-none;
+  }
+  &::before {
+    content: '';
+    width: 100%;
+    height: 1px;
+    @apply absolute left-0 top-1/2 -translate-y-1/2 bg-gray-200;
+  }
+}
