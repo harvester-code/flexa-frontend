@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
+import { OrbitProgress } from 'react-loading-indicators';
 import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
@@ -11,7 +12,6 @@ import TabDefault from '@/components/TabDefault';
 import TheContentHeader from '@/components/TheContentHeader';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
-import { OrbitProgress } from 'react-loading-indicators';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -111,25 +111,23 @@ export default function SimulationDetail(props) {
         availableTabs={loaded ? availableTabIndex : 0}
         tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
         className={`mt-[40px]`}
-        onTabChange={(index) => (!loaded || index > availableTabIndex ? null : setTabIndex(index))}        
+        onTabChange={(index) => (!loaded || index > availableTabIndex ? null : setTabIndex(index))}
       />
-      {
-        loaded ? (
-          <React.Fragment key={simulationId}>
-            <TabScenarioOverview visible={tabIndex == 0} />
-            <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
-            <TabPassengerSchedule visible={tabIndex == 2} />
-            <TabProcessingProcedures visible={tabIndex == 3} />
-            <TabFacilityConnection visible={tabIndex == 4} />
-            <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
-            <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
-          </React.Fragment>  
-        ) : (
-          <div className="flex min-h-[200px] flex-1 items-center justify-center">
-            <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-          </div>
-        )
-      }
+      {loaded ? (
+        <React.Fragment key={simulationId}>
+          <TabScenarioOverview visible={tabIndex == 0} />
+          <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
+          <TabPassengerSchedule visible={tabIndex == 2} />
+          <TabProcessingProcedures visible={tabIndex == 3} />
+          <TabFacilityConnection visible={tabIndex == 4} />
+          <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
+          <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
+        </React.Fragment>
+      ) : (
+        <div className="flex min-h-[200px] flex-1 items-center justify-center">
+          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
+        </div>
+      )}
     </div>
   );
 }

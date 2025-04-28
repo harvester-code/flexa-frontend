@@ -22,7 +22,8 @@ const DataConnectionCriterias = ['I/D', 'Airline', 'Country', 'Region'];
 
 export default function TabProcessingProcedures({ visible }: TabProcessingProceduresProps) {
   const { setPassengerAttr, passenger_attr } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, setAvailableTabIndex, setProcessingProcedureTime, flightScheduleTime } = useSimulationStore();
+  const { tabIndex, setTabIndex, setAvailableTabIndex, setProcessingProcedureTime, flightScheduleTime } =
+    useSimulationStore();
 
   const refPassengerScheduleTime = useRef(Array(1).fill(0)).current;
 
@@ -34,13 +35,17 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const [loadError, setLoadError] = useState(false);
   const [lastProcedures, setLastProcedures] = useState<ProcessingProcedureState[]>();
 
-  const applied = lastProcedures == procedures && ((!refPassengerScheduleTime[0] && !flightScheduleTime) || (refPassengerScheduleTime[0] == flightScheduleTime));
+  const applied =
+    lastProcedures == procedures &&
+    ((!refPassengerScheduleTime[0] && !flightScheduleTime) ||
+      refPassengerScheduleTime[0] == flightScheduleTime);
 
   useEffect(() => {
-    if(loaded && !applied) {
+    if (loaded && !applied) {
       setAvailableTabIndex(tabIndex);
     }
   }, [applied, loaded]);
+
   const loadData = () => {
     setLoadingProcessingProcedures(true);
 
@@ -96,7 +101,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             };
           });
           setProcedures(newProcedures);
-          if(!flightScheduleTime && !refPassengerScheduleTime[0]) setLastProcedures(newProcedures);
+          if (!flightScheduleTime && !refPassengerScheduleTime[0]) setLastProcedures(newProcedures);
         }
       } else {
         loadData();
@@ -248,7 +253,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                       );
                                     }}
                                     onKeyDown={(e) => {
-                                      if(e.key == 'Enter') {
+                                      if (e.key == 'Enter') {
                                         setProcedures((prevItem) =>
                                           prevItem.map((item, i) =>
                                             i === index
@@ -279,7 +284,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                             : item
                                         )
                                       );
-                                      if(!item.editable) {
+                                      if (!item.editable) {
                                         setTimeout(() => {
                                           document.getElementById(`${item.id}_${index}_input_name`)?.focus();
                                         }, 50);
@@ -310,7 +315,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                           procedures.map((item, idx) =>
                                             index == idx ? { ...item, nodesText: newText } : item
                                           )
-                                        )
+                                        );
                                       }}
                                     />
                                   </dd>

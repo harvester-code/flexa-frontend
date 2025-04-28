@@ -227,7 +227,9 @@ function ConditionItem({
   const selLogicItem = logicItems?.find((val) => val?.id == logic);
   const selCriteriaItem = criteriaItems?.find((val) => val?.id == criteria);
   const selOperatorItem = operatorItems?.[criteria]?.find((val) => val?.id == operator);
-  const valueItemsCur = valueItems?.[criteria]?.sort((a, b) => a.id.localeCompare(b.id, 'en', { sensitivity: 'base' })); 
+  const valueItemsCur = valueItems?.[criteria]?.sort((a, b) =>
+    a.id.localeCompare(b.id, 'en', { sensitivity: 'base' })
+  );
   const selValueItem = valueItemsCur?.find((val) => val?.[0]?.id == value);
   return (
     <div className="flex flex-row">
@@ -279,9 +281,7 @@ function ConditionItem({
             if (criteria != criteriaId) {
               setCriteria(criteriaId);
               setOperator(operatorItems[criteriaId][0].id);
-              setValue(
-                operatorItems[criteriaId][0].multiSelect === false ? [valueItemsCur[0].id] : []
-              );
+              setValue(operatorItems[criteriaId][0].multiSelect === false ? [valueItemsCur[0].id] : []);
             }
           }}
         />

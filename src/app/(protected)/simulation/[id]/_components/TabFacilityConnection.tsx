@@ -220,8 +220,15 @@ function Conditions({
 export default function TabFacilityConnection({ visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, processingProcedureTime, facilityConnCapacities, setFacilityConnCapacities, setAvailableTabIndex } =
-    useSimulationStore();
+  const {
+    tabIndex,
+    setTabIndex,
+    priorities,
+    processingProcedureTime,
+    facilityConnCapacities,
+    setFacilityConnCapacities,
+    setAvailableTabIndex,
+  } = useSimulationStore();
 
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [availableProcedureIndex, setAvailableProcedureIndex] = useState(0);
@@ -280,10 +287,10 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   };
 
   useEffect(() => {
-    if(visible && !loaded) {
+    if (visible && !loaded) {
       if (!processingProcedureTime && facility_conn?.snapshot) {
         restoreSnapshot();
-      }  
+      }
       setLoaded(true);
     }
   }, [visible, facility_conn?.snapshot]);
@@ -398,7 +405,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
   const applyButtonEnable = checkTablesValid(procedureIndex);
 
   useEffect(() => {
-    if(loaded && !applyButtonEnable) {
+    if (loaded && !applyButtonEnable) {
       setAvailableTabIndex(tabIndex);
     }
   }, [applyButtonEnable, loaded]);
@@ -702,7 +709,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
           {!tableData?.[procedureIndex] || tableData[procedureIndex].hidden ? null : (
             <div>
               <GridTable
-                className='max-h-[80vh]'              
+                className="max-h-[80vh]"
                 type={tableType == TableTypes[0] ? 'checkbox' : tableType == TableTypes[1] ? 'number' : 'text'}
                 title={tableData[procedureIndex].title}
                 header={tableData[procedureIndex].header}
@@ -755,10 +762,11 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}
           disabled={
-            !applyButtonEnable ? true :
-            facilityConnCapacities
-              ? false
-              : procedureIndex < procedures.length || loadingFacilityConnection || loadError
+            !applyButtonEnable
+              ? true
+              : facilityConnCapacities
+                ? false
+                : procedureIndex < procedures.length || loadingFacilityConnection || loadError
           }
         >
           <span className="flex flex-grow items-center justify-center">Facility Information</span>

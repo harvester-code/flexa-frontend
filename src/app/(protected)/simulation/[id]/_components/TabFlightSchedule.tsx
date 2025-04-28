@@ -138,7 +138,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       tabSecondary,
       conditions,
       priorities,
-      applied,      
+      applied,
       ...snapshot,
     };
     setFlightSchedule({ ...flight_sch, ...(params || {}), snapshot: newSnapshot });
@@ -250,13 +250,13 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   );
 
   useEffect(() => {
-    if(prevStates.current.selAirport != selAirport || prevStates.current.selDate != selDate) {
+    if (prevStates.current.selAirport != selAirport || prevStates.current.selDate != selDate) {
       setAddConditionsVisible(false);
       setSelConditions(undefined);
       setChartData(undefined);
     } else {
       if (chartData) loadFlightSchedule(false, addConditionsVisible);
-    }    
+    }
     prevStates.current = { selConditions, selAirport, selDate };
   }, [selConditions, selAirport, selDate]);
 
@@ -415,7 +415,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               checked={addConditionsVisible}
               onChange={() => {
                 const nextState = !addConditionsVisible;
-                setAddConditionsVisible(nextState);                
+                setAddConditionsVisible(nextState);
                 if (!nextState) loadFlightSchedule(false, false);
               }}
               className="checkbox-toggle"
@@ -501,7 +501,9 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     marker: {
                       color:
                         chartDataCurrent.length - index - 1 < barColorsCurrent.length
-                          ? (item.name == 'etc' ? BarColors.ETC : barColorsCurrent[chartDataCurrent.length - index - 1])
+                          ? item.name == 'etc'
+                            ? BarColors.ETC
+                            : barColorsCurrent[chartDataCurrent.length - index - 1]
                           : undefined,
                       opacity: 1,
                       cornerradius: 7,

@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ChartData, ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
 import { popModal, pushModal } from '@/app/provider';
@@ -41,7 +40,15 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const { passenger_attr, facility_info, setFacilityInformation, simulation, setSimulation, overview, setOverview } = useSimulationMetadata();
+  const {
+    passenger_attr,
+    facility_info,
+    setFacilityInformation,
+    simulation,
+    setSimulation,
+    overview,
+    setOverview,
+  } = useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
 
   // const [socket, setSocket] = useState<WebSocket>();
@@ -72,7 +79,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     { text: 'Total' },
   ] as ProcedureInfo[];
 
-  const saveSnapshot = (params: any, overviewData?: Partial<SimulationOverviewResponse>, simulationData?: Partial<SimulationResponse>) => {
+  const saveSnapshot = (
+    params: any,
+    overviewData?: Partial<SimulationOverviewResponse>,
+    simulationData?: Partial<SimulationResponse>
+  ) => {
     const newSnapshot: any = {
       ...(overview?.snapshot || {}),
       params,
@@ -96,7 +107,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       if (snapshot.params && snapshot.overview && deepCompare(snapshot.params, facilityInfoParams)) {
         setSimulationParams(snapshot.params);
         setOverviewData(snapshot.overview);
-        if(snapshot.simulation) setSimulationData(snapshot.simulation);
+        if (snapshot.simulation) setSimulationData(snapshot.simulation);
       }
     }
   };
@@ -108,7 +119,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [passenger_attr?.procedures]);
 
   const loadOverview = () => {
-    if(loaded && !deepCompare(facility_info?.params, simulationParams)) {
+    if (loaded && !deepCompare(facility_info?.params, simulationParams)) {
       const params = { ...(facility_info?.params || simulationParams), scenario_id: simulationId };
       setLoadingSimulation(true);
       setOverviewData(undefined);
@@ -132,18 +143,17 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   useEffect(() => {
     if (visible) {
-      if(!loaded) {
+      if (!loaded) {
         restoreSnapshot();
         setLoaded(true);
-      } 
-      else {
+      } else {
         loadOverview();
       }
     }
   }, [visible]);
 
   useEffect(() => {
-    if(loaded) {
+    if (loaded) {
       loadOverview();
     }
   }, [loaded]);
@@ -151,7 +161,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   const onRunSimulation = () => {
     const params = simulationParams;
 
-    if(!params) {
+    if (!params) {
       console.error('run simulation - param error');
       return;
     }
@@ -195,7 +205,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             for (const criteriaCur in chartCur?.chart_y_data) {
               const criteriaDataCur = chartCur?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
               const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
-              for (const itemCur of (criteriaDataCur || [])) {
+              for (const itemCur of criteriaDataCur || []) {
                 itemCur.acc_y = Array(itemCur.y.length).fill(0);
                 for (let i = 0; i < itemCur.y.length; i++) {
                   acc_y[i] += itemCur.y[i];
@@ -235,7 +245,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
 
-  const inOutChartMaxY = Math.max(...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]), ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]))
+  const inOutChartMaxY = Math.max(
+    ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]),
+    ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0])
+  );
   // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
   return !visible ? null : (
     <div ref={refWidth}>
@@ -492,18 +505,18 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                         hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                       };
                     }) as Plotly.Data[]),
-                    {
-                      x: chartDataCurrent?.outbound?.chart_x_data,
-                      y: lineChartDataCurrent?.y,
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: 'Capacity',
-                      marker: {
-                        color: '#FF0000',
-                        opacity: 1,
-                      },
-                      orientation: 'h',
+                  {
+                    x: chartDataCurrent?.outbound?.chart_x_data,
+                    y: lineChartDataCurrent?.y,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Capacity',
+                    marker: {
+                      color: '#FF0000',
+                      opacity: 1,
                     },
+                    orientation: 'h',
+                  },
                 ]}
                 chartLayout={{
                   width,

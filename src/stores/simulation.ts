@@ -1,15 +1,11 @@
-import dayjs from 'dayjs';
 import { create } from 'zustand';
-import { ConditionData, ConditionState } from '@/types/conditions';
+import { ConditionData } from '@/types/conditions';
 import {
   Capacities,
   FacilityConnection,
   FacilityInformation,
   FlightSchedule,
-  Overview,
-  PassengerPatternState,
   PassengerSchedule,
-  ProcessingProcedureState,
   ProcessingProcedures,
   ScenarioHistory,
   ScenarioInfo,
@@ -21,24 +17,24 @@ import {
 export const BarColors = {
   DEFAULT: [
     ...[
-      "#6E55E0",
-      "#4C84BC",
-      "#B48CF2",
-      "#042440",
-      "#69D6D6",
-      "#545CA1",
-      "#65AFFF",
-      "#FF5C7A",
-      "#1F2C93",
-      "#F2789F",
-      "#5C3C9F",
-      "#FFA600",
-      "#4CAF50",
-      "#FF6E40",
-      "#C0CA33",
-      "#00B8D4",
-      "#D3D3D3",
-      "#7A7A7A",
+      '#6E55E0',
+      '#4C84BC',
+      '#B48CF2',
+      '#042440',
+      '#69D6D6',
+      '#545CA1',
+      '#65AFFF',
+      '#FF5C7A',
+      '#1F2C93',
+      '#F2789F',
+      '#5C3C9F',
+      '#FFA600',
+      '#4CAF50',
+      '#FF6E40',
+      '#C0CA33',
+      '#00B8D4',
+      '#D3D3D3',
+      '#7A7A7A',
     ],
     '#4C84BC',
   ],
@@ -46,7 +42,7 @@ export const BarColors = {
   // '3': ['#D6BBFB', '#9E77ED', '#6941C6'],
   // '4': ['#D6BBFB', '#B692F6', '#9E77ED', '#6941C6'],
   // '5': ['#D6BBFB', '#B692F6', '#9E77ED', '#7F56D9', '#6941C6'],
-  ETC: "#7A7A7A"
+  ETC: '#7A7A7A',
 };
 
 export const LineColors = ['#42307D', '#6941C6', '#9E77ED', '#D6BBFB', '#F4EBFF'];
@@ -85,8 +81,7 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
 
   setMetadata: (data) => set({ ...data }),
 
-  resetMetadata: () =>
-    set({ history: get()?.history }),
+  resetMetadata: () => set({ history: get()?.history }),
 
   setOverview: (overview, replace) =>
     set(
@@ -168,7 +163,6 @@ export const useSimulationStore = create<{
 
   processingProcedureTime: number;
   setProcessingProcedureTime: (time: number) => void;
-
 }>((set, get) => ({
   tabIndex: 0,
   setTabIndex: (index) => {
