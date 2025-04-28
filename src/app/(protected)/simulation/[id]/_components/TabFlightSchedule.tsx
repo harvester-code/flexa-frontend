@@ -89,7 +89,7 @@ const parseConditions = (conditionData: ConditionParams[]): ConditionData => {
 
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
-  const { overview, setFlightSchedule, flight_sch } = useSimulationMetadata();
+  const { resetMetadata, setFlightSchedule, flight_sch } = useSimulationMetadata();
   const {
     tabIndex,
     setTabIndex,
@@ -182,7 +182,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
         airport: selAirport,
-        condition: useCondition ? selConditions || [] : [],
+        condition: first_load ? [] : useCondition ? selConditions || [] : [],
       };
 
       getFlightSchedules(simulationId, params)
@@ -235,6 +235,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             snapshotData.chartData = newChartData;
           }
 
+          resetMetadata();
           setFlightScheduleTime(Date.now());
           setApplied(true);
           setLoadingFlightSchedule(false);
@@ -375,6 +376,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                   if (date) {
                     setAddConditionsVisible(false);
                     setSelConditions(undefined);
+                    setChartData(undefined);
                     setSelDate(date);
                   }
                 }}
@@ -393,7 +395,12 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             className="btn-md btn-primary"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             text="Load"
-            onClick={() => loadFlightSchedule(false, addConditionsVisible)}
+            onClick={() => {
+              setAddConditionsVisible(false);
+              setSelConditions(undefined);
+              setChartData(undefined);
+              loadFlightSchedule(true, addConditionsVisible);
+            }}
           />
         </div>
       </div>

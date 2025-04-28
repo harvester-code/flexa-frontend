@@ -66,6 +66,7 @@ export const SankeyColors = [
 
 interface ScenarioMetadataZustand extends Partial<ScenarioMetadata> {
   setMetadata: (data: ScenarioMetadata) => void;
+  resetMetadata: () => void;
 
   setOverview: (overview: Partial<ScenarioOverview>, replace?: boolean) => void;
   setFlightSchedule: (flightSchedule: Partial<FlightSchedule>, replace?: boolean) => void;
@@ -83,6 +84,9 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
   scenario_id: '',
 
   setMetadata: (data) => set({ ...data }),
+
+  resetMetadata: () =>
+    set({ history: get()?.history }),
 
   setOverview: (overview, replace) =>
     set(

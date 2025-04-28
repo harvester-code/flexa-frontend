@@ -155,6 +155,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       console.error('run simulation - param error');
       return;
     }
+
     // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
 
     // ws.onopen = () => {
