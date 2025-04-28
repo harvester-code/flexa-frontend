@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { faAngleDown, faAngleLeft, faAngleRight, faAngleUp } from '@fortawesome/free-solid-svg-icons';
+import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { FacilityInformation, ProcedureInfo } from '@/types/simulations';
 import { getFacilityInfoLineChartData } from '@/services/simulations';
@@ -13,7 +13,7 @@ import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
 import { useResize } from '@/hooks/useResize';
-import { deepCompare, numberWithCommas } from '@/lib/utils';
+import { numberWithCommas } from '@/lib/utils';
 import GridTable, { GridTableHeader, GridTableRow } from './GridTable';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -57,7 +57,14 @@ const tableCellHeight = 36;
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const refWidth = useRef(null);
   const { passenger_attr, facility_conn, facility_info, setFacilityInformation } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, facilityConnCapacities, setFacilityConnCapacities, flightScheduleTime, processingProcedureTime } = useSimulationStore();
+  const {
+    tabIndex,
+    setTabIndex,
+    facilityConnCapacities,
+    setFacilityConnCapacities,
+    flightScheduleTime,
+    processingProcedureTime,
+  } = useSimulationStore();
 
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState<number[]>([]);
@@ -99,10 +106,10 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   };
 
   useEffect(() => {
-    if(visible && !loaded) {
+    if (visible && !loaded) {
       if (!flightScheduleTime && !processingProcedureTime && facility_info?.snapshot) {
         restoreSnapshot();
-      }  
+      }
       setLoaded(true);
     }
   }, [visible]);
@@ -126,14 +133,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               return {
                 name: item.name,
                 values: Array(data.numberOfEachDevices).fill(
-                  String(index == 0 ? item.value : data.maximumQueuesAllowedPer)
+                  String(index == 0 ? data.processingTime : data.maximumQueuesAllowedPer)
                 ),
                 style: { background: '#FFFFFF' },
               };
             }),
           }
         : facilitySettingsCurrent.defaultTableData;
-
     const newFacilitySettings = { ...facilitySettings, [id]: { ...data, defaultTableData } };
     _setFacilitySettings(newFacilitySettings);
     if (snapshot) saveSnapshot({}, { facilitySettings: newFacilitySettings });
@@ -587,7 +593,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           <div className="flex items-center gap-[20px]">
             <Checkbox
               id="Automatic"
-              label="Automatic Input"
+              label="Check-box"
               checked={!!facilitySettingsCurrent.automaticInput}
               onChange={() =>
                 setFacilitySettings({
@@ -701,8 +707,8 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
             <div>
               <hr />
               <div className="mt-[34px] flex flex-row justify-between">
-                <h3 className="title-sm">Check Generated Passenger Data</h3>
-                <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
+                <h3 className="title-sm">Estimated Passenger Inflow by Time</h3>
+                {/* <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p> */}
               </div>
               <div className="mt-[20px] flex items-center justify-between">
                 <p className="text-[40px] text-xl font-semibold">

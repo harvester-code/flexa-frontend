@@ -147,7 +147,8 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
 export default function TabPassengerSchedule({ visible }: TabPassengerScheduleProps) {
   const refWidth = useRef(null);
   const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, flightScheduleTime, setFlightScheduleTime, setAvailableTabIndex } = useSimulationStore();
+  const { tabIndex, setTabIndex, priorities, flightScheduleTime, setFlightScheduleTime, setAvailableTabIndex } =
+    useSimulationStore();
 
   const refFlightScheduleTime = useRef(Array(1).fill(0)).current;
 
@@ -202,12 +203,12 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
   };
 
   useEffect(() => {
-    if(visible && !loaded) {
+    if (visible && !loaded) {
       if (!flightScheduleTime && passenger_sch?.snapshot) {
         restoreSnapshot();
-      }  
+      }
       setLoaded(true);
-    } else if(visible && loaded && refFlightScheduleTime[0] != flightScheduleTime) {
+    } else if (visible && loaded && refFlightScheduleTime[0] != flightScheduleTime) {
       setChartData(undefined);
     }
   }, [visible]);
@@ -306,7 +307,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
 
   const distributionData: Plotly.Data[] = [];
 
-  const vlineData: Array<{ x: number, minY: number, maxY: number, color: string }> = [];
+  const vlineData: Array<{ x: number; minY: number; maxY: number; color: string }> = [];
 
   const minMaxMean = { min: Number(otherPassengerState.mean) * -1, max: Number(otherPassengerState.mean) * -1 };
 
@@ -489,21 +490,24 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
               Total: {numberWithCommas(chartData?.total)} Pax
             </dt>
             <dd className="text-[40px] text-xl font-semibold">
-              {chartData?.total_sub_obj?.map((textItem, index) => {
-              return (
-                <React.Fragment key={`value_${index}`}>
-                  {textItem.value}{textItem.unit || ''}
-                  <span className='text-sm'>{` ${textItem.title}`}</span>
-                </React.Fragment>
-              );
-            }).map((textcompo, index) => {
-              return (
-                <React.Fragment key={`compo_${index}`}>
-                  {index > 0 ? ' × ' : ''}
-                  {textcompo}
-                </React.Fragment>
-              )
-            })}
+              {chartData?.total_sub_obj
+                ?.map((textItem, index) => {
+                  return (
+                    <React.Fragment key={`value_${index}`}>
+                      {textItem.value}
+                      {textItem.unit || ''}
+                      <span className="text-sm">{` ${textItem.title}`}</span>
+                    </React.Fragment>
+                  );
+                })
+                .map((textcompo, index) => {
+                  return (
+                    <React.Fragment key={`compo_${index}`}>
+                      {index > 0 ? ' × ' : ''}
+                      {textcompo}
+                    </React.Fragment>
+                  );
+                })}
             </dd>
           </dl>
           <div className="mt-[10px] flex h-[210px] items-center justify-center rounded-md bg-white">
@@ -544,7 +548,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                       dash: 'dot',
                     },
                   };
-                })
+                }),
               }}
               config={{
                 displayModeBar: false,

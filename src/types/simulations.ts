@@ -1,4 +1,4 @@
-import { ConditionData, ConditionParams, ConditionState } from '@/types/conditions';
+import { ConditionParams, ConditionState } from '@/types/conditions';
 import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
 
 interface ScenarioData {
