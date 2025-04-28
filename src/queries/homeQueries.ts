@@ -30,7 +30,7 @@ const useSummaries = ({
   scenarioId?: string;
 }) => {
   return useQuery({
-    queryKey: ['summaries', scenarioId],
+    queryKey: ['summaries', scenarioId, calculate_type, percentile],
     queryFn: async () => {
       const { data: { data } = {} } = await fetchSummaries({ calculate_type, percentile, scenarioId });
       return data;
