@@ -1,11 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
-import Input from '@/components/Input';
-import TheDropdownMenu from '@/components/TheDropdownMenu';
 import {
   Tooltip,
   TooltipArrow,
@@ -17,11 +14,6 @@ import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 
-const KPI_FUNCS = [
-  { label: 'Mean', value: 'mean' },
-  // { label: 'Top N%', value: 'topN' },
-];
-
 const TOOLTIP_MAP = {
   'Passenger Throughput': 'The number of all passengers processed in a day',
   'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
@@ -31,17 +23,12 @@ const TOOLTIP_MAP = {
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
+  calculate_type: string;
+  percentile: number;
 }
 
-function HomeSummary({ scenario }: HomeSummaryProps) {
-  const [topValue, setTopValue] = useState(0);
-  const [kpiFunc, setKPIFunc] = useState(KPI_FUNCS[0]);
-
-  const { data: summaries, isLoading } = useSummaries({
-    calculate_type: kpiFunc.value,
-    percentile: topValue,
-    scenarioId: scenario?.id,
-  });
+function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {
+  const { data: summaries, isLoading } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -57,34 +44,7 @@ function HomeSummary({ scenario }: HomeSummaryProps) {
 
   return (
     <>
-      <div className="my-[14px] flex justify-end gap-4">
-        <TheDropdownMenu
-          className="min-w-[180px] [&>*]:justify-start"
-          items={KPI_FUNCS}
-          icon={<ChevronDown />}
-          label={kpiFunc.label}
-          onSelect={(opt) => setKPIFunc(opt)}
-        />
-
-        {kpiFunc.value === 'topN' && (
-          <div className="flex items-center gap-1 text-lg font-semibold">
-            <span>Top</span>
-            <div className="max-w-20">
-              {/* FIXME: 컴포넌트 수정하기 */}
-              <Input
-                className="input-rounded text-center text-sm"
-                type="text"
-                placeholder="0-100"
-                value={topValue.toString()}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopValue(Number(e.target.value))}
-              />
-            </div>
-            <span>%</span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex overflow-auto">
+      <div className="my-[14px] flex overflow-auto">
         {/* NOTE: NORMAL */}
         <div className="flex flex-1 flex-col gap-y-5 font-medium">
           <div className="flex h-full">

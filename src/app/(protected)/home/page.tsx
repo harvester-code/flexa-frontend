@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
+import Input from '@/components/Input';
 import TheContentHeader from '@/components/TheContentHeader';
+import TheDropdownMenu from '@/components/TheDropdownMenu';
 import SimulationOverview from '@/components/popups/SimulationOverview';
+import { useDebounce } from '@/hooks/useDebounce';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCanvas from './_components/HomeCanvas';
 import HomeCharts from './_components/HomeCharts';
@@ -14,11 +18,20 @@ import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
 import { snapshot } from './samples';
 
+const KPI_FUNCS = [
+  { label: 'Mean', value: 'mean' },
+  { label: 'Top N%', value: 'topN' },
+];
+
 function HomePage() {
   const { data: user } = useUser();
-  const { data: scenarios, isLoading: isScenariosLoading } = useScenarios(user?.groupId);
+  const { data: scenarios } = useScenarios(user?.groupId);
 
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
+
+  const [calculateType, setCalculateType] = useState(KPI_FUNCS[0]);
+  const [percentile, setPercentile] = useState(5);
+  const debouncedPercentile = useDebounce(percentile, 300);
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
@@ -40,8 +53,39 @@ function HomePage() {
 
       <HomeCanvas scenario={scenario} snapshot={snapshot} />
 
-      <HomeAccordion title="Summary">
-        <HomeSummary scenario={scenario} />
+      <div className="mt-4 flex justify-end gap-4">
+        <TheDropdownMenu
+          className="min-w-[180px] [&>*]:justify-start"
+          items={KPI_FUNCS}
+          icon={<ChevronDown />}
+          label={calculateType.label}
+          onSelect={(opt) => setCalculateType(opt)}
+        />
+
+        {calculateType.value === 'topN' && (
+          <div className="flex items-center gap-1 text-lg font-semibold">
+            <span>Top</span>
+            <div className="max-w-20">
+              {/* FIXME: 컴포넌트 수정하기 */}
+              <Input
+                className="input-rounded text-center text-sm"
+                type="text"
+                placeholder="0-100"
+                value={percentile.toString()}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPercentile(Number(e.target.value))}
+              />
+            </div>
+            <span>%</span>
+          </div>
+        )}
+      </div>
+
+      <HomeAccordion title="Summary" className="mt-4">
+        <HomeSummary
+          calculate_type={calculateType.value}
+          percentile={debouncedPercentile}
+          scenario={scenario}
+        />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">

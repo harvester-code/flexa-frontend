@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import dayjs from 'dayjs';
 import { Ban, Calendar, Link2, Plus, Search } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { Button } from '@/components/ui/Button';
@@ -42,7 +43,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
   const columns = useMemo(
     () => [
       columnHelper.accessor('simulation_name', {
-        // TODO: 클릭 범위 조정
+        header: () => <span>Simulation Name</span>,
         cell: (info) => (
           <p
             className="flex cursor-pointer items-center gap-2.5 hover:font-bold"
@@ -68,11 +69,13 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
         footer: (info) => info.column.id,
       }),
       columnHelper.accessor('simulation_date', {
-        header: () => <span>Visits</span>,
+        header: () => <span>Created at</span>,
+        cell: (info) => dayjs(info.getValue()).format('MMM-DD-YYYY HH:mm'),
         footer: (info) => info.column.id,
       }),
       columnHelper.accessor('updated_at', {
-        header: () => <p>Edit Date</p>,
+        header: () => <p>Last updated at</p>,
+        cell: (info) => dayjs(info.getValue()).format('MMM-DD-YYYY HH:mm'),
         footer: (info) => info.column.id,
       }),
       columnHelper.accessor('memo', {
@@ -125,16 +128,13 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
         <DialogContent className="h-full max-h-[39rem] max-w-[90%] overflow-auto xl:max-w-[70rem]">
           <DialogHeader>
             <DialogTitle className="flex items-baseline justify-between pt-1.5">
-              <span>Simulation Overview</span>
+              <span>Select Scenario</span>
               <Button className="right-5 top-5" type="submit">
                 <Plus /> New Scenario
               </Button>
             </DialogTitle>
 
-            <DialogDescription>
-              You can modify, review results, or create new scenarios based on the simulation generated with the
-              entered facility information.
-            </DialogDescription>
+            <DialogDescription>Select the scenario you&apos;d like to review.</DialogDescription>
           </DialogHeader>
 
           <Separator />
@@ -171,6 +171,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
                     </tr>
                   ))}
                 </thead>
+
                 <tbody>
                   {table.getRowModel().rows.map((row) => (
                     <tr key={row.id} className="hover:bg-accent-50" onClick={row.getToggleSelectedHandler()}>

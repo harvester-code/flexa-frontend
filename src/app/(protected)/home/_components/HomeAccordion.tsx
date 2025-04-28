@@ -7,14 +7,15 @@ import { cn } from '@/lib/utils';
 interface HomeAccordionProps {
   title: string;
   open?: boolean;
+  className?: string;
   children?: React.ReactNode;
 }
 
-function HomeAccordion({ title, open = true, children }: HomeAccordionProps) {
+function HomeAccordion({ title, open = true, className, children }: HomeAccordionProps) {
   const [isOpened, setIsOpened] = useState<boolean>(open);
 
   return (
-    <div className="mt-12 flex flex-col">
+    <div className={cn('mt-12 flex flex-col', className)}>
       <div className="flex">
         <h3
           className="flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-default-100 px-5 text-2xl font-semibold text-default-900"
