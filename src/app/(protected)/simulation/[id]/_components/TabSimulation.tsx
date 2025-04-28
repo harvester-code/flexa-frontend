@@ -184,7 +184,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     // console.log(params)
     runSimulation(params)
       .then(({ data }) => {
-        console.log(data)
         const chartKeys = ['inbound', 'outbound', 'queing'];
         for (const chartGroupCur of data?.chart || []) {
           for (const chartKeyCur of chartKeys) {
@@ -235,6 +234,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
 
+  const inOutChartMaxY = Math.max(...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]), ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]))
   // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
   return !visible ? null : (
     <div ref={refWidth}>
@@ -404,7 +404,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 </div>
               </div>
               <div className="mb-[20px] mt-[30px] flex justify-between">
-                <p className="text-sm font-medium text-default-600">Number of arrival passengers by hours</p>
+                <p className="text-sm font-medium text-default-600">Pax Inflow</p>
               </div>
               <BarChart
                 chartData={[
@@ -458,6 +458,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     orientation: 'h',
                   },
                   bargap: 0.4,
+                  yaxis: {
+                    range: [0, inOutChartMaxY],
+                  },
                   // barcornerradius: 7,
                 }}
                 config={{
@@ -465,7 +468,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 }}
               />
               <div className="mb-[20px] mt-[50px] flex justify-between">
-                <p className="text-sm font-medium text-default-600">Number of processed passengers</p>
+                <p className="text-sm font-medium text-default-600">Pax Outflow</p>
               </div>
               <BarChart
                 chartData={[
@@ -519,6 +522,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     orientation: 'h',
                   },
                   bargap: 0.4,
+                  yaxis: {
+                    range: [0, inOutChartMaxY],
+                  },
                   // barcornerradius: 7,
                 }}
                 config={{
@@ -526,7 +532,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 }}
               />
               <div className="mb-[20px] mt-[50px] flex justify-between">
-                <p className="text-sm font-medium text-default-600">Number of queuing passengers</p>
+                <p className="text-sm font-medium text-default-600">Queue Pax</p>
               </div>
               <BarChart
                 chartData={[
@@ -575,7 +581,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 }}
               />
               <div className="mb-[20px] mt-[50px] flex justify-between">
-                <p className="text-sm font-medium text-default-600">Average waiting time</p>
+                <p className="text-sm font-medium text-default-600">Wait Time</p>
               </div>
               <LineChart
                 chartData={[
