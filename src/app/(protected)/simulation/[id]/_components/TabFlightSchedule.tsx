@@ -190,7 +190,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           const flightSchedule: Partial<FlightSchedule> = { params };
           const snapshotData: any = { applied: true };
 
-          if (data?.add_conditions) {
+          if (first_load && data?.add_conditions) {
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
               if (Array.isArray(conditions[keyCur]))
@@ -200,7 +200,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             snapshotData.conditions = conditions;
           }
 
-          if (data?.add_priorities) {
+          if (first_load && data?.add_priorities) {
             const priorities = parseConditions(data?.add_priorities);
             for (const keyCur in priorities) {
               if (Array.isArray(priorities[keyCur]))

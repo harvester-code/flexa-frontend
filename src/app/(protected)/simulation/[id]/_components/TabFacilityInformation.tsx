@@ -126,14 +126,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               return {
                 name: item.name,
                 values: Array(data.numberOfEachDevices).fill(
-                  String(index == 0 ? item.value : data.maximumQueuesAllowedPer)
+                  String(index == 0 ? data.processingTime : data.maximumQueuesAllowedPer)
                 ),
                 style: { background: '#FFFFFF' },
               };
             }),
           }
         : facilitySettingsCurrent.defaultTableData;
-
     const newFacilitySettings = { ...facilitySettings, [id]: { ...data, defaultTableData } };
     _setFacilitySettings(newFacilitySettings);
     if (snapshot) saveSnapshot({}, { facilitySettings: newFacilitySettings });
@@ -587,7 +586,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           <div className="flex items-center gap-[20px]">
             <Checkbox
               id="Automatic"
-              label="Automatic Input"
+              label="Check-box"
               checked={!!facilitySettingsCurrent.automaticInput}
               onChange={() =>
                 setFacilitySettings({
@@ -701,8 +700,8 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
             <div>
               <hr />
               <div className="mt-[34px] flex flex-row justify-between">
-                <h3 className="title-sm">Check Generated Passenger Data</h3>
-                <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p>
+                <h3 className="title-sm">Estimated Passenger Inflow by Time</h3>
+                {/* <p className="mt-[10px] text-sm text-default-500">Load completed(100%)</p> */}
               </div>
               <div className="mt-[20px] flex items-center justify-between">
                 <p className="text-[40px] text-xl font-semibold">

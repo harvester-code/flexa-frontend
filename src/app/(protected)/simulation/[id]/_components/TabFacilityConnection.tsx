@@ -702,6 +702,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
           {!tableData?.[procedureIndex] || tableData[procedureIndex].hidden ? null : (
             <div>
               <GridTable
+                className='max-h-[80vh]'              
                 type={tableType == TableTypes[0] ? 'checkbox' : tableType == TableTypes[1] ? 'number' : 'text'}
                 title={tableData[procedureIndex].title}
                 header={tableData[procedureIndex].header}
@@ -714,6 +715,7 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
                 onDataChange={(data) => {
                   setTableData(tableData.map((val, idx) => (idx == procedureIndex ? { ...val, data } : val)));
                 }}
+                stickyTopRows={1}
               />
             </div>
           )}
