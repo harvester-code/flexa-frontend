@@ -427,7 +427,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     .map((item, index) => {
                       return {
                         x: chartDataCurrent?.inbound?.chart_x_data,
-                        y: item.acc_y,
+                        y: item.y,
                         name: item.name,
                         type: 'bar',
                         marker: {
@@ -463,7 +463,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     t: 0,
                     b: 30,
                   },
-                  barmode: 'overlay',
+                  barmode: 'stack',
                   legend: {
                     x: 1,
                     y: 1.1,
@@ -491,7 +491,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     .map((item, index) => {
                       return {
                         x: chartDataCurrent?.outbound?.chart_x_data,
-                        y: item.acc_y,
+                        y: item.y,
                         name: item.name,
                         type: 'bar',
                         marker: {
@@ -527,7 +527,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     t: 0,
                     b: 30,
                   },
-                  barmode: 'overlay',
+                  barmode: 'stack',
                   legend: {
                     x: 1,
                     y: 1.1,
@@ -555,7 +555,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     .map((item, index) => {
                       return {
                         x: chartDataCurrent?.queing?.chart_x_data,
-                        y: item.acc_y,
+                        y: item.y,
                         name: item.name,
                         type: 'bar',
                         marker: {
@@ -579,7 +579,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     t: 0,
                     b: 30,
                   },
-                  barmode: 'overlay',
+                  barmode: 'stack',
                   legend: {
                     x: 1,
                     y: 1.1,
@@ -620,7 +620,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     t: 0,
                     b: 30,
                   },
-                  barmode: 'overlay',
                   legend: {
                     x: 1,
                     y: 1.1,

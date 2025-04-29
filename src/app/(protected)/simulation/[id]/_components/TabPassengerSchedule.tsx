@@ -592,7 +592,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                   .map((item, index) => {
                     return {
                       x: chartData?.x,
-                      y: item.acc_y,
+                      y: item.y,
                       name: item.name,
                       type: 'bar',
                       marker: {
@@ -613,7 +613,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
                     t: 0,
                     b: 30,
                   },
-                  barmode: 'overlay',
+                  barmode: 'stack',
                   legend: {
                     x: 1,
                     y: 1.2,
