@@ -125,7 +125,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       setOverviewData(undefined);
       setSimulationData(undefined);
       setSimulationParams(params);
-      getSimulationOverview(params)
+
+      getSimulationOverview(simulationId, params)
         .then(({ data }) => {
           setOverviewData(data);
           setOverview({ ...overview, matric: data?.matric });
