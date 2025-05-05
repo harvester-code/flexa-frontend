@@ -196,6 +196,13 @@ const getSimulationOverview = (scenario_id: string, params: SimulationParams) =>
   );
 };
 
+const requestSimulation = (scenario_id: string, params: SimulationParams) => {
+  return instanceWithAuth.post<SimulationResponse>(
+    `${BASE_URL}/request-simulation/scenario-id/${scenario_id}`,
+    params
+  );
+};
+
 const runSimulation = (params: SimulationParams) => {
   return instanceWithAuth.post<SimulationResponse>(`${BASE_URL}/run-simulation/temp`, params);
 };
@@ -205,15 +212,16 @@ export {
   deleteScenario,
   duplicateScenario,
   fetchScenarios,
+  getFacilityConns,
+  getFacilityInfoLineChartData,
   getFlightSchedules,
   getPassengerSchedules,
   getProcessingProcedures,
-  getFacilityConns,
-  getFacilityInfoLineChartData,
   getScenarioMetadata,
   getSimulationOverview,
-  runSimulation,
   modifyScenario,
+  requestSimulation,
+  runSimulation,
   setMasterScenario,
   updateScenarioMetadata,
 };
