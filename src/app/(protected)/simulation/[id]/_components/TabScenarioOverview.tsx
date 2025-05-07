@@ -84,9 +84,11 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     if (!history) return;
     metadata.setHistoryItem({ ...history[index], memo: newMemo }, index);
   };
+
   const handleUpdateMemo = () => {
     updateScenarioMetadata(false);
   };
+
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
@@ -166,10 +168,12 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           </tbody>
         </table>
       </div>
+
       <div className="pagingFraction mt-[20px] flex items-center justify-end gap-[20px]">
         <p className="text-sm font-medium">
           Page {historyPageData.lastPage > 0 ? historyPage + 1 : 0} of {historyPageData.lastPage}
         </p>
+
         <p className="flex gap-[10px]">
           <button
             className="flex h-[40px] w-[40px] items-center justify-center rounded-md border border-default-200"
@@ -179,6 +183,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           >
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           </button>
+
           <button
             className="flex h-[40px] w-[40px] items-center justify-center rounded-md border border-default-200"
             onClick={() => {
@@ -189,6 +194,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           </button>
         </p>
       </div>
+
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -199,6 +205,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Scenario List</span>
         </button>
+
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}

@@ -65,9 +65,11 @@ export default function SimulationDetail(props) {
       setLoaded(true);
     });
   }, [params?.id]);
+
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [tabIndex]);
+
   return (
     <div className="mx-auto max-w-[1340px] px-[30px]">
       <TheContentHeader text="Simulation" />
@@ -105,6 +107,7 @@ export default function SimulationDetail(props) {
           />
         </div>
       </div>
+
       <TabDefault
         tabCount={tabs.length}
         currentTab={tabIndex}
@@ -113,13 +116,14 @@ export default function SimulationDetail(props) {
         className={`mt-[40px]`}
         onTabChange={(index) => (!loaded || index > availableTabIndex ? null : setTabIndex(index))}
       />
+
       {loaded ? (
         <React.Fragment key={simulationId}>
           <TabScenarioOverview visible={tabIndex == 0} />
           <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
-          <TabPassengerSchedule visible={tabIndex == 2} />
+          <TabPassengerSchedule simulationId={params?.id} visible={tabIndex == 2} />
           <TabProcessingProcedures visible={tabIndex == 3} />
-          <TabFacilityConnection visible={tabIndex == 4} />
+          <TabFacilityConnection simulationId={params?.id} visible={tabIndex == 4} />
           <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
           <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
         </React.Fragment>

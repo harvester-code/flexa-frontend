@@ -27,6 +27,7 @@ const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: fa
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
 interface TabPassengerScheduleProps {
+  simulationId: string;
   visible: boolean;
 }
 
@@ -144,7 +145,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
   );
 }
 
-export default function TabPassengerSchedule({ visible }: TabPassengerScheduleProps) {
+export default function TabPassengerSchedule({ simulationId, visible }: TabPassengerScheduleProps) {
   const refWidth = useRef(null);
   const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
   const { tabIndex, setTabIndex, priorities, flightScheduleTime, setFlightScheduleTime, setAvailableTabIndex } =
@@ -244,7 +245,7 @@ export default function TabPassengerSchedule({ visible }: TabPassengerSchedulePr
       ],
     };
 
-    getPassengerSchedules(params)
+    getPassengerSchedules(simulationId, params)
       .then(({ data }) => {
         const passengerSchedule: Partial<PassengerSchedule> = { params };
         const snapshotData: any = {};

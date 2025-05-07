@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { ChartData, ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
 import { popModal, pushModal } from '@/app/provider';
-import { getSimulationOverview, runSimulation } from '@/services/simulations';
+import { getSimulationOverview, requestSimulation, runSimulation } from '@/services/simulations';
 import { BarColors, SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
@@ -40,15 +40,8 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const {
-    passenger_attr,
-    facility_info,
-    setFacilityInformation,
-    simulation,
-    setSimulation,
-    overview,
-    setOverview,
-  } = useSimulationMetadata();
+  const { passenger_attr, facility_info, setFacilityInformation, overview, setOverview } =
+    useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
 
   // const [socket, setSocket] = useState<WebSocket>();
@@ -125,7 +118,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       setOverviewData(undefined);
       setSimulationData(undefined);
       setSimulationParams(params);
-      getSimulationOverview(params)
+
+      getSimulationOverview(simulationId, params)
         .then(({ data }) => {
           setOverviewData(data);
           setOverview({ ...overview, matric: data?.matric });
@@ -158,7 +152,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
   }, [loaded]);
 
-  const onRunSimulation = () => {
+  const onRunSimulation = async () => {
     const params = simulationParams;
 
     if (!params) {
@@ -166,65 +160,61 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       return;
     }
 
-    // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
+    const response = await requestSimulation(simulationId, params);
 
+    // NOTE: 시뮬레이션 시작 코드
+    // setLoadingSimulation(true);
+    // runSimulation(params)
+    //   .then(({ data }) => {
+    //     const chartKeys = ['inbound', 'outbound', 'queing'];
+    //     for (const chartGroupCur of data?.chart || []) {
+    //       for (const chartKeyCur of chartKeys) {
+    //         const chartCur = chartGroupCur[chartKeyCur] as {
+    //           chart_x_data: string[];
+    //           chart_y_data: ChartData;
+    //         };
+    //         for (const criteriaCur in chartCur?.chart_y_data) {
+    //           const criteriaDataCur = chartCur?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
+    //           const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
+    //           for (const itemCur of criteriaDataCur || []) {
+    //             itemCur.acc_y = Array(itemCur.y.length).fill(0);
+    //             for (let i = 0; i < itemCur.y.length; i++) {
+    //               acc_y[i] += itemCur.y[i];
+    //               itemCur.acc_y[i] = Number(acc_y[i]);
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //     setSimulationData(data);
+    //     saveSnapshot(params, overviewData, data);
+    //     setLoadingSimulation(false);
+    //   })
+    //   .catch((e) => {
+    //     console.error(e);
+    //     setSimulationData(undefined);
+    //     setLoadError(true);
+    //     setLoadingSimulation(false);
+    //   });
+
+    // NOTE: WebSocket 연결
+    // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
     // ws.onopen = () => {
     //   console.log('WebSocket 연결이 열렸습니다.');
-
     //   // ws.send(params);
     // };
-
     // ws.onmessage = (event) => {
     //   console.log(event.data);
     // };
-
     // ws.onerror = (error) => {
     //   console.error('WebSocket 에러:', error);
     // };
-
     // ws.onclose = () => {
     //   console.log('WebSocket 연결이 종료되었습니다.');
     //   ws.close();
     //   setSocket(undefined);
     // };
-
     // setSocket(ws);
-
-    setLoadingSimulation(true);
-
-    // console.log(params)
-    runSimulation(params)
-      .then(({ data }) => {
-        const chartKeys = ['inbound', 'outbound', 'queing'];
-        for (const chartGroupCur of data?.chart || []) {
-          for (const chartKeyCur of chartKeys) {
-            const chartCur = chartGroupCur[chartKeyCur] as {
-              chart_x_data: string[];
-              chart_y_data: ChartData;
-            };
-            for (const criteriaCur in chartCur?.chart_y_data) {
-              const criteriaDataCur = chartCur?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
-              const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
-              for (const itemCur of criteriaDataCur || []) {
-                itemCur.acc_y = Array(itemCur.y.length).fill(0);
-                for (let i = 0; i < itemCur.y.length; i++) {
-                  acc_y[i] += itemCur.y[i];
-                  itemCur.acc_y[i] = Number(acc_y[i]);
-                }
-              }
-            }
-          }
-        }
-        setSimulationData(data);
-        saveSnapshot(params, overviewData, data);
-        setLoadingSimulation(false);
-      })
-      .catch((e) => {
-        console.error(e);
-        setSimulationData(undefined);
-        setLoadError(true);
-        setLoadingSimulation(false);
-      });
   };
 
   const processCurrent = procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_');

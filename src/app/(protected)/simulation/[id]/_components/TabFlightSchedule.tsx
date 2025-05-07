@@ -91,19 +91,19 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const refWidth = useRef(null);
   const { resetMetadata, setFlightSchedule, flight_sch } = useSimulationMetadata();
   const {
-    tabIndex,
-    setTabIndex,
     conditions,
-    setConditions,
     priorities,
-    setPriorities,
+    tabIndex,
     setAvailableTabIndex,
-    availableTabIndex,
+    setConditions,
     setFlightScheduleTime,
+    setPriorities,
+    setTabIndex,
   } = useSimulationStore();
 
   const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
   const [addConditionsVisible, setAddConditionsVisible] = useState(false);
+
   const [selColorCriteria, setSelColorCriteria] = useState(flight_sch?.snapshot?.selColorCriteria || 'Airline');
   const [selDate, setSelDate] = useState<Date>(flight_sch?.snapshot?.selDate || dayjs().toDate());
   const [selAirport, setSelAirport] = useState('ICN');
@@ -178,6 +178,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
       setLoadingFlightSchedule(true);
       setAvailableTabIndex(tabIndex);
+
       const params = {
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
@@ -190,26 +191,33 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           const flightSchedule: Partial<FlightSchedule> = { params };
           const snapshotData: any = { applied: true };
 
+          // ========================================================
           if (first_load && data?.add_conditions) {
             const conditions = parseConditions(data?.add_conditions);
             for (const keyCur in conditions) {
               if (Array.isArray(conditions[keyCur]))
-                for (const rowCur of conditions[keyCur]) rowCur.tooltip = { title: 'title', text: 'test' };
+                for (const rowCur of conditions[keyCur]) {
+                  rowCur.tooltip = { title: 'title', text: 'test' };
+                }
             }
             setConditions(conditions);
             snapshotData.conditions = conditions;
           }
 
+          // ========================================================
           if (first_load && data?.add_priorities) {
             const priorities = parseConditions(data?.add_priorities);
             for (const keyCur in priorities) {
               if (Array.isArray(priorities[keyCur]))
-                for (const rowCur of priorities[keyCur]) rowCur.tooltip = { title: 'title', text: 'test' };
+                for (const rowCur of priorities[keyCur]) {
+                  rowCur.tooltip = { title: 'title', text: 'test' };
+                }
             }
             setPriorities(priorities);
             snapshotData.priorities = priorities;
           }
 
+          // ========================================================
           if (data?.chart_x_data && data?.chart_y_data) {
             for (const criteriaCur in data?.chart_y_data) {
               const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
@@ -235,6 +243,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             snapshotData.chartData = newChartData;
           }
 
+          // ========================================================
           resetMetadata();
           setFlightScheduleTime(Date.now());
           setApplied(true);
@@ -357,6 +366,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               }}
             />
           )}
+
           <Popover>
             <PopoverTrigger asChild>
               <div>

@@ -27,6 +27,7 @@ import GridTable, { GridTableHeader, GridTableRow, checkNotEmptyRows } from './G
 const TableTypes = ['Check-box', 'Probability (%)']; // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
 
 interface FacilityConnectionProps {
+  simulationId: string;
   visible: boolean;
 }
 
@@ -217,7 +218,7 @@ function Conditions({
   );
 }
 
-export default function TabFacilityConnection({ visible }: FacilityConnectionProps) {
+export default function TabFacilityConnection({ simulationId, visible }: FacilityConnectionProps) {
   const refWidth = useRef(null);
   const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
   const {
@@ -521,7 +522,8 @@ export default function TabFacilityConnection({ visible }: FacilityConnectionPro
 
     setLoadingFacilityConnection(true);
     setFacilityConnection({ params: undefined });
-    getFacilityConns(params)
+
+    getFacilityConns(simulationId, params)
       .then(({ data }) => {
         setFacilityConnCapacities({ ...data });
         const facilityConnection: Partial<FacilityConnection> = { ...facility_conn, params };

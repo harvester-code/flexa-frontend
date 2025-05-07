@@ -6,7 +6,6 @@ import {
   PassengerScheduleResponse,
   ProcessingProceduresResponse,
   ScenarioHistory,
-  ScenarioMetadata,
   ScenarioMetadataResponse,
   ScenariosDataResponse,
   SimulationOverviewResponse,
@@ -125,8 +124,11 @@ interface PassengerSchedulesParams {
   }>;
 }
 
-const getPassengerSchedules = (params: PassengerSchedulesParams) => {
-  return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/passenger-schedules`, params);
+const getPassengerSchedules = (scenario_id: string, params: PassengerSchedulesParams) => {
+  return instanceWithAuth.post<PassengerScheduleResponse>(
+    `${BASE_URL}/passenger-schedules/scenario-id/${scenario_id}`,
+    params
+  );
 };
 
 const getProcessingProcedures = () => {
@@ -162,8 +164,11 @@ interface FacilityConnsParams extends PassengerSchedulesParams {
   };
 }
 
-const getFacilityConns = (params: FacilityConnsParams) => {
-  return instanceWithAuth.post<FacilityConnectionResponse>(`${BASE_URL}/facility-conns`, params);
+const getFacilityConns = (scenario_id: string, params: FacilityConnsParams) => {
+  return instanceWithAuth.post<FacilityConnectionResponse>(
+    `${BASE_URL}/facility-conns/scenario-id/${scenario_id}`,
+    params
+  );
 };
 
 const getFacilityInfoLineChartData = (params: { time_unit?: number; facility_schedules?: number[][] }) => {
@@ -184,8 +189,18 @@ interface SimulationParams extends FacilityConnsParams {
   }>;
 }
 
-const getSimulationOverview = (params: SimulationParams) => {
-  return instanceWithAuth.post<SimulationOverviewResponse>(`${BASE_URL}/run-simulation/overview`, params);
+const getSimulationOverview = (scenario_id: string, params: SimulationParams) => {
+  return instanceWithAuth.post<SimulationOverviewResponse>(
+    `${BASE_URL}/run-simulation/overview/scenario-id/${scenario_id}`,
+    params
+  );
+};
+
+const requestSimulation = (scenario_id: string, params: SimulationParams) => {
+  return instanceWithAuth.post<SimulationResponse>(
+    `${BASE_URL}/request-simulation/scenario-id/${scenario_id}`,
+    params
+  );
 };
 
 const runSimulation = (params: SimulationParams) => {
@@ -197,15 +212,16 @@ export {
   deleteScenario,
   duplicateScenario,
   fetchScenarios,
+  getFacilityConns,
+  getFacilityInfoLineChartData,
   getFlightSchedules,
   getPassengerSchedules,
   getProcessingProcedures,
-  getFacilityConns,
-  getFacilityInfoLineChartData,
   getScenarioMetadata,
   getSimulationOverview,
-  runSimulation,
   modifyScenario,
+  requestSimulation,
+  runSimulation,
   setMasterScenario,
   updateScenarioMetadata,
 };
