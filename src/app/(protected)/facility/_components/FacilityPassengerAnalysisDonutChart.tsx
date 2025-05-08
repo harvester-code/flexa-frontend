@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Circle } from 'lucide-react';
 import { usePassengerAnalysesDonutChart } from '@/queries/facilityQueries';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -146,7 +146,7 @@ function FacilityPassengerAnalysisDonutChart({
         </ButtonGroup>
 
         <div className="my-10 text-xl font-semibold text-default-900">
-          Total Queue Length: {totalQueueLength} Pax
+          Total Queue Pax: {totalQueueLength} Pax
         </div>
 
         <div className="grid grid-cols-2 items-start gap-x-20 overflow-hidden">

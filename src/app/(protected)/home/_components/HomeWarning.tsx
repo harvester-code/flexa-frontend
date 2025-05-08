@@ -17,7 +17,7 @@ dayjs.extend(customParseFormat);
 
 const TARGET_OPTIONS = [
   { label: 'Wait Time', value: 'waiting_time' },
-  { label: 'Queue Length', value: 'queue_length' },
+  { label: 'Queue Pax', value: 'queue_length' },
 ];
 
 interface HomeWarningProps {

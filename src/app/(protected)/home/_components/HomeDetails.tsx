@@ -82,7 +82,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                 <div>
                   <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
                   <dl>
-                    <dt>Queue Length</dt>
+                    <dt>Queue Pax</dt>
                     <dd className="!font-semibold">{overview.queueLength}</dd>
                   </dl>
                 </div>
@@ -101,7 +101,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                 <div>
                   <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
-                    <dt>Waiting Time</dt>
+                    <dt>Wait Time</dt>
                     <dd className="!font-semibold">
                       {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h` : null}
                       {overview.waitTime?.minute > 0 ? `${overview.waitTime?.minute}m` : null}
@@ -157,7 +157,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                           <div>
                             <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
                             <dl>
-                              <dt>Queue Length</dt>
+                              <dt>Queue Pax</dt>
                               <dd className="!font-semibold">{comp.queueLength}</dd>
                             </dl>
                           </div>
@@ -175,7 +175,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                           <div>
                             <Clock4 className="size-6" stroke="#6941c6" />
                             <dl>
-                              <dt>Waiting Time</dt>
+                              <dt>Wait Time</dt>
                               <dd className="!font-semibold">
                                 {comp.waitTime?.hour > 0 ? `${comp.waitTime?.hour}h` : null}
                                 {comp.waitTime?.minute > 0 ? `${comp.waitTime?.minute}m` : null}

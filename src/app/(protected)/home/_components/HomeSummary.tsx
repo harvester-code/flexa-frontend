@@ -16,7 +16,7 @@ import HomeNoScenario from './HomeNoScenario';
 const TOOLTIP_MAP = {
   'Passenger Throughput': 'The number of all passengers processed in a day',
   'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
-  'Queue Length': 'Average (or top n%) queue experienced by passengers across all checkpoints',
+  'Queue Pax': 'Average (or top n%) queue experienced by passengers across all checkpoints',
   'Facility Utilization': 'Percentage of time during the day that the facility is operational',
 };
 

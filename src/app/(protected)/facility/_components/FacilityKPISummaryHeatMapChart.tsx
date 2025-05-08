@@ -9,8 +9,8 @@ import { cn } from '@/lib/utils';
 const HeatMapChart = dynamic(() => import('@/components/charts/HeatMapChart'), { ssr: false });
 
 const HEAT_MAP_CHART_OPTIONS = [
-  { label: 'Queue Length', value: 'queue_length', color: '#7f56d9' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '#7f56d9' },
+  { label: 'Queue Pax', value: 'queue_length', color: '#7f56d9' },
+  { label: 'Wait Time', value: 'waiting_time', color: '#7f56d9' },
   { label: 'Throughput', value: 'throughput', color: '#7f56d9' },
 ] as const;
 

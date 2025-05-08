@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { AlignLeft, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { usePassengerAnalysesBarChart } from '@/queries/facilityQueries';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -16,8 +16,8 @@ interface FacilityPassengerAnalysisBarChartProps {
 }
 
 const CHART_OPTIONS: Option[] = [
-  { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+  { label: 'Queue Pax', value: 'queue_length', color: '' },
+  { label: 'Wait Time', value: 'waiting_time', color: '' },
   { label: 'Throughput', value: 'throughput', color: '' },
 ];
 

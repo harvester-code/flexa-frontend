@@ -19,14 +19,14 @@ const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: 
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
 const CHART_OPTIONS: Option[] = [
-  { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+  { label: 'Queue Pax', value: 'queue_length', color: '' },
+  { label: 'Wait Time', value: 'waiting_time', color: '' },
   { label: 'Throughput', value: 'throughput', color: '' },
 ];
 
 const CHART_OPTIONS2: Option[] = [
-  { label: 'Queue Length', value: 'queue_length', color: '' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '' },
+  { label: 'Queue Pax', value: 'queue_length', color: '' },
+  { label: 'Wait Time', value: 'waiting_time', color: '' },
 ];
 
 interface HomeChartsProps {

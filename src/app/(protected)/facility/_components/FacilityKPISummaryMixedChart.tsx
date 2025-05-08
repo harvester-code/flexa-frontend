@@ -13,8 +13,8 @@ const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
 const MIXED_CHART_OPTIONS = [
-  { label: 'Queue Length', value: 'queue_length', color: '#7f56d9' },
-  { label: 'Waiting Time', value: 'waiting_time', color: '#ff9500' },
+  { label: 'Queue Pax', value: 'queue_length', color: '#7f56d9' },
+  { label: 'Wait Time', value: 'waiting_time', color: '#ff9500' },
   { label: 'Throughput', value: 'throughput', color: '#067647' },
 ] as const;
 
