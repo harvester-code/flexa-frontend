@@ -8,15 +8,7 @@ import { faAngleDown, faAngleRight, faAngleUp } from '@fortawesome/free-solid-sv
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
-import {
-  NavIcon01,
-  NavIcon02,
-  NavIcon03,
-  NavIcon04,
-  NavIcon05,
-  NavIcon06,
-  SearchIcon,
-} from '@/components/icons';
+import { NavIcon01, NavIcon02, NavIcon04, NavIcon06 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import './AppSidebar.css';
 
@@ -24,11 +16,10 @@ function AppSidebar() {
   const pathname = usePathname();
 
   const [isHovered, setIsHovered] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMyMenuOpen, setIsMyMenuOpen] = useState(false);
 
-  const { data: userInfo, isLoading } = useUser();
+  const { data: userInfo } = useUser();
 
   // TODO: 네비게이션 메뉴 map으로 만들기
   return (
@@ -38,7 +29,6 @@ function AppSidebar() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
-        setIsInputFocused(false);
         setIsOpen(false);
         setIsMyMenuOpen(false);
       }}
@@ -49,21 +39,7 @@ function AppSidebar() {
         </Link>
       </h1>
 
-      <div className={`search-box ${isInputFocused ? 'active' : ''}`}>
-        <input
-          type="text"
-          placeholder="Search"
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
-        />
-        <button className="text-secondary">
-          <div className="search-icon">
-            <SearchIcon />
-          </div>
-        </button>
-      </div>
-
-      <ul className="gnb-list mt-[20px]">
+      <ul className="gnb-list mt-12">
         <li className={pathname === '/home' ? 'active' : ''}>
           <Link href="/home">
             <NavIcon01 />
@@ -80,14 +56,6 @@ function AppSidebar() {
           </Link>
         </li>
 
-        <li className={pathname === '/passenger-flow' ? 'active' : ''}>
-          <Link href="/passenger-flow">
-            <NavIcon03 />
-            <span className="text">Passenger Flow</span>
-            <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-          </Link>
-        </li>
-
         <li className={pathname === '/simulation' ? 'active' : ''}>
           <Link href="/simulation">
             <NavIcon04 />
@@ -100,14 +68,6 @@ function AppSidebar() {
       <hr />
 
       <ul className="gnb-list">
-        <li className={pathname === '/messenger' ? 'active' : ''}>
-          <Link href="/messenger">
-            <NavIcon05 />
-            <span className="text">Messenger</span>
-            <span className="number">959+</span>
-          </Link>
-        </li>
-
         <li className={`settings ${isOpen ? 'active' : ''}`}>
           <a onClick={() => setIsOpen((prev) => !prev)}>
             <NavIcon06 />
