@@ -106,8 +106,16 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
             <dd>
               <ul className="flex flex-wrap items-center gap-2.5">
                 <li className="flex items-center gap-2.5">
+                  <span>Scenario:</span>
                   <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
                     {scenario?.simulation_name}
+                  </span>
+
+                  <span>/</span>
+
+                  <span>Date:</span>
+                  <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+                    {dayjs(scenario?.simulation_date).format('MMM-DD-YYYY')}
                   </span>
                 </li>
               </ul>
