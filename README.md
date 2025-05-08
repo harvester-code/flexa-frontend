@@ -1,6 +1,6 @@
 # Flexa WaitFree Next.js
 
-## 주요 기술 스택:
+## 주요 기술 스택
 
 - Next.js 15
 - React 19
@@ -9,32 +9,36 @@
 - plotly.js
 - Supabase
 
-## 실행 명령어:
+## 실행 명령어
 
 ```shell
-$ npm install --force
-$ npm run dev
+npm install --force
+npm run dev
 ```
 
 package.json의 scripts 참조
 
-## 도커 빌드 및 ECR 푸시하기
+## 배포하기
+
+Vercel을 이용하여 배포를 진행합니다.
+
+### 개발용
 
 ```shell
-IMAGE_TAG=${IMAGE_TAG}     # 직접 입력 필요
-ENVIRONMENT=${ENVIRONMENT} # 직접 입력 필요
-
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com
-docker build --platform linux/amd64 --provenance false -t coop/flexa-waitfree-next:${IMAGE_TAG} -f docker/${ENVIRONMENT}/Dockerfile .
-docker tag coop/flexa-waitfree-next:${IMAGE_TAG} 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:${IMAGE_TAG}
-docker push 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:${IMAGE_TAG}
+vercel
 ```
 
-## 폴더 구조:
+### 운영용
+
+```shell
+vercel --prod
+```
+
+## 폴더 구조
 
 ### 1차 배포시까지 활용 구조
 
-#### 예시:
+#### 예시
 
 ```bash
 src/
@@ -73,11 +77,11 @@ src/
   - [(번역) 기능 분할 설계 - 최고의 프런트엔드 아키텍처 | emewjin.log](https://emewjin.github.io/feature-sliced-design/)
   - [아직도 React 폴더 구조로 고민하고 계신가요? FSD 한 번 써보세요[제로초뉴스] - YouTube](https://www.youtube.com/watch?v=64Fx5Y1gEOA&ab_channel=ZeroChoTV)
 
-## 참고 사항:
+## 참고 사항
 
 - 프로젝트에 Supabase를 연결할 때 아래 레포지토리 구조를 참고해서 작업해주세요.
 
   - [next.js/examples/with-supabase at canary · vercel/next.js](https://github.com/vercel/next.js/tree/canary/examples/with-supabase)
 
 - Docker, Makefile 등 프로젝트에 필요한 파일 생성시 참고해주세요.
-  - https://github.com/vercel/next.js/tree/canary/examples/with-docker-multi-env
+  - [next.js/examples/with-docker-multi-env at canary · vercel/next.js](https://github.com/vercel/next.js/tree/canary/examples/with-docker-multi-env)
