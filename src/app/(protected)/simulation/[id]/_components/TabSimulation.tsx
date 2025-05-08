@@ -128,7 +128,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           setLoadingSimulation(false);
         })
         .catch((e) => {
-          console.log(e);
           setLoadError(true);
           setLoadingSimulation(false);
         });

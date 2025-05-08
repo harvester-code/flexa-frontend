@@ -30,8 +30,6 @@ function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTabl
     func: kpiFunc.value,
   });
 
-  console.log(scenarioId);
-
   if (!scenarioId) {
     return <HomeNoScenario />;
   }

@@ -450,8 +450,6 @@ const Canvas = () => {
                 image: { zoom: imageScale, position: imagePosition },
                 markers: rectangles.map((rect) => rect.childs),
               };
-
-              console.log(snapshot);
             }
           }}
         >
