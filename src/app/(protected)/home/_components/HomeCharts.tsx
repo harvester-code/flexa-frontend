@@ -1,32 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
+import { PRIMARY_COLOR_SCALES } from '@/constants';
 import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import HomeLoading from './HomeLoading';
-import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
-
-// TODO: 동적으로 수정하기
-const FACILITY_OPTIONS: Option[] = [
-  { label: 'All Facilities', value: 'all_facilities' },
-  { label: 'Check-in', value: 'checkin' },
-  { label: 'Departure Gate', value: 'departure_gate' },
-  { label: 'Security', value: 'security' },
-  { label: 'Passport', value: 'passport' },
-];
 
 const CHART_OPTIONS: Option[] = [
   { label: 'Queue Length', value: 'queue_length', color: '' },
@@ -41,35 +31,45 @@ const CHART_OPTIONS2: Option[] = [
 
 interface HomeChartsProps {
   scenario: ScenarioData | null;
+  processes: Option[];
 }
 
-function HomeCharts({ scenario }: HomeChartsProps) {
+function HomeCharts({ scenario, processes }: HomeChartsProps) {
+  const FACILITY_OPTIONS: Option[] = useMemo(
+    () => [{ label: 'All Facilities', value: 'all_facilities' }].concat(processes),
+    [processes]
+  );
+
   const [chartType, setChartType] = useState(true);
 
   // TODO: 변수명 개선하기
-  const [selectedFacility1, setSelectedFacility1] = useState(FACILITY_OPTIONS[0]);
-  const [selectedFacility2, setSelectedFacility2] = useState(FACILITY_OPTIONS[0]);
+  // Mixed Chart
+  const [facility1, setFacility1] = useState(FACILITY_OPTIONS[0]);
   const handleSelectFacility1 = useCallback(
     (item: Option) => {
-      if (item.value !== selectedFacility1.value) {
-        setSelectedFacility1(item);
+      if (item.value !== facility1.value) {
+        setFacility1(item);
       }
     },
-    [selectedFacility1]
+    [facility1]
   );
+
+  // TODO: 변수명 개선하기
+  // Histogram Chart
+  const [facility2, setFacility2] = useState(FACILITY_OPTIONS[0]);
   const handleSelectFacility2 = useCallback(
     (item: Option) => {
-      if (item.value !== selectedFacility2.value) {
-        setSelectedFacility2(item);
+      if (item.value !== facility2.value) {
+        setFacility2(item);
       }
     },
-    [selectedFacility2]
+    [facility2]
   );
 
   // FIXME: 하드코딩 제거하기
-  const [selectedChartOption1, setSelectedChartOption1] = useState([0]);
+  const [chartOption1, setChartOption1] = useState([0]);
   const handleChartOption1 = (buttonIndex: number) => {
-    setSelectedChartOption1((prevData) => {
+    setChartOption1((prevData) => {
       if (prevData.includes(buttonIndex)) {
         if (prevData.length === 1) {
           return prevData;
@@ -84,9 +84,9 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     });
   };
   // FIXME: 하드코딩 제거하기
-  const [selectedChartOption2, setSelectedChartOption2] = useState([0]);
+  const [chartOption2, setChartOption2] = useState([0]);
   const handleChartOption2 = (buttonIndex: number) => {
-    setSelectedChartOption2((prevData) => {
+    setChartOption2((prevData) => {
       if (prevData.includes(buttonIndex)) {
         if (prevData.length === 1) {
           return prevData;
@@ -167,7 +167,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
   useEffect(() => {
     if (!flowChart) return;
 
-    const chartData = flowChart[selectedFacility1.value];
+    const chartData = flowChart[facility1.value];
 
     if (!chartData) return;
 
@@ -175,39 +175,32 @@ function HomeCharts({ scenario }: HomeChartsProps) {
     setLineChartData([]);
     const yaxis = [null, 'y2'];
 
-    selectedChartOption1.forEach((activeIndex, i) => {
+    chartOption1.forEach((activeIndex, i) => {
       const option = CHART_OPTIONS[activeIndex];
       handleChartLayout(option, yaxis[i]);
       handleBarChartData(chartData, option, yaxis[i]);
       handleLineChartData(chartData, option, yaxis[i]);
     });
-  }, [
-    selectedChartOption1,
-    selectedFacility1,
-    flowChart,
-    handleChartLayout,
-    handleBarChartData,
-    handleLineChartData,
-  ]);
+  }, [chartOption1, facility1, flowChart, handleChartLayout, handleBarChartData, handleLineChartData]);
 
   // ================================================================================
   useEffect(() => {
     if (!histogram) return;
-    const facility = selectedFacility2.value;
+    const facility = facility2.value;
 
     if (!histogram[facility]) return;
-    const option = CHART_OPTIONS[selectedChartOption2[0]].value;
+    const option = CHART_OPTIONS[chartOption2[0]].value;
 
     const data = histogram[facility][option]
       .map(({ title, value }, i) => ({
         title,
-        value: Number(value.replace('%', '')),
+        value: value,
         color: PRIMARY_COLOR_SCALES[i],
       }))
       .filter(({ value }) => value > 0);
 
     setHistogramChartData(data);
-  }, [histogram, selectedFacility2, selectedChartOption2]);
+  }, [histogram, facility2, chartOption2]);
 
   // ================================================================================
   useEffect(() => {
@@ -242,8 +235,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
 
   return (
     <div className="mt-5 flex flex-col gap-[35px]">
-      {/* ============================================================================= */}
-      {/* NOTE: MIXED CHARTS */}
+      {/* ==================== MIXED CHARTS ==================== */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
@@ -266,16 +258,19 @@ function HomeCharts({ scenario }: HomeChartsProps) {
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
-              label={selectedFacility1.label}
+              label={facility1.label}
               onSelect={handleSelectFacility1}
             />
             <div className="flex items-center">
-              {/* HACK: 하드코딩 제거하기 */}
+              {/* FIXME: 다른 옵션에서 Throught를 선택한 상태로 다시 All Facilities로 돌아가면 그대로 눌러져있다. */}
               <ButtonGroup>
-                {CHART_OPTIONS.map((opt, i) => (
+                {CHART_OPTIONS.slice(
+                  0,
+                  facility1.value === 'all_facilities' ? CHART_OPTIONS.length - 1 : CHART_OPTIONS.length
+                ).map((opt, i) => (
                   <Button
                     className={cn(
-                      selectedChartOption1.includes(i)
+                      chartOption1.includes(i)
                         ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                         : ''
                     )}
@@ -283,7 +278,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
                     key={i}
                     onClick={() => handleChartOption1(i)}
                   >
-                    {selectedChartOption1.includes(i) && (
+                    {chartOption1.includes(i) && (
                       <Circle className="!size-2.5" fill="#111" stroke="transparent" />
                     )}
                     {opt.label}
@@ -303,8 +298,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         </div>
       </div>
 
-      {/* ============================================================================= */}
-      {/* NOTE: HISTOGRAM */}
+      {/* ==================== HISTOGRAM ==================== */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
@@ -315,7 +309,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
               className="min-w-60 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
-              label={selectedFacility2.label}
+              label={facility2.label}
               onSelect={handleSelectFacility2}
             />
             <div className="flex items-center">
@@ -323,7 +317,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
                 {CHART_OPTIONS2.map((opt, idx) => (
                   <Button
                     className={cn(
-                      selectedChartOption2.includes(idx)
+                      chartOption2.includes(idx)
                         ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                         : ''
                     )}
@@ -331,9 +325,6 @@ function HomeCharts({ scenario }: HomeChartsProps) {
                     key={idx}
                     onClick={() => handleChartOption2(idx)}
                   >
-                    {selectedChartOption2.includes(idx) && (
-                      <Circle className="!size-2.5" fill="#111" stroke="transparent" />
-                    )}
                     {opt.label}
                   </Button>
                 ))}
@@ -368,8 +359,7 @@ function HomeCharts({ scenario }: HomeChartsProps) {
         </div>
       </div>
 
-      {/* ============================================================================= */}
-      {/* NOTE: SANKEY */}
+      {/* ==================== SANKEY ==================== */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
           <h5 className="flex h-[50px] items-center text-xl font-semibold">Sankey Chart</h5>

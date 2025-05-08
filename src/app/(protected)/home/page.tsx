@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
+import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import Input from '@/components/Input';
@@ -26,6 +27,7 @@ const KPI_FUNCS = [
 function HomePage() {
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
+  const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
 
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
 
@@ -82,22 +84,27 @@ function HomePage() {
 
       <HomeAccordion title="Summary" className="mt-4">
         <HomeSummary
+          scenario={scenario}
           calculate_type={calculateType.value}
           percentile={debouncedPercentile}
-          scenario={scenario}
         />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning scenario={scenario} />
+        <HomeWarning scenario={scenario} processes={processes} />
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails scenario={scenario} />
+        <HomeDetails
+          scenario={scenario}
+          processes={processes}
+          calculate_type={calculateType.value}
+          percentile={debouncedPercentile}
+        />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
-        <HomeCharts scenario={scenario} />
+        <HomeCharts scenario={scenario} processes={processes} />
       </HomeAccordion>
     </div>
   );

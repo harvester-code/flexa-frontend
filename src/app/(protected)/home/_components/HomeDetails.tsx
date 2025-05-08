@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { pascalCase } from 'change-case';
 import { ChevronRight, Clock4, LockOpen, User } from 'lucide-react';
+import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
 import { cn } from '@/lib/utils';
@@ -14,14 +15,15 @@ import HomeNoScenario from './HomeNoScenario';
 
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
+  processes: Option[];
+  calculate_type: string;
+  percentile: number;
 }
 
-function HomeDetails({ scenario }: HomeDetailsProps) {
+function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDetailsProps) {
   const { data: details, isLoading } = useFacilityDetails({
-    // TODO: 아래 값은 Summary에서 받아와야한다.
-    calculate_type: 'mean',
-    percentile: 0,
-    //
+    calculate_type,
+    percentile,
     scenarioId: scenario?.id,
   });
 
@@ -40,7 +42,7 @@ function HomeDetails({ scenario }: HomeDetailsProps) {
   return (
     <div className="detail-list">
       {details &&
-        details?.map(({ category, overview, components }, i) => (
+        details?.map(({ category, components, overview }, i) => (
           <div className="detail-item" key={i}>
             <div className="mb-2 flex items-center" style={{ color: '#4A5578' }}>
               <h4 className="mr-1 text-xl font-semibold">{pascalCase(category)}</h4>
@@ -88,14 +90,23 @@ function HomeDetails({ scenario }: HomeDetailsProps) {
                   <Clock4 className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
                     <dt>Proc. Time</dt>
-                    <dd className="!font-semibold">{overview.procTime}</dd>
+
+                    <dd className="!font-semibold">
+                      {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h` : null}
+                      {overview.procTime?.minute > 0 ? `${overview.procTime?.minute}m` : null}
+                      {overview.procTime?.second > 0 ? `${overview.procTime?.second}s` : null}
+                    </dd>
                   </dl>
                 </div>
                 <div>
                   <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
                     <dt>Waiting Time</dt>
-                    <dd className="!font-semibold">{overview.waitTime}</dd>
+                    <dd className="!font-semibold">
+                      {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h` : null}
+                      {overview.waitTime?.minute > 0 ? `${overview.waitTime?.minute}m` : null}
+                      {overview.waitTime?.second > 0 ? `${overview.waitTime?.second}s` : null}
+                    </dd>
                   </dl>
                 </div>
               </div>
@@ -154,14 +165,22 @@ function HomeDetails({ scenario }: HomeDetailsProps) {
                             <Clock4 className="size-6" stroke="#6941c6" />
                             <dl>
                               <dt>Proc. Time</dt>
-                              <dd className="!font-semibold">{comp.procTime}</dd>
+                              <dd className="!font-semibold">
+                                {comp.procTime?.hour > 0 ? `${comp.procTime?.hour}h` : null}
+                                {comp.procTime?.minute > 0 ? `${comp.procTime?.minute}m` : null}
+                                {comp.procTime?.second > 0 ? `${comp.procTime?.second}s` : null}
+                              </dd>
                             </dl>
                           </div>
                           <div>
                             <Clock4 className="size-6" stroke="#6941c6" />
                             <dl>
                               <dt>Waiting Time</dt>
-                              <dd className="!font-semibold">{comp.waitTime}</dd>
+                              <dd className="!font-semibold">
+                                {comp.waitTime?.hour > 0 ? `${comp.waitTime?.hour}h` : null}
+                                {comp.waitTime?.minute > 0 ? `${comp.waitTime?.minute}m` : null}
+                                {comp.waitTime?.second > 0 ? `${comp.waitTime?.second}s` : null}
+                              </dd>
                             </dl>
                           </div>
                         </div>

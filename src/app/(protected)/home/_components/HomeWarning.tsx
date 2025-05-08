@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { pascalCase } from 'change-case';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ChevronDown } from 'lucide-react';
+import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
@@ -14,15 +15,6 @@ import HomeNoScenario from './HomeNoScenario';
 
 dayjs.extend(customParseFormat);
 
-const PROCESS_OPTIONS = [
-  { label: 'All Facilities', value: 'all_facilities' },
-  // TODO: 아래 데이터는 동적으로 달라짐
-  { label: 'Check-in', value: 'checkin' },
-  { label: 'Departure Gate', value: 'departure_gate' },
-  { label: 'Security Control', value: 'security' },
-  { label: 'Passport Control', value: 'passport' },
-];
-
 const TARGET_OPTIONS = [
   { label: 'Wait Time', value: 'waiting_time' },
   { label: 'Queue Length', value: 'queue_length' },
@@ -30,10 +22,16 @@ const TARGET_OPTIONS = [
 
 interface HomeWarningProps {
   scenario: ScenarioData | null;
+  processes: Option[];
 }
 
-function HomeWarning({ scenario }: HomeWarningProps) {
+function HomeWarning({ scenario, processes }: HomeWarningProps) {
   const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
+
+  const PROCESS_OPTIONS = useMemo(
+    () => [{ label: 'All Facilities', value: 'all_facilities' }].concat(processes),
+    [processes]
+  );
 
   const [facility, setFacility] = useState(PROCESS_OPTIONS[0]);
   const [target, setTarget] = useState(TARGET_OPTIONS[0]);
@@ -80,8 +78,6 @@ function HomeWarning({ scenario }: HomeWarningProps) {
             const facility = parts.pop();
             const zone = parts.join('_');
 
-            const [minutes, seconds] = waiting_time.split(':');
-
             return (
               <div
                 className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3"
@@ -92,19 +88,30 @@ function HomeWarning({ scenario }: HomeWarningProps) {
                     {pascalCase(zone)} {facility} · {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
                   </dt>
                 </dl>
-                {/* HACK: 추후에 데이터 구조를 바꿔야함 */}
+
                 <div className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
                   {target.value === 'waiting_time' ? (
                     <p>
-                      <span>
-                        {minutes}
-                        <span className="text-2xl">m</span>
-                      </span>
+                      {waiting_time.hour > 0 ? (
+                        <span>
+                          {waiting_time.hour}
+                          <span className="text-2xl">h</span>
+                        </span>
+                      ) : null}
 
-                      <span className="ml-1">
-                        {seconds}
-                        <span className="text-2xl">s</span>
-                      </span>
+                      {waiting_time.minute > 0 ? (
+                        <span>
+                          {waiting_time.minute}
+                          <span className="text-2xl">m</span>
+                        </span>
+                      ) : null}
+
+                      {waiting_time.second > 0 ? (
+                        <span>
+                          {waiting_time.second}
+                          <span className="text-2xl">s</span>
+                        </span>
+                      ) : null}
                     </p>
                   ) : target.value === 'queue_length' ? (
                     <p>
