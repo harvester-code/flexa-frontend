@@ -7,25 +7,25 @@
   "printWidth": 112,
   "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
   "importOrder": [
-    "^@/styles/(.*)$",
+    "^@/styles(?:/.*)?$",
 
     "^react$",
     "^next(?:/.*)?$",
     "<THIRD_PARTY_MODULES>",
 
-    "^@/types/(.*)$",
-    "^@/app/(.*)$",
+    "^@/types(?:/.*)?$",
+    "^@/app(?:/.*)?$",
 
-    "^@/actions/(.*)$",
-    "^@/services/(.*)$",
-    "^@/stores/(.*)$",
-    "^@/queries/(.*)$",
-    "^@/constants/(.*)$",
+    "^@/actions(?:/.*)?$",
+    "^@/services(?:/.*)?$",
+    "^@/stores(?:/.*)?$",
+    "^@/queries(?:/.*)?$",
+    "^@/constants(?:/.*)?$",
 
-    "^@/components/(.*)$",
-    "^@/hooks/(.*)$",
-    "^@/lib/(.*)$",
-    "^@/utils/(.*)$",
+    "^@/components(?:/.*)?$",
+    "^@/hooks(?:/.*)?$",
+    "^@/lib(?:/.*)?$",
+    "^@/utils(?:/.*)?$",
 
     "^[./]"
   ],
