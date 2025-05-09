@@ -16,7 +16,7 @@ import FacilityPassengerAnalysis from './_components/FacilityPassengerAnalysis';
 
 const TABS: Option[] = [
   { label: 'KPI Summary', value: 'kpiSummary' },
-  { label: 'Passenger Analysis', value: 'passengerAnalysis' },
+  { label: 'Top View', value: 'topView' },
 ];
 
 function FacilityPage() {
@@ -64,11 +64,11 @@ function FacilityPage() {
         </div>
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
-          <TabsContent value="kpiSummary">
+          <TabsContent value={TABS[0].value}>
             <FacilityKPISummary key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
           </TabsContent>
 
-          <TabsContent value="passengerAnalysis">
+          <TabsContent value={TABS[1].value}>
             <FacilityPassengerAnalysis key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
           </TabsContent>
         </AppTabs>
