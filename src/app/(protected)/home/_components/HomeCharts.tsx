@@ -6,7 +6,7 @@ import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
-import { PRIMARY_COLOR_SCALES } from '@/constants';
+import { PRIMARY_COLOR_SCALES, SANKEY_COLOR_SCALES } from '@/constants';
 import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -213,9 +213,8 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
         node: {
           pad: 15,
           thickness: 20,
-          // line: { color: 'black', width: 0.5 },
           label: sankey.label,
-          color: PRIMARY_COLOR_SCALES,
+          color: SANKEY_COLOR_SCALES,
         },
         link: sankey.link,
       },
