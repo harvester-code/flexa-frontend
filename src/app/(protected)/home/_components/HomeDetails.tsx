@@ -120,7 +120,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                     <dd className="!font-semibold">
                       {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h` : null}
                       {overview.procTime?.minute > 0 ? `${overview.procTime?.minute}m` : null}
-                      {overview.procTime?.second > 0 ? `${overview.procTime?.second}s` : null}
+                      {overview.procTime?.second}s
                     </dd>
                   </dl>
                 </div>
@@ -135,7 +135,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                     <dd className="!font-semibold">
                       {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h` : null}
                       {overview.waitTime?.minute > 0 ? `${overview.waitTime?.minute}m` : null}
-                      {overview.waitTime?.second > 0 ? `${overview.waitTime?.second}s` : null}
+                      {overview.waitTime?.second}s
                     </dd>
                   </dl>
                 </div>
@@ -203,7 +203,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                                 <dd className="!font-semibold">
                                   {comp.procTime?.hour > 0 ? `${comp.procTime?.hour}h` : null}
                                   {comp.procTime?.minute > 0 ? `${comp.procTime?.minute}m` : null}
-                                  {comp.procTime?.second > 0 ? `${comp.procTime?.second}s` : null}
+                                  {comp.procTime?.second}s
                                 </dd>
                               </dl>
                             </div>
@@ -215,7 +215,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                                 <dd className="!font-semibold">
                                   {comp.waitTime?.hour > 0 ? `${comp.waitTime?.hour}h` : null}
                                   {comp.waitTime?.minute > 0 ? `${comp.waitTime?.minute}m` : null}
-                                  {comp.waitTime?.second > 0 ? `${comp.waitTime?.second}s` : null}
+                                  {comp.waitTime?.second}s
                                 </dd>
                               </dl>
                             </div>
