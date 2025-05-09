@@ -1,8 +1,8 @@
 .detail-list {
-  @apply mt-5 flex flex-col gap-10;
+  @apply mt-5 flex flex-col gap-5;
 
   .detail-item {
-    @apply flex flex-col rounded-md border border-default-200 bg-default-100 px-5 pb-2 pt-4;
+    @apply flex flex-col rounded-md border border-default-200 bg-default-100 px-5 py-4;
 
     .detail-head {
       @apply mb-[14px] flex max-h-6 items-center justify-between;
@@ -58,7 +58,7 @@
       }
 
       .scroll-list {
-        @apply flex flex-grow gap-4 overflow-x-auto pb-4;
+        @apply flex flex-grow gap-4 overflow-x-auto;
 
         .scroll-item {
           @apply flex flex-none flex-col rounded-md border border-default-200 bg-white p-4;
