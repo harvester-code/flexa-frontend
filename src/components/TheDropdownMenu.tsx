@@ -48,7 +48,7 @@ export default function TheDropdownMenu({
             className="cursor-pointer justify-center hover:bg-accent-100"
             onClick={() => handleSelect(item)}
           >
-            {item.label}
+            {item?.label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
