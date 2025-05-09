@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleSmall } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
 import {
@@ -115,7 +116,12 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button className="text-lg font-medium leading-5">{title}</button>
+                        <button className="text-lg font-medium leading-5">
+                          {title}
+                          {(i === 1 || i === 2) && (
+                            <CircleSmall className="ml-1 size-4" fill="#9E77ED" stroke="#9E77ED" />
+                          )}
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent
                         side="right"
@@ -124,6 +130,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
                         <p className="mb-2">
                           <strong>{title}</strong>
                         </p>
+
                         <p>{TOOLTIP_MAP[title]}</p>
                         <TooltipArrow
                           className="-my-px border-none fill-[#fff] drop-shadow-[0_1px_0_var(--default-200)]"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CircleSmall } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -55,7 +55,9 @@ function HomePage() {
 
       <HomeCanvas scenario={scenario} snapshot={snapshot} />
 
-      <div className="mt-4 flex justify-end gap-4">
+      <div className="mt-4 flex items-center justify-end">
+        <CircleSmall className="mr-2" fill="#9E77ED" stroke="#9E77ED" />
+
         <TheDropdownMenu
           className="min-w-[180px] [&>*]:justify-start"
           items={KPI_FUNCS}
@@ -65,7 +67,7 @@ function HomePage() {
         />
 
         {calculateType.value === 'topN' && (
-          <div className="flex items-center gap-1 text-lg font-semibold">
+          <div className="ml-4 flex items-center gap-1 text-lg font-semibold">
             <span>Top</span>
             <div className="max-w-20">
               {/* FIXME: 컴포넌트 수정하기 */}

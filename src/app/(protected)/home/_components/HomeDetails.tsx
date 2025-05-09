@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { pascalCase } from 'change-case';
-import { ChevronRight, Clock4, LockOpen, User } from 'lucide-react';
+import { ChevronRight, CircleSmall, Clock4, LockOpen, User } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
@@ -74,7 +74,10 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                 <div>
                   <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
-                    <dt>Opened</dt>
+                    <dt className="flex items-center">
+                      <span>Opened</span>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
                     <dd className="!font-semibold">
                       {overview.opened[0]} / {overview.opened[1]}
                     </dd>
@@ -100,15 +103,20 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                 <div>
                   <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
                   <dl>
-                    <dt>Queue Pax</dt>
+                    <dt className="flex items-center">
+                      <span>Queue Pax</span>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
                     <dd className="!font-semibold">{overview.queueLength}</dd>
                   </dl>
                 </div>
                 <div>
                   <Clock4 className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
-                    <dt>Proc. Time</dt>
-
+                    <dt className="flex items-center">
+                      <span>Proc. Time</span>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
                     <dd className="!font-semibold">
                       {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h` : null}
                       {overview.procTime?.minute > 0 ? `${overview.procTime?.minute}m` : null}
@@ -120,7 +128,10 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                 <div>
                   <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
                   <dl>
-                    <dt>Wait Time</dt>
+                    <dt className="flex items-center">
+                      <span>Wait Time</span>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
                     <dd className="!font-semibold">
                       {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h` : null}
                       {overview.waitTime?.minute > 0 ? `${overview.waitTime?.minute}m` : null}
