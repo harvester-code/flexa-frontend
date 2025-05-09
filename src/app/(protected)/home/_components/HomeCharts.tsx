@@ -36,7 +36,7 @@ interface HomeChartsProps {
 
 function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const FACILITY_OPTIONS: Option[] = useMemo(
-    () => [{ label: 'All Facilities', value: 'all_facilities' }].concat(processes),
+    () => [{ label: 'All Process (avg)', value: 'all_facilities' }].concat(processes),
     [processes]
   );
 

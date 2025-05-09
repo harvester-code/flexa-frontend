@@ -29,7 +29,7 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
   const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
 
   const PROCESS_OPTIONS = useMemo(
-    () => [{ label: 'All Facilities', value: 'all_facilities' }].concat(processes),
+    () => [{ label: 'All Process (avg)', value: 'all_facilities' }].concat(processes),
     [processes]
   );
 
