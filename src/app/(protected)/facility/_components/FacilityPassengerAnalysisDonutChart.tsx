@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Circle } from 'lucide-react';
+import { RowData, createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { capitalCase } from 'change-case';
 import { usePassengerAnalysesDonutChart } from '@/queries/facilityQueries';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -9,24 +9,31 @@ import { cn } from '@/lib/utils';
 
 const DonutChart = dynamic(() => import('@/components/charts/DonutChart'), { ssr: false });
 
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    className: string;
+  }
+}
+
 interface FacilityPassengerAnalysisDonutChartProps {
   process?: string;
   scenarioId?: string;
 }
 
-// TODO: 색깔 설정하기
+interface Rank {
+  rank: number;
+  text: string;
+  passengers: number;
+}
+
 const DONUT_CHART_OPTIONS = [
-  // 아래는 고정
-  { label: 'Airline', value: 'airline', color: '' },
-  { label: 'Destination', value: 'destination', color: '' },
-  { label: 'Flight Number', value: 'flight_number', color: '' },
-  // 아래는 동적
-  // { label: 'checkin Counter', value: 'checkInCounter', color: '' },
+  { label: 'Airline', value: 'airline' },
+  { label: 'Destination', value: 'destination' },
+  { label: 'Flight Number', value: 'flight_number' },
 ];
 
-const defaultData: any[] = [];
-
-const columnHelper = createColumnHelper<any>();
+const defaultData: Rank[] = [];
+const columnHelper = createColumnHelper<Rank>();
 
 function FacilityPassengerAnalysisDonutChart({
   process,
@@ -53,36 +60,30 @@ function FacilityPassengerAnalysisDonutChart({
 
   const [totalQueueLength, setTotalQueueLength] = useState();
   const [chartData, setChartData] = useState<Plotly.Data[]>([]);
-  const [tableData, setTableData] = useState();
 
-  const columns = useMemo(
-    () => [
-      columnHelper.group({
-        id: 'top5',
-        // HACK: activeCharts 수정하기
-        header: () => <span className="capitalize">{DONUT_CHART_OPTIONS[activeCharts[0]].label}</span>,
-        columns: [
-          columnHelper.accessor('rank', {
-            header: undefined,
-            cell: (info) => info.getValue(),
-          }),
-          columnHelper.accessor('text', {
-            header: undefined,
-            cell: (info) => info.getValue(),
-          }),
-          columnHelper.accessor('count', {
-            header: undefined,
-            cell: (info) => info.getValue(),
-          }),
-        ],
-      }),
-    ],
-    [activeCharts]
-  );
+  const [tableData, setTableData] = useState([...defaultData]);
+
+  const columns = [
+    columnHelper.accessor('rank', {
+      header: () => <span>Rank</span>,
+      cell: (info) => info.getValue(),
+      meta: { className: 'w-[20%] text-center' },
+    }),
+    columnHelper.accessor('text', {
+      header: () => <span>{capitalCase(DONUT_CHART_OPTIONS[activeCharts[0]].value)}</span>,
+      cell: (info) => info.getValue(),
+      meta: { className: 'w-[40%] text-center' },
+    }),
+    columnHelper.accessor('passengers', {
+      header: () => <span>Passengers</span>,
+      cell: (info) => info.getValue(),
+      meta: { className: 'w-[40%] text-center' },
+    }),
+  ];
 
   const table = useReactTable({
+    data: tableData,
     columns,
-    data: tableData ?? defaultData,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -92,6 +93,7 @@ function FacilityPassengerAnalysisDonutChart({
     const key = DONUT_CHART_OPTIONS[activeCharts[0]].value;
 
     setTotalQueueLength(passengerAnalysisDonutChartData.total_queue_length[key]);
+
     setChartData([
       {
         type: 'pie',
@@ -103,13 +105,16 @@ function FacilityPassengerAnalysisDonutChart({
         values: passengerAnalysisDonutChartData.pie_result[key].values,
       },
     ]);
-    setTableData(
-      passengerAnalysisDonutChartData.table_result[key].map((d) => ({
-        rank: d.rank,
-        text: d.title,
-        count: d.value,
-      }))
-    );
+
+    // FIXME: 백엔드에서 데이터 구조가 변경되어야함.
+    setTableData([
+      { rank: 1, text: 'ABC Airline', passengers: 999 },
+      { rank: 2, text: 'ABC Airline', passengers: 999 },
+      { rank: 3, text: 'ABC Airline', passengers: 999 },
+      { rank: 4, text: 'ABC Airline', passengers: 999 },
+      { rank: 5, text: 'ABC Airline', passengers: 999 },
+      { rank: 6, text: 'ABC Airline', passengers: 999 },
+    ]);
   }, [activeCharts, passengerAnalysisDonutChartData]);
 
   return (
@@ -130,16 +135,15 @@ function FacilityPassengerAnalysisDonutChart({
         <ButtonGroup>
           {DONUT_CHART_OPTIONS.map((opt, idx) => (
             <Button
+              key={idx}
               className={cn(
                 activeCharts.includes(idx)
                   ? 'bg-default-200 shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                   : ''
               )}
               variant="outline"
-              key={idx}
               onClick={() => handleActiveCharts(idx)}
             >
-              {activeCharts.includes(idx) && <Circle className="!size-2.5" fill="#111" stroke="transparent" />}
               {opt.label}
             </Button>
           ))}
@@ -155,45 +159,39 @@ function FacilityPassengerAnalysisDonutChart({
             chartLayout={{
               margin: { l: 0, r: 0, b: 0, t: 0 },
               height: 320,
-              legend: {
-                xanchor: 'right',
-                x: 1.1,
-                y: 0.5,
-              },
+              legend: { xanchor: 'right', x: 1.1, y: 0.5 },
               font: { size: 14 },
             }}
           />
 
           <div className="w-full max-w-[540px] overflow-hidden rounded-md border border-default-300">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead>
-                {table.getHeaderGroups().map((headerGroup) => {
-                  if (headerGroup.depth > 0) return;
-                  return (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          className="bg-default-100 px-6 py-2.5 text-start"
-                          key={header.id}
-                          colSpan={header.colSpan}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  );
-                })}
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className={cn(header.column.columnDef.meta?.className, 'bg-default-100 py-3')}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
               </thead>
 
               <tbody>
                 {table.getRowModel().rows.map((row) => (
                   <tr key={row.id}>
-                    {/* TODO: border bottom을 0으로 설정하기 */}
                     {row.getVisibleCells().map((cell) => (
                       <td
-                        className="border border-default-200 px-6 py-4 first:border-l-0 last:border-r-0"
+                        className={cn(
+                          cell.column.columnDef.meta?.className,
+                          'border-x border-t border-default-200 px-6 py-4 first:border-l-0 last:border-r-0'
+                        )}
                         key={cell.id}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
