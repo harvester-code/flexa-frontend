@@ -3,13 +3,7 @@
 import { CircleSmall } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/Tooltip';
+import { Tooltip, TooltipArrow, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -50,18 +44,14 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
             <dl className="flex w-1/2 flex-col justify-between">
               <dt>{summaries?.normal[0].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[0].value.toLocaleString()}
-              </dd>
+              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[0].value.toLocaleString()}</dd>
             </dl>
 
             <div className="mx-5 w-0.5 bg-default-200"></div>
 
             <dl className="flex w-1/2 flex-col justify-between">
               <dt>{summaries?.normal[1].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[1].value.toLocaleString()}
-              </dd>
+              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[1].value.toLocaleString()}</dd>
             </dl>
           </div>
 
@@ -79,18 +69,14 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
             <dl className="flex w-1/2 flex-col justify-between">
               <dt>{summaries?.normal[3].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[3].value.toLocaleString()}
-              </dd>
+              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[3].value.toLocaleString()}</dd>
             </dl>
 
             <div className="mx-5 w-0.5 bg-default-200"></div>
 
             <dl className="flex w-1/2 flex-col justify-between">
               <dt>{summaries?.normal[4].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[4].value.toLocaleString()}
-              </dd>
+              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[4].value.toLocaleString()}</dd>
             </dl>
           </div>
 
@@ -110,7 +96,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
         <p className="mb-2.5 text-xl font-semibold leading-6">KPI</p>
         <div className="grid grid-cols-2 grid-rows-2 gap-5">
           {summaries &&
-            summaries?.kpi.map(({ title, value }, i) => (
+            summaries?.kpi.map(({ title, value, unit }, i) => (
               <dl className="rounded-lg bg-white p-4" key={i}>
                 <dt>
                   <TooltipProvider delayDuration={100}>
@@ -144,7 +130,8 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
                 <dd className="pt-8 text-end text-[2.5rem] font-semibold leading-[2.75rem]">
                   {Number.isInteger(value)
                     ? value.toLocaleString()
-                    : `${value.hour > 0 ? `${value.hour}h ` : ''} ${value.minute > 0 ? `${value.minute}m ` : ''} ${value.second > 0 ? `${value.second}s` : ''}`.trim()}
+                    : `${value.hour > 0 ? `${value.hour}h ` : ''} ${value.minute > 0 ? `${value.minute}m ` : ''} ${value.second}s`.trim()}
+                  <span>{unit}</span>
                 </dd>
               </dl>
             ))}
