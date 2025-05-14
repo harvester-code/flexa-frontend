@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { pascalCase } from 'change-case';
 import { ChevronRight, CircleSmall, Clock4, LockOpen, User } from 'lucide-react';
-import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
 import { cn } from '@/lib/utils';
@@ -15,17 +14,12 @@ import HomeNoScenario from './HomeNoScenario';
 
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
-  processes: Option[];
   calculate_type: string;
   percentile: number;
 }
 
-function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDetailsProps) {
-  const { data: details, isLoading } = useFacilityDetails({
-    calculate_type,
-    percentile,
-    scenarioId: scenario?.id,
-  });
+function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps) {
+  const { data: details, isLoading } = useFacilityDetails({ calculate_type, percentile, scenarioId: scenario?.id });
 
   const [openIndexes, setOpenIndexes] = useState<number[]>([]);
 

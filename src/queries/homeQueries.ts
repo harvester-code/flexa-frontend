@@ -60,7 +60,7 @@ const useFacilityDetails = ({
   scenarioId?: string;
 }) => {
   return useQuery({
-    queryKey: ['facility-details', scenarioId],
+    queryKey: ['facility-details', scenarioId, calculate_type, percentile],
     queryFn: async () => {
       const { data: { data } = {} } = await fetchFacilityDetails({ calculate_type, percentile, scenarioId });
       return data;

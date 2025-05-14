@@ -85,11 +85,7 @@ function HomePage() {
       </div>
 
       <HomeAccordion title="Summary" className="mt-4">
-        <HomeSummary
-          scenario={scenario}
-          calculate_type={calculateType.value}
-          percentile={debouncedPercentile}
-        />
+        <HomeSummary scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
@@ -97,12 +93,7 @@ function HomePage() {
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails
-          scenario={scenario}
-          processes={processes}
-          calculate_type={calculateType.value}
-          percentile={debouncedPercentile}
-        />
+        <HomeDetails scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
