@@ -23,18 +23,20 @@ const useKPISummary = ({
   scenarioId,
   process,
   func,
+  percentile,
 }: {
   scenarioId?: string;
   process?: string;
   func: string;
+  percentile: number;
 }) => {
   return useQuery({
-    queryKey: ['kpi-summary', scenarioId, process, func],
+    queryKey: ['kpi-summary', scenarioId, process, func, percentile],
     queryFn: async () => {
-      const { data: { data } = {} } = await fetchKPISummary({ scenarioId, func, process });
+      const { data: { data } = {} } = await fetchKPISummary({ scenarioId, process, func, percentile });
       return data;
     },
-    enabled: !!scenarioId && !!process,
+    enabled: !!scenarioId,
   });
 };
 

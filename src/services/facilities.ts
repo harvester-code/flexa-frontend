@@ -9,15 +9,21 @@ const fetchProcesses = ({ scenarioId }: { scenarioId?: string }) => {
 
 const fetchKPISummary = ({
   scenarioId,
-  func,
   process,
+  func,
+  percentile,
 }: {
   scenarioId?: string;
-  func: string;
   process?: string;
+  func: string;
+  percentile: number;
 }) => {
   return instanceWithAuth.get(`${BASE_URL}/kpi-summaries/tables/kpi/scenario-id/${scenarioId}`, {
-    params: { process, func },
+    params: {
+      process,
+      calculate_type: func,
+      percentile,
+    },
   });
 };
 
@@ -39,13 +45,7 @@ const fetchPassengerAnalysesBarChart = ({ scenarioId, process }: { scenarioId?: 
   });
 };
 
-const fetchPassengerAnalysesDonutChart = ({
-  scenarioId,
-  process,
-}: {
-  scenarioId?: string;
-  process?: string;
-}) => {
+const fetchPassengerAnalysesDonutChart = ({ scenarioId, process }: { scenarioId?: string; process?: string }) => {
   return instanceWithAuth.get(`${BASE_URL}/passenger-analyses/charts/pie/scenario-id/${scenarioId}`, {
     params: { process },
   });
