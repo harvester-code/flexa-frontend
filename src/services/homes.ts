@@ -12,7 +12,7 @@ const fetchSummaries = ({
   scenarioId,
 }: {
   calculate_type: string;
-  percentile?: number;
+  percentile: number | null;
   scenarioId?: string;
 }) => {
   return instanceWithAuth.get(`${BASE_URL}/summaries/${scenarioId}`, {
@@ -33,7 +33,7 @@ const fetchFacilityDetails = ({
   scenarioId,
 }: {
   calculate_type: string;
-  percentile?: number;
+  percentile: number | null;
   scenarioId?: string;
 }) => {
   return instanceWithAuth.get(`${BASE_URL}/facility-details/${scenarioId}`, {

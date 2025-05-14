@@ -15,7 +15,7 @@ import HomeNoScenario from './HomeNoScenario';
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
   calculate_type: string;
-  percentile: number;
+  percentile: number | null;
 }
 
 function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps) {

@@ -18,7 +18,7 @@ const TOOLTIP_MAP = {
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
   calculate_type: string;
-  percentile: number;
+  percentile: number | null;
 }
 
 function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {

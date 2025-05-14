@@ -26,7 +26,7 @@ const useSummaries = ({
   scenarioId,
 }: {
   calculate_type: string;
-  percentile?: number;
+  percentile: number | null;
   scenarioId?: string;
 }) => {
   return useQuery({
@@ -56,7 +56,7 @@ const useFacilityDetails = ({
   scenarioId,
 }: {
   calculate_type: string;
-  percentile?: number;
+  percentile: number | null;
   scenarioId?: string;
 }) => {
   return useQuery({
