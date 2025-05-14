@@ -66,7 +66,7 @@ function HomePage() {
           onSelect={(opt) => setCalculateType(opt)}
         />
 
-        {calculateType.value === 'topN' && (
+        {calculateType.value === 'topN' ? (
           <div className="ml-4 flex items-center gap-1 text-lg font-semibold">
             <span>Top</span>
             <div className="max-w-20">
@@ -81,7 +81,7 @@ function HomePage() {
             </div>
             <span>%</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       <HomeAccordion title="Summary" className="mt-4">
