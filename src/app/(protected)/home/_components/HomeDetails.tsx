@@ -61,10 +61,7 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
               onClick={() => toggleOpen(i)}
             >
               <ChevronRight
-                className={cn(
-                  'mr-1 transition-transform duration-100',
-                  openIndexes.includes(i) ? 'rotate-90' : ''
-                )}
+                className={cn('mr-1 transition-transform duration-100', openIndexes.includes(i) ? 'rotate-90' : '')}
               />
               <h4 className="text-xl font-semibold">{pascalCase(category)}</h4>
             </div>
@@ -118,9 +115,9 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                       <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
-                      {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h` : null}
-                      {overview.procTime?.minute > 0 ? `${overview.procTime?.minute}m` : null}
-                      {overview.procTime?.second}s
+                      {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h ` : null}
+                      {overview.procTime?.minute > 0 ? `${String(overview.procTime?.minute).padStart(2, '0')}m ` : null}
+                      {String(overview.procTime?.second).padStart(2, '0')}s
                     </dd>
                   </dl>
                 </div>
@@ -133,9 +130,9 @@ function HomeDetails({ scenario, processes, calculate_type, percentile }: HomeDe
                       <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
-                      {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h` : null}
-                      {overview.waitTime?.minute > 0 ? `${overview.waitTime?.minute}m` : null}
-                      {overview.waitTime?.second}s
+                      {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h ` : null}
+                      {overview.waitTime?.minute > 0 ? `${String(overview.waitTime?.minute).padStart(2, '0')}m ` : null}
+                      {String(overview.waitTime?.second).padStart(2, '0')}s
                     </dd>
                   </dl>
                 </div>

@@ -79,10 +79,7 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
             const zone = parts.join('_');
 
             return (
-              <div
-                className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3"
-                key={i}
-              >
+              <div className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3" key={i}>
                 <dl className="flex justify-between">
                   <dt className="font-semibold text-default-700">
                     {pascalCase(zone)} {facility} · {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
@@ -95,28 +92,26 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
                       {waiting_time.hour > 0 ? (
                         <span>
                           {waiting_time.hour}
-                          <span className="text-2xl">h</span>
+                          <span className="text-2xl">h&nbsp;</span>
                         </span>
                       ) : null}
 
                       {waiting_time.minute > 0 ? (
                         <span>
-                          {waiting_time.minute}
-                          <span className="text-2xl">m</span>
+                          {String(waiting_time.minute).padStart(2, '0')}
+                          <span className="text-2xl">m&nbsp;</span>
                         </span>
                       ) : null}
 
-                      {waiting_time.second > 0 ? (
-                        <span>
-                          {waiting_time.second}
-                          <span className="text-2xl">s</span>
-                        </span>
-                      ) : null}
+                      <span>
+                        {String(waiting_time.second).padStart(2, '0')}
+                        <span className="text-2xl">s</span>
+                      </span>
                     </p>
                   ) : target.value === 'queue_length' ? (
                     <p>
                       {queue_length}
-                      <span className="text-2xl"> pax</span>
+                      <span className="text-2xl">&nbsp;pax</span>
                     </p>
                   ) : (
                     'Error'
