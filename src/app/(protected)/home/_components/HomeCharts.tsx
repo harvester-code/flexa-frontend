@@ -6,7 +6,7 @@ import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useHistogramChart, useLineChart, useSankeyChart } from '@/queries/homeQueries';
-import { PRIMARY_COLOR_SCALES, SANKEY_COLOR_SCALES } from '@/constants';
+import { SANKEY_COLOR_SCALES } from '@/constants';
 import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
@@ -26,8 +26,8 @@ const CHART_OPTIONS: Option[] = [
 ];
 
 const CHART_OPTIONS2: Option[] = [
-  { label: 'Queue Pax', value: 'queue_length', color: '' },
   { label: 'Wait Time', value: 'waiting_time', color: '' },
+  { label: 'Queue Pax', value: 'queue_length', color: '' },
 ];
 
 interface HomeChartsProps {
@@ -106,7 +106,13 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const { data: histogram, isLoading: isHistogramLoading } = useHistogramChart({ scenarioId: scenario?.id });
   const { data: sankey, isLoading: isSankeyChartLoading } = useSankeyChart({ scenarioId: scenario?.id });
 
-  const [histogramChartData, setHistogramChartData] = useState<Option[]>([]);
+  const [histogramChartData, setHistogramChartData] = useState<
+    {
+      title: string;
+      value: string;
+      width: number;
+    }[]
+  >([]);
 
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
   const [totalPassengers, setTotalPassengers] = useState(0);
@@ -193,11 +199,7 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     const option = CHART_OPTIONS[chartOption2[0]].value;
 
     const data = histogram[facility][option]
-      .map(({ title, value }, i) => ({
-        title,
-        value: value,
-        color: PRIMARY_COLOR_SCALES[i],
-      }))
+      .map(({ title, value }) => ({ title, value: value, width: value }))
       .filter(({ value }) => value > 0);
 
     setHistogramChartData(data);
@@ -238,7 +240,7 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
       {/* ==================== MIXED CHARTS ==================== */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
-          <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Hourly Trends</h5>
           <div className="mb-4 mt-8 flex items-center justify-end gap-1 text-sm">
             <span>Bar Chart</span>
             <Checkbox
@@ -330,14 +332,14 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
             </div>
           </div>
 
-          <TheHistogramChart chartData={histogramChartData} />
+          <TheHistogramChart className="mt-10 rounded-md bg-white" chartData={histogramChartData} />
         </div>
       </div>
 
       {/* ==================== SANKEY ==================== */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between pl-5">
-          <h5 className="flex h-[50px] items-center text-xl font-semibold">Sankey Chart</h5>
+          <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
           <p className="text-sm font-medium">
             Total Passengers Processed: {Number(totalPassengers).toLocaleString()} pax
           </p>
