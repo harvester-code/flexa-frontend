@@ -1,19 +1,36 @@
 'use client';
 
-import { CircleSmall } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
-import { Tooltip, TooltipArrow, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
+import TheHistogramChart from '@/components/charts/TheHistogramChart';
+import {
+  PassengerQueue,
+  PassengerThroughput,
+  RatioIcon01,
+  RatioIcon02,
+  RatioIcon03,
+  WaitTime,
+} from '@/components/icons';
+import { Button, ButtonGroup } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
+import HomeSummaryCard from './HomeSummaryCard';
 
-const TOOLTIP_MAP = {
-  'Passenger Throughput': 'The number of all passengers processed in a day',
-  'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
-  'Queue Pax': 'Average (or top n%) queue experienced by passengers across all checkpoints',
-  'Facility Utilization': 'Percentage of time during the day that the facility is operational',
-};
+// const TOOLTIP_MAP = {
+//   'Passenger Throughput': 'The number of all passengers processed in a day',
+//   'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
+//   'Queue Pax': 'Average (or top n%) queue experienced by passengers across all checkpoints',
+//   'Facility Utilization': 'Percentage of time during the day that the facility is operational',
+// };
+
+const CHART_OPTIONS2: Option[] = [
+  { label: 'Wait Time', value: 'waiting_time' },
+  { label: 'Queue Pax', value: 'queue_length' },
+];
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
@@ -23,6 +40,75 @@ interface HomeSummaryProps {
 
 function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {
   const { data: summaries, isLoading } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
+
+  const [chartData, setChartData] = useState<
+    {
+      title: string;
+      value: string;
+      width: number;
+    }[]
+  >([]);
+
+  // FIXME: 하드코딩 제거하기
+  const [chartOption2, setChartOption2] = useState([0]);
+  const handleChartOption2 = (buttonIndex: number) => {
+    setChartOption2((prevData) => {
+      if (prevData.includes(buttonIndex)) {
+        if (prevData.length === 1) {
+          return prevData;
+        }
+        return prevData.filter((v) => v !== buttonIndex);
+      } else {
+        if (prevData.length >= 1) {
+          return [...prevData.slice(1), buttonIndex];
+        }
+        return [...prevData, buttonIndex];
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (!summaries) return;
+
+    const key = CHART_OPTIONS2[chartOption2[0]].value;
+    const processes = summaries.pax_experience[key];
+
+    // NOTE: 퍼센트를 계산하기 위해서 합계를 계산합니다.
+    const sum = Object.values<number | { hour: number; minute: number; second: number }>(processes).reduce(
+      (acc: number, curr: number | { hour: number; minute: number; second: number }) => {
+        if (typeof curr === 'number') {
+          return acc + curr;
+        }
+        const seconds = curr.hour * 60 * 60 + curr.minute * 60 + curr.second;
+        return acc + seconds;
+      },
+      0
+    );
+
+    const chartData_ = Object.entries(processes).map(([process, value], i) => {
+      if (typeof value === 'number') {
+        const percentage = Math.round((value / sum) * 10000) / 100;
+
+        return {
+          title: process,
+          value: value.toLocaleString() + 'pax',
+          width: percentage,
+        };
+      }
+
+      const v = value as { hour: number; minute: number; second: number };
+      const seconds = v.hour * 60 * 60 + v.minute * 60 + v.second;
+      const percentage = Math.round((seconds / sum) * 10000) / 100;
+
+      return {
+        title: process,
+        value: `${v.hour > 0 ? `${v.hour}h ` : ''} ${v.minute > 0 ? `${v.minute}m ` : ''} ${v.second}s`.trim(),
+        width: percentage,
+      };
+    });
+
+    setChartData(chartData_);
+  }, [chartOption2, summaries]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -37,107 +123,66 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
   }
 
   return (
-    <div className="my-[14px] flex overflow-auto">
-      {/* ==================== NORMAL ==================== */}
-      <div className="flex flex-1 flex-col gap-y-5 font-medium">
-        <div className="flex h-full">
-          <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
-            <dl className="flex w-1/2 flex-col justify-between">
-              <dt>{summaries?.normal[0].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[0].value.toLocaleString()}</dd>
-            </dl>
-
-            <div className="mx-5 w-0.5 bg-default-200"></div>
-
-            <dl className="flex w-1/2 flex-col justify-between">
-              <dt>{summaries?.normal[1].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[1].value.toLocaleString()}</dd>
-            </dl>
-          </div>
-
-          <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 px-4 py-5">
-            <dl className="flex h-full flex-col justify-between">
-              <dt>{summaries?.normal[2].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[2].value[0]} / {summaries?.normal[2].value[1].toLocaleString()}
-              </dd>
-            </dl>
-          </div>
-        </div>
-
-        <div className="flex h-full">
-          <div className="flex w-[25rem] rounded-lg border border-default-200 px-4 py-5">
-            <dl className="flex w-1/2 flex-col justify-between">
-              <dt>{summaries?.normal[3].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[3].value.toLocaleString()}</dd>
-            </dl>
-
-            <div className="mx-5 w-0.5 bg-default-200"></div>
-
-            <dl className="flex w-1/2 flex-col justify-between">
-              <dt>{summaries?.normal[4].title}</dt>
-              <dd className="text-end text-[2.5rem] font-semibold">{summaries?.normal[4].value.toLocaleString()}</dd>
-            </dl>
-          </div>
-
-          <div className="mx-5 min-w-[12.5rem] rounded-lg border border-default-200 px-4 py-5">
-            <dl className="flex h-full flex-col justify-between">
-              <dt>{summaries?.normal[5].title}</dt>
-              <dd className="mt-14 text-end text-[2.5rem] font-semibold">
-                {summaries?.normal[5].value.toLocaleString()}
-              </dd>
-            </dl>
-          </div>
-        </div>
+    <>
+      <div className="my-[14px] grid grid-cols-3 grid-rows-2 gap-3 overflow-auto">
+        <HomeSummaryCard
+          icon={PassengerThroughput}
+          title="Pax Throughput"
+          value={summaries?.throughput.toLocaleString()}
+        />
+        <HomeSummaryCard
+          showCircle
+          icon={WaitTime}
+          title="Wait Time"
+          value={`${summaries?.waiting_time.hour > 0 ? `${summaries?.waiting_time.hour}h ` : ''} ${summaries?.waiting_time.minute > 0 ? `${summaries?.waiting_time.minute}m ` : ''} ${summaries?.waiting_time.second}s`.trim()}
+        />
+        <HomeSummaryCard
+          showCircle
+          icon={PassengerQueue}
+          title="Queue Pax"
+          value={`${summaries?.queue_length.toLocaleString()} pax`}
+        />
+        <HomeSummaryCard
+          icon={RatioIcon01}
+          title="Activated / Installed Ratio"
+          value={`${summaries?.facility_utilization.toFixed(1)}%`}
+        />
+        <HomeSummaryCard
+          icon={RatioIcon02}
+          title="Processed / Activated Ratio"
+          value={`${summaries?.processed_per_activated.toFixed(1)}%`}
+        />
+        <HomeSummaryCard
+          icon={RatioIcon03}
+          title="Processed / Installed Ratio"
+          value={`${summaries?.processed_per_installed.toFixed(1)}%`}
+        />
       </div>
 
-      {/* ==================== KPI ==================== */}
-      <div className="min-w-fit flex-1 rounded-lg border border-accent-300 bg-accent-50 px-5 py-3">
-        <p className="mb-2.5 text-xl font-semibold leading-6">KPI</p>
-        <div className="grid grid-cols-2 grid-rows-2 gap-5">
-          {summaries &&
-            summaries?.kpi.map(({ title, value, unit }, i) => (
-              <dl className="rounded-lg bg-white p-4" key={i}>
-                <dt>
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="text-lg font-medium leading-5">
-                          {title}
-                          {(i === 1 || i === 2) && (
-                            <CircleSmall className="ml-1 size-4" fill="#9E77ED" stroke="#9E77ED" />
-                          )}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="right"
-                        className="max-w-56 border border-default-200 bg-white px-2 py-4 text-black"
-                      >
-                        <p className="mb-2">
-                          <strong>{title}</strong>
-                        </p>
-
-                        <p>{TOOLTIP_MAP[title]}</p>
-                        <TooltipArrow
-                          className="-my-px border-none fill-[#fff] drop-shadow-[0_1px_0_var(--default-200)]"
-                          aria-hidden="true"
-                        />
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </dt>
-
-                <dd className="pt-8 text-end text-[2.5rem] font-semibold leading-[2.75rem]">
-                  {Number.isInteger(value)
-                    ? value.toLocaleString()
-                    : `${value.hour > 0 ? `${value.hour}h ` : ''} ${value.minute > 0 ? `${value.minute}m ` : ''} ${value.second}s`.trim()}
-                  <span>{unit}</span>
-                </dd>
-              </dl>
+      <div className="rounded border border-default-200 px-4 py-3">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-xl font-semibold">Pax Experience</div>
+          <ButtonGroup>
+            {CHART_OPTIONS2.map((opt, idx) => (
+              <Button
+                className={cn(
+                  chartOption2.includes(idx)
+                    ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                    : ''
+                )}
+                variant="outline"
+                key={idx}
+                onClick={() => handleChartOption2(idx)}
+              >
+                {opt.label}
+              </Button>
             ))}
+          </ButtonGroup>
         </div>
+
+        <TheHistogramChart chartData={chartData} />
       </div>
-    </div>
+    </>
   );
 }
 
