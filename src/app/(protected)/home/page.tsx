@@ -109,12 +109,12 @@ function HomePage() {
         <HomeWarning scenario={scenario} processes={processes} />
       </HomeAccordion>
 
-      <HomeAccordion title="Details">
-        <HomeDetails scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
-      </HomeAccordion>
-
       <HomeAccordion title="Charts">
         <HomeCharts scenario={scenario} processes={processes} />
+      </HomeAccordion>
+
+      <HomeAccordion title="Details">
+        <HomeDetails scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
       </HomeAccordion>
     </div>
   );
