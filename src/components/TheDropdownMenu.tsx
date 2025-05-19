@@ -1,11 +1,6 @@
 import { Option } from '@/types/commons';
 import { Button } from '@/components/ui/Button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
 
 export interface TheDropdownMenuProps {
@@ -44,7 +39,7 @@ export default function TheDropdownMenu({
       <DropdownMenuContent align="center" className={cn(className)}>
         {items?.map((item) => (
           <DropdownMenuItem
-            key={item.value}
+            key={item?.value}
             className="cursor-pointer justify-center hover:bg-accent-100"
             onClick={() => handleSelect(item)}
           >
