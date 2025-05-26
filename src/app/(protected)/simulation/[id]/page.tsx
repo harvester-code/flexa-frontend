@@ -120,12 +120,12 @@ export default function SimulationDetail(props) {
       {loaded ? (
         <React.Fragment key={simulationId}>
           <TabScenarioOverview visible={tabIndex == 0} />
-          <TabFlightSchedule simulationId={params?.id} visible={tabIndex == 1} />
-          <TabPassengerSchedule simulationId={params?.id} visible={tabIndex == 2} />
+          <TabFlightSchedule visible={tabIndex == 1} simulationId={params?.id} />
+          <TabPassengerSchedule visible={tabIndex == 2} simulationId={params?.id} />
           <TabProcessingProcedures visible={tabIndex == 3} />
-          <TabFacilityConnection simulationId={params?.id} visible={tabIndex == 4} />
-          <TabFacilityInformation simulationId={params?.id} visible={tabIndex == 5} />
-          <TabSimulation simulationId={params?.id} visible={tabIndex == 6} />
+          <TabFacilityConnection visible={tabIndex == 4} simulationId={params?.id} />
+          <TabFacilityInformation visible={tabIndex == 5} simulationId={params?.id} />
+          <TabSimulation visible={tabIndex == 6} simulationId={params?.id} />
         </React.Fragment>
       ) : (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">

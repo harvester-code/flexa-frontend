@@ -48,17 +48,13 @@ const duplicateScenario = (params: { editor: string }, scenario_id: string) => {
 };
 
 const setMasterScenario = (group_id: string, scenario_id: string) => {
-  return instanceWithAuth.patch(
-    `${BASE_URL}/scenarios/masters/group-id/${group_id}/scenario-id/${scenario_id}`
-  );
+  return instanceWithAuth.patch(`${BASE_URL}/scenarios/masters/group-id/${group_id}/scenario-id/${scenario_id}`);
 };
 
 // =======================================================================
 
 const getScenarioMetadata = (scenario_id: string) => {
-  return instanceWithAuth.get<ScenarioMetadataResponse>(
-    `${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`
-  );
+  return instanceWithAuth.get<ScenarioMetadataResponse>(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`);
 };
 
 const updateScenarioMetadata = (addHistory: boolean = true) => {

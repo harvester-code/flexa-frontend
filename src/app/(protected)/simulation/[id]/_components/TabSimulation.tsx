@@ -1,24 +1,19 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
-import { ChartData, ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
+import { ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
 import { popModal, pushModal } from '@/app/provider';
-import { getSimulationOverview, requestSimulation, runSimulation } from '@/services/simulations';
+import { fetchSimulation, getSimulationOverview, requestSimulation } from '@/services/simulations';
 import { BarColors, SankeyColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
 import AnalysisPopup from '@/components/popups/Analysis';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
 import { deepCompare } from '@/lib/utils';
 
@@ -40,12 +35,8 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const refWidth = useRef(null);
-  const { passenger_attr, facility_info, setFacilityInformation, overview, setOverview } =
-    useSimulationMetadata();
+  const { passenger_attr, facility_info, setFacilityInformation, overview, setOverview } = useSimulationMetadata();
   const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
-
-  // const [socket, setSocket] = useState<WebSocket>();
-  // const [loaded, setLoaded] = useState(false);
 
   const [simulationParams, setSimulationParams] = useState();
   const [overviewData, setOverviewData] = useState<SimulationOverviewResponse>();
@@ -223,11 +214,13 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
+
   const chartDataCurrent = simulationData?.chart?.find(
     (item) =>
       item.process == processCurrent &&
       passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
   );
+
   const lineChartDataCurrent = simulationData?.line_chart?.find(
     (item) =>
       item.process == processCurrent &&
@@ -239,6 +232,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0])
   );
   // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
+
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Overview</h2>
@@ -257,6 +251,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           ))}
         </div>
       ) : null}
+
       {loadingSimulation ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
@@ -264,6 +259,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       ) : simulationData ? (
         <div>
           <h2 className="title-sm mt-[40px]">Simulation completed</h2>
+
           <div className="mt-[20px] flex items-center justify-between gap-[20px]">
             <div className="flex flex-grow items-center gap-[25px] rounded-md border border-default-300 bg-default-50 px-[20px] py-[40px]">
               <img src="/image/ico-check-green.svg" alt="" />
@@ -284,9 +280,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               </dl>
             </div>
           </div>
+
           <h2 className="title-sm mt-[44px]">
             Passenger Flow {simulationData.simulation_completed[0].value} Passengers
           </h2>
+
           <div className="mt-[40px] flex h-[570px] items-center justify-center rounded-md bg-white">
             <SankeyChart
               chartData={[
@@ -296,40 +294,27 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   node: {
                     pad: 15,
                     thickness: 20,
-                    line: {
-                      color: 'black',
-                      width: 0.5,
-                    },
+                    line: { color: 'black', width: 0.5 },
                     label: simulationData?.sankey.label,
-                    color: simulationData?.sankey.label.map(
-                      (_, index) => SankeyColors[index % SankeyColors.length]
-                    ),
+                    color: simulationData?.sankey.label.map((_, index) => SankeyColors[index % SankeyColors.length]),
                   },
                   link: simulationData?.sankey.link,
                 },
               ]}
               chartLayout={{
                 title: 'Sankey Diagram',
-                font: {
-                  size: 10,
-                },
+                font: { size: 10 },
                 width,
                 height: 570,
-                margin: {
-                  l: 100,
-                  r: 100,
-                  t: 0,
-                  b: 0,
-                },
+                margin: { l: 100, r: 100, t: 0, b: 0 },
               }}
               config={{
                 displayModeBar: false,
               }}
             />
           </div>
-          <div
-          // className='sticky top-0 z-[100] bg-white pb-[10px]'
-          >
+
+          <div>
             <h2 className="title-sm mt-[60px]">Passenger by Facility</h2>
             <TabDefault
               tabCount={procedures.length}
@@ -354,10 +339,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   </li>
                 ))}
               </ul>
-            ) : (
-              <></>
-            )}
+            ) : null}
           </div>
+
           {procedureIndex < procedures.length - 1 ? (
             <div>
               <div className="indicator mt-[20px]">
@@ -446,24 +430,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 chartLayout={{
                   width,
                   height: 390,
-                  margin: {
-                    l: 30,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
+                  margin: { l: 30, r: 10, t: 0, b: 30 },
                   barmode: 'stack',
-                  legend: {
-                    x: 1,
-                    y: 1.1,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
-                  yaxis: {
-                    range: [0, inOutChartMaxY],
-                  },
+                  yaxis: { range: [0, inOutChartMaxY] },
                   // barcornerradius: 7,
                 }}
                 config={{
@@ -510,24 +481,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 chartLayout={{
                   width,
                   height: 390,
-                  margin: {
-                    l: 30,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
+                  margin: { l: 30, r: 10, t: 0, b: 30 },
                   barmode: 'stack',
-                  legend: {
-                    x: 1,
-                    y: 1.1,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
-                  yaxis: {
-                    range: [0, inOutChartMaxY],
-                  },
+                  yaxis: { range: [0, inOutChartMaxY] },
                   // barcornerradius: 7,
                 }}
                 config={{
@@ -562,20 +520,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 chartLayout={{
                   width,
                   height: 390,
-                  margin: {
-                    l: 30,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
+                  margin: { l: 30, r: 10, t: 0, b: 30 },
                   barmode: 'stack',
-                  legend: {
-                    x: 1,
-                    y: 1.1,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                   // barcornerradius: 7,
                 }}
@@ -603,19 +550,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 chartLayout={{
                   width,
                   height: 390,
-                  margin: {
-                    l: 30,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
-                  legend: {
-                    x: 1,
-                    y: 1.1,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  margin: { l: 30, r: 10, t: 0, b: 30 },
+                  legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                   // barcornerradius: 7,
                 }}
@@ -675,29 +611,17 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 chartLayout={{
                   width,
                   height: 390,
-                  margin: {
-                    l: 30,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
+                  margin: { l: 30, r: 10, t: 0, b: 30 },
                   barmode: 'overlay',
-                  legend: {
-                    x: 1,
-                    y: 1.1,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                   // barcornerradius: 7,
                 }}
-                config={{
-                  displayModeBar: false,
-                }}
+                config={{ displayModeBar: false }}
               />
             </>
           )}
+
           <div className="chart-btn mt-[60px]">
             <button
               onClick={() => {
@@ -742,6 +666,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       ) : (
         <div className="h-[50px]" />
       )}
+
       {/* 하단버튼 */}
       <div className="mt-[30px] flex justify-between">
         <button
@@ -753,10 +678,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         </button>
 
         {/* FIXME: [25.04.07] ADD CONDITIONS가 있을 때 데이터가 제대로 안 나오는 현상 발생 */}
-        <button
-          className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
-          onClick={() => onRunSimulation()}
-        >
+        <button className="btn-md btn-tertiary btn-rounded w-[210px] justify-between" onClick={() => onRunSimulation()}>
           <span className="flex flex-grow items-center justify-center">Run Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
         </button>
