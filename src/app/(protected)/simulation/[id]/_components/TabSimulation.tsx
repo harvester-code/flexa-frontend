@@ -134,6 +134,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
   };
 
+  // FIXME: 아래 2개의 useEffect를 통합
+  // 사용자가 해당 탭을 선택했을 때,
+  // [1] 데이터가 loaded 되어있지 않으면 스냅샷에서 데이터를 가지고 온다.
+  // [2] 데이터가 loaded 되어있으면 Overview 데이터를 가지고 온다.
   useEffect(() => {
     if (visible) {
       if (!loaded) {
@@ -141,13 +145,15 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         setLoaded(true);
       } else {
         loadOverview();
+        loadSimulation();
       }
     }
   }, [visible]);
-
+  // 위 useEffect에서 loaded 값이 변하면 Overview 데이터를 가지고 온다.
   useEffect(() => {
     if (loaded) {
       loadOverview();
+      loadSimulation();
     }
   }, [loaded]);
 
@@ -155,11 +161,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     const params = simulationParams;
 
     if (!params) {
-      console.error('run simulation - param error');
-      return;
+      return console.error('run simulation - param error');
     }
 
-    const response = await requestSimulation(simulationId, params);
+    await requestSimulation(simulationId, params);
 
     // NOTE: 시뮬레이션 시작 코드
     // setLoadingSimulation(true);
@@ -195,26 +200,21 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     //     setLoadError(true);
     //     setLoadingSimulation(false);
     //   });
-
-    // NOTE: WebSocket 연결
-    // const ws = new WebSocket('ws://43.202.4.213:8000/api/v1/test', getLastAccessToken());
-    // ws.onopen = () => {
-    //   console.log('WebSocket 연결이 열렸습니다.');
-    //   // ws.send(params);
-    // };
-    // ws.onmessage = (event) => {
-    //   console.log(event.data);
-    // };
-    // ws.onerror = (error) => {
-    //   console.error('WebSocket 에러:', error);
-    // };
-    // ws.onclose = () => {
-    //   console.log('WebSocket 연결이 종료되었습니다.');
-    //   ws.close();
-    //   setSocket(undefined);
-    // };
-    // setSocket(ws);
   };
+
+  const loadSimulation = async () => {
+    try {
+      const { data } = await fetchSimulation(simulationId);
+      if (data) {
+        setSimulationData(data);
+      }
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  };
+
+  // ==============================================================================
 
   const processCurrent = procedures[procedureIndex].text?.toLowerCase().replace(/[\s-]+/g, '_');
 
