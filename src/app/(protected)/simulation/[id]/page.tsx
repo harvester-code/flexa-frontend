@@ -30,56 +30,61 @@ const tabs: { text: string; number?: number }[] = [
   { text: 'Simulation' },
 ];
 
-export default function SimulationDetail(props) {
-  const params: { id: string } = React.use(props?.params);
+export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const metadata = useSimulationMetadata();
   const { toast } = useToast();
+
   const [loaded, setLoaded] = useState(false);
 
+  const simulationId = React.use(params).id;
   const {
-    tabIndex,
-    setTabIndex,
     availableTabIndex,
+    scenarioInfo,
     setAvailableTabIndex,
     setCheckpoint,
-    scenarioInfo,
     setScenarioInfo,
+    setTabIndex,
+    tabIndex,
   } = useSimulationStore();
+  const metadata = useSimulationMetadata();
 
-  const simulationId = params?.id;
-
-  const lastHistory =
+  const latestHistory =
     metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
 
   useEffect(() => {
-    setLoaded(false);
     setAvailableTabIndex(1);
     setTabIndex(0);
-    getScenarioMetadata(params?.id).then(({ data }) => {
+
+    // Fetch the scenario metadata
+    getScenarioMetadata(simulationId).then(({ data }) => {
       const clientTime = dayjs();
       const serverTime = dayjs(data?.checkpoint);
+
       setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'millisecond'));
       setScenarioInfo(data?.scenario_info);
+
       metadata.setMetadata(data?.metadata);
+
       setLoaded(true);
     });
-  }, [params?.id]);
+  }, [simulationId]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [tabIndex]);
 
   return (
     <div className="mx-auto max-w-[1340px] px-[30px]">
       <TheContentHeader text="Simulation" />
+
       <div className="mt-[15px] flex justify-between">
         <dl className="sub-title">
           <dd>
             {scenarioInfo?.simulation_name || ''}
-            {lastHistory?.checkpoint ? <span>{timeToRelativeTime(lastHistory?.checkpoint)}</span> : null}
+            {latestHistory?.checkpoint ? <span>{timeToRelativeTime(latestHistory?.checkpoint)}</span> : null}
           </dd>
         </dl>
+
         <div className="flex items-center gap-[10px]">
           <Button
             className="btn-md btn-default"
@@ -89,6 +94,7 @@ export default function SimulationDetail(props) {
               router.replace(`/simulation`);
             }}
           />
+
           <Button
             className="btn-md btn-primary"
             icon={<Image width={20} height={20} src="/image/ico-save.svg" alt="" />}
@@ -120,12 +126,12 @@ export default function SimulationDetail(props) {
       {loaded ? (
         <React.Fragment key={simulationId}>
           <TabScenarioOverview visible={tabIndex == 0} />
-          <TabFlightSchedule visible={tabIndex == 1} simulationId={params?.id} />
-          <TabPassengerSchedule visible={tabIndex == 2} simulationId={params?.id} />
+          <TabFlightSchedule visible={tabIndex == 1} simulationId={simulationId} />
+          <TabPassengerSchedule visible={tabIndex == 2} simulationId={simulationId} />
           <TabProcessingProcedures visible={tabIndex == 3} />
-          <TabFacilityConnection visible={tabIndex == 4} simulationId={params?.id} />
-          <TabFacilityInformation visible={tabIndex == 5} simulationId={params?.id} />
-          <TabSimulation visible={tabIndex == 6} simulationId={params?.id} />
+          <TabFacilityConnection visible={tabIndex == 4} simulationId={simulationId} />
+          <TabFacilityInformation visible={tabIndex == 5} simulationId={simulationId} />
+          <TabSimulation visible={tabIndex == 6} simulationId={simulationId} />
         </React.Fragment>
       ) : (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
