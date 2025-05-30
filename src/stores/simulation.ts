@@ -84,16 +84,10 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
   resetMetadata: () => set({ history: get()?.history }),
 
   setOverview: (overview, replace) =>
-    set(
-      replace ? { overview } : { overview: { ...(get().overview || ({} as ScenarioOverview)), ...overview } }
-    ),
+    set(replace ? { overview } : { overview: { ...(get().overview || ({} as ScenarioOverview)), ...overview } }),
 
   setFlightSchedule: (flight_sch, replace) =>
-    set(
-      replace
-        ? { flight_sch }
-        : { flight_sch: { ...(get().flight_sch || ({} as FlightSchedule)), ...flight_sch } }
-    ),
+    set(replace ? { flight_sch } : { flight_sch: { ...(get().flight_sch || ({} as FlightSchedule)), ...flight_sch } }),
 
   setPassengerSchedule: (passenger_sch, replace) =>
     set(
@@ -125,9 +119,7 @@ export const useSimulationMetadata = create<ScenarioMetadataZustand>((set, get) 
 
   setSimulation: (simulation, replace) =>
     set(
-      replace
-        ? { simulation }
-        : { simulation: { ...(get().simulation || ({} as SimulationResponse)), ...simulation } }
+      replace ? { simulation } : { simulation: { ...(get().simulation || ({} as SimulationResponse)), ...simulation } }
     ),
 
   addHistoryItem: (item: ScenarioHistory) => set({ history: [...(get()?.history || []), item] }),
@@ -165,9 +157,7 @@ export const useSimulationStore = create<{
   setProcessingProcedureTime: (time: number) => void;
 }>((set, get) => ({
   tabIndex: 0,
-  setTabIndex: (index) => {
-    set({ tabIndex: index, availableTabIndex: Math.max(index, get().availableTabIndex) });
-  },
+  setTabIndex: (index) => set({ tabIndex: index, availableTabIndex: Math.max(index, get().availableTabIndex) }),
 
   availableTabIndex: 1,
   setAvailableTabIndex: (index) => set({ availableTabIndex: index }),

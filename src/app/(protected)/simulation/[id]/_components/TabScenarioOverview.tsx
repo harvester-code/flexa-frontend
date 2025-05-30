@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,7 +10,7 @@ import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import Input from '@/components/Input';
 import { timeToRelativeTime } from '@/lib/utils';
 
-const PageRowAmount = 5;
+const PAGE_ROW_AMOUNT = 5;
 
 const OverviewTable = [
   { key: 'date', text: 'Date' },
@@ -32,61 +32,32 @@ interface TabScenarioOverviewProps {
 }
 
 export default function TabScenarioOverview({ visible }: TabScenarioOverviewProps) {
-  // 메모 상태 관리
-  const metadata = useSimulationMetadata();
-  const {
-    tabIndex,
-    setTabIndex,
-    scenarioInfo,
-    setConditions,
-    setPriorities,
-    availableTabIndex,
-    setAvailableTabIndex,
-  } = useSimulationStore();
-  const overview = metadata?.overview;
-  const flight_sch = metadata?.flight_sch;
-  const history = [...(metadata?.history || [])].reverse();
   const router = useRouter();
   const [historyPage, setHistoryPage] = useState(0);
+
+  const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
+
+  const metadata = useSimulationMetadata();
+  const overview = metadata?.overview;
+  const history = [...(metadata?.history || [])].reverse();
+
   const historyPageData = {
-    start: historyPage * PageRowAmount,
-    end: historyPage * PageRowAmount + PageRowAmount,
-    lastPage: history ? Math.ceil(history.length / PageRowAmount) : 1,
+    start: historyPage * PAGE_ROW_AMOUNT,
+    end: historyPage * PAGE_ROW_AMOUNT + PAGE_ROW_AMOUNT,
+    lastPage: history ? Math.ceil(history.length / PAGE_ROW_AMOUNT) : 1,
   };
 
-  const [loaded, setLoaded] = useState(false);
-  const restoreSnapshot = () => {
-    if (overview?.snapshot) {
-      const snapshot = overview?.snapshot;
-      if (snapshot?.availableTabIndex) setAvailableTabIndex(snapshot?.availableTabIndex);
-    }
-    if (flight_sch?.snapshot) {
-      const snapshot = flight_sch?.snapshot;
-      if (snapshot?.conditions) setConditions(snapshot?.conditions);
-      if (snapshot?.priorities) setPriorities(snapshot?.priorities);
-    }
-  };
-
-  useEffect(() => {
-    if (visible && !loaded && (overview?.snapshot || flight_sch?.snapshot)) {
-      restoreSnapshot();
-      setLoaded(true);
-    }
-  }, [visible, overview?.snapshot, flight_sch?.snapshot]);
-
-  useEffect(() => {
-    if (!visible && loaded) {
-      metadata?.setOverview({ snapshot: { ...(overview?.snapshot || {}), availableTabIndex } });
-    }
-  }, [availableTabIndex]);
-
+  const handleUpdateMemo = () => updateScenarioMetadata(false);
   const handleMemoChange = (index: number, newMemo: string) => {
-    if (!history) return;
-    metadata.setHistoryItem({ ...history[index], memo: newMemo }, index);
-  };
-
-  const handleUpdateMemo = () => {
-    updateScenarioMetadata(false);
+    if (history) {
+      metadata.setHistoryItem(
+        {
+          ...history[index],
+          memo: newMemo,
+        },
+        index
+      );
+    }
   };
 
   return !visible ? null : (
@@ -118,6 +89,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           ))}
         </div>
       )}
+
       <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
       <div className="table-wrap mt-[10px]">
         <table className="table-default">
@@ -142,9 +114,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                   </td>
                   <td className="">{relTime} ago</td>
                   <td className="text-center">
-                    <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>
-                      {item.simulation}
-                    </span>
+                    <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>{item.simulation}</span>
                   </td>
                   <td className="">
                     <Input

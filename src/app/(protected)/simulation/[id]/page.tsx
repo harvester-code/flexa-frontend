@@ -36,12 +36,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   const [loaded, setLoaded] = useState(false);
 
-  const simulationId = React.use(params).id;
   const {
     availableTabIndex,
     scenarioInfo,
     setAvailableTabIndex,
     setCheckpoint,
+    setConditions,
+    setPriorities,
     setScenarioInfo,
     setTabIndex,
     tabIndex,
@@ -51,22 +52,36 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const latestHistory =
     metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
 
+  const simulationId = React.use(params).id;
+
+  // ‼️ 시뮬레이션 페이지에 필요한 데이터를 로드합니다.
+  // 이 데이터를 스토어에 저장하고, 하위 탭 컴포넌트에서 사용합니다.
   useEffect(() => {
-    setAvailableTabIndex(1);
+    const loadMetadata = async () => {
+      try {
+        const {
+          data: { checkpoint, metadata: metadata_, scenario_info },
+        } = await getScenarioMetadata(simulationId);
+
+        const clientTime = dayjs();
+        const serverTime = dayjs(checkpoint);
+
+        setCheckpoint(checkpoint, clientTime.diff(serverTime, 'millisecond'));
+        setScenarioInfo(scenario_info);
+        metadata.setMetadata(metadata_);
+
+        setAvailableTabIndex(metadata_?.overview?.snapshot?.availableTabIndex || 1);
+        setConditions(metadata_.flight_sch.snapshot.conditions || []);
+        setPriorities(metadata_.flight_sch.snapshot.priorities || []);
+      } catch (error) {
+        console.error('Failed to load scenario metadata:', error);
+      } finally {
+        setLoaded(true);
+      }
+    };
+
     setTabIndex(0);
-
-    // Fetch the scenario metadata
-    getScenarioMetadata(simulationId).then(({ data }) => {
-      const clientTime = dayjs();
-      const serverTime = dayjs(data?.checkpoint);
-
-      setCheckpoint(data?.checkpoint, clientTime.diff(serverTime, 'millisecond'));
-      setScenarioInfo(data?.scenario_info);
-
-      metadata.setMetadata(data?.metadata);
-
-      setLoaded(true);
-    });
+    loadMetadata();
   }, [simulationId]);
 
   useEffect(() => {
@@ -115,12 +130,15 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       </div>
 
       <TabDefault
-        tabCount={tabs.length}
+        className={`mt-[40px]`}
         currentTab={tabIndex}
         availableTabs={loaded ? availableTabIndex : 0}
-        tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
-        className={`mt-[40px]`}
-        onTabChange={(index) => (!loaded || index > availableTabIndex ? null : setTabIndex(index))}
+        tabCount={tabs.length}
+        tabs={tabs.map((tab) => ({
+          text: tab.text,
+          number: tab.number || 0,
+        }))}
+        onTabChange={(i) => (!loaded || i > availableTabIndex ? null : setTabIndex(i))}
       />
 
       {loaded ? (
