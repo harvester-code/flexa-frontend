@@ -14,12 +14,7 @@ import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
 import Tooltip from '@/components/Tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
 
@@ -36,13 +31,7 @@ function gaussian(x: number, mean: number, stddev: number) {
   return (1 / (stddev * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
 }
 
-function generateNormalDistributionLineChart(
-  mean: number,
-  stddev: number,
-  start: number,
-  end: number,
-  step: number
-) {
+function generateNormalDistributionLineChart(mean: number, stddev: number, start: number, end: number, step: number) {
   const xValues: number[] = [];
   const yValues: number[] = [];
 
@@ -85,6 +74,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
     _setStates(newStates);
     if (onChange) onChange(newStates);
   };
+
   useEffect(() => {
     if (!defaultValues)
       setStates({
@@ -93,6 +83,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
         stddev: DropdownLists.stddev[0].id,
       });
   }, []);
+
   return (
     <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <Conditions
@@ -106,9 +97,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
       />
       <div className="p-[20px]">
         <div className="flex flex-col gap-[10px]">
-          <p className="font-semibold text-default-900">
-            Passengers with above characteristics arrive at the airport
-          </p>
+          <p className="font-semibold text-default-900">Passengers with above characteristics arrive at the airport</p>
           <div className="flex items-center gap-[10px] text-xl">
             normally distributed with mean
             <input
@@ -312,9 +301,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
   const minMaxMean = { min: Number(otherPassengerState.mean) * -1, max: Number(otherPassengerState.mean) * -1 };
 
-  const prioritiesList = addPrioritiesVisible
-    ? [...prioritiesItems, otherPassengerState]
-    : [otherPassengerState];
+  const prioritiesList = addPrioritiesVisible ? [...prioritiesItems, otherPassengerState] : [otherPassengerState];
 
   for (const itemCur of prioritiesList) {
     const minCur = Number(itemCur?.mean) * -1 - Number(itemCur?.stddev) * 4;
@@ -483,13 +470,9 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         </div>
       ) : chartData ? (
         <>
-          <p className="mt-[20px] text-[40px] text-xl font-semibold text-default-800">
-            Check Generated Passenger Data
-          </p>
+          <p className="mt-[20px] text-[40px] text-xl font-semibold text-default-800">Check Generated Passenger Data</p>
           <dl className="mt-[25px]">
-            <dt className="text-[40px] text-xl font-semibold">
-              Total: {numberWithCommas(chartData?.total)} Pax
-            </dt>
+            <dt className="text-[40px] text-xl font-semibold">Total: {numberWithCommas(chartData?.total)} Pax</dt>
             <dd className="text-[40px] text-xl font-semibold">
               {chartData?.total_sub_obj
                 ?.map((textItem, index) => {

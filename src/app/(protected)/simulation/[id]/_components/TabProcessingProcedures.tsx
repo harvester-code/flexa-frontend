@@ -37,8 +37,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
   const applied =
     lastProcedures == procedures &&
-    ((!refPassengerScheduleTime[0] && !flightScheduleTime) ||
-      refPassengerScheduleTime[0] == flightScheduleTime);
+    ((!refPassengerScheduleTime[0] && !flightScheduleTime) || refPassengerScheduleTime[0] == flightScheduleTime);
 
   useEffect(() => {
     if (loaded && !applied) {

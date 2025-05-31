@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
+import { useShallow } from 'zustand/react/shallow';
 import { updateScenarioMetadata } from '@/services/simulations';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { useScenarioStore } from '@/stores/useScenarioStore';
 import Input from '@/components/Input';
 import { timeToRelativeTime } from '@/lib/utils';
 
@@ -35,11 +36,17 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   const router = useRouter();
   const [historyPage, setHistoryPage] = useState(0);
 
-  const { tabIndex, setTabIndex, scenarioInfo } = useSimulationStore();
-
-  const metadata = useSimulationMetadata();
-  const overview = metadata?.overview;
-  const history = [...(metadata?.history || [])].reverse();
+  const { overview, history, setTabIndex, setHistoryItem, tabIndex, scenarioInfo } = useScenarioStore(
+    useShallow((state) => ({
+      overview: state.overview,
+      setTabIndex: state.setTabIndex,
+      // history: [...(state.history || [])].reverse(),
+      history: state.history,
+      setHistoryItem: state.setHistoryItem,
+      tabIndex: state.tabIndex,
+      scenarioInfo: state.scenarioInfo,
+    }))
+  );
 
   const historyPageData = {
     start: historyPage * PAGE_ROW_AMOUNT,
@@ -50,7 +57,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   const handleUpdateMemo = () => updateScenarioMetadata(false);
   const handleMemoChange = (index: number, newMemo: string) => {
     if (history) {
-      metadata.setHistoryItem(
+      setHistoryItem(
         {
           ...history[index],
           memo: newMemo,

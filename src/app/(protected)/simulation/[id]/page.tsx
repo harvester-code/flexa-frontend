@@ -5,8 +5,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
+import { useShallow } from 'zustand/react/shallow';
 import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
 import TheContentHeader from '@/components/TheContentHeader';
@@ -35,24 +36,37 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const { toast } = useToast();
 
   const [loaded, setLoaded] = useState(false);
+  const simulationId = React.use(params).id;
 
   const {
+    tabIndex,
+    setTabIndex,
     availableTabIndex,
-    scenarioInfo,
     setAvailableTabIndex,
+    scenarioInfo,
+    setScenarioInfo,
+    history,
     setCheckpoint,
+    setMetadata,
     setConditions,
     setPriorities,
-    setScenarioInfo,
-    setTabIndex,
-    tabIndex,
-  } = useSimulationStore();
-  const metadata = useSimulationMetadata();
+  } = useScenarioStore(
+    useShallow((state) => ({
+      tabIndex: state.tabIndex,
+      setTabIndex: state.setTabIndex,
+      availableTabIndex: state.availableTabIndex,
+      setAvailableTabIndex: state.setAvailableTabIndex,
+      scenarioInfo: state.scenarioInfo,
+      setScenarioInfo: state.setScenarioInfo,
+      history: state.history,
+      setCheckpoint: state.setCheckpoint,
+      setMetadata: state.setMetadata,
+      setConditions: state.setConditions,
+      setPriorities: state.setPriorities,
+    }))
+  );
 
-  const latestHistory =
-    metadata?.history && metadata?.history?.length > 0 ? metadata.history[metadata.history?.length - 1] : null;
-
-  const simulationId = React.use(params).id;
+  const latestHistory = history && history?.length > 0 ? history[history?.length - 1] : null;
 
   // ‼️ 시뮬레이션 페이지에 필요한 데이터를 로드합니다.
   // 이 데이터를 스토어에 저장하고, 하위 탭 컴포넌트에서 사용합니다.
@@ -68,7 +82,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
         setCheckpoint(checkpoint, clientTime.diff(serverTime, 'millisecond'));
         setScenarioInfo(scenario_info);
-        metadata.setMetadata(metadata_);
+        setMetadata(metadata_);
 
         setAvailableTabIndex(metadata_?.overview?.snapshot?.availableTabIndex || 1);
         setConditions(metadata_.flight_sch.snapshot.conditions || []);
@@ -110,7 +124,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             }}
           />
 
-          <Button
+          {/* <Button
             className="btn-md btn-primary"
             icon={<Image width={20} height={20} src="/image/ico-save.svg" alt="" />}
             text="Save"
@@ -125,7 +139,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
                 });
               }
             }}
-          />
+          /> */}
         </div>
       </div>
 

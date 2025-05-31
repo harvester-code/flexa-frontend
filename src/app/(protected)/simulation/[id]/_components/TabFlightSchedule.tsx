@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { OrbitProgress } from 'react-loading-indicators';
+import { useShallow } from 'zustand/react/shallow';
 import { ConditionData, ConditionParams, ConditionState, DropdownItem, OperatorItem } from '@/types/conditions';
-import { ChartData, FlightSchedule } from '@/types/simulations';
+import { FlightSchedule } from '@/types/simulations';
 import { getFlightSchedules } from '@/services/simulations';
-import { BarColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { BarColors } from '@/stores/simulation';
+import { useScenarioStore } from '@/stores/useScenarioStore';
 import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -18,17 +20,14 @@ import Conditions from '@/components/Conditions';
 import selectBoxStyles from '@/components/SelectBox.module.css';
 import TabDefault from '@/components/TabDefault';
 import { Calendar } from '@/components/ui/Calendar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { useResize } from '@/hooks/useResize';
 import { deepCompare } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import _jsonAirport from '../_json/airport_constants.json';
+
+// TODO
+// - Load 눌렀을 때, 기존에 있던 Conditions, ChartData 등등 초기화하고 데이터 읽어오기
 
 const jsonAirportObj = {};
 const jsonAirport = _jsonAirport.map((item) => {
@@ -42,7 +41,7 @@ const jsonAirport = _jsonAirport.map((item) => {
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
-const tabsSecondary: { text: string; number?: number }[] = [
+const SUB_TABS: { text: string; number?: number }[] = [
   { text: 'Connect Cirium®' },
   { text: 'Connect OAG®' },
   { text: 'Direct Upload' },
@@ -89,82 +88,60 @@ const parseConditions = (conditionData: ConditionParams[]): ConditionData => {
 
 export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
   const refWidth = useRef(null);
-  const { resetMetadata, setFlightSchedule, flight_sch } = useSimulationMetadata();
-  const {
-    conditions,
-    priorities,
-    tabIndex,
-    setAvailableTabIndex,
-    setConditions,
-    setFlightScheduleTime,
-    setPriorities,
-    setTabIndex,
-  } = useSimulationStore();
-
-  const [chartData, setChartData] = useState<{ total: number; x: string[]; data: ChartData }>();
-  const [addConditionsVisible, setAddConditionsVisible] = useState(false);
-
-  const [selColorCriteria, setSelColorCriteria] = useState(flight_sch?.snapshot?.selColorCriteria || 'Airline');
-  const [selDate, setSelDate] = useState<Date>(flight_sch?.snapshot?.selDate || dayjs().toDate());
-  const [selAirport, setSelAirport] = useState('ICN');
-  const [selConditions, setSelConditions] = useState<ConditionState[]>();
-
-  const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [tabSecondary, setTabSecondary] = useState(flight_sch?.snapshot?.tabSecondary || 0);
-  const [applied, setApplied] = useState(true);
-
-  const prevStates = useRef({ selConditions, selAirport, selDate });
-
-  const { width } = useResize(refWidth);
 
   const { data: userInfo } = useUser();
+  const {
+    tabIndex,
+    setTabIndex,
+    setAvailableTabIndex,
+    subTab,
+    setTargetDate,
+    targetDate,
+    selDate,
+    airport,
+    flightSchedule,
+    setFlightSchedule,
+    setFlightScheduleTime,
+    resetMetadata,
+    chartData,
+    colorCriteria,
+    setColorCriteria,
+    conditions,
+    setConditions,
+    priorities,
+    setPriorities,
+  } = useScenarioStore(
+    useShallow((state) => ({
+      tabIndex: state.tabIndex,
+      setTabIndex: state.setTabIndex,
+      setAvailableTabIndex: state.setAvailableTabIndex,
+      subTab: state.flight_sch?.snapshot?.tabSecondary || 0,
+      setTargetDate: state.setTargetDate,
+      targetDate: state.flight_sch?.params?.date || dayjs().format('YYYY-MM-DD'),
+      selDate: state.flight_sch?.snapshot?.selDate || dayjs().toDate(),
+      airport: state.flight_sch?.params?.airport || 'ICN',
+      flightSchedule: state.flight_sch?.snapshot || {},
+      setFlightSchedule: state.setFlightSchedule,
+      setFlightScheduleTime: state.setFlightScheduleTime,
+      resetMetadata: state.resetMetadata,
+      chartData: state.flight_sch?.snapshot?.chartData,
+      colorCriteria: state.flight_sch?.snapshot?.selColorCriteria || 'Airline',
+      setColorCriteria: state.setColorCriteria,
+      conditions: state.conditions,
+      setConditions: state.setConditions,
+      priorities: state.priorities,
+      setPriorities: state.setPriorities,
+    }))
+  );
 
+  const [selConditions, setSelConditions] = useState<ConditionState[]>();
+
+  const [applied, setApplied] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  const saveSnapshot = (params?: Partial<FlightSchedule>, snapshot: any = {}) => {
-    const paramsCur = params?.params;
-    const newSnapshot: any = {
-      chartData,
-      selColorCriteria,
-      addConditionsVisible: paramsCur
-        ? paramsCur?.condition?.length > 0
-          ? true
-          : false
-        : addConditionsVisible,
-      selDate: paramsCur?.date || selDate,
-      selAirport: paramsCur?.airport || selAirport,
-      selConditions: paramsCur?.condition?.length > 0 ? paramsCur?.condition : selConditions,
-      tabSecondary,
-      conditions,
-      priorities,
-      applied,
-      ...snapshot,
-    };
-    setFlightSchedule({ ...flight_sch, ...(params || {}), snapshot: newSnapshot });
-  };
-
-  const restoreSnapshot = () => {
-    if (flight_sch?.snapshot) {
-      const snapshot = flight_sch?.snapshot;
-      if (snapshot.params) setFlightSchedule({ ...flight_sch, params: snapshot.params });
-      if (snapshot.addConditionsVisible) setAddConditionsVisible(snapshot.addConditionsVisible);
-      if (snapshot.selConditions) setSelConditions(snapshot.selConditions);
-      if (snapshot.selAirport) setSelAirport(snapshot.selAirport);
-      setTimeout(() => {
-        if (snapshot.chartData) setChartData(snapshot.chartData);
-      }, 10);
-    }
-  };
-
-  useEffect(() => {
-    if (visible && !loaded && flight_sch?.snapshot) {
-      restoreSnapshot();
-      setLoaded(true);
-    }
-  }, [visible, flight_sch?.snapshot]);
-
-  const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
+  const chartDataCurrent = chartData?.data?.[colorCriteria] || [];
 
   const barColorsCurrent = !chartDataCurrent
     ? []
@@ -172,6 +149,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       ? BarColors[String(chartDataCurrent?.length)]
       : BarColors.DEFAULT;
 
+  // ‼️ 시리움에서 데이터를 불러온다.
   const loadFlightSchedule = useCallback(
     (first_load: boolean, useCondition: boolean) => {
       if (!simulationId) return;
@@ -182,7 +160,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       const params = {
         first_load,
         date: dayjs(selDate).format('YYYY-MM-DD'),
-        airport: selAirport,
+        airport: airport,
         condition: first_load ? [] : useCondition ? selConditions || [] : [],
       };
 
@@ -239,7 +217,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
               data: data?.chart_y_data,
             };
 
-            setChartData(newChartData);
+            // setChartData(newChartData);
             snapshotData.chartData = newChartData;
           }
 
@@ -248,28 +226,28 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
           setFlightScheduleTime(Date.now());
           setApplied(true);
           setLoadingFlightSchedule(false);
-          saveSnapshot(flightSchedule, snapshotData);
+          // saveSnapshot(flightSchedule, snapshotData);
         })
         .catch(() => {
           setLoadError(true);
           setLoadingFlightSchedule(false);
         });
     },
-    [userInfo?.id, selDate, selAirport, selConditions, simulationId]
+    [userInfo?.id, selDate, airport, selConditions, simulationId]
   );
 
-  useEffect(() => {
-    if (prevStates.current.selAirport != selAirport || prevStates.current.selDate != selDate) {
-      setAddConditionsVisible(false);
-      setSelConditions(undefined);
-      setChartData(undefined);
-    } else {
-      if (chartData) loadFlightSchedule(false, addConditionsVisible);
-    }
-    prevStates.current = { selConditions, selAirport, selDate };
-  }, [selConditions, selAirport, selDate]);
+  // useEffect(() => {
+  //   if (prevStates.current.selAirport != selAirport || prevStates.current.selDate != selDate) {
+  //     setAddConditionsVisible(false);
+  //     setSelConditions(undefined);
+  // setChartData(undefined);
+  //   } else {
+  //     if (chartData) loadFlightSchedule(false, addConditionsVisible);
+  //   }
+  //   prevStates.current = { selConditions, selAirport, selDate };
+  // }, [selConditions, selAirport, selDate]);
 
-  const conditionChanged = !applied || flight_sch?.snapshot?.addConditionsVisible != addConditionsVisible;
+  // const conditionChanged = !applied || flightSchedule?.addConditionsVisible != addConditionsVisible;
 
   const [inputAirport, setInputAirport] = useState(false);
 
@@ -280,16 +258,16 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       ? jsonAirport.filter((item) => item?.searchText?.indexOf(inputAirportText.toUpperCase()) >= 0)
       : [];
 
-  const airportFullName = jsonAirportObj[selAirport] || '';
+  const airportFullName = jsonAirportObj[airport] || '';
 
   return !visible ? null : (
     <div ref={refWidth}>
       <h2 className="title-sm mt-[25px]">Flight Schedule</h2>
 
       <TabDefault
-        tabCount={tabsSecondary.length}
-        currentTab={tabSecondary}
-        tabs={tabsSecondary.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
+        tabCount={SUB_TABS.length}
+        currentTab={subTab}
+        tabs={SUB_TABS.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
         className={`tab-secondary mt-[25px]`}
         // onTabChange={(tabIndex) => setTabSecondary(tabIndex)}
       />
@@ -297,6 +275,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       <div className="mt-[40px] flex items-center justify-between">
         <p className="text-xl font-semibold text-default-800">Load Flight Schedule Data</p>
 
+        {/* ========== 공항 검색 버튼 ========== */}
         <div className="flex items-center gap-[10px]">
           {inputAirport ? (
             <div className="relative">
@@ -334,9 +313,9 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                           className={cn(selectBoxStyles.selectOptionItem)}
                           key={index}
                           onClick={() => {
-                            setAddConditionsVisible(false);
+                            // setAddConditionsVisible(false);
+                            // setSelAirport(item.iata);
                             setSelConditions(undefined);
-                            setSelAirport(item.iata);
                             setInputAirportText('');
                             setInputAirport(false);
                           }}
@@ -356,7 +335,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             <Button
               className="btn-md btn-default"
               icon={<Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />}
-              text={selAirport}
+              text={airport}
               textSub={airportFullName}
               onClick={() => {
                 setInputAirport(true);
@@ -371,23 +350,25 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             <PopoverTrigger asChild>
               <div>
                 <Button
-                  className="btn-md btn-default"
+                  className="btn-md btn-default !min-w-36"
                   icon={<Image width={16} height={16} src="/image/ico-calendar.svg" alt="" />}
-                  text={dayjs(selDate).format('MMM D, YYYY')}
+                  text={dayjs(targetDate).format('MMM DD, YYYY')}
                   onClick={() => {}}
                 />
               </div>
             </PopoverTrigger>
+
             <PopoverContent className="w-auto p-0" align="start">
+              {/* FIXME: 클릭 후 닫히게 변경 필요 */}
               <Calendar
                 mode="single"
-                selected={selDate}
+                selected={dayjs(targetDate).toDate()}
+                defaultMonth={dayjs(targetDate).toDate()}
                 onSelect={(date) => {
                   if (date) {
-                    setAddConditionsVisible(false);
-                    setSelConditions(undefined);
-                    setChartData(undefined);
-                    setSelDate(date);
+                    setTargetDate(dayjs(date).format('YYYY-MM-DD'));
+                    // setSelConditions(undefined);
+                    // setChartData(undefined);
                   }
                 }}
               />
@@ -406,51 +387,52 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             text="Load"
             onClick={() => {
-              setAddConditionsVisible(false);
-              setSelConditions(undefined);
-              setChartData(undefined);
-              loadFlightSchedule(true, addConditionsVisible);
+              // setSelConditions(undefined);
+              // setAddConditionsVisible(false);
+              // setChartData(undefined);
+              // loadFlightSchedule(true, addConditionsVisible);
             }}
           />
         </div>
       </div>
 
+      {/* ========== 데이터 필터링 섹션 ========== */}
       {chartData ? (
         <>
           <p className="mt-[20px] text-xl font-semibold">Flight Schedule Data Filtering</p>
           <div className="mt-[10px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
             <Checkbox
               id="add-conditions"
-              label=""
-              checked={addConditionsVisible}
-              onChange={() => {
-                const nextState = !addConditionsVisible;
-                setAddConditionsVisible(nextState);
-                if (!nextState) loadFlightSchedule(false, false);
-              }}
               className="checkbox-toggle"
-              disabled={!conditions}
+              label=""
+              checked={Object.keys(conditions || {}).length > 0}
+              onChange={() => {}}
+              // onChange={() => {
+              //   const nextState = !addConditionsVisible;
+              //   setAddConditionsVisible(nextState);
+              //   if (!nextState) loadFlightSchedule(false, false);
+              // }}
+              // disabled={!conditions}
             />
             <dl>
               <dt className="font-semibold">Add Conditions</dt>
               <dd className="text-sm font-medium text-default-400">
-                Enable the option to set conditions for filtering passenger data.{' '}
+                Enable the option to set conditions for filtering passenger data.
               </dd>
             </dl>
           </div>
-          {conditions && addConditionsVisible ? (
+
+          {Object.keys(conditions || {}).length > 0 ? (
             <Conditions
               className="mt-[30px] rounded-lg border border-gray-200"
-              logicItems={conditions.logicItems}
-              criteriaItems={conditions.criteriaItems}
-              operatorItems={conditions.operatorItems}
-              valueItems={conditions.valueItems}
+              logicItems={conditions?.logicItems || []}
+              criteriaItems={conditions?.criteriaItems || []}
+              operatorItems={conditions?.operatorItems || {}}
+              valueItems={conditions?.valueItems || {}}
               initialValue={selConditions}
-              onBtnApply={(conditions) => {
-                setSelConditions(conditions);
-              }}
+              onBtnApply={(conditions) => setSelConditions(conditions)}
               onChange={(conitions) => {
-                if (deepCompare(flight_sch?.snapshot.selConditions, conitions)) {
+                if (deepCompare(flightSchedule.selConditions, conitions)) {
                   if (!applied) setApplied(true);
                 } else {
                   if (applied) setApplied(false);
@@ -476,7 +458,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                     <Button
                       className="btn-lg btn-default text-sm"
                       icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                      text={`Color by : ${selColorCriteria}`}
+                      text={`Color by : ${colorCriteria}`}
                       onClick={() => {}}
                     />
                   </div>
@@ -487,7 +469,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                       <DropdownMenuItem
                         className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
                         style={{ width: 143 }}
-                        onClick={() => setSelColorCriteria(text)}
+                        onClick={() => setColorCriteria(text)}
                       >
                         <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
                       </DropdownMenuItem>
@@ -523,24 +505,11 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                   };
                 })}
               chartLayout={{
-                width,
                 height: 390,
-                margin: {
-                  l: 30,
-                  r: 10,
-                  t: 0,
-                  b: 30,
-                },
+                margin: { l: 30, r: 10, t: 0, b: 30 },
                 barmode: 'stack',
-                legend: {
-                  x: 1,
-                  y: 1.2,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
+                legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                 bargap: 0.4,
-                // barcornerradius: 7,
               }}
               config={{
                 displayModeBar: false,
@@ -574,6 +543,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
         <div className="h-[50px]" />
       )}
 
+      {/* ========== 탭 이동 버튼 ========== */}
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -585,7 +555,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={conditionChanged || !chartData}
+          // disabled={conditionChanged || !chartData}
           onClick={() => setTabIndex(tabIndex + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>

@@ -205,9 +205,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     const timeUnit = facilitySettingsCurrent.timeUnit || DefaultTimeUnit;
     const times: Array<string> = [];
     for (let timeCur = 0; timeCur < 1440; timeCur += timeUnit) {
-      times.push(
-        `${String(Math.floor(timeCur / 60)).padStart(2, '0')}:${String(timeCur % 60).padStart(2, '0')}`
-      );
+      times.push(`${String(Math.floor(timeCur / 60)).padStart(2, '0')}:${String(timeCur % 60).padStart(2, '0')}`);
     }
     setFacilitySettings(
       {
@@ -438,7 +436,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         <div className="flex justify-between gap-[20px]">
           <dl className="flex flex-grow flex-col gap-[5px]">
             <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">{procedures[procedureIndex].text} desks</h4>
+              <h4 className="pl-[10px] text-sm font-semibold">{procedures[procedureIndex]?.text} desks</h4>
             </dt>
             <dd>
               <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
@@ -713,10 +711,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               <div className="mt-[20px] flex items-center justify-between">
                 <p className="text-[40px] text-xl font-semibold">
                   Total:{' '}
-                  {numberWithCommas(
-                    facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.total || 0
-                  )}{' '}
-                  Pax
+                  {numberWithCommas(facilityConnCapacities?.[procedureId]?.bar_chart_y_data[nodeName]?.total || 0)} Pax
                 </p>
                 {/* <p>
                   <Button
