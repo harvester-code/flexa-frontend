@@ -6,16 +6,17 @@ import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
+import { useShallow } from 'zustand/react/shallow';
 import { ConditionData } from '@/types/conditions';
 import { ChartData, PassengerPatternState, PassengerSchedule } from '@/types/simulations';
 import { getPassengerSchedules } from '@/services/simulations';
-import { BarColors, LineColors, useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { BarColors, LineColors } from '@/stores/simulation';
+import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
 import Tooltip from '@/components/Tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
-import { useResize } from '@/hooks/useResize';
 import { numberWithCommas } from '@/lib/utils';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -58,6 +59,8 @@ const DropdownLists = {
     }),
 };
 
+let _priorityIdCurrent = 0;
+
 interface PrioritiesProps {
   className?: string;
   conditions: ConditionData;
@@ -65,11 +68,11 @@ interface PrioritiesProps {
   onChange?: (state: PassengerPatternState) => void;
 }
 
-let _priorityIdCurrent = 0;
-
 function Priorities({ className, conditions, defaultValues, onChange }: PrioritiesProps) {
   const [id] = useState(++_priorityIdCurrent);
+
   const [states, _setStates] = useState<PassengerPatternState | undefined>(defaultValues);
+
   const setStates = (newStates: PassengerPatternState) => {
     _setStates(newStates);
     if (onChange) onChange(newStates);
@@ -88,16 +91,18 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
     <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <Conditions
         className=""
+        conditions={states?.conditions || []}
         logicItems={conditions.logicItems}
         criteriaItems={conditions.criteriaItems}
         operatorItems={conditions.operatorItems}
         valueItems={conditions.valueItems}
-        initialValue={states?.conditions}
         onChange={(conditions) => setStates({ ...states, conditions })}
       />
+
       <div className="p-[20px]">
         <div className="flex flex-col gap-[10px]">
           <p className="font-semibold text-default-900">Passengers with above characteristics arrive at the airport</p>
+
           <div className="flex items-center gap-[10px] text-xl">
             normally distributed with mean
             <input
@@ -127,6 +132,7 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
             />
             minutes
           </div>
+
           <p className="text-xl">before the flight departure.</p>
         </div>
       </div>
@@ -135,10 +141,29 @@ function Priorities({ className, conditions, defaultValues, onChange }: Prioriti
 }
 
 export default function TabPassengerSchedule({ simulationId, visible }: TabPassengerScheduleProps) {
-  const refWidth = useRef(null);
-  const { setPassengerSchedule, flight_sch, passenger_sch } = useSimulationMetadata();
-  const { tabIndex, setTabIndex, priorities, flightScheduleTime, setFlightScheduleTime, setAvailableTabIndex } =
-    useSimulationStore();
+  const {
+    setPassengerSchedule,
+    flight_sch,
+    passenger_sch,
+    tabIndex,
+    setTabIndex,
+    priorities,
+    flightScheduleTime,
+    setFlightScheduleTime,
+    setAvailableTabIndex,
+  } = useScenarioStore(
+    useShallow((state) => ({
+      setPassengerSchedule: state.setPassengerSchedule,
+      flight_sch: state.flight_sch,
+      passenger_sch: state.passenger_sch,
+      tabIndex: state.tabIndex,
+      setTabIndex: state.setTabIndex,
+      priorities: state.priorities,
+      flightScheduleTime: state.flightScheduleTime,
+      setFlightScheduleTime: state.setFlightScheduleTime,
+      setAvailableTabIndex: state.setAvailableTabIndex,
+    }))
+  );
 
   const refFlightScheduleTime = useRef(Array(1).fill(0)).current;
 
@@ -163,21 +188,19 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
   const [loadError, setLoadError] = useState(false);
   const [timestamp, setTimestamp] = useState(Date.now());
 
-  const { width } = useResize(refWidth);
-
   const [loaded, setLoaded] = useState(false);
 
-  const saveSnapshot = (params?: Partial<PassengerSchedule>, snapshot: any = {}) => {
-    const newSnapshot: any = {
-      chartData,
-      selColorCriteria,
-      addPrioritiesVisible,
-      selPriorities,
-      otherPassengerState,
-      ...snapshot,
-    };
-    setPassengerSchedule({ ...passenger_sch, ...(params || {}), snapshot: newSnapshot });
-  };
+  // const saveSnapshot = (params?: Partial<PassengerSchedule>, snapshot: any = {}) => {
+  //   const newSnapshot: any = {
+  //     chartData,
+  //     selColorCriteria,
+  //     addPrioritiesVisible,
+  //     selPriorities,
+  //     otherPassengerState,
+  //     ...snapshot,
+  //   };
+  //   setPassengerSchedule({ ...passenger_sch, ...(params || {}), snapshot: newSnapshot });
+  // };
 
   const restoreSnapshot = () => {
     if (passenger_sch?.snapshot) {
@@ -214,9 +237,12 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
   const conditions = priorities;
 
   const prioritiesItems = selPriorities && selPriorities?.length > 0 ? selPriorities : [undefined];
-  const loadPassengerSchedules = useCallback(() => {
+
+  const loadPassengerSchedules = () => {
     setLoadingPassengerSchedules(true);
-    setAvailableTabIndex(tabIndex);
+
+    // setAvailableTabIndex(tabIndex);
+
     const params = {
       flight_schedule: flight_sch?.params,
       destribution_conditions: [
@@ -237,7 +263,9 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     getPassengerSchedules(simulationId, params)
       .then(({ data }) => {
         const passengerSchedule: Partial<PassengerSchedule> = { params };
+
         const snapshotData: any = {};
+
         if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
           for (const criteriaCur in data?.bar_chart_y_data) {
             const criteriaDataCur = data?.bar_chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
@@ -259,16 +287,18 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
           setChartData(newChartData);
           snapshotData.chartData = newChartData;
         }
+
         refFlightScheduleTime[0] = Date.now();
         setFlightScheduleTime(refFlightScheduleTime[0]);
         setLoadingPassengerSchedules(false);
-        saveSnapshot(passengerSchedule, snapshotData);
+        // saveSnapshot(passengerSchedule, snapshotData);
       })
+
       .catch(() => {
         setLoadError(true);
         setLoadingPassengerSchedules(false);
       });
-  }, [selPriorities, otherPassengerState, addPrioritiesVisible, flight_sch]);
+  };
 
   useEffect(() => {
     if (visible && !loaded && passenger_sch?.params) {
@@ -334,10 +364,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       type: 'scatter',
       mode: 'lines',
       name: `Condition${index + 1}`,
-      line: {
-        color: lineColor,
-        width: 2,
-      },
+      line: { color: lineColor, width: 2 },
     });
   });
 
@@ -347,17 +374,15 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     y: [0],
     mode: 'markers',
     type: 'scatter',
-    marker: {
-      symbol: 'circle',
-      size: 16,
-      color: '#53389e',
-    },
+    marker: { symbol: 'circle', size: 16, color: '#53389e' },
   });
 
   return !visible ? null : (
-    <div ref={refWidth}>
+    <div>
       <h2 className="title-sm mt-[25px]">Passenger Schedule</h2>
+
       <p className="mt-[30px] text-[40px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
+
       <div className="mt-[20px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"
@@ -377,6 +402,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
           </dd>
         </dl>
       </div>
+
       {conditions && addPrioritiesVisible ? (
         <>
           {prioritiesItems.map((item, index) => (
@@ -401,6 +427,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
           </div>
         </>
       ) : null}
+
       <div className="schedule-block mt-[20px]">
         {conditions && addPrioritiesVisible ? (
           <div className="schedule-top">
@@ -419,6 +446,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             </div>
           </div>
         ) : null}
+
         <div className="schedule-bottom">
           <div className="flex flex-col gap-[10px]" key={timestamp}>
             <p className="font-semibold text-default-900">Other passengers arrive at the airport</p>
@@ -451,19 +479,21 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
               />
               minutes
             </div>
+
             <p className="text-xl">before the flight departure.</p>
           </div>
         </div>
       </div>
+
       <p className="mt-[20px] flex justify-end">
         <Button
           className="btn-md btn-tertiary"
-          // iconRight={applied ? <FontAwesomeIcon className="nav-icon" size="sm" icon={faCheck} /> : null}
+          text="Apply"
           disabled={loadingPassengerSchedules}
-          text={'Apply'}
-          onClick={() => loadPassengerSchedules()}
+          onClick={loadPassengerSchedules}
         />
       </p>
+
       {loadingPassengerSchedules ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
@@ -498,27 +528,11 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             <LineChart
               chartData={distributionData}
               chartLayout={{
-                width,
                 height: 210,
-                margin: {
-                  l: 20,
-                  r: 10,
-                  t: 0,
-                  b: 20,
-                },
-                legend: {
-                  x: 1,
-                  y: 1.2,
-                  xanchor: 'right',
-                  yanchor: 'top',
-                  orientation: 'h',
-                },
-                xaxis: {
-                  title: 'X',
-                },
-                yaxis: {
-                  showticklabels: false,
-                },
+                margin: { l: 20, r: 10, t: 0, b: 20 },
+                legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
+                xaxis: { title: 'X' },
+                yaxis: { showticklabels: false },
                 shapes: vlineData.map((vline) => {
                   return {
                     type: 'line',
@@ -526,17 +540,11 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                     x1: vline.x,
                     y0: vline.minY,
                     y1: vline.maxY,
-                    line: {
-                      color: vline.color,
-                      width: 1,
-                      dash: 'dot',
-                    },
+                    line: { color: vline.color, width: 1, dash: 'dot' },
                   };
                 }),
               }}
-              config={{
-                displayModeBar: false,
-              }}
+              config={{ displayModeBar: false }}
             />
           </div>
           <div className="mt-[50px]">
@@ -553,6 +561,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                       />
                     </div>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent className="cursor-pointer bg-white">
                     {Object.keys(chartData?.data).map((text, index) => (
                       <div key={index} className="flex flex-col">
@@ -569,48 +578,30 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                 </DropdownMenu>
               </div>
             </div>
+
             <div className="mt-[10px] flex items-center justify-center rounded-md bg-white">
               <BarChart
                 chartData={chartDataCurrent
-                  .sort((a, b) => b.order - a.order)
+                  // FIXME: Read-only
+                  // .sort((a, b) => b.order - a.order)
                   .map((item, index) => {
                     return {
                       x: chartData?.x,
                       y: item.y,
                       name: item.name,
                       type: 'bar',
-                      marker: {
-                        color: barColorsCurrent[index],
-                        opacity: 1,
-                        cornerradius: 7,
-                        // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
-                      },
+                      marker: { color: barColorsCurrent[index], opacity: 1, cornerradius: 7 },
                       hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                     };
                   })}
                 chartLayout={{
-                  width,
                   height: 390,
-                  margin: {
-                    l: 40,
-                    r: 10,
-                    t: 0,
-                    b: 30,
-                  },
+                  margin: { l: 40, r: 10, t: 0, b: 30 },
                   barmode: 'stack',
-                  legend: {
-                    x: 1,
-                    y: 1.2,
-                    xanchor: 'right',
-                    yanchor: 'top',
-                    orientation: 'h',
-                  },
+                  legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
-                  // barcornerradius: 7,
                 }}
-                config={{
-                  displayModeBar: false,
-                }}
+                config={{ displayModeBar: false }}
               />
             </div>
           </div>
@@ -626,6 +617,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       ) : (
         <div className="h-[10px]" />
       )}
+
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -634,6 +626,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
         </button>
+
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           disabled={!chartData}
