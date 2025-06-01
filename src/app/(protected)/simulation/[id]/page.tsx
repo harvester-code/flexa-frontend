@@ -48,7 +48,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     history,
     setCheckpoint,
     setMetadata,
-    setConditions,
+    setConditionFilters,
+    setSelectedConditions,
     setPriorities,
   } = useScenarioStore(
     useShallow((state) => ({
@@ -61,7 +62,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       history: state.history,
       setCheckpoint: state.setCheckpoint,
       setMetadata: state.setMetadata,
-      setConditions: state.setConditions,
+      setConditionFilters: state.setConditionFilters,
+      setSelectedConditions: state.setSelectedConditions,
       setPriorities: state.setPriorities,
     }))
   );
@@ -85,7 +87,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         setMetadata(metadata_);
 
         setAvailableTabIndex(metadata_?.overview?.snapshot?.availableTabIndex || 1);
-        setConditions(metadata_.flight_sch.snapshot.conditions || []);
+        setConditionFilters(metadata_.flight_sch.snapshot.conditions || []);
+        setSelectedConditions(metadata_.flight_sch.params.condition || []);
         setPriorities(metadata_.flight_sch.snapshot.priorities || []);
       } catch (error) {
         console.error('Failed to load scenario metadata:', error);
