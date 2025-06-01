@@ -5,10 +5,11 @@ import Image from 'next/image';
 import { faAngleDown, faAngleLeft, faAngleRight, faAngleUp, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
+import { useShallow } from 'zustand/react/shallow';
 import { ConditionData, OperatorItem } from '@/types/conditions';
 import { FacilitiesConnectionState, FacilityConnection, ProcedureInfo } from '@/types/simulations';
 import { getFacilityConns } from '@/services/simulations';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
+import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ConditionsBase from '@/components/Conditions';
@@ -69,6 +70,7 @@ function Conditions({
   const lastStates = useRef(Array(1).fill(defaultValues)).current;
   const setStates = (states: FacilitiesConnectionState) => {
     const valueLength = states.destConditions?.[0]?.value.length;
+
     const tableData =
       states?.tableData?.header?.length == states.destConditions?.[0]?.value?.length &&
       states?.tableData?.data?.length == states.sourceConditions?.[0]?.value?.length
@@ -90,18 +92,25 @@ function Conditions({
               }) || [],
             hidden: false,
           };
+
     const newStates = { ...states, tableData };
+
     _setStates(newStates);
+
     lastStates[0] = { ...newStates };
+
     if (onChange) onChange(newStates);
   };
+
   const setTableData = (tableData: ConditionTableData) => {
     const newStates = { ...lastStates[0], tableData };
     lastStates[0] = { ...newStates };
     _setStates(newStates);
     if (onChange) onChange(newStates);
   };
+
   const tableData = states?.tableData;
+
   return (
     <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <ConditionsBase
@@ -112,9 +121,10 @@ function Conditions({
         criteriaItems={sourceConditions.criteriaItems}
         operatorItems={sourceConditions.operatorItems}
         valueItems={sourceConditions.valueItems}
-        initialValue={states?.sourceConditions}
+        conditions={states?.sourceConditions || []}
         onChange={(sourceConditions) => setStates({ ...lastStates[0], sourceConditions })}
       />
+
       <ConditionsBase
         className="border-b-0 pt-[0px]"
         logicVisible={false}
@@ -129,9 +139,10 @@ function Conditions({
         criteriaItems={ifConditions.criteriaItems.filter((val) => val.id != sourceName)}
         operatorItems={ifConditions.operatorItems}
         valueItems={ifConditions.valueItems}
-        initialValue={states?.ifConditions}
+        conditions={states?.ifConditions || []}
         onChange={(ifConditions) => setStates({ ...lastStates[0], ifConditions })}
       />
+
       <ConditionsBase
         className="bg-white"
         addCondition={false}
@@ -140,9 +151,10 @@ function Conditions({
         criteriaItems={destConditions.criteriaItems}
         operatorItems={destConditions.operatorItems}
         valueItems={destConditions.valueItems}
-        initialValue={states?.destConditions}
+        conditions={states?.destConditions || []}
         onChange={(destConditions) => setStates({ ...lastStates[0], destConditions })}
       />
+
       {tableData ? (
         <div className="table-import">
           <div className="flex items-center justify-center">
@@ -156,6 +168,7 @@ function Conditions({
               {tableData.hidden ? 'Show' : 'Hide'} Table
             </button>
           </div>
+
           {tableData.hidden || tableData.header.length < 1 || tableData.data.length < 1 ? null : (
             <div className="table-wrap mt-[10px] overflow-hidden rounded-md px-[20px]">
               <div className="mt-[20px] flex items-center justify-end">
@@ -167,6 +180,7 @@ function Conditions({
                   />
                 </div>
               </div>
+
               <div className="table-wrap mt-[10px] overflow-hidden rounded-md pb-[10px]">
                 {!tableData ? null : (
                   <GridTable
@@ -190,6 +204,7 @@ function Conditions({
           )}
         </div>
       ) : null}
+
       {deletable ? (
         <div className="flex items-center justify-center rounded-md border border-default-200 bg-rose-100">
           <button
@@ -207,9 +222,11 @@ function Conditions({
 }
 
 export default function TabFacilityConnection({ simulationId, visible }: FacilityConnectionProps) {
-  const refWidth = useRef(null);
-  const { setFacilityConnection, passenger_attr, passenger_sch, facility_conn } = useSimulationMetadata();
   const {
+    setFacilityConnection,
+    passenger_attr,
+    passenger_sch,
+    facility_conn,
     tabIndex,
     setTabIndex,
     priorities,
@@ -217,7 +234,21 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     facilityConnCapacities,
     setFacilityConnCapacities,
     setAvailableTabIndex,
-  } = useSimulationStore();
+  } = useScenarioStore(
+    useShallow((state) => ({
+      setFacilityConnection: state.setFacilityConnection,
+      passenger_attr: state.passenger_attr,
+      passenger_sch: state.passenger_sch,
+      facility_conn: state.facility_conn,
+      tabIndex: state.tabIndex,
+      setTabIndex: state.setTabIndex,
+      priorities: state.priorities,
+      processingProcedureTime: state.processingProcedureTime,
+      facilityConnCapacities: state.facilityConnCapacities,
+      setFacilityConnCapacities: state.setFacilityConnCapacities,
+      setAvailableTabIndex: state.setAvailableTabIndex,
+    }))
+  );
 
   const [procedureIndex, setProcedureIndex] = useState(0);
   const [availableProcedureIndex, setAvailableProcedureIndex] = useState(0);
@@ -231,20 +262,20 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
   const [loaded, setLoaded] = useState(false);
 
-  const saveSnapshot = (params?: Partial<FacilityConnection>, snapshot: any = {}) => {
-    const newSnapshot: any = {
-      facilityConnCapacities,
-      procedureIndex,
-      availableProcedureIndex,
-      addConditionsVisible,
-      tableType,
-      tableData,
-      selConditions,
-      ifConditions,
-      ...snapshot,
-    };
-    setFacilityConnection({ ...facility_conn, ...(params || {}), snapshot: newSnapshot });
-  };
+  // const saveSnapshot = (params?: Partial<FacilityConnection>, snapshot: any = {}) => {
+  //   const newSnapshot: any = {
+  //     facilityConnCapacities,
+  //     procedureIndex,
+  //     availableProcedureIndex,
+  //     addConditionsVisible,
+  //     tableType,
+  //     tableData,
+  //     selConditions,
+  //     ifConditions,
+  //     ...snapshot,
+  //   };
+  //   setFacilityConnection({ ...facility_conn, ...(params || {}), snapshot: newSnapshot });
+  // };
 
   const restoreSnapshot = () => {
     if (facility_conn?.snapshot) {
@@ -259,9 +290,10 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
       if (snapshot.ifConditions) {
         const ifConditionsCur = { ...snapshot.ifConditions };
         if (ifConditionsCur?.operatorItems.Time) {
-          for (const rowCur of ifConditionsCur?.operatorItems.Time) {
-            rowCur.multiSelect = false;
-          }
+          // FIXME: Error: Cannot assign to read only property 'multiSelect' of object '#<Object>'
+          // for (const rowCur of ifConditionsCur?.operatorItems.Time) {
+          //   rowCur.multiSelect = false;
+          // }
         }
         // Time 중복 들어간 경우 임시 처리. 추후에 삭제해도 됨. 시작
         if (ifConditionsCur?.criteriaItems?.length >= 6 && ifConditionsCur?.criteriaItems[5].id == 'Time') {
@@ -289,20 +321,25 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
   useEffect(() => {
     if (passenger_attr?.procedures && passenger_attr?.data_connection_criteria && priorities) {
       const ifConditions = { ...priorities };
+
       if (!ifConditions.criteriaItems.find((val) => val.id == 'Time')) {
         ifConditions.criteriaItems.push({ id: 'Time', text: 'Time' });
       }
-      ifConditions.operatorItems['Time'] = [
-        { id: 'start', text: 'start', multiSelect: false },
-        { id: 'end', text: 'end', multiSelect: false },
-      ];
-      ifConditions.valueItems['Time'] = Array(24)
-        .fill(0)
-        .map((_, index) => {
-          const id = `${String(index).padStart(2, '0')}:00`;
-          return { id, text: id };
-        }) as OperatorItem[];
+
+      // FIXME: Error: Cannot assign to read only property 'Time' of object '#<Object>'
+      // ifConditions.operatorItems['Time'] = [
+      //   { id: 'start', text: 'start', multiSelect: false },
+      //   { id: 'end', text: 'end', multiSelect: false },
+      // ];
+      // ifConditions.valueItems['Time'] = Array(24)
+      //   .fill(0)
+      //   .map((_, index) => {
+      //     const id = `${String(index).padStart(2, '0')}:00`;
+      //     return { id, text: id };
+      //   }) as OperatorItem[];
+
       setIfConfitions(ifConditions);
+
       setTableData(
         passenger_attr?.procedures?.map((procedure, index) => {
           const sourceName =
@@ -364,9 +401,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
   const procedures = [
     ...(passenger_attr?.procedures?.map((item, index) => {
-      return {
-        text: item.name,
-      };
+      return { text: item.name };
     }) || []),
   ] as ProcedureInfo[];
 
@@ -400,12 +435,13 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     if (procedureIndex < procedures.length - 1) {
       setAvailableProcedureIndex(availableProcedureIndex + 1);
       setProcedureIndex(procedureIndex + 1);
-      saveSnapshot({}, { availableProcedureIndex: availableProcedureIndex + 1, procedureIndex: procedureIndex + 1 });
+      // saveSnapshot({}, { availableProcedureIndex: availableProcedureIndex + 1, procedureIndex: procedureIndex + 1 });
     }
   };
 
   const onBtnPassengerFlowCheck = () => {
     if (!checkTablesValidAll()) return;
+
     const params = { ...passenger_sch?.params };
 
     const processes = {
@@ -507,21 +543,25 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     getFacilityConns(simulationId, params)
       .then(({ data }) => {
         setFacilityConnCapacities({ ...data });
+
         const facilityConnection: Partial<FacilityConnection> = { ...facility_conn, params };
-        const snapshotData: any = { facilityConnCapacities: { ...data } };
         setFacilityConnection(facilityConnection);
-        setLoadingFacilityConnection(false);
-        saveSnapshot(facilityConnection, snapshotData);
+
+        // const snapshotData: any = { facilityConnCapacities: { ...data } };
+        // saveSnapshot(facilityConnection, snapshotData);
       })
       .catch(() => {
         setLoadError(true);
+      })
+      .finally(() => {
         setLoadingFacilityConnection(false);
       });
   };
 
   return !visible ? null : (
-    <div ref={refWidth}>
+    <div>
       <h2 className="title-sm mt-[25px]">Allocate Passenger Attributes to Processing Facilities</h2>
+
       <TabDefault
         tabCount={procedures.length}
         currentTab={procedureIndex}
@@ -534,9 +574,11 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         }}
         className={`tab-secondary mt-[25px]`}
       />
+
       {loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
           <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+
           <p className="title-sm" style={{ color: '#30374F' }}>
             Unable to load data
           </p>
@@ -547,11 +589,14 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
             <p className="text-[40px] text-xl font-semibold text-default-800">
               {procedureIndex == 0 ? passenger_attr?.data_connection_criteria : procedures[procedureIndex - 1].text}
             </p>
+
             <p className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-default-100">
               <FontAwesomeIcon className="nav-icon" size="sm" icon={faArrowRight} />
             </p>
+
             <p className="text-[40px] text-xl font-semibold text-default-800">{procedures[procedureIndex]?.text}</p>
           </div>
+
           {!tableData?.[procedureIndex] || procedureIndex < 1 ? null : (
             <div className="add-time mt-[30px]">
               <p className="flex items-center gap-[10px]">
@@ -560,6 +605,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
                   <Tooltip text={'test'} />
                 </button>
               </p>
+
               <div className="relative mt-[10px]">
                 <Input
                   type="number"
@@ -579,6 +625,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               </div>
             </div>
           )}
+
           {addConditionsVisible ? (
             <div className="mt-[30px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
               <Checkbox
@@ -593,6 +640,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
                 }}
                 className="checkbox-toggle"
               />
+
               <dl>
                 <dt className="font-semibold">Add Conditions</dt>
                 <dd className="text-sm font-medium text-default-400">
@@ -601,6 +649,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               </dl>
             </div>
           ) : null}
+
           {ifConditions && addConditionsVisible?.[procedureIndex] && tableData?.[procedureIndex] && selConditions ? (
             <div>
               {conditionsItems.map((item, index) => (
@@ -632,6 +681,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
                   }}
                 />
               ))}
+
               <div className="mt-[20px] flex items-center justify-center rounded-md border border-default-200 bg-default-100">
                 <button
                   className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
@@ -660,6 +710,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               />
             </div>
           </div>
+
           {/* {!tableData?.[procedureIndex] ? null : (
             <div className="mt-[10px] flex items-center justify-center">
               <button
@@ -678,8 +729,8 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
                 {tableData[procedureIndex].hidden ? 'Show' : 'Hide'} Table
               </button>
             </div>
-          )}
- */}
+          )} */}
+
           {!tableData?.[procedureIndex] || tableData[procedureIndex].hidden ? null : (
             <div>
               <GridTable
@@ -703,6 +754,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
             <p className="font-medium text-warning">
               {/* ● Please make sure to fill in all fields without leaving any blank rows! */}
             </p>
+
             <Button
               className="btn-md btn-tertiary"
               text="Apply"
@@ -710,6 +762,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               onClick={() => (procedureIndex == procedures.length - 1 ? onBtnPassengerFlowCheck() : onBtnApply())}
             />
           </div>
+
           <div>
             {loadingFacilityConnection ? (
               <div className="flex min-h-[200px] flex-1 items-center justify-center">
@@ -728,6 +781,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
         </button>
+
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           onClick={() => setTabIndex(tabIndex + 1)}
