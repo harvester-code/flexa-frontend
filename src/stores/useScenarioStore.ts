@@ -1,8 +1,10 @@
 import { StateCreator, create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { ConditionData } from '@/types/conditions';
+import { immer } from 'zustand/middleware/immer';
+import { ConditionData, ConditionState } from '@/types/conditions';
 import {
   Capacities,
+  ChartData,
   FacilityConnection,
   FacilityInformation,
   FlightSchedule,
@@ -14,6 +16,10 @@ import {
   ScenarioOverview,
   SimulationResponse,
 } from '@/types/simulations';
+
+function mergeOrReplace<T>(target: T | undefined, source: Partial<T>, replace?: boolean): T | Partial<T> {
+  return replace ? source : { ...target, ...source };
+}
 
 interface ScenarioSlice {
   tabIndex: number;
@@ -28,8 +34,14 @@ interface ScenarioSlice {
   scenarioInfo?: ScenarioInfo;
   setScenarioInfo: (scenarioInfo: ScenarioInfo) => void;
 
-  conditions?: ConditionData;
-  setConditions: (conditions: ConditionData) => void;
+  conditionFilters?: ConditionData;
+  setConditionFilters: (conditions?: ConditionData) => void;
+
+  isConditionFilterEnabled: boolean;
+  setIsConditionFilterEnabled: (enabled: boolean) => void;
+
+  selectedConditions: ConditionState[];
+  setSelectedConditions: (conditions: ConditionState[]) => void;
 
   priorities?: ConditionData;
   setPriorities: (priorities: ConditionData) => void;
@@ -67,178 +79,279 @@ interface MetadataSlice extends Partial<ScenarioMetadata> {
 
   setColorCriteria: (value: string) => void;
   setTargetDate: (value: string) => void;
+  setChartData: (value: { total: number; x: string[]; data: ChartData } | undefined) => void;
 }
 
 type ScenarioStore = ScenarioSlice & MetadataSlice;
 
-const createScenarioSlice: StateCreator<ScenarioStore, [['zustand/devtools', never]], [], ScenarioSlice> = (
-  set,
-  get
-) => ({
+// Ref: https://github.com/pmndrs/zustand/discussions/1796
+type SliceCreator<T> = StateCreator<ScenarioStore, [['zustand/devtools', never], ['zustand/immer', never]], [], T>;
+
+// TODO: ScenarioStore와 MetadataStore가 논리적으로 정확히 분리되어 있지 않음.
+const createScenarioSlice: SliceCreator<ScenarioSlice> = (set, get) => ({
   tabIndex: 0,
   setTabIndex: (index) =>
     set(
-      { tabIndex: index, availableTabIndex: Math.max(index, get().availableTabIndex) },
+      (state) => {
+        state.tabIndex = index;
+        state.availableTabIndex = Math.max(index, state.availableTabIndex);
+      },
       false,
       'scenario/setTabIndex'
     ),
 
   availableTabIndex: 1,
-  setAvailableTabIndex: (index) => set({ availableTabIndex: index }, false, 'scenario/setAvailableTabIndex'),
+  setAvailableTabIndex: (index) =>
+    set(
+      (state) => {
+        state.availableTabIndex = index;
+      },
+      false,
+      'scenario/setAvailableTabIndex'
+    ),
 
   checkpoint: undefined,
-  setCheckpoint: (time, diff) => set({ checkpoint: { time, diff } }, false, 'scenario/setCheckpoint'),
+  setCheckpoint: (time, diff) =>
+    set(
+      (state) => {
+        state.checkpoint = { time, diff };
+      },
+      false,
+      'scenario/setCheckpoint'
+    ),
 
   scenarioInfo: undefined,
-  setScenarioInfo: (scenarioInfo) => set({ scenarioInfo }, false, 'scenario/setScenarioInfo'),
+  setScenarioInfo: (info) =>
+    set(
+      (state) => {
+        state.scenarioInfo = info;
+      },
+      false,
+      'scenario/setScenarioInfo'
+    ),
 
-  conditions: undefined,
-  setConditions: (conditions) => set({ conditions }, false, 'scenario/setConditions'),
+  conditionFilters: undefined,
+  setConditionFilters: (conditionFilters) =>
+    set(
+      (state) => {
+        state.conditionFilters = conditionFilters;
+      },
+      false,
+      'scenario/setConditions'
+    ),
+
+  isConditionFilterEnabled: false,
+  setIsConditionFilterEnabled: (enabled) =>
+    set(
+      (state) => {
+        state.isConditionFilterEnabled = enabled;
+      },
+      false,
+      'scenario/setIsConditionFilterEnabled'
+    ),
+
+  selectedConditions: [],
+  setSelectedConditions: (conditions) =>
+    set(
+      (state) => {
+        state.selectedConditions = conditions;
+        state.isConditionFilterEnabled = conditions.length > 0;
+      },
+      false,
+      'scenario/setSelectedConditions'
+    ),
 
   priorities: undefined,
-  setPriorities: (priorities) => set({ priorities }, false, 'scenario/setPriorities'),
+  setPriorities: (priorities) =>
+    set(
+      (state) => {
+        state.priorities = priorities;
+      },
+      false,
+      'scenario/setPriorities'
+    ),
 
   facilityConnCapacities: undefined,
   setFacilityConnCapacities: (capacities) =>
-    set({ facilityConnCapacities: capacities }, false, 'scenario/setFacilityConnCapacities'),
+    set(
+      (state) => {
+        state.facilityConnCapacities = capacities;
+      },
+      false,
+      'scenario/setFacilityConnCapacities'
+    ),
 
   flightScheduleTime: 0,
-  setFlightScheduleTime: (time) => set({ flightScheduleTime: time }, false, 'scenario/setFlightScheduleTime'),
+  setFlightScheduleTime: (time) =>
+    set(
+      (state) => {
+        state.flightScheduleTime = time;
+      },
+      false,
+      'scenario/setFlightScheduleTime'
+    ),
 
   processingProcedureTime: 0,
   setProcessingProcedureTime: (time) =>
-    set({ processingProcedureTime: time }, false, 'scenario/setProcessingProcedureTime'),
+    set(
+      (state) => {
+        state.processingProcedureTime = time;
+      },
+      false,
+      'scenario/setProcessingProcedureTime'
+    ),
 });
 
-const createMetadataSlice: StateCreator<ScenarioStore, [['zustand/devtools', never]], [], MetadataSlice> = (
-  set,
-  get
-) => ({
+const createMetadataSlice: SliceCreator<MetadataSlice> = (set, get) => ({
   scenario_id: '',
 
-  setMetadata: (data) => set({ ...data }, false, 'metadata/setMetadata'),
+  setMetadata: (data) =>
+    set(
+      (state) => {
+        Object.assign(state, data);
+      },
+      false,
+      'metadata/setMetadata'
+    ),
 
-  resetMetadata: () => set({ history: get()?.history }, false, 'metadata/resetMetadata'),
+  resetMetadata: () =>
+    set(
+      (state) => {
+        const history = state.history;
+        // Object.keys(state).forEach((key) => {
+        //   if (key !== 'history') {
+        //     state[key] = undefined;
+        //   }
+        // });
+        state.history = history;
+      },
+      false,
+      'metadata/resetMetadata'
+    ),
 
   setOverview: (overview, replace) =>
     set(
-      replace
-        ? { overview }
-        : {
-            overview: { ...(get().overview || ({} as ScenarioOverview)), ...overview },
-          },
+      (state) => {
+        state.overview = mergeOrReplace(state.overview, overview, replace);
+      },
       false,
       'metadata/setOverview'
     ),
 
   setFlightSchedule: (flight_sch, replace) =>
     set(
-      replace
-        ? { flight_sch }
-        : {
-            flight_sch: { ...(get().flight_sch || ({} as FlightSchedule)), ...flight_sch },
-          },
+      (state) => {
+        state.flight_sch = mergeOrReplace(state.flight_sch, flight_sch, replace);
+      },
       false,
       'metadata/setFlightSchedule'
     ),
 
   setPassengerSchedule: (passenger_sch, replace) =>
     set(
-      replace
-        ? { passenger_sch }
-        : { passenger_sch: { ...(get().passenger_sch || ({} as PassengerSchedule)), ...passenger_sch } },
+      (state) => {
+        state.passenger_sch = mergeOrReplace(state.passenger_sch, passenger_sch, replace);
+      },
       false,
       'metadata/setPassengerSchedule'
     ),
 
   setPassengerAttr: (passenger_attr, replace) =>
     set(
-      replace
-        ? { passenger_attr }
-        : { passenger_attr: { ...(get().passenger_attr || ({} as ProcessingProcedures)), ...passenger_attr } },
+      (state) => {
+        state.passenger_attr = mergeOrReplace(state.passenger_attr, passenger_attr, replace);
+      },
       false,
       'metadata/setPassengerAttr'
     ),
 
   setFacilityConnection: (facility_conn, replace) =>
     set(
-      replace
-        ? { facility_conn }
-        : { facility_conn: { ...(get().facility_conn || ({} as FacilityConnection)), ...facility_conn } },
+      (state) => {
+        state.facility_conn = mergeOrReplace(state.facility_conn, facility_conn, replace);
+      },
       false,
       'metadata/setFacilityConnection'
     ),
 
   setFacilityInformation: (facility_info, replace) =>
     set(
-      replace
-        ? { facility_info }
-        : { facility_info: { ...(get().facility_info || ({} as FacilityConnection)), ...facility_info } },
+      (state) => {
+        state.facility_info = mergeOrReplace(state.facility_info, facility_info, replace);
+      },
       false,
       'metadata/setFacilityInformation'
     ),
 
   setSimulation: (simulation, replace) =>
     set(
-      replace
-        ? { simulation }
-        : {
-            simulation: { ...(get().simulation || ({} as SimulationResponse)), ...simulation },
-          },
+      (state) => {
+        state.simulation = mergeOrReplace(state.simulation, simulation, replace);
+      },
       false,
       'metadata/setSimulation'
     ),
 
-  addHistoryItem: (item: ScenarioHistory) =>
+  addHistoryItem: (item) =>
     set(
-      {
-        history: [...(get()?.history || []), item],
+      (state) => {
+        state.history = [...(state.history || []), item];
       },
       false,
       'metadata/addHistoryItem'
     ),
 
-  setHistoryItem: (item: ScenarioHistory, index: number) =>
+  setHistoryItem: (item, index) =>
     set(
-      {
-        history: get()?.history?.map((val, idx) => (idx == index ? item : val)),
+      (state) => {
+        if (state.history && state.history[index]) {
+          state.history[index] = item;
+        }
       },
       false,
       'metadata/setHistoryItem'
     ),
 
-  setColorCriteria: (value: string) => {
-    const prev = get().flight_sch;
+  setColorCriteria: (value) =>
     set(
-      {
-        flight_sch: {
-          ...prev,
-          snapshot: { ...prev?.snapshot, selColorCriteria: value },
-        },
+      (state) => {
+        state.flight_sch ??= {};
+        state.flight_sch.snapshot ??= {};
+        state.flight_sch.snapshot.selColorCriteria = value;
       },
       false,
       'metadata/setColorCriteria'
-    );
-  },
+    ),
 
-  setTargetDate: (value: string) => {
-    const prev = get().flight_sch;
+  setTargetDate: (value) =>
     set(
-      {
-        flight_sch: {
-          ...prev,
-          params: { ...prev?.params, date: value },
-        },
+      (state) => {
+        state.flight_sch ??= {};
+        state.flight_sch.params ??= {};
+        state.flight_sch.params.date = value;
       },
       false,
       'metadata/setTargetDate'
-    );
-  },
+    ),
+
+  setChartData: (value) =>
+    set(
+      (state) => {
+        state.flight_sch ??= {};
+        state.flight_sch.snapshot ??= {};
+        state.flight_sch.snapshot.chartData = value;
+      },
+      false,
+      'metadata/setChartData'
+    ),
 });
 
 export const useScenarioStore = create<ScenarioStore>()(
-  devtools((...a) => ({
-    ...createScenarioSlice(...a),
-    ...createMetadataSlice(...a),
-  }))
+  devtools(
+    immer((...a) => ({
+      ...createScenarioSlice(...a),
+      ...createMetadataSlice(...a),
+    })),
+    { name: 'ScenarioStore', enabled: process.env.NODE_ENV === 'development' }
+  )
 );
