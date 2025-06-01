@@ -89,7 +89,7 @@ const updateScenarioMetadata = (addHistory: boolean = true) => {
 // =======================================================================
 
 interface FlightSchedulesParams {
-  first_load: boolean;
+  // first_load: boolean;
   airport: string;
   date: string;
   condition: Array<{
