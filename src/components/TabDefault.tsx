@@ -7,7 +7,7 @@ interface TabDefaultProps {
   className?: string;
   tabs: {
     text: React.ReactNode;
-    number: number;
+    number: number | null; // 숫자가 없을 경우 null
   }[];
   tabCount: number; // 탭의 갯수 추가
   onTabChange?: (tabIndex: number) => void;

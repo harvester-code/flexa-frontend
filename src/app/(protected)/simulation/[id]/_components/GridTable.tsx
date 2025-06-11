@@ -1,43 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CellStyle, Column, NumberCell, Range, ReactGrid, Row, TextCell } from '@silevis/reactgrid';
+import { AllocationTableHeader, AllocationTableRow } from '@/types/scenarios';
 import { useResize } from '@/hooks/useResize';
 import './gridTable.css';
-
-export interface GridTableHeader {
-  name: string;
-  width?: number;
-  minWidth?: number;
-  style?: CellStyle;
-}
-
-export interface GridTableRow {
-  name: string;
-  values: string[];
-  style?: CellStyle;
-  height?: number;
-  checkToNumber?: number[];
-  cellStyles?: { [index: string]: CellStyle };
-}
-
-interface GridTableProps {
-  className?: string;
-  type?: 'text' | 'checkbox' | 'number';
-  title?: string;
-  titleWidth?: number;
-  header: GridTableHeader[];
-  headerHeight?: number;
-  normalizeRowSum?: number;
-  visibleRowSum?: boolean;
-  data: GridTableRow[];
-  errorMessage?: string;
-  onDataChange: (data: GridTableRow[]) => void;
-  stickyLeftColumns?: number;
-  stickyRightColumns?: number;
-  stickyTopRows?: number;
-  stickyBottomRows?: number;
-}
 
 interface CellParams {
   rowIndex: number;
@@ -48,8 +15,9 @@ interface CellParams {
 
 // 각 row 의 숫자 합이 0인지 확인
 // float 오차 때문에 같은지 비교할때. 오차가 0.000000001 이하인지 확인하는걸로 구현
-export function checkNotEmptyRows(data?: GridTableRow[]) {
+export function checkNotEmptyRows(data: GridTableRow[] | null) {
   if (!data) return false;
+
   for (const rowCur of data) {
     if (rowCur.values.reduce((acc, current) => acc + Number(current), 0) <= 0.000000001) {
       return false;
@@ -100,6 +68,40 @@ export const normalizeRowsAll = (data: GridTableRow[], normalizeRowSum: number =
   return newData;
 };
 
+export interface GridTableHeader {
+  name: string;
+  width?: number;
+  minWidth?: number;
+  style?: CellStyle;
+}
+
+export interface GridTableRow {
+  name: string;
+  values: string[];
+  style?: CellStyle;
+  height?: number;
+  checkToNumber?: number[];
+  cellStyles?: { [index: string]: CellStyle };
+}
+
+interface GridTableProps {
+  className?: string;
+  type?: 'text' | 'checkbox' | 'number';
+  title?: string;
+  titleWidth?: number;
+  header: AllocationTableHeader[];
+  headerHeight?: number;
+  normalizeRowSum?: number;
+  visibleRowSum?: boolean;
+  data: AllocationTableRow[];
+  errorMessage?: string;
+  stickyLeftColumns?: number;
+  stickyRightColumns?: number;
+  stickyTopRows?: number;
+  stickyBottomRows?: number;
+  onDataChange: (data: AllocationTableRow[]) => void;
+}
+
 export default function GridTable({
   className,
   type = 'text',
@@ -111,20 +113,23 @@ export default function GridTable({
   visibleRowSum = true,
   data,
   errorMessage,
-  onDataChange,
   stickyLeftColumns,
   stickyRightColumns,
   stickyTopRows,
   stickyBottomRows,
+  onDataChange,
 }: GridTableProps) {
   const refWidth = useRef(null);
   const selRange = useRef(Array(1).fill([])).current;
   const { width } = useResize(refWidth);
+
   const sumColVisible = normalizeRowSum && visibleRowSum && type == 'number';
+
   const isCheckedAll = (row: GridTableRow) => {
     for (const value of row.values) if (Number(value) < 1) return false;
     return true;
   };
+
   const handleCheckAllCol = (colIndex: number) => {
     if (!normalizeRowSum) return;
     const changes: CellParams[] = [];
@@ -141,6 +146,7 @@ export default function GridTable({
     }
     handleChangeCheck(changes);
   };
+
   const handleCheckAllRow = (rowIndex: number) => {
     if (!normalizeRowSum) return;
     const row = data[rowIndex];
@@ -169,23 +175,33 @@ export default function GridTable({
     newData = normalizeRowsAll(newData, normalizeRowSum);
     if (onDataChange) onDataChange(newData);
   };
+
   const handleChangeCheck = (changes: CellParams[]) => {
     if (!normalizeRowSum) return;
-    const newData = [...data];
+
+    const newData = structuredClone(data);
+
     for (const changeCur of changes) {
       newData[changeCur.rowIndex].values[changeCur.colIndex] = Math.max(
         Number(changeCur.value) > 0 ? 10 : 0,
         0
       ).toString();
+
       let checkedCount = 0;
+
       for (const val of newData[changeCur.rowIndex].values) if (Number(val) > 0) checkedCount++;
+
       const divPer = Math.floor((normalizeRowSum * 100) / checkedCount) / 100;
+
       let checkedIdx = 0;
       let remainPer = normalizeRowSum;
+
       for (let i = 0; i < newData[changeCur.rowIndex].values.length; i++) {
         const val = newData[changeCur.rowIndex].values[i];
+
         if (Number(val) > 0) {
           checkedIdx++;
+
           if (checkedIdx < checkedCount) remainPer -= divPer;
           const row = newData[changeCur.rowIndex];
           newData[changeCur.rowIndex].values[i] =
@@ -197,17 +213,15 @@ export default function GridTable({
         }
       }
     }
+
     if (onDataChange) onDataChange(newData);
   };
+
   const handleChangeNumber = (changes: CellParams[]) => {
-    const newData = [...data];
+    const newData = structuredClone(data);
+
     for (const changeCur of changes) {
-      if (
-        isNaN(changeCur.colIndex) ||
-        changeCur.colIndex < 0 ||
-        isNaN(changeCur.rowIndex) ||
-        changeCur.rowIndex < 0
-      )
+      if (isNaN(changeCur.colIndex) || changeCur.colIndex < 0 || isNaN(changeCur.rowIndex) || changeCur.rowIndex < 0)
         continue;
       newData[changeCur.rowIndex].values[changeCur.colIndex] = Math.max(Number(changeCur.value), 0).toString();
     }
@@ -219,16 +233,21 @@ export default function GridTable({
     const newData = normalizeRow(data, rowIndex, normalizeRowSum);
     if (onDataChange) onDataChange(newData);
   };
+
   const handleChangeNumberRowsAll = () => {
     if (!normalizeRowSum) return;
-    let newData = [...data];
+
+    let newData = structuredClone(data);
+
     for (let i = 0; i < data.length; i++) {
       newData = normalizeRow(newData, i, normalizeRowSum);
     }
     if (onDataChange) onDataChange(newData);
   };
+
   const handleChangeText = (changes: CellParams[]) => {
-    const newData = [...data];
+    const newData = structuredClone(data);
+
     for (const changeCur of changes) {
       newData[changeCur.rowIndex].values[changeCur.colIndex] = changeCur.value || '';
     }
@@ -260,37 +279,30 @@ export default function GridTable({
       width: Math.max(header.minWidth || 1, header.width && header.width > 0 ? header.width : cellWidth),
     };
   });
+
   const headerRow: Row = {
     rowId: 'header',
     height: headerHeight,
     cells: headerIncludeTitle.map((col, cidx) => {
       const style =
         cidx > 0
-          ? {
-              background: '#F9F9FB',
-              border: { left: { width: '0' }, right: { width: '0' }, ...(col.style || {}) },
-            }
-          : {
-              background: '#F9F9FB',
-              ...(col.style || {}),
-            };
-      return {
-        type: 'header',
-        text: String(col.name),
-        style,
-      };
+          ? { background: '#F9F9FB', border: { left: { width: '0' }, right: { width: '0' }, ...(col.style || {}) } }
+          : { background: '#F9F9FB', ...(col.style || {}) };
+
+      return { type: 'header', text: String(col.name), style };
     }),
   };
-  const dataRows = [...data]?.map((row, index) => {
+
+  const dataRows = structuredClone(data).map((row, index) => {
     const sum = row?.values.reduce((acc, current) => acc + Number(current), 0);
+
     return {
       rowId: `${index}`,
       height: row.height || 72,
       cells: [...(sumColVisible ? [row.name, sum] : [row.name]), ...row.values].map((value, vidx) => {
         const cellId = `${String(index)},${String(vidx)}`;
         const cellStyle = row.cellStyles && cellId in row.cellStyles ? row.cellStyles[cellId] : {};
-        const cellType =
-          vidx == 0 ? 'header' : type == 'number' ? 'number' : type == 'checkbox' ? 'checkbox' : 'text';
+        const cellType = vidx == 0 ? 'header' : type == 'number' ? 'number' : type == 'checkbox' ? 'checkbox' : 'text';
         const common = {
           type: cellType,
           nonEditable: vidx == 0 || (sumColVisible && vidx == 1) ? true : false,
@@ -327,6 +339,7 @@ export default function GridTable({
       }),
     };
   }) as Row[];
+
   const rows = [headerRow, ...dataRows];
 
   useEffect(() => {
@@ -335,7 +348,9 @@ export default function GridTable({
         selRange[0] = [];
       }
     };
+
     window.addEventListener('keyup', handleKeyEvent);
+
     return () => {
       window.removeEventListener('keyup', handleKeyEvent);
     };
@@ -345,9 +360,7 @@ export default function GridTable({
     <div ref={refWidth}>
       {width < 1 ? null : (
         <>
-          <div
-            className={`table-wrap mt-[10px] overflow-auto rounded-md border border-default-300 ${className || ''}`}
-          >
+          <div className={`table-wrap mt-[10px] overflow-auto rounded-md border border-default-300 ${className || ''}`}>
             <ReactGrid
               rows={rows}
               columns={columns}
@@ -359,25 +372,26 @@ export default function GridTable({
                     type == 'checkbox' || type == 'number'
                       ? String((cellCur.newCell as NumberCell).value)
                       : (cellCur.newCell as TextCell).text;
+
                   if (selRange[0]?.length > 0) {
                     for (const rangeCur of selRange[0]) {
                       const colIdxs: number[] = [];
                       const rowIdxs: number[] = [];
                       const selRangeCur = rangeCur as Range;
+
                       for (const colCur of selRangeCur.columns)
                         colIdxs.push(sumColVisible ? Number(colCur.columnId) - 2 : Number(colCur.columnId) - 1);
+
                       for (const rowCur of selRangeCur.rows) rowIdxs.push(Number(rowCur.rowId));
+
                       for (const col of colIdxs) {
                         for (const row of rowIdxs) {
-                          changes.push({
-                            rowIndex: row,
-                            colIndex: col,
-                            value: isNaN(Number(value)) ? '' : value,
-                          });
+                          changes.push({ rowIndex: row, colIndex: col, value: isNaN(Number(value)) ? '' : value });
                         }
                       }
                     }
                   }
+
                   changes.push({
                     rowIndex: Number(cellCur.rowId),
                     colIndex: sumColVisible ? Number(cellCur.columnId) - 2 : Number(cellCur.columnId) - 1,
@@ -385,6 +399,7 @@ export default function GridTable({
                       ? { value: isNaN(Number(value)) ? '' : value }
                       : { value }),
                   });
+
                   if (type == 'checkbox') {
                     handleChangeCheck(changes);
                   } else if (type == 'number') {
@@ -418,6 +433,7 @@ export default function GridTable({
               stickyBottomRows={stickyBottomRows}
             />
           </div>
+
           {!errorMessage ? null : (
             <div className="mt-[20px] flex items-center justify-between pr-[20px]">
               <p className="font-medium text-warning">{errorMessage}</p>

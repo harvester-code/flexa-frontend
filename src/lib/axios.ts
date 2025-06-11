@@ -6,9 +6,8 @@ export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 const instanceWithAuth = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 29 * 1000, // timeout in milliseconds
 });
-
-let _token: string = '';
 
 instanceWithAuth.interceptors.request.use(
   async (config) => {
@@ -20,7 +19,6 @@ instanceWithAuth.interceptors.request.use(
 
     const token = session?.access_token;
     if (token) {
-      _token = token;
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
@@ -30,6 +28,4 @@ instanceWithAuth.interceptors.request.use(
   }
 );
 
-const getLastAccessToken = () => _token;
-
-export { instanceWithAuth, getLastAccessToken };
+export { instanceWithAuth };

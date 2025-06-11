@@ -73,7 +73,7 @@
     "lucide-react": "^0.477.0",
     "next": "15.2.4",
     "next-themes": "^0.4.4",
-    "plotly.js": "^3.0.1",
+    "plotly.js": "^2.35.3",
     "plotly.js-dist-min": "^3.0.1",
     "react": "^19.0.0",
     "react-beautiful-dnd": "^13.1.1",

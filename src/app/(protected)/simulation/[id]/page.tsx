@@ -21,14 +21,14 @@ import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
 
-const tabs: { text: string; number?: number }[] = [
-  { text: 'Scenario Overview' },
-  { text: 'Flight Schedule' },
-  { text: 'Passenger Schedule' },
-  { text: 'Processing Procedures' },
-  { text: 'Facility Connection' },
-  { text: 'Facility Information' },
-  { text: 'Simulation' },
+const tabs: { text: string; number: number }[] = [
+  { text: 'Scenario Overview', number: 0 },
+  { text: 'Flight Schedule', number: 1 },
+  { text: 'Passenger Schedule', number: 2 },
+  { text: 'Processing Procedures', number: 3 },
+  { text: 'Facility Connection', number: 4 },
+  { text: 'Facility Information', number: 5 },
+  { text: 'Simulation', number: 6 },
 ];
 
 export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -39,57 +39,82 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const simulationId = React.use(params).id;
 
   const {
-    tabIndex,
-    setTabIndex,
-    availableTabIndex,
-    setAvailableTabIndex,
-    scenarioInfo,
-    setScenarioInfo,
-    history,
+    availableScenarioTab,
+    currentScenarioTab,
+    scenarioName,
+    checkpoint,
     setCheckpoint,
-    setMetadata,
-    setConditionFilters,
-    setSelectedConditions,
-    setPriorities,
+    setCurrentScenarioTab,
+    scenarioHistory,
+    //
+    loadScenarioProfileMetadata,
+    loadFlightScheduleMetadata,
+    loadPassengerScheduleMetadata,
+    loadAirportProcessingMetadata,
+    loadFacilityConnectionMetadata,
+    loadFacilityCapacityMetadata,
+    //
+    scenarioProfile,
+    scenarioOverview,
+    flightSchedule,
+    passengerSchedule,
+    airportProcessing,
+    facilityConnection,
+    facilityCapacity,
   } = useScenarioStore(
-    useShallow((state) => ({
-      tabIndex: state.tabIndex,
-      setTabIndex: state.setTabIndex,
-      availableTabIndex: state.availableTabIndex,
-      setAvailableTabIndex: state.setAvailableTabIndex,
-      scenarioInfo: state.scenarioInfo,
-      setScenarioInfo: state.setScenarioInfo,
-      history: state.history,
-      setCheckpoint: state.setCheckpoint,
-      setMetadata: state.setMetadata,
-      setConditionFilters: state.setConditionFilters,
-      setSelectedConditions: state.setSelectedConditions,
-      setPriorities: state.setPriorities,
+    useShallow((s) => ({
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
+      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
+      checkpoint: s.scenarioProfile.checkpoint,
+      scenarioName: s.scenarioProfile.scenarioName,
+      scenarioHistory: s.scenarioProfile.scenarioHistory,
+      setCheckpoint: s.scenarioProfile.actions.setCheckpoint,
+      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
+      //
+      loadScenarioProfileMetadata: s.scenarioProfile.actions.loadMetadata,
+      loadFlightScheduleMetadata: s.flightSchedule.actions.loadMetadata,
+      loadPassengerScheduleMetadata: s.passengerSchedule.actions.loadMetadata,
+      loadAirportProcessingMetadata: s.airportProcessing.actions.loadMetadata,
+      loadFacilityConnectionMetadata: s.facilityConnection.actions.loadMetadata,
+      loadFacilityCapacityMetadata: s.facilityCapacity.actions.loadMetadata,
+      //
+      scenarioProfile: s.scenarioProfile,
+      scenarioOverview: s.scenarioOverview,
+      flightSchedule: s.flightSchedule,
+      passengerSchedule: s.passengerSchedule,
+      airportProcessing: s.airportProcessing,
+      facilityConnection: s.facilityConnection,
+      facilityCapacity: s.facilityCapacity,
     }))
   );
-
-  const latestHistory = history && history?.length > 0 ? history[history?.length - 1] : null;
 
   // ‼️ 시뮬레이션 페이지에 필요한 데이터를 로드합니다.
   // 이 데이터를 스토어에 저장하고, 하위 탭 컴포넌트에서 사용합니다.
   useEffect(() => {
-    const loadMetadata = async () => {
+    const loadScenario = async () => {
       try {
         const {
-          data: { checkpoint, metadata: metadata_, scenario_info },
+          data: { checkpoint: scenarioCheckpoint, metadata: scenarioMetadata, scenario_info: scenarioInfo },
         } = await getScenarioMetadata(simulationId);
 
         const clientTime = dayjs();
-        const serverTime = dayjs(checkpoint);
+        const serverTime = dayjs(scenarioCheckpoint);
 
-        setCheckpoint(checkpoint, clientTime.diff(serverTime, 'millisecond'));
-        setScenarioInfo(scenario_info);
-        setMetadata(metadata_);
+        loadScenarioProfileMetadata({
+          checkpoint: scenarioCheckpoint,
+          scenarioName: scenarioInfo.simulation_name,
+          scenarioTerminal: scenarioInfo.terminal,
+          scenarioHistory: scenarioMetadata.history,
+        });
+        loadFlightScheduleMetadata(scenarioMetadata.flight_sch);
+        loadPassengerScheduleMetadata(scenarioMetadata.passenger_sch);
+        loadAirportProcessingMetadata(scenarioMetadata.passenger_attr);
+        loadFacilityConnectionMetadata(scenarioMetadata.facility_conn);
+        loadFacilityCapacityMetadata(scenarioMetadata.facility_info);
 
-        setAvailableTabIndex(metadata_?.overview?.snapshot?.availableTabIndex || 1);
-        setConditionFilters(metadata_.flight_sch.snapshot.conditions || []);
-        setSelectedConditions(metadata_.flight_sch.params.condition || []);
-        setPriorities(metadata_.flight_sch.snapshot.priorities || []);
+        setCheckpoint({ time: scenarioCheckpoint, diff: clientTime.diff(serverTime, 'millisecond') });
+
+        console.log(scenarioMetadata);
       } catch (error) {
         console.error('Failed to load scenario metadata:', error);
       } finally {
@@ -97,13 +122,55 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       }
     };
 
-    setTabIndex(0);
-    loadMetadata();
-  }, [simulationId]);
+    loadScenario();
+  }, []);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [tabIndex]);
+  const latestHistory =
+    scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;
+
+  // useEffect(() => {
+  //   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // }, [currentScenarioTab]=);
+
+  const saveScenario = async () => {
+    const { actions: a, ...scenarioProfileSnapShot } = scenarioProfile;
+    const { actions: b, ...scenarioOverviewSnapShot } = scenarioOverview;
+    const { actions: c, ...flightScheduleSnapShot } = flightSchedule;
+    const { actions: d, ...passengerScheduleSnapShot } = passengerSchedule;
+    const { actions: e, ...airportProcessingSnapShot } = airportProcessing;
+    const { actions: f, ...facilityConnectionSnapShot } = facilityConnection;
+    const { actions: g, ...facilityCapacitySnapShot } = facilityCapacity;
+
+    const newCheckpoint = dayjs()
+      .add((checkpoint?.diff || 0) * -1, 'millisecond')
+      .format('YYYY-MM-DD HH:mm:ss Z');
+
+    const historyItem = {
+      checkpoint: newCheckpoint,
+      error_count: 0,
+      memo: '',
+      // FIXME: 시뮬레이션이 완료되었는지 여부를 확인하는 로직이 필요합니다.
+      // 예시로 'Done'으로 설정하였으나, 실제 로직에 맞게 수정해야 합니다.
+      simulation: 'Done',
+    };
+
+    const history = [...scenarioProfileSnapShot.scenarioHistory, historyItem];
+
+    const params = {
+      overview: scenarioOverviewSnapShot,
+      flight_sch: flightScheduleSnapShot,
+      passenger_sch: passengerScheduleSnapShot,
+      // FIXME: passenger_attr는 airportProcessingSnapShot으로 변경되어야 합니다.
+      passenger_attr: airportProcessingSnapShot,
+      facility_conn: facilityConnectionSnapShot,
+      facility_info: facilityCapacitySnapShot,
+      history,
+    };
+
+    await updateScenarioMetadata(simulationId, params);
+
+    toast({ variant: 'default', title: 'Saved successfully.', duration: 3000 });
+  };
 
   return (
     <div className="mx-auto max-w-[1340px] px-[30px]">
@@ -112,7 +179,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       <div className="mt-[15px] flex justify-between">
         <dl className="sub-title">
           <dd>
-            {scenarioInfo?.simulation_name || ''}
+            {scenarioName}
             {latestHistory?.checkpoint ? <span>{timeToRelativeTime(latestHistory?.checkpoint)}</span> : null}
           </dd>
         </dl>
@@ -127,46 +194,33 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             }}
           />
 
-          {/* <Button
+          <Button
             className="btn-md btn-primary"
             icon={<Image width={20} height={20} src="/image/ico-save.svg" alt="" />}
             text="Save"
-            onClick={() => {
-              if (metadata) {
-                updateScenarioMetadata().then((response) => {
-                  toast({
-                    variant: 'default',
-                    title: 'Saved successfully.',
-                    duration: 3000,
-                  });
-                });
-              }
-            }}
-          /> */}
+            onClick={saveScenario}
+          />
         </div>
       </div>
 
       <TabDefault
         className={`mt-[40px]`}
-        currentTab={tabIndex}
-        availableTabs={loaded ? availableTabIndex : 0}
+        currentTab={currentScenarioTab}
+        availableTabs={availableScenarioTab}
         tabCount={tabs.length}
-        tabs={tabs.map((tab) => ({
-          text: tab.text,
-          number: tab.number || 0,
-        }))}
-        onTabChange={(i) => (!loaded || i > availableTabIndex ? null : setTabIndex(i))}
+        tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number }))}
+        onTabChange={setCurrentScenarioTab}
       />
 
       {loaded ? (
         <React.Fragment key={simulationId}>
-          <TabScenarioOverview visible={tabIndex == 0} />
-          <TabFlightSchedule visible={tabIndex == 1} simulationId={simulationId} />
-          <TabPassengerSchedule visible={tabIndex == 2} simulationId={simulationId} />
-          <TabProcessingProcedures visible={tabIndex == 3} />
-          <TabFacilityConnection visible={tabIndex == 4} simulationId={simulationId} />
-          <TabFacilityInformation visible={tabIndex == 5} simulationId={simulationId} />
-          <TabSimulation visible={tabIndex == 6} simulationId={simulationId} />
+          <TabScenarioOverview visible={currentScenarioTab === 0} />
+          <TabFlightSchedule visible={currentScenarioTab === 1} simulationId={simulationId} />
+          <TabPassengerSchedule visible={currentScenarioTab === 2} simulationId={simulationId} />
+          <TabProcessingProcedures visible={currentScenarioTab === 3} />
+          <TabFacilityConnection visible={currentScenarioTab === 4} simulationId={simulationId} />
+          <TabFacilityInformation visible={currentScenarioTab === 5} simulationId={simulationId} />
+          <TabSimulation visible={currentScenarioTab === 6} simulationId={simulationId} />
         </React.Fragment>
       ) : (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">

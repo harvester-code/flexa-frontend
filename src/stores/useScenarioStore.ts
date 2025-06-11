@@ -1,356 +1,688 @@
+import dayjs from 'dayjs';
 import { StateCreator, create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { ConditionData, ConditionState } from '@/types/conditions';
 import {
-  Capacities,
-  ChartData,
+  AirportProcessing,
+  FacilityCapacity,
+  FacilityCapacitySetting,
   FacilityConnection,
-  FacilityInformation,
   FlightSchedule,
   PassengerSchedule,
-  ProcessingProcedures,
-  ScenarioHistory,
-  ScenarioInfo,
-  ScenarioMetadata,
+  Procedure,
   ScenarioOverview,
-  SimulationResponse,
-} from '@/types/simulations';
+} from '@/types/scenarios';
 
-function mergeOrReplace<T>(target: T | undefined, source: Partial<T>, replace?: boolean): T | Partial<T> {
-  return replace ? source : { ...target, ...source };
+// ==================== ScenarioProfile ====================
+interface ScenarioProfileSliceActions {
+  loadMetadata: (metadata: any) => void;
+  setCheckpoint: (checkpoint: { time: string; diff: number }) => void;
+  setScenarioName: (name: string) => void;
+  setScenarioTerminal: (terminal: string) => void;
+  setCurrentScenarioTab: (index: number) => void;
+  setAvailableScenarioTab: (index: number) => void;
 }
 
-interface ScenarioSlice {
-  tabIndex: number;
-  setTabIndex: (index: number) => void;
-
-  availableTabIndex: number;
-  setAvailableTabIndex: (index: number) => void;
-
-  checkpoint?: { time: string; diff: number };
-  setCheckpoint: (time: string, diff: number) => void;
-
-  scenarioInfo?: ScenarioInfo;
-  setScenarioInfo: (scenarioInfo: ScenarioInfo) => void;
-
-  conditionFilters?: ConditionData;
-  setConditionFilters: (conditions?: ConditionData) => void;
-
-  isConditionFilterEnabled: boolean;
-  setIsConditionFilterEnabled: (enabled: boolean) => void;
-
-  selectedConditions: ConditionState[];
-  setSelectedConditions: (conditions: ConditionState[]) => void;
-
-  priorities?: ConditionData;
-  setPriorities: (priorities: ConditionData) => void;
-
-  facilityConnCapacities?: Capacities;
-  setFacilityConnCapacities: (capacities?: Capacities) => void;
-
-  flightScheduleTime: number;
-  setFlightScheduleTime: (time: number) => void;
-
-  processingProcedureTime: number;
-  setProcessingProcedureTime: (time: number) => void;
+interface ScenarioProfileSlice {
+  scenarioProfile: {
+    checkpoint: { time: string; diff: number } | null;
+    scenarioName: string;
+    scenarioTerminal: string;
+    scenarioHistory: {
+      checkpoint: string;
+      updated_at?: string;
+      simulation: 'Done' | 'Yet';
+      memo: string;
+      error_count: number;
+    }[];
+    currentScenarioTab: number;
+    availableScenarioTab: number;
+    // ---
+    actions: ScenarioProfileSliceActions;
+  };
 }
 
-interface MetadataSlice extends Partial<ScenarioMetadata> {
-  resetMetadata: () => void;
-  setMetadata: (data: ScenarioMetadata) => void;
-
-  setOverview: (overview: Partial<ScenarioOverview>, replace?: boolean) => void;
-
-  setFlightSchedule: (flightSchedule: Partial<FlightSchedule>, replace?: boolean) => void;
-
-  setPassengerSchedule: (passengerSchedule: Partial<PassengerSchedule>, replace?: boolean) => void;
-
-  setPassengerAttr: (passenger_attr: Partial<ProcessingProcedures>, replace?: boolean) => void;
-
-  setFacilityConnection: (facility_conn: Partial<FacilityConnection>, replace?: boolean) => void;
-
-  setFacilityInformation: (facility_info: Partial<FacilityInformation>, replace?: boolean) => void;
-
-  setSimulation: (simulation: Partial<SimulationResponse>, replace?: boolean) => void;
-
-  addHistoryItem: (item: ScenarioHistory) => void;
-  setHistoryItem: (item: ScenarioHistory, index: number) => void;
-
-  setColorCriteria: (value: string) => void;
-  setTargetDate: (value: string) => void;
-  setChartData: (value: { total: number; x: string[]; data: ChartData } | undefined) => void;
+// ==================== ScenarioOverview ====================
+interface ScenarioOverviewSliceActions {
+  setMatrix: (matrix: ScenarioOverview['matrix']) => void;
+}
+interface ScenarioOverviewSlice {
+  scenarioOverview: ScenarioOverview & {
+    // ---
+    actions: ScenarioOverviewSliceActions;
+  };
 }
 
-type ScenarioStore = ScenarioSlice & MetadataSlice;
+// ==================== FlightSchedule ====================
+interface FlightScheduleSliceActions {
+  loadMetadata: (metadata: any) => void;
+  setTargetAirport: (airport: FlightSchedule['targetAirport']) => void;
+  setTargetDate: (date: FlightSchedule['targetDate']) => void;
+  setChartData: (data: FlightSchedule['chartData']) => void;
+  setCriterias: (criterias: FlightSchedule['criterias']) => void;
+  setSelectedCriteria: (criteria: FlightSchedule['selectedCriteria']) => void;
+  setFilters: (filters: FlightSchedule['filterOptions']) => void;
+  setSelectedFilters: (filters: FlightSchedule['selectedFilters']) => void;
+  setIsFilterEnabled: (isEnabled: FlightSchedule['isFilterEnabled']) => void;
+}
+interface FlightScheduleSlice {
+  flightSchedule: FlightSchedule & {
+    // ---
+    actions: FlightScheduleSliceActions;
+  };
+}
+
+// ==================== PassengerSchedule ====================
+interface PassengerScheduleSliceActions {
+  loadMetadata: (metadata: any) => void;
+  setChartData: (data: PassengerSchedule['chartData']) => void;
+  setCriterias: (criterias: PassengerSchedule['criterias']) => void;
+  setSelectedCriteria: (criteria: PassengerSchedule['selectedCriteria']) => void;
+  setFilters: (options: PassengerSchedule['filterOptions']) => void;
+  setNormalDistributionParam: (index: number, param: PassengerSchedule['normalDistributionParams'][number]) => void;
+  setNormalDistributionParams: (params: PassengerSchedule['normalDistributionParams']) => void;
+  setIsFilterEnabled: (isEnabled: PassengerSchedule['isFilterEnabled']) => void;
+  resetState: () => void; // Reset state to initial values
+}
+interface PassengerScheduleSlice {
+  passengerSchedule: PassengerSchedule & {
+    // ---
+    actions: PassengerScheduleSliceActions;
+  };
+}
+
+// ==================== AirportProcessing ====================
+interface AirportProcessingSliceActions {
+  loadMetadata: (metadata: any) => void;
+  setProcedures: (procedures: Procedure[]) => void;
+  setDataConnectionCriteria: (criteria: string) => void;
+  resetState: () => void; // Reset state to initial values
+}
+
+interface AirportProcessingSlice {
+  airportProcessing: AirportProcessing & {
+    // ---
+    actions: AirportProcessingSliceActions;
+  };
+}
+
+// ==================== FacilityConnection ====================
+interface FacilityConnectionSliceActions {
+  loadMetadata: (metadata: any) => void;
+  setAllocationTables: (tables: FacilityConnection['allocationTables']) => void;
+  setSelectedSecondTab: (index: number) => void;
+  setSnapshot: (snapshot: FacilityConnection['snapshot']) => void;
+  setAllocationConditions: (conditions: FacilityConnection['allocationConditions']) => void;
+  setAllocationConditionsEnabled: (conditions: FacilityConnection['allocationConditionsEnabled']) => void;
+  resetState: () => void; // Reset state to initial values
+}
+
+interface FacilityConnectionSlice {
+  facilityConnection: FacilityConnection & {
+    actions: FacilityConnectionSliceActions;
+  };
+}
+
+// ==================== FacilityCapacity ====================
+interface FacilityCapacitySliceActions {
+  loadMetadata: (metadata: any) => void;
+  setSelectedSecondTab: (index: number) => void;
+  setSelectedNodes: (nodes: number[]) => void;
+  updateSelectedNode: (tabIndex: number, nodeIndex: number) => void;
+  setSettings: (settings: FacilityCapacity['settings']) => void;
+  updateSetting: (tabIndex: number, nodeIndex: number, setting: Partial<FacilityCapacitySetting>) => void;
+  setBarChartData: (data: FacilityCapacity['barChartData']) => void;
+  resetState: () => void; // Reset state to initial values
+}
+interface FacilityCapacitySlice {
+  facilityCapacity: FacilityCapacity & {
+    actions: FacilityCapacitySliceActions;
+  };
+}
+
+// ==================== ScenarioStore ====================
+type ScenarioStore = ScenarioProfileSlice &
+  ScenarioOverviewSlice &
+  FlightScheduleSlice &
+  PassengerScheduleSlice &
+  AirportProcessingSlice &
+  FacilityConnectionSlice &
+  FacilityCapacitySlice;
 
 // Ref: https://github.com/pmndrs/zustand/discussions/1796
 type SliceCreator<T> = StateCreator<ScenarioStore, [['zustand/devtools', never], ['zustand/immer', never]], [], T>;
 
-// TODO: ScenarioStore와 MetadataStore가 논리적으로 정확히 분리되어 있지 않음.
-const createScenarioSlice: SliceCreator<ScenarioSlice> = (set, get) => ({
-  tabIndex: 0,
-  setTabIndex: (index) =>
-    set(
-      (state) => {
-        state.tabIndex = index;
-        state.availableTabIndex = Math.max(index, state.availableTabIndex);
-      },
-      false,
-      'scenario/setTabIndex'
-    ),
+// ==================== Scenario Profile Slice Creator ====================
+const initialScenarioProfile: Omit<ScenarioProfileSlice['scenarioProfile'], 'actions'> = {
+  checkpoint: null,
+  scenarioName: '',
+  scenarioTerminal: '',
+  scenarioHistory: [],
+  currentScenarioTab: 0,
+  availableScenarioTab: process.env.NODE_ENV === 'development' ? 999 : 0,
+};
 
-  availableTabIndex: 1,
-  setAvailableTabIndex: (index) =>
-    set(
-      (state) => {
-        state.availableTabIndex = index;
-      },
-      false,
-      'scenario/setAvailableTabIndex'
-    ),
+const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get) => ({
+  scenarioProfile: {
+    ...initialScenarioProfile,
 
-  checkpoint: undefined,
-  setCheckpoint: (time, diff) =>
-    set(
-      (state) => {
-        state.checkpoint = { time, diff };
-      },
-      false,
-      'scenario/setCheckpoint'
-    ),
-
-  scenarioInfo: undefined,
-  setScenarioInfo: (info) =>
-    set(
-      (state) => {
-        state.scenarioInfo = info;
-      },
-      false,
-      'scenario/setScenarioInfo'
-    ),
-
-  conditionFilters: undefined,
-  setConditionFilters: (conditionFilters) =>
-    set(
-      (state) => {
-        state.conditionFilters = conditionFilters;
-      },
-      false,
-      'scenario/setConditions'
-    ),
-
-  isConditionFilterEnabled: false,
-  setIsConditionFilterEnabled: (enabled) =>
-    set(
-      (state) => {
-        state.isConditionFilterEnabled = enabled;
-      },
-      false,
-      'scenario/setIsConditionFilterEnabled'
-    ),
-
-  selectedConditions: [],
-  setSelectedConditions: (conditions) =>
-    set(
-      (state) => {
-        state.selectedConditions = conditions;
-        state.isConditionFilterEnabled = conditions.length > 0;
-      },
-      false,
-      'scenario/setSelectedConditions'
-    ),
-
-  priorities: undefined,
-  setPriorities: (priorities) =>
-    set(
-      (state) => {
-        state.priorities = priorities;
-      },
-      false,
-      'scenario/setPriorities'
-    ),
-
-  facilityConnCapacities: undefined,
-  setFacilityConnCapacities: (capacities) =>
-    set(
-      (state) => {
-        state.facilityConnCapacities = capacities;
-      },
-      false,
-      'scenario/setFacilityConnCapacities'
-    ),
-
-  flightScheduleTime: 0,
-  setFlightScheduleTime: (time) =>
-    set(
-      (state) => {
-        state.flightScheduleTime = time;
-      },
-      false,
-      'scenario/setFlightScheduleTime'
-    ),
-
-  processingProcedureTime: 0,
-  setProcessingProcedureTime: (time) =>
-    set(
-      (state) => {
-        state.processingProcedureTime = time;
-      },
-      false,
-      'scenario/setProcessingProcedureTime'
-    ),
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.scenarioProfile = { ...state.scenarioProfile, ...metadata };
+          },
+          false,
+          'scenarioProfile/loadMetadata'
+        ),
+      setCheckpoint: (checkpoint) =>
+        set(
+          (state) => {
+            state.scenarioProfile.checkpoint = checkpoint;
+          },
+          false,
+          'scenarioProfile/setCheckpoint'
+        ),
+      setScenarioName: (name) =>
+        set(
+          (state) => {
+            state.scenarioProfile.scenarioName = name;
+          },
+          false,
+          'scenarioProfile/setScenarioName'
+        ),
+      setScenarioTerminal: (terminal) =>
+        set(
+          (state) => {
+            state.scenarioProfile.scenarioTerminal = terminal;
+          },
+          false,
+          'scenarioProfile/setScenarioTerminal'
+        ),
+      setCurrentScenarioTab: (index) =>
+        set(
+          (state) => {
+            state.scenarioProfile.currentScenarioTab = index;
+          },
+          false,
+          'scenarioProfile/setCurrentScenarioTab'
+        ),
+      setAvailableScenarioTab: (index) =>
+        set(
+          (state) => {
+            state.scenarioProfile.availableScenarioTab = index;
+          },
+          false,
+          'scenarioProfile/setAvailableScenarioTab'
+        ),
+    },
+  },
 });
 
-const createMetadataSlice: SliceCreator<MetadataSlice> = (set, get) => ({
-  scenario_id: '',
+// ==================== Scenario Overview Slice Creator ====================
+const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, get) => ({
+  scenarioOverview: {
+    matrix: [],
 
-  setMetadata: (data) =>
-    set(
-      (state) => {
-        Object.assign(state, data);
-      },
-      false,
-      'metadata/setMetadata'
-    ),
-
-  resetMetadata: () =>
-    set(
-      (state) => {
-        const history = state.history;
-        // Object.keys(state).forEach((key) => {
-        //   if (key !== 'history') {
-        //     state[key] = undefined;
-        //   }
-        // });
-        state.history = history;
-      },
-      false,
-      'metadata/resetMetadata'
-    ),
-
-  setOverview: (overview, replace) =>
-    set(
-      (state) => {
-        state.overview = mergeOrReplace(state.overview, overview, replace);
-      },
-      false,
-      'metadata/setOverview'
-    ),
-
-  setFlightSchedule: (flight_sch, replace) =>
-    set(
-      (state) => {
-        state.flight_sch = mergeOrReplace(state.flight_sch, flight_sch, replace);
-      },
-      false,
-      'metadata/setFlightSchedule'
-    ),
-
-  setPassengerSchedule: (passenger_sch, replace) =>
-    set(
-      (state) => {
-        state.passenger_sch = mergeOrReplace(state.passenger_sch, passenger_sch, replace);
-      },
-      false,
-      'metadata/setPassengerSchedule'
-    ),
-
-  setPassengerAttr: (passenger_attr, replace) =>
-    set(
-      (state) => {
-        state.passenger_attr = mergeOrReplace(state.passenger_attr, passenger_attr, replace);
-      },
-      false,
-      'metadata/setPassengerAttr'
-    ),
-
-  setFacilityConnection: (facility_conn, replace) =>
-    set(
-      (state) => {
-        state.facility_conn = mergeOrReplace(state.facility_conn, facility_conn, replace);
-      },
-      false,
-      'metadata/setFacilityConnection'
-    ),
-
-  setFacilityInformation: (facility_info, replace) =>
-    set(
-      (state) => {
-        state.facility_info = mergeOrReplace(state.facility_info, facility_info, replace);
-      },
-      false,
-      'metadata/setFacilityInformation'
-    ),
-
-  setSimulation: (simulation, replace) =>
-    set(
-      (state) => {
-        state.simulation = mergeOrReplace(state.simulation, simulation, replace);
-      },
-      false,
-      'metadata/setSimulation'
-    ),
-
-  addHistoryItem: (item) =>
-    set(
-      (state) => {
-        state.history = [...(state.history || []), item];
-      },
-      false,
-      'metadata/addHistoryItem'
-    ),
-
-  setHistoryItem: (item, index) =>
-    set(
-      (state) => {
-        if (state.history && state.history[index]) {
-          state.history[index] = item;
-        }
-      },
-      false,
-      'metadata/setHistoryItem'
-    ),
-
-  setColorCriteria: (value) =>
-    set(
-      (state) => {
-        state.flight_sch ??= {};
-        state.flight_sch.snapshot ??= {};
-        state.flight_sch.snapshot.selColorCriteria = value;
-      },
-      false,
-      'metadata/setColorCriteria'
-    ),
-
-  setTargetDate: (value) =>
-    set(
-      (state) => {
-        state.flight_sch ??= {};
-        state.flight_sch.params ??= {};
-        state.flight_sch.params.date = value;
-      },
-      false,
-      'metadata/setTargetDate'
-    ),
-
-  setChartData: (value) =>
-    set(
-      (state) => {
-        state.flight_sch ??= {};
-        state.flight_sch.snapshot ??= {};
-        state.flight_sch.snapshot.chartData = value;
-      },
-      false,
-      'metadata/setChartData'
-    ),
+    actions: {
+      setMatrix: (matrix) =>
+        set(
+          (state) => {
+            state.scenarioOverview.matrix = matrix;
+          },
+          false,
+          'scenarioOverview/setMatrix'
+        ),
+    },
+  },
 });
 
+// ==================== Flight Schedule Slice Creator ====================
+const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) => ({
+  flightSchedule: {
+    datasource: 0,
+    targetAirport: { iata: 'ICN', name: '', searchText: '' },
+    targetDate: dayjs().format('YYYY-MM-DD'),
+    //
+    isFilterEnabled: false,
+    filterOptions: null,
+    selectedFilters: [],
+    //
+    criterias: [],
+    selectedCriteria: '',
+    chartData: null,
+
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.flightSchedule = { ...state.flightSchedule, ...metadata };
+          },
+          false,
+          'flightSchedule/loadMetadata'
+        ),
+      setTargetAirport: (airport) =>
+        set(
+          (state) => {
+            state.flightSchedule.targetAirport = airport;
+          },
+          false,
+          'flightSchedule/setTargetAirport'
+        ),
+
+      setTargetDate: (date) =>
+        set(
+          (state) => {
+            state.flightSchedule.targetDate = date;
+          },
+          false,
+          'flightSchedule/setTargetDate'
+        ),
+
+      setChartData: (chartData) =>
+        set(
+          (state) => {
+            state.flightSchedule.chartData = chartData;
+          },
+          false,
+          'flightSchedule/setChartData'
+        ),
+
+      setCriterias: (criterias) =>
+        set(
+          (state) => {
+            state.flightSchedule.criterias = criterias;
+          },
+          false,
+          'flightSchedule/setCriterias'
+        ),
+
+      setSelectedCriteria: (selectedCriteria) =>
+        set(
+          (state) => {
+            state.flightSchedule.selectedCriteria = selectedCriteria;
+          },
+          false,
+          'flightSchedule/setSelectedCriteria'
+        ),
+
+      setFilters: (filters) =>
+        set(
+          (state) => {
+            state.flightSchedule.filterOptions = filters;
+          },
+          false,
+          'flightSchedule/setFilters'
+        ),
+
+      setSelectedFilters: (selectedFilters) =>
+        set(
+          (state) => {
+            state.flightSchedule.selectedFilters = selectedFilters;
+          },
+          false,
+          'flightSchedule/setSelectedFilters'
+        ),
+
+      setIsFilterEnabled: (isEnabled) =>
+        set(
+          (state) => {
+            state.flightSchedule.isFilterEnabled = isEnabled;
+          },
+          false,
+          'flightSchedule/setIsFilterEnabled'
+        ),
+    },
+  },
+});
+
+// ==================== Passenger Schedule Slice Creator ====================
+const initialPassengerSchedule: Omit<PassengerScheduleSlice['passengerSchedule'], 'actions'> = {
+  isFilterEnabled: false,
+  filterOptions: null,
+  normalDistributionParams: [{ conditions: [], mean: 120, stddev: 30 }],
+  chartData: null,
+  criterias: [],
+  selectedCriteria: '',
+};
+
+const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set, get) => ({
+  passengerSchedule: {
+    ...initialPassengerSchedule,
+
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.passengerSchedule = { ...state.passengerSchedule, ...metadata };
+          },
+          false,
+          'passengerSchedule/loadMetadata'
+        ),
+
+      setChartData: (chartData) =>
+        set(
+          (state) => {
+            state.passengerSchedule.chartData = chartData;
+          },
+          false,
+          'passengerSchedule/setChartData'
+        ),
+
+      setCriterias: (criterias) =>
+        set(
+          (state) => {
+            state.passengerSchedule.criterias = criterias;
+          },
+          false,
+          'passengerSchedule/setCriterias'
+        ),
+
+      setSelectedCriteria: (selectedCriteria) =>
+        set(
+          (state) => {
+            state.passengerSchedule.selectedCriteria = selectedCriteria;
+          },
+          false,
+          'passengerSchedule/setSelectedCriteria'
+        ),
+
+      setIsFilterEnabled: (isEnabled) =>
+        set(
+          (state) => {
+            state.passengerSchedule.isFilterEnabled = isEnabled;
+          },
+          false,
+          'passengerSchedule/setIsFilterEnabled'
+        ),
+
+      setFilters: (filterOptions) =>
+        set(
+          (state) => {
+            state.passengerSchedule.filterOptions = filterOptions;
+          },
+          false,
+          'passengerSchedule/setFilterOptions'
+        ),
+
+      setNormalDistributionParam: (index, param) =>
+        set(
+          (state) => {
+            if (index >= 0 && index < state.passengerSchedule.normalDistributionParams.length) {
+              state.passengerSchedule.normalDistributionParams[index] = param;
+            }
+          },
+          false,
+          'passengerSchedule/setNormalDistributionParam'
+        ),
+
+      setNormalDistributionParams: (params) =>
+        set(
+          (state) => {
+            state.passengerSchedule.normalDistributionParams = params;
+          },
+          false,
+          'passengerSchedule/setNormalDistributionParams'
+        ),
+
+      resetState: () =>
+        set(
+          (state) => {
+            state.passengerSchedule = {
+              ...initialPassengerSchedule,
+              actions: state.passengerSchedule.actions,
+            };
+          },
+          false,
+          'passengerSchedule/resetState'
+        ),
+    },
+  },
+});
+
+// ==================== Airport Processing Slice Creator ====================
+
+const initialAirportProcessing: Omit<AirportProcessingSlice['airportProcessing'], 'actions'> = {
+  dataConnectionCriteria: '',
+  procedures: [],
+};
+
+const createAirportProcessingSlice: SliceCreator<AirportProcessingSlice> = (set, get) => ({
+  airportProcessing: {
+    ...initialAirportProcessing,
+
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.airportProcessing = { ...state.airportProcessing, ...metadata };
+          },
+          false,
+          'airportProcessing/loadMetadata'
+        ),
+      setProcedures: (procedures) =>
+        set(
+          (state) => {
+            state.airportProcessing.procedures = procedures;
+          },
+          false,
+          'airportProcessing/setProcedures'
+        ),
+
+      setDataConnectionCriteria: (criteria) =>
+        set(
+          (state) => {
+            state.airportProcessing.dataConnectionCriteria = criteria;
+          },
+          false,
+          'airportProcessing/setDataConnectionCriteria'
+        ),
+
+      resetState: () =>
+        set(
+          (state) => {
+            state.airportProcessing = {
+              ...initialAirportProcessing,
+              actions: state.airportProcessing.actions,
+            };
+          },
+          false,
+          'airportProcessing/resetState'
+        ),
+    },
+  },
+});
+
+// ==================== Facility Connection Slice Creator ====================
+const initialFacilityConnection: Omit<FacilityConnectionSlice['facilityConnection'], 'actions'> = {
+  selectedSecondTab: 0,
+  activedSecondTab: process.env.NODE_ENV === 'development' ? 999 : 0,
+  allocationTables: [],
+  allocationConditions: [],
+  allocationConditionsEnabled: [],
+  snapshot: null,
+};
+
+const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (set, get) => ({
+  facilityConnection: {
+    ...initialFacilityConnection,
+
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.facilityConnection = { ...state.facilityConnection, ...metadata };
+          },
+          false,
+          'facilityConnection/loadMetadata'
+        ),
+      setAllocationTables: (tables) =>
+        set(
+          (state) => {
+            state.facilityConnection.allocationTables = tables;
+          },
+          false,
+          'facilityConnection/setAllocations'
+        ),
+      setSelectedSecondTab: (index) =>
+        set(
+          (state) => {
+            state.facilityConnection.selectedSecondTab = index;
+          },
+          false,
+          'facilityConnection/setSelectedSecondTab'
+        ),
+      setSnapshot: (snapshot) =>
+        set(
+          (state) => {
+            state.facilityConnection.snapshot = snapshot;
+          },
+          false,
+          'facilityConnection/setSnapshot'
+        ),
+      setAllocationConditions: (conditions) =>
+        set(
+          (state) => {
+            state.facilityConnection.allocationConditions = conditions;
+          },
+          false,
+          'facilityConnection/setAllocationConditions'
+        ),
+      setAllocationConditionsEnabled: (conditionsEnabled) =>
+        set(
+          (state) => {
+            state.facilityConnection.allocationConditionsEnabled = conditionsEnabled;
+          },
+          false,
+          'facilityConnection/setAllocationConditionsEnabled'
+        ),
+
+      resetState: () =>
+        set(
+          (state) => {
+            state.facilityConnection = {
+              ...initialFacilityConnection,
+              actions: state.facilityConnection.actions,
+            };
+          },
+          false,
+          'facilityConnection/resetState'
+        ),
+    },
+  },
+});
+
+// ==================== Facility Capacity Slice Creator ====================
+
+const initialFacilityCapacity: Omit<FacilityCapacitySlice['facilityCapacity'], 'actions'> = {
+  selectedSecondTab: 0,
+  availableSecondTab: process.env.NODE_ENV === 'development' ? 999 : 0,
+  selectedNodes: [],
+  settings: {},
+  barChartData: null,
+};
+
+const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, get) => ({
+  facilityCapacity: {
+    ...initialFacilityCapacity,
+
+    actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.facilityCapacity = { ...state.facilityCapacity, ...metadata };
+          },
+          false,
+          'facilityCapacity/loadMetadata'
+        ),
+      setSelectedSecondTab: (index) =>
+        set(
+          (state) => {
+            state.facilityCapacity.selectedSecondTab = index;
+          },
+          false,
+          'facilityCapacity/setSelectedSecondTab'
+        ),
+
+      setSelectedNodes: (nodes) =>
+        set(
+          (state) => {
+            state.facilityCapacity.selectedNodes = nodes;
+          },
+          false,
+          'facilityCapacity/setSelectedNodes'
+        ),
+
+      updateSelectedNode: (tabIndex, nodeIndex) =>
+        set(
+          (state) => {
+            const selectedNodes = state.facilityCapacity.selectedNodes;
+            if (selectedNodes[tabIndex] !== nodeIndex) {
+              selectedNodes[tabIndex] = nodeIndex;
+            } else {
+              selectedNodes[tabIndex] = -1; // 선택 해제
+            }
+          },
+          false,
+          'facilityCapacity/updateSelectedNode'
+        ),
+
+      setSettings: (settings) =>
+        set(
+          (state) => {
+            state.facilityCapacity.settings = settings;
+          },
+          false,
+          'facilityCapacity/setSettings'
+        ),
+
+      updateSetting: (tabIndex, nodeIndex, setting) =>
+        set(
+          (state) => {
+            const settings = state.facilityCapacity.settings;
+            const targetKey = `${tabIndex}_${nodeIndex}`;
+
+            settings[targetKey] = { ...settings[targetKey], ...setting };
+          },
+          false,
+          'facilityCapacity/updateSetting'
+        ),
+
+      setBarChartData: (data) =>
+        set(
+          (state) => {
+            state.facilityCapacity.barChartData = data;
+          },
+          false,
+          'facilityCapacity/setBarChartData'
+        ),
+
+      resetState: () =>
+        set(
+          (state) => {
+            state.facilityCapacity = {
+              ...initialFacilityCapacity,
+              actions: state.facilityCapacity.actions,
+            };
+          },
+          false,
+          'facilityCapacity/resetState'
+        ),
+    },
+  },
+});
+
+// ==================== Scenario Store ====================
 export const useScenarioStore = create<ScenarioStore>()(
   devtools(
-    immer((...a) => ({
-      ...createScenarioSlice(...a),
-      ...createMetadataSlice(...a),
+    immer((set, get, ...rest) => ({
+      ...createScenarioProfileSlice(set, get, ...rest),
+      ...createScenarioOverviewSlice(set, get, ...rest),
+      ...createFlightScheduleSlice(set, get, ...rest),
+      ...createPassengerScheduleSlice(set, get, ...rest),
+      ...createAirportProcessingSlice(set, get, ...rest),
+      ...createFacilityConnectionSlice(set, get, ...rest),
+      ...createFacilityCapacitySlice(set, get, ...rest),
     })),
     { name: 'ScenarioStore', enabled: process.env.NODE_ENV === 'development' }
   )

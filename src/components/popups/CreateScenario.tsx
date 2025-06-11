@@ -135,7 +135,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                   } else PopupAlert.confirm('Failed to create the scenario.');
                 })
                 .catch((e) => {
-                  console.log(e);
+                  console.error(e);
                   PopupAlert.confirm('Failed to create the scenario.');
                 });
             }}

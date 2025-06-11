@@ -13,7 +13,7 @@ import { timeToRelativeTime } from '@/lib/utils';
 
 const PAGE_ROW_AMOUNT = 5;
 
-const OverviewTable = [
+const OVERVIEW_CARDS = [
   { key: 'date', text: 'Date' },
   { key: 'terminal', text: 'Terminal' },
   { key: 'analysis_type', text: 'Analysis Type' },
@@ -36,15 +36,34 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   const router = useRouter();
   const [historyPage, setHistoryPage] = useState(0);
 
-  const { overview, history, setTabIndex, setHistoryItem, tabIndex, scenarioInfo } = useScenarioStore(
-    useShallow((state) => ({
-      overview: state.overview,
-      setTabIndex: state.setTabIndex,
-      // history: [...(state.history || [])].reverse(),
-      history: state.history,
-      setHistoryItem: state.setHistoryItem,
-      tabIndex: state.tabIndex,
-      scenarioInfo: state.scenarioInfo,
+  // const { overview, history, setTabIndex, setHistoryItem, tabIndex, scenarioInfo } = useScenarioStore(
+  //   useShallow((state) => ({
+  //     overview: state.overview,
+  //     setTabIndex: state.setTabIndex,
+  //     history: [...(state.history || [])].reverse(),
+  //     history: state.history,
+  //     setHistoryItem: state.setHistoryItem,
+  //     tabIndex: state.tabIndex,
+  //     scenarioInfo: state.scenarioInfo,
+  //   }))
+  // );
+
+  const {
+    history,
+    scenarioMatrix,
+    scenarioTerminal,
+
+    currentScenarioTab,
+    setCurrentScenarioTab,
+  } = useScenarioStore(
+    useShallow((s) => ({
+      history: s.scenarioProfile.scenarioHistory,
+      scenarioMatrix: s.scenarioOverview.matrix,
+      scenarioTerminal: s.scenarioProfile.scenarioTerminal,
+      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
+      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
+      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
     }))
   );
 
@@ -54,31 +73,31 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     lastPage: history ? Math.ceil(history.length / PAGE_ROW_AMOUNT) : 1,
   };
 
-  const handleUpdateMemo = () => updateScenarioMetadata(false);
-  const handleMemoChange = (index: number, newMemo: string) => {
-    if (history) {
-      setHistoryItem(
-        {
-          ...history[index],
-          memo: newMemo,
-        },
-        index
-      );
-    }
-  };
+  // const handleUpdateMemo = () => updateScenarioMetadata(false);
+  // const handleMemoChange = (index: number, newMemo: string) => {
+  //   if (history) {
+  //     setHistoryItem(
+  //       {
+  //         ...history[index],
+  //         memo: newMemo,
+  //       },
+  //       index
+  //     );
+  //   }
+  // };
 
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
-      {overview?.matric && overview?.matric?.length > 0 ? (
+      {scenarioMatrix && scenarioMatrix.length > 0 ? (
         <div className="overview-wrap mt-[10px]">
-          {overview?.matric?.map((item, index) => (
+          {scenarioMatrix.map((item, index) => (
             <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
               <dl>
                 <dt className="text-left">{item?.name}</dt>
-                <dd className="whitespace-pre text-right">
+                <dd className="whitespace-pre text-right !text-lg">
                   {(Array.isArray(item?.value) ? item.value.join('\n') : item?.value) ||
-                    (item.name == 'Terminal' ? scenarioInfo?.terminal : '')}
+                    (item.name == 'Terminal' ? scenarioTerminal : '')}
                 </dd>
               </dl>
             </a>
@@ -86,11 +105,11 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
         </div>
       ) : (
         <div className="overview-wrap mt-[10px]">
-          {OverviewTable.map((item) => (
-            <a key={item.key} href="#" className="overview-item">
+          {OVERVIEW_CARDS.map((card) => (
+            <a key={card.key} href="#" className="overview-item">
               <dl>
-                <dt className="text-left">{item.text}</dt>
-                <dd className="text-right">{overview?.[item.key] || '-'}</dd>
+                <dt className="text-left">{card.text}</dt>
+                <dd className="text-right">{scenarioMatrix[card.key] || '-'}</dd>
               </dl>
             </a>
           ))}
@@ -113,6 +132,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
             {history?.map((item, index) => {
               const checkpoint = dayjs(item.checkpoint);
               const relTime = timeToRelativeTime(item.checkpoint);
+
               return index >= historyPageData.start && index < historyPageData.end ? (
                 <tr key={index} className="border-b">
                   <td className="">
@@ -124,15 +144,15 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                     <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>{item.simulation}</span>
                   </td>
                   <td className="">
-                    <Input
+                    {/* <Input
                       type="text"
                       placeholder=""
                       value={history[index].memo}
                       className="!border-none bg-transparent !text-default-700"
                       onChange={(e) => handleMemoChange(index, e.target.value)}
                       onBlur={() => handleUpdateMemo()}
-                      // disabled={true}
-                    />
+                      disabled={true}
+                    /> */}
                   </td>
                   <td className="text-center">
                     <span className={`badge error ${item.error_count > 0 ? 'yellow' : 'green'}`}>
@@ -185,7 +205,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setTabIndex(tabIndex + 1)}
+          onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Flight Schedule</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

@@ -1,30 +1,118 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
-import { ConditionData } from '@/types/conditions';
-import { ChartData, PassengerPatternState, PassengerSchedule } from '@/types/simulations';
-import { getPassengerSchedules } from '@/services/simulations';
-import { BarColors, LineColors } from '@/stores/simulation';
+import { Filter, FilterOptions, NormalDistributionParam, Option } from '@/types/scenarios';
+import { PassengerSchedulesParams, getPassengerSchedules } from '@/services/simulations';
+import { LineColors } from '@/stores/simulation';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
-import Tooltip from '@/components/Tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { numberWithCommas } from '@/lib/utils';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
-interface TabPassengerScheduleProps {
-  simulationId: string;
-  visible: boolean;
+interface PrioritiesProps {
+  id: number;
+  conditions: Filter[];
+  mean: number;
+  stddev: number;
+  filterOptions: FilterOptions | null;
+  className?: string;
+  addCondition: boolean;
+  onAddCondition?: (newFilter: Filter) => void;
+  onChange?: (index: number, newPriority: NormalDistributionParam) => void;
+  onDelete?: (index: number) => void;
+  onFilterChange?: (payload: { what: keyof Filter; states: Option[]; index?: number }) => void;
+}
+
+function Priorities({
+  className,
+  id,
+  filterOptions,
+  conditions,
+  mean,
+  stddev,
+  addCondition,
+  onAddCondition,
+  onChange,
+  onDelete,
+  onFilterChange,
+}: PrioritiesProps) {
+  if (!filterOptions) {
+    return (
+      <div className="mt-5 flex items-center justify-center rounded-lg border border-gray-300 p-8">
+        <p className="text-rose-500">⚠️ First, you need to load the Flight Schedule to use this feature.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
+      <Conditions
+        addCondition={addCondition}
+        conditions={conditions}
+        logicItems={filterOptions.logicItems}
+        criteriaItems={filterOptions.criteriaItems}
+        operatorItems={filterOptions.operatorItems}
+        valueItems={filterOptions.valueItems}
+        onAddCondition={(newFilter) => {
+          if (onAddCondition) onAddCondition(newFilter);
+        }}
+        onChange={(payload) => {
+          if (onFilterChange) onFilterChange(payload);
+        }}
+        onDelete={(index) => {
+          if (onDelete) onDelete(index);
+        }}
+      />
+
+      <div className="p-[20px]">
+        <div className="flex flex-col gap-[10px]">
+          <p className="font-semibold text-default-900">Passengers with above characteristics arrive at the airport</p>
+
+          <div className="flex items-center gap-[10px] text-xl">
+            <span>normally distributed with mean</span>
+            <input
+              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
+              type="number"
+              value={mean}
+              onChange={(e) => {
+                if (onChange) onChange(id, { conditions, mean: Number(e.target.value), stddev });
+              }}
+              onBlur={(e) => {
+                const val = Math.max(Math.min(Number(e.target.value), 999), 20);
+                if (onChange) onChange(id, { conditions, mean: val, stddev });
+              }}
+            />
+            <span>standard deviation</span>
+            <input
+              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
+              type="number"
+              value={stddev}
+              onChange={(e) => {
+                if (onChange) onChange(id, { conditions, mean, stddev: Number(e.target.value) });
+              }}
+              onBlur={(e) => {
+                const val = Math.max(Math.min(Number(e.target.value), 500), 1);
+                if (onChange) onChange(id, { conditions, mean, stddev: val });
+              }}
+            />
+            <span>minutes</span>
+          </div>
+          <p className="text-xl">before the flight departure.</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function gaussian(x: number, mean: number, stddev: number) {
@@ -44,308 +132,28 @@ function generateNormalDistributionLineChart(mean: number, stddev: number, start
   return { x: xValues, y: yValues };
 }
 
-const DropdownLists = {
-  Mean: Array(101)
-    .fill(0)
-    .map((_, index) => {
-      const id = String(50 + index);
-      return { id, text: id };
-    }),
-  stddev: Array(61)
-    .fill(0)
-    .map((_, index) => {
-      const id = String(30 + index);
-      return { id, text: id };
-    }),
-};
-
-let _priorityIdCurrent = 0;
-
-interface PrioritiesProps {
-  className?: string;
-  conditions: ConditionData;
-  defaultValues?: PassengerPatternState;
-  onChange?: (state: PassengerPatternState) => void;
-}
-
-function Priorities({ className, conditions, defaultValues, onChange }: PrioritiesProps) {
-  const [id] = useState(++_priorityIdCurrent);
-
-  const [states, _setStates] = useState<PassengerPatternState | undefined>(defaultValues);
-
-  const setStates = (newStates: PassengerPatternState) => {
-    _setStates(newStates);
-    if (onChange) onChange(newStates);
+function getPassengerDistributionChartData(passengerPatterns: NormalDistributionParam[], lineColors: string[]) {
+  // x축 범위 계산 (모든 패턴의 평균±4*표준편차 중 최소/최대)
+  const xRange = {
+    min: Number(passengerPatterns[0]?.mean) * -1,
+    max: Number(passengerPatterns[0]?.mean) * -1,
   };
-
-  useEffect(() => {
-    if (!defaultValues)
-      setStates({
-        conditions: undefined,
-        mean: DropdownLists.Mean[0].id,
-        stddev: DropdownLists.stddev[0].id,
-      });
-  }, []);
-
-  return (
-    <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
-      <Conditions
-        className=""
-        conditions={states?.conditions || []}
-        logicItems={conditions.logicItems}
-        criteriaItems={conditions.criteriaItems}
-        operatorItems={conditions.operatorItems}
-        valueItems={conditions.valueItems}
-        onChange={(conditions) => setStates({ ...states, conditions })}
-      />
-
-      <div className="p-[20px]">
-        <div className="flex flex-col gap-[10px]">
-          <p className="font-semibold text-default-900">Passengers with above characteristics arrive at the airport</p>
-
-          <div className="flex items-center gap-[10px] text-xl">
-            normally distributed with mean
-            <input
-              id={`priority-mean-${id}`}
-              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
-              type="number"
-              defaultValue={states?.mean}
-              onBlur={(e) => {
-                const val = Math.max(Math.min(Number(e.target.value), 999), 20);
-                setStates({ ...states, mean: String(val) });
-                const element = document.getElementById(`priority-mean-${id}`) as HTMLInputElement;
-                if (element) element.value = String(val);
-              }}
-            />
-            standard deviation
-            <input
-              id={`priority-stddev-${id}`}
-              className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
-              type="number"
-              defaultValue={states?.stddev}
-              onBlur={(e) => {
-                const val = Math.max(Math.min(Number(e.target.value), 500), 1);
-                setStates({ ...states, stddev: String(val) });
-                const element = document.getElementById(`priority-stddev-${id}`) as HTMLInputElement;
-                if (element) element.value = String(val);
-              }}
-            />
-            minutes
-          </div>
-
-          <p className="text-xl">before the flight departure.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function TabPassengerSchedule({ simulationId, visible }: TabPassengerScheduleProps) {
-  const {
-    setPassengerSchedule,
-    flight_sch,
-    passenger_sch,
-    tabIndex,
-    setTabIndex,
-    priorities,
-    flightScheduleTime,
-    setFlightScheduleTime,
-    setAvailableTabIndex,
-  } = useScenarioStore(
-    useShallow((state) => ({
-      setPassengerSchedule: state.setPassengerSchedule,
-      flight_sch: state.flight_sch,
-      passenger_sch: state.passenger_sch,
-      tabIndex: state.tabIndex,
-      setTabIndex: state.setTabIndex,
-      priorities: state.priorities,
-      flightScheduleTime: state.flightScheduleTime,
-      setFlightScheduleTime: state.setFlightScheduleTime,
-      setAvailableTabIndex: state.setAvailableTabIndex,
-    }))
-  );
-
-  const refFlightScheduleTime = useRef(Array(1).fill(0)).current;
-
-  const [chartData, setChartData] = useState<{
-    total: number;
-    total_sub_obj: Array<{
-      title: string;
-      value: string;
-      unit?: string;
-    }>;
-    x: string[];
-    data: ChartData;
-  }>();
-  const [selColorCriteria, setSelColorCriteria] = useState('Airline');
-  const [addPrioritiesVisible, setAddPrioritiesVisible] = useState(false);
-  const [selPriorities, setSelPriorities] = useState<PassengerPatternState[]>();
-  const [otherPassengerState, setOtherPassengerState] = useState<PassengerPatternState>({
-    mean: DropdownLists.Mean[0].id,
-    stddev: DropdownLists.stddev[0].id,
+  passengerPatterns.forEach((pattern) => {
+    const mean = Number(pattern.mean) * -1;
+    const stddev = Number(pattern.stddev);
+    const candidateMin = mean - stddev * 4;
+    const candidateMax = Math.max(mean + stddev * 4, 5);
+    if (candidateMin < xRange.min) xRange.min = candidateMin;
+    if (candidateMax > xRange.max) xRange.max = candidateMax;
   });
-  const [loadingPassengerSchedules, setLoadingPassengerSchedules] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [timestamp, setTimestamp] = useState(Date.now());
-
-  const [loaded, setLoaded] = useState(false);
-
-  // const saveSnapshot = (params?: Partial<PassengerSchedule>, snapshot: any = {}) => {
-  //   const newSnapshot: any = {
-  //     chartData,
-  //     selColorCriteria,
-  //     addPrioritiesVisible,
-  //     selPriorities,
-  //     otherPassengerState,
-  //     ...snapshot,
-  //   };
-  //   setPassengerSchedule({ ...passenger_sch, ...(params || {}), snapshot: newSnapshot });
-  // };
-
-  const restoreSnapshot = () => {
-    if (passenger_sch?.snapshot) {
-      const snapshot = passenger_sch?.snapshot;
-      if (snapshot.params) setPassengerSchedule({ ...passenger_sch, params: snapshot.params });
-      if (snapshot.chartData) setChartData(snapshot.chartData);
-      if (snapshot.selColorCriteria) setSelColorCriteria(snapshot.selColorCriteria);
-      if (snapshot.addPrioritiesVisible) setAddPrioritiesVisible(snapshot.addPrioritiesVisible);
-      if (snapshot.selPriorities) setSelPriorities(snapshot.selPriorities);
-      if (snapshot.otherPassengerState) setOtherPassengerState(snapshot.otherPassengerState);
-      setTimestamp(Date.now());
-    }
-  };
-
-  useEffect(() => {
-    if (visible && !loaded) {
-      if (!flightScheduleTime && passenger_sch?.snapshot) {
-        restoreSnapshot();
-      }
-      setLoaded(true);
-    } else if (visible && loaded && refFlightScheduleTime[0] != flightScheduleTime) {
-      setChartData(undefined);
-    }
-  }, [visible]);
-
-  const chartDataCurrent = chartData?.data?.[selColorCriteria] || [];
-
-  const barColorsCurrent = !chartDataCurrent
-    ? []
-    : String(chartDataCurrent?.length) in BarColors
-      ? BarColors[String(chartDataCurrent?.length)]
-      : BarColors.DEFAULT;
-
-  const conditions = priorities;
-
-  const prioritiesItems = selPriorities && selPriorities?.length > 0 ? selPriorities : [undefined];
-
-  const loadPassengerSchedules = () => {
-    setLoadingPassengerSchedules(true);
-
-    // setAvailableTabIndex(tabIndex);
-
-    const params = {
-      flight_schedule: flight_sch?.params,
-      destribution_conditions: [
-        ...(addPrioritiesVisible
-          ? prioritiesItems?.map((item, index) => {
-              return { index, conditions: item.conditions, mean: item.mean, standard_deviation: item.stddev };
-            }) || []
-          : []),
-        {
-          index: addPrioritiesVisible ? prioritiesItems.length : 0,
-          mean: otherPassengerState.mean,
-          standard_deviation: otherPassengerState.stddev,
-          conditions: [],
-        },
-      ],
-    };
-
-    getPassengerSchedules(simulationId, params)
-      .then(({ data }) => {
-        const passengerSchedule: Partial<PassengerSchedule> = { params };
-
-        const snapshotData: any = {};
-
-        if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
-          for (const criteriaCur in data?.bar_chart_y_data) {
-            const criteriaDataCur = data?.bar_chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
-            const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
-            for (const itemCur of criteriaDataCur) {
-              itemCur.acc_y = Array(itemCur.y.length).fill(0);
-              for (let i = 0; i < itemCur.y.length; i++) {
-                acc_y[i] += itemCur.y[i];
-                itemCur.acc_y[i] = Number(acc_y[i]);
-              }
-            }
-          }
-          const newChartData = {
-            total: data?.total,
-            total_sub_obj: data?.total_sub_obj,
-            x: data?.bar_chart_x_data,
-            data: data?.bar_chart_y_data,
-          };
-          setChartData(newChartData);
-          snapshotData.chartData = newChartData;
-        }
-
-        refFlightScheduleTime[0] = Date.now();
-        setFlightScheduleTime(refFlightScheduleTime[0]);
-        setLoadingPassengerSchedules(false);
-        // saveSnapshot(passengerSchedule, snapshotData);
-      })
-
-      .catch(() => {
-        setLoadError(true);
-        setLoadingPassengerSchedules(false);
-      });
-  };
-
-  useEffect(() => {
-    if (visible && !loaded && passenger_sch?.params) {
-      setLoaded(true);
-      const conditions = passenger_sch?.params?.destribution_conditions;
-      if (conditions.length > 1) {
-        const priorities: PassengerPatternState[] = [];
-        for (let i = 0; i < conditions.length - 1; i++) {
-          const itemCur = conditions[i];
-          priorities.push({
-            mean: itemCur.mean,
-            stddev: itemCur.standard_deviation,
-            conditions: itemCur.conditions,
-          });
-        }
-        setSelPriorities(priorities);
-        setAddPrioritiesVisible(true);
-      }
-      const otherCondition = conditions[conditions.length - 1];
-      setOtherPassengerState({
-        mean: otherCondition.mean,
-        stddev: otherCondition.standard_deviation,
-      });
-    }
-  }, [visible]);
 
   const distributionData: Plotly.Data[] = [];
-
   const vlineData: Array<{ x: number; minY: number; maxY: number; color: string }> = [];
 
-  const minMaxMean = { min: Number(otherPassengerState.mean) * -1, max: Number(otherPassengerState.mean) * -1 };
-
-  const prioritiesList = addPrioritiesVisible ? [...prioritiesItems, otherPassengerState] : [otherPassengerState];
-
-  for (const itemCur of prioritiesList) {
-    const minCur = Number(itemCur?.mean) * -1 - Number(itemCur?.stddev) * 4;
-    const maxCur = Math.max(Number(itemCur?.mean) * -1 + Number(itemCur?.stddev) * 4, 5);
-    if (minCur < minMaxMean.min) minMaxMean.min = minCur;
-    if (maxCur > minMaxMean.max) minMaxMean.max = maxCur;
-  }
-
-  prioritiesList.map((item, index) => {
-    if (!item) return null;
-    const mean = Number(item?.mean) * -1;
-    const stddev = Number(item?.stddev);
-    const start = minMaxMean.min;
-    const end = minMaxMean.max;
+  passengerPatterns.forEach((pattern, patternIdx) => {
+    const mean = Number(pattern.mean) * -1;
+    const stddev = Number(pattern.stddev);
+    const { min: start, max: end } = xRange;
     const step = 0.1;
 
     const { x, y } = generateNormalDistributionLineChart(mean, stddev, start, end, step);
@@ -353,21 +161,22 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     const minY = Math.min(...y);
     const maxY = Math.max(...y);
 
-    const lineColor = index < LineColors.length ? LineColors[index] : 'blue';
+    const lineColor = patternIdx < lineColors.length ? lineColors[patternIdx] : 'blue';
 
     vlineData.push({ x: mean - stddev, minY, maxY, color: lineColor });
     vlineData.push({ x: mean + stddev, minY, maxY, color: lineColor });
 
     distributionData.push({
-      x: x,
-      y: y,
+      x,
+      y,
       type: 'scatter',
       mode: 'lines',
-      name: `Condition${index + 1}`,
+      name: `Condition${patternIdx + 1}`,
       line: { color: lineColor, width: 2 },
-    });
+    } as Plotly.Data);
   });
 
+  // 기준점(항공편 출발 시각) 마커 추가
   distributionData.push({
     name: 'flight',
     x: [0],
@@ -375,7 +184,137 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     mode: 'markers',
     type: 'scatter',
     marker: { symbol: 'circle', size: 16, color: '#53389e' },
-  });
+  } as Plotly.Data);
+
+  return { distributionData, vlineData };
+}
+
+interface TabPassengerScheduleProps {
+  simulationId: string;
+  visible: boolean;
+}
+
+export default function TabPassengerSchedule({ simulationId, visible }: TabPassengerScheduleProps) {
+  const {
+    currentScenarioTab,
+    filterOptions,
+    isPriorityFilterEnabled,
+    passengerScheduleChartData,
+    passengerScheduleColorCriteria,
+    selectedFilters,
+    selectedPriorities,
+    setCurrentScenarioTab,
+    setIsPriorityFilterEnabled,
+    setPassengerScheduleChartData,
+    setPassengerScheduleColorCriteria,
+    setSelectedPriorities,
+    setSelectedPriority,
+    targetAirport,
+    targetDate,
+  } = useScenarioStore(
+    useShallow((state) => ({
+      currentScenarioTab: state.scenarioProfile.currentScenarioTab,
+      filterOptions: state.passengerSchedule.filterOptions,
+      isPriorityFilterEnabled: state.passengerSchedule.isFilterEnabled,
+      passengerScheduleChartData: state.passengerSchedule.chartData,
+      passengerScheduleColorCriteria: state.passengerSchedule.selectedCriteria,
+      selectedFilters: state.flightSchedule.selectedFilters,
+      selectedPriorities: state.passengerSchedule.normalDistributionParams,
+      setCurrentScenarioTab: state.scenarioProfile.actions.setCurrentScenarioTab,
+      setIsPriorityFilterEnabled: state.passengerSchedule.actions.setIsFilterEnabled,
+      setPassengerScheduleChartData: state.passengerSchedule.actions.setChartData,
+      setPassengerScheduleColorCriteria: state.passengerSchedule.actions.setSelectedCriteria,
+      setSelectedPriorities: state.passengerSchedule.actions.setNormalDistributionParams,
+      setSelectedPriority: state.passengerSchedule.actions.setNormalDistributionParam,
+      targetAirport: state.flightSchedule.targetAirport,
+      targetDate: state.flightSchedule.targetDate,
+    }))
+  );
+
+  const [loadingPassengerSchedules, setLoadingPassengerSchedules] = useState(false);
+  const [isLoadError, setIsLoadError] = useState(false);
+
+  const [distributionData, setDistributionData] = useState<Plotly.Data[]>([]);
+  const [vlineData, setVlineData] = useState<
+    {
+      x: number;
+      minY: number;
+      maxY: number;
+      color: string;
+    }[]
+  >([]);
+
+  // useEffect(() => {
+  //   if (isPriorityFilterEnabled && selectedPriorities.length === 1) {
+  //     setSelectedPriorities([{ conditions: [], mean: 120, stddev: 30 }, ...selectedPriorities]);
+  //   }
+  // }, [isPriorityFilterEnabled, selectedPriorities, setSelectedPriorities]);
+
+  const loadPassengerSchedules = async () => {
+    // setAvailableTabIndex(currentScenarioTab);
+
+    try {
+      setLoadingPassengerSchedules(true);
+
+      const params: PassengerSchedulesParams = {
+        flight_schedule: { airport: targetAirport.iata, condition: selectedFilters, date: targetDate },
+        destribution_conditions: isPriorityFilterEnabled
+          ? selectedPriorities.map(({ conditions, mean, stddev }, index) => ({
+              index,
+              conditions,
+              mean,
+              standard_deviation: stddev,
+            }))
+          : [
+              {
+                index: 0,
+                conditions: selectedPriorities[selectedPriorities.length - 1].conditions,
+                mean: selectedPriorities[selectedPriorities.length - 1].mean,
+                standard_deviation: selectedPriorities[selectedPriorities.length - 1].stddev,
+              },
+            ],
+      };
+
+      const { data } = await getPassengerSchedules(simulationId, params);
+
+      if (data?.bar_chart_x_data && data?.bar_chart_y_data) {
+        for (const criteriaCur in data?.bar_chart_y_data) {
+          const criteriaDataCur = data?.bar_chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
+
+          const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
+
+          for (const itemCur of criteriaDataCur) {
+            itemCur.acc_y = Array(itemCur.y.length).fill(0);
+
+            for (let i = 0; i < itemCur.y.length; i++) {
+              acc_y[i] += itemCur.y[i];
+              itemCur.acc_y[i] = Number(acc_y[i]);
+            }
+          }
+        }
+        const newChartData = {
+          total: data?.total,
+          total_sub_obj: data?.total_sub_obj,
+          x: data?.bar_chart_x_data,
+          data: data?.bar_chart_y_data,
+        };
+        setPassengerScheduleChartData(newChartData);
+
+        const newColorCriterias = Object.keys(newChartData?.data);
+        setPassengerScheduleColorCriteria(newColorCriterias[0]);
+      }
+
+      // TODO: 아래 코드는 추후에 함수를 분리하자.
+      const { distributionData, vlineData } = getPassengerDistributionChartData(selectedPriorities, LineColors);
+      setDistributionData(distributionData);
+      setVlineData(vlineData);
+    } catch (error) {
+      console.error(error);
+      setIsLoadError(true);
+    } finally {
+      setLoadingPassengerSchedules(false);
+    }
+  };
 
   return !visible ? null : (
     <div>
@@ -383,103 +322,162 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
       <p className="mt-[30px] text-[40px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
 
+      {/* ========== 데이터 필터링 섹션 ========== */}
       <div className="mt-[20px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"
-          label=""
-          checked={addPrioritiesVisible}
-          onChange={() => {
-            setChartData(undefined);
-            setAddPrioritiesVisible(!addPrioritiesVisible);
-            setAvailableTabIndex(tabIndex);
-          }}
           className="checkbox-toggle"
+          label=""
+          checked={isPriorityFilterEnabled}
+          onChange={() => setIsPriorityFilterEnabled(!isPriorityFilterEnabled)}
         />
         <dl>
-          <dt className="font-semibold">Add Conditions</dt>
+          <dt className="font-semibold">Add Priorities</dt>
           <dd className="text-sm font-medium text-default-400">
-            Enable the option to set conditions for filtering passenger data.
+            Enable the option to set priorities for filtering passenger data.
           </dd>
         </dl>
       </div>
 
-      {conditions && addPrioritiesVisible ? (
-        <>
-          {prioritiesItems.map((item, index) => (
+      {/* ========== 필터링 IF 섹션 ========== */}
+      {isPriorityFilterEnabled && selectedPriorities.length > 1
+        ? selectedPriorities.slice(0, -1).map((item, procIndex) => (
             <Priorities
-              key={index}
-              conditions={conditions}
-              defaultValues={item}
-              onChange={(states) => {
-                setSelPriorities([...prioritiesItems.map((rowCur, idx) => (index == idx ? states : rowCur))]);
+              key={procIndex}
+              id={procIndex}
+              filterOptions={filterOptions}
+              conditions={item.conditions}
+              mean={item.mean}
+              stddev={item.stddev}
+              addCondition={procIndex < selectedPriorities.length - 1}
+              onAddCondition={(newFilter) => {
+                setSelectedPriority(procIndex, {
+                  ...selectedPriorities[procIndex],
+                  conditions: [...selectedPriorities[procIndex].conditions, newFilter],
+                });
+              }}
+              onChange={setSelectedPriority}
+              onDelete={(filterIndex) => {
+                if (selectedPriorities[procIndex].conditions.length <= 1) {
+                  setSelectedPriorities(selectedPriorities.filter((_, i) => i !== procIndex));
+                  setIsPriorityFilterEnabled(false);
+                  return;
+                }
+
+                setSelectedPriority(procIndex, {
+                  ...selectedPriorities[procIndex],
+                  conditions: selectedPriorities[procIndex].conditions.filter((_, i) => i !== filterIndex),
+                });
+              }}
+              onFilterChange={({ states, what, index }) => {
+                if (index === undefined) return;
+
+                const updatedConditions = selectedPriorities[procIndex].conditions.map((filter, i) => {
+                  if (i !== index) return filter;
+
+                  if (what === 'criteria') {
+                    const newCriteria = states[0].id;
+                    const defaultOperator = filterOptions?.operatorItems[newCriteria][0].id || '';
+
+                    return { ...filter, criteria: newCriteria, operator: defaultOperator, value: [] };
+                  }
+
+                  if (what === 'value') {
+                    return { ...filter, value: states.map((s) => s.id) };
+                  }
+
+                  return filter;
+                });
+
+                setSelectedPriority(procIndex, {
+                  ...selectedPriorities[procIndex],
+                  conditions: updatedConditions,
+                });
               }}
             />
-          ))}
-          <div className="mt-[20px] flex items-center justify-center rounded-md border border-default-200 bg-default-100">
-            <button
-              className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
-              onClick={() => {
-                setSelPriorities([...prioritiesItems, undefined] as PassengerPatternState[]);
-              }}
-            >
-              + Add ELSE IF
-            </button>
-          </div>
-        </>
+          ))
+        : null}
+
+      {/* ========== 필터링 ELSE IF 섹션 ========== */}
+      {isPriorityFilterEnabled ? (
+        <div className="mt-[20px] flex items-center justify-center rounded-md border border-default-200 bg-default-100">
+          <button
+            className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
+            onClick={() => {
+              const newPriorty = { conditions: [], mean: 120, stddev: 30 };
+              // ‼️ 아래 코드의 순서가 굉장히 중요하다. (변경 X)
+              setSelectedPriorities([
+                ...selectedPriorities.slice(0, -1),
+                newPriorty,
+                selectedPriorities[selectedPriorities.length - 1],
+              ]);
+            }}
+          >
+            + Add ELSE IF
+          </button>
+        </div>
       ) : null}
 
+      {/* ========== 필터링 ELSE 섹션 ========== */}
       <div className="schedule-block mt-[20px]">
-        {conditions && addPrioritiesVisible ? (
-          <div className="schedule-top">
-            <div className="select-grid">
-              <div className="select-list">
-                <dl>
-                  <dt>
-                    Logic <span className="text-accent-600">*</span>
-                    <Tooltip title={'test'} text={'test'} />
-                  </dt>
-                  <dd className="pl-[10px]">
-                    <Dropdown items={[{ id: 'ELSE', text: 'ELSE' }]} defaultId={'ELSE'} />
-                  </dd>
-                </dl>
+        {isPriorityFilterEnabled ? (
+          <>
+            <div className="schedule-top">
+              <div className="select-grid">
+                <div className="select-list">
+                  <dl>
+                    <dt>
+                      Logic <span className="text-accent-600">*</span>
+                      {/* <Tooltip title={'test'} text={'test'} /> */}
+                    </dt>
+                    <dd className="pl-[10px]">
+                      <Dropdown items={[{ id: 'ELSE', text: 'ELSE' }]} defaultId={'ELSE'} />
+                    </dd>
+                  </dl>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         ) : null}
 
         <div className="schedule-bottom">
-          <div className="flex flex-col gap-[10px]" key={timestamp}>
-            <p className="font-semibold text-default-900">Other passengers arrive at the airport</p>
+          <div className="flex flex-col gap-[10px]">
+            <p className="font-semibold text-default-900">
+              Passengers with above characteristics arrive at the airport
+            </p>
             <div className="flex items-center gap-[10px] text-xl">
-              normally distributed with mean
+              <span>normally distributed with mean</span>
               <input
-                id="other-passenger-mean"
                 className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
                 type="number"
-                defaultValue={otherPassengerState.mean}
+                value={selectedPriorities[selectedPriorities.length - 1]?.mean}
+                onChange={(e) => {
+                  const prev = selectedPriorities[selectedPriorities.length - 1];
+                  setSelectedPriority(selectedPriorities.length - 1, { ...prev, mean: Number(e.target.value) });
+                }}
                 onBlur={(e) => {
+                  const prev = selectedPriorities[selectedPriorities.length - 1];
                   const val = Math.max(Math.min(Number(e.target.value), 999), 20);
-                  setOtherPassengerState({ ...otherPassengerState, mean: String(val) });
-                  const element = document.getElementById('other-passenger-mean') as HTMLInputElement;
-                  if (element) element.value = String(val);
+                  setSelectedPriority(selectedPriorities.length - 1, { ...prev, mean: val });
                 }}
               />
-              standard deviation
+              <span>standard deviation</span>
               <input
-                id="other-passenger-stddev"
                 className="text-md w-[100px] rounded-full border border-gray-500 px-[14px] py-[8px]"
                 type="number"
-                defaultValue={otherPassengerState.stddev}
+                value={selectedPriorities[selectedPriorities.length - 1]?.stddev}
+                onChange={(e) => {
+                  const prev = selectedPriorities[selectedPriorities.length - 1];
+                  setSelectedPriority(selectedPriorities.length - 1, { ...prev, stddev: Number(e.target.value) });
+                }}
                 onBlur={(e) => {
+                  const prev = selectedPriorities[selectedPriorities.length - 1];
                   const val = Math.max(Math.min(Number(e.target.value), 500), 1);
-                  setOtherPassengerState({ ...otherPassengerState, stddev: String(val) });
-                  const element = document.getElementById('other-passenger-stddev') as HTMLInputElement;
-                  if (element) element.value = String(val);
+                  setSelectedPriority(selectedPriorities.length - 1, { ...prev, stddev: val });
                 }}
               />
-              minutes
+              <span>minutes</span>
             </div>
-
             <p className="text-xl">before the flight departure.</p>
           </div>
         </div>
@@ -498,13 +496,24 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
         </div>
-      ) : chartData ? (
+      ) : isLoadError ? (
+        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
+          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+          <p className="title-sm" style={{ color: '#30374F' }}>
+            Unable to load data
+          </p>
+        </div>
+      ) : passengerScheduleChartData && passengerScheduleChartData.total > 0 ? (
         <>
           <p className="mt-[20px] text-[40px] text-xl font-semibold text-default-800">Check Generated Passenger Data</p>
+
           <dl className="mt-[25px]">
-            <dt className="text-[40px] text-xl font-semibold">Total: {numberWithCommas(chartData?.total)} Pax</dt>
+            <dt className="text-[40px] text-xl font-semibold">
+              Total: {numberWithCommas(passengerScheduleChartData?.total)} Pax
+            </dt>
+
             <dd className="text-[40px] text-xl font-semibold">
-              {chartData?.total_sub_obj
+              {passengerScheduleChartData?.total_sub_obj
                 ?.map((textItem, index) => {
                   return (
                     <React.Fragment key={`value_${index}`}>
@@ -517,14 +526,16 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                 .map((textcompo, index) => {
                   return (
                     <React.Fragment key={`compo_${index}`}>
-                      {index > 0 ? ' × ' : ''}
+                      {index > 0 ? ' ｘ ' : ''}
                       {textcompo}
                     </React.Fragment>
                   );
                 })}
             </dd>
           </dl>
-          <div className="mt-[10px] flex h-[210px] items-center justify-center rounded-md bg-white">
+
+          {/* =============== 여객 정규분포 차트 =============== */}
+          <div className="mt-[10px] rounded-md bg-white">
             <LineChart
               chartData={distributionData}
               chartLayout={{
@@ -547,6 +558,8 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
               config={{ displayModeBar: false }}
             />
           </div>
+
+          {/* =============== 여객 SHOW-UP 차트 =============== */}
           <div className="mt-[50px]">
             <div className="flex items-center justify-end pl-[35px]">
               <div className="flex flex-col">
@@ -556,19 +569,19 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                       <Button
                         className="btn-lg btn-default text-sm"
                         icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                        text={`Color by : ${selColorCriteria}`}
+                        text={`Color by : ${passengerScheduleColorCriteria}`}
                         onClick={() => {}}
                       />
                     </div>
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent className="cursor-pointer bg-white">
-                    {Object.keys(chartData?.data).map((text, index) => (
+                    {Object.keys(passengerScheduleChartData?.data).map((text, index) => (
                       <div key={index} className="flex flex-col">
                         <DropdownMenuItem
                           className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
                           style={{ width: 143 }}
-                          onClick={() => setSelColorCriteria(text)}
+                          onClick={() => setPassengerScheduleColorCriteria(text)}
                         >
                           <span className="ml-[10px] text-base font-medium text-gray-800">{text}</span>
                         </DropdownMenuItem>
@@ -579,25 +592,23 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
               </div>
             </div>
 
-            <div className="mt-[10px] flex items-center justify-center rounded-md bg-white">
+            <div className="mt-[10px] rounded-md bg-white">
               <BarChart
-                chartData={chartDataCurrent
-                  // FIXME: Read-only
-                  // .sort((a, b) => b.order - a.order)
+                chartData={[...passengerScheduleChartData?.data?.[passengerScheduleColorCriteria]]
+                  .sort((a, b) => b.order - a.order)
                   .map((item, index) => {
                     return {
-                      x: chartData?.x,
+                      x: passengerScheduleChartData?.x,
                       y: item.y,
                       name: item.name,
                       type: 'bar',
-                      marker: { color: barColorsCurrent[index], opacity: 1, cornerradius: 7 },
+                      // marker: { color: barColorsCurrent[index], opacity: 1, cornerradius: 7 },
                       hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                     };
                   })}
                 chartLayout={{
-                  height: 390,
-                  margin: { l: 40, r: 10, t: 0, b: 30 },
                   barmode: 'stack',
+                  margin: { l: 40, r: 10, t: 0, b: 30 },
                   legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                 }}
@@ -606,22 +617,13 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             </div>
           </div>
         </>
-      ) : loadError ? (
-        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
+      ) : null}
 
-          <p className="title-sm" style={{ color: '#30374F' }}>
-            Unable to load data
-          </p>
-        </div>
-      ) : (
-        <div className="h-[10px]" />
-      )}
-
+      {/* =============== 탭 이동 버튼 =============== */}
       <div className="mt-[30px] flex justify-between">
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setTabIndex(tabIndex - 1)}
+          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
         >
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
           <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
@@ -629,8 +631,8 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={!chartData}
-          onClick={() => setTabIndex(tabIndex + 1)}
+          disabled={!passengerScheduleChartData}
+          onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Processing Procedures</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

@@ -1,5 +1,6 @@
 import { ConditionParams, ConditionState } from '@/types/conditions';
 import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
+import { Procedure } from './scenarios';
 
 interface ScenarioData {
   created_at: string;
@@ -26,7 +27,7 @@ interface ScenariosDataResponse {
 
 type ScenarioOverview = {
   matric: Overview[];
-  snapshot: any;
+  snapshot: unknown;
 };
 
 interface ScenarioHistory {
@@ -64,8 +65,8 @@ interface ScenarioMetadataResponse {
 }
 
 interface FlightSchedule {
-  params: any;
-  snapshot: any;
+  params: unknown;
+  snapshot: unknown;
 }
 
 interface PassengerPatternState {
@@ -75,8 +76,8 @@ interface PassengerPatternState {
 }
 
 interface PassengerSchedule {
-  params: any;
-  snapshot: any;
+  params: unknown;
+  snapshot: unknown;
 }
 
 interface ProcessingProcedureData {
@@ -94,7 +95,7 @@ interface ProcessingProcedureState extends ProcessingProcedureData {
 interface ProcessingProcedures {
   data_connection_criteria: string;
   procedures: ProcessingProcedureData[];
-  snapshot: any;
+  snapshot: unknown;
 }
 
 interface ChartData {
@@ -117,7 +118,7 @@ interface FlightSchedulesResponse {
 interface PassengerScheduleResponse {
   bar_chart_x_data: string[];
   bar_chart_y_data: ChartData;
-  dst_chart: any;
+  dst_chart: unknown;
   total: number;
   total_sub_obj: Array<{
     title: string;
@@ -127,13 +128,13 @@ interface PassengerScheduleResponse {
 }
 
 interface FacilityConnection {
-  params: any;
-  snapshot: any;
+  params: unknown;
+  snapshot: unknown;
 }
 
 interface FacilityInformation {
-  params: any;
-  snapshot: any;
+  params: unknown;
+  snapshot: unknown;
 }
 
 interface FacilityConnectionResponse {
@@ -146,7 +147,7 @@ interface FacilityInfoLineChartResponse {
 }
 
 interface ProcessingProceduresResponse {
-  process: ProcessingProcedureData[];
+  process: Procedure[];
 }
 
 interface ConditionTableData {
@@ -165,7 +166,12 @@ interface FacilitiesConnectionState {
 
 interface Capacity {
   bar_chart_x_data: string[];
-  bar_chart_y_data: { [name: string]: { total: number; y: number[] } };
+  bar_chart_y_data: {
+    [name: string]: {
+      total: number;
+      y: number[];
+    };
+  };
 }
 
 interface Capacities {

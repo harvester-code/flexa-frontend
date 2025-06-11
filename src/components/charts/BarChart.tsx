@@ -12,7 +12,11 @@ function BarChart({ chartData, chartLayout, config }: BarChartProps) {
 
   useEffect(() => {
     if (chartRef.current) {
-      Plotly.newPlot(chartRef.current, chartData, chartLayout, config);
+      Plotly.newPlot(chartRef.current, chartData, chartLayout, {
+        autosizable: true,
+        responsive: true,
+        ...config,
+      });
     }
   }, [chartData, chartLayout, config]);
 

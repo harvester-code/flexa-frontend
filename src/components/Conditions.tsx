@@ -2,7 +2,7 @@
 
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ConditionData, ConditionState, DropdownItem } from '@/types/conditions';
+import { Filter, FilterOptions, Option } from '@/types/scenarios';
 import Button from '@/components/Button';
 import Tooltip from '@/components/Tooltip';
 import {
@@ -17,50 +17,27 @@ import { useResize } from '@/hooks/useResize';
 
 interface DropdownProps {
   defaultId?: string | Array<string>;
-  items: DropdownItem[];
-  onChange?: (item: DropdownItem[]) => void;
+  items: Option[];
   multiSelect?: boolean;
   disabled?: boolean;
   className?: string;
   label?: string;
-}
-
-interface ConditionItemProps extends ConditionData {
-  condition: ConditionState;
-
-  label?: string;
-
-  logicVisible?: boolean;
-  deletable?: boolean;
-
-  onDelete?: () => void;
-  onChange?: (states: ConditionState) => void;
-}
-
-interface ConditionsProps extends ConditionData {
-  className?: string;
-  addCondition?: boolean;
-  logicVisible?: boolean;
-  conditions: ConditionState[];
-  labels?: string[];
-  onChange?: (conditions: ConditionState[]) => void;
-  // initialValue: ConditionState[];
-  // onBtnApply?: (conditions: ConditionState[]) => void;
+  onChange?: (item: Option[]) => void;
 }
 
 export function Dropdown({
-  className = '',
-  defaultId,
-  items,
-  onChange,
   multiSelect = false,
   disabled = false,
+  defaultId,
+  items,
   label,
+  className = '',
+  onChange,
 }: DropdownProps) {
   const refDropdown: RefObject<HTMLDivElement | null> = useRef(null);
 
   const [initialized, setInitialized] = useState(false);
-  const [selItems, setSelItems] = useState<Array<DropdownItem>>([]);
+  const [selItems, setSelItems] = useState<Array<Option>>([]);
 
   const { width } = useResize(refDropdown);
 
@@ -68,35 +45,61 @@ export function Dropdown({
 
   useEffect(() => {
     if (items) {
+      // `defaultId`가 제공된 경우, 이를 기반으로 선택된 항목 초기화
       if (defaultId) {
-        const selItems: { [key: string]: boolean } = {};
+        const tempItems: { [key: string]: boolean } = {};
+
+        // 다중 선택 모드 처리
         if (multiSelect && Array.isArray(defaultId) && defaultId?.length > 0) {
-          for (const idCur of defaultId) selItems[idCur] = true;
-        } else if (!multiSelect && defaultId?.length > 0) {
+          // `defaultId`가 배열인 경우, 각 ID를 선택된 상태로 표시
+          for (const idCur of defaultId) tempItems[idCur] = true;
+        }
+        // 단일 선택 모드 처리
+        else if (!multiSelect && defaultId?.length > 0) {
+          // `defaultId`가 배열인 경우, 첫 번째 ID를 선택
           if (Array.isArray(defaultId)) {
-            selItems[defaultId[0]] = true;
-          } else {
-            selItems[defaultId] = true;
+            tempItems[defaultId[0]] = true;
+          }
+          // `defaultId`가 문자열인 경우, 해당 ID를 직접 선택
+          else {
+            tempItems[defaultId] = true;
           }
         }
-        setSelItems(items.filter((item) => item.id in selItems));
-      } else {
+
+        // console.log('tempItems', tempItems);
+        // console.log(items.filter((item) => item.id in tempItems));
+
+        // `items` 배열에서 선택된 항목만 필터링
+        setSelItems(items.filter((item) => item.id in tempItems));
+      }
+      // `defaultId`가 제공되지 않은 경우, 기본적으로 첫 번째 항목 선택
+      else {
         setSelItems([items[0]]);
+        // `onChange` 콜백을 기본 선택 항목으로 트리거
         if (onChange) onChange([items[0]]);
       }
+
+      // 드롭다운 초기화 완료 표시
       setInitialized(true);
     }
-  }, [items]);
+  }, [items]); // `items` 배열이 변경될 때마다 이 효과 재실행
 
   useEffect(() => {
+    // 드롭다운이 초기화된 상태에서만 실행
     if (initialized) {
-      if (!multiSelect && selItems.length > 1) {
-        setSelItems([selItems[0]]);
-      } else if (!multiSelect && selItems.length < 1) {
-        setSelItems([items[0]]);
+      // 다중 선택이 비활성화된 경우
+      if (!multiSelect) {
+        // 선택된 항목이 2개 이상인 경우, 첫 번째 항목만 유지
+        if (selItems.length > 1) {
+          setSelItems([selItems[0]]);
+        }
+        // 선택된 항목이 없는 경우, 기본적으로 첫 번째 항목을 선택
+        else if (selItems.length < 1) {
+          setSelItems([items[0]]);
+        }
       }
     }
-  }, [multiSelect]);
+  }, [multiSelect]); // `multiSelect` 값이 변경될 때마다 이 효과 실행
 
   return (
     <div className="flex flex-col">
@@ -105,7 +108,7 @@ export function Dropdown({
           ref={refDropdown}
           className={`flex cursor-pointer flex-row items-center rounded-full border border-gray-300 bg-white px-[14px] py-[6px] ${className}`}
           onClick={
-            disabled || items.length <= 1
+            disabled || items?.length <= 1
               ? undefined
               : () => {
                   setOpenDropdownMenu(true);
@@ -146,19 +149,19 @@ export function Dropdown({
 
           <div className="flex-1" />
 
-          {items.length <= 1 ? null : (
+          {items?.length <= 1 ? null : (
             <Image width={20} height={20} className="h-[20px] w-[20px]" src="/image/ico-dropdown.svg" alt="" />
           )}
         </div>
 
         <DropdownMenuTrigger asChild disabled={disabled}>
-          <div />
+          <div></div>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent className="max-h-[400px] cursor-pointer overflow-y-auto bg-white">
           {label ? <DropdownMenuLabel>{label}</DropdownMenuLabel> : null}
 
-          {items?.map((itemCurrent: DropdownItem, index: number) => {
+          {items?.map((itemCurrent: Option, index: number) => {
             const selItemCur = selItems?.find((item) => item.id === itemCurrent.id);
 
             return (
@@ -203,61 +206,51 @@ export function Dropdown({
   );
 }
 
+interface ConditionItemProps extends FilterOptions {
+  logicVisible?: boolean;
+  deletable?: boolean;
+  condition: Filter;
+  label?: string;
+  onChange?: (payload: { what: keyof Filter; states: Option[] }) => void;
+  onDelete?: () => void;
+}
+
 function ConditionItem({
-  condition,
-  label,
   logicVisible = false,
   deletable = true,
-  onDelete,
-  onChange,
   logicItems,
   criteriaItems,
   operatorItems,
   valueItems,
+  label,
+  condition,
+  onChange,
+  onDelete,
 }: ConditionItemProps) {
-  const [logic, setLogic] = useState<string>(condition?.logic || logicItems?.[0]?.id);
-  const [criteria, setCriteria] = useState<string>(condition?.criteria || criteriaItems?.[0]?.id);
-  const [operator, setOperator] = useState<string>(condition?.operator || operatorItems?.[criteria]?.[0]?.id);
-  const [value, setValue] = useState<string[]>(condition?.value || ['']);
-
-  useEffect(() => {
-    if (onChange)
-      onChange({
-        logic,
-        criteria,
-        operator,
-        value,
-      });
-  }, [logic, criteria, operator, value]);
-
-  const selLogicItem = logicItems?.find((val) => val?.id == logic);
-  const selCriteriaItem = criteriaItems?.find((val) => val?.id == criteria);
-  const selOperatorItem = operatorItems?.[criteria]?.find((val) => val?.id == operator);
-
-  // FIXME: Readonly valueItems
-  // const valueItemsCur = valueItems?.[criteria]?.sort((a, b) => a.id.localeCompare(b.id, 'en', { sensitivity: 'base' }));
-  const valueItemsCur = valueItems?.[criteria];
-  const selValueItem = valueItemsCur?.find((val) => val?.[0]?.id == value);
+  const { criteria, logic, operator, value } = condition;
 
   return (
     <div className="flex flex-row">
+      {/* =============== Logic Items =============== */}
       {logicVisible ? (
         <div className="flex w-[100px] flex-col">
           <div className="flex flex-row">
             <span className="text-sm font-medium text-gray-800">Logic</span>
-
             <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
 
-            {selLogicItem?.tooltip?.text ? (
+            {/* {selLogicItem?.tooltip?.text ? (
               <Tooltip className="ml-[2px]" title={selLogicItem?.tooltip?.title} text={selLogicItem?.tooltip?.text} />
-            ) : null}
+            ) : null} */}
           </div>
 
           <Dropdown
+            key={crypto.randomUUID()}
+            className="mt-[6px]"
             defaultId={logic}
             items={logicItems}
-            className="mt-[6px]"
-            onChange={(items) => setLogic(items[0].id)}
+            onChange={(items) => {
+              if (onChange) onChange({ what: 'logic', states: items });
+            }}
           />
         </div>
       ) : label ? (
@@ -268,47 +261,37 @@ function ConditionItem({
         <div className="flex w-[100px] flex-col"></div>
       )}
 
+      {/* =============== Criteria Items =============== */}
       <div className="ml-[20px] flex flex-1 flex-col">
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Criteria</span>
-
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
 
-          {selCriteriaItem?.tooltip?.text ? (
-            <Tooltip
-              className="ml-[2px]"
-              title={selCriteriaItem?.tooltip?.title}
-              text={selCriteriaItem?.tooltip?.text}
-            />
-          ) : null}
+          {/* {selCriteriaItem?.tooltip?.text ? (
+            <Tooltip className="ml-[2px]" title={selCriteriaItem?.tooltip?.title} text={selCriteriaItem?.tooltip?.text} />
+          ) : null} */}
         </div>
 
         <Dropdown
+          key={crypto.randomUUID()}
+          className="mt-[6px] flex-1"
           defaultId={criteria}
           items={criteriaItems}
-          className="mt-[6px] flex-1"
           onChange={(items) => {
-            const criteriaId = items[0].id;
-            if (criteria != criteriaId) {
-              setCriteria(criteriaId);
-              setOperator(operatorItems[criteriaId][0].id);
-              setValue(operatorItems[criteriaId][0].multiSelect === false ? [valueItemsCur[0].id] : []);
-            }
+            if (onChange) onChange({ what: 'criteria', states: items });
           }}
         />
       </div>
 
+      {/* =============== Operator Items =============== */}
       <div className="ml-[20px] flex flex-1 flex-col">
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Operator</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-          {selOperatorItem?.tooltip?.text ? (
-            <Tooltip
-              className="ml-[2px]"
-              title={selOperatorItem?.tooltip?.title}
-              text={selOperatorItem?.tooltip?.text}
-            />
-          ) : null}
+
+          {/* {selOperatorItem?.tooltip?.text ? (
+            <Tooltip className="ml-[2px]" title={selOperatorItem?.tooltip?.title} text={selOperatorItem?.tooltip?.text} />
+          ) : null} */}
         </div>
 
         <Dropdown
@@ -316,26 +299,34 @@ function ConditionItem({
           defaultId={operator}
           items={operatorItems[criteria]}
           className="mt-[6px] flex-1"
-          onChange={(items) => setOperator(items[0].id)}
+          onChange={(items) => {
+            if (onChange) onChange({ what: 'operator', states: items });
+          }}
         />
       </div>
 
+      {/* =============== Value Items =============== */}
       <div className="ml-[20px] flex flex-1 flex-col">
         <div className="flex flex-row">
           <span className="text-sm font-medium text-gray-800">Value</span>
           <span className="ml-[2px] text-sm font-medium text-purple-600">*</span>
-          {selValueItem?.tooltip?.text ? (
+
+          {/* {selValueItem?.tooltip?.text ? (
             <Tooltip className="ml-[2px]" title={selValueItem?.tooltip?.title} text={selValueItem?.tooltip?.text} />
-          ) : null}
+          ) : null} */}
         </div>
 
         <Dropdown
           key={criteria}
-          defaultId={value}
-          items={valueItemsCur}
           className="mt-[6px] flex-1"
+          defaultId={value}
+          // HACK
+          // items={[...valueItems[criteria]].sort((a, b) => a.id.localeCompare(b.id, 'en', { sensitivity: 'base' }))}
+          items={valueItems[criteria]}
           multiSelect={operatorItems[criteria]?.find((val) => val.id == operator)?.multiSelect === true}
-          onChange={(items) => setValue(items.map((val) => val?.id))}
+          onChange={(items) => {
+            if (onChange) onChange({ what: 'value', states: items });
+          }}
         />
       </div>
 
@@ -356,92 +347,81 @@ function ConditionItem({
   );
 }
 
+interface ConditionsProps extends FilterOptions {
+  className?: string;
+  addCondition?: boolean;
+  logicVisible?: boolean;
+  conditions: Filter[];
+  labels?: string[];
+  onAddCondition?: (filter: Filter) => void;
+  onChange?: (payload: { what: keyof Filter; states: Option[]; index?: number }) => void;
+  onDelete?: (index: number) => void;
+}
+
 export default function Conditions({
   className,
   addCondition = true,
   logicVisible = true,
-
   conditions,
   labels,
-
   logicItems,
   criteriaItems,
   operatorItems,
   valueItems,
-
+  onAddCondition,
   onChange,
+  onDelete,
 }: ConditionsProps) {
-  const [conditionsTime, setConditionsTime] = useState(Date.now());
-
-  const defaultCriteriaId = criteriaItems[0]?.id;
-  const defaultConditionItem = {
-    logic: logicItems[0].id,
-    criteria: defaultCriteriaId,
-    operator: operatorItems[defaultCriteriaId][0].id,
-    value: [valueItems[defaultCriteriaId][0].id],
-  };
-
-  useEffect(() => {
-    if (conditions.length > 0) return;
-
-    const newConditions = [defaultConditionItem];
-    if (onChange) {
-      onChange(newConditions);
-    }
-  }, []);
-
   return (
     <div className={`flex flex-col`}>
       <div
-        className={`flex flex-col gap-y-[20px] border-b border-gray-200 bg-gray-100 px-[30px] pb-[14px] pt-[30px] ${className}`}
+        className={`flex flex-col gap-y-5 border-b border-gray-200 bg-gray-100 px-[30px] pb-3.5 pt-[30px] ${className}`}
       >
-        {conditions?.map((item: ConditionState, index: number) => (
-          <ConditionItem
-            key={`${conditionsTime}_${index}`}
-            condition={item}
-            logicVisible={logicVisible == false ? false : index > 0}
-            logicItems={logicItems}
-            criteriaItems={criteriaItems}
-            operatorItems={operatorItems}
-            valueItems={valueItems}
-            deletable={addCondition}
-            label={labels && index < labels.length ? labels[index] : ''}
-            onChange={(state) => {
-              const newConditions = conditions.map((val, idx) => (idx == index ? state : val));
-
-              if (onChange) {
-                onChange(newConditions);
-              }
-            }}
-            onDelete={() => {
-              const newConditions = [...conditions];
-
-              newConditions.splice(index, 1);
-
-              setConditionsTime(Date.now());
-
-              if (onChange) {
-                onChange(newConditions);
-              }
-            }}
-          />
-        ))}
+        {conditions?.map((condition: Filter, index: number) => {
+          return (
+            <ConditionItem
+              key={`condition-item-${index}`}
+              condition={condition}
+              logicVisible={logicVisible == false ? false : index > 0}
+              logicItems={logicItems}
+              criteriaItems={criteriaItems}
+              operatorItems={operatorItems}
+              valueItems={valueItems}
+              deletable={addCondition}
+              label={labels && index < labels.length ? labels[index] : ''}
+              onChange={({ states, what }) => {
+                if (onChange) onChange({ what, states, index });
+              }}
+              onDelete={() => {
+                if (onDelete) onDelete(index);
+              }}
+            />
+          );
+        })}
 
         {addCondition ? (
           <div className="flex flex-row items-center justify-center">
             <button
               className="px-[30px] py-[5px]"
               onClick={() => {
-                const newConditions = [...(conditions || []), defaultConditionItem];
+                if (!onAddCondition) return;
 
-                setConditionsTime(Date.now());
+                const initLogic = logicItems?.[0]?.id || '';
+                const initCriteria = criteriaItems?.[0]?.id || '';
+                const initOperator = operatorItems?.[initCriteria]?.[0]?.id || '';
+                const initValue = valueItems?.[initCriteria]?.[0]?.id || '';
 
-                if (onChange) {
-                  onChange(newConditions);
-                }
+                const defaultFilter: Filter = {
+                  logic: initLogic,
+                  criteria: initCriteria,
+                  operator: initOperator,
+                  value: [initValue],
+                };
+
+                onAddCondition(defaultFilter);
               }}
             >
-              <span className="text-lg font-medium text-purple-600">+ Add Condition</span>
+              <span className="text-lg font-medium text-purple-600">+ Add Filter</span>
             </button>
           </div>
         ) : (
