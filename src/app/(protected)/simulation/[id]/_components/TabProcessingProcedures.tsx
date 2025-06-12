@@ -58,6 +58,16 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
     ]);
   };
 
+  const calcProcedures = (procedures: Procedure[]): Procedure[] => {
+    return procedures.map((proc, i) => ({
+      ...proc,
+      id: String(i),
+      nameText: proc.name,
+      nodesText: proc.nodes.join(','),
+      editable: false,
+    }));
+  };
+
   const onClickDelete = (index: number) => {
     setProcedures(procedures_.filter((item, idx) => index != idx));
   };
@@ -88,13 +98,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
           return;
         }
 
-        const processedProcedures: Procedure[] = data.process.map((proc, i) => ({
-          ...proc,
-          id: String(i),
-          nameText: proc.name,
-          nodesText: proc.nodes.join(','),
-          editable: false,
-        }));
+        const processedProcedures: Procedure[] = calcProcedures(data.process);
 
         setProcedures(processedProcedures);
         setDataConnectionCriteria(DATA_CONNECTION_CRITERIAS[0]);
@@ -268,7 +272,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                       // HACK: 더 좋은 코드가 있을 것 같은데...
                                       setProcedures(
                                         procedures_.map((item, i) =>
-                                          i === index ? { ...item, nodesText: newText } : item
+                                          i === index
+                                            ? { ...item, nodesText: newText, nodes: newText.split(',') }
+                                            : item
                                         )
                                       );
                                     }}
