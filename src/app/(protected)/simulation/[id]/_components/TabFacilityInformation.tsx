@@ -8,10 +8,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useShallow } from 'zustand/react/shallow';
 import { getFacilityConns, getFacilityInfoLineChartData } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
+import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
+import { cn } from '@/lib/utils';
 import GridTable from './GridTable';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -90,95 +92,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     }))
   );
 
-  const currentSetting = settings[`${selectedSecondTab}_${selectedNodes[selectedSecondTab]}`] || {};
-
-  // const id = `${procedureIndex}_${nodeIndex[procedureIndex] || 0}`;
-  // const [facilitySettings, _setFacilitySettings] = useState<{
-  //   [id: string]: FacilitySettings;
-  // }>({});
-
-  // const facilitySettingsCurrent = facilitySettings[id] || {};
-
-  // const openingHoursTableData = facilitySettingsCurrent.openingHoursTableData;
-  // const setOpeningHoursTableData = (openingHoursTableData: TableData) => {
-  //   _setFacilitySettings({
-  //     ...facilitySettings,
-  //     [id]: {
-  //       ...facilitySettingsCurrent,
-  //       openingHoursTableData: { ...facilitySettingsCurrent.openingHoursTableData, ...openingHoursTableData },
-  //     },
-  //   });
-  // };
-
-  // let simulationAvairable = true;
-
-  // for (let p = 0; p < procedures__.length; p++) {
-  //   const nodeCount = procedures__[p]?.nodes?.length || 0;
-  //   for (let n = 0; n < nodeCount; n++) {
-  //     if (!facilitySettings?.[`${p}_${n}`]?.lineChartData) {
-  //       simulationAvairable = false;
-  //       break;
-  //     }
-  //   }
-  // }
-
-  // const onSimulation = () => {
-  //   if (!simulationAvairable) return;
-
-  //   let nodeIdCur = 0;
-
-  //   const components: any[] = [];
-  //   const params = { ...facility_conn?.params, components, scenario_id: simulationId };
-
-  //   for (let p = 0; p < procedures__.length; p++) {
-  //     const componentCur = procedures__[p];
-  //     const nodes: any[] = [];
-  //     const nodeCount = passenger_attr?.procedures?.[p]?.nodes?.length || 0;
-
-  //     for (let n = 0; n < nodeCount; n++) {
-  //       const idCur = `${p}_${n}`;
-  //       const facilitySettingsCurrent = facilitySettings[idCur];
-  //       const nodeName = passenger_attr?.procedures?.[p]?.nodes[n];
-  //       nodes.push({
-  //         id: nodeIdCur++,
-  //         name: nodeName,
-  //         max_queue_length: facilitySettingsCurrent.maximumQueuesAllowedPer,
-  //         facility_count: facilitySettingsCurrent.numberOfEachDevices,
-  //         facility_schedules: facilitySettingsCurrent.openingHoursTableData?.data.map((item) => {
-  //           return item.values.map((val) => {
-  //             if (val.length < 1) return 0;
-  //             const num = Number(val);
-  //             return num == 0 ? 0.0000000001 : num;
-  //           });
-  //         }),
-  //       });
-  //     }
-
-  //     components.push({
-  //       name: componentCur?.nameText?.toLowerCase().replace(/[\s-]+/g, '_'),
-  //       nodes,
-  //     });
-  //   }
-
-  //   setFacilityInformation({ ...facility_info, params });
-  //   setTabIndex(tabIndex + 1);
-  // };
-
-  // useEffect(() => {
-  //   if (defaultTableData && facilitySettingsCurrent?.processingTime) {
-  //     setDefaultTableData({
-  //       ...defaultTableData,
-  //       data: defaultTableData.data.map((item, index) => {
-  //         return item.name == 'Processing time (sec)'
-  //           ? {
-  //               ...item,
-  //               values: Array(item.values.length).fill(String(facilitySettingsCurrent.processingTime)),
-  //             }
-  //           : item;
-  //       }),
-  //     });
-  //   }
-  // }, [facilitySettingsCurrent?.processingTime]);
+  const currentSetting = settings?.[`${selectedSecondTab}_${selectedNodes[selectedSecondTab]}`];
 
   // ====================================================================================================
 
@@ -190,15 +104,30 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
   // ====================================================================================================
 
-  const tableHeight = currentSetting.openingHoursTableData
+  const tableHeight = currentSetting?.openingHoursTableData
     ? currentSetting.openingHoursTableData?.data?.length * TABLE_CELL_HEIGHT + TABLE_HEADER_HEIGHT + 2
     : 0;
-  const vChartTop = currentSetting.lineChartData ? 1 : 0;
-  const vChartHeight = currentSetting.lineChartData ? tableHeight + 544 : tableHeight + 8;
-  const vChartMarginTop = currentSetting.lineChartData ? -270 : 0;
-  const vChartParentHeight = currentSetting.lineChartData ? tableHeight + 280 : tableHeight;
+  const vChartTop = currentSetting?.lineChartData ? 1 : 0;
+  const vChartHeight = currentSetting?.lineChartData ? tableHeight + 544 : tableHeight + 8;
+  const vChartMarginTop = currentSetting?.lineChartData ? -270 : 0;
+  const vChartParentHeight = currentSetting?.lineChartData ? tableHeight + 280 : tableHeight;
 
   // ====================================================================================================
+
+  const generateDefaultTableData = (deviceCount: number) => ({
+    header: Array(deviceCount)
+      .fill(0)
+      .map((_, index) => ({
+        name: `Desk ${String(index + 1).padStart(2, '0')}`,
+        style: { background: '#F9F9FB' },
+        minWidth: 80,
+      })),
+    data: FACILITY_SETTINGS_DEFAULTS.map((item, index) => ({
+      name: item.name,
+      values: Array(deviceCount).fill(String(index === 0 ? 60 : 200)),
+      style: { background: '#FFFFFF' },
+    })),
+  });
 
   const generateTimeSlots = (interval: number): string[] => {
     const slots: string[] = [];
@@ -212,12 +141,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     return slots;
   };
 
-  const generateOpeningHoursTableData = useCallback(() => {
-    const timeUnit = currentSetting?.timeUnit || DEFAULT_TIME_UNIT;
+  const generateOpeningHoursTableData = useCallback((deviceCount: number, processingTime: number) => {
+    const timeUnit = DEFAULT_TIME_UNIT;
+    // const timeUnit = currentSetting.timeUnit || DEFAULT_TIME_UNIT;
     const times = generateTimeSlots(timeUnit);
 
     return {
-      header: Array(currentSetting?.numberOfEachDevices)
+      header: Array(deviceCount)
         .fill(0)
         .map((_, index) => {
           return {
@@ -229,16 +159,16 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       data: times.map((time) => {
         return {
           name: time,
-          values: Array(currentSetting?.numberOfEachDevices)
+          values: Array(deviceCount)
             .fill(0)
-            .map((_, cidx) => String(currentSetting?.defaultTableData?.data[0].values[cidx])),
+            .map((_, cidx) => String(processingTime)),
           style: { background: '#FFFFFF' },
           height: TABLE_CELL_HEIGHT,
-          checkToNumber: currentSetting?.defaultTableData?.data[0].values,
+          checkToNumber: processingTime,
         };
       }),
     };
-  }, [currentSetting?.timeUnit, currentSetting?.numberOfEachDevices, currentSetting?.defaultTableData]);
+  }, []);
 
   const generateLineChartData = useCallback(async () => {
     if (!currentSetting?.openingHoursTableData) return;
@@ -265,27 +195,26 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }, [currentSetting?.openingHoursTableData, currentSetting?.timeUnit]);
 
   // ====================================================================================================
-  // ‼️ Initialize settings and load data when the component is visible
+  // 1️⃣ Initialize settings and load data when the component is visible
   useEffect(() => {
-    if (!visible || isInitialized || !procedures?.length) return;
+    if (!visible || isInitialized) return;
 
-    const createDefaultTableData = (deviceCount: number) => ({
-      header: Array(deviceCount)
-        .fill(0)
-        .map((_, index) => ({
-          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-          style: { background: '#F9F9FB' },
-          minWidth: 80,
-        })),
-      data: FACILITY_SETTINGS_DEFAULTS.map((item, index) => ({
-        name: item.name,
-        values: Array(deviceCount).fill(String(index === 0 ? 60 : 200)),
-        style: { background: '#FFFFFF' },
-      })),
-    });
+    if (!procedures || procedures.length === 0) {
+      console.error('Error: Procedures are empty.');
+      return;
+    }
 
-    const createInitialSettings = () =>
-      procedures.reduce((settings, procedure, procedureIndex) => {
+    // ‼️ 반드시 가장 먼저 호출되어야함. (추후에 개선해보자.)
+    setSelectedNodes(Array(procedures.length).fill(0));
+
+    if (!currentSetting) {
+      const defaultDeviceCount = 5; // Default number of devices
+      const defaultProcessingTime = 60; // Default processing time in seconds
+
+      const defaultTableData = generateDefaultTableData(defaultDeviceCount);
+      const defaultOpeningHoursTableData = generateOpeningHoursTableData(defaultDeviceCount, defaultProcessingTime);
+
+      const initSettings = procedures.reduce((settings, procedure, procedureIndex) => {
         procedure.nodes.forEach((_, nodeIndex) => {
           const key = `${procedureIndex}_${nodeIndex}`;
           settings[key] = {
@@ -294,93 +223,26 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
             maximumQueuesAllowedPer: 200,
             timeUnit: DEFAULT_TIME_UNIT,
             overviewChartVisible: false,
-            defaultTableData: createDefaultTableData(5),
+            defaultTableData: defaultTableData,
             lineChartData: null,
-            openingHoursTableData: generateOpeningHoursTableData(),
+            openingHoursTableData: defaultOpeningHoursTableData,
           };
         });
         return settings;
       }, {});
 
-    // =====================
-
-    const loadLineChartData = async () => {
-      const lineChartData = await generateLineChartData();
-
-      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], { lineChartData });
-    };
-
-    const loadBarChartData = async () => {
-      const cleanedProcesses = allocationTables.reduce((acc, table, index) => {
-        const defaultMatrix = table.data?.reduce((matrix, row) => {
-          matrix[row.name] = row.values.reduce((rowAcc, val, idx) => {
-            rowAcc[table.header[idx].name] = Number(val) / 100;
-            return rowAcc;
-          }, {});
-          return matrix;
-        }, {});
-
-        acc[index + 1] = {
-          name: table.title,
-          nodes: table.header.map((header) => header.name),
-          source: String(index),
-          destination: procedures.length < index + 2 ? null : String(index + 2),
-          wait_time: 0,
-          default_matrix: defaultMatrix,
-          priority_matrix: [],
-        };
-        return acc;
-      }, {});
-
-      const params = {
-        destribution_conditions: normalDistributionParams.map(({ conditions, mean, stddev }, index) => ({
-          index,
-          conditions,
-          mean,
-          standard_deviation: stddev,
-        })),
-        flight_schedule: {
-          airport: targetAirport.iata,
-          date: targetDate,
-          condition: flightScheduleFilters,
-        },
-        processes: {
-          '0': {
-            name: dataConnectionCriteria,
-            nodes: [],
-            source: null,
-            destination: '1',
-            wait_time: null,
-            default_matrix: null,
-            priority_matrix: null,
-          },
-          ...cleanedProcesses,
-        },
-      };
-
-      try {
-        const { data } = await getFacilityConns(simulationId, params);
-        setBarChartData(data);
-      } catch (error) {
-        console.error('Error fetching bar chart data:', error);
-        setBarChartData(null);
-      }
-    };
-
-    setSettings(createInitialSettings());
-    setSelectedNodes(Array(procedures.length).fill(0));
-
-    loadBarChartData();
-    loadLineChartData();
+      setSettings(initSettings);
+    }
 
     setIsInitialized(true);
   }, [
-    visible,
+    currentSetting,
+    generateOpeningHoursTableData,
     isInitialized,
     procedures,
-    generateOpeningHoursTableData,
     setSettings,
     setSelectedNodes,
+    visible,
     allocationTables,
     dataConnectionCriteria,
     flightScheduleFilters,
@@ -395,18 +257,127 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     updateSetting,
   ]);
 
-  // HACK: 현재는 일일이 라인 차트를 호출하지만 추후에는 개선하자.
-  useEffect(() => {
-    if (!visible) return;
+  // 2️⃣ currentSetting이 변경되면, 해당 설정에 대한 바 차트 데이터를 불러오고, 라인 차트 데이터를 업데이트합니다.
+  const loadLineChartData = useCallback(async () => {
+    const facilitySchedules = currentSetting.openingHoursTableData?.data.map((item) =>
+      item.values.map((val) => {
+        const num = Number(val);
+        return num > 0 ? num : 0.0000000001;
+      })
+    );
 
-    const loadLineChartData = async () => {
-      const lineChartData = await generateLineChartData();
-
-      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], { lineChartData });
+    const params = {
+      time_unit: currentSetting.timeUnit || DEFAULT_TIME_UNIT,
+      facility_schedules: facilitySchedules,
     };
 
+    try {
+      const { data } = await getFacilityInfoLineChartData(params);
+
+      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+        lineChartData: data,
+      });
+    } catch (error) {
+      console.error('Error fetching line chart data:', error);
+      return null;
+    }
+  }, [currentSetting, selectedSecondTab, selectedNodes, updateSetting]);
+
+  useEffect(() => {
+    if (!currentSetting) return;
+
+    if (currentSetting.lineChartData) return;
+
+    if (!barChartData) {
+      const loadBarChartData = async () => {
+        const cleanedProcesses = allocationTables.reduce((acc, table, index) => {
+          const defaultMatrix = table.data?.reduce((matrix, row) => {
+            matrix[row.name] = row.values.reduce((rowAcc, val, idx) => {
+              rowAcc[table.header[idx].name] = Number(val) / 100;
+              return rowAcc;
+            }, {});
+            return matrix;
+          }, {});
+
+          acc[index + 1] = {
+            name: table.title,
+            nodes: table.header.map((header) => header.name),
+            source: String(index),
+            destination: procedures.length < index + 2 ? null : String(index + 2),
+            wait_time: 0,
+            default_matrix: defaultMatrix,
+            priority_matrix: [],
+          };
+          return acc;
+        }, {});
+
+        const params = {
+          destribution_conditions: normalDistributionParams.map(({ conditions, mean, stddev }, index) => ({
+            index,
+            conditions,
+            mean,
+            standard_deviation: stddev,
+          })),
+          flight_schedule: {
+            airport: targetAirport.iata,
+            date: targetDate,
+            condition: flightScheduleFilters,
+          },
+          processes: {
+            '0': {
+              name: dataConnectionCriteria,
+              nodes: [],
+              source: null,
+              destination: '1',
+              wait_time: null,
+              default_matrix: null,
+              priority_matrix: null,
+            },
+            ...cleanedProcesses,
+          },
+        };
+
+        try {
+          const { data } = await getFacilityConns(simulationId, params);
+          setBarChartData(data);
+        } catch (error) {
+          console.error('Error fetching bar chart data:', error);
+          setBarChartData(null);
+        }
+      };
+
+      loadBarChartData();
+    }
+
+    // ================================================================================
+
     loadLineChartData();
-  }, [visible, selectedSecondTab, selectedNodes, generateLineChartData, updateSetting]);
+  }, [
+    barChartData,
+    currentSetting,
+    selectedNodes,
+    selectedSecondTab,
+    updateSetting,
+    allocationTables,
+    dataConnectionCriteria,
+    flightScheduleFilters,
+    normalDistributionParams,
+    procedures.length,
+    setBarChartData,
+    simulationId,
+    targetAirport.iata,
+    targetDate,
+    loadLineChartData,
+  ]);
+
+  // HACK: 이 부분은 나중에 개선 필요
+  if (visible && (!isInitialized || !currentSetting)) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p>Loading facility settings...</p>
+      </div>
+    );
+  }
 
   return !visible ? null : (
     <div>
@@ -850,15 +821,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       </div>
 
       {/* =============== OPENING HOURS =============== */}
-      {/* <p className="mt-[20px] flex justify-end">
-        <Button className="btn-md btn-tertiary" text="Apply" onClick={() => generateOpeningHoursTableData()} />
-      </p> */}
-
       <div className={`${currentSetting?.openingHoursTableData ? '' : 'hidden'}`}>
         <div className={`mt-[30px] flex items-center justify-between`}>
           <h2 className="title-sm">Set Opening Hours</h2>
 
           <div className="flex items-center gap-[20px]">
+            <Button className="btn-md btn-tertiary" text="Update Line Chart" onClick={loadLineChartData} />
+
             <Checkbox
               id="Automatic"
               label="Check-box"
@@ -900,23 +869,24 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         </div>
 
         <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
-          <div className={`relative h-[600px] overflow-auto pr-[400px]`}>
-            <div>
-              <GridTable
-                type={currentSetting.automaticInput ? 'checkbox' : 'text'}
-                title="Opening Time"
-                titleWidth={92}
-                headerHeight={TABLE_HEADER_HEIGHT}
-                stickyTopRows={1}
-                header={currentSetting.openingHoursTableData?.header || []}
-                data={currentSetting.openingHoursTableData?.data || []}
-                onDataChange={(data) => {
-                  // setOpeningHoursTableData({ ...openingHoursTableData, data } as TableData);
-                }}
-              />
+          <div className={cn('relative h-[600px] pr-[400px]', barChartData ? 'overflow-auto' : 'overflow-hidden')}>
+            {/* =============== VERTICAL BAR CHART =============== */}
 
-              {/* =============== VERTICAL BAR CHART =============== */}
-              {barChartData ? (
+            {barChartData ? (
+              <>
+                <GridTable
+                  type={currentSetting.automaticInput ? 'checkbox' : 'text'}
+                  title="Opening Time"
+                  titleWidth={92}
+                  headerHeight={TABLE_HEADER_HEIGHT}
+                  stickyTopRows={1}
+                  header={currentSetting.openingHoursTableData?.header || []}
+                  data={currentSetting.openingHoursTableData?.data || []}
+                  onDataChange={(data) => {
+                    // setOpeningHoursTableData({ ...openingHoursTableData, data } as TableData);
+                  }}
+                />
+
                 <div style={{ marginTop: vChartMarginTop, top: vChartTop, right: 0, position: 'absolute' }}>
                   <div style={{ overflow: 'hidden', height: vChartParentHeight }}>
                     <BarChart
@@ -931,7 +901,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                               procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
                             ]?.y,
                           ].reverse(),
-                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
+                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`).reverse(),
                           // name: item.name,
                         },
                         {
@@ -939,7 +909,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           mode: 'lines',
                           marker: { color: '#FF0000', opacity: 1 },
                           x: [...(currentSetting.lineChartData?.y || [])].reverse(),
-                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
+                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`).reverse(),
                         },
                       ]}
                       chartLayout={{
@@ -955,8 +925,16 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     />
                   </div>
                 </div>
-              ) : null}
-            </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-300/50 text-center text-lg">
+                <p>
+                  Please wait while the data is being processed.
+                  <br />
+                  This may take a few minutes depending on the size of the dataset.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -967,19 +945,19 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           <h3 className="title-sm">Estimated Passenger Inflow by Time</h3>
         </div>
 
-        <div>
-          <div className="mt-[15px] flex justify-end">
-            <ul className="chart-info">
-              <li>
-                <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
-              </li>
-              <li>
-                <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
-              </li>
-            </ul>
-          </div>
+        {barChartData ? (
+          <div className="min-h-[300px] w-full">
+            <div className="mt-[15px] flex justify-end">
+              <ul className="chart-info">
+                <li>
+                  <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
+                </li>
+                <li>
+                  <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
+                </li>
+              </ul>
+            </div>
 
-          {barChartData ? (
             <BarChart
               chartData={
                 // HACK: 이 부분은 나중에 개선 필요
@@ -989,18 +967,17 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                         type: 'bar',
                         marker: { color: '#6941C6', opacity: 1 },
                         x: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
-                        y: [
-                          ...barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
+                        y:
+                          barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
                             procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                          ]?.y,
-                        ].reverse(),
+                          ]?.y || [],
                       },
                       {
                         type: 'scatter',
                         mode: 'lines',
                         marker: { color: '#FF0000', opacity: 1 },
                         x: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
-                        y: [...currentSetting.lineChartData?.y].reverse(),
+                        y: currentSetting.lineChartData?.y || [],
                       },
                     ]
                   : []
@@ -1016,8 +993,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               }}
               config={{ displayModeBar: false }}
             />
-          ) : null}
-        </div>
+          </div>
+        ) : (
+          <div className="flex h-[300px] w-full items-center justify-center">
+            <p>
+              Please wait while the data is being processed. This may take a few minutes depending on the size of the
+              dataset.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* =============== NAVIGATION BUTTONS =============== */}

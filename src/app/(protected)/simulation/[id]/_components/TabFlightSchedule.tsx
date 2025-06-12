@@ -102,6 +102,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
     resetAirportProcessing,
     resetFacilityConnection,
     resetFacilityCapacity,
+    resetScenarioOverview,
   } = useScenarioStore(
     useShallow((s) => ({
       colorCriteria: s.flightSchedule.selectedCriteria,
@@ -123,10 +124,12 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       setFlightScheduleSelectedFilters: s.flightSchedule.actions.setSelectedFilters,
       setTargetAirport: s.flightSchedule.actions.setTargetAirport,
       setTargetDate: s.flightSchedule.actions.setTargetDate,
+      //
       resetPassengerSchedule: s.passengerSchedule.actions.resetState,
       resetAirportProcessing: s.airportProcessing.actions.resetState,
       resetFacilityConnection: s.facilityConnection.actions.resetState,
       resetFacilityCapacity: s.facilityCapacity.actions.resetState,
+      resetScenarioOverview: s.scenarioOverview.actions.resetState,
     }))
   );
 
@@ -350,6 +353,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
                 resetFacilityConnection(); // 시설 연결 데이터 초기화
                 resetFacilityCapacity(); // 시설 용량 데이터 초기화
                 // resetAirportProcessing(); // 공항 프로세스 데이터 초기화
+                resetScenarioOverview(); // 시나리오 개요 데이터 초기화
 
                 return loadFlightSchedule();
               }

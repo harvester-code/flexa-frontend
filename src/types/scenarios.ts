@@ -144,6 +144,9 @@ export interface PassengerSchedule {
 
   normalDistributionParams: NormalDistributionParam[];
 
+  distributionData: Plotly.Data[] | null;
+  vlineData: { x: number; minY: number; maxY: number; color: string }[] | null;
+
   chartData: {
     total: number;
     total_sub_obj: { title: string; value: string; unit: string }[];

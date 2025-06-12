@@ -48,6 +48,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     scenarioHistory,
     //
     loadScenarioProfileMetadata,
+    loadScenarioOverviewMetadata,
     loadFlightScheduleMetadata,
     loadPassengerScheduleMetadata,
     loadAirportProcessingMetadata,
@@ -72,6 +73,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       //
       loadScenarioProfileMetadata: s.scenarioProfile.actions.loadMetadata,
+      loadScenarioOverviewMetadata: s.scenarioOverview.actions.loadMetadata,
       loadFlightScheduleMetadata: s.flightSchedule.actions.loadMetadata,
       loadPassengerScheduleMetadata: s.passengerSchedule.actions.loadMetadata,
       loadAirportProcessingMetadata: s.airportProcessing.actions.loadMetadata,
@@ -106,6 +108,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           scenarioTerminal: scenarioInfo.terminal,
           scenarioHistory: scenarioMetadata.history,
         });
+        loadScenarioOverviewMetadata(scenarioMetadata.overview);
         loadFlightScheduleMetadata(scenarioMetadata.flight_sch);
         loadPassengerScheduleMetadata(scenarioMetadata.passenger_sch);
         loadAirportProcessingMetadata(scenarioMetadata.passenger_attr);
@@ -113,8 +116,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         loadFacilityCapacityMetadata(scenarioMetadata.facility_info);
 
         setCheckpoint({ time: scenarioCheckpoint, diff: clientTime.diff(serverTime, 'millisecond') });
-
-        console.log(scenarioMetadata);
       } catch (error) {
         console.error('Failed to load scenario metadata:', error);
       } finally {
@@ -154,7 +155,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       simulation: 'Done',
     };
 
-    const history = [...scenarioProfileSnapShot.scenarioHistory, historyItem];
+    const history = [...(scenarioProfileSnapShot?.scenarioHistory || []), historyItem];
 
     const params = {
       overview: scenarioOverviewSnapShot,

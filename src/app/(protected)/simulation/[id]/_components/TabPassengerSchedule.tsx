@@ -203,6 +203,10 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     passengerScheduleColorCriteria,
     selectedFilters,
     selectedPriorities,
+    distributionData,
+    vlineData,
+    setDistributionData,
+    setVlineData,
     setCurrentScenarioTab,
     setIsPriorityFilterEnabled,
     setPassengerScheduleChartData,
@@ -220,6 +224,11 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       passengerScheduleColorCriteria: state.passengerSchedule.selectedCriteria,
       selectedFilters: state.flightSchedule.selectedFilters,
       selectedPriorities: state.passengerSchedule.normalDistributionParams,
+      distributionData: state.passengerSchedule.distributionData,
+      vlineData: state.passengerSchedule.vlineData,
+
+      setDistributionData: state.passengerSchedule.actions.setDistributionData,
+      setVlineData: state.passengerSchedule.actions.setVlineData,
       setCurrentScenarioTab: state.scenarioProfile.actions.setCurrentScenarioTab,
       setIsPriorityFilterEnabled: state.passengerSchedule.actions.setIsFilterEnabled,
       setPassengerScheduleChartData: state.passengerSchedule.actions.setChartData,
@@ -234,15 +243,15 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
   const [loadingPassengerSchedules, setLoadingPassengerSchedules] = useState(false);
   const [isLoadError, setIsLoadError] = useState(false);
 
-  const [distributionData, setDistributionData] = useState<Plotly.Data[]>([]);
-  const [vlineData, setVlineData] = useState<
-    {
-      x: number;
-      minY: number;
-      maxY: number;
-      color: string;
-    }[]
-  >([]);
+  // const [distributionData, setDistributionData] = useState<Plotly.Data[]>([]);
+  // const [vlineData, setVlineData] = useState<
+  //   {
+  //     x: number;
+  //     minY: number;
+  //     maxY: number;
+  //     color: string;
+  //   }[]
+  // >([]);
 
   // useEffect(() => {
   //   if (isPriorityFilterEnabled && selectedPriorities.length === 1) {
@@ -304,8 +313,8 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         setPassengerScheduleColorCriteria(newColorCriterias[0]);
       }
 
-      // TODO: 아래 코드는 추후에 함수를 분리하자.
       const { distributionData, vlineData } = getPassengerDistributionChartData(selectedPriorities, LineColors);
+
       setDistributionData(distributionData);
       setVlineData(vlineData);
     } catch (error) {
@@ -537,14 +546,15 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
           {/* =============== 여객 정규분포 차트 =============== */}
           <div className="mt-[10px] rounded-md bg-white">
             <LineChart
-              chartData={distributionData}
+              // HACK: structuredClone is used to avoid mutating the original data
+              chartData={structuredClone(distributionData) || []}
               chartLayout={{
                 height: 210,
                 margin: { l: 20, r: 10, t: 0, b: 20 },
                 legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                 xaxis: { title: 'X' },
                 yaxis: { showticklabels: false },
-                shapes: vlineData.map((vline) => {
+                shapes: vlineData?.map((vline) => {
                   return {
                     type: 'line',
                     x0: vline.x,

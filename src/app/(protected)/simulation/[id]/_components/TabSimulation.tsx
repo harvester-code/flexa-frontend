@@ -101,128 +101,21 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [visible]);
 
   const [simulationParams, setSimulationParams] = useState<any>();
-  const [overviewData, setOverviewData] = useState<SimulationOverviewResponse>();
   const [simulationData, setSimulationData] = useState<SimulationResponse>();
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   const [procedureIndex, setProcedureIndex] = useState(0);
-  const [nodeIndex, setNodeIndex] = useState<number[]>([]);
 
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [selGroupCriteria, setSelGroupCriteria] = useState(GROUP_CRITERIAS[0].id);
-
-  const [loaded, setLoaded] = useState(false);
-
-  // const procedures = [
-  //   ...(passenger_attr?.procedures?.map((item, index) => {
-  //     return {
-  //       text: item.name,
-  //     };
-  //   }) || []),
-  //   { text: 'Total' },
-  // ] as ProcedureInfo[];
-
-  // useEffect(() => {
-  //   if (nodeIndex.length < 1 && passenger_attr?.procedures) {
-  //     setNodeIndex(Array(passenger_attr?.procedures.length).fill(0));
-  //   }
-  // }, [passenger_attr?.procedures]);
-
-  const loadOverview = () => {
-    // if (loaded) {
-    //   const params = {
-    //     ...(facility_info?.params || simulationParams),
-    //     scenario_id: simulationId,
-    //   };
-    //   setLoadingSimulation(true);
-    //   setOverviewData(undefined);
-    //   setSimulationData(undefined);
-    //   setSimulationParams(params);
-    //   getSimulationOverview(simulationId, params)
-    //     .then(({ data }) => {
-    //       console.log(data);
-    //       setOverviewData(data);
-    //       setOverview({ ...overview, matric: data?.matric });
-    //       setSimulationData(undefined);
-    //       // saveSnapshot(params, data);
-    //     })
-    //     .catch((e) => {
-    //       setLoadError(true);
-    //     })
-    //     .finally(() => {
-    //       setLoadingSimulation(false);
-    //     });
-    // }
-  };
-
-  // FIXME: 아래 2개의 useEffect를 통합
-  // 사용자가 해당 탭을 선택했을 때,
-  // [1] 데이터가 loaded 되어있지 않으면 스냅샷에서 데이터를 가지고 온다.
-  // [2] 데이터가 loaded 되어있으면 Overview 데이터를 가지고 온다.
-  // useEffect(() => {
-  //   if (visible) {
-  //     if (!loaded) {
-  //       // restoreSnapshot();
-  //       setLoaded(true);
-  //     } else {
-  //       loadOverview();
-  //       loadSimulation();
-  //     }
-  //   }
-  // }, [visible]);
-
-  // 위 useEffect에서 loaded 값이 변하면 Overview 데이터를 가지고 온다.
-  // useEffect(() => {
-  //   if (loaded) {
-  //     loadOverview();
-  //     loadSimulation();
-  //   }
-  // }, [loaded]);
 
   const runSimulation = async () => {
     if (!simulationParams) {
       return console.error('Simulation parameters are not set.');
     }
 
-    console.log(simulationParams);
-
     await requestSimulation(simulationId, simulationParams);
-
-    // NOTE: 시뮬레이션 시작 코드
-    // setLoadingSimulation(true);
-    // runSimulation(params)
-    //   .then(({ data }) => {
-    //     const chartKeys = ['inbound', 'outbound', 'queing'];
-    //     for (const chartGroupCur of data?.chart || []) {
-    //       for (const chartKeyCur of chartKeys) {
-    //         const chartCur = chartGroupCur[chartKeyCur] as {
-    //           chart_x_data: string[];
-    //           chart_y_data: ChartData;
-    //         };
-    //         for (const criteriaCur in chartCur?.chart_y_data) {
-    //           const criteriaDataCur = chartCur?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
-    //           const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
-    //           for (const itemCur of criteriaDataCur || []) {
-    //             itemCur.acc_y = Array(itemCur.y.length).fill(0);
-    //             for (let i = 0; i < itemCur.y.length; i++) {
-    //               acc_y[i] += itemCur.y[i];
-    //               itemCur.acc_y[i] = Number(acc_y[i]);
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //     setSimulationData(data);
-    //     saveSnapshot(params, overviewData, data);
-    //     setLoadingSimulation(false);
-    //   })
-    //   .catch((e) => {
-    //     console.error(e);
-    //     setSimulationData(undefined);
-    //     setLoadError(true);
-    //     setLoadingSimulation(false);
-    //   });
   };
 
   const loadSimulation = useCallback(async () => {
@@ -243,6 +136,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   // ‼️ 코드의 시작점이다.
   useEffect(() => {
     if (!visible || isInitialized) return;
+
+    // Already initialized, skip loading
+    if (matrix && matrix.length > 0) return;
 
     let nodeIdCur = 0;
 
@@ -420,9 +316,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     <div>
       <h2 className="title-sm mt-[25px]">Overview</h2>
 
-      {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
-      {/* 여기서부터 하기!!!!!!!!!! */}
-      {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
       {matrix && matrix.length > 0 ? (
         <div className="overview-wrap mt-[10px]">
           {matrix.map((item, index) => (
@@ -438,7 +331,13 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             </a>
           ))}
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
+          <p className="title-sm" style={{ color: '#30374F' }}>
+            Waiting for simulation overview data...
+          </p>
+        </div>
+      )}
 
       {loadingSimulation ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
@@ -850,7 +749,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         </button>
 
         {/* FIXME: [25.04.07] ADD CONDITIONS가 있을 때 데이터가 제대로 안 나오는 현상 발생 */}
-        <button className="btn-md btn-tertiary btn-rounded w-[210px] justify-between" onClick={runSimulation}>
+        <button
+          className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
+          onClick={runSimulation}
+          disabled={matrix.length < 1}
+        >
           <span className="flex flex-grow items-center justify-center">Run Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
         </button>

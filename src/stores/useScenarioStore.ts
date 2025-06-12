@@ -44,7 +44,9 @@ interface ScenarioProfileSlice {
 
 // ==================== ScenarioOverview ====================
 interface ScenarioOverviewSliceActions {
+  loadMetadata: (metadata: any) => void;
   setMatrix: (matrix: ScenarioOverview['matrix']) => void;
+  resetState: () => void; // Reset state to initial values
 }
 interface ScenarioOverviewSlice {
   scenarioOverview: ScenarioOverview & {
@@ -75,6 +77,8 @@ interface FlightScheduleSlice {
 // ==================== PassengerSchedule ====================
 interface PassengerScheduleSliceActions {
   loadMetadata: (metadata: any) => void;
+  setDistributionData: (data: PassengerSchedule['distributionData']) => void;
+  setVlineData: (data: PassengerSchedule['vlineData']) => void;
   setChartData: (data: PassengerSchedule['chartData']) => void;
   setCriterias: (criterias: PassengerSchedule['criterias']) => void;
   setSelectedCriteria: (criteria: PassengerSchedule['selectedCriteria']) => void;
@@ -219,12 +223,25 @@ const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get
   },
 });
 
-// ==================== Scenario Overview Slice Creator ====================
+// ==================== Senario Overview Slice Creator ====================
+const initialScenarioOverview: Omit<ScenarioOverviewSlice['scenarioOverview'], 'actions'> = {
+  matrix: [],
+};
+
 const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, get) => ({
   scenarioOverview: {
-    matrix: [],
+    ...initialScenarioOverview,
 
     actions: {
+      loadMetadata: (metadata) =>
+        set(
+          (state) => {
+            state.scenarioOverview = { ...state.scenarioOverview, ...metadata };
+          },
+          false,
+          'scenarioOverview/loadMetadata'
+        ),
+
       setMatrix: (matrix) =>
         set(
           (state) => {
@@ -232,6 +249,18 @@ const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, g
           },
           false,
           'scenarioOverview/setMatrix'
+        ),
+
+      resetState: () =>
+        set(
+          (state) => {
+            state.scenarioOverview = {
+              ...initialScenarioOverview,
+              actions: state.scenarioOverview.actions,
+            };
+          },
+          false,
+          'scenarioOverview/resetState'
         ),
     },
   },
@@ -341,6 +370,8 @@ const initialPassengerSchedule: Omit<PassengerScheduleSlice['passengerSchedule']
   isFilterEnabled: false,
   filterOptions: null,
   normalDistributionParams: [{ conditions: [], mean: 120, stddev: 30 }],
+  distributionData: null,
+  vlineData: null,
   chartData: null,
   criterias: [],
   selectedCriteria: '',
@@ -358,6 +389,24 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
           },
           false,
           'passengerSchedule/loadMetadata'
+        ),
+
+      setDistributionData: (distributionData) =>
+        set(
+          (state) => {
+            state.passengerSchedule.distributionData = distributionData;
+          },
+          false,
+          'passengerSchedule/setDistributionData'
+        ),
+
+      setVlineData: (vlineData) =>
+        set(
+          (state) => {
+            state.passengerSchedule.vlineData = vlineData;
+          },
+          false,
+          'passengerSchedule/setVlineData'
         ),
 
       setChartData: (chartData) =>
@@ -642,7 +691,7 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
             const settings = state.facilityCapacity.settings;
             const targetKey = `${tabIndex}_${nodeIndex}`;
 
-            settings[targetKey] = { ...settings[targetKey], ...setting };
+            if (settings) settings[targetKey] = { ...settings[targetKey], ...setting };
           },
           false,
           'facilityCapacity/updateSetting'
