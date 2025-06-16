@@ -209,6 +209,10 @@ export default function Profile() {
         const { data, error } = await supabase
           .from('user_information')
           .update({
+            first_name: firstName,
+            last_name: lastName,
+            position: position,
+            bio: introduction,
             profile_image_url: imageUrl,
           })
           .eq('user_id', userId)
