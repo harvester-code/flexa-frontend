@@ -56,32 +56,6 @@ export const getScenarioMetadata = (scenario_id: string) => {
 };
 
 export const updateScenarioMetadata = (scenario_id: string, params: unknown) => {
-  // export const updateScenarioMetadata = (addHistory: boolean = true) => {
-  // const store = useSimulationStore.getState();
-  // const states = useSimulationMetadata.getState();
-  // const checkpoint = dayjs()
-  //   .add((store.checkpoint?.diff || 0) * -1, 'millisecond')
-  //   .format('YYYY-MM-DD HH:mm:ss Z');
-
-  // const historyItem: ScenarioHistory = {
-  //   checkpoint,
-  //   error_count: 0,
-  //   memo: '',
-  //   simulation: states?.simulation?.chart ? 'Done' : 'Yet',
-  // };
-
-  // const history = addHistory ? [...(states.history || []), historyItem] : states.history || [];
-
-  // const params = {
-  //   overview: states.overview || {},
-  //   flight_sch: states.flight_sch || {},
-  //   passenger_sch: states.passenger_sch || {},
-  //   passenger_attr: states.passenger_attr || {},
-  //   facility_conn: states.facility_conn || {},
-  //   facility_info: states.facility_info || {},
-  //   history,
-  // };
-  // if (addHistory) states.addHistoryItem(historyItem);
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`, params);
 };
 

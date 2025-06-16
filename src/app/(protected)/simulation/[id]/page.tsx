@@ -104,16 +104,16 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
         loadScenarioProfileMetadata({
           checkpoint: scenarioCheckpoint,
-          scenarioName: scenarioInfo.simulation_name,
+          scenarioName: scenarioInfo.name,
           scenarioTerminal: scenarioInfo.terminal,
           scenarioHistory: scenarioMetadata.history,
         });
         loadScenarioOverviewMetadata(scenarioMetadata.overview);
-        loadFlightScheduleMetadata(scenarioMetadata.flight_sch);
-        loadPassengerScheduleMetadata(scenarioMetadata.passenger_sch);
-        loadAirportProcessingMetadata(scenarioMetadata.passenger_attr);
-        loadFacilityConnectionMetadata(scenarioMetadata.facility_conn);
-        loadFacilityCapacityMetadata(scenarioMetadata.facility_info);
+        loadFlightScheduleMetadata(scenarioMetadata.flight_schedule);
+        loadPassengerScheduleMetadata(scenarioMetadata.passenger_schedule);
+        loadAirportProcessingMetadata(scenarioMetadata.processing_procedures);
+        loadFacilityConnectionMetadata(scenarioMetadata.facility_connection);
+        loadFacilityCapacityMetadata(scenarioMetadata.facility_information);
 
         setCheckpoint({ time: scenarioCheckpoint, diff: clientTime.diff(serverTime, 'millisecond') });
       } catch (error) {
@@ -159,13 +159,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
     const params = {
       overview: scenarioOverviewSnapShot,
-      flight_sch: flightScheduleSnapShot,
-      passenger_sch: passengerScheduleSnapShot,
-      // FIXME: passenger_attr는 airportProcessingSnapShot으로 변경되어야 합니다.
-      passenger_attr: airportProcessingSnapShot,
-      facility_conn: facilityConnectionSnapShot,
-      facility_info: facilityCapacitySnapShot,
       history,
+      flight_schedule: flightScheduleSnapShot,
+      passenger_schedule: passengerScheduleSnapShot,
+      processing_procedures: airportProcessingSnapShot,
+      facility_connection: facilityConnectionSnapShot,
+      facility_information: facilityCapacitySnapShot,
     };
 
     await updateScenarioMetadata(simulationId, params);

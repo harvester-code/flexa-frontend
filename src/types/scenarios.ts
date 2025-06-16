@@ -44,19 +44,18 @@ interface ScenarioMetadata {
   id: number;
   scenario_id: string;
   overview: unknown;
-  flight_sch: unknown;
-  passenger_sch: unknown;
-  passenger_attr: unknown;
-  facility_conn: unknown;
-  facility_info: unknown;
-  simulation: unknown;
+  flight_schedule: unknown;
+  passenger_schedule: unknown;
+  processing_procedures: unknown;
+  facility_connection: unknown;
+  facility_information: unknown;
   history: unknown[];
 }
 
 interface ScenarioInformation {
-  editor: string;
+  name: string;
   memo: string;
-  simulation_name: string;
+  editor: string;
   terminal: string;
 }
 

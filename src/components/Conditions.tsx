@@ -244,7 +244,8 @@ function ConditionItem({
           </div>
 
           <Dropdown
-            key={crypto.randomUUID()}
+            // HACK: Using a random key to force re-render when criteria changes
+            key={`dropdown-${Math.random().toString(36).substring(2, 9)}`}
             className="mt-[6px]"
             defaultId={logic}
             items={logicItems}
@@ -273,7 +274,8 @@ function ConditionItem({
         </div>
 
         <Dropdown
-          key={crypto.randomUUID()}
+          // HACK: Using a random key to force re-render when criteria changes
+          key={`dropdown-${Math.random().toString(36).substring(2, 9)}`}
           className="mt-[6px] flex-1"
           defaultId={criteria}
           items={criteriaItems}
