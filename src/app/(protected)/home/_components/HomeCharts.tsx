@@ -12,6 +12,7 @@ import TheDropdownMenu from '@/components/TheDropdownMenu';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
 
@@ -194,13 +195,28 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
   useEffect(() => {
     if (!histogram) return;
     const facility = facility2.value;
-
     if (!histogram[facility]) return;
-    const option = CHART_OPTIONS[chartOption2[0]].value;
 
-    const data = histogram[facility][option]
-      .map(({ title, value }) => ({ title, value: value, width: value }))
-      .filter(({ value }) => value > 0);
+    const option = CHART_OPTIONS2[chartOption2[0]].value;
+    const { bins, range_unit, value_unit } = histogram[facility][option];
+
+    function makeLabel([start, end], unit) {
+      if (end === null) return `${start}${unit}~`;
+      return `${start}~${end}${unit}`;
+    }
+
+    const data = bins
+      .map(({ range, value }) => ({
+        title: makeLabel(range, range_unit),
+        value: (
+          <>
+            {value}
+            {value_unit ? formatUnit(value_unit) : null}
+          </>
+        ),
+        width: value,
+      }))
+      .filter(({ width }) => width > 0);
 
     setHistogramChartData(data);
   }, [histogram, facility2, chartOption2]);

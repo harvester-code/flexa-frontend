@@ -9,6 +9,7 @@ import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
+import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -29,7 +30,7 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
   const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
 
   const PROCESS_OPTIONS = useMemo(
-    () => [{ label: 'All Process (avg)', value: 'all_facilities' }].concat(processes),
+    () => [{ label: 'All Process', value: 'all_facilities' }].concat(processes),
     [processes]
   );
 
@@ -88,30 +89,11 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
 
                 <div className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
                   {target.value === 'waiting_time' ? (
-                    <p>
-                      {waiting_time.hour > 0 ? (
-                        <span>
-                          {waiting_time.hour}
-                          <span className="text-2xl">h&nbsp;</span>
-                        </span>
-                      ) : null}
-
-                      {waiting_time.minute > 0 ? (
-                        <span>
-                          {String(waiting_time.minute).padStart(2, '0')}
-                          <span className="text-2xl">m&nbsp;</span>
-                        </span>
-                      ) : null}
-
-                      <span>
-                        {String(waiting_time.second).padStart(2, '0')}
-                        <span className="text-2xl">s</span>
-                      </span>
-                    </p>
+                    <p>{formatTimeTaken(waiting_time)}</p>
                   ) : target.value === 'queue_length' ? (
                     <p>
                       {queue_length}
-                      <span className="text-2xl">&nbsp;pax</span>
+                      {formatUnit('pax')}
                     </p>
                   ) : (
                     'Error'

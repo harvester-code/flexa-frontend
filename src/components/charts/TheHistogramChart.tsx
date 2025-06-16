@@ -1,11 +1,12 @@
 import { capitalCase } from 'change-case';
+import { capitalizeFirst } from '@/app/(protected)/home/_components/HomeFormat';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { cn } from '@/lib/utils';
 
 interface TheHistogramChartProps {
   chartData: {
     title: string;
-    value: string;
+    value: React.ReactNode;
     width: number;
   }[];
   className?: string;
@@ -31,7 +32,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                 {value}
               </div>
 
-              <p className="mt-1 truncate text-sm font-medium text-default-700">{capitalCase(title)}</p>
+              <p className="mt-1 truncate text-sm font-medium text-default-700">{capitalizeFirst(title)}</p>
             </div>
           );
         })}

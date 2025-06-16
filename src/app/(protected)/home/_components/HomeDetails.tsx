@@ -3,14 +3,17 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { pascalCase } from 'change-case';
-import { ChevronRight, CircleSmall, Clock4, LockOpen, User } from 'lucide-react';
+import { ChevronRight, CircleSmall, Clock4, LockOpen } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
+import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import './HomeDetails.css';
+import { formatImageSize, formatNumberWithComma, formatPercent, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
+import HomeTooltip from './HomeTooltip';
 
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
@@ -63,70 +66,97 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
             <div className="detail-body">
               <div className="summary">
                 <div>
-                  <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
+                  {formatImageSize(<LockOpen stroke="#6941c6" />, 30)}
                   <dl>
                     <dt className="flex items-center">
                       <span>Opened</span>
+                      <HomeTooltip content="Actual number of activated desks.">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
                       <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
                       {overview.opened[0]} / {overview.opened[1]}
+                      {formatUnit('EA')}
                     </dd>
                   </dl>
                 </div>
 
                 <div>
-                  <User className="size-[1.875rem]" stroke="#6941c6" />
+                  {formatImageSize(<PassengerThroughput />, 30)}
                   <dl>
-                    <dt>Throughput</dt>
-                    <dd className="!font-semibold">{overview.throughput}</dd>
-                  </dl>
-                </div>
-
-                <div>
-                  <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
-                  <dl>
-                    <dt>Max Queue</dt>
-                    <dd className="!font-semibold">{overview.maxQueue}</dd>
-                  </dl>
-                </div>
-
-                <div>
-                  <Image src="/image/ico-main-03.svg" width={30} height={30} alt="" />
-                  <dl>
-                    <dt className="flex items-center">
-                      <span>Queue Pax</span>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
-                    </dt>
-                    <dd className="!font-semibold">{overview.queueLength}</dd>
-                  </dl>
-                </div>
-                <div>
-                  <Clock4 className="size-[1.875rem]" stroke="#6941c6" />
-                  <dl>
-                    <dt className="flex items-center">
-                      <span>Proc. Time</span>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    <dt>
+                      Throughput
+                      <HomeTooltip content="Actual number of passengers processed.">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
                     </dt>
                     <dd className="!font-semibold">
-                      {overview.procTime?.hour > 0 ? `${overview.procTime?.hour}h ` : null}
-                      {overview.procTime?.minute > 0 ? `${String(overview.procTime?.minute).padStart(2, '0')}m ` : null}
-                      {String(overview.procTime?.second).padStart(2, '0')}s
+                      {formatNumberWithComma(overview.throughput)}
+                      {formatUnit('pax')}
                     </dd>
                   </dl>
                 </div>
 
                 <div>
-                  <LockOpen className="size-[1.875rem]" stroke="#6941c6" />
+                  {formatImageSize(<PassengerQueue />, 30)}
+                  <dl>
+                    <dt>
+                      Queue Pax
+                      <HomeTooltip content="Average/Top (int)% queue passengers">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
+                    </dt>
+                    <dd className="!font-semibold">
+                      {formatNumberWithComma(overview.queuePax)}
+                      {formatUnit('pax')}
+                    </dd>
+                  </dl>
+                </div>
+
+                <div>
+                  {formatImageSize(<WaitTime />, 30)}
                   <dl>
                     <dt className="flex items-center">
                       <span>Wait Time</span>
+                      <HomeTooltip content="Average/Top (int)% wait time of passengers">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
+                    <dd className="!font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
+                  </dl>
+                </div>
+                <div>
+                  {formatImageSize(<RatioIcon01 />, 30)}
+                  <dl>
+                    <dt className="flex items-center">
+                      <span>AI Ratio</span>
+                      <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
                       <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
-                      {overview.waitTime?.hour > 0 ? `${overview.waitTime?.hour}h ` : null}
-                      {overview.waitTime?.minute > 0 ? `${String(overview.waitTime?.minute).padStart(2, '0')}m ` : null}
-                      {String(overview.waitTime?.second).padStart(2, '0')}s
+                      {Math.round(Number(overview.ai_ratio))}
+                      {formatUnit('%')}
+                    </dd>
+                  </dl>
+                </div>
+
+                <div>
+                  {formatImageSize(<RatioIcon02 />, 30)}
+                  <dl>
+                    <dt className="flex items-center">
+                      <span>PA Ratio</span>
+                      <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
+                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                      </HomeTooltip>
+                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
+                    </dt>
+                    <dd className="!font-semibold">
+                      {Math.round(Number(overview.pa_ratio))}
+                      {formatUnit('%')}
                     </dd>
                   </dl>
                 </div>
@@ -141,72 +171,81 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                     const zone = parts.join('_');
 
                     return (
-                      <div className={cn('scroll-item', !comp.isOpened && 'closed')} key={j}>
+                      <div className={cn('scroll-item', comp.opened[0] === 0 && 'closed')} key={j}>
                         <div className="scroll-item-head">
                           <h5>
                             <em>
                               {pascalCase(zone)} {facility}
                             </em>
-                            {!comp.isOpened && <span className="stats-close">CLOSED</span>}
+                            {comp.opened[0] === 0 ? (
+                              <span className="stats-close">CLOSED</span>
+                            ) : (
+                              <span className="stats-open">OPEN</span>
+                            )}
                           </h5>
                         </div>
 
                         <div className="scroll-item-body">
                           <div className="summary-sm disabled">
                             <div>
-                              <LockOpen className="size-6" stroke="#6941c6" />
+                              {formatImageSize(<LockOpen stroke="#6941c6" />, 24)}
                               <dl>
                                 <dt>Opened</dt>
                                 <dd className="!font-semibold">
                                   {comp.opened[0]} / {comp.opened[1]}
+                                  {formatUnit('EA')}
                                 </dd>
                               </dl>
                             </div>
 
                             <div>
-                              <User className="size-6" stroke="#6941c6" />
+                              {formatImageSize(<PassengerThroughput />, 24)}
                               <dl>
                                 <dt>Throughput</dt>
-                                <dd className="!font-semibold">{comp.throughput}</dd>
-                              </dl>
-                            </div>
-
-                            <div>
-                              <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
-                              <dl>
-                                <dt>Max Queue</dt>
-                                <dd className="!font-semibold">{comp.maxQueue}</dd>
-                              </dl>
-                            </div>
-
-                            <div>
-                              <Image src="/image/ico-main-03.svg" alt="" width={24} height={24} />
-                              <dl>
-                                <dt>Queue Pax</dt>
-                                <dd className="!font-semibold">{comp.queueLength}</dd>
-                              </dl>
-                            </div>
-
-                            <div>
-                              <Clock4 className="size-6" stroke="#6941c6" />
-                              <dl>
-                                <dt>Proc. Time</dt>
                                 <dd className="!font-semibold">
-                                  {comp.procTime?.hour > 0 ? `${comp.procTime?.hour}h` : null}
-                                  {comp.procTime?.minute > 0 ? `${comp.procTime?.minute}m` : null}
-                                  {comp.procTime?.second}s
+                                  {formatNumberWithComma(comp.throughput)}
+                                  {formatUnit('pax')}
                                 </dd>
                               </dl>
                             </div>
 
                             <div>
-                              <Clock4 className="size-6" stroke="#6941c6" />
+                              {formatImageSize(<PassengerQueue />, 24)}
+                              <dl>
+                                <dt>Queue Pax</dt>
+                                <dd className="!font-semibold">
+                                  {formatNumberWithComma(comp.queuePax)}
+                                  {formatUnit('pax')}
+                                </dd>
+                              </dl>
+                            </div>
+
+                            <div>
+                              {formatImageSize(<WaitTime />, 24)}
                               <dl>
                                 <dt>Wait Time</dt>
+                                <dd className="!font-semibold">{formatTimeTaken(comp.waitTime)}</dd>
+                              </dl>
+                            </div>
+
+                            <div>
+                              {formatImageSize(<RatioIcon01 />, 24)}
+                              <dl>
+                                <dt>AI Ratio</dt>
                                 <dd className="!font-semibold">
-                                  {comp.waitTime?.hour > 0 ? `${comp.waitTime?.hour}h` : null}
-                                  {comp.waitTime?.minute > 0 ? `${comp.waitTime?.minute}m` : null}
-                                  {comp.waitTime?.second}s
+                                  {Math.round(Number(comp.ai_ratio))}
+                                  {formatUnit('%')}
+                                </dd>
+                              </dl>
+                            </div>
+
+                            <div>
+                              {formatImageSize(<RatioIcon02 />, 24)}
+                              <dl>
+                                <dt>PA Ratio</dt>
+                                <dd className="!font-semibold">
+                                  {Math.round(Number(comp.pa_ratio))}
+                                  {formatUnit('%')}
                                 </dd>
                               </dl>
                             </div>

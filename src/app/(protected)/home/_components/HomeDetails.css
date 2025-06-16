@@ -80,6 +80,12 @@
                 background-color: #fef3f2;
                 color: #b42318;
               }
+              .stats-open {
+                @apply ml-2.5 items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium;
+                border: 1px solid #bbf7d0;
+                background-color: #f0fdf4;
+                color: #027a48;
+              }
             }
 
             a {
@@ -124,6 +130,9 @@
 
                 .stats-close {
                   @apply flex;
+                }
+                .stats-open {
+                  @apply hidden;
                 }
               }
             }

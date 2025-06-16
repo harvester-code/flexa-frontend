@@ -15,10 +15,12 @@ import {
 } from '@/components/icons';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 import HomeSummaryCard from './HomeSummaryCard';
+import HomeTooltip from './HomeTooltip';
 
 // const TOOLTIP_MAP = {
 //   'Passenger Throughput': 'The number of all passengers processed in a day',
@@ -91,7 +93,12 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
 
         return {
           title: process,
-          value: value.toLocaleString() + 'pax',
+          value: (
+            <>
+              {value.toLocaleString()}
+              {formatUnit('pax')}
+            </>
+          ),
           width: percentage,
         };
       }
@@ -102,7 +109,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
 
       return {
         title: process,
-        value: `${v.hour > 0 ? `${v.hour}h ` : ''} ${v.minute > 0 ? `${v.minute}m ` : ''} ${v.second}s`.trim(),
+        value: formatTimeTaken(v),
         width: percentage,
       };
     });
@@ -127,35 +134,81 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
       <div className="my-[14px] grid grid-cols-3 grid-rows-2 gap-3 overflow-auto">
         <HomeSummaryCard
           icon={PassengerThroughput}
-          title="Pax Throughput"
-          value={summaries?.throughput.toLocaleString()}
+          title={<span>Pax Throughput</span>}
+          value={
+            <>
+              {summaries?.throughput.toLocaleString()}
+              {formatUnit('pax')}
+            </>
+          }
         />
         <HomeSummaryCard
           showCircle
           icon={WaitTime}
-          title="Wait Time"
-          value={`${summaries?.waiting_time.hour > 0 ? `${summaries?.waiting_time.hour}h ` : ''} ${summaries?.waiting_time.minute > 0 ? `${summaries?.waiting_time.minute}m ` : ''} ${summaries?.waiting_time.second}s`.trim()}
+          title={<span>Wait Time</span>}
+          value={formatTimeTaken(summaries?.waiting_time)}
         />
         <HomeSummaryCard
           showCircle
           icon={PassengerQueue}
-          title="Queue Pax"
-          value={`${summaries?.queue_length.toLocaleString()} pax`}
+          title={<span>Queue Pax</span>}
+          value={
+            <>
+              {summaries?.queue_length.toLocaleString()}
+              {formatUnit('pax')}
+            </>
+          }
         />
         <HomeSummaryCard
           icon={RatioIcon01}
-          title="Activated / Installed Ratio"
-          value={`${summaries?.facility_utilization.toFixed(1)}%`}
+          title={
+            <span className="flex items-center">
+              Activated / Installed Ratio (AIR)
+              <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
+                <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+              </HomeTooltip>
+            </span>
+          }
+          value={
+            <>
+              {Math.round(Number(summaries?.facility_utilization))}
+              {formatUnit('%')}
+            </>
+          }
         />
         <HomeSummaryCard
           icon={RatioIcon02}
-          title="Processed / Activated Ratio"
-          value={`${summaries?.processed_per_activated.toFixed(1)}%`}
+          title={
+            <span className="flex items-center">
+              Processed / Activated Ratio (PAR)
+              <HomeTooltip content="The ratio of processed capacity to activated capacity.">
+                <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+              </HomeTooltip>
+            </span>
+          }
+          value={
+            <>
+              {Math.round(Number(summaries?.processed_per_activated))}
+              {formatUnit('%')}
+            </>
+          }
         />
         <HomeSummaryCard
           icon={RatioIcon03}
-          title="Processed / Installed Ratio"
-          value={`${summaries?.processed_per_installed.toFixed(1)}%`}
+          title={
+            <span className="flex items-center">
+              Processed / Installed Ratio (PIR)
+              <HomeTooltip content="The ratio of processed capacity to total installed capacity.">
+                <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+              </HomeTooltip>
+            </span>
+          }
+          value={
+            <>
+              {Math.round(Number(summaries?.processed_per_installed))}
+              {formatUnit('%')}
+            </>
+          }
         />
       </div>
 

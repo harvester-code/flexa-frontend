@@ -4,8 +4,8 @@ import { CircleSmall } from 'lucide-react';
 interface HomeSummaryCardProps {
   showCircle?: boolean;
   icon: ComponentType<unknown>;
-  title: string;
-  value: string | number;
+  title: React.ReactNode;
+  value: React.ReactNode;
 }
 
 function HomeSummaryCard({ title, value, icon: IconComponent, showCircle = false }: HomeSummaryCardProps) {
