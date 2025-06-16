@@ -35,7 +35,7 @@ export default function Password() {
             .from('user_login_history')
             .select('session_id')
             .eq('user_id', session.user.id)
-            .order('logged_in_at', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(1)
             .single();
 
@@ -61,6 +61,8 @@ export default function Password() {
         error: userError,
       } = await supabase.auth.getUser();
 
+      console.log('로그인 기록 쿼리 user.id:', user?.id); // user.id 값 확인
+
       if (userError) {
         console.error('사용자 정보 조회 실패:', userError.message);
         toast({
@@ -85,7 +87,7 @@ export default function Password() {
         .from('user_login_history')
         .select('*')
         .eq('user_id', user.id)
-        .order('logged_in_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) {
@@ -276,9 +278,7 @@ export default function Password() {
                 className={`${!isPasswordValid && newPassword.length > 0 ? 'border-red-500 focus:border-red-500' : ''}`}
               />
               <ul className="password-Feedback">
-                <li
-                  className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-brand' : 'text-gray-400'}`}
-                >
+                <li className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-brand' : 'text-gray-400'}`}>
                   {newPassword.length >= 6 ? (
                     <CheckCircle2 className="h-4 w-4 transition-all duration-200" />
                   ) : (
@@ -342,7 +342,7 @@ export default function Password() {
                 </dt>
                 <dd className="text-sm">
                   {history.ip_address}, {history.user_agent} •{' '}
-                  {new Date(history.logged_in_at).toLocaleDateString('ko-KR', {
+                  {new Date(history.created_at).toLocaleDateString('ko-KR', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',

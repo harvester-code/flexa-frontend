@@ -310,7 +310,7 @@ export type Database = {
         Row: {
           id: string;
           ip_address: string | null;
-          logged_in_at: string | null;
+          created_at: string | null;
           session_id: string | null;
           user_agent: string | null;
           user_id: string | null;
@@ -318,7 +318,7 @@ export type Database = {
         Insert: {
           id?: string;
           ip_address?: string | null;
-          logged_in_at?: string | null;
+          created_at?: string | null;
           session_id?: string | null;
           user_agent?: string | null;
           user_id?: string | null;
@@ -326,7 +326,7 @@ export type Database = {
         Update: {
           id?: string;
           ip_address?: string | null;
-          logged_in_at?: string | null;
+          created_at?: string | null;
           session_id?: string | null;
           user_agent?: string | null;
           user_id?: string | null;
