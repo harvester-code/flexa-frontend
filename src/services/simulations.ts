@@ -16,12 +16,11 @@ import { instanceWithAuth } from '@/lib/axios';
 const BASE_URL = 'api/v1/simulations';
 
 interface CreateScenarioParams {
-  simulation_name: string;
+  name: string;
   airport: string;
   terminal: string;
   editor: string;
   memo: string;
-  group_id: string;
 }
 
 export const createScenario = (params: CreateScenarioParams) => {

@@ -62,7 +62,8 @@ const SimulationPage: React.FC = () => {
       setScenarioStates(
         scenarios.map((item) => {
           return {
-            name: item.simulation_name,
+            name: item.name,
+            // name: item.simulation_name,
             memo: item.memo,
             editName: false,
             editMemo: false,
@@ -105,7 +106,7 @@ const SimulationPage: React.FC = () => {
       },
       item.id
     ).catch(() => {
-      handleRowChange(index, { name: scenarios[index].simulation_name });
+      handleRowChange(index, { name: scenarios[index].name });
       PopupAlert.confirm('Failed to change the name');
     });
   };
@@ -163,7 +164,7 @@ const SimulationPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         });
       },
-      `Are you sure you want to delete ${item.simulation_name}?`
+      `Are you sure you want to delete ${item.name}?`
     );
   };
 
@@ -290,7 +291,7 @@ const SimulationPage: React.FC = () => {
           <tbody>
             {scenarios?.length > 0 && scenarios?.length == scenarioStates?.length ? (
               scenarios?.map((item, index) =>
-                searchKeyword?.length > 0 && item.simulation_name.indexOf(searchKeyword) < 0 ? null : (
+                searchKeyword?.length > 0 && item.name.indexOf(searchKeyword) < 0 ? null : (
                   <tr key={index} className={`border-b text-sm ${selected[index] ? 'active' : ''}`}>
                     <td className="text-center">
                       <Checkbox
@@ -298,9 +299,7 @@ const SimulationPage: React.FC = () => {
                         id={`check-${index}`}
                         checked={selected[index]}
                         onChange={() =>
-                          setSelected([
-                            ...selected.map((_, i) => (i == index ? !selected[index] : selected[i])),
-                          ])
+                          setSelected([...selected.map((_, i) => (i == index ? !selected[index] : selected[i]))])
                         }
                         className="checkbox text-sm"
                       />
@@ -336,7 +335,9 @@ const SimulationPage: React.FC = () => {
                     <td className="text-center">{item.terminal}</td>
                     <td className="">{item.editor}</td>
                     <td className="">
-                      {item?.simulation_date ? dayjs(item?.simulation_date).format('MMM-DD-YYYY') : null}
+                      {item?.target_flight_schedule_date
+                        ? dayjs(item?.target_flight_schedule_date).format('MMM-DD-YYYY')
+                        : null}
                     </td>
                     <td className="">{dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}</td>
                     <td className="">

@@ -42,7 +42,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('simulation_name', {
+      columnHelper.accessor('name', {
         header: () => <span>Simulation Name</span>,
         cell: (info) => (
           <p
@@ -68,7 +68,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
         cell: (info) => info.renderValue(),
         footer: (info) => info.column.id,
       }),
-      columnHelper.accessor('simulation_date', {
+      columnHelper.accessor('target_flight_schedule_date', {
         header: () => <span>Created at</span>,
         cell: (info) => dayjs(info.getValue()).format('MMM-DD-YYYY HH:mm'),
         footer: (info) => info.column.id,
@@ -108,14 +108,14 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
                 <li className="flex items-center gap-2.5">
                   <span>Scenario:</span>
                   <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-                    {scenario?.simulation_name}
+                    {scenario?.name}
                   </span>
 
                   <span>/</span>
 
                   <span>Date:</span>
                   <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-                    {dayjs(scenario?.simulation_date).format('MMM-DD-YYYY')}
+                    {dayjs(scenario?.target_flight_schedule_date).format('MMM-DD-YYYY')}
                   </span>
                 </li>
               </ul>

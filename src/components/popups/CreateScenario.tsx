@@ -112,21 +112,23 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                 PopupAlert.confirm('Please enter the scenario name.', 'confirm', () => {}, 'Test');
                 return;
               }
+
               if (!terminal) {
                 PopupAlert.confirm('Please select the simulation location.');
                 return;
               }
+
               // if (!scenarioMemo) {
               //   PopupAlert.confirm('Please enter the memo.');
               //   return;
               // }
+
               createScenario({
-                simulation_name: scenarioName,
+                name: scenarioName,
                 airport: locationAirport,
                 terminal,
                 memo: '', //scenarioMemo,
                 editor: userInfo?.fullName || '',
-                group_id: String(userInfo?.groupId),
               })
                 .then(({ data }) => {
                   if (data?.scenario_id) {

@@ -3,18 +3,18 @@ import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]
 import { Procedure } from './scenarios';
 
 interface ScenarioData {
+  airport: string;
   created_at: string;
   editor: string;
   id: string;
   is_active: boolean;
   memo: string;
-  simulation_date?: string;
-  simulation_name: string;
-  simulation_url?: string;
-  size?: number;
+  name: string;
+  status: 'done' | 'yet';
+  target_flight_schedule_date: string | null;
   terminal: string;
-  updated_at?: string;
-  user_id?: string;
+  updated_at: string;
+  user_id: string;
 }
 
 interface ScenariosDataResponse {
