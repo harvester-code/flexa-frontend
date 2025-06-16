@@ -207,7 +207,7 @@ export default function Profile() {
 
         // 사용자 정보 업데이트
         const { data, error } = await supabase
-          .from('user_info')
+          .from('user_information')
           .update({
             profile_image_url: imageUrl,
           })
@@ -256,7 +256,7 @@ export default function Profile() {
     const supabase = createClient();
 
     const { data, error } = await supabase
-      .from('user_info')
+      .from('user_information')
       .update({
         first_name: firstName,
         last_name: lastName,
@@ -394,8 +394,7 @@ export default function Profile() {
                         <Image width={70} height={70} src="/image/ico-cloud.svg" alt="upload" />
                       </p>
                       <p className="mt-1">
-                        <span className="text-base font-semibold text-accent-700">Click to Upload</span> or Drag
-                        & Drop
+                        <span className="text-base font-semibold text-accent-700">Click to Upload</span> or Drag & Drop
                       </p>
                       <p className="text-xs">SVG, PNG, JPG or GIF (max. 800x400px)</p>
                     </>
@@ -434,7 +433,7 @@ export default function Profile() {
 
                           // 3. 사용자 정보에서 이미지 URL 제거
                           const { error } = await supabase
-                            .from('user_info')
+                            .from('user_information')
                             .update({ profile_image_url: null })
                             // FIXME: 느낌표 없애기
                             .eq('user_id', userInfo!.id);

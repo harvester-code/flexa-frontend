@@ -19,7 +19,7 @@ const fetchUser = async () => {
     throw new Error('존재하지 않는 유저입니다.');
   }
 
-  const { data, error } = await supabase.from('user_info').select('*').eq('user_id', userId).single();
+  const { data, error } = await supabase.from('user_information').select('*').eq('user_id', userId).single();
 
   if (error) {
     throw new Error(error.message);

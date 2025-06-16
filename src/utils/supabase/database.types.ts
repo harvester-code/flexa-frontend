@@ -214,7 +214,7 @@ export type Database = {
             foreignKeyName: 'simulation_scenario_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'user_info';
+            referencedRelation: 'user_information';
             referencedColumns: ['user_id'];
           },
         ];
@@ -246,7 +246,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      user_info: {
+      user_information: {
         Row: {
           bio: string | null;
           created_at: string;
@@ -363,9 +363,7 @@ export type Database = {
 type PublicSchema = Database[Extract<keyof Database, 'public'>];
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] & PublicSchema['Views']) | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
         Database[PublicTableNameOrOptions['schema']]['Views'])
