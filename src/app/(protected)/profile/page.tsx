@@ -43,7 +43,7 @@ export default function ProfilePage() {
           tabCount={2}
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number || 0 }))}
+          tabs={tabs.map((tab) => ({ text: tab.text }))}
           className={`mt-16 grid-cols-2`}
         />
         {currentTab === 0 ? <Profile /> : <Password />}

@@ -3,11 +3,10 @@ import React from 'react';
 interface TabDefaultProps {
   currentTab: number; // 현재 페이지
   availableTabs?: number; // 0 ~ availableTabs 까지 탭 버튼 활성화
-  // number: number;
   className?: string;
   tabs: {
     text: React.ReactNode;
-    number: number | null; // 숫자가 없을 경우 null
+    number?: number;
   }[];
   tabCount: number; // 탭의 갯수 추가
   onTabChange?: (tabIndex: number) => void;
