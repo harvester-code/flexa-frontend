@@ -12,12 +12,13 @@ import TheDropdownMenu from '@/components/TheDropdownMenu';
 import SimulationOverview from '@/components/popups/SimulationOverview';
 import { useDebounce } from '@/hooks/useDebounce';
 import HomeAccordion from './_components/HomeAccordion';
-import HomeCanvas from './_components/HomeCanvas';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
-import { snapshot } from './samples';
+
+// import HomeCanvas from './_components/HomeCanvas';
+// import { snapshot } from './samples';
 
 const KPI_FUNCS = [
   { label: 'Mean', value: 'mean' },
@@ -70,7 +71,7 @@ function HomePage() {
         onSelectScenario={setScenario}
       />
 
-      <HomeCanvas scenario={scenario} snapshot={snapshot} />
+      {/* <HomeCanvas scenario={scenario} snapshot={snapshot} /> */}
 
       <div className="mt-4 flex items-center justify-end">
         <CircleSmall className="mr-2" fill="#9E77ED" stroke="#9E77ED" />
