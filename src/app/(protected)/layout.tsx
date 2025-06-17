@@ -5,8 +5,8 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AppSidebar />
-      <main className="relative ml-[100px]">
-        <section className="mb-[20px]">{children}</section>
+      <main className="relative ml-[100px] flex min-h-screen flex-col">
+        <section className="flex-1">{children}</section>
         <AppFooter />
       </main>
     </>

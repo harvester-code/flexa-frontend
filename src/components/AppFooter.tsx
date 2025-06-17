@@ -33,7 +33,7 @@ const AppFooter: React.FC = () => (
         </div>
       </div>
 
-      <div className="-m-px border-t border-default-200 pb-10 pt-6 font-medium text-default-400">
+      <div className="border-t border-default-200 pb-10 pt-6 font-medium text-default-400">
         <p>© 2024 Flexa. All rights reserved.</p>
       </div>
     </div>
