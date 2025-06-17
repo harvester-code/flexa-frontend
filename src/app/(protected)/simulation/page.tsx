@@ -304,15 +304,15 @@ const SimulationPage: React.FC = () => {
                         className="checkbox text-sm"
                       />
                     </td>
-                    <td className="">
+
+                    <td>
                       <div className="flex items-center gap-[10px]">
-                        {/* <span>
-                      <Image width={16} height={16} src={item.imagePath} alt="" />
-                    </span> */}
                         <div
                           className={`cursor-pointer`}
                           onClick={() => {
-                            if (!scenarioStates[index].editName) router.push(`${pathname}/${item.id}`);
+                            if (!scenarioStates[index].editName) {
+                              router.push(`${pathname}/${item.id}`);
+                            }
                           }}
                         >
                           <input
@@ -333,14 +333,14 @@ const SimulationPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="text-center">{item.terminal}</td>
-                    <td className="">{item.editor}</td>
-                    <td className="">
+                    <td>{item.editor}</td>
+                    <td>
                       {item?.target_flight_schedule_date
                         ? dayjs(item?.target_flight_schedule_date).format('MMM-DD-YYYY')
                         : null}
                     </td>
-                    <td className="">{dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}</td>
-                    <td className="">
+                    <td>{dayjs(item?.updated_at).format('MMM-DD-YYYY hh:mm')}</td>
+                    <td>
                       <input
                         ref={scenarioStates[index].refMemo}
                         type="text"

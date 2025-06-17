@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { useShallow } from 'zustand/react/shallow';
 import { updateScenarioMetadata } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
+import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { timeToRelativeTime } from '@/lib/utils';
 
@@ -34,19 +35,6 @@ interface TabScenarioOverviewProps {
 
 export default function TabScenarioOverview({ visible }: TabScenarioOverviewProps) {
   const router = useRouter();
-  const [historyPage, setHistoryPage] = useState(0);
-
-  // const { overview, history, setTabIndex, setHistoryItem, tabIndex, scenarioInfo } = useScenarioStore(
-  //   useShallow((state) => ({
-  //     overview: state.overview,
-  //     setTabIndex: state.setTabIndex,
-  //     history: [...(state.history || [])].reverse(),
-  //     history: state.history,
-  //     setHistoryItem: state.setHistoryItem,
-  //     tabIndex: state.tabIndex,
-  //     scenarioInfo: state.scenarioInfo,
-  //   }))
-  // );
 
   const {
     history,
@@ -66,6 +54,8 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
       setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
     }))
   );
+
+  const [historyPage, setHistoryPage] = useState(0);
 
   const historyPageData = {
     start: historyPage * PAGE_ROW_AMOUNT,
@@ -116,7 +106,8 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
         </div>
       )}
 
-      <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
+      {/* ---------- 아래 History 관련 UI는 잠시 주석 처리 ---------- */}
+      {/* <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
       <div className="table-wrap mt-[10px]">
         <table className="table-default">
           <thead>
@@ -144,7 +135,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                     <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>{item.simulation}</span>
                   </td>
                   <td className="">
-                    {/* <Input
+                    <Input
                       type="text"
                       placeholder=""
                       value={history[index].memo}
@@ -152,7 +143,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
                       onChange={(e) => handleMemoChange(index, e.target.value)}
                       onBlur={() => handleUpdateMemo()}
                       disabled={true}
-                    /> */}
+                    />
                   </td>
                   <td className="text-center">
                     <span className={`badge error ${item.error_count > 0 ? 'yellow' : 'green'}`}>
@@ -190,7 +181,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
           </button>
         </p>
-      </div>
+      </div> */}
 
       <div className="mt-[30px] flex justify-between">
         <button

@@ -229,7 +229,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       {/* TODO: 아직 사용 불가한 데이터 소스에 대해서 not yet UI 추가하기 */}
       <TabDefault
         className={`tab-secondary mt-[25px]`}
-        tabs={SUB_TABS.map((tab) => ({ text: tab.text, number: tab.number }))}
+        tabs={SUB_TABS.map((tab) => ({ text: tab.text }))}
         tabCount={SUB_TABS.length}
         currentTab={selectedDatasource}
       />

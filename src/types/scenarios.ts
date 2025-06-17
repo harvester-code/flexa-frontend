@@ -262,6 +262,7 @@ export interface FacilityCapacitySetting {
   timeUnit: number;
   automaticInput: boolean;
   overviewChartVisible: boolean;
+  facilityType: 'limited_facility' | 'unlimited_facility';
   // ------ 시설 기본 세팅 테이블 데이터
   defaultTableData: {
     header: AllocationTableHeader[];

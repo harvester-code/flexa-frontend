@@ -197,6 +197,8 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   // ====================================================================================================
   // 1️⃣ Initialize settings and load data when the component is visible
   useEffect(() => {
+    console.log(selectedNodes, procedures, currentSetting, isInitialized, visible);
+
     if (!visible || isInitialized) return;
 
     if (!procedures || procedures.length === 0) {
@@ -204,36 +206,41 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       return;
     }
 
+    if (selectedNodes.length === procedures.length) return;
+
+    if (currentSetting) return;
+
+    console.log('hello');
+
     // ‼️ 반드시 가장 먼저 호출되어야함. (추후에 개선해보자.)
     setSelectedNodes(Array(procedures.length).fill(0));
 
-    if (!currentSetting) {
-      const defaultDeviceCount = 5; // Default number of devices
-      const defaultProcessingTime = 60; // Default processing time in seconds
+    const defaultDeviceCount = 5; // Default number of devices
+    const defaultProcessingTime = 60; // Default processing time in seconds
 
-      const defaultTableData = generateDefaultTableData(defaultDeviceCount);
-      const defaultOpeningHoursTableData = generateOpeningHoursTableData(defaultDeviceCount, defaultProcessingTime);
+    const defaultTableData = generateDefaultTableData(defaultDeviceCount);
+    const defaultOpeningHoursTableData = generateOpeningHoursTableData(defaultDeviceCount, defaultProcessingTime);
 
-      const initSettings = procedures.reduce((settings, procedure, procedureIndex) => {
-        procedure.nodes.forEach((_, nodeIndex) => {
-          const key = `${procedureIndex}_${nodeIndex}`;
-          settings[key] = {
-            numberOfEachDevices: 5,
-            processingTime: 60,
-            maximumQueuesAllowedPer: 200,
-            timeUnit: DEFAULT_TIME_UNIT,
-            overviewChartVisible: false,
-            defaultTableData: defaultTableData,
-            lineChartData: null,
-            openingHoursTableData: defaultOpeningHoursTableData,
-          };
-        });
-        return settings;
-      }, {});
+    const initSettings = procedures.reduce((settings, procedure, procedureIndex) => {
+      procedure.nodes.forEach((_, nodeIndex) => {
+        const key = `${procedureIndex}_${nodeIndex}`;
+        settings[key] = {
+          numberOfEachDevices: 5,
+          processingTime: 60,
+          maximumQueuesAllowedPer: 200,
+          timeUnit: DEFAULT_TIME_UNIT,
+          overviewChartVisible: false,
+          defaultTableData: defaultTableData,
+          lineChartData: null,
+          openingHoursTableData: defaultOpeningHoursTableData,
+          // TODO: 'limited_facility' | 'unlimited_facility'
+          facilityType: 'limited_facility',
+        };
+      });
+      return settings;
+    }, {});
 
-      setSettings(initSettings);
-    }
-
+    setSettings(initSettings);
     setIsInitialized(true);
   }, [
     currentSetting,
@@ -371,13 +378,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   ]);
 
   // HACK: 이 부분은 나중에 개선 필요
-  if (visible && (!isInitialized || !currentSetting)) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p>Loading facility settings...</p>
-      </div>
-    );
-  }
+  if (visible && !currentSetting) return null;
 
   return !visible ? null : (
     <div>
@@ -389,7 +390,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
         availableTabs={availableSecondTab}
-        tabs={procedures.map((proc, i) => ({ text: proc.name, number: i }))}
+        tabs={procedures?.map((proc, i) => ({ text: proc.nameText }))}
         onTabChange={(index) => {
           if (index > availableSecondTab) return;
           setSelectedSecondTab(index);
@@ -421,7 +422,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           {/* =============== DESK =============== */}
           <dl className="flex flex-grow flex-col gap-[5px]">
             <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">{procedures[selectedSecondTab].name} desks</h4>
+              <h4 className="pl-[10px] text-sm font-semibold">{procedures[selectedSecondTab].nameText} desks</h4>
             </dt>
 
             <dd>
@@ -444,7 +445,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedData = currentSetting.defaultTableData.data.map((item) => ({
+                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
                         ...item,
                         values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                       }));
@@ -467,7 +468,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                       }));
@@ -507,7 +508,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedData = currentSetting.defaultTableData.data.map((item) => ({
+                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
                         ...item,
                         values: Array(inputValue).fill(currentSetting.processingTime),
                       }));
@@ -531,7 +532,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(inputValue).fill(currentSetting.processingTime),
                       }));
@@ -565,7 +566,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedData = currentSetting.defaultTableData.data.map((item) => ({
+                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
                         ...item,
                         values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                       }));
@@ -589,7 +590,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           minWidth: 80,
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                       }));
@@ -634,7 +635,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
                         defaultTableData: {
                           ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data.map((item) => ({
+                          data: currentSetting.defaultTableData?.data?.map((item) => ({
                             ...item,
                             values: updatedValues,
                           })),
@@ -644,7 +645,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
                       }));
@@ -681,7 +682,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
                         defaultTableData: {
                           ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data.map((item) => ({
+                          data: currentSetting.defaultTableData?.data?.map((item) => ({
                             ...item,
                             values: updatedValues,
                           })),
@@ -691,7 +692,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(currentSetting.numberOfEachDevices).fill(inputValue),
                       }));
@@ -722,7 +723,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
                         defaultTableData: {
                           ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data.map((item) => ({
+                          data: currentSetting.defaultTableData?.data?.map((item) => ({
                             ...item,
                             values: updatedValues,
                           })),
@@ -732,7 +733,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data.map((item) => ({
+                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
                       }));
@@ -826,6 +827,9 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           <h2 className="title-sm">Set Opening Hours</h2>
 
           <div className="flex items-center gap-[20px]">
+            {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
+            {/* 라인차트를 숫자를 입력했을 때 마다 호출하도록 변경하기 */}
+            {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
             <Button className="btn-md btn-tertiary" text="Update Line Chart" onClick={loadLineChartData} />
 
             <Checkbox
@@ -896,20 +900,17 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           type: 'bar',
                           orientation: 'h',
                           marker: { color: '#6941C6', opacity: 1 },
-                          x: [
-                            ...barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
-                              procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                            ]?.y,
-                          ].reverse(),
-                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`).reverse(),
-                          // name: item.name,
+                          x: barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
+                            procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
+                          ]?.y,
+                          y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
                         },
                         {
                           type: 'scatter',
                           mode: 'lines',
                           marker: { color: '#FF0000', opacity: 1 },
-                          x: [...(currentSetting.lineChartData?.y || [])].reverse(),
-                          y: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`).reverse(),
+                          x: currentSetting.lineChartData?.y || [],
+                          y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
                         },
                       ]}
                       chartLayout={{
@@ -966,7 +967,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                       {
                         type: 'bar',
                         marker: { color: '#6941C6', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
+                        x: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`),
                         y:
                           barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
                             procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
@@ -976,7 +977,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                         type: 'scatter',
                         mode: 'lines',
                         marker: { color: '#FF0000', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data.map((val) => `${val.name}`),
+                        x: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`),
                         y: currentSetting.lineChartData?.y || [],
                       },
                     ]

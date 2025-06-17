@@ -36,15 +36,6 @@ const GROUP_CRITERIAS = [
 
 export default function TabSimulation({ simulationId, visible }: TabSimulationProps) {
   const {
-    // passenger_attr,
-    // facility_info,
-    // setFacilityInformation,
-    // overview,
-    // setOverview,
-    // tabIndex,
-    // setTabIndex,
-    // scenarioInfo,
-    // +++
     currentScenarioTab,
     setCurrentScenarioTab,
     scenarioTerminal,
@@ -65,15 +56,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     setMatrix,
   } = useScenarioStore(
     useShallow((s) => ({
-      // passenger_attr: s.passenger_attr,
-      // facility_info: s.facility_info,
-      // setFacilityInformation: s.setFacilityInformation,
-      // overview: s.overview,
-      // setOverview: s.setOverview,
-      // tabIndex: s.tabIndex,
-      // setTabIndex: s.setTabIndex,
-      // scenarioInfo: s.scenarioInfo,
-      // +++
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       scenarioTerminal: s.scenarioProfile.scenarioTerminal,
@@ -105,8 +87,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
-  const [procedureIndex, setProcedureIndex] = useState(0);
-
   const [selColorCriteria, setSelColorCriteria] = useState('Airline');
   const [selGroupCriteria, setSelGroupCriteria] = useState(GROUP_CRITERIAS[0].id);
 
@@ -118,7 +98,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     await requestSimulation(simulationId, simulationParams);
   };
 
-  const loadSimulation = useCallback(async () => {
+  const loadSimulationOutput = useCallback(async () => {
     try {
       const { data } = await fetchSimulation(simulationId);
       if (data) {
@@ -130,6 +110,25 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
   }, [simulationId]);
 
+  const loadSimulationOverview = useCallback((components: any, params: any) => {
+    // HACK: 초기화, 임시방편
+    setMatrix([]);
+
+    getSimulationOverview(simulationId, {
+      scenario_id: simulationId,
+      components,
+      ...params,
+    })
+      .then(({ data }) => {
+        // HACK: 여기 위치가 맞을까?
+        setMatrix(data.matric);
+      })
+      .catch((e) => {
+        console.error('Error fetching overview data:', e);
+        setLoadError(true);
+      });
+  }, []);
+
   // ==============================================================================
 
   // HACK: 아래 코드 개선하기
@@ -137,9 +136,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   useEffect(() => {
     if (!visible || isInitialized) return;
 
-    // Already initialized, skip loading
-    if (matrix && matrix.length > 0) return;
-
+    // --- 🔥 삭제 고려 대상 🔥 ---
     let nodeIdCur = 0;
 
     const components: {
@@ -149,6 +146,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         name: string;
         max_queue_length: number;
         facility_count: number;
+        facility_type: 'limited_facility' | 'unlimited_facility';
         facility_schedules: Array<number[]>;
       }[];
     }[] = [];
@@ -161,6 +159,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         name: string;
         max_queue_length: number;
         facility_count: number;
+        facility_type: 'limited_facility' | 'unlimited_facility';
         facility_schedules: Array<number[]>;
       }[] = [];
 
@@ -174,6 +173,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           name: nodeName,
           max_queue_length: targetSetting.maximumQueuesAllowedPer,
           facility_count: targetSetting.numberOfEachDevices,
+          facility_type: targetSetting.facilityType,
           facility_schedules:
             targetSetting.openingHoursTableData?.data?.map((item) => {
               return item.values.map((val) => {
@@ -186,31 +186,26 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         });
       }
 
-      components.push({
-        // name: currentComponent?.nameText?.toLowerCase().replace(/[\s-]+/g, '_') || '',
-        name: currentComponent.name,
-        nodes,
-      });
+      components.push({ name: currentComponent.name, nodes });
     }
 
-    // --- 🔥 삭제 고려 대상 🔥 ---
     const cleanedProcesses = {};
 
     allocationTables.forEach((table, index) => {
       const defaultMatrix = {};
 
       table.data?.forEach((row) => {
-        // const rowName = row.name.toLowerCase().replace(/[\s-]+/g, '_');
+        const rowName = row.name;
 
-        defaultMatrix[row.name] = {};
+        defaultMatrix[rowName] = {};
 
         row.values.forEach((val, idx) => {
-          defaultMatrix[row.name][table.header[idx].name] = Number(val) / 100;
+          defaultMatrix[rowName][table.header[idx].name] = Number(val) / 100;
         });
       });
 
       cleanedProcesses[index + 1] = {
-        name: table.title,
+        name: table.title.toLowerCase().replace(/[\s-]+/g, '_'),
         nodes: table.header.map((header) => header.name),
         source: String(index),
         destination: procedures_.length < index + 2 ? null : String(index + 2),
@@ -248,20 +243,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     };
     // --- 🔥 삭제 고려 대상 🔥 ---
 
-    getSimulationOverview(simulationId, {
-      scenario_id: simulationId,
-      components,
-      ...params,
-    })
-      .then(({ data }) => {
-        setMatrix(data.matric);
-      })
-      .catch((e) => {
-        console.error('Error fetching overview data:', e);
-        setLoadError(true);
-      });
-
-    loadSimulation();
+    loadSimulationOutput();
+    if (!matrix || matrix.length < 1) {
+      loadSimulationOverview(components, params);
+    }
 
     setSimulationParams({ scenario_id: simulationId, components, ...params });
     setIsInitialized(true);
@@ -271,7 +256,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     allocationTables,
     dataConnectionCriteria,
     flightScheduleFilters,
-    loadSimulation,
+    loadSimulationOutput,
+    loadSimulationOverview,
     normalDistributionParams,
     procedures_,
     setMatrix,
@@ -279,30 +265,31 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     simulationId,
     targetAirport.iata,
     targetDate,
+    matrix,
   ]);
 
   // ==============================================================================
+
+  const [procedureIndex, setProcedureIndex] = useState(0);
+  const [nodeIndex, setNodeIndex] = useState([]);
 
   const processCurrent = procedures_[procedureIndex]?.nameText?.toLowerCase().replace(/[\s-]+/g, '_');
 
   const kpiDataCurrent = simulationData?.kpi?.find(
     (item) =>
-      // item.process == processCurrent &&
-      // passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
+      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
       item
   );
 
   const chartDataCurrent = simulationData?.chart?.find(
     (item) =>
-      // item.process == processCurrent &&
-      // passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
+      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
       item
   );
 
   const lineChartDataCurrent = simulationData?.line_chart?.find(
     (item) =>
-      // item.process == processCurrent &&
-      // passenger_attr?.procedures?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
+      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
       item
   );
 
@@ -314,7 +301,22 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   return !visible ? null : (
     <div>
-      <h2 className="title-sm mt-[25px]">Overview</h2>
+      <div className="mt-[25px] flex items-center justify-between">
+        <h2 className="title-sm">Overview</h2>
+        <Button
+          className="btn-md btn-tertiary"
+          text="Reload Data"
+          onClick={() => {
+            console.log(simulationParams);
+
+            loadSimulationOverview(simulationParams?.components || [], {
+              destribution_conditions: simulationParams?.destribution_conditions || [],
+              flight_schedule: simulationParams?.flight_schedule || {},
+              processes: simulationParams?.processes || {},
+            });
+          }}
+        />
+      </div>
 
       {matrix && matrix.length > 0 ? (
         <div className="overview-wrap mt-[10px]">
@@ -406,7 +408,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             <TabDefault
               tabCount={procedures_.length}
               currentTab={procedureIndex}
-              tabs={procedures_.map((tab) => ({ text: tab.nameText, number: null }))}
+              tabs={procedures_.map((tab) => ({ text: tab.nameText }))}
               onTabChange={(index) => {
                 setProcedureIndex(index);
               }}
@@ -752,7 +754,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         <button
           className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
           onClick={runSimulation}
-          disabled={matrix.length < 1}
+          // disabled={matrix.length < 1}
         >
           <span className="flex flex-grow items-center justify-center">Run Simulation</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

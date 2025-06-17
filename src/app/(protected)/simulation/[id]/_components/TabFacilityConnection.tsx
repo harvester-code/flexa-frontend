@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -245,31 +245,6 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     }
   }, [procedures.length]);
 
-  const validateTable = () => {
-    const isDefaultTableValid = checkNotEmptyRows(allocationTables[selectedSecondTab].data);
-
-    const isConditionsTableValid = allocationConditionsEnabled[selectedSecondTab]
-      ? allocationConditions[selectedSecondTab].every((condition) => checkNotEmptyRows(condition.tableData.data))
-      : true;
-
-    const isDone = isDefaultTableValid && isConditionsTableValid;
-
-    if (isDone) {
-      setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? true : v)));
-
-      if (selectedSecondTab < procedures.length - 1) {
-        // 다음 탭으로 이동
-        setSelectedSecondTab(selectedSecondTab + 1);
-      }
-
-      return;
-    }
-
-    if (validatedTableStates[selectedSecondTab]) {
-      setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? false : v)));
-    }
-  };
-
   const filterOptionsWithTime = useMemo(() => {
     if (!filterOptions) return null;
 
@@ -437,7 +412,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
       };
 
       return {
-        title: proc.name,
+        title: proc.nameText || '',
         header,
         data,
         sourceCondition,
@@ -523,6 +498,33 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     return updatedCondition;
   };
 
+  // -------------------------------------------------------------
+  // 테이블의 유효성을 검사하는 함수입니다.
+  const validateTable = useCallback(() => {
+    const isDefaultTableValid = checkNotEmptyRows(allocationTables[selectedSecondTab].data);
+    const isConditionsTableValid = allocationConditionsEnabled[selectedSecondTab]
+      ? allocationConditions[selectedSecondTab].every((condition) => checkNotEmptyRows(condition.tableData.data))
+      : true;
+
+    const isDone = isDefaultTableValid && isConditionsTableValid;
+
+    if (isDone && validatedTableStates[selectedSecondTab]) {
+      return; // 이미 완료된 상태라면 아무 작업도 하지 않음
+    } else if (isDone && !validatedTableStates[selectedSecondTab]) {
+      setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? true : v)));
+    } else if (!isDone && validatedTableStates[selectedSecondTab]) {
+      setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? false : v)));
+    }
+  }, [allocationTables, allocationConditions, allocationConditionsEnabled, selectedSecondTab, validatedTableStates]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    if (allocationTables.length === 0 || allocationConditions.length === 0) return;
+
+    validateTable();
+  }, [allocationTables, allocationConditions, validateTable, visible]);
+
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Allocate Passenger Attributes to Processing Facilities</h2>
@@ -532,7 +534,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
         availableTabs={activedSecondTab}
-        tabs={procedures?.map((proc) => ({ text: proc.nameText, number: Number(proc.id) + 1 })) || []}
+        tabs={procedures?.map((proc) => ({ text: proc.nameText })) || []}
         onTabChange={(index) => {
           if (index > activedSecondTab) return;
           setSelectedSecondTab(index);
@@ -551,7 +553,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         <div>
           <div className="mt-[30px] flex items-center justify-center gap-[100px]">
             <p className="text-[40px] text-xl font-semibold text-default-800">
-              {selectedSecondTab === 0 ? dataConnectionCriteria : procedures[selectedSecondTab - 1].name}
+              {selectedSecondTab === 0 ? dataConnectionCriteria : procedures[selectedSecondTab - 1].nameText}
             </p>
 
             <p className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-default-100">
@@ -726,7 +728,6 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
             </div>
           </div>
 
-          {/* 선택된 탭의 인덱스를 통해서 UI에서 보여주고 있다. */}
           {procedures.length === allocationTables.length ? (
             <GridTable
               className="max-h-[80vh]"
@@ -739,10 +740,10 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
                   ? ''
                   : '● Please make sure to fill in all fields without leaving any blank rows!'
               }
-              // HACK: 현재는 Cell이 1개 바뀔 때마다 모든 테이블 데이터를 업데이트하고 있다.
-              //       추후에는 선택된 테이블의 데이터만 업데이트하도록 개선해야 한다.
               stickyTopRows={1}
               onDataChange={(data) => {
+                // HACK: 현재는 Cell이 1개 바뀔 때마다 모든 테이블 데이터를 업데이트하고 있다.
+                //       추후에는 선택된 테이블의 데이터만 업데이트하도록 개선해야 한다.
                 setAllocationTables(
                   allocationTables.map((val, i) => (selectedSecondTab === i ? { ...val, data } : val))
                 );
@@ -750,8 +751,20 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
             />
           ) : null}
 
-          <div className="mt-[20px] flex items-center justify-end">
-            <Button className="btn-md btn-tertiary" text="Validate" onClick={validateTable} />
+          <div className="mt-[20px] flex items-center justify-between">
+            <Button
+              className="btn-md btn-tertiary"
+              text="Prev"
+              disabled={selectedSecondTab === 0}
+              onClick={() => setSelectedSecondTab(Math.max(0, selectedSecondTab - 1))}
+            />
+
+            <Button
+              className="btn-md btn-tertiary"
+              text="Next"
+              disabled={selectedSecondTab === procedures.length - 1}
+              onClick={() => setSelectedSecondTab(Math.min(procedures.length - 1, selectedSecondTab + 1))}
+            />
           </div>
         </div>
       )}

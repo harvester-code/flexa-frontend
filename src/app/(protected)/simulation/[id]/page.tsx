@@ -93,6 +93,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   // ‼️ 시뮬레이션 페이지에 필요한 데이터를 로드합니다.
   // 이 데이터를 스토어에 저장하고, 하위 탭 컴포넌트에서 사용합니다.
   useEffect(() => {
+    setCurrentScenarioTab(0); // Reset to the first tab when loading a new scenario
+
     const loadScenario = async () => {
       try {
         const {
@@ -124,7 +126,18 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     };
 
     loadScenario();
-  }, []);
+  }, [
+    loadScenarioProfileMetadata,
+    loadScenarioOverviewMetadata,
+    loadFlightScheduleMetadata,
+    loadPassengerScheduleMetadata,
+    loadAirportProcessingMetadata,
+    loadFacilityConnectionMetadata,
+    loadFacilityCapacityMetadata,
+    setCheckpoint,
+    setCurrentScenarioTab,
+    simulationId,
+  ]);
 
   const latestHistory =
     scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;
@@ -150,9 +163,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       checkpoint: newCheckpoint,
       error_count: 0,
       memo: '',
-      // FIXME: 시뮬레이션이 완료되었는지 여부를 확인하는 로직이 필요합니다.
-      // 예시로 'Done'으로 설정하였으나, 실제 로직에 맞게 수정해야 합니다.
-      simulation: 'Done',
+      simulation: 'yet',
     };
 
     const history = [...(scenarioProfileSnapShot?.scenarioHistory || []), historyItem];
@@ -208,7 +219,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         currentTab={currentScenarioTab}
         availableTabs={availableScenarioTab}
         tabCount={tabs.length}
-        tabs={tabs.map((tab) => ({ text: tab.text, number: tab.number }))}
+        tabs={tabs.map((tab) => ({ text: tab.text }))}
         onTabChange={setCurrentScenarioTab}
       />
 

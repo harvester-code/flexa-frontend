@@ -14,7 +14,6 @@ import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import Tooltip from '@/components/Tooltip';
 
-// 동적으로 변경하기
 const DATA_CONNECTION_CRITERIAS = ['I/D', 'Airline', 'Country', 'Region'];
 
 interface TabProcessingProceduresProps {
@@ -30,21 +29,26 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
     dataConnectionCriteria,
     setProcedures,
     setDataConnectionCriteria,
+    resetFacilityConnection,
+    resetFacilityCapacity,
   } = useScenarioStore(
     useShallow((s) => ({
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
       procedures_: s.airportProcessing.procedures,
-      // ---
       setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       setDataConnectionCriteria: s.airportProcessing.actions.setDataConnectionCriteria,
       setProcedures: s.airportProcessing.actions.setProcedures,
+      resetFacilityConnection: s.facilityConnection.actions.resetState,
+      resetFacilityCapacity: s.facilityCapacity.actions.resetState,
     }))
   );
 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadError, setIsLoadError] = useState(false);
+
+  const [tempPrevNodes, setTempPrevNodes] = useState<string | null>(null);
 
   const onClickAdd = () => {
     setProcedures([
@@ -98,7 +102,14 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
           return;
         }
 
-        const processedProcedures: Procedure[] = calcProcedures(data.process);
+        const processedProcedures: Procedure[] = data.process.map((proc, i) => ({
+          ...proc,
+          id: String(i),
+          name: proc.name.toLowerCase().replace(/[\s-]+/g, '_'),
+          nameText: proc.name,
+          nodesText: proc.nodes.join(','),
+          editable: false,
+        }));
 
         setProcedures(processedProcedures);
         setDataConnectionCriteria(DATA_CONNECTION_CRITERIAS[0]);
@@ -111,7 +122,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
       }
     };
 
-    loadProcessingProcedures();
+    if (procedures_.length === 0) {
+      loadProcessingProcedures();
+    }
   }, []);
 
   return !visible ? null : (
@@ -209,7 +222,13 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
                                     setProcedures(
                                       procedures_.map((item, i) =>
-                                        i === index ? { ...item, nameText: newText, name: newText } : item
+                                        i === index
+                                          ? {
+                                              ...item,
+                                              nameText: newText,
+                                              name: newText.toLowerCase().replace(/[\s-]+/g, '_'),
+                                            }
+                                          : item
                                       )
                                     );
                                   }}
@@ -267,9 +286,43 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                   <Input
                                     type="text"
                                     value={proc.nodesText || ''}
+                                    onBlur={(e) => {
+                                      if (!tempPrevNodes || tempPrevNodes === e.target.value) return;
+
+                                      // 데이터 초기화
+                                      if (
+                                        confirm(
+                                          'If you change the desk, previous connection setting will be deleted.\nDo you want to continue?'
+                                        )
+                                      ) {
+                                        setProcedures(
+                                          procedures_.map((item, prodIndex) =>
+                                            prodIndex === index
+                                              ? {
+                                                  ...item,
+                                                  nodes: e.target.value.split(',').map((node) => node.trim()),
+                                                  nodesText: e.target.value,
+                                                }
+                                              : item
+                                          )
+                                        );
+                                        resetFacilityConnection(); // 시설 연결 데이터 초기화
+                                        resetFacilityCapacity(); // 시설 용량 데이터 초기화
+                                      }
+                                      // Previous Nodes 복원
+                                      else {
+                                        setProcedures(
+                                          procedures_.map((item, prodIndex) =>
+                                            prodIndex === index ? { ...item, nodesText: tempPrevNodes } : item
+                                          )
+                                        );
+                                      }
+
+                                      setTempPrevNodes(null);
+                                    }}
+                                    // HACK: 더 좋은 코드가 있을 것 같은데...
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                       const newText = e.target.value.replace(/[^A-Za-z0-9,]/g, '');
-                                      // HACK: 더 좋은 코드가 있을 것 같은데...
                                       setProcedures(
                                         procedures_.map((item, i) =>
                                           i === index
@@ -278,6 +331,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                         )
                                       );
                                     }}
+                                    onFocus={(e) => setTempPrevNodes(e.target.value)}
                                   />
                                 </dd>
                               </dl>
@@ -297,7 +351,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             </Droppable>
           </div>
 
-          <p className={`add-item`}>
+          <p className="add-item">
             <button onClick={onClickAdd}>
               <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
             </button>

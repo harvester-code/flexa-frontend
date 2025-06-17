@@ -55,7 +55,23 @@ export const getScenarioMetadata = (scenario_id: string) => {
   return instanceWithAuth.get<ScenarioMetadataResponse>(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`);
 };
 
-export const updateScenarioMetadata = (scenario_id: string, params: unknown) => {
+export const updateScenarioMetadata = (
+  scenario_id: string,
+  params: {
+    overview: unknown;
+    history: {
+      checkpoint: string;
+      error_count: number;
+      memo: string;
+      simulation: string; // FIXME: simulation: 'done' | 'yet';
+    }[];
+    flight_schedule: unknown;
+    passenger_schedule: unknown;
+    processing_procedures: unknown;
+    facility_connection: unknown;
+    facility_information: unknown;
+  }
+) => {
   return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`, params);
 };
 
