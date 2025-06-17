@@ -109,11 +109,11 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           scenarioName: scenarioInfo.name,
           scenarioTerminal: scenarioInfo.terminal,
           scenarioHistory: scenarioMetadata.history,
-          availableScenarioTab: scenarioMetadata.overview.availableScenarioTab,
-          currentScenarioTab: scenarioMetadata.overview.currentScenarioTab,
+          availableScenarioTab: scenarioMetadata.overview?.availableScenarioTab ?? 1,
+          currentScenarioTab: scenarioMetadata.overview?.currentScenarioTab ?? 0,
         });
         loadScenarioOverviewMetadata({
-          matrix: scenarioMetadata.overview.matrix,
+          matrix: scenarioMetadata.overview?.matrix ?? [],
         });
         loadFlightScheduleMetadata(scenarioMetadata.flight_schedule);
         loadPassengerScheduleMetadata(scenarioMetadata.passenger_schedule);
