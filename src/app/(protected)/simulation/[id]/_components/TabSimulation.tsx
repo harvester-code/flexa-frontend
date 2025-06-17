@@ -95,7 +95,13 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       return console.error('Simulation parameters are not set.');
     }
 
+    try {
     await requestSimulation(simulationId, simulationParams);
+      alert('The simulation has started successfully! \nPlease wait a moment while the results are being generated.');
+    } catch (error) {
+      console.error('Error running simulation:', error);
+      return;
+    }
   };
 
   const loadSimulationOutput = useCallback(async () => {
@@ -340,6 +346,26 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           </p>
         </div>
       )}
+
+      {/* 하단버튼 */}
+      <div className="mt-[30px] flex justify-between">
+        <button
+          className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
+        >
+          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
+          <span className="flex flex-grow items-center justify-center">Facility Information</span>
+        </button>
+
+        <button
+          className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
+          onClick={runSimulation}
+          // disabled={matrix.length < 1}
+        >
+          <span className="flex flex-grow items-center justify-center">Run Simulation</span>
+          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
+        </button>
+      </div>
 
       {loadingSimulation ? (
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
@@ -739,27 +765,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       ) : (
         <div className="h-[50px]" />
       )}
-
-      {/* 하단버튼 */}
-      <div className="mt-[30px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Facility Information</span>
-        </button>
-
-        {/* FIXME: [25.04.07] ADD CONDITIONS가 있을 때 데이터가 제대로 안 나오는 현상 발생 */}
-        <button
-          className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
-          onClick={runSimulation}
-          // disabled={matrix.length < 1}
-        >
-          <span className="flex flex-grow items-center justify-center">Run Simulation</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
-      </div>
     </div>
   );
 }
