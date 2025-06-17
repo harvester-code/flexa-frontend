@@ -1,21 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
-import { ProcedureInfo, SimulationOverviewResponse, SimulationResponse } from '@/types/simulations';
-import { popModal, pushModal } from '@/app/provider';
+import { SimulationResponse } from '@/types/simulations';
 import { fetchSimulation, getSimulationOverview, requestSimulation } from '@/services/simulations';
 import { BarColors } from '@/stores/simulation';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import { SANKEY_COLOR_SCALES } from '@/constants';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
-import AnalysisPopup from '@/components/popups/Analysis';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -39,40 +37,44 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     currentScenarioTab,
     setCurrentScenarioTab,
     scenarioTerminal,
-
-    procedures_,
-    settings,
-
-    targetAirport,
-    targetDate,
-    flightScheduleFilters,
-
-    dataConnectionCriteria,
-    normalDistributionParams,
-
-    allocationTables,
-
     matrix,
     setMatrix,
+    flightScheduleFilters,
+    targetAirport,
+    targetDate,
+    normalDistributionParams,
+    procedures,
+    dataConnectionCriteria,
+    allocationTables,
+    settings,
   } = useScenarioStore(
     useShallow((s) => ({
+      // Scenario Profile
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       scenarioTerminal: s.scenarioProfile.scenarioTerminal,
 
-      procedures_: s.airportProcessing.procedures,
-      settings: s.facilityCapacity.settings,
-      targetAirport: s.flightSchedule.targetAirport,
-      targetDate: s.flightSchedule.targetDate,
-      flightScheduleFilters: s.flightSchedule.selectedFilters,
-
-      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
-      normalDistributionParams: s.passengerSchedule.normalDistributionParams,
-
-      allocationTables: s.facilityConnection.allocationTables,
-
+      // Scenario Overview
       matrix: s.scenarioOverview.matrix,
       setMatrix: s.scenarioOverview.actions.setMatrix,
+
+      // Flight Schedule
+      flightScheduleFilters: s.flightSchedule.selectedFilters,
+      targetAirport: s.flightSchedule.targetAirport,
+      targetDate: s.flightSchedule.targetDate,
+
+      // Passenger Schedule
+      normalDistributionParams: s.passengerSchedule.normalDistributionParams,
+
+      // Airport Processing
+      procedures: s.airportProcessing.procedures,
+      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
+
+      // Facility Connection
+      allocationTables: s.facilityConnection.allocationTables,
+
+      // Facility Capacity
+      settings: s.facilityCapacity.settings,
     }))
   );
 
@@ -96,7 +98,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
 
     try {
-    await requestSimulation(simulationId, simulationParams);
+      await requestSimulation(simulationId, simulationParams);
       alert('The simulation has started successfully! \nPlease wait a moment while the results are being generated.');
     } catch (error) {
       console.error('Error running simulation:', error);
@@ -106,6 +108,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   const loadSimulationOutput = useCallback(async () => {
     try {
+      setLoadingSimulation(true);
+
       const { data } = await fetchSimulation(simulationId);
       if (data) {
         setSimulationData(data);
@@ -113,6 +117,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     } catch (error) {
       console.error(error);
       return null;
+    } finally {
+      setLoadingSimulation(false);
+      setLoadError(false);
     }
   }, [simulationId]);
 
@@ -157,8 +164,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       }[];
     }[] = [];
 
-    for (let p = 0; p < procedures_.length; p++) {
-      const currentComponent = procedures_[p];
+    for (let p = 0; p < procedures.length; p++) {
+      const currentComponent = procedures[p];
       const nodeCount = currentComponent?.nodes?.length || 0;
       const nodes: {
         id: number;
@@ -172,7 +179,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       for (let n = 0; n < nodeCount; n++) {
         const id = `${p}_${n}`;
         const targetSetting = settings[id] || {};
-        const nodeName = procedures_[p].nodes[n];
+        const nodeName = procedures[p].nodes[n];
 
         nodes.push({
           id: nodeIdCur++,
@@ -214,7 +221,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         name: table.title.toLowerCase().replace(/[\s-]+/g, '_'),
         nodes: table.header.map((header) => header.name),
         source: String(index),
-        destination: procedures_.length < index + 2 ? null : String(index + 2),
+        destination: procedures.length < index + 2 ? null : String(index + 2),
         wait_time: 0,
         default_matrix: defaultMatrix,
         // TODO: 아래는 어떤 값이지?
@@ -249,10 +256,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     };
     // --- 🔥 삭제 고려 대상 🔥 ---
 
-    loadSimulationOutput();
     if (!matrix || matrix.length < 1) {
       loadSimulationOverview(components, params);
     }
+    loadSimulationOutput();
 
     setSimulationParams({ scenario_id: simulationId, components, ...params });
     setIsInitialized(true);
@@ -265,7 +272,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     loadSimulationOutput,
     loadSimulationOverview,
     normalDistributionParams,
-    procedures_,
+    procedures,
     setMatrix,
     settings,
     simulationId,
@@ -276,33 +283,51 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
   // ==============================================================================
 
-  const [procedureIndex, setProcedureIndex] = useState(0);
-  const [nodeIndex, setNodeIndex] = useState([]);
+  const [selectedProcedure, setSelectedProcedure] = useState(0);
+  const [selectedNodes, setSelectedNodes] = useState<number[]>([]);
 
-  const processCurrent = procedures_[procedureIndex]?.nameText?.toLowerCase().replace(/[\s-]+/g, '_');
+  useEffect(() => {
+    if (!procedures || procedures.length < 1) return;
 
-  const kpiDataCurrent = simulationData?.kpi?.find(
-    (item) =>
-      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
-      item
-  );
+    setSelectedProcedure(0);
+    setSelectedNodes(Array(procedures.length).fill(0));
+  }, [procedures]);
 
-  const chartDataCurrent = simulationData?.chart?.find(
-    (item) =>
-      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
-      item
-  );
+  const kpiDataCurrent = useMemo(() => {
+    if (!simulationData || !simulationData.kpi) return [];
 
-  const lineChartDataCurrent = simulationData?.line_chart?.find(
-    (item) =>
-      // item.process == processCurrent && procedures_?.[procedureIndex]?.nodes[nodeIndex[procedureIndex]] == item.node
-      item
-  );
+    const target = simulationData.kpi.find(
+      (item) =>
+        item.process === procedures[selectedProcedure].name &&
+        item.node === procedures[selectedProcedure]?.nodes[selectedNodes[selectedProcedure]]
+    );
+    return target?.kpi || [];
+  }, [simulationData, procedures, selectedProcedure, selectedNodes]);
 
-  const inOutChartMaxY = Math.max(
-    ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]),
-    ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0])
-  );
+  const lineChartDataCurrent = useMemo(() => {
+    if (!simulationData || !simulationData.line_chart) return null;
+
+    return simulationData.line_chart.find(
+      (item) =>
+        item.process === procedures[selectedProcedure].name &&
+        item.node === procedures[selectedProcedure]?.nodes[selectedNodes[selectedProcedure]]
+    );
+  }, [simulationData, procedures, selectedProcedure, selectedNodes]);
+
+  const chartDataCurrent = useMemo(() => {
+    if (!simulationData || !simulationData.chart) return null;
+
+    return simulationData.chart.find(
+      (item) =>
+        item.process === procedures[selectedProcedure].name &&
+        item.node === procedures[selectedProcedure]?.nodes[selectedNodes[selectedProcedure]]
+    );
+  }, [simulationData, procedures, selectedProcedure, selectedNodes]);
+
+  // const inOutChartMaxY = Math.max(
+  //   ...(chartDataCurrent?.inbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0]),
+  //   ...(chartDataCurrent?.outbound?.chart_y_data[selColorCriteria]?.map((item) => item.acc_y)?.[0] || [0])
+  // );
   // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
 
   return !visible ? null : (
@@ -313,8 +338,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           className="btn-md btn-tertiary"
           text="Reload Data"
           onClick={() => {
-            console.log(simulationParams);
-
             loadSimulationOverview(simulationParams?.components || [], {
               destribution_conditions: simulationParams?.destribution_conditions || [],
               flight_schedule: simulationParams?.flight_schedule || {},
@@ -372,11 +395,11 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
         </div>
       ) : simulationData ? (
-        <div>
-          <h2 className="title-sm mt-[40px]">Simulation completed</h2>
+        <div className="my-8">
+          <h2 className="title-sm">Most Recent Simulation Result</h2>
 
-          <div className="mt-[20px] flex items-center justify-between gap-[20px]">
-            <div className="flex flex-grow items-center gap-[25px] rounded-md border border-default-300 bg-default-50 px-[20px] py-[40px]">
+          <div className="mt-5 flex items-center justify-between gap-5">
+            <div className="flex flex-grow items-center gap-[25px] rounded-md border border-default-300 bg-default-50 px-5 py-[40px]">
               <Image width={60} height={60} src="/image/ico-check-green.svg" alt="" />
 
               <dl className="flex flex-col gap-[8px]">
@@ -387,7 +410,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               </dl>
             </div>
 
-            <div className="flex flex-grow items-center gap-[25px] rounded-md border border-default-300 bg-default-50 px-[20px] py-[40px]">
+            <div className="flex flex-grow items-center gap-[25px] rounded-md border border-default-300 bg-default-50 px-5 py-[40px]">
               <Image width={60} height={60} src="/image/ico-check-red.png" alt="" />
               <dl className="flex flex-col gap-[8px]">
                 <dt className="text-2xl font-semibold text-default-800">
@@ -414,7 +437,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     line: { color: 'black', width: 0.5 },
                     label: simulationData?.sankey.label,
                     color: SANKEY_COLOR_SCALES,
-                    // color: simulationData?.sankey.label.map((_, index) => SankeyColors[index % SankeyColors.length]),
                   },
                   link: simulationData?.sankey.link,
                 },
@@ -432,52 +454,58 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             <h2 className="title-sm mt-[60px]">Passenger by Facility</h2>
 
             <TabDefault
-              tabCount={procedures_.length}
-              currentTab={procedureIndex}
-              tabs={procedures_.map((tab) => ({ text: tab.nameText }))}
-              onTabChange={(index) => {
-                setProcedureIndex(index);
-              }}
-              className={`tab-secondary mt-[25px]`}
+              className="tab-secondary mt-[25px]"
+              tabCount={procedures.length}
+              currentTab={selectedProcedure}
+              tabs={procedures.map((tab) => ({ text: tab.nameText }))}
+              onTabChange={setSelectedProcedure}
             />
 
-            {/* {procedureIndex < procedures_.length - 1 ? (
+            {selectedProcedure < procedures.length ? (
               <ul className="gate-list grid-cols-5">
-                {passenger_attr?.procedures?.[procedureIndex]?.nodes?.map((text, index) => (
-                  <li key={index} className={`${index == nodeIndex[procedureIndex] ? 'active' : ''}`}>
+                {procedures[selectedProcedure].nodes.map((node, idx) => (
+                  <li key={idx} className={`${idx === selectedNodes[selectedProcedure] ? 'active' : ''}`}>
                     <button
                       onClick={() => {
-                        setNodeIndex(nodeIndex.map((val, idx) => (idx == procedureIndex ? index : val)));
+                        setSelectedNodes((prev) => {
+                          const newSelectedNodes = [...prev];
+                          newSelectedNodes[selectedProcedure] = idx;
+                          return newSelectedNodes;
+                        });
                       }}
                     >
-                      {text}
+                      {node}
                     </button>
                   </li>
                 ))}
               </ul>
-            ) : null} */}
+            ) : null}
           </div>
 
-          {procedureIndex < procedures_.length - 1 ? (
+          {selectedProcedure < procedures.length ? (
             <div>
-              <div className="indicator mt-[20px]">
-                <h4 className="text-lg font-semibold">KPI Indicators</h4>
+              {/* =============== KPI =============== */}
+              {simulationData && simulationData.kpi ? (
+                <div className="indicator mt-5">
+                  <h4 className="text-lg font-semibold">KPI Indicators</h4>
 
-                <ul className="indicator-list grid-cols-3 gap-[20px]">
-                  {kpiDataCurrent?.kpi?.map((item, index) => (
-                    <li key={index}>
-                      <dl>
-                        <dt className="text-left">{item.title}</dt>
-                        <dd className="mt-[10px] text-right">
-                          {item.value}
-                          {item.unit || ''}
-                        </dd>
-                      </dl>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                  <ul className="indicator-list grid-cols-3 gap-5">
+                    {kpiDataCurrent.map((item, index) => (
+                      <li key={index}>
+                        <dl>
+                          <dt className="text-left">{item.title}</dt>
+                          <dd className="mt-[10px] text-right">
+                            {item.value}
+                            {item.unit || ''}
+                          </dd>
+                        </dl>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
+              {/* =============== Charts =============== */}
               <div className="mt-[40px] flex items-center justify-between">
                 <p className="text-40 text-xl font-semibold">Graphs</p>
                 <div className="flex flex-col">
@@ -510,7 +538,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 </div>
               </div>
 
-              <div className="mb-[20px] mt-[30px] flex justify-between">
+              <div className="mb-5 mt-[30px] flex justify-between">
                 <p className="text-sm font-medium text-default-600">Pax Inflow</p>
               </div>
 
@@ -557,7 +585,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 // config={{ displayModeBar: false, doubleClick: false }}
               />
 
-              <div className="mb-[20px] mt-[50px] flex justify-between">
+              <div className="mb-5 mt-[50px] flex justify-between">
                 <p className="text-sm font-medium text-default-600">Pax Outflow</p>
               </div>
 
@@ -602,7 +630,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 // config={{ displayModeBar: false }}
               />
 
-              <div className="mb-[20px] mt-[50px] flex justify-between">
+              <div className="mb-5 mt-[50px] flex justify-between">
                 <p className="text-sm font-medium text-default-600">Queue Pax</p>
               </div>
 
@@ -622,7 +650,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                             : BarColors.DEFAULT)[index],
                           opacity: 1,
                           cornerradius: 7,
-                          // TODO 겹쳐지는 모든 Bar 들에 radius 줄 수 있는 방법 찾아보기.
                         },
                         hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
                       };
@@ -638,7 +665,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 // config={{ displayModeBar: false }}
               />
 
-              <div className="mb-[20px] mt-[50px] flex justify-between">
+              <div className="mb-5 mt-[50px] flex justify-between">
                 <p className="text-sm font-medium text-default-600">Wait Time</p>
               </div>
 
@@ -718,7 +745,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             </>
           )}
 
-          <div className="chart-btn mt-[60px]">
+          {/* NOTE: 현재는 아래 버튼을 사용하지 않지만, 향후 기능 확장을 위해 주석 처리
+                    필요시 주석을 제거하고 사용하세요. */}
+          {/* <div className="chart-btn mt-[60px]">
             <button
               onClick={() => {
                 const popupId = pushModal({
@@ -752,7 +781,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               View Recommendations
               <span>Beta</span>
             </button>
-          </div>
+          </div> */}
         </div>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
@@ -763,7 +792,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           </p>
         </div>
       ) : (
-        <div className="h-[50px]" />
+        <div className="h-12"></div>
       )}
     </div>
   );
