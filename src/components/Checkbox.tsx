@@ -12,7 +12,7 @@ interface CheckboxProps {
 export default function Checkbox({ id, label, checked, onChange, className, disabled = false }: CheckboxProps) {
   return (
     <div className={`inline-flex items-center ${className}`}>
-      <input id={id} type="checkbox" checked={checked} onChange={onChange} disabled={disabled} />
+      <input id={id} type="checkbox" checked={checked ?? false} onChange={onChange} disabled={disabled} />
       <label htmlFor={id} className={`${className}`}>
         {label}
       </label>

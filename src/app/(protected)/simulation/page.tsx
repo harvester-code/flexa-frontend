@@ -318,19 +318,19 @@ const SimulationPage = () => {
                       <div className="flex items-center gap-[10px]">
                         <div
                           onClick={() => {
-                            if (!scenarioStates[idx].editName) {
+                            if (!scenarioStates[idx]?.editName) {
                               router.push(`${pathname}/${scenario.id}`);
                             }
                           }}
                         >
                           <input
                             className="!border-none bg-transparent py-[8px] !text-default-700"
-                            style={{ pointerEvents: scenarioStates[idx].editName ? 'auto' : 'none' }}
-                            ref={scenarioStates[idx].refName}
+                            style={{ pointerEvents: scenarioStates[idx]?.editName ? 'auto' : 'none' }}
+                            ref={scenarioStates[idx]?.refName}
                             type="text"
                             placeholder=""
-                            value={scenarioStates[idx]?.name}
-                            disabled={scenarioStates[idx].editName ? false : true}
+                            value={scenarioStates[idx]?.name ?? ''}
+                            disabled={scenarioStates[idx]?.editName ? false : true}
                             onBlur={() => onRenameEnd(idx)}
                             onChange={(e) => handleRowChange(idx, { name: e.target.value })}
                             onKeyDown={(e) => {
@@ -360,13 +360,13 @@ const SimulationPage = () => {
                     {/* ===== Scenario Memo ===== */}
                     <td>
                       <input
-                        ref={scenarioStates[idx].refMemo}
+                        ref={scenarioStates[idx]?.refMemo}
                         type="text"
                         placeholder=""
-                        value={scenarioStates[idx]?.memo}
+                        value={scenarioStates[idx]?.memo ?? ''}
                         className="!border-none bg-transparent py-[8px] !text-default-700"
                         onChange={(e) => handleRowChange(idx, { memo: e.target.value })}
-                        disabled={scenarioStates[idx].editMemo ? false : true}
+                        disabled={scenarioStates[idx]?.editMemo ? false : true}
                         onBlur={() => onEditMemoEnd(idx)}
                         onKeyDown={(e) => {
                           if (e.key == 'Enter') onEditMemoEnd(idx);

@@ -206,7 +206,7 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     }
 
     const data = bins
-      .map(({ range, value }) => ({
+      ?.map(({ range, value }) => ({
         title: makeLabel(range, range_unit),
         value: (
           <>
