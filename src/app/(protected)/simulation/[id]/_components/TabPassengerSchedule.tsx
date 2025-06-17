@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
@@ -56,7 +56,7 @@ function Priorities({
   }
 
   return (
-    <div className={`mt-[20px] flex flex-col rounded-lg border border-gray-300 ${className}`}>
+    <div className={`mt-5 flex flex-col rounded-lg border border-gray-300 ${className}`}>
       <Conditions
         addCondition={addCondition}
         conditions={conditions}
@@ -75,7 +75,7 @@ function Priorities({
         }}
       />
 
-      <div className="p-[20px]">
+      <div className="p-5">
         <div className="flex flex-col gap-[10px]">
           <p className="font-semibold text-default-900">Passengers with above characteristics arrive at the airport</p>
 
@@ -197,6 +197,8 @@ interface TabPassengerScheduleProps {
 export default function TabPassengerSchedule({ simulationId, visible }: TabPassengerScheduleProps) {
   const {
     currentScenarioTab,
+    availableScenarioTab,
+    setAvailableScenarioTab,
     filterOptions,
     isPriorityFilterEnabled,
     passengerScheduleChartData,
@@ -216,27 +218,28 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     targetAirport,
     targetDate,
   } = useScenarioStore(
-    useShallow((state) => ({
-      currentScenarioTab: state.scenarioProfile.currentScenarioTab,
-      filterOptions: state.passengerSchedule.filterOptions,
-      isPriorityFilterEnabled: state.passengerSchedule.isFilterEnabled,
-      passengerScheduleChartData: state.passengerSchedule.chartData,
-      passengerScheduleColorCriteria: state.passengerSchedule.selectedCriteria,
-      selectedFilters: state.flightSchedule.selectedFilters,
-      selectedPriorities: state.passengerSchedule.normalDistributionParams,
-      distributionData: state.passengerSchedule.distributionData,
-      vlineData: state.passengerSchedule.vlineData,
-
-      setDistributionData: state.passengerSchedule.actions.setDistributionData,
-      setVlineData: state.passengerSchedule.actions.setVlineData,
-      setCurrentScenarioTab: state.scenarioProfile.actions.setCurrentScenarioTab,
-      setIsPriorityFilterEnabled: state.passengerSchedule.actions.setIsFilterEnabled,
-      setPassengerScheduleChartData: state.passengerSchedule.actions.setChartData,
-      setPassengerScheduleColorCriteria: state.passengerSchedule.actions.setSelectedCriteria,
-      setSelectedPriorities: state.passengerSchedule.actions.setNormalDistributionParams,
-      setSelectedPriority: state.passengerSchedule.actions.setNormalDistributionParam,
-      targetAirport: state.flightSchedule.targetAirport,
-      targetDate: state.flightSchedule.targetDate,
+    useShallow((s) => ({
+      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
+      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
+      filterOptions: s.passengerSchedule.filterOptions,
+      isPriorityFilterEnabled: s.passengerSchedule.isFilterEnabled,
+      passengerScheduleChartData: s.passengerSchedule.chartData,
+      passengerScheduleColorCriteria: s.passengerSchedule.selectedCriteria,
+      selectedFilters: s.flightSchedule.selectedFilters,
+      selectedPriorities: s.passengerSchedule.normalDistributionParams,
+      distributionData: s.passengerSchedule.distributionData,
+      vlineData: s.passengerSchedule.vlineData,
+      setDistributionData: s.passengerSchedule.actions.setDistributionData,
+      setVlineData: s.passengerSchedule.actions.setVlineData,
+      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
+      setIsPriorityFilterEnabled: s.passengerSchedule.actions.setIsFilterEnabled,
+      setPassengerScheduleChartData: s.passengerSchedule.actions.setChartData,
+      setPassengerScheduleColorCriteria: s.passengerSchedule.actions.setSelectedCriteria,
+      setSelectedPriorities: s.passengerSchedule.actions.setNormalDistributionParams,
+      setSelectedPriority: s.passengerSchedule.actions.setNormalDistributionParam,
+      targetAirport: s.flightSchedule.targetAirport,
+      targetDate: s.flightSchedule.targetDate,
     }))
   );
 
@@ -260,8 +263,6 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
   // }, [isPriorityFilterEnabled, selectedPriorities, setSelectedPriorities]);
 
   const loadPassengerSchedules = async () => {
-    // setAvailableTabIndex(currentScenarioTab);
-
     try {
       setLoadingPassengerSchedules(true);
 
@@ -317,6 +318,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
       setDistributionData(distributionData);
       setVlineData(vlineData);
+      setAvailableScenarioTab(currentScenarioTab + 1);
     } catch (error) {
       console.error(error);
       setIsLoadError(true);
@@ -332,7 +334,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       <p className="mt-[30px] text-[40px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
 
       {/* ========== 데이터 필터링 섹션 ========== */}
-      <div className="mt-[20px] flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
+      <div className="mt-5 flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"
           className="checkbox-toggle"
@@ -409,7 +411,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
       {/* ========== 필터링 ELSE IF 섹션 ========== */}
       {isPriorityFilterEnabled ? (
-        <div className="mt-[20px] flex items-center justify-center rounded-md border border-default-200 bg-default-100">
+        <div className="mt-5 flex items-center justify-center rounded-md border border-default-200 bg-default-100">
           <button
             className="h-[60px] w-full text-lg font-medium text-accent-600 hover:text-accent-700"
             onClick={() => {
@@ -428,7 +430,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       ) : null}
 
       {/* ========== 필터링 ELSE 섹션 ========== */}
-      <div className="schedule-block mt-[20px]">
+      <div className="schedule-block mt-5">
         {isPriorityFilterEnabled ? (
           <>
             <div className="schedule-top">
@@ -492,7 +494,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         </div>
       </div>
 
-      <p className="mt-[20px] flex justify-end">
+      <p className="mt-5 flex justify-end">
         <Button
           className="btn-md btn-tertiary"
           text="Apply"
@@ -514,7 +516,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         </div>
       ) : passengerScheduleChartData && passengerScheduleChartData.total > 0 ? (
         <>
-          <p className="mt-[20px] text-[40px] text-xl font-semibold text-default-800">Check Generated Passenger Data</p>
+          <p className="mt-5 text-[40px] text-xl font-semibold text-default-800">Check Generated Passenger Data</p>
 
           <dl className="mt-[25px]">
             <dt className="text-[40px] text-xl font-semibold">
@@ -641,7 +643,8 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={!passengerScheduleChartData}
+          // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
+          disabled={availableScenarioTab < 3}
           onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Processing Procedures</span>

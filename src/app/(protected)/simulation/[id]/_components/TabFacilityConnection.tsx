@@ -209,6 +209,9 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     activedSecondTab,
     selectedSecondTab,
     setSelectedSecondTab,
+
+    availableScenarioTab,
+    setAvailableScenarioTab,
   } = useScenarioStore(
     useShallow((s) => ({
       tabIndex: s.scenarioProfile.currentScenarioTab,
@@ -231,6 +234,9 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
       activedSecondTab: s.facilityConnection.activedSecondTab,
       selectedSecondTab: s.facilityConnection.selectedSecondTab,
       setSelectedSecondTab: s.facilityConnection.actions.setSelectedSecondTab,
+
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
+      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
     }))
   );
 
@@ -500,6 +506,9 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
   // -------------------------------------------------------------
   // 테이블의 유효성을 검사하는 함수입니다.
+  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  // 만약 테이블이 비어있는 상태로 저장할 경우, 이를 저장 안되게 하기 (근데 생각해보면 FacilityInformation이 없으면 해도 되지 않나?)
+  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
   const validateTable = useCallback(() => {
     const isDefaultTableValid = checkNotEmptyRows(allocationTables[selectedSecondTab].data);
     const isConditionsTableValid = allocationConditionsEnabled[selectedSecondTab]
@@ -511,11 +520,22 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     if (isDone && validatedTableStates[selectedSecondTab]) {
       return; // 이미 완료된 상태라면 아무 작업도 하지 않음
     } else if (isDone && !validatedTableStates[selectedSecondTab]) {
+      // 완료된 상태로 변경
       setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? true : v)));
     } else if (!isDone && validatedTableStates[selectedSecondTab]) {
+      // 완료되지 않은 상태로 변경
       setValidatedTableStates((prev) => prev.map((v, i) => (i === selectedSecondTab ? false : v)));
+      setAvailableScenarioTab(Math.max(availableScenarioTab - 1, 4));
     }
-  }, [allocationTables, allocationConditions, allocationConditionsEnabled, selectedSecondTab, validatedTableStates]);
+  }, [
+    allocationTables,
+    allocationConditions,
+    allocationConditionsEnabled,
+    availableScenarioTab,
+    selectedSecondTab,
+    setAvailableScenarioTab,
+    validatedTableStates,
+  ]);
 
   useEffect(() => {
     if (!visible) return;
@@ -534,7 +554,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
         availableTabs={activedSecondTab}
-        tabs={procedures?.map((proc) => ({ text: proc.nameText })) || []}
+        tabs={procedures.map((proc) => ({ text: proc.nameText || '' }))}
         onTabChange={(index) => {
           if (index > activedSecondTab) return;
           setSelectedSecondTab(index);
@@ -782,7 +802,10 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
           disabled={validatedTableStates.some((v) => v === false)}
-          onClick={() => setTabIndex(tabIndex + 1)}
+          onClick={() => {
+            setTabIndex(tabIndex + 1);
+            setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 5));
+          }}
         >
           <span className="flex flex-grow items-center justify-center">Facility Information</span>
           <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />

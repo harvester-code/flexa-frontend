@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import _ from 'lodash';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { Procedure } from '@/types/scenarios';
 import { getProcessingProcedures } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
+import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import Tooltip from '@/components/Tooltip';
@@ -24,8 +26,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const {
     currentScenarioTab,
     setCurrentScenarioTab,
+    availableScenarioTab,
     setAvailableScenarioTab,
-    procedures_,
+    procedures,
     dataConnectionCriteria,
     setProcedures,
     setDataConnectionCriteria,
@@ -34,9 +37,10 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   } = useScenarioStore(
     useShallow((s) => ({
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
-      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
-      procedures_: s.airportProcessing.procedures,
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
       setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
+      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
+      procedures: s.airportProcessing.procedures,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       setDataConnectionCriteria: s.airportProcessing.actions.setDataConnectionCriteria,
       setProcedures: s.airportProcessing.actions.setProcedures,
@@ -48,15 +52,15 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadError, setIsLoadError] = useState(false);
 
-  const [tempPrevNodes, setTempPrevNodes] = useState<string | null>(null);
+  const [tempPrevProcedures, setTempPrevProcedures] = useState<Procedure[]>([]);
 
   const onClickAdd = () => {
     setProcedures([
-      ...procedures_,
+      ...procedures,
       {
         name: '',
         nodes: [],
-        id: String(procedures_.length),
+        id: String(procedures.length),
         editable: true,
       },
     ]);
@@ -73,21 +77,21 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   };
 
   const onClickDelete = (index: number) => {
-    setProcedures(procedures_.filter((item, idx) => index != idx));
+    setProcedures(procedures.filter((item, idx) => index != idx));
   };
 
   const onDragEnd = ({ source, destination }) => {
     if (!destination) return;
 
-    const procedures = Array.from(procedures_);
+    const steps = Array.from(procedures);
 
     // 동일 위치 드래그 방지 (불필요한 상태 업데이트 방지)
     if (source.index === destination.index) return;
 
-    const [movedItem] = procedures.splice(source.index, 1);
-    procedures.splice(destination.index, 0, movedItem);
+    const [movedItem] = steps.splice(source.index, 1);
+    steps.splice(destination.index, 0, movedItem);
 
-    // setProcedures({ ...procedures_, procedures });
+    // setProcedures({ ...procedures, procedures });
   };
 
   useEffect(() => {
@@ -111,8 +115,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
           editable: false,
         }));
 
-        setProcedures(processedProcedures);
         setDataConnectionCriteria(DATA_CONNECTION_CRITERIAS[0]);
+        setProcedures(processedProcedures);
+        // +++
 
         setIsLoadError(false);
       } catch (error) {
@@ -122,10 +127,28 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
       }
     };
 
-    if (procedures_.length === 0) {
+    if (procedures.length === 0) {
       loadProcessingProcedures();
+    } else {
+      setTempPrevProcedures(procedures);
     }
   }, []);
+
+  // ================================================================
+
+  const isProceduresChanged = (oldVal: Procedure[], newVal: Procedure[]) => {
+    return !_.isEqual(oldVal, newVal);
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+
+    if (currentScenarioTab >= availableScenarioTab) return;
+
+    if (isProceduresChanged(tempPrevProcedures, procedures)) {
+      setAvailableScenarioTab(availableScenarioTab - 1);
+    }
+  }, [currentScenarioTab, availableScenarioTab, procedures, tempPrevProcedures, setAvailableScenarioTab, visible]);
 
   return !visible ? null : (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -196,7 +219,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             >
               {(provided) => (
                 <ul ref={provided.innerRef} {...provided.droppableProps}>
-                  {procedures_?.map((proc, index) => {
+                  {procedures?.map((proc, index) => {
                     return (
                       <Draggable key={`${proc.id}_${index}`} index={index} draggableId={proc.id}>
                         {(provided) => (
@@ -221,7 +244,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     const newText = e.target.value.replace(/[^A-Za-z0-9-_ ]/g, '');
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
                                     setProcedures(
-                                      procedures_.map((item, i) =>
+                                      procedures.map((item, i) =>
                                         i === index
                                           ? {
                                               ...item,
@@ -236,9 +259,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     if (e.key === 'Enter') {
                                       // HACK: 더 좋은 코드가 있을 것 같은데...
                                       setProcedures(
-                                        procedures_.map((item, i) =>
-                                          i === index ? { ...item, editable: false } : item
-                                        )
+                                        procedures.map((item, i) => (i === index ? { ...item, editable: false } : item))
                                       );
 
                                       (e.target as HTMLInputElement).blur();
@@ -254,8 +275,8 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                   onClick={() => {
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
                                     setProcedures(
-                                      procedures_.map((item, i) =>
-                                        i === index ? { ...item, editable: !item.editable } : item
+                                      procedures.map((proc, i) =>
+                                        i === index ? { ...proc, editable: !proc.editable } : proc
                                       )
                                     );
                                     if (!proc.editable) {
@@ -276,10 +297,8 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
                               <dl className="ml-[40px] mr-[300px] flex-grow">
                                 <dt className="tooltip-line">
-                                  Enter the {proc.name} desks <span className="text-accent-600">*</span>
-                                  <button>
-                                    <Tooltip text={'test'} />
-                                  </button>
+                                  Enter the {proc.nameText} desks <span className="text-accent-600">*</span>
+                                  {/* <button><Tooltip text={'test'} /></button> */}
                                 </dt>
 
                                 <dd>
@@ -287,51 +306,29 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     type="text"
                                     value={proc.nodesText || ''}
                                     onBlur={(e) => {
-                                      if (!tempPrevNodes || tempPrevNodes === e.target.value) return;
+                                      const newNodes = e.target.value.trim();
 
-                                      // 데이터 초기화
-                                      if (
-                                        confirm(
-                                          'If you change the desk, previous connection setting will be deleted.\nDo you want to continue?'
+                                      setProcedures(
+                                        procedures.map((proc, prodIndex) =>
+                                          prodIndex === index
+                                            ? {
+                                                ...proc,
+                                                nodes: newNodes.split(',').map((n) => n.trim()),
+                                                nodesText: newNodes,
+                                              }
+                                            : proc
                                         )
-                                      ) {
-                                        setProcedures(
-                                          procedures_.map((item, prodIndex) =>
-                                            prodIndex === index
-                                              ? {
-                                                  ...item,
-                                                  nodes: e.target.value.split(',').map((node) => node.trim()),
-                                                  nodesText: e.target.value,
-                                                }
-                                              : item
-                                          )
-                                        );
-                                        resetFacilityConnection(); // 시설 연결 데이터 초기화
-                                        resetFacilityCapacity(); // 시설 용량 데이터 초기화
-                                      }
-                                      // Previous Nodes 복원
-                                      else {
-                                        setProcedures(
-                                          procedures_.map((item, prodIndex) =>
-                                            prodIndex === index ? { ...item, nodesText: tempPrevNodes } : item
-                                          )
-                                        );
-                                      }
-
-                                      setTempPrevNodes(null);
+                                      );
                                     }}
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                       const newText = e.target.value.replace(/[^A-Za-z0-9,]/g, '');
                                       setProcedures(
-                                        procedures_.map((item, i) =>
-                                          i === index
-                                            ? { ...item, nodesText: newText, nodes: newText.split(',') }
-                                            : item
+                                        procedures.map((item, i) =>
+                                          i === index ? { ...item, nodesText: newText } : item
                                         )
                                       );
                                     }}
-                                    onFocus={(e) => setTempPrevNodes(e.target.value)}
                                   />
                                 </dd>
                               </dl>
@@ -357,6 +354,38 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
             </button>
           </p>
 
+          <div className="mt-5 flex justify-end">
+            <Button
+              className="btn-md btn-tertiary"
+              text="Apply"
+              onClick={() => {
+                // NOTE: 이전 절차와 현재 절차가 동일
+                if (!isProceduresChanged(tempPrevProcedures, procedures)) {
+                  setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 4));
+                  return;
+                }
+
+                // ----------------------------------------------------------------------
+
+                const isGranted = confirm(
+                  'If you change the desk, previous connection setting will be deleted.Do you want to continue?'
+                );
+
+                // NOTE: 이전 절차와 현재 절차가 동일하지 않지만, 사용자가 변경을 승인한 경우
+                if (isGranted) {
+                  setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 4));
+                  setTempPrevProcedures(procedures);
+                  resetFacilityConnection();
+                  resetFacilityCapacity();
+                  return;
+                }
+
+                // NOTE: 이전 절차와 현재 절차가 동일하지 않지만, 사용자가 변경을 승인하지 않은 경우
+                setProcedures(tempPrevProcedures);
+              }}
+            />
+          </div>
+
           <div className="mt-[30px] flex justify-between">
             <button
               className="btn-md btn-default btn-rounded w-[210px] justify-between"
@@ -368,7 +397,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
             <button
               className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              // disabled={!applied}
+              // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
+              disabled={isProceduresChanged(tempPrevProcedures, procedures) || availableScenarioTab < 4}
+              // disabled={availableScenarioTab < 4}
               onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
             >
               <span className="flex flex-grow items-center justify-center">Facility Connection</span>

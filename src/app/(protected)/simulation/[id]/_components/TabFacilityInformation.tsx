@@ -197,7 +197,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   // ====================================================================================================
   // 1️⃣ Initialize settings and load data when the component is visible
   useEffect(() => {
-    console.log(selectedNodes, procedures, currentSetting, isInitialized, visible);
+    // console.log(selectedNodes, procedures, currentSetting, isInitialized, visible);
 
     if (!visible || isInitialized) return;
 
@@ -209,8 +209,6 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     if (selectedNodes.length === procedures.length) return;
 
     if (currentSetting) return;
-
-    console.log('hello');
 
     // ‼️ 반드시 가장 먼저 호출되어야함. (추후에 개선해보자.)
     setSelectedNodes(Array(procedures.length).fill(0));
@@ -390,7 +388,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
         availableTabs={availableSecondTab}
-        tabs={procedures?.map((proc, i) => ({ text: proc.nameText }))}
+        tabs={procedures.map((proc, i) => ({ text: proc.nameText || '' }))}
         onTabChange={(index) => {
           if (index > availableSecondTab) return;
           setSelectedSecondTab(index);
@@ -827,9 +825,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           <h2 className="title-sm">Set Opening Hours</h2>
 
           <div className="flex items-center gap-[20px]">
-            {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
-            {/* 라인차트를 숫자를 입력했을 때 마다 호출하도록 변경하기 */}
-            {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
+            {/* TODO: 라인차트를 숫자를 입력했을 때 마다 호출하도록 변경하기 */}
             <Button className="btn-md btn-tertiary" text="Update Line Chart" onClick={loadLineChartData} />
 
             <Checkbox

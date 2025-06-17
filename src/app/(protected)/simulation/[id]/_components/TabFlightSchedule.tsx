@@ -81,6 +81,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
   const {
     colorCriteria,
     currentScenarioTab,
+    availableScenarioTab,
+    setAvailableScenarioTab,
     filterOptions,
     flightScheduleChartData,
     isFilterEnabled,
@@ -107,6 +109,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
     useShallow((s) => ({
       colorCriteria: s.flightSchedule.selectedCriteria,
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
+      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
+      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
       filterOptions: s.flightSchedule.filterOptions,
       flightScheduleChartData: s.flightSchedule.chartData,
       isFilterEnabled: s.flightSchedule.isFilterEnabled,
@@ -124,7 +128,6 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       setFlightScheduleSelectedFilters: s.flightSchedule.actions.setSelectedFilters,
       setTargetAirport: s.flightSchedule.actions.setTargetAirport,
       setTargetDate: s.flightSchedule.actions.setTargetDate,
-      //
       resetPassengerSchedule: s.passengerSchedule.actions.resetState,
       resetAirportProcessing: s.airportProcessing.actions.resetState,
       resetFacilityConnection: s.facilityConnection.actions.resetState,
@@ -228,10 +231,11 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
       {/* TODO: 아직 사용 불가한 데이터 소스에 대해서 not yet UI 추가하기 */}
       <TabDefault
-        className={`tab-secondary mt-[25px]`}
+        className="tab-secondary mt-[25px]"
         tabs={SUB_TABS.map((tab) => ({ text: tab.text }))}
         tabCount={SUB_TABS.length}
         currentTab={selectedDatasource}
+        availableTabs={0}
       />
 
       <div className="mt-[40px] flex items-center justify-between">
@@ -344,6 +348,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
             text="Load"
             iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
             onClick={() => {
+              setAvailableScenarioTab(2);
+
               if (!flightScheduleChartData) {
                 return loadFlightSchedule();
               }
@@ -556,6 +562,8 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
 
         <button
           className="btn-md btn-default btn-rounded w-[210px] justify-between"
+          // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
+          disabled={availableScenarioTab < 2}
           onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
         >
           <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>

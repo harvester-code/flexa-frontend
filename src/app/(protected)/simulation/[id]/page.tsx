@@ -109,8 +109,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           scenarioName: scenarioInfo.name,
           scenarioTerminal: scenarioInfo.terminal,
           scenarioHistory: scenarioMetadata.history,
+          availableScenarioTab: scenarioMetadata.overview.availableScenarioTab,
+          currentScenarioTab: scenarioMetadata.overview.currentScenarioTab,
         });
-        loadScenarioOverviewMetadata(scenarioMetadata.overview);
+        loadScenarioOverviewMetadata({
+          matrix: scenarioMetadata.overview.matrix,
+        });
         loadFlightScheduleMetadata(scenarioMetadata.flight_schedule);
         loadPassengerScheduleMetadata(scenarioMetadata.passenger_schedule);
         loadAirportProcessingMetadata(scenarioMetadata.processing_procedures);
@@ -155,6 +159,18 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     const { actions: f, ...facilityConnectionSnapShot } = facilityConnection;
     const { actions: g, ...facilityCapacitySnapShot } = facilityCapacity;
 
+    const tempSnapshot = [
+      airportProcessingSnapShot.dataConnectionCriteria,
+      ...airportProcessingSnapShot.procedures.map((proc) => `${proc.name}::${proc.nodesText}`),
+    ].join('::');
+
+    console.log(tempSnapshot, facilityConnectionSnapShot.snapshot);
+
+    if (facilityConnectionSnapShot.snapshot && tempSnapshot !== facilityConnectionSnapShot.snapshot) {
+      alert('Unable to save the scenario. Please ensure the Processing Procedures tab is applied before saving.');
+      return;
+    }
+
     const newCheckpoint = dayjs()
       .add((checkpoint?.diff || 0) * -1, 'millisecond')
       .format('YYYY-MM-DD HH:mm:ss Z');
@@ -169,7 +185,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     const history = [...(scenarioProfileSnapShot?.scenarioHistory || []), historyItem];
 
     const params = {
-      overview: scenarioOverviewSnapShot,
+      overview: {
+        ...scenarioOverviewSnapShot,
+        // NOTE: 현재 개발에는 Scenario Profile을 저장하는 KEY가 따로 존재하지 않아 overview에 저장합니다.
+        availableScenarioTab: scenarioProfileSnapShot.availableScenarioTab,
+        currentScenarioTab: scenarioProfileSnapShot.currentScenarioTab,
+      },
       history,
       flight_schedule: flightScheduleSnapShot,
       passenger_schedule: passengerScheduleSnapShot,

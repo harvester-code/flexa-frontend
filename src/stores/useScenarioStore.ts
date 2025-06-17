@@ -163,7 +163,8 @@ const initialScenarioProfile: Omit<ScenarioProfileSlice['scenarioProfile'], 'act
   scenarioTerminal: '',
   scenarioHistory: [],
   currentScenarioTab: 0,
-  availableScenarioTab: process.env.NODE_ENV === 'development' ? 999 : 0,
+  // availableScenarioTab: process.env.NODE_ENV === 'development' ? 999 : 0,
+  availableScenarioTab: 1,
 };
 
 const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get) => ({

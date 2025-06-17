@@ -43,7 +43,11 @@ export interface ScenarioOverview {
 interface ScenarioMetadata {
   id: number;
   scenario_id: string;
-  overview: unknown;
+  overview: {
+    matrix: ScenarioOverview['matrix'];
+    currentScenarioTab: number;
+    availableScenarioTab: number;
+  };
   flight_schedule: unknown;
   passenger_schedule: unknown;
   processing_procedures: unknown;
