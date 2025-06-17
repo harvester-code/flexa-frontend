@@ -85,7 +85,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [visible]);
 
   const [simulationParams, setSimulationParams] = useState<any>();
-  const [simulationData, setSimulationData] = useState<SimulationResponse>();
+  const [simulationData, setSimulationData] = useState<SimulationResponse>({} as SimulationResponse);
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
@@ -106,6 +106,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     }
   };
 
+  // FIXME: 새롭게 저장된 시뮬레이션 결과가 불러오지 않는 문제 발생.
   const loadSimulationOutput = useCallback(async () => {
     try {
       setLoadingSimulation(true);
@@ -294,7 +295,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [procedures]);
 
   const kpiDataCurrent = useMemo(() => {
-    if (!simulationData || !simulationData.kpi) return [];
+    if (Object.keys(simulationData).length < 1 || !simulationData.kpi) return [];
 
     const target = simulationData.kpi.find(
       (item) =>
@@ -305,7 +306,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [simulationData, procedures, selectedProcedure, selectedNodes]);
 
   const lineChartDataCurrent = useMemo(() => {
-    if (!simulationData || !simulationData.line_chart) return null;
+    if (Object.keys(simulationData).length < 1 || !simulationData.line_chart) return null;
 
     return simulationData.line_chart.find(
       (item) =>
@@ -315,7 +316,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   }, [simulationData, procedures, selectedProcedure, selectedNodes]);
 
   const chartDataCurrent = useMemo(() => {
-    if (!simulationData || !simulationData.chart) return null;
+    if (Object.keys(simulationData).length < 1 || !simulationData.chart) return null;
 
     return simulationData.chart.find(
       (item) =>
@@ -347,9 +348,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         />
       </div>
 
-      {matrix && matrix.length > 0 ? (
+      {matrix.length > 0 ? (
         <div className="overview-wrap mt-[10px]">
-          {matrix.map((item, index) => (
+          {matrix?.map((item, index) => (
             <a key={index} href="#" className="overview-item h-[120px] overflow-hidden">
               <dl>
                 <dt className="text-left">{item.name}</dt>
@@ -394,7 +395,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         <div className="flex min-h-[200px] flex-1 items-center justify-center">
           <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
         </div>
-      ) : simulationData ? (
+      ) : Object.keys(simulationData).length > 0 ? (
         <div className="my-8">
           <h2 className="title-sm">Most Recent Simulation Result</h2>
 
@@ -404,7 +405,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
 
               <dl className="flex flex-col gap-[8px]">
                 <dt className="text-2xl font-semibold text-default-800">
-                  {simulationData.simulation_completed[0].value} Passengers
+                  {simulationData?.simulation_completed?.[0]?.value} Passengers
                 </dt>
                 <dd className="text-xl text-default-500">completed passengers</dd>
               </dl>
@@ -414,7 +415,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               <Image width={60} height={60} src="/image/ico-check-red.png" alt="" />
               <dl className="flex flex-col gap-[8px]">
                 <dt className="text-2xl font-semibold text-default-800">
-                  {simulationData.simulation_completed[1].value} Passengers
+                  {simulationData?.simulation_completed?.[1]?.value} Passengers
                 </dt>
                 <dd className="text-xl text-default-500">incomplete passengers</dd>
               </dl>
@@ -422,7 +423,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
           </div>
 
           <h2 className="title-sm mt-[44px]">
-            Passenger Flow {simulationData.simulation_completed[0].value} Passengers
+            Passenger Flow {simulationData?.simulation_completed?.[0]?.value} Passengers
           </h2>
 
           <div className="mt-[40px] rounded-md bg-white">
@@ -457,7 +458,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               className="tab-secondary mt-[25px]"
               tabCount={procedures.length}
               currentTab={selectedProcedure}
-              tabs={procedures.map((tab) => ({ text: tab.nameText ?? '' }))}
+              tabs={procedures?.map((tab) => ({ text: tab.nameText ?? '' }))}
               onTabChange={setSelectedProcedure}
             />
 
@@ -482,15 +483,15 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             ) : null}
           </div>
 
-          {selectedProcedure < procedures.length ? (
+          {chartDataCurrent ? (
             <div>
               {/* =============== KPI =============== */}
-              {simulationData && simulationData.kpi ? (
+              {Object.keys(simulationData).length > 0 && simulationData?.kpi ? (
                 <div className="indicator mt-5">
                   <h4 className="text-lg font-semibold">KPI Indicators</h4>
 
                   <ul className="indicator-list grid-cols-3 gap-5">
-                    {kpiDataCurrent.map((item, index) => (
+                    {kpiDataCurrent?.map((item, index) => (
                       <li key={index}>
                         <dl>
                           <dt className="text-left">{item.title}</dt>
@@ -522,7 +523,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent className="cursor-pointer bg-white">
-                      {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data).map((text, index) => (
+                      {Object.keys(simulationData?.chart[0]?.inbound?.chart_y_data)?.map((text, index) => (
                         <div key={index} className="flex flex-col">
                           <DropdownMenuItem
                             className="flex cursor-pointer flex-row px-[14px] py-[10px] pl-[14px]"
@@ -691,7 +692,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
             </div>
           ) : (
             <>
-              <div className="mt-[40px] flex items-center justify-between">
+              {/* <div className="mt-[40px] flex items-center justify-between">
                 <p className="text-40 mb-[10px] text-xl font-semibold">Total</p>
                 <div className="flex flex-col">
                   <DropdownMenu>
@@ -740,8 +741,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                 }}
-                // config={{ displayModeBar: false }}
-              />
+              /> */}
             </>
           )}
 
