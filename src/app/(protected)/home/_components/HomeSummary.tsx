@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { JSX, ReactNode, useEffect, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
@@ -46,7 +46,8 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
   const [chartData, setChartData] = useState<
     {
       title: string;
-      value: string;
+      value: JSX.Element | ReactNode;
+      // value: string;
       width: number;
     }[]
   >([]);
