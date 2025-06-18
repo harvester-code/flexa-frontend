@@ -12,7 +12,26 @@ function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
 
   useEffect(() => {
     if (chartRef.current) {
-      Plotly.newPlot(chartRef.current, chartData, chartLayout, {
+      const mergedLayout = {
+        ...chartLayout,
+        yaxis: {
+          ...(typeof chartLayout?.yaxis === 'object' ? chartLayout.yaxis : {}),
+          tickformat: ',d',
+        },
+        xaxis: {
+          ...(typeof chartLayout?.xaxis === 'object' ? chartLayout.xaxis : {}),
+          tickformat: '%H:%M',
+        },
+        ...(chartLayout?.yaxis2
+          ? {
+              yaxis2: {
+                ...(typeof chartLayout?.yaxis2 === 'object' ? chartLayout.yaxis2 : {}),
+                tickformat: ',d',
+              },
+            }
+          : {}),
+      };
+      Plotly.newPlot(chartRef.current, chartData, mergedLayout, {
         autosizable: true,
         responsive: true,
         ...config,

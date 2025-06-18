@@ -36,6 +36,12 @@ interface HomeChartsProps {
   processes: Option[];
 }
 
+// HEX → RGBA 변환 함수
+const hexToRgba = (hex: string, alpha = 0.2) => {
+  const [r, g, b] = hex.match(/\w\w/g)!.map((x) => parseInt(x, 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+};
+
 function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const FACILITY_OPTIONS: Option[] = useMemo(
     () => [{ label: 'All Process (avg)', value: 'all_facilities' }].concat(processes),
@@ -119,16 +125,24 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const [totalPassengers, setTotalPassengers] = useState(0);
 
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
+  const convertSecondsToMinutes = (data: Plotly.Data): Plotly.Data => ({
+    ...data,
+    y: Array.isArray((data as any).y)
+      ? (data as any).y.map((v: any) => (typeof v === 'number' ? v / 60 : v))
+      : (data as any).y,
+  });
   const handleLineChartData = useCallback((data, option: Option, yaxis: null | string) => {
     const MAX_DATA_LENGTH = 2;
-
     setLineChartData((prevData) => {
-      const newData: Plotly.Data = {
+      let newData: Plotly.Data = {
         ...data[option.value],
         name: option.value,
         line: { color: option.color },
         yaxis,
       };
+      if (option.value === 'waiting_time') {
+        newData = convertSecondsToMinutes(newData);
+      }
       const updatedData = [...prevData, newData];
       return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
     });
@@ -139,24 +153,38 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     showlegend: false,
     xaxis: { showgrid: false },
   });
+  const getYAxisTitle = (optionValue: string) => (optionValue === 'waiting_time' ? '(min)' : '(pax)');
   const handleChartLayout = useCallback((option: Option, yaxis: null | string) => {
     setChartLayout((prev) => {
       if (yaxis) {
         return {
           ...prev,
-          yaxis2: { title: { text: option.label }, overlaying: 'y', side: 'right', showgrid: false },
+          yaxis2: {
+            title: { text: `${option.label} ${getYAxisTitle(option.value)}`, standoff: 16 },
+            overlaying: 'y',
+            side: 'right',
+            showgrid: true,
+            gridcolor: hexToRgba(option.color ?? '#888888', 0.1),
+            gridwidth: 2,
+          },
         };
       }
-
-      return { ...prev, yaxis: { title: { text: option.label } } };
+      return {
+        ...prev,
+        yaxis: {
+          title: { text: `${option.label} ${getYAxisTitle(option.value)}`, standoff: 16 },
+          showgrid: true,
+          gridcolor: hexToRgba(option.color ?? '#888888', 0.1),
+          gridwidth: 2,
+        },
+      };
     });
   }, []);
   const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
   const handleBarChartData = useCallback((data, option: Option, yaxis: null | string) => {
     const MAX_DATA_LENGTH = 2;
-
     setBarChartData((prevData) => {
-      const newData: Plotly.Data = {
+      let newData: Plotly.Data = {
         ...data[option.value],
         type: 'bar',
         name: option.value,
@@ -167,6 +195,9 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
         },
         yaxis,
       };
+      if (option.value === 'waiting_time') {
+        newData = convertSecondsToMinutes(newData);
+      }
       const updatedData = [...prevData, newData];
       return updatedData.length > MAX_DATA_LENGTH ? updatedData.slice(1) : updatedData;
     });
@@ -242,6 +273,13 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     setSankeyChartData(data);
     setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
   }, [sankey]);
+
+  // facility1이 all_facilities로 바뀔 때, chartOption1에서 Throughput(2) 자동 제거
+  useEffect(() => {
+    if (facility1.value === 'all_facilities') {
+      setChartOption1((prev) => prev.filter((idx) => idx !== 2));
+    }
+  }, [facility1]);
 
   if (!scenario) {
     return <HomeNoScenario />;
