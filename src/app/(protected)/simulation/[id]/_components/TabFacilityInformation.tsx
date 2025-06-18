@@ -197,8 +197,6 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   // ====================================================================================================
   // 1️⃣ Initialize settings and load data when the component is visible
   useEffect(() => {
-    // console.log(selectedNodes, procedures, currentSetting, isInitialized, visible);
-
     if (!visible || isInitialized) return;
 
     if (!procedures || procedures.length === 0) {
@@ -892,7 +890,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           type: 'bar',
                           orientation: 'h',
                           marker: { color: '#6941C6', opacity: 1 },
-                          x: barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
+                          x: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
                             procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
                           ]?.y,
                           y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
@@ -961,7 +959,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                         marker: { color: '#6941C6', opacity: 1 },
                         x: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`),
                         y:
-                          barChartData[procedures[selectedSecondTab].name]?.bar_chart_y_data[
+                          barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
                             procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
                           ]?.y || [],
                       },
