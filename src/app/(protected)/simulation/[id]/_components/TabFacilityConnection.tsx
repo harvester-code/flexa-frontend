@@ -553,12 +553,8 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
         className="tab-secondary mt-[25px]"
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
-        availableTabs={activedSecondTab}
         tabs={procedures.map((proc) => ({ text: proc.nameText || '' }))}
-        onTabChange={(index) => {
-          if (index > activedSecondTab) return;
-          setSelectedSecondTab(index);
-        }}
+        onTabChange={setSelectedSecondTab}
       />
 
       {loadError ? (

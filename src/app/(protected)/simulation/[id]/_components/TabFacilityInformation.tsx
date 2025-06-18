@@ -387,12 +387,8 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         className="tab-secondary mt-[25px]"
         tabCount={procedures.length}
         currentTab={selectedSecondTab}
-        availableTabs={availableSecondTab}
         tabs={procedures.map((proc, i) => ({ text: proc.nameText || '' }))}
-        onTabChange={(index) => {
-          if (index > availableSecondTab) return;
-          setSelectedSecondTab(index);
-        }}
+        onTabChange={setSelectedSecondTab}
       />
 
       {/* =============== NODE TABS =============== */}

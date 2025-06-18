@@ -25,8 +25,19 @@ export default function TabDefault({
           key={index}
           className={cn('tab-button', index === currentTab ? 'active' : '', index > availableTabs ? 'opacity-50' : '')}
           onClick={() => {
-            if (index > availableTabs) return;
-            if (onTabChange) onTabChange(index);
+            if (!onTabChange) return;
+
+            if (availableTabs === 999) {
+              onTabChange(index);
+              return;
+            }
+
+            if (index > availableTabs) {
+              return;
+            }
+
+            onTabChange(index);
+            return;
           }}
         >
           {tab.text} {tab.number ? <span>{tab.number}</span> : null}
