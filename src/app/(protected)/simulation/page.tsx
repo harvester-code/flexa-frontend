@@ -295,7 +295,13 @@ const SimulationPage = () => {
                 searchKeyword?.length > 0 && scenario.name.indexOf(searchKeyword) < 0 ? null : (
                   <tr
                     key={idx}
-                    className={cn('border-b text-sm hover:bg-default-100', isScenarioSelected[idx] ? 'active' : '')}
+                    className={cn(
+                      'border-b text-sm hover:cursor-pointer hover:bg-default-100',
+                      isScenarioSelected[idx] ? 'active' : ''
+                    )}
+                    onClick={() => {
+                      if (!scenarioStates[idx]?.editName) router.push(`${pathname}/${scenario.id}`);
+                    }}
                   >
                     <td className="text-center">
                       <Checkbox
@@ -316,13 +322,7 @@ const SimulationPage = () => {
                     {/* ===== Scenario Name ===== */}
                     <td className="cursor-pointer">
                       <div className="flex items-center gap-[10px]">
-                        <div
-                          onClick={() => {
-                            if (!scenarioStates[idx]?.editName) {
-                              router.push(`${pathname}/${scenario.id}`);
-                            }
-                          }}
-                        >
+                        <div>
                           <input
                             className="!border-none bg-transparent py-[8px] !text-default-700"
                             style={{ pointerEvents: scenarioStates[idx]?.editName ? 'auto' : 'none' }}
@@ -382,33 +382,42 @@ const SimulationPage = () => {
                             <EllipsisVertical className="!size-4" />
                           </div>
                         </DropdownMenuTrigger>
+
                         <DropdownMenuContent align="end" className="pr-[20px]">
                           <DropdownMenuItem>
                             <Image width={16} height={16} src="/image/ico-run.svg" alt="" />
                             Run
                           </DropdownMenuItem>
+
                           <DropdownMenuSeparator />
+
                           <DropdownMenuItem onClick={() => onDuplicate(idx)}>
                             <Image width={16} height={16} src="/image/ico-duplicate.svg" alt="" />
                             Duplicate
                           </DropdownMenuItem>
+
                           <DropdownMenuItem onClick={() => onRename(idx)}>
                             <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Rename
                           </DropdownMenuItem>
+
                           <DropdownMenuItem onClick={() => onEditMemo(idx)}>
                             <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Edit Memo
                           </DropdownMenuItem>
+
                           <DropdownMenuItem onClick={() => onSetMaster(idx)}>
                             <Image width={16} height={16} src="/image/ico-rename.svg" alt="" />
                             Set Master
                           </DropdownMenuItem>
+
                           <DropdownMenuItem>
                             <Image width={16} height={16} src="/image/ico-share.svg" alt="" />
                             Share
                           </DropdownMenuItem>
+
                           <DropdownMenuSeparator />
+
                           <DropdownMenuItem className="text-red" onClick={() => onDelete(idx)}>
                             <Trash2 className="size-4" />
                             Delete
