@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -34,9 +34,6 @@ const tabs: { text: string; number: number }[] = [
 export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { toast } = useToast();
-
-  const [loaded, setLoaded] = useState(false);
-  const simulationId = React.use(params).id;
 
   const {
     availableScenarioTab,
@@ -90,47 +87,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }))
   );
 
+  const simulationId = use(params).id;
+  const [isInitialized, setIsInitialized] = useState(false);
+
   // ‼️ 시뮬레이션 페이지에 필요한 데이터를 로드합니다.
   // 이 데이터를 스토어에 저장하고, 하위 탭 컴포넌트에서 사용합니다.
-  useEffect(() => {
-    setCurrentScenarioTab(0); // Reset to the first tab when loading a new scenario
-
-    const loadScenario = async () => {
-      try {
-        const {
-          data: { checkpoint: scenarioCheckpoint, metadata: scenarioMetadata, scenario_info: scenarioInfo },
-        } = await getScenarioMetadata(simulationId);
-
-        const clientTime = dayjs();
-        const serverTime = dayjs(scenarioCheckpoint);
-
-        loadScenarioProfileMetadata({
-          checkpoint: scenarioCheckpoint,
-          scenarioName: scenarioInfo.name,
-          scenarioTerminal: scenarioInfo.terminal,
-          scenarioHistory: scenarioMetadata.history,
-          availableScenarioTab: scenarioMetadata.overview?.availableScenarioTab ?? 1,
-          currentScenarioTab: scenarioMetadata.overview?.currentScenarioTab ?? 0,
-        });
-        loadScenarioOverviewMetadata({
-          matrix: scenarioMetadata.overview?.matrix ?? [],
-        });
-        loadFlightScheduleMetadata(scenarioMetadata.flight_schedule);
-        loadPassengerScheduleMetadata(scenarioMetadata.passenger_schedule);
-        loadAirportProcessingMetadata(scenarioMetadata.processing_procedures);
-        loadFacilityConnectionMetadata(scenarioMetadata.facility_connection);
-        loadFacilityCapacityMetadata(scenarioMetadata.facility_information);
-
-        setCheckpoint({ time: scenarioCheckpoint, diff: clientTime.diff(serverTime, 'millisecond') });
-      } catch (error) {
-        console.error('Failed to load scenario metadata:', error);
-      } finally {
-        setLoaded(true);
-      }
-    };
-
-    loadScenario();
-  }, [
+  useLoadScenarioData(simulationId, {
     loadScenarioProfileMetadata,
     loadScenarioOverviewMetadata,
     loadFlightScheduleMetadata,
@@ -138,17 +100,17 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     loadAirportProcessingMetadata,
     loadFacilityConnectionMetadata,
     loadFacilityCapacityMetadata,
-    setCheckpoint,
     setCurrentScenarioTab,
-    simulationId,
-  ]);
-
-  const latestHistory =
-    scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;
+    setIsInitialized,
+  });
 
   // useEffect(() => {
   //   window.scrollTo({ top: 0, behavior: 'smooth' });
   // }, [currentScenarioTab]=);
+
+  const latestHistory = useMemo(() => {
+    return scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;
+  }, [scenarioHistory]);
 
   const saveScenario = async () => {
     const { actions: a, ...scenarioProfileSnapShot } = scenarioProfile;
@@ -163,8 +125,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       airportProcessingSnapShot.dataConnectionCriteria,
       ...airportProcessingSnapShot.procedures.map((proc) => `${proc.name}::${proc.nodesText}`),
     ].join('::');
-
-    console.log(tempSnapshot, facilityConnectionSnapShot.snapshot);
 
     if (facilityConnectionSnapShot.snapshot && tempSnapshot !== facilityConnectionSnapShot.snapshot) {
       alert('Unable to save the scenario. Please ensure the Processing Procedures tab is applied before saving.');
@@ -205,7 +165,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   };
 
   return (
-    <div className="mx-auto max-w-[1340px] px-[30px]">
+    <div className="mx-auto mb-10 max-w-[1340px] px-[30px]">
       <TheContentHeader text="Simulation" />
 
       <div className="mt-[15px] flex justify-between">
@@ -221,9 +181,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             className="btn-md btn-default"
             icon={<Image width={20} height={20} src="/image/ico-arrow-left.svg" alt="" />}
             text="Back to Scenario List"
-            onClick={() => {
-              router.replace(`/simulation`);
-            }}
+            onClick={() => router.replace(`/simulation`)}
           />
 
           <Button
@@ -244,7 +202,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         onTabChange={setCurrentScenarioTab}
       />
 
-      {loaded ? (
+      {isInitialized ? (
         <React.Fragment key={simulationId}>
           <TabScenarioOverview visible={currentScenarioTab === 0} />
           <TabFlightSchedule visible={currentScenarioTab === 1} simulationId={simulationId} />
@@ -261,4 +219,61 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       )}
     </div>
   );
+}
+
+function useLoadScenarioData(simulationId: string, actions) {
+  const {
+    loadScenarioProfileMetadata,
+    loadScenarioOverviewMetadata,
+    loadFlightScheduleMetadata,
+    loadPassengerScheduleMetadata,
+    loadAirportProcessingMetadata,
+    loadFacilityConnectionMetadata,
+    loadFacilityCapacityMetadata,
+    setCurrentScenarioTab,
+    setIsInitialized,
+  } = actions;
+
+  useEffect(() => {
+    setCurrentScenarioTab(0); // Reset to the first tab when loading a new scenario
+
+    const loadScenario = async () => {
+      try {
+        const { data } = await getScenarioMetadata(simulationId);
+        const { checkpoint, metadata, scenario_info } = data;
+
+        loadScenarioProfileMetadata({
+          checkpoint,
+          scenarioName: scenario_info.name,
+          scenarioTerminal: scenario_info.terminal,
+          scenarioHistory: metadata.history,
+          availableScenarioTab: metadata.overview?.availableScenarioTab ?? 1,
+          currentScenarioTab: metadata.overview?.currentScenarioTab ?? 0,
+        });
+        loadScenarioOverviewMetadata({ matrix: metadata.overview?.matrix ?? [] });
+        loadFlightScheduleMetadata(metadata.flight_schedule);
+        loadPassengerScheduleMetadata(metadata.passenger_schedule);
+        loadAirportProcessingMetadata(metadata.processing_procedures);
+        loadFacilityConnectionMetadata(metadata.facility_connection);
+        loadFacilityCapacityMetadata(metadata.facility_information);
+      } catch (error) {
+        console.error('Failed to load scenario metadata:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadScenario();
+  }, [
+    loadScenarioProfileMetadata,
+    loadScenarioOverviewMetadata,
+    loadFlightScheduleMetadata,
+    loadPassengerScheduleMetadata,
+    loadAirportProcessingMetadata,
+    loadFacilityConnectionMetadata,
+    loadFacilityCapacityMetadata,
+    setCurrentScenarioTab,
+    setIsInitialized,
+    simulationId,
+  ]);
 }

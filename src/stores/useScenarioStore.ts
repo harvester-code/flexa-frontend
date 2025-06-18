@@ -175,7 +175,11 @@ const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.scenarioProfile = { ...state.scenarioProfile, ...metadata };
+            state.scenarioProfile = {
+              ...initialScenarioProfile,
+              ...metadata,
+              actions: state.scenarioProfile.actions,
+            };
           },
           false,
           'scenarioProfile/loadMetadata'
@@ -237,7 +241,11 @@ const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, g
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.scenarioOverview = { ...state.scenarioOverview, ...metadata };
+            state.scenarioOverview = {
+              ...initialScenarioOverview,
+              ...metadata,
+              actions: state.scenarioOverview.actions,
+            };
           },
           false,
           'scenarioOverview/loadMetadata'
@@ -268,25 +276,33 @@ const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, g
 });
 
 // ==================== Flight Schedule Slice Creator ====================
+const initialFlightSchedule: Omit<FlightScheduleSlice['flightSchedule'], 'actions'> = {
+  datasource: 0,
+  targetAirport: { iata: 'ICN', name: '', searchText: '' },
+  targetDate: dayjs().format('YYYY-MM-DD'),
+  //
+  isFilterEnabled: false,
+  filterOptions: null,
+  selectedFilters: [],
+  //
+  criterias: [],
+  selectedCriteria: '',
+  chartData: null,
+};
+
 const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) => ({
   flightSchedule: {
-    datasource: 0,
-    targetAirport: { iata: 'ICN', name: '', searchText: '' },
-    targetDate: dayjs().format('YYYY-MM-DD'),
-    //
-    isFilterEnabled: false,
-    filterOptions: null,
-    selectedFilters: [],
-    //
-    criterias: [],
-    selectedCriteria: '',
-    chartData: null,
+    ...initialFlightSchedule,
 
     actions: {
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.flightSchedule = { ...state.flightSchedule, ...metadata };
+            state.flightSchedule = {
+              ...initialFlightSchedule,
+              ...metadata,
+              actions: state.flightSchedule.actions,
+            };
           },
           false,
           'flightSchedule/loadMetadata'
@@ -386,7 +402,11 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.passengerSchedule = { ...state.passengerSchedule, ...metadata };
+            state.passengerSchedule = {
+              ...initialPassengerSchedule,
+              ...metadata,
+              actions: state.passengerSchedule.actions,
+            };
           },
           false,
           'passengerSchedule/loadMetadata'
@@ -505,7 +525,11 @@ const createAirportProcessingSlice: SliceCreator<AirportProcessingSlice> = (set,
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.airportProcessing = { ...state.airportProcessing, ...metadata };
+            state.airportProcessing = {
+              ...initialAirportProcessing,
+              ...metadata,
+              actions: state.airportProcessing.actions,
+            };
           },
           false,
           'airportProcessing/loadMetadata'
@@ -561,7 +585,11 @@ const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (se
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.facilityConnection = { ...state.facilityConnection, ...metadata };
+            state.facilityConnection = {
+              ...initialFacilityConnection,
+              ...metadata,
+              actions: state.facilityConnection.actions,
+            };
           },
           false,
           'facilityConnection/loadMetadata'
@@ -640,7 +668,11 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
       loadMetadata: (metadata) =>
         set(
           (state) => {
-            state.facilityCapacity = { ...state.facilityCapacity, ...metadata };
+            state.facilityCapacity = {
+              ...initialFacilityCapacity,
+              ...metadata,
+              actions: state.facilityCapacity.actions,
+            };
           },
           false,
           'facilityCapacity/loadMetadata'
