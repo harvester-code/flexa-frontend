@@ -21,9 +21,9 @@ const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: 
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
 
 const CHART_OPTIONS: Option[] = [
-  { label: 'Queue Pax', value: 'queue_length', color: '' },
-  { label: 'Wait Time', value: 'waiting_time', color: '' },
-  { label: 'Throughput', value: 'throughput', color: '' },
+  { label: 'Queue Pax', value: 'queue_length', color: '#FF9800' }, // 주황
+  { label: 'Wait Time', value: 'waiting_time', color: '#1976D2' }, // 파랑
+  { label: 'Throughput', value: 'throughput', color: '#43A047' }, // 초록 등
 ];
 
 const CHART_OPTIONS2: Option[] = [
@@ -206,7 +206,7 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     }
 
     const data = bins
-      ?.map(({ range, value }) => ({
+      .map(({ range, value }) => ({
         title: makeLabel(range, range_unit),
         value: (
           <>
@@ -296,14 +296,15 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
                     key={i}
                     onClick={() => handleChartOption1(i)}
                   >
-                    {chartOption1.includes(i) && <Circle className="!size-2.5" fill="#111" stroke="transparent" />}
+                    {chartOption1.includes(i) && (
+                      <Circle className="!size-2.5" fill={opt.color} color={opt.color} stroke="transparent" />
+                    )}
                     {opt.label}
                   </Button>
                 ))}
               </ButtonGroup>
             </div>
           </div>
-
           <div className="min-h-96 bg-white">
             {chartType ? (
               <LineChart chartData={lineChartData} chartLayout={chartLayout} />
