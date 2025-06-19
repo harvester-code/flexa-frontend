@@ -144,13 +144,13 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           }
         />
         <HomeSummaryCard
-          showCircle
           icon={WaitTime}
           title={<span>Wait Time</span>}
           value={formatTimeTaken(summaries?.waiting_time)}
+          kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'topN' ? 'topN' : undefined}
+          percentile={calculate_type === 'topN' ? (percentile ?? undefined) : undefined}
         />
         <HomeSummaryCard
-          showCircle
           icon={PassengerQueue}
           title={<span>Queue Pax</span>}
           value={
@@ -159,6 +159,8 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
               {formatUnit('pax')}
             </>
           }
+          kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'topN' ? 'topN' : undefined}
+          percentile={calculate_type === 'topN' ? (percentile ?? undefined) : undefined}
         />
         <HomeSummaryCard
           icon={RatioIcon01}

@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { pascalCase } from 'change-case';
-import { ChevronRight, CircleSmall, Clock4, LockOpen } from 'lucide-react';
+import { ChevronRight, Clock4, LockOpen } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { useFacilityDetails } from '@/queries/homeQueries';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import './HomeDetails.css';
 import { formatImageSize, formatNumberWithComma, formatPercent, formatTimeTaken, formatUnit } from './HomeFormat';
+import { badgeBtnSm } from './HomeKpiSelector';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -73,7 +74,6 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                       <HomeTooltip content="Actual number of activated desks.">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
                       {overview.opened[0]} / {overview.opened[1]}
@@ -99,10 +99,17 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                 </div>
 
                 <div>
-                  {formatImageSize(<PassengerQueue />, 30)}
+                  <div className="relative inline-block">
+                    {formatImageSize(<PassengerQueue />, 30)}
+                    {calculate_type && (
+                      <span className={badgeBtnSm(true) + ' absolute -top-4 left-1/2 z-10 -translate-x-1/2'}>
+                        {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                      </span>
+                    )}
+                  </div>
                   <dl>
-                    <dt>
-                      Queue Pax
+                    <dt className="flex items-center gap-1">
+                      <span>Queue Pax</span>
                       <HomeTooltip content="Average/Top (int)% queue passengers">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
@@ -115,14 +122,20 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                 </div>
 
                 <div>
-                  {formatImageSize(<WaitTime />, 30)}
+                  <div className="relative inline-block">
+                    {formatImageSize(<WaitTime />, 30)}
+                    {calculate_type && (
+                      <span className={badgeBtnSm(true) + ' absolute -top-4 left-1/2 z-10 -translate-x-1/2'}>
+                        {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                      </span>
+                    )}
+                  </div>
                   <dl>
-                    <dt className="flex items-center">
+                    <dt className="flex items-center gap-1">
                       <span>Wait Time</span>
                       <HomeTooltip content="Average/Top (int)% wait time of passengers">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
                   </dl>
@@ -135,7 +148,6 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                       <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
                       {Math.round(Number(overview.ai_ratio))}
@@ -152,7 +164,6 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                       <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
-                      <CircleSmall className="ml-1 size-3" fill="#9E77ED" stroke="#9E77ED" aria-hidden="true" />
                     </dt>
                     <dd className="!font-semibold">
                       {Math.round(Number(overview.pa_ratio))}
@@ -210,7 +221,17 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                             </div>
 
                             <div>
-                              {formatImageSize(<PassengerQueue />, 24)}
+                              <div className="relative inline-block">
+                                {formatImageSize(<PassengerQueue />, 24)}
+                                {calculate_type && (
+                                  <span
+                                    className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
+                                    style={{ height: '11px', fontSize: '7px', minWidth: '14px', padding: '0 1px' }}
+                                  >
+                                    {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                                  </span>
+                                )}
+                              </div>
                               <dl>
                                 <dt>Queue Pax</dt>
                                 <dd className="!font-semibold">
@@ -221,7 +242,17 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                             </div>
 
                             <div>
-                              {formatImageSize(<WaitTime />, 24)}
+                              <div className="relative inline-block">
+                                {formatImageSize(<WaitTime />, 24)}
+                                {calculate_type && (
+                                  <span
+                                    className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
+                                    style={{ height: '11px', fontSize: '7px', minWidth: '14px', padding: '0 1px' }}
+                                  >
+                                    {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                                  </span>
+                                )}
+                              </div>
                               <dl>
                                 <dt>Wait Time</dt>
                                 <dd className="!font-semibold">{formatTimeTaken(comp.waitTime)}</dd>

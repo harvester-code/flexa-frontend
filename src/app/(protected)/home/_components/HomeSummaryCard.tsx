@@ -1,20 +1,25 @@
 import { ComponentType } from 'react';
-import { CircleSmall } from 'lucide-react';
 import { formatImageSize } from './HomeFormat';
+import { badgeBtn } from './HomeKpiSelector';
 
 interface HomeSummaryCardProps {
-  showCircle?: boolean;
   icon: ComponentType<unknown>;
   title: React.ReactNode;
   value: React.ReactNode;
+  kpiType?: 'mean' | 'topN'; // for Wait Time/Queue Pax badge
+  percentile?: number;
 }
 
-function HomeSummaryCard({ title, value, icon: IconComponent, showCircle = false }: HomeSummaryCardProps) {
+function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentile }: HomeSummaryCardProps) {
   return (
     <div className="rounded border border-default-200 px-4 py-3">
-      <p className="mb-4 flex items-center">
+      <p className="mb-4 flex items-center gap-2">
         {title}
-        {showCircle && <CircleSmall className="ml-1 size-4" fill="#9E77ED" stroke="#9E77ED" />}
+        {kpiType && (
+          <span className={badgeBtn(true)}>
+            {kpiType === 'mean' ? 'Mean' : percentile ? `Top ${percentile}%` : 'Top N%'}
+          </span>
+        )}
       </p>
       <div className="flex items-center justify-between">
         {formatImageSize(<IconComponent />, 32)}

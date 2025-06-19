@@ -6,35 +6,21 @@ import { ScenarioData } from '@/types/simulations';
 import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
-import Input from '@/components/Input';
 import TheContentHeader from '@/components/TheContentHeader';
-import TheDropdownMenu from '@/components/TheDropdownMenu';
 import SimulationOverview from '@/components/popups/SimulationOverview';
-import { useDebounce } from '@/hooks/useDebounce';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
+import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
-
-// import HomeCanvas from './_components/HomeCanvas';
-// import { snapshot } from './samples';
-
-const KPI_FUNCS = [
-  { label: 'Mean', value: 'mean' },
-  { label: 'Top N%', value: 'topN' },
-];
 
 function HomePage() {
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
   const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
-
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
-
-  const [calculateType, setCalculateType] = useState(KPI_FUNCS[0]);
-  const [percentile, setPercentile] = useState<number | null>(null);
-  const debouncedPercentile = useDebounce(percentile, 300);
+  const [kpi, setKpi] = useState<{ type: 'mean' | 'topN'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
@@ -42,23 +28,6 @@ function HomePage() {
       setScenario(scenarios.scenarios[0]);
     }
   }, [scenarios]);
-
-  useEffect(() => {
-    if (calculateType.value === 'topN') {
-      setPercentile(5);
-    } else {
-      setPercentile(null);
-    }
-  }, [calculateType]);
-
-  // HACK: Input 컴포넌트 변경 전까지
-  useEffect(() => {
-    if (calculateType.value === 'topN' && percentile === 0) {
-      setPercentile(Math.max(percentile, 1));
-    } else if (calculateType.value === 'topN' && percentile && percentile > 100) {
-      setPercentile(Math.min(percentile, 100));
-    }
-  }, [calculateType, percentile]);
 
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
@@ -71,39 +40,12 @@ function HomePage() {
         onSelectScenario={setScenario}
       />
 
-      {/* <HomeCanvas scenario={scenario} snapshot={snapshot} /> */}
-
-      <div className="mt-4 flex items-center justify-end">
-        <CircleSmall className="mr-2" fill="#9E77ED" stroke="#9E77ED" />
-
-        <TheDropdownMenu
-          className="min-w-[180px] [&>*]:justify-start"
-          items={KPI_FUNCS}
-          icon={<ChevronDown />}
-          label={calculateType.label}
-          onSelect={(opt) => setCalculateType(opt)}
-        />
-
-        {calculateType.value === 'topN' && percentile !== null ? (
-          <div className="ml-4 flex items-center gap-1 text-lg font-semibold">
-            <span>Top</span>
-            <div className="max-w-20">
-              {/* FIXME: 컴포넌트 수정하기 */}
-              <Input
-                className="input-rounded text-center text-sm"
-                type="text"
-                placeholder="1-100"
-                value={percentile.toString()}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPercentile(Number(e.target.value))}
-              />
-            </div>
-            <span>%</span>
-          </div>
-        ) : null}
+      <div className="mt-4 flex items-center justify-start gap-2">
+        <HomeKpiSelector value={kpi} onChange={setKpi} />
       </div>
 
       <HomeAccordion title="Summary" className="mt-4">
-        <HomeSummary scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
+        <HomeSummary scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
@@ -115,7 +57,7 @@ function HomePage() {
       </HomeAccordion>
 
       <HomeAccordion title="Details">
-        <HomeDetails scenario={scenario} calculate_type={calculateType.value} percentile={debouncedPercentile} />
+        <HomeDetails scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
       </HomeAccordion>
     </div>
   );
