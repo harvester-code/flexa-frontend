@@ -36,12 +36,6 @@ interface HomeChartsProps {
   processes: Option[];
 }
 
-// HEX → RGBA 변환 함수
-const hexToRgba = (hex: string, alpha = 0.2) => {
-  const [r, g, b] = hex.match(/\w\w/g)!.map((x) => parseInt(x, 16));
-  return `rgba(${r},${g},${b},${alpha})`;
-};
-
 function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const FACILITY_OPTIONS: Option[] = useMemo(
     () => [{ label: 'All Process (avg)', value: 'all_facilities' }].concat(processes),
@@ -113,13 +107,7 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
   const { data: histogram, isLoading: isHistogramLoading } = useHistogramChart({ scenarioId: scenario?.id });
   const { data: sankey, isLoading: isSankeyChartLoading } = useSankeyChart({ scenarioId: scenario?.id });
 
-  const [histogramChartData, setHistogramChartData] = useState<
-    {
-      title: string;
-      value: string;
-      width: number;
-    }[]
-  >([]);
+  const [histogramChartData, setHistogramChartData] = useState<{ title: string; value: string; width: number }[]>([]);
 
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
   const [totalPassengers, setTotalPassengers] = useState(0);
@@ -153,7 +141,9 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     showlegend: false,
     xaxis: { showgrid: false },
   });
+
   const getYAxisTitle = (optionValue: string) => (optionValue === 'waiting_time' ? '(min)' : '(pax)');
+
   const handleChartLayout = useCallback((option: Option, yaxis: null | string) => {
     setChartLayout((prev) => {
       if (yaxis) {
@@ -180,7 +170,9 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
       };
     });
   }, []);
+
   const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
+
   const handleBarChartData = useCallback((data, option: Option, yaxis: null | string) => {
     const MAX_DATA_LENGTH = 2;
     setBarChartData((prevData) => {
@@ -412,5 +404,11 @@ function HomeCharts({ scenario, processes }: HomeChartsProps) {
     </div>
   );
 }
+
+// HEX → RGBA 변환 함수
+const hexToRgba = (hex: string, alpha = 0.2) => {
+  const [r, g, b] = hex.match(/\w\w/g)!.map((x) => parseInt(x, 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 export default HomeCharts;
