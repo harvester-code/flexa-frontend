@@ -15,6 +15,7 @@ import {
 } from '@/components/icons';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import HomeErrors from './HomeErrors';
 import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
@@ -41,7 +42,11 @@ interface HomeSummaryProps {
 }
 
 function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {
-  const { data: summaries, isLoading } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
+  const {
+    data: summaries,
+    isLoading,
+    isError,
+  } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
 
   const [chartData, setChartData] = useState<
     {
@@ -124,6 +129,10 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
 
   if (isLoading) {
     return <HomeLoading />;
+  }
+
+  if (isError) {
+    return <HomeErrors />;
   }
 
   if (!summaries) {
