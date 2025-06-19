@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { pascalCase } from 'change-case';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -9,33 +9,54 @@ import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
-import { formatTimeTaken, formatUnit } from './HomeFormat';
+import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 
 dayjs.extend(customParseFormat);
 
-const TARGET_OPTIONS = [
-  { label: 'Wait Time', value: 'waiting_time' },
-  { label: 'Queue Pax', value: 'queue_length' },
-];
-
 interface HomeWarningProps {
   scenario: ScenarioData | null;
-  processes: Option[];
 }
 
-function HomeWarning({ scenario, processes }: HomeWarningProps) {
+function HomeWarning({ scenario }: HomeWarningProps) {
   const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
 
-  const PROCESS_OPTIONS = useMemo(
-    () => [{ label: 'All Process', value: 'all_facilities' }].concat(processes),
-    [processes]
-  );
+  // Build options directly from alertIssueData keys
+  const facilityOptions = useMemo(() => {
+    if (!alertIssueData) return [];
+    return Object.keys(alertIssueData).map((key) => ({
+      label: capitalizeFirst(key),
+      value: key,
+    }));
+  }, [alertIssueData]);
 
-  const [facility, setFacility] = useState(PROCESS_OPTIONS[0]);
-  const [target, setTarget] = useState(TARGET_OPTIONS[0]);
+  // Build target options dynamically from the first facility's first item
+  const targetOptions = useMemo(() => {
+    if (!alertIssueData) return [];
+    const firstFacilityKey = Object.keys(alertIssueData)[0];
+    const firstItem = alertIssueData[firstFacilityKey]?.[0];
+    if (!firstItem) return [];
+    return Object.keys(firstItem)
+      .filter((key) => !['time', 'node'].includes(key))
+      .map((key) => ({
+        label: capitalizeFirst(key),
+        value: key,
+      }));
+  }, [alertIssueData]);
+
+  // Track selected facility key only
+  const [selectedFacilityKey, setSelectedFacilityKey] = useState<string | undefined>(facilityOptions[0]?.value);
+  useEffect(() => {
+    setSelectedFacilityKey(facilityOptions[0]?.value);
+  }, [facilityOptions.length]);
+
+  // Track selected target option
+  const [target, setTarget] = useState(targetOptions[0]);
+  useEffect(() => {
+    setTarget(targetOptions[0]);
+  }, [targetOptions.length]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -54,26 +75,27 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
       <div className="my-3.5 flex justify-end gap-3.5">
         <TheDropdownMenu
           className="min-w-60 [&>*]:justify-start"
-          items={PROCESS_OPTIONS}
+          items={facilityOptions}
           icon={<ChevronDown />}
-          label={facility.label}
-          onSelect={(opt) => setFacility(opt)}
+          label={facilityOptions.find((opt) => opt.value === selectedFacilityKey)?.label || ''}
+          onSelect={(opt) => setSelectedFacilityKey(opt.value)}
         />
 
         <div className="min-w-60">
           <TheDropdownMenu
             className="min-w-60 [&>*]:justify-start"
-            items={TARGET_OPTIONS}
+            items={targetOptions}
             icon={<ChevronDown />}
-            label={target.label}
+            label={target?.label}
             onSelect={(opt) => setTarget(opt)}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4 rounded-md bg-default-50 p-5">
-        {alertIssueData &&
-          alertIssueData[facility.value]?.map(({ node, time, waiting_time, queue_length }, i) => {
+        {selectedFacilityKey &&
+          alertIssueData[selectedFacilityKey]?.map((item, i) => {
+            const { node, time } = item;
             const parts = node.split('_');
             // NOTE: 코드 순서가 중요
             const facility = parts.pop();
@@ -88,13 +110,15 @@ function HomeWarning({ scenario, processes }: HomeWarningProps) {
                 </dl>
 
                 <div className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
-                  {target.value === 'waiting_time' ? (
-                    <p>{formatTimeTaken(waiting_time)}</p>
-                  ) : target.value === 'queue_length' ? (
-                    <p>
-                      {queue_length}
-                      {formatUnit('pax')}
-                    </p>
+                  {target?.value && item[target.value] !== undefined ? (
+                    target.value === 'waiting_time' ? (
+                      <p>{formatTimeTaken(item[target.value])}</p>
+                    ) : (
+                      <p>
+                        {item[target.value]}
+                        {target.value === 'queue_length' ? formatUnit('pax') : ''}
+                      </p>
+                    )
                   ) : (
                     'Error'
                   )}
