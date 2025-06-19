@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, ReactNode, useEffect, useState } from 'react';
+import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useSummaries } from '@/queries/homeQueries';
@@ -16,7 +16,7 @@ import {
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import HomeErrors from './HomeErrors';
-import { formatTimeTaken, formatUnit } from './HomeFormat';
+import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -30,11 +30,6 @@ import HomeTooltip from './HomeTooltip';
 //   'Facility Utilization': 'Percentage of time during the day that the facility is operational',
 // };
 
-const CHART_OPTIONS2: Option[] = [
-  { label: 'Wait Time', value: 'waiting_time' },
-  { label: 'Queue Pax', value: 'queue_length' },
-];
-
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
   calculate_type: string;
@@ -43,10 +38,18 @@ interface HomeSummaryProps {
 
 function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {
   const {
-    data: summaries,
+    data: summaryData,
     isLoading,
     isError,
   } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
+
+  const CHART_OPTIONS2: Option[] = useMemo(() => {
+    if (!summaryData || !summaryData.pax_experience) return [];
+    return Object.keys(summaryData.pax_experience).map((key) => ({
+      label: capitalizeFirst(key),
+      value: key,
+    }));
+  }, [summaryData]);
 
   const [chartData, setChartData] = useState<
     {
@@ -76,10 +79,10 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
   };
 
   useEffect(() => {
-    if (!summaries) return;
+    if (!summaryData) return;
 
     const key = CHART_OPTIONS2[chartOption2[0]].value;
-    const processes = summaries.pax_experience[key];
+    const processes = summaryData.pax_experience[key];
 
     // NOTE: 퍼센트를 계산하기 위해서 합계를 계산합니다.
     const sum = Object.values<number | { hour: number; minute: number; second: number }>(processes).reduce(
@@ -121,7 +124,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
     });
 
     setChartData(chartData_);
-  }, [chartOption2, summaries]);
+  }, [chartOption2, summaryData]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -135,7 +138,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
     return <HomeErrors />;
   }
 
-  if (!summaries) {
+  if (!summaryData) {
     return <HomeNoData />;
   }
 
@@ -147,7 +150,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           title={<span>Pax Throughput</span>}
           value={
             <>
-              {summaries?.throughput.toLocaleString()}
+              {summaryData?.throughput.toLocaleString()}
               {formatUnit('pax')}
             </>
           }
@@ -155,7 +158,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
         <HomeSummaryCard
           icon={WaitTime}
           title={<span>Wait Time</span>}
-          value={formatTimeTaken(summaries?.waiting_time)}
+          value={formatTimeTaken(summaryData?.waiting_time)}
           kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'topN' ? 'topN' : undefined}
           percentile={calculate_type === 'topN' ? (percentile ?? undefined) : undefined}
         />
@@ -164,7 +167,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           title={<span>Queue Pax</span>}
           value={
             <>
-              {summaries?.queue_length.toLocaleString()}
+              {summaryData?.queue_length.toLocaleString()}
               {formatUnit('pax')}
             </>
           }
@@ -183,7 +186,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           }
           value={
             <>
-              {Math.round(Number(summaries?.facility_utilization))}
+              {Math.round(Number(summaryData?.facility_utilization))}
               {formatUnit('%')}
             </>
           }
@@ -200,7 +203,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           }
           value={
             <>
-              {Math.round(Number(summaries?.processed_per_activated))}
+              {Math.round(Number(summaryData?.processed_per_activated))}
               {formatUnit('%')}
             </>
           }
@@ -217,7 +220,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
           }
           value={
             <>
-              {Math.round(Number(summaries?.processed_per_installed))}
+              {Math.round(Number(summaryData?.processed_per_installed))}
               {formatUnit('%')}
             </>
           }
@@ -239,7 +242,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
                 key={idx}
                 onClick={() => handleChartOption2(idx)}
               >
-                {opt.label}
+                {capitalizeFirst(opt.label)}
               </Button>
             ))}
           </ButtonGroup>
