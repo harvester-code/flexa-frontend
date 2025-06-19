@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, CircleSmall } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
-import { useProcesses } from '@/queries/facilityQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import TheContentHeader from '@/components/TheContentHeader';
@@ -18,7 +16,6 @@ import HomeWarning from './_components/HomeWarning';
 function HomePage() {
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
-  const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'topN'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
@@ -32,28 +29,25 @@ function HomePage() {
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
       <TheContentHeader text="Home" />
-
       <SimulationOverview
         className="mt-8"
         items={scenarios?.scenarios ?? []}
         scenario={scenario}
         onSelectScenario={setScenario}
       />
-
       <div className="mt-4 flex items-center justify-start gap-2">
         <HomeKpiSelector value={kpi} onChange={setKpi} />
       </div>
-
       <HomeAccordion title="Summary" className="mt-4">
         <HomeSummary scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues">
-        <HomeWarning scenario={scenario} processes={processes} />
+        <HomeWarning scenario={scenario} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts">
-        <HomeCharts scenario={scenario} processes={processes} />
+        <HomeCharts scenario={scenario} />
       </HomeAccordion>
 
       <HomeAccordion title="Details">
