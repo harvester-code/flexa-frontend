@@ -6,32 +6,56 @@ import { cn } from '@/lib/utils';
 // 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
 function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): number[] {
   const total = rawWidths.reduce((a, b) => a + b, 0);
-  if (total === 0) return rawWidths.map((_) => 100 / rawWidths.length);
+  if (total === 0) return rawWidths.map(() => 100 / rawWidths.length);
 
-  // 1. 비율로 변환
-  let percents = rawWidths.map((v) => (v / total) * 100);
+  const percents = rawWidths.map((v) => (v / total) * 100);
 
-  // 2. 최소값 미만 항목을 minPercent로 올림, 초과분 계산
-  let over = 0;
-  percents = percents.map((p) => {
-    if (p < minPercent) {
-      over += minPercent - p;
-      return minPercent;
+  let amountToRaise = 0;
+  let donatablePool = 0;
+  const segmentsToRaise: number[] = [];
+  const donorSegments: number[] = [];
+
+  percents.forEach((p, i) => {
+    // 0%인 항목은 너비를 조정하지 않습니다.
+    if (p > 0 && p < minPercent) {
+      amountToRaise += minPercent - p;
+      segmentsToRaise.push(i);
+    } else if (p > minPercent) {
+      // 10% 초과분만 '기부 가능'한 양으로 계산합니다.
+      donatablePool += p - minPercent;
+      donorSegments.push(i);
     }
-    return p;
   });
 
-  // 3. 가장 큰 값(최대값)에서만 over만큼 차감
-  if (over > 0) {
-    let maxIdx = percents.reduce((maxIdx, p, i) => (p > percents[maxIdx] ? i : maxIdx), 0);
-    percents[maxIdx] -= over;
-  }
+  // '기부 가능한' 총량이 '필요한' 총량보다 클 경우에만 안전하게 조정을 실행합니다.
+  if (amountToRaise > 0 && donatablePool > amountToRaise) {
+    // 기여는 각자의 '여유분'에 비례하여 이루어집니다.
+    donorSegments.forEach((i) => {
+      const surplus = percents[i] - minPercent;
+      const contributionRatio = surplus / donatablePool;
+      percents[i] -= amountToRaise * contributionRatio;
+    });
 
-  // 4. 합이 100이 아닐 수 있으니 가장 큰 값에 보정
-  const sum = percents.reduce((a, b) => a + b, 0);
-  if (Math.abs(sum - 100) > 0.01) {
-    let maxIdx = percents.reduce((maxIdx, p, i) => (p > percents[maxIdx] ? i : maxIdx), 0);
-    percents[maxIdx] += 100 - sum;
+    segmentsToRaise.forEach((i) => {
+      percents[i] = minPercent;
+    });
+  }
+  // 만약 기부 가능한 양이 충분하지 않으면, 왜곡을 피하기 위해 아무것도 하지 않고 원본 비율을 유지합니다.
+
+  // 부동소수점 계산으로 인한 오차를 가장 큰 항목에 더하여 보정합니다.
+  const finalSum = percents.reduce((a, b) => a + b, 0);
+  if (Math.abs(finalSum - 100) > 0.01) {
+    let maxIdx = -1;
+    let maxVal = -1;
+    percents.forEach((p, i) => {
+      if (p > maxVal) {
+        maxVal = p;
+        maxIdx = i;
+      }
+    });
+    if (maxIdx !== -1) {
+      percents[maxIdx] += 100 - finalSum;
+    }
   }
 
   return percents;
@@ -51,7 +75,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
 
   // width 보정: 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
   const rawWidths = filteredChartData.map((d) => d.width);
-  const fixedWidths = formatHistogramWidth(rawWidths, 10);
+  const fixedWidths = formatHistogramWidth(rawWidths, 7);
 
   return (
     <div className={cn('flex w-full min-w-0 overflow-hidden text-center', className)}>
@@ -71,7 +95,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                 {value}
               </div>
 
-              <p className="mt-1 truncate text-sm font-medium text-default-700">{capitalizeFirst(title)}</p>
+              <p className="mt-1 truncate text-xs font-medium text-default-700">{capitalizeFirst(title)}</p>
             </div>
           );
         })}

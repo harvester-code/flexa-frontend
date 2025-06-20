@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
@@ -17,60 +17,73 @@ interface HomeChartHistogramProps {
 
 function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
   const { data: histogramData, isLoading: isHistogramLoading } = useHistogramChart({ scenarioId: scenario?.id });
-  const FACILITY_OPTIONS: Option[] = useMemo(() => {
+
+  const FACILITY_OPTIONS = useMemo(() => {
     if (!histogramData) return [];
-    const keys = Object.keys(histogramData);
-    // all_facilities를 맨 앞으로, 나머지는 알파벳 순으로
-    const sortedKeys = [
-      ...keys.filter((k) => k === 'all_facilities'),
-      ...keys.filter((k) => k !== 'all_facilities').sort(),
-    ];
-    return sortedKeys.map((key) => ({
-      label: capitalizeFirst(key),
+    return Object.keys(histogramData).map((key) => ({
+      label: capitalizeFirst(key.replace('_', ' ')),
       value: key,
     }));
   }, [histogramData]);
-  const [facility2, setFacility2] = useState(FACILITY_OPTIONS[0] || null);
+
+  const [selectedFacilityValue, setSelectedFacilityValue] = useState('');
   useEffect(() => {
-    setFacility2(FACILITY_OPTIONS[0] || null);
-  }, [FACILITY_OPTIONS.length]);
-  const handleSelectFacility2 = useCallback(
-    (item: Option) => {
-      if (!facility2 || item.value !== facility2.value) {
-        setFacility2(item);
-      }
-    },
-    [facility2]
-  );
-  console.log(facility2);
-  const [chartOption2, setChartOption2] = useState([0]);
-  const handleChartOption2 = (buttonIndex: number) => {
-    setChartOption2((prevData) => {
-      if (prevData.includes(buttonIndex)) {
-        if (prevData.length === 1) {
-          return prevData;
-        }
-        return prevData.filter((v) => v !== buttonIndex);
-      } else {
-        if (prevData.length >= 1) {
-          return [...prevData.slice(1), buttonIndex];
-        }
-        return [...prevData, buttonIndex];
-      }
-    });
-  };
-  const [histogramChartData, setHistogramChartData] = useState<{ title: string; value: string; width: number }[]>([]);
+    if (FACILITY_OPTIONS.length > 0 && !selectedFacilityValue) {
+      setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
+    }
+  }, [FACILITY_OPTIONS, selectedFacilityValue]);
+
+  const ZONE_OPTIONS = useMemo(() => {
+    if (!histogramData || !selectedFacilityValue) return [];
+    const facilityData = histogramData[selectedFacilityValue];
+    if (!facilityData) return [];
+    return Object.keys(facilityData).map((key) => ({
+      label: key === 'all_zones' ? 'All Zones' : capitalizeFirst(key),
+      value: key,
+    }));
+  }, [histogramData, selectedFacilityValue]);
+
+  const [selectedZoneValue, setSelectedZoneValue] = useState('');
   useEffect(() => {
-    if (!histogramData || !facility2) return;
-    const facility = facility2.value;
-    if (!histogramData[facility]) return;
-    const option = CHART_OPTIONS2[chartOption2[0]].value;
-    const { bins, range_unit, value_unit } = histogramData[facility][option];
-    function makeLabel([start, end], unit) {
+    if (ZONE_OPTIONS.length > 0) {
+      setSelectedZoneValue(ZONE_OPTIONS[0].value);
+    } else {
+      setSelectedZoneValue('');
+    }
+  }, [ZONE_OPTIONS]);
+
+  const [selectedChartType, setSelectedChartType] = useState('waiting_time');
+
+  const CHART_OPTIONS: Option[] = useMemo(() => {
+    if (
+      !histogramData ||
+      !selectedFacilityValue ||
+      !selectedZoneValue ||
+      !histogramData[selectedFacilityValue]?.[selectedZoneValue]
+    )
+      return [];
+    return Object.keys(histogramData[selectedFacilityValue][selectedZoneValue]).map((key) => ({
+      label: key === 'waiting_time' ? 'Wait Time' : 'Queue Pax',
+      value: key,
+    }));
+  }, [histogramData, selectedFacilityValue, selectedZoneValue]);
+
+  const histogramChartData = useMemo(() => {
+    const chartData = histogramData?.[selectedFacilityValue]?.[selectedZoneValue]?.[selectedChartType];
+
+    if (!chartData || !Array.isArray(chartData.bins)) {
+      return [];
+    }
+
+    const { bins, range_unit, value_unit } = chartData;
+
+    const makeLabel = (range: (number | null)[], unit: string) => {
+      const [start, end] = range;
       if (end === null) return `${start}${unit}~`;
       return `${start}~${end}${unit}`;
-    }
-    const data = bins
+    };
+
+    return bins
       .map(({ range, value }) => ({
         title: makeLabel(range, range_unit),
         value: (
@@ -82,22 +95,15 @@ function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
         width: value,
       }))
       .filter(({ width }) => width > 0);
-    setHistogramChartData(data);
-  }, [histogramData, facility2, chartOption2]);
-  const CHART_OPTIONS2: Option[] = useMemo(() => {
-    if (!histogramData || !facility2 || !histogramData[facility2.value]) return [];
-    return Object.keys(histogramData[facility2.value]).map((key) => ({
-      label: capitalizeFirst(key),
-      value: key,
-      color: '',
-    }));
-  }, [histogramData, facility2]);
+  }, [histogramData, selectedFacilityValue, selectedZoneValue, selectedChartType]);
+
   if (!scenario) {
     return <HomeNoScenario />;
   }
   if (isHistogramLoading) {
     return <HomeLoading />;
   }
+
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
@@ -105,25 +111,34 @@ function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
       </div>
       <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
         <div className="flex flex-col items-stretch justify-between gap-4 xl:flex-row xl:items-center">
-          <TheDropdownMenu
-            className="min-w-60 [&>*]:justify-start"
-            items={FACILITY_OPTIONS}
-            icon={<ChevronDown />}
-            label={facility2?.label || ''}
-            onSelect={handleSelectFacility2}
-          />
+          <div className="flex flex-wrap gap-4">
+            <TheDropdownMenu
+              className="min-w-48 flex-1 [&>*]:justify-start"
+              items={FACILITY_OPTIONS}
+              icon={<ChevronDown />}
+              label={FACILITY_OPTIONS.find((opt) => opt.value === selectedFacilityValue)?.label || 'Select Facility'}
+              onSelect={(item) => setSelectedFacilityValue(item.value)}
+            />
+            <TheDropdownMenu
+              className="min-w-48 flex-1 [&>*]:justify-start"
+              items={ZONE_OPTIONS}
+              icon={<ChevronDown />}
+              label={ZONE_OPTIONS.find((opt) => opt.value === selectedZoneValue)?.label || 'Select Zone'}
+              onSelect={(item) => setSelectedZoneValue(item.value)}
+            />
+          </div>
           <div className="flex items-center">
             <ButtonGroup>
-              {CHART_OPTIONS2.map((opt, idx) => (
+              {CHART_OPTIONS.map((opt) => (
                 <Button
                   className={cn(
-                    chartOption2.includes(idx)
+                    selectedChartType === opt.value
                       ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                       : ''
                   )}
                   variant="outline"
-                  key={idx}
-                  onClick={() => handleChartOption2(idx)}
+                  key={opt.value}
+                  onClick={() => setSelectedChartType(opt.value)}
                 >
                   {opt.label}
                 </Button>

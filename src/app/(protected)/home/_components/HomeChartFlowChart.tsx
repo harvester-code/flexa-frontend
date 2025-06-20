@@ -16,7 +16,6 @@ interface HomeChartFlowChartProps {
 function HomeChartFlowChart({ scenario }: HomeChartFlowChartProps) {
   const { data: sankey, isLoading: isSankeyChartLoading } = useSankeyChart({ scenarioId: scenario?.id });
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
-  const [totalPassengers, setTotalPassengers] = useState(0);
   const [layerTitles, setLayerTitles] = useState<string[]>([]);
   useEffect(() => {
     if (!sankey) return;
@@ -36,7 +35,6 @@ function HomeChartFlowChart({ scenario }: HomeChartFlowChartProps) {
     ];
     setSankeyChartData(data);
     setLayerTitles(layerTitles);
-    setTotalPassengers(sankey.link?.value.reduce((acc, crr) => acc + crr, 0));
   }, [sankey]);
   if (!scenario) {
     return <HomeNoScenario />;
@@ -48,9 +46,6 @@ function HomeChartFlowChart({ scenario }: HomeChartFlowChartProps) {
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
-        <p className="text-sm font-medium">
-          Total Passengers Processed: {Number(totalPassengers).toLocaleString()} pax
-        </p>
       </div>
       <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
         <div className="relative mb-2 h-8 w-full">
