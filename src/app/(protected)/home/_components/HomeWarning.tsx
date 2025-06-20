@@ -9,7 +9,8 @@ import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
-import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
+import { Button, ButtonGroup } from '@/components/ui/Button';
+import { capitalizeFirst, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -32,19 +33,11 @@ function HomeWarning({ scenario }: HomeWarningProps) {
     }));
   }, [alertIssueData]);
 
-  // Build target options dynamically from the first facility's first item
-  const targetOptions = useMemo(() => {
-    if (!alertIssueData) return [];
-    const firstFacilityKey = Object.keys(alertIssueData)[0];
-    const firstItem = alertIssueData[firstFacilityKey]?.[0];
-    if (!firstItem) return [];
-    return Object.keys(firstItem)
-      .filter((key) => !['time', 'node'].includes(key))
-      .map((key) => ({
-        label: capitalizeFirst(key),
-        value: key,
-      }));
-  }, [alertIssueData]);
+  // Static select options for the second dropdown
+  const SELECT_OPTIONS = [
+    { label: 'Wait Time', value: 'waiting_time' },
+    { label: 'Queue Pax', value: 'queue_length' },
+  ];
 
   // Track selected facility key only
   const [selectedFacilityKey, setSelectedFacilityKey] = useState<string | undefined>(facilityOptions[0]?.value);
@@ -53,10 +46,10 @@ function HomeWarning({ scenario }: HomeWarningProps) {
   }, [facilityOptions.length]);
 
   // Track selected target option
-  const [target, setTarget] = useState(targetOptions[0]);
+  const [target, setTarget] = useState(SELECT_OPTIONS[0]);
   useEffect(() => {
-    setTarget(targetOptions[0]);
-  }, [targetOptions.length]);
+    setTarget(SELECT_OPTIONS[0]);
+  }, []);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -72,23 +65,31 @@ function HomeWarning({ scenario }: HomeWarningProps) {
 
   return (
     <>
-      <div className="my-3.5 flex justify-end gap-3.5">
+      <div className="my-3.5 flex items-center justify-between gap-3.5">
         <TheDropdownMenu
-          className="min-w-60 [&>*]:justify-start"
+          className="ml-4 w-60 min-w-60 [&>*]:justify-start"
           items={facilityOptions}
           icon={<ChevronDown />}
           label={facilityOptions.find((opt) => opt.value === selectedFacilityKey)?.label || ''}
           onSelect={(opt) => setSelectedFacilityKey(opt.value)}
         />
-
-        <div className="min-w-60">
-          <TheDropdownMenu
-            className="min-w-60 [&>*]:justify-start"
-            items={targetOptions}
-            icon={<ChevronDown />}
-            label={target?.label}
-            onSelect={(opt) => setTarget(opt)}
-          />
+        <div className="mr-4">
+          <ButtonGroup>
+            {SELECT_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                className={
+                  target.value === opt.value
+                    ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                    : ''
+                }
+                variant="outline"
+                onClick={() => setTarget(opt)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </ButtonGroup>
         </div>
       </div>
 
@@ -100,22 +101,37 @@ function HomeWarning({ scenario }: HomeWarningProps) {
             // NOTE: 코드 순서가 중요
             const facility = parts.pop();
             const zone = parts.join('_');
+            const displayZone = capitalizeFirst(zone.replace('_', '-'));
 
             return (
-              <div className="relative flex flex-col rounded-md border border-default-200 bg-white px-4 py-3" key={i}>
-                <dl className="flex justify-between">
-                  <dt className="font-semibold text-default-700">
-                    {pascalCase(zone)} {facility} · {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
-                  </dt>
-                </dl>
+              <div
+                className="relative flex flex-col overflow-hidden rounded-md border border-default-200 bg-white"
+                key={i}
+              >
+                <div className="bg-default-100 px-4 py-2">
+                  <dl className="flex items-center justify-between">
+                    <dt className="flex items-center gap-2">
+                      <span className="text-brand-500 rounded px-3 py-1 text-base font-semibold">
+                        {displayZone} {facility}
+                      </span>
+                    </dt>
+                    <dd>
+                      <span className="text-brand-500 rounded px-3 py-1 text-base font-semibold">
+                        {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
+                      </span>
+                    </dd>
+                  </dl>
+                </div>
 
-                <div className="mt-2 flex justify-end text-4xl font-semibold text-default-900">
+                <div className="flex justify-end px-4 py-3 text-4xl font-semibold text-default-900">
                   {target?.value && item[target.value] !== undefined ? (
                     target.value === 'waiting_time' ? (
                       <p>{formatTimeTaken(item[target.value])}</p>
                     ) : (
                       <p>
-                        {item[target.value]}
+                        {target.value === 'queue_length'
+                          ? formatNumberWithComma(item[target.value])
+                          : item[target.value]}
                         {target.value === 'queue_length' ? formatUnit('pax') : ''}
                       </p>
                     )
