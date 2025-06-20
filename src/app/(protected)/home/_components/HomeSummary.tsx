@@ -23,12 +23,10 @@ import HomeNoScenario from './HomeNoScenario';
 import HomeSummaryCard from './HomeSummaryCard';
 import HomeTooltip from './HomeTooltip';
 
-// const TOOLTIP_MAP = {
-//   'Passenger Throughput': 'The number of all passengers processed in a day',
-//   'Wait Time': 'Average (or top n%) wait time experienced by passengers across all checkpoints',
-//   'Queue Pax': 'Average (or top n%) queue experienced by passengers across all checkpoints',
-//   'Facility Utilization': 'Percentage of time during the day that the facility is operational',
-// };
+const CHART_OPTIONS: Option[] = [
+  { label: 'Wait Time', value: 'waiting_time' },
+  { label: 'Queue Pax', value: 'queue_length' },
+];
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
@@ -43,88 +41,42 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
     isError,
   } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
 
-  const CHART_OPTIONS2: Option[] = useMemo(() => {
-    if (!summaryData || !summaryData.pax_experience) return [];
-    return Object.keys(summaryData.pax_experience).map((key) => ({
-      label: capitalizeFirst(key),
-      value: key,
-    }));
-  }, [summaryData]);
+  const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
 
-  const [chartData, setChartData] = useState<
-    {
-      title: string;
-      value: JSX.Element | ReactNode;
-      // value: string;
-      width: number;
-    }[]
-  >([]);
+  const chartData = useMemo(() => {
+    if (!summaryData?.pax_experience) return [];
 
-  // FIXME: 하드코딩 제거하기
-  const [chartOption2, setChartOption2] = useState([0]);
-  const handleChartOption2 = (buttonIndex: number) => {
-    setChartOption2((prevData) => {
-      if (prevData.includes(buttonIndex)) {
-        if (prevData.length === 1) {
-          return prevData;
-        }
-        return prevData.filter((v) => v !== buttonIndex);
-      } else {
-        if (prevData.length >= 1) {
-          return [...prevData.slice(1), buttonIndex];
-        }
-        return [...prevData, buttonIndex];
-      }
-    });
-  };
+    const processes = summaryData.pax_experience[selectedChartType];
 
-  useEffect(() => {
-    if (!summaryData) return;
+    if (selectedChartType === 'waiting_time') {
+      const entries = Object.entries(processes as Record<string, { hour: number; minute: number; second: number }>);
+      const allZero = entries.every(([, value]) => value.hour === 0 && value.minute === 0 && value.second === 0);
 
-    const key = CHART_OPTIONS2[chartOption2[0]].value;
-    const processes = summaryData.pax_experience[key];
-
-    // NOTE: 퍼센트를 계산하기 위해서 합계를 계산합니다.
-    const sum = Object.values<number | { hour: number; minute: number; second: number }>(processes).reduce(
-      (acc: number, curr: number | { hour: number; minute: number; second: number }) => {
-        if (typeof curr === 'number') {
-          return acc + curr;
-        }
-        const seconds = curr.hour * 60 * 60 + curr.minute * 60 + curr.second;
-        return acc + seconds;
-      },
-      0
-    );
-
-    const chartData_ = Object.entries(processes).map(([process, value], i) => {
-      if (typeof value === 'number') {
-        const percentage = Math.round((value / sum) * 10000) / 100;
-
+      return entries.map(([process, value]) => {
+        const seconds = value.hour * 60 * 60 + value.minute * 60 + value.second;
         return {
           title: process,
-          value: (
-            <>
-              {value.toLocaleString()}
-              {formatUnit('pax')}
-            </>
-          ),
-          width: percentage,
+          value: formatTimeTaken(value),
+          width: seconds > 0 ? seconds : allZero ? 1 : 0.001,
         };
-      }
+      });
+    }
 
-      const v = value as { hour: number; minute: number; second: number };
-      const seconds = v.hour * 60 * 60 + v.minute * 60 + v.second;
-      const percentage = Math.round((seconds / sum) * 10000) / 100;
-
+    const entries = Object.entries(processes as Record<string, number>);
+    const allZero = entries.every(([, value]) => value === 0);
+    return entries.map(([process, value]) => {
       return {
         title: process,
-        value: formatTimeTaken(v),
-        width: percentage,
+        value: (
+          <>
+            {value.toLocaleString()}
+            {formatUnit('pax')}
+          </>
+        ),
+        width: value > 0 ? value : allZero ? 1 : 0.001,
       };
     });
-
-    setChartData(chartData_);
-  }, [chartOption2, summaryData]);
+  }, [selectedChartType, summaryData]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -231,18 +183,18 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
         <div className="mb-4 flex items-center justify-between">
           <div className="text-xl font-semibold">Pax Experience</div>
           <ButtonGroup>
-            {CHART_OPTIONS2.map((opt, idx) => (
+            {CHART_OPTIONS.map((opt) => (
               <Button
                 className={cn(
-                  chartOption2.includes(idx)
+                  selectedChartType === opt.value
                     ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                     : ''
                 )}
                 variant="outline"
-                key={idx}
-                onClick={() => handleChartOption2(idx)}
+                key={opt.value}
+                onClick={() => setSelectedChartType(opt.value)}
               >
-                {capitalizeFirst(opt.label)}
+                {opt.label}
               </Button>
             ))}
           </ButtonGroup>
