@@ -22,6 +22,13 @@ interface HomeDetailsProps {
   percentile: number | null;
 }
 
+// Tooltip helper
+const getTooltipText = (type: string, percentile: number | null, base: string) => {
+  if (type === 'mean') return `Average ${base}`;
+  if (type === 'topN' && percentile) return `Top ${percentile}% ${base}`;
+  return base;
+};
+
 function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps) {
   const { data: details, isLoading } = useFacilityDetails({ calculate_type, percentile, scenarioId: scenario?.id });
 
@@ -110,7 +117,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                   <dl>
                     <dt className="flex items-center gap-1">
                       <span>Queue Pax</span>
-                      <HomeTooltip content="Average/Top (int)% queue passengers">
+                      <HomeTooltip content={getTooltipText(calculate_type, percentile, 'queue passengers')}>
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
                     </dt>
@@ -133,7 +140,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                   <dl>
                     <dt className="flex items-center gap-1">
                       <span>Wait Time</span>
-                      <HomeTooltip content="Average/Top (int)% wait time of passengers">
+                      <HomeTooltip content={getTooltipText(calculate_type, percentile, 'wait time of passengers')}>
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
                     </dt>
@@ -144,7 +151,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                   {formatImageSize(<RatioIcon01 />, 30)}
                   <dl>
                     <dt className="flex items-center">
-                      <span>AI Ratio</span>
+                      <span>A/I Ratio</span>
                       <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
@@ -160,7 +167,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                   {formatImageSize(<RatioIcon02 />, 30)}
                   <dl>
                     <dt className="flex items-center">
-                      <span>PA Ratio</span>
+                      <span>P/A Ratio</span>
                       <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
                         <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                       </HomeTooltip>
@@ -262,7 +269,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                             <div>
                               {formatImageSize(<RatioIcon01 />, 24)}
                               <dl>
-                                <dt>AI Ratio</dt>
+                                <dt>A/I Ratio</dt>
                                 <dd className="!font-semibold">
                                   {Math.round(Number(comp.ai_ratio))}
                                   {formatUnit('%')}
@@ -273,7 +280,7 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
                             <div>
                               {formatImageSize(<RatioIcon02 />, 24)}
                               <dl>
-                                <dt>PA Ratio</dt>
+                                <dt>P/A Ratio</dt>
                                 <dd className="!font-semibold">
                                   {Math.round(Number(comp.pa_ratio))}
                                   {formatUnit('%')}
