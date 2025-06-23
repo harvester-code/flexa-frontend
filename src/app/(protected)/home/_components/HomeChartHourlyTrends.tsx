@@ -308,7 +308,7 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
         </div>
       </div>
       <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
-        <div className="mb-4 flex flex-col items-stretch justify-between gap-4 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-4">
             <TheDropdownMenu
               className="min-w-48 flex-1 [&>*]:justify-start"
@@ -325,7 +325,7 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
               onSelect={(item) => setSelectedZoneValue(item.value)}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center self-center md:self-auto">
             <ButtonGroup>
               {CHART_OPTIONS.map((opt, i) => (
                 <Button

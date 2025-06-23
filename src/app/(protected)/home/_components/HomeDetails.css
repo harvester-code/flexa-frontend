@@ -20,26 +20,13 @@
       @apply flex flex-col gap-2.5;
 
       > .summary {
-        /* HACK: grid-cols-6는 임시적인 것 추후에 더 증가할 수 있음 */
-        @apply grid h-[95px] grid-cols-6 rounded-md border border-default-200 bg-white px-[30px] py-[15px];
+        @apply gap-3 rounded-md border border-default-200 bg-white px-[10px] py-[10px];
 
         > div {
-          @apply relative flex items-center gap-2.5 px-[25px];
+          @apply relative flex items-center gap-2.5 px-[10px];
 
           &::after {
-            height: 48px;
-            content: '';
-            @apply absolute right-0 top-1/2 ml-auto mr-2.5 flex w-px -translate-y-1/2 bg-default-200;
-          }
-
-          &:last-child {
-            &::after {
-              display: none;
-            }
-
-            dd {
-              /* color: #ff9500; */
-            }
+            display: none;
           }
 
           dl {
@@ -51,7 +38,6 @@
 
             dd {
               @apply text-xl font-medium;
-              /* color: #34c759; */
             }
           }
         }

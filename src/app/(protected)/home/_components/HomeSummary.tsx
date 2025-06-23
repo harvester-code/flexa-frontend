@@ -96,7 +96,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
 
   return (
     <>
-      <div className="my-[14px] grid grid-cols-3 grid-rows-2 gap-3 overflow-auto">
+      <div className="my-[14px] grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
         <HomeSummaryCard
           icon={PassengerThroughput}
           title={<span>Pax Throughput</span>}
@@ -179,7 +179,7 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
         />
       </div>
 
-      <div className="rounded border border-default-200 px-4 py-3">
+      <div className="rounded border border-default-200 px-5 py-3">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-xl font-semibold">Pax Experience</div>
           <ButtonGroup>

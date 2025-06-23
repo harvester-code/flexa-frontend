@@ -72,111 +72,125 @@ function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps)
             </div>
 
             <div className="detail-body">
-              <div className="summary">
-                <div>
-                  {formatImageSize(<LockOpen stroke="#6941c6" />, 30)}
-                  <dl>
-                    <dt className="flex items-center">
-                      <span>Opened</span>
-                      <HomeTooltip content="Actual number of activated desks.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">
-                      {overview.opened[0]} / {overview.opened[1]}
-                      {formatUnit('EA')}
-                    </dd>
-                  </dl>
-                </div>
-
-                <div>
-                  {formatImageSize(<PassengerThroughput />, 30)}
-                  <dl>
-                    <dt>
-                      Throughput
-                      <HomeTooltip content="Actual number of passengers processed.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">
-                      {formatNumberWithComma(overview.throughput)}
-                      {formatUnit('pax')}
-                    </dd>
-                  </dl>
-                </div>
-
-                <div>
-                  <div className="relative inline-block">
-                    {formatImageSize(<PassengerQueue />, 30)}
-                    {calculate_type && (
-                      <span className={badgeBtnSm(true) + ' absolute -top-4 left-1/2 z-10 -translate-x-1/2'}>
-                        {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                      </span>
-                    )}
+              <div className="summary grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {/* Opened */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    {formatImageSize(<LockOpen stroke="#6941c6" />, 30)}
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center">
+                        <span>Opened</span>
+                        <HomeTooltip content="Actual number of activated desks.">
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">
+                        {overview.opened[0]} / {overview.opened[1]}
+                        {formatUnit('EA')}
+                      </dd>
+                    </dl>
                   </div>
-                  <dl>
-                    <dt className="flex items-center gap-1">
-                      <span>Queue Pax</span>
-                      <HomeTooltip content={getTooltipText(calculate_type, percentile, 'queue passengers')}>
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">
-                      {formatNumberWithComma(overview.queuePax)}
-                      {formatUnit('pax')}
-                    </dd>
-                  </dl>
                 </div>
-
-                <div>
-                  <div className="relative inline-block">
-                    {formatImageSize(<WaitTime />, 30)}
-                    {calculate_type && (
-                      <span className={badgeBtnSm(true) + ' absolute -top-4 left-1/2 z-10 -translate-x-1/2'}>
-                        {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                      </span>
-                    )}
+                {/* Throughput */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    {formatImageSize(<PassengerThroughput />, 30)}
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center">
+                        Throughput
+                        <HomeTooltip content="Actual number of passengers processed.">
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">
+                        {formatNumberWithComma(overview.throughput)}
+                        {formatUnit('pax')}
+                      </dd>
+                    </dl>
                   </div>
-                  <dl>
-                    <dt className="flex items-center gap-1">
-                      <span>Wait Time</span>
-                      <HomeTooltip content={getTooltipText(calculate_type, percentile, 'wait time of passengers')}>
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
-                  </dl>
                 </div>
-                <div>
-                  {formatImageSize(<RatioIcon01 />, 30)}
-                  <dl>
-                    <dt className="flex items-center">
-                      <span>A/I Ratio</span>
-                      <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">
-                      {Math.round(Number(overview.ai_ratio))}
-                      {formatUnit('%')}
-                    </dd>
-                  </dl>
+                {/* Wait Time */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    <div className="relative flex items-center">
+                      {formatImageSize(<WaitTime />, 30)}
+                      {calculate_type && (
+                        <span className={badgeBtnSm(true) + ' absolute -top-3.5 left-1/2 z-10 -translate-x-1/2'}>
+                          {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                        </span>
+                      )}
+                    </div>
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center gap-1">
+                        <span>Wait Time</span>
+                        <HomeTooltip content={getTooltipText(calculate_type, percentile, 'wait time of passengers')}>
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
+                    </dl>
+                  </div>
                 </div>
-
-                <div>
-                  {formatImageSize(<RatioIcon02 />, 30)}
-                  <dl>
-                    <dt className="flex items-center">
-                      <span>P/A Ratio</span>
-                      <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </dt>
-                    <dd className="!font-semibold">
-                      {Math.round(Number(overview.pa_ratio))}
-                      {formatUnit('%')}
-                    </dd>
-                  </dl>
+                {/* Queue Pax */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    <div className="relative flex items-center">
+                      {formatImageSize(<PassengerQueue />, 30)}
+                      {calculate_type && (
+                        <span className={badgeBtnSm(true) + ' absolute -top-3.5 left-1/2 z-10 -translate-x-1/2'}>
+                          {calculate_type === 'mean' ? 'Mean' : 'Top'}
+                        </span>
+                      )}
+                    </div>
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center gap-1">
+                        <span>Queue Pax</span>
+                        <HomeTooltip content={getTooltipText(calculate_type, percentile, 'queue passengers')}>
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">
+                        {formatNumberWithComma(overview.queuePax)}
+                        {formatUnit('pax')}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+                {/* A/I Ratio */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    {formatImageSize(<RatioIcon01 />, 30)}
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center">
+                        <span>A/I Ratio</span>
+                        <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">
+                        {Math.round(Number(overview.ai_ratio))}
+                        {formatUnit('%')}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+                {/* P/A Ratio */}
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-200 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                  <div className="flex h-full flex-row items-center justify-center gap-3">
+                    {formatImageSize(<RatioIcon02 />, 30)}
+                    <dl className="flex flex-col justify-center">
+                      <dt className="flex items-center">
+                        <span>P/A Ratio</span>
+                        <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
+                          <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+                        </HomeTooltip>
+                      </dt>
+                      <dd className="text-xl !font-semibold">
+                        {Math.round(Number(overview.pa_ratio))}
+                        {formatUnit('%')}
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
 

@@ -65,15 +65,17 @@ function HomeWarning({ scenario }: HomeWarningProps) {
 
   return (
     <>
-      <div className="my-3.5 flex items-center justify-between gap-3.5">
-        <TheDropdownMenu
-          className="ml-4 w-60 min-w-60 [&>*]:justify-start"
-          items={facilityOptions}
-          icon={<ChevronDown />}
-          label={facilityOptions.find((opt) => opt.value === selectedFacilityKey)?.label || ''}
-          onSelect={(opt) => setSelectedFacilityKey(opt.value)}
-        />
-        <div className="mr-4">
+      <div className="my-3.5 ml-5 mr-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex w-full justify-center md:w-auto md:flex-1 md:justify-start">
+          <TheDropdownMenu
+            className="w-full md:w-60 md:min-w-60 md:max-w-[240px] [&>*]:justify-start"
+            items={facilityOptions}
+            icon={<ChevronDown />}
+            label={facilityOptions.find((opt) => opt.value === selectedFacilityKey)?.label || ''}
+            onSelect={(opt) => setSelectedFacilityKey(opt.value)}
+          />
+        </div>
+        <div className="flex w-full items-center justify-center md:w-auto md:justify-end">
           <ButtonGroup>
             {SELECT_OPTIONS.map((opt) => (
               <Button
@@ -93,7 +95,7 @@ function HomeWarning({ scenario }: HomeWarningProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 rounded-md bg-default-50 p-5">
+      <div className="grid grid-cols-1 grid-rows-8 gap-4 rounded-md bg-default-50 p-5 md:grid-cols-2 md:grid-rows-4 xl:grid-cols-4 xl:grid-rows-2">
         {selectedFacilityKey &&
           alertIssueData[selectedFacilityKey]?.map((item, i) => {
             const { node, time } = item;
