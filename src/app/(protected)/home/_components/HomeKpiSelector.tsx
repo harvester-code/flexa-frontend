@@ -69,7 +69,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-base font-medium text-gray-700">Select a KPI Value:</span>
+      <span className="ml-2 text-base font-medium text-gray-700">Select a KPI Value:</span>
       <button type="button" className={segBtn(value.type === 'mean')} onClick={() => handleTypeChange('mean')}>
         Mean
       </button>

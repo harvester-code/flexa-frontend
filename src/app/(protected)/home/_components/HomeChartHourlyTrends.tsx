@@ -295,7 +295,7 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Hourly Trends</h5>
-        <div className="mb-4 mt-8 flex items-center justify-end gap-1 text-sm">
+        <div className="mb-4 mr-5 mt-8 flex items-center gap-1 text-sm">
           <span>Bar Chart</span>
           <Checkbox
             id="chart-type"
