@@ -58,10 +58,24 @@
       }
 
       .scroll-list {
-        @apply flex flex-grow gap-4 overflow-x-auto;
+        @apply flex flex-grow gap-4 overflow-x-auto rounded-md pr-4;
+        scroll-snap-type: x mandatory;
+
+        &::-webkit-scrollbar {
+          @apply h-1.5;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          @apply rounded-full bg-default-300;
+        }
+
+        &::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
 
         .scroll-item {
           @apply flex flex-none flex-col rounded-md border border-default-200 bg-white p-4;
+          scroll-snap-align: start;
 
           .scroll-item-head {
             @apply flex items-center justify-between;
