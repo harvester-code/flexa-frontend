@@ -295,13 +295,7 @@ const SimulationPage = () => {
                 searchKeyword?.length > 0 && scenario.name.indexOf(searchKeyword) < 0 ? null : (
                   <tr
                     key={idx}
-                    className={cn(
-                      'border-b text-sm hover:cursor-pointer hover:bg-default-100',
-                      isScenarioSelected[idx] ? 'active' : ''
-                    )}
-                    onClick={() => {
-                      if (!scenarioStates[idx]?.editName) router.push(`${pathname}/${scenario.id}`);
-                    }}
+                    className={cn('border-b text-sm hover:bg-default-100', isScenarioSelected[idx] ? 'active' : '')}
                   >
                     <td className="text-center">
                       <Checkbox
@@ -320,11 +314,16 @@ const SimulationPage = () => {
                     </td>
 
                     {/* ===== Scenario Name ===== */}
-                    <td className="cursor-pointer">
+                    <td>
                       <div className="flex items-center gap-[10px]">
-                        <div>
+                        <div
+                          className="w-full cursor-pointer hover:font-semibold"
+                          onClick={() => {
+                            if (!scenarioStates[idx]?.editName) router.push(`${pathname}/${scenario.id}`);
+                          }}
+                        >
                           <input
-                            className="!border-none bg-transparent py-[8px] !text-default-700"
+                            className="w-full !border-none bg-transparent py-[8px] !text-default-700"
                             style={{ pointerEvents: scenarioStates[idx]?.editName ? 'auto' : 'none' }}
                             ref={scenarioStates[idx]?.refName}
                             type="text"
@@ -341,10 +340,10 @@ const SimulationPage = () => {
                       </div>
                     </td>
 
-                    {/*  ===== Scenario Terminal ===== */}
+                    {/* ===== Scenario Terminal ===== */}
                     <td className="text-center">{scenario.terminal}</td>
 
-                    {/*  ===== Scenario Editor ===== */}
+                    {/* ===== Scenario Editor ===== */}
                     <td>{scenario.editor}</td>
 
                     {/* ===== Scenario Target Date ===== */}
