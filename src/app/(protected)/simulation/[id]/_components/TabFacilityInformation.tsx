@@ -14,7 +14,7 @@ import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
 import { cn } from '@/lib/utils';
-import GridTable from './GridTable';
+import SimulationGridTable from './SimulationGridTable';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -517,7 +517,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Desks details</h4>
         {currentSetting.defaultTableData ? (
           <div>
-            <GridTable
+            <SimulationGridTable
               type={'text'}
               titleWidth={120}
               header={currentSetting.defaultTableData?.header || []}
@@ -592,7 +592,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
             {barChartData ? (
               <>
-                <GridTable
+                <SimulationGridTable
                   type={currentSetting.automaticInput ? 'checkbox' : 'text'}
                   title="Opening Time"
                   titleWidth={92}

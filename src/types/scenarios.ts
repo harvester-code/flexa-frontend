@@ -1,5 +1,5 @@
 import type { CellStyle } from '@silevis/reactgrid';
-import { GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
+import { GridTableRow } from '@/app/(protected)/simulation/[id]/_components/SimulationGridTable';
 
 // ======================================================
 // API 응답 타입 정의

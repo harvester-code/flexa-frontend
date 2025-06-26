@@ -22,7 +22,7 @@ import ConditionsBase from '@/components/Conditions';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
-import GridTable, { checkNotEmptyRows } from './GridTable';
+import SimulationGridTable, { checkNotEmptyRows } from './SimulationGridTable';
 import SimulationTabNavigation from './SimulationTabNavigation';
 
 const TABLE_TYPES = ['Check-box', 'Probability (%)'];
@@ -157,7 +157,7 @@ function Conditions({
 
             <div className="table-wrap mt-[10px] overflow-hidden rounded-md pb-[10px]">
               {selectedValues.tableData ? (
-                <GridTable
+                <SimulationGridTable
                   className="border-none"
                   type={tableType == TABLE_TYPES[0] ? 'checkbox' : tableType == TABLE_TYPES[1] ? 'number' : 'text'}
                   title={selectedValues.tableData.title}
@@ -925,7 +925,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
           </div>
 
           {procedures.length === allocationTables.length ? (
-            <GridTable
+            <SimulationGridTable
               className="max-h-[80vh]"
               type={tableType === TABLE_TYPES[0] ? 'checkbox' : tableType === TABLE_TYPES[1] ? 'number' : 'text'}
               title={allocationTables[selectedSecondTab]?.title || ''}

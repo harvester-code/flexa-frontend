@@ -1,5 +1,5 @@
 import { ConditionParams, ConditionState } from '@/types/conditions';
-import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/GridTable';
+import { GridTableHeader, GridTableRow } from '@/app/(protected)/simulation/[id]/_components/SimulationGridTable';
 import { Procedure } from './scenarios';
 
 interface ScenarioData {

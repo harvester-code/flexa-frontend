@@ -102,7 +102,7 @@ interface GridTableProps {
   onDataChange: (data: AllocationTableRow[]) => void;
 }
 
-export default function GridTable({
+export default function SimulationGridTable({
   className,
   type = 'text',
   title,
