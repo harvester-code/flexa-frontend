@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   AllocationCondition,
@@ -13,6 +14,7 @@ import {
   FilterOptions,
   Option,
 } from '@/types/scenarios';
+import { getFacilityConns } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -21,9 +23,20 @@ import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
 import GridTable, { checkNotEmptyRows } from './GridTable';
+import SimulationTabNavigation from './SimulationTabNavigation';
 
-const TableTypes = ['Check-box', 'Probability (%)'];
+const TABLE_TYPES = ['Check-box', 'Probability (%)'];
 // ['Check-box', 'Distance (m)', 'Ratio (n:n)', 'Probability (%)', 'File Upload'];
+const TABLE_CELL_HEIGHT = 36;
+
+const FACILITY_SETTINGS_DEFAULTS = [
+  { name: 'Processing time (sec)', value: 60 },
+  // { name: 'Maximum Allowed Queue (persons)', value: 200 },
+];
+
+const DEFAULT_DEVICE_COUNT = 5;
+const DEFAULT_PROCESSING_TIME = 60;
+const DEFAULT_TIME_UNIT = 10;
 
 interface ConditionsProps {
   className?: string;
@@ -57,7 +70,7 @@ function Conditions({
   onDataChange,
   onDelete,
 }: ConditionsProps) {
-  const [tableType, setTableType] = useState(TableTypes[0]);
+  const [tableType, setTableType] = useState(TABLE_TYPES[0]);
 
   const sourceName = sourceConditions?.criteriaItems?.[0]?.id;
 
@@ -135,7 +148,7 @@ function Conditions({
             <div className="mt-[20px] flex items-center justify-end">
               <div className="w-[340px]">
                 <SelectBox
-                  options={TableTypes}
+                  options={TABLE_TYPES}
                   selectedOption={tableType}
                   onSelectedOption={(val) => setTableType(val)}
                 />
@@ -146,7 +159,7 @@ function Conditions({
               {selectedValues.tableData ? (
                 <GridTable
                   className="border-none"
-                  type={tableType == TableTypes[0] ? 'checkbox' : tableType == TableTypes[1] ? 'number' : 'text'}
+                  type={tableType == TABLE_TYPES[0] ? 'checkbox' : tableType == TABLE_TYPES[1] ? 'number' : 'text'}
                   title={selectedValues.tableData.title}
                   header={selectedValues.tableData.header}
                   data={selectedValues.tableData.data || []}
@@ -212,6 +225,14 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
     availableScenarioTab,
     setAvailableScenarioTab,
+
+    setSettings,
+    setSelectedNodes,
+    normalDistributionParams,
+    targetAirport,
+    targetDate,
+    flightScheduleFilters,
+    setBarChartData,
   } = useScenarioStore(
     useShallow((s) => ({
       tabIndex: s.scenarioProfile.currentScenarioTab,
@@ -237,10 +258,18 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
       availableScenarioTab: s.scenarioProfile.availableScenarioTab,
       setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
+
+      setSettings: s.facilityCapacity.actions.setSettings,
+      setSelectedNodes: s.facilityCapacity.actions.setSelectedNodes,
+      normalDistributionParams: s.passengerSchedule.normalDistributionParams,
+      targetAirport: s.flightSchedule.targetAirport,
+      targetDate: s.flightSchedule.targetDate,
+      flightScheduleFilters: s.flightSchedule.selectedFilters,
+      setBarChartData: s.facilityCapacity.actions.setBarChartData,
     }))
   );
 
-  const [tableType, setTableType] = useState(TableTypes[0]);
+  const [tableType, setTableType] = useState(TABLE_TYPES[0]);
   const [loadError, setLoadError] = useState(false);
 
   const [validatedTableStates, setValidatedTableStates] = useState<boolean[]>([]);
@@ -545,6 +574,157 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     validateTable();
   }, [allocationTables, allocationConditions, validateTable, visible]);
 
+  // -------------------------------------------------------------
+
+  const generateDefaultTableData = (deviceCount: number) => ({
+    header: Array(deviceCount)
+      .fill(0)
+      .map((_, index) => ({
+        name: `Desk ${String(index + 1).padStart(2, '0')}`,
+        style: { background: '#F9F9FB' },
+        minWidth: 80,
+      })),
+    data: FACILITY_SETTINGS_DEFAULTS.map((item, index) => ({
+      name: item.name,
+      values: Array(deviceCount).fill(String(index === 0 ? 60 : 200)),
+      style: { background: '#FFFFFF' },
+    })),
+  });
+
+  const generateOpeningHoursTableData = (deviceCount: number, processingTime: number) => {
+    const timeUnit = DEFAULT_TIME_UNIT;
+    // const timeUnit = currentSetting.timeUnit || DEFAULT_TIME_UNIT;
+    const times = generateTimeSlots(timeUnit);
+
+    return {
+      header: Array(deviceCount)
+        .fill(0)
+        .map((_, index) => {
+          return {
+            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+            style: { background: '#F9F9FB' },
+            minWidth: 80,
+          };
+        }),
+      data: times.map((time) => {
+        return {
+          name: time,
+          values: Array(deviceCount)
+            .fill(0)
+            .map((_, cidx) => String(processingTime)),
+          style: { background: '#FFFFFF' },
+          height: TABLE_CELL_HEIGHT,
+          checkToNumber: processingTime,
+        };
+      }),
+    };
+  };
+
+  const generateTimeSlots = (interval: number): string[] => {
+    const slots: string[] = [];
+    for (let minutes = 0; minutes < 1440; minutes += interval) {
+      const hours = Math.floor(minutes / 60)
+        .toString()
+        .padStart(2, '0');
+      const mins = (minutes % 60).toString().padStart(2, '0');
+      slots.push(`${hours}:${mins}`);
+    }
+    return slots;
+  };
+
+  // --------------------------------------------------------------------------
+
+  const fetchBarChartData = async () => {
+    const cleanedProcesses = allocationTables.reduce((acc, table, index) => {
+      const defaultMatrix = table.data?.reduce((matrix, row) => {
+        matrix[row.name] = row.values.reduce((rowAcc, val, idx) => {
+          rowAcc[table.header[idx].name] = Number(val) / 100;
+          return rowAcc;
+        }, {});
+        return matrix;
+      }, {});
+
+      acc[index + 1] = {
+        name: table.title,
+        nodes: table.header.map((header) => header.name),
+        source: String(index),
+        destination: procedures.length < index + 2 ? null : String(index + 2),
+        wait_time: 0,
+        default_matrix: defaultMatrix,
+        priority_matrix: [],
+      };
+      return acc;
+    }, {});
+
+    const params = {
+      destribution_conditions: normalDistributionParams.map(({ conditions, mean, stddev }, index) => ({
+        index,
+        conditions,
+        mean,
+        standard_deviation: stddev,
+      })),
+      flight_schedule: {
+        airport: targetAirport.iata,
+        date: targetDate,
+        condition: flightScheduleFilters,
+      },
+      processes: {
+        '0': {
+          name: dataConnectionCriteria,
+          nodes: [],
+          source: null,
+          destination: '1',
+          wait_time: null,
+          default_matrix: null,
+          priority_matrix: null,
+        },
+        ...cleanedProcesses,
+      },
+    };
+
+    try {
+      const { data } = await getFacilityConns(simulationId, params);
+      return data;
+    } catch (error) {
+      console.error('Error fetching bar chart data:', error);
+      return null;
+    }
+  };
+
+  const setBarChartDataFromServer = async () => {
+    const data = await fetchBarChartData();
+    setBarChartData(data);
+  };
+
+  // --------------------------------------------------------------------------
+
+  const buildInitialSettings = () =>
+    procedures.reduce((settings, procedure, procedureIndex) => {
+      procedure.nodes.forEach((_, nodeIndex) => {
+        const key = `${procedureIndex}_${nodeIndex}`;
+        settings[key] = {
+          numberOfEachDevices: DEFAULT_DEVICE_COUNT,
+          processingTime: DEFAULT_PROCESSING_TIME,
+          maximumQueuesAllowedPer: 200,
+          timeUnit: DEFAULT_TIME_UNIT,
+          overviewChartVisible: false,
+          defaultTableData: generateDefaultTableData(DEFAULT_DEVICE_COUNT),
+          lineChartData: null,
+          openingHoursTableData: generateOpeningHoursTableData(DEFAULT_DEVICE_COUNT, DEFAULT_PROCESSING_TIME),
+          facilityType: 'limited_facility', // TODO: 'limited_facility' | 'unlimited_facility'
+        };
+      });
+      return settings;
+    }, {});
+
+  const initializeFacilitySettings = () => {
+    setSettings(buildInitialSettings());
+    setSelectedNodes(Array(procedures.length).fill(0));
+  };
+
+  // --------------------------------------------------------------------------
+  const [loading, setLoading] = useState(false);
+
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Allocate Passenger Attributes to Processing Facilities</h2>
@@ -737,7 +917,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
             <div className="w-[340px]">
               <SelectBox
-                options={TableTypes}
+                options={TABLE_TYPES}
                 selectedOption={tableType}
                 onSelectedOption={(val) => setTableType(val)}
               />
@@ -747,7 +927,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
           {procedures.length === allocationTables.length ? (
             <GridTable
               className="max-h-[80vh]"
-              type={tableType === TableTypes[0] ? 'checkbox' : tableType === TableTypes[1] ? 'number' : 'text'}
+              type={tableType === TABLE_TYPES[0] ? 'checkbox' : tableType === TABLE_TYPES[1] ? 'number' : 'text'}
               title={allocationTables[selectedSecondTab]?.title || ''}
               header={allocationTables[selectedSecondTab]?.header || []}
               data={allocationTables[selectedSecondTab]?.data || []}
@@ -786,27 +966,33 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
       )}
 
       {/* =============== 탭 이동 버튼 =============== */}
-      <div className="mt-[40px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setTabIndex(tabIndex - 1)}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
-        </button>
-
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          disabled={validatedTableStates.some((v) => v === false)}
-          onClick={() => {
-            setTabIndex(tabIndex + 1);
-            setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 5));
-          }}
-        >
-          <span className="flex flex-grow items-center justify-center">Facility Information</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
-      </div>
+      <SimulationTabNavigation
+        buttons={[
+          {
+            label: 'Flight Schedule',
+            icon: <ChevronLeft />,
+            iconPosition: 'left',
+            onClick: () => setTabIndex(tabIndex - 1),
+          },
+          {
+            loading,
+            label: 'Facility Information',
+            icon: <ChevronRight />,
+            onClick: async () => {
+              setLoading(true);
+              try {
+                initializeFacilitySettings();
+                await setBarChartDataFromServer();
+                //
+                setTabIndex(tabIndex + 1);
+                setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 5));
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

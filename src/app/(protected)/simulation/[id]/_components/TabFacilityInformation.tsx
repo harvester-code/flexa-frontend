@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useShallow } from 'zustand/react/shallow';
-import { getFacilityConns, getFacilityInfoLineChartData } from '@/services/simulations';
+import { getFacilityInfoLineChartData } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
@@ -20,11 +20,6 @@ const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: fa
 
 const DEFAULT_TIME_UNIT = 10;
 
-const FACILITY_SETTINGS_DEFAULTS = [
-  { name: 'Processing time (sec)', value: 60 },
-  // { name: 'Maximum Allowed Queue (persons)', value: 200 },
-];
-
 const TABLE_HEADER_HEIGHT = 52;
 const TABLE_CELL_HEIGHT = 36;
 
@@ -37,70 +32,30 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const {
     currentScenarioTab,
     setCurrentScenarioTab,
-
     procedures,
     selectedSecondTab,
-    availableSecondTab,
     setSelectedSecondTab,
-
     selectedNodes,
-    setSelectedNodes,
     updateSelectedNode,
-
     settings,
-    setSettings,
     updateSetting,
     barChartData,
-    setBarChartData,
-
-    targetAirport,
-    targetDate,
-    flightScheduleFilters,
-
-    normalDistributionParams,
-    dataConnectionCriteria,
-
-    allocationTables,
   } = useScenarioStore(
     useShallow((s) => ({
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
-
       procedures: s.airportProcessing.procedures,
       selectedSecondTab: s.facilityCapacity.selectedSecondTab,
-      availableSecondTab: s.facilityCapacity.availableSecondTab,
       setSelectedSecondTab: s.facilityCapacity.actions.setSelectedSecondTab,
-
       selectedNodes: s.facilityCapacity.selectedNodes,
-      setSelectedNodes: s.facilityCapacity.actions.setSelectedNodes,
       updateSelectedNode: s.facilityCapacity.actions.updateSelectedNode,
-
       settings: s.facilityCapacity.settings,
-      setSettings: s.facilityCapacity.actions.setSettings,
       updateSetting: s.facilityCapacity.actions.updateSetting,
       barChartData: s.facilityCapacity.barChartData,
-      setBarChartData: s.facilityCapacity.actions.setBarChartData,
-
-      targetAirport: s.flightSchedule.targetAirport,
-      targetDate: s.flightSchedule.targetDate,
-      flightScheduleFilters: s.flightSchedule.selectedFilters,
-
-      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
-      normalDistributionParams: s.passengerSchedule.normalDistributionParams,
-
-      allocationTables: s.facilityConnection.allocationTables,
     }))
   );
 
   const currentSetting = settings?.[`${selectedSecondTab}_${selectedNodes[selectedSecondTab]}`];
-
-  // ====================================================================================================
-
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  useEffect(() => {
-    if (!visible) setIsInitialized(false);
-  }, [visible]);
 
   // ====================================================================================================
 
@@ -113,154 +68,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const vChartParentHeight = currentSetting?.lineChartData ? tableHeight + 280 : tableHeight;
 
   // ====================================================================================================
-
-  const generateDefaultTableData = (deviceCount: number) => ({
-    header: Array(deviceCount)
-      .fill(0)
-      .map((_, index) => ({
-        name: `Desk ${String(index + 1).padStart(2, '0')}`,
-        style: { background: '#F9F9FB' },
-        minWidth: 80,
-      })),
-    data: FACILITY_SETTINGS_DEFAULTS.map((item, index) => ({
-      name: item.name,
-      values: Array(deviceCount).fill(String(index === 0 ? 60 : 200)),
-      style: { background: '#FFFFFF' },
-    })),
-  });
-
-  const generateTimeSlots = (interval: number): string[] => {
-    const slots: string[] = [];
-    for (let minutes = 0; minutes < 1440; minutes += interval) {
-      const hours = Math.floor(minutes / 60)
-        .toString()
-        .padStart(2, '0');
-      const mins = (minutes % 60).toString().padStart(2, '0');
-      slots.push(`${hours}:${mins}`);
-    }
-    return slots;
-  };
-
-  const generateOpeningHoursTableData = useCallback((deviceCount: number, processingTime: number) => {
-    const timeUnit = DEFAULT_TIME_UNIT;
-    // const timeUnit = currentSetting.timeUnit || DEFAULT_TIME_UNIT;
-    const times = generateTimeSlots(timeUnit);
-
-    return {
-      header: Array(deviceCount)
-        .fill(0)
-        .map((_, index) => {
-          return {
-            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-            style: { background: '#F9F9FB' },
-            minWidth: 80,
-          };
-        }),
-      data: times.map((time) => {
-        return {
-          name: time,
-          values: Array(deviceCount)
-            .fill(0)
-            .map((_, cidx) => String(processingTime)),
-          style: { background: '#FFFFFF' },
-          height: TABLE_CELL_HEIGHT,
-          checkToNumber: processingTime,
-        };
-      }),
-    };
-  }, []);
-
-  const generateLineChartData = useCallback(async () => {
-    if (!currentSetting?.openingHoursTableData) return;
-
-    const facilitySchedules = currentSetting.openingHoursTableData.data.map((item) =>
-      item.values.map((val) => {
-        const num = Number(val);
-        return num > 0 ? num : 0.0000000001;
-      })
-    );
-
-    const params = {
-      time_unit: currentSetting.timeUnit || DEFAULT_TIME_UNIT,
-      facility_schedules: facilitySchedules,
-    };
-
-    try {
-      const { data } = await getFacilityInfoLineChartData(params);
-      return data;
-    } catch (error) {
-      console.error('Error fetching line chart data:', error);
-      return null;
-    }
-  }, [currentSetting?.openingHoursTableData, currentSetting?.timeUnit]);
-
-  // ====================================================================================================
-  // 1️⃣ Initialize settings and load data when the component is visible
-  useEffect(() => {
-    if (!visible || isInitialized) return;
-
-    if (!procedures || procedures.length === 0) {
-      console.error('Error: Procedures are empty.');
-      return;
-    }
-
-    if (selectedNodes.length === procedures.length) return;
-
-    if (currentSetting) return;
-
-    // ‼️ 반드시 가장 먼저 호출되어야함. (추후에 개선해보자.)
-    setSelectedNodes(Array(procedures.length).fill(0));
-
-    const defaultDeviceCount = 5; // Default number of devices
-    const defaultProcessingTime = 60; // Default processing time in seconds
-
-    const defaultTableData = generateDefaultTableData(defaultDeviceCount);
-    const defaultOpeningHoursTableData = generateOpeningHoursTableData(defaultDeviceCount, defaultProcessingTime);
-
-    const initSettings = procedures.reduce((settings, procedure, procedureIndex) => {
-      procedure.nodes.forEach((_, nodeIndex) => {
-        const key = `${procedureIndex}_${nodeIndex}`;
-        settings[key] = {
-          numberOfEachDevices: 5,
-          processingTime: 60,
-          maximumQueuesAllowedPer: 200,
-          timeUnit: DEFAULT_TIME_UNIT,
-          overviewChartVisible: false,
-          defaultTableData: defaultTableData,
-          lineChartData: null,
-          openingHoursTableData: defaultOpeningHoursTableData,
-          // TODO: 'limited_facility' | 'unlimited_facility'
-          facilityType: 'limited_facility',
-        };
-      });
-      return settings;
-    }, {});
-
-    setSettings(initSettings);
-    setIsInitialized(true);
-  }, [
-    currentSetting,
-    generateOpeningHoursTableData,
-    isInitialized,
-    procedures,
-    setSettings,
-    setSelectedNodes,
-    visible,
-    allocationTables,
-    dataConnectionCriteria,
-    flightScheduleFilters,
-    generateLineChartData,
-    normalDistributionParams,
-    selectedNodes,
-    selectedSecondTab,
-    setBarChartData,
-    simulationId,
-    targetAirport.iata,
-    targetDate,
-    updateSetting,
-  ]);
-
-  // 2️⃣ currentSetting이 변경되면, 해당 설정에 대한 바 차트 데이터를 불러오고, 라인 차트 데이터를 업데이트합니다.
+  // currentSetting이 변경되면, 해당 설정에 대한 바 차트 데이터를 불러오고, 라인 차트 데이터를 업데이트합니다.
   const loadLineChartData = useCallback(async () => {
     const facilitySchedules = currentSetting.openingHoursTableData?.data.map((item) =>
       item.values.map((val) => {
@@ -287,94 +95,10 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   }, [currentSetting, selectedSecondTab, selectedNodes, updateSetting]);
 
   useEffect(() => {
-    if (!currentSetting) return;
-
-    if (currentSetting.lineChartData) return;
-
-    if (!barChartData) {
-      const loadBarChartData = async () => {
-        const cleanedProcesses = allocationTables.reduce((acc, table, index) => {
-          const defaultMatrix = table.data?.reduce((matrix, row) => {
-            matrix[row.name] = row.values.reduce((rowAcc, val, idx) => {
-              rowAcc[table.header[idx].name] = Number(val) / 100;
-              return rowAcc;
-            }, {});
-            return matrix;
-          }, {});
-
-          acc[index + 1] = {
-            name: table.title,
-            nodes: table.header.map((header) => header.name),
-            source: String(index),
-            destination: procedures.length < index + 2 ? null : String(index + 2),
-            wait_time: 0,
-            default_matrix: defaultMatrix,
-            priority_matrix: [],
-          };
-          return acc;
-        }, {});
-
-        const params = {
-          destribution_conditions: normalDistributionParams.map(({ conditions, mean, stddev }, index) => ({
-            index,
-            conditions,
-            mean,
-            standard_deviation: stddev,
-          })),
-          flight_schedule: {
-            airport: targetAirport.iata,
-            date: targetDate,
-            condition: flightScheduleFilters,
-          },
-          processes: {
-            '0': {
-              name: dataConnectionCriteria,
-              nodes: [],
-              source: null,
-              destination: '1',
-              wait_time: null,
-              default_matrix: null,
-              priority_matrix: null,
-            },
-            ...cleanedProcesses,
-          },
-        };
-
-        try {
-          const { data } = await getFacilityConns(simulationId, params);
-          setBarChartData(data);
-        } catch (error) {
-          console.error('Error fetching bar chart data:', error);
-          setBarChartData(null);
-        }
-      };
-
-      loadBarChartData();
+    if (!currentSetting.lineChartData) {
+      loadLineChartData();
     }
-
-    // ================================================================================
-
-    loadLineChartData();
-  }, [
-    barChartData,
-    currentSetting,
-    selectedNodes,
-    selectedSecondTab,
-    updateSetting,
-    allocationTables,
-    dataConnectionCriteria,
-    flightScheduleFilters,
-    normalDistributionParams,
-    procedures.length,
-    setBarChartData,
-    simulationId,
-    targetAirport.iata,
-    targetDate,
-    loadLineChartData,
-  ]);
-
-  // HACK: 이 부분은 나중에 개선 필요
-  if (visible && !currentSetting) return null;
+  }, [currentSetting.lineChartData, loadLineChartData]);
 
   return !visible ? null : (
     <div>
