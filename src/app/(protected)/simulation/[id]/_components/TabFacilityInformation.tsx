@@ -85,6 +85,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     try {
       const { data } = await getFacilityInfoLineChartData(params);
 
+      // NOTE: Zustand 상태 업데이트
       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
         lineChartData: data,
       });
@@ -523,10 +524,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               header={currentSetting.defaultTableData?.header || []}
               data={currentSetting.defaultTableData?.data || []}
               onDataChange={(data) => {
-                const newTableData = {
-                  ...currentSetting.defaultTableData,
-                  data,
-                };
+                const newTableData = { ...currentSetting.defaultTableData, data };
 
                 updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
                   defaultTableData: { ...newTableData, header: newTableData.header || [] },
@@ -537,7 +535,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         ) : null}
       </div>
 
-      {/* =============== OPENING HOURS =============== */}
+      {/* =============== SET OPENING HOURS =============== */}
       <div className={`${currentSetting?.openingHoursTableData ? '' : 'hidden'}`}>
         <div className={`mt-[30px] flex items-center justify-between`}>
           <h2 className="title-sm">Set Opening Hours</h2>
@@ -555,10 +553,6 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
                     automaticInput: !currentSetting.automaticInput,
                   })
-                // setFacilitySettings({
-                //   ...currentSetting,
-                //   automaticInput: !currentSetting.automaticInput,
-                // })
               }
               className="checkbox-toggle"
             />
@@ -574,12 +568,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   ]}
                   defaultId={'10'}
                   className="min-w-[200px]"
-                  onChange={(items) => {
-                    // setFacilitySettings({
-                    //   ...currentSetting,
-                    //   timeUnit: Number(items[0].id),
-                    // });
-                  }}
+                  onChange={(items) => {}}
                 />
               </dd>
             </dl>
@@ -588,8 +577,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
         <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
           <div className={cn('relative h-[600px] pr-[400px]', barChartData ? 'overflow-auto' : 'overflow-hidden')}>
-            {/* =============== VERTICAL BAR CHART =============== */}
-
+            {/* =============== TABLE & HORIZONTAL BAR CHART =============== */}
             {barChartData ? (
               <>
                 <SimulationGridTable
@@ -647,6 +635,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         </div>
       </div>
 
+      {/* ================= BAR CHART =============== */}
       <div>
         <hr />
         <div className="mt-[34px] flex flex-row justify-between">
@@ -702,14 +691,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               config={{ displayModeBar: false }}
             />
           </div>
-        ) : (
-          <div className="flex h-[300px] w-full items-center justify-center">
-            <p>
-              Please wait while the data is being processed. This may take a few minutes depending on the size of the
-              dataset.
-            </p>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* =============== NAVIGATION BUTTONS =============== */}
