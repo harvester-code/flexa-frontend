@@ -6,7 +6,7 @@ interface HomeSummaryCardProps {
   icon: ComponentType<unknown>;
   title: React.ReactNode;
   value: React.ReactNode;
-  kpiType?: 'mean' | 'topN'; // for Wait Time/Queue Pax badge
+  kpiType?: 'mean' | 'top'; // for Wait Time/Queue Pax badge
   percentile?: number;
 }
 

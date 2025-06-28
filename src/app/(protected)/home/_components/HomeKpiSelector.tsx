@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 
 interface KpiSelectorValue {
-  type: 'mean' | 'topN';
+  type: 'mean' | 'top';
   percentile?: number;
 }
 
@@ -30,13 +30,13 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
   const [errorMessage, setErrorMessage] = useState('');
 
   // KPI 타입 변경
-  const handleTypeChange = (type: 'mean' | 'topN') => {
+  const handleTypeChange = (type: 'mean' | 'top') => {
     setErrorMessage('');
     if (type === 'mean') {
       onChange({ type });
     } else {
-      // topN 선택 시 percentile 기본값 5
-      onChange({ type: 'topN', percentile: Number(inputValue) || 5 });
+      // top 선택 시 percentile 기본값 5
+      onChange({ type: 'top', percentile: Number(inputValue) || 5 });
     }
   };
 
@@ -54,7 +54,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
       return;
     }
     setErrorMessage('');
-    onChange({ type: 'topN', percentile: valueNum });
+    onChange({ type: 'top', percentile: valueNum });
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -73,10 +73,10 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
       <button type="button" className={segBtn(value.type === 'mean')} onClick={() => handleTypeChange('mean')}>
         Mean
       </button>
-      <button type="button" className={segBtn(value.type === 'topN')} onClick={() => handleTypeChange('topN')}>
+      <button type="button" className={segBtn(value.type === 'top')} onClick={() => handleTypeChange('top')}>
         Top N%
       </button>
-      {value.type === 'topN' && (
+      {value.type === 'top' && (
         <Popover open={!!errorMessage}>
           <PopoverTrigger asChild>
             <input
@@ -87,7 +87,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
               onBlur={handleInputBlur}
               placeholder="1-100"
               className={`h-9 w-16 rounded-md border px-1 text-center text-sm ${errorMessage ? 'border-red-500' : 'border-[#7f56d9]'}`}
-              disabled={value.type !== 'topN'}
+              disabled={value.type !== 'top'}
             />
           </PopoverTrigger>
           {errorMessage && (
@@ -116,7 +116,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
           )}
         </Popover>
       )}
-      {value.type === 'topN' && <span className="text-lg font-semibold">%</span>}
+      {value.type === 'top' && <span className="text-lg font-semibold">%</span>}
     </div>
   );
 };

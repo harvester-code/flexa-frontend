@@ -11,7 +11,7 @@ import HomeNoScenario from '../../home/_components/HomeNoScenario';
 
 const STATS_OPTIONS = [
   { label: 'Mean', value: 'mean' },
-  { label: 'Top N%', value: 'topN' },
+  { label: 'Top N%', value: 'top' },
 ];
 
 interface FacilityKPISummaryTableProps {
@@ -59,7 +59,7 @@ function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTabl
             onSelect={setKPIFunc}
           />
 
-          {kpiFunc.value === 'topN' && (
+          {kpiFunc.value === 'top' && (
             <div className="ml-4 flex items-center gap-1 text-lg font-semibold">
               <span>Top</span>
               <div className="max-w-20">

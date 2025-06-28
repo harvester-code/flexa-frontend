@@ -25,7 +25,7 @@ interface HomeDetailsProps {
 // Tooltip helper
 const getTooltipText = (type: string, percentile: number | null, base: string) => {
   if (type === 'mean') return `Average ${base}`;
-  if (type === 'topN' && percentile) return `Top ${percentile}% ${base}`;
+  if (type === 'top' && percentile) return `Top ${percentile}% ${base}`;
   return base;
 };
 

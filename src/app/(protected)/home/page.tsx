@@ -17,7 +17,7 @@ function HomePage() {
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios(user?.groupId);
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
-  const [kpi, setKpi] = useState<{ type: 'mean' | 'topN'; percentile?: number }>({ type: 'mean', percentile: 5 });
+  const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
   // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
   useEffect(() => {
