@@ -614,16 +614,17 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                           type: 'bar',
                           orientation: 'h',
                           marker: { color: '#6941C6', opacity: 1 },
-                          x: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-                            procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                          ]?.y,
+                          x: [
+                            ...barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
+                              procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
+                            ]?.y,
+                          ].reverse(),
                           y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
                         },
                         {
-                          type: 'scatter',
                           mode: 'lines',
                           marker: { color: '#FF0000', opacity: 1 },
-                          x: currentSetting.lineChartData?.y || [],
+                          x: [...(currentSetting.lineChartData?.y || [])].reverse(),
                           y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
                         },
                       ]}
@@ -641,15 +642,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   </div>
                 </div>
               </>
-            ) : (
-              <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-300/50 text-center text-lg">
-                <p>
-                  Please wait while the data is being processed.
-                  <br />
-                  This may take a few minutes depending on the size of the dataset.
-                </p>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
