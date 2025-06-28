@@ -354,7 +354,7 @@ export default function SimulationGridTable({
     return () => {
       window.removeEventListener('keyup', handleKeyEvent);
     };
-  }, []);
+  }, [selRange]);
 
   return header?.length > 0 && data?.length > 0 ? (
     <div ref={refWidth}>
