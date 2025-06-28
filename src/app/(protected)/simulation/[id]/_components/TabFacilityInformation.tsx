@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useDebounce } from 'react-use';
 import { useShallow } from 'zustand/react/shallow';
 import { getFacilityInfoLineChartData } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
-import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
@@ -68,9 +68,8 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const vChartParentHeight = currentSetting?.lineChartData ? tableHeight + 280 : tableHeight;
 
   // ====================================================================================================
-  // currentSetting이 변경되면, 해당 설정에 대한 바 차트 데이터를 불러오고, 라인 차트 데이터를 업데이트합니다.
-  const loadLineChartData = useCallback(async () => {
-    const facilitySchedules = currentSetting.openingHoursTableData?.data.map((item) =>
+  const loadLineChartData = async () => {
+    const facilitySchedules = currentSetting?.openingHoursTableData?.data.map((item) =>
       item.values.map((val) => {
         const num = Number(val);
         return num > 0 ? num : 0.0000000001;
@@ -93,13 +92,9 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       console.error('Error fetching line chart data:', error);
       return null;
     }
-  }, [currentSetting, selectedSecondTab, selectedNodes, updateSetting]);
+  };
 
-  useEffect(() => {
-    if (!currentSetting.lineChartData) {
-      loadLineChartData();
-    }
-  }, [currentSetting.lineChartData, loadLineChartData]);
+  useDebounce(() => loadLineChartData(), 500, [currentSetting?.openingHoursTableData]);
 
   return !visible ? null : (
     <div>
@@ -540,19 +535,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         <div className={`mt-[30px] flex items-center justify-between`}>
           <h2 className="title-sm">Set Opening Hours</h2>
 
-          <div className="flex items-center gap-[20px]">
-            {/* TODO: 라인차트를 숫자를 입력했을 때 마다 호출하도록 변경하기 */}
-            <Button className="btn-md btn-tertiary" text="Update Line Chart" onClick={loadLineChartData} />
-
+          {/* <div className="flex items-center gap-[20px]">
             <Checkbox
               id="Automatic"
               label="Check-box"
               checked={!!currentSetting.automaticInput}
-              onChange={
-                () =>
-                  updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                    automaticInput: !currentSetting.automaticInput,
-                  })
+              onChange={() =>
+                updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                  automaticInput: !currentSetting.automaticInput,
+                })
               }
               className="checkbox-toggle"
             />
@@ -572,7 +563,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                 />
               </dd>
             </dl>
-          </div>
+          </div> */}
         </div>
 
         <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
@@ -588,8 +579,14 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   stickyTopRows={1}
                   header={currentSetting.openingHoursTableData?.header || []}
                   data={currentSetting.openingHoursTableData?.data || []}
-                  onDataChange={(data) => {
-                    // setOpeningHoursTableData({ ...openingHoursTableData, data } as TableData);
+                  onDataChange={(newData) => {
+                    const newTableData = {
+                      ...currentSetting.openingHoursTableData,
+                      data: newData,
+                    };
+                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                      openingHoursTableData: { ...newTableData, header: newTableData.header || [] },
+                    });
                   }}
                 />
 
