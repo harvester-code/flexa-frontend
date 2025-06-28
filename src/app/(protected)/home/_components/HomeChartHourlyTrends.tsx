@@ -50,10 +50,13 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
     showlegend: false,
   });
 
-  const convertSecondsToMinutes = (data: Plotly.Data): Plotly.Data => ({
+  const convertSecondsToMinutesInt = (data: Plotly.Data): Plotly.Data => ({
     ...data,
     y: Array.isArray((data as any).y)
-      ? (data as any).y.map((v: any) => (typeof v === 'number' ? v / 60 : v))
+      ? (data as any).y.map((v: any) => {
+          const num = Number(v);
+          return isNaN(num) ? null : Math.floor(num / 60);
+        })
       : (data as any).y,
   });
   const getYAxisTitle = (optionValue: string) => (optionValue === 'waiting_time' ? '(min)' : '(pax)');
@@ -179,7 +182,7 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
         showlegend: false,
       } as any;
       if (option.value === 'waiting_time') {
-        barChartTrace = convertSecondsToMinutes(barChartTrace);
+        barChartTrace = convertSecondsToMinutesInt(barChartTrace);
       }
       newBarChartData.push(barChartTrace);
 
@@ -193,7 +196,7 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
         showlegend: false,
       };
       if (option.value === 'waiting_time') {
-        lineChartTrace = convertSecondsToMinutes(lineChartTrace);
+        lineChartTrace = convertSecondsToMinutesInt(lineChartTrace);
       }
       newLineChartData.push(lineChartTrace);
     });
@@ -239,7 +242,8 @@ function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
     // --- Calculate and Apply Max Value for Wait Time Unit ---
     const selectedWaitTimeOption = selectedOptionsWithAxis.find((opt) => opt.value === 'waiting_time');
     if (selectedWaitTimeOption) {
-      const waitTimeData = chartDataForZone.waiting_time?.map((v) => (typeof v === 'number' ? v / 60 : 0)) ?? [];
+      const waitTimeData =
+        chartDataForZone.waiting_time?.map((v) => (typeof v === 'number' ? Math.floor(v / 60) : 0)) ?? [];
       const maxWaitTimeValue = waitTimeData.length > 0 ? Math.max(...waitTimeData) : 0;
       const waitTimeRangeMax = maxWaitTimeValue > 0 ? maxWaitTimeValue * 1.1 : 10;
 
