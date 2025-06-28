@@ -249,7 +249,7 @@ export default function SimulationGridTable({
     const newData = structuredClone(data);
 
     for (const changeCur of changes) {
-      newData[changeCur.rowIndex].values[changeCur.colIndex] = changeCur.value || '';
+      newData[changeCur.rowIndex].values[changeCur.colIndex] = changeCur.value || 'NaN';
     }
     if (onDataChange) onDataChange(newData);
   };
