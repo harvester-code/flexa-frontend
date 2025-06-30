@@ -69,6 +69,10 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
   // ====================================================================================================
   const loadLineChartData = async () => {
+    if (!currentSetting?.openingHoursTableData) {
+      return null;
+    }
+
     const facilitySchedules = currentSetting?.openingHoursTableData?.data.map((item) =>
       item.values.map((val) => {
         const num = Number(val);
