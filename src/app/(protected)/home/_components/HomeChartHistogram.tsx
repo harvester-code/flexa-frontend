@@ -7,6 +7,7 @@ import TheDropdownMenu from '@/components/TheDropdownMenu';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import './HomeCss.css';
 import { capitalizeFirst, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
@@ -110,8 +111,8 @@ function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
       </div>
       <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-4">
+        <div className="chart-header-container">
+          <div className="chart-header-selects">
             <TheDropdownMenu
               className="min-w-48 flex-1 [&>*]:justify-start"
               items={FACILITY_OPTIONS}
@@ -127,7 +128,7 @@ function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
               onSelect={(item) => setSelectedZoneValue(item.value)}
             />
           </div>
-          <div className="flex items-center self-center md:self-auto">
+          <div className="chart-header-buttons">
             <ButtonGroup>
               {CHART_OPTIONS.map((opt) => (
                 <Button

@@ -1,0 +1,12 @@
+/* Chart header layout */
+.chart-header-container {
+  @apply flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between;
+}
+
+.chart-header-selects {
+  @apply flex flex-wrap gap-4 lg:flex-nowrap;
+}
+
+.chart-header-buttons {
+  @apply flex items-center self-center lg:self-auto;
+}

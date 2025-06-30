@@ -1,6 +1,7 @@
 import { capitalCase } from 'change-case';
 import { capitalizeFirst } from '@/app/(protected)/home/_components/HomeFormat';
 import { PRIMARY_COLOR_SCALES } from '@/constants';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 
 // 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
@@ -78,28 +79,40 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
   const fixedWidths = formatHistogramWidth(rawWidths, 7);
 
   return (
-    <div className={cn('flex w-full min-w-0 overflow-hidden text-center', className)}>
-      {chartData &&
-        filteredChartData.map(({ title, value }, idx) => {
-          const width = fixedWidths[idx];
-          return (
-            <div style={{ width: `${width}%` }} className="min-w-0" key={idx}>
-              <div
-                className={cn(
-                  'truncate p-3.5 text-3xl font-bold text-white',
-                  idx === 0 ? 'rounded-l-lg' : '',
-                  idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
-                )}
-                style={{ background: `${PRIMARY_COLOR_SCALES[idx]}` }}
-              >
-                {value}
-              </div>
+    <TooltipProvider delayDuration={0}>
+      <div className={cn('flex w-full min-w-0 overflow-hidden text-center', className)}>
+        {chartData &&
+          filteredChartData.map(({ title, value }, idx) => {
+            const width = fixedWidths[idx];
+            return (
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <div style={{ width: `${width}%` }} className="min-w-0 cursor-pointer">
+                    <div
+                      className={cn(
+                        'truncate p-3.5 text-3xl font-bold text-white transition-opacity hover:opacity-80',
+                        idx === 0 ? 'rounded-l-lg' : '',
+                        idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
+                      )}
+                      style={{ background: `${PRIMARY_COLOR_SCALES[idx]}` }}
+                    >
+                      {value}
+                    </div>
 
-              <p className="mt-1 truncate text-xs font-medium text-default-700">{capitalizeFirst(title)}</p>
-            </div>
-          );
-        })}
-    </div>
+                    <p className="mt-1 truncate text-xs font-medium text-default-700">{capitalizeFirst(title)}</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  <div className="text-center">
+                    <div className="font-semibold">{capitalizeFirst(title)}</div>
+                    <div className="text-sm">{value}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+      </div>
+    </TooltipProvider>
   );
 }
 
