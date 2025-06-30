@@ -554,7 +554,11 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
                 height: 210,
                 margin: { l: 20, r: 10, t: 0, b: 20 },
                 legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
-                xaxis: { title: 'X' },
+                xaxis: {
+                  title: {
+                    text: 'X',
+                  },
+                },
                 yaxis: { showticklabels: false },
                 shapes: vlineData?.map((vline) => {
                   return {

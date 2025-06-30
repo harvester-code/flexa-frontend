@@ -443,7 +443,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 },
               ]}
               chartLayout={{
-                title: 'Sankey Diagram',
+                title: {
+                  text: 'Sankey Diagram',
+                },
                 margin: { l: 16, r: 16, b: 16, t: 16 },
                 font: { size: 20 },
               }}
