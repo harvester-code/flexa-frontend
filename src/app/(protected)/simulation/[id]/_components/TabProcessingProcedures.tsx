@@ -415,7 +415,6 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
               className="btn-md btn-default btn-rounded w-[210px] justify-between"
               // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
               disabled={isProceduresChanged(tempPrevProcedures, procedures) || availableScenarioTab < 4}
-              // disabled={availableScenarioTab < 4}
               onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
             >
               <span className="flex flex-grow items-center justify-center">Facility Connection</span>

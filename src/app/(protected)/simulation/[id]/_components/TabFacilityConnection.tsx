@@ -636,9 +636,14 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
   const fetchBarChartData = async () => {
     const cleanedProcesses = allocationTables.reduce((acc, table, index) => {
+      // 각 테이블의 데이터를 행렬(matrix) 형태로 변환합니다.
+      // 예: { "소스1": { "목적지1": 0.5, "목적지2": 0.3 }, "소스2": { "목적지1": 0.2, "목적지2": 0.7 } }
       const defaultMatrix = table.data?.reduce((matrix, row) => {
+        // 각 행(row)에 대해 열(column) 데이터를 처리합니다
         matrix[row.name] = row.values.reduce((rowAcc, val, idx) => {
-          rowAcc[table.header[idx].name] = Number(val) / 100;
+          // 각 값을 퍼센트에서 소수점으로 변환 (예: 50 -> 0.5)
+          const destinationName = table.header[idx].name;
+          rowAcc[destinationName] = Number(val) / 100;
           return rowAcc;
         }, {});
         return matrix;
