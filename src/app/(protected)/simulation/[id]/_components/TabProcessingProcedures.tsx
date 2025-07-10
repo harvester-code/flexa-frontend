@@ -238,6 +238,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                 <FontAwesomeIcon size="sm" icon={faEquals} />
                               </button>
 
+                              {/* ========== 컴포넌트 입력 ========== */}
                               <p className="item-name">
                                 <Input
                                   id={`${proc.id}_${index}_input_name`}
@@ -246,14 +247,15 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                   value={proc.nameText}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const newText = e.target.value.replace(/[^A-Za-z0-9-_ ]/g, '');
+
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
                                     setProcedures(
                                       procedures.map((item, i) =>
                                         i === index
                                           ? {
                                               ...item,
-                                              nameText: newText,
                                               name: newText.toLowerCase().replace(/[\s-]+/g, '_'),
+                                              nameText: newText,
                                             }
                                           : item
                                       )
