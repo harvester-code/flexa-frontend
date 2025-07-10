@@ -6,7 +6,7 @@ export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 const instanceWithAuth = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 29 * 1000, // timeout in milliseconds
+  timeout: 180 * 1000,
 });
 
 instanceWithAuth.interceptors.request.use(
