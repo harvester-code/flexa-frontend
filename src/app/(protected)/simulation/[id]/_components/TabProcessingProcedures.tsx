@@ -139,7 +139,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
   // ================================================================
 
   const isProceduresChanged = (oldVal: Procedure[], newVal: Procedure[]) => {
-    return !_.isEqual(oldVal, newVal);
+    const oldValWithoutEditable = oldVal.map((proc) => ({ ...proc, editable: false }));
+    const newValWithoutEditable = newVal.map((proc) => ({ ...proc, editable: false }));
+    return !_.isEqual(oldValWithoutEditable, newValWithoutEditable);
   };
 
   useEffect(() => {
@@ -371,13 +373,13 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
               className="btn-md btn-tertiary"
               text="Apply"
               onClick={() => {
+                setProcedures(procedures.map((proc) => ({ ...proc, editable: false })));
+
                 // NOTE: 이전 절차와 현재 절차가 동일
                 if (!isProceduresChanged(tempPrevProcedures, procedures)) {
                   setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 4));
                   return;
                 }
-
-                // ----------------------------------------------------------------------
 
                 const isGranted = confirm(
                   'If you change the desk, previous connection setting will be deleted.Do you want to continue?'
