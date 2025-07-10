@@ -295,6 +295,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                 </button>
                               </p>
 
+                              {/* ========== 시설 리스트 입력 ========== */}
                               <dl className="ml-[40px] mr-[300px] flex-grow">
                                 <dt className="tooltip-line">
                                   Enter the {proc.nameText} desks <span className="text-accent-600">*</span>
@@ -307,25 +308,34 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                     value={proc.nodesText || ''}
                                     onBlur={(e) => {
                                       const newNodes = e.target.value.trim();
+                                      const trimmedNodes = newNodes
+                                        .split(',')
+                                        .map((n) => n.trim())
+                                        .filter((n) => n !== '');
 
                                       setProcedures(
                                         procedures.map((proc, prodIndex) =>
                                           prodIndex === index
                                             ? {
                                                 ...proc,
-                                                nodes: newNodes.split(',').map((n) => n.trim()),
-                                                nodesText: newNodes,
+                                                nodes: trimmedNodes,
+                                                nodesText: trimmedNodes.join(','),
                                               }
                                             : proc
                                         )
                                       );
                                     }}
-                                    // HACK: 더 좋은 코드가 있을 것 같은데...
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                      const newText = e.target.value.replace(/[^A-Za-z0-9,]/g, '');
+                                      const newText = e.target.value.replace(/[^A-Za-z0-9-_,() ]/g, '');
+
                                       setProcedures(
                                         procedures.map((item, i) =>
-                                          i === index ? { ...item, nodesText: newText } : item
+                                          i === index
+                                            ? {
+                                                ...item,
+                                                nodesText: newText,
+                                              }
+                                            : item
                                         )
                                       );
                                     }}
