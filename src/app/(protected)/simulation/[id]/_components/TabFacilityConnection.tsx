@@ -691,7 +691,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
     }
   };
 
-  const setBarChartDataFromServer = async () => {
+  const loadBarChartData = async () => {
     const data = await fetchBarChartData();
     setBarChartData(data);
   };
@@ -982,7 +982,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               setLoading(true);
               try {
                 initializeFacilitySettings();
-                await setBarChartDataFromServer();
+                await loadBarChartData();
                 //
                 setTabIndex(tabIndex + 1);
                 setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 5));
