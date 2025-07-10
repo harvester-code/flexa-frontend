@@ -180,10 +180,10 @@ export interface AirportProcessing {
 export interface Procedure {
   id: string;
   name: string;
-  nameText?: string;
+  nameText: string;
   nodes: string[];
-  nodesText?: string;
-  editable?: boolean;
+  nodesText: string;
+  editable: boolean;
 }
 
 // ======================================================

@@ -59,7 +59,9 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
       ...procedures,
       {
         name: '',
+        nameText: '',
         nodes: [],
+        nodesText: '',
         id: String(procedures.length),
         editable: true,
       },
@@ -239,7 +241,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                   id={`${proc.id}_${index}_input_name`}
                                   className={`${proc.editable ? '' : 'hidden'} text-2xl`}
                                   type="text"
-                                  value={proc.nameText || ''}
+                                  value={proc.nameText}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const newText = e.target.value.replace(/[^A-Za-z0-9-_ ]/g, '');
                                     // HACK: 더 좋은 코드가 있을 것 같은데...
@@ -305,7 +307,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                 <dd>
                                   <Input
                                     type="text"
-                                    value={proc.nodesText || ''}
+                                    value={proc.nodesText}
                                     onBlur={(e) => {
                                       const newNodes = e.target.value.trim();
                                       const trimmedNodes = newNodes

@@ -460,7 +460,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               className="tab-secondary mt-[25px]"
               tabCount={procedures.length}
               currentTab={selectedProcedure}
-              tabs={procedures?.map((tab) => ({ text: tab.nameText ?? '' }))}
+              tabs={procedures?.map((tab) => ({ text: tab.nameText }))}
               onTabChange={setSelectedProcedure}
             />
 
