@@ -136,10 +136,16 @@ import { abort } from "process";
 
 
     function AemosTemplate({ scenario }: AemosTemplateProps) {
-    const { data: aemos_dict } = useAemosTemplate({ scenarioId: scenario?.id });
+    const { 
+        data: aemos_dict,
+        isLoading,
+        isError 
+    } = useAemosTemplate({ scenarioId: scenario?.id });
     const [showTables, setShowTables] = useState(false);
 
-    if (!aemos_dict) return <div style={{ marginTop: "2rem" }}>AEMOS loading...</div>;
+    if (isLoading) return <div style={{ marginTop: "2rem" }}>AEMOS loading...</div>;
+    if (isError) return <div style={{ marginTop: "2rem", color: "red" }}>Error loading AEMOS data</div>;
+    if (!aemos_dict) return <div style={{ marginTop: "2rem" }}>No AEMOS data available</div>;
 
     const { metric_dict: metric, template_dict, service_point_info_dict } = aemos_dict;
 
