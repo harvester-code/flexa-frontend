@@ -13,6 +13,7 @@ import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
+import AemosTemplate from './_components/AemosTemplate';
 
 function HomePage() {
   const { data: user } = useUser();
@@ -52,8 +53,6 @@ function HomePage() {
 
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
-      <div>Hey ~~~~</div>
-      <div>Hello World</div>
       <TheContentHeader text="Home" />
 
       <HomeScenario
@@ -106,6 +105,10 @@ function HomePage() {
           isLoading={isKpiLoading}
         />
       </HomeAccordion>
+
+      <AemosTemplate scenario={scenario} />
+
+
     </div>
   );
 }
