@@ -158,7 +158,7 @@ function Conditions({
             <div className="table-wrap mt-[10px] overflow-hidden rounded-md pb-[10px]">
               {selectedValues.tableData ? (
                 <SimulationGridTable
-                  className="border-none"
+                  // className="border-none"
                   type={tableType == TABLE_TYPES[0] ? 'checkbox' : tableType == TABLE_TYPES[1] ? 'number' : 'text'}
                   title={selectedValues.tableData.title}
                   header={selectedValues.tableData.header}
@@ -535,9 +535,6 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
   // -------------------------------------------------------------
   // 테이블의 유효성을 검사하는 함수입니다.
-  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-  // 만약 테이블이 비어있는 상태로 저장할 경우, 이를 저장 안되게 하기 (근데 생각해보면 FacilityInformation이 없으면 해도 되지 않나?)
-  // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
   const validateTable = useCallback(() => {
     const isDefaultTableValid = checkNotEmptyRows(allocationTables[selectedSecondTab].data);
     const isConditionsTableValid = allocationConditionsEnabled[selectedSecondTab]
@@ -931,7 +928,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
 
           {procedures.length === allocationTables.length ? (
             <SimulationGridTable
-              className="max-h-[80vh]"
+              // className="max-h-[80vh]"
               type={tableType === TABLE_TYPES[0] ? 'checkbox' : tableType === TABLE_TYPES[1] ? 'number' : 'text'}
               title={allocationTables[selectedSecondTab]?.title || ''}
               header={allocationTables[selectedSecondTab]?.header || []}
