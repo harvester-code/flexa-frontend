@@ -23,4 +23,8 @@ const fetchKpiHomeData = ({
   });
 };
 
-export { fetchCommonHomeData, fetchKpiHomeData };
+const fetchAemosTemplate = ({ scenarioId }: { scenarioId?: string }) => {
+  return instanceWithAuth.get(`${BASE_URL}/aemos_template/${scenarioId}`);
+};
+
+export { fetchCommonHomeData, fetchKpiHomeData, fetchAemosTemplate };
