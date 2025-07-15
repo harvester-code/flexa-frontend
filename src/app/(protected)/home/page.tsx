@@ -52,6 +52,8 @@ function HomePage() {
 
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
+      <div>Hey ~~~~</div>
+      <div>Hello World</div>
       <TheContentHeader text="Home" />
 
       <HomeScenario
