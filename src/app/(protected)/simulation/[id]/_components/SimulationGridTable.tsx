@@ -85,7 +85,6 @@ export interface GridTableRow {
 }
 
 interface GridTableProps {
-  className?: string;
   type?: 'text' | 'checkbox' | 'number';
   title?: string;
   titleWidth?: number;
@@ -103,7 +102,6 @@ interface GridTableProps {
 }
 
 export default function SimulationGridTable({
-  className,
   type = 'text',
   title,
   titleWidth = 0,
@@ -119,9 +117,10 @@ export default function SimulationGridTable({
   stickyBottomRows,
   onDataChange,
 }: GridTableProps) {
-  const refWidth = useRef(null);
+  const tableContRef = useRef(null);
+  const { width } = useResize(tableContRef);
+
   const selRange = useRef(Array(1).fill([])).current;
-  const { width } = useResize(refWidth);
 
   const sumColVisible = normalizeRowSum && visibleRowSum && type == 'number';
 
@@ -356,91 +355,85 @@ export default function SimulationGridTable({
     };
   }, [selRange]);
 
-  return header?.length > 0 && data?.length > 0 ? (
-    <div ref={refWidth}>
-      {width < 1 ? null : (
-        <>
-          <div className={`table-wrap mt-[10px] overflow-auto rounded-md border border-default-300 ${className || ''}`}>
-            <ReactGrid
-              rows={rows}
-              columns={columns}
-              enableRangeSelection={true}
-              onCellsChanged={(cellChanges) => {
-                for (const cellCur of cellChanges) {
-                  const changes: CellParams[] = [];
-                  const value =
-                    type == 'checkbox' || type == 'number'
-                      ? String((cellCur.newCell as NumberCell).value)
-                      : (cellCur.newCell as TextCell).text;
+  return (
+    <>
+      <div ref={tableContRef}>
+        <ReactGrid
+          rows={rows}
+          columns={columns}
+          enableRangeSelection
+          onCellsChanged={(cellChanges) => {
+            for (const cellCur of cellChanges) {
+              const changes: CellParams[] = [];
+              const value =
+                type == 'checkbox' || type == 'number'
+                  ? String((cellCur.newCell as NumberCell).value)
+                  : (cellCur.newCell as TextCell).text;
 
-                  if (selRange[0]?.length > 0) {
-                    for (const rangeCur of selRange[0]) {
-                      const colIdxs: number[] = [];
-                      const rowIdxs: number[] = [];
-                      const selRangeCur = rangeCur as Range;
+              if (selRange[0]?.length > 0) {
+                for (const rangeCur of selRange[0]) {
+                  const colIdxs: number[] = [];
+                  const rowIdxs: number[] = [];
+                  const selRangeCur = rangeCur as Range;
 
-                      for (const colCur of selRangeCur.columns)
-                        colIdxs.push(sumColVisible ? Number(colCur.columnId) - 2 : Number(colCur.columnId) - 1);
+                  for (const colCur of selRangeCur.columns)
+                    colIdxs.push(sumColVisible ? Number(colCur.columnId) - 2 : Number(colCur.columnId) - 1);
 
-                      for (const rowCur of selRangeCur.rows) rowIdxs.push(Number(rowCur.rowId));
+                  for (const rowCur of selRangeCur.rows) rowIdxs.push(Number(rowCur.rowId));
 
-                      for (const col of colIdxs) {
-                        for (const row of rowIdxs) {
-                          changes.push({ rowIndex: row, colIndex: col, value: isNaN(Number(value)) ? '' : value });
-                        }
-                      }
+                  for (const col of colIdxs) {
+                    for (const row of rowIdxs) {
+                      changes.push({ rowIndex: row, colIndex: col, value: isNaN(Number(value)) ? '' : value });
                     }
                   }
-
-                  changes.push({
-                    rowIndex: Number(cellCur.rowId),
-                    colIndex: sumColVisible ? Number(cellCur.columnId) - 2 : Number(cellCur.columnId) - 1,
-                    ...(type == 'checkbox' || type == 'number'
-                      ? { value: isNaN(Number(value)) ? '' : value }
-                      : { value }),
-                  });
-
-                  if (type == 'checkbox') {
-                    handleChangeCheck(changes);
-                  } else if (type == 'number') {
-                    handleChangeNumber(changes);
-                  } else {
-                    handleChangeText(changes);
-                  }
                 }
-              }}
-              onSelectionChanging={(selectedRanges) => {
-                selRange[0] = selectedRanges;
-                return true;
-              }}
-              onFocusLocationChanging={(location) => {
-                if (type == 'checkbox' && location.rowId == 'header') {
-                  handleCheckAllCol(Number(location.columnId) - 1);
-                } else if (type == 'checkbox' && location.columnId == '0') {
-                  handleCheckAllRow(Number(location.rowId));
-                } else if (type == 'number' && location.columnId == '0') {
-                  if (location.rowId == 'header') {
-                    handleChangeNumberRowsAll();
-                  } else {
-                    handleChangeNumberRow(Number(location.rowId));
-                  }
-                }
-                return true;
-              }}
-              stickyLeftColumns={stickyLeftColumns}
-              stickyRightColumns={stickyRightColumns}
-              stickyTopRows={stickyTopRows}
-              stickyBottomRows={stickyBottomRows}
-            />
-          </div>
+              }
 
-          {!errorMessage ? null : (
-            <div className="mt-[20px] flex items-center justify-between pr-[20px]">
-              <p className="font-medium text-warning">{errorMessage}</p>
-            </div>
-          )}
-        </>
+              changes.push({
+                rowIndex: Number(cellCur.rowId),
+                colIndex: sumColVisible ? Number(cellCur.columnId) - 2 : Number(cellCur.columnId) - 1,
+                ...(type == 'checkbox' || type == 'number' ? { value: isNaN(Number(value)) ? '' : value } : { value }),
+              });
+
+              if (type == 'checkbox') {
+                handleChangeCheck(changes);
+              } else if (type == 'number') {
+                handleChangeNumber(changes);
+              } else {
+                handleChangeText(changes);
+              }
+            }
+          }}
+          onSelectionChanging={(selectedRanges) => {
+            selRange[0] = selectedRanges;
+            return true;
+          }}
+          onFocusLocationChanging={(location) => {
+            if (type == 'checkbox' && location.rowId == 'header') {
+              handleCheckAllCol(Number(location.columnId) - 1);
+            } else if (type == 'checkbox' && location.columnId == '0') {
+              handleCheckAllRow(Number(location.rowId));
+            } else if (type == 'number' && location.columnId == '0') {
+              if (location.rowId == 'header') {
+                handleChangeNumberRowsAll();
+              } else {
+                handleChangeNumberRow(Number(location.rowId));
+              }
+            }
+            return true;
+          }}
+          stickyLeftColumns={stickyLeftColumns}
+          stickyRightColumns={stickyRightColumns}
+          stickyTopRows={stickyTopRows}
+          stickyBottomRows={stickyBottomRows}
+        />
+      </div>
+
+      {!errorMessage ? null : (
+        <div className="mt-[20px] flex items-center justify-between pr-[20px]">
+          <p className="font-medium text-warning">{errorMessage}</p>
+        </div>
       )}
-    </div>
-  ) : null;
+    </>
+  );
 }

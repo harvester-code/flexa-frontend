@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import dayjs from 'dayjs';
 import { useDebounce } from 'react-use';
 import { useShallow } from 'zustand/react/shallow';
 import { getFacilityInfoLineChartData } from '@/services/simulations';
@@ -13,15 +14,29 @@ import Checkbox from '@/components/Checkbox';
 import { Dropdown } from '@/components/Conditions';
 import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
+import TheRadioGroup from '@/components/TheRadioGroup';
 import { cn } from '@/lib/utils';
 import SimulationGridTable from './SimulationGridTable';
 
-const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
+const PlotlyChart = dynamic(() => import('@/components/ThePlotlyChart'), { ssr: false });
 
 const DEFAULT_TIME_UNIT = 10;
 
 const TABLE_HEADER_HEIGHT = 52;
-const TABLE_CELL_HEIGHT = 36;
+const TABLE_ROW_HEIGHT = 36;
+
+const INFINITE_FACILITY_OPTIONS = [
+  {
+    value: 'limited_facility' as const,
+    label: 'Limited Facility',
+    description: 'Set it to a facility with limited physical capacity, such as check-in · security',
+  },
+  {
+    value: 'unlimited_facility' as const,
+    label: 'Unlimited Facility',
+    description: 'Set it to a facility with unlimited physical capacity, such as mobile check-in · hallway',
+  },
+];
 
 interface TabFacilityInformationProps {
   simulationId: string;
@@ -30,6 +45,7 @@ interface TabFacilityInformationProps {
 
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
   const {
+    targetDate,
     currentScenarioTab,
     setCurrentScenarioTab,
     procedures,
@@ -42,6 +58,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     barChartData,
   } = useScenarioStore(
     useShallow((s) => ({
+      targetDate: s.flightSchedule.targetDate,
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
       procedures: s.airportProcessing.procedures,
@@ -58,18 +75,48 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
   const currentSetting = settings?.[`${selectedSecondTab}_${selectedNodes[selectedSecondTab]}`];
 
   // ====================================================================================================
-
-  const tableHeight = currentSetting?.openingHoursTableData
-    ? currentSetting.openingHoursTableData?.data?.length * TABLE_CELL_HEIGHT + TABLE_HEADER_HEIGHT + 2
+  const calculatedTableHeight = currentSetting?.openingHoursTableData
+    ? currentSetting.openingHoursTableData?.data?.length * TABLE_ROW_HEIGHT + TABLE_HEADER_HEIGHT + 2
     : 0;
-  const vChartTop = currentSetting?.lineChartData ? 1 : 0;
-  const vChartHeight = currentSetting?.lineChartData ? tableHeight + 544 : tableHeight + 8;
-  const vChartMarginTop = currentSetting?.lineChartData ? -270 : 0;
-  const vChartParentHeight = currentSetting?.lineChartData ? tableHeight + 280 : tableHeight;
+
+  // ====================================================================================================
+  const tableRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleTableScroll = () => {
+      if (tableRef.current && chartRef.current) {
+        chartRef.current.scrollTop = tableRef.current.scrollTop;
+      }
+    };
+
+    const handleChartScroll = () => {
+      if (chartRef.current && tableRef.current) {
+        tableRef.current.scrollTop = chartRef.current.scrollTop;
+      }
+    };
+
+    const tableElement = tableRef.current;
+    const chartElement = chartRef.current;
+
+    tableElement?.addEventListener('scroll', handleTableScroll);
+    chartElement?.addEventListener('scroll', handleChartScroll);
+
+    return () => {
+      tableElement?.removeEventListener('scroll', handleTableScroll);
+      chartElement?.removeEventListener('scroll', handleChartScroll);
+    };
+  }, [visible]);
 
   // ====================================================================================================
   const loadLineChartData = async () => {
     if (!currentSetting?.openingHoursTableData) {
+      return null;
+    }
+
+    if (currentSetting?.facilityType === 'unlimited_facility') {
       return null;
     }
 
@@ -133,199 +180,267 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
         <h2 className="title-sm">Facility Default Settings</h2>
       </div>
 
+      <TheRadioGroup
+        items={INFINITE_FACILITY_OPTIONS}
+        defaultValue={INFINITE_FACILITY_OPTIONS[0].value}
+        selectedValue={currentSetting.facilityType}
+        onValueChange={(value) => {
+          const numberOfEachDevices = value === 'limited_facility' ? 5 : 1;
+          const maximumQueuesAllowedPer = value === 'limited_facility' ? 200 : 1;
+
+          updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+            facilityType: value as (typeof INFINITE_FACILITY_OPTIONS)[number]['value'],
+            numberOfEachDevices,
+            maximumQueuesAllowedPer,
+          });
+
+          // --- Update defaultTableData header if it exists
+          if (currentSetting.defaultTableData) {
+            const updatedHeader = Array(numberOfEachDevices)
+              .fill(0)
+              .map((_, index) => ({
+                name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                style: { background: '#F9F9FB' },
+                minWidth: 80,
+              }));
+
+            const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+              ...item,
+              values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
+            }));
+
+            updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+              defaultTableData: {
+                ...currentSetting.defaultTableData,
+                header: updatedHeader,
+                data: updatedData,
+              },
+            });
+          }
+
+          // --- Update openingHoursTableData if it exists
+          if (currentSetting.openingHoursTableData) {
+            const updatedHeader = Array(numberOfEachDevices)
+              .fill(0)
+              .map((_, index) => ({
+                name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                style: { background: '#F9F9FB' },
+                minWidth: 80,
+              }));
+
+            const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+              ...item,
+              values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
+            }));
+
+            updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+              openingHoursTableData: {
+                ...currentSetting.openingHoursTableData,
+                header: updatedHeader,
+                data: updatedOpeningHoursData,
+              },
+            });
+          }
+        }}
+      />
+
       <div className="process-item-content mt-[17px] rounded-lg border border-default-300 bg-gray-100 p-[20px]">
         <div className="flex justify-between gap-[20px]">
           {/* =============== DESK =============== */}
-          <dl className="flex flex-grow flex-col gap-[5px]">
-            <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">{procedures[selectedSecondTab].nameText} desks</h4>
-            </dt>
+          {currentSetting?.facilityType === 'limited_facility' && (
+            <dl className="flex flex-grow flex-col gap-[5px]">
+              <dt>
+                <h4 className="pl-[10px] text-sm font-semibold">
+                  Number of each devices in {procedures[selectedSecondTab].nameText}
+                </h4>
+              </dt>
 
-            <dd>
-              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
-                <button
-                  onClick={() => {
-                    const newNumberOfDevices = Math.max(currentSetting.numberOfEachDevices - 1, 1);
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      numberOfEachDevices: newNumberOfDevices,
-                    });
-
-                    // --- Update defaultTableData header if it exists
-                    if (currentSetting.defaultTableData) {
-                      const updatedHeader = Array(newNumberOfDevices)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
-                        }));
-
-                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                      }));
+              <dd>
+                <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+                  <button
+                    onClick={() => {
+                      const newNumberOfDevices = Math.max(currentSetting.numberOfEachDevices - 1, 1);
 
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          header: updatedHeader,
-                          data: updatedData,
-                        },
+                        numberOfEachDevices: newNumberOfDevices,
                       });
-                    }
-                    // --- Update openingHoursTableData if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const updatedHeader = Array(newNumberOfDevices)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
+
+                      // --- Update defaultTableData header if it exists
+                      if (currentSetting.defaultTableData) {
+                        const updatedHeader = Array(newNumberOfDevices)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
+
+                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                      }));
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          defaultTableData: {
+                            ...currentSetting.defaultTableData,
+                            header: updatedHeader,
+                            data: updatedData,
+                          },
+                        });
+                      }
+                      // --- Update openingHoursTableData if it exists
+                      if (currentSetting.openingHoursTableData) {
+                        const updatedHeader = Array(newNumberOfDevices)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          header: updatedHeader,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
-                    }
-                  }}
-                >
-                  <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
-                </button>
-
-                <Input
-                  className="!border-0 text-center focus:!outline-none"
-                  type="text"
-                  placeholder=""
-                  value={String(currentSetting.numberOfEachDevices)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const inputValue = Number(e.target.value);
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      numberOfEachDevices: inputValue,
-                    });
-
-                    // --- Update defaultTableData header if it exists
-                    if (currentSetting.defaultTableData) {
-                      const updatedHeader = Array(inputValue)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
+                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(inputValue).fill(currentSetting.processingTime),
-                      }));
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          openingHoursTableData: {
+                            ...currentSetting.openingHoursTableData,
+                            header: updatedHeader,
+                            data: updatedOpeningHoursData,
+                          },
+                        });
+                      }
+                    }}
+                  >
+                    <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
+                  </button>
+
+                  <Input
+                    className="!border-0 text-center focus:!outline-none"
+                    type="text"
+                    placeholder=""
+                    value={String(currentSetting.numberOfEachDevices)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const inputValue = Number(e.target.value);
 
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          header: updatedHeader,
-                          data: updatedData,
-                        },
+                        numberOfEachDevices: inputValue,
                       });
-                    }
 
-                    // --- Update openingHoursTableData if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const updatedHeader = Array(inputValue)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
+                      // --- Update defaultTableData header if it exists
+                      if (currentSetting.defaultTableData) {
+                        const updatedHeader = Array(inputValue)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
+
+                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(inputValue).fill(currentSetting.processingTime),
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(inputValue).fill(currentSetting.processingTime),
-                      }));
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          defaultTableData: {
+                            ...currentSetting.defaultTableData,
+                            header: updatedHeader,
+                            data: updatedData,
+                          },
+                        });
+                      }
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          header: updatedHeader,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
-                    }
-                  }}
-                />
+                      // --- Update openingHoursTableData if it exists
+                      if (currentSetting.openingHoursTableData) {
+                        const updatedHeader = Array(inputValue)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
 
-                <button
-                  onClick={() => {
-                    const newNumberOfDevices = currentSetting.numberOfEachDevices + 1;
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      numberOfEachDevices: newNumberOfDevices,
-                    });
-
-                    // --- Update defaultTableData header if it exists
-                    if (currentSetting.defaultTableData) {
-                      const updatedHeader = Array(newNumberOfDevices)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
+                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(inputValue).fill(currentSetting.processingTime),
                         }));
 
-                      const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                      }));
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          openingHoursTableData: {
+                            ...currentSetting.openingHoursTableData,
+                            header: updatedHeader,
+                            data: updatedOpeningHoursData,
+                          },
+                        });
+                      }
+                    }}
+                  />
+
+                  <button
+                    onClick={() => {
+                      const newNumberOfDevices = currentSetting.numberOfEachDevices + 1;
 
                       updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          header: updatedHeader,
-                          data: updatedData,
-                        },
+                        numberOfEachDevices: newNumberOfDevices,
                       });
-                    }
 
-                    // --- Update openingHoursTableData if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const updatedHeader = Array(newNumberOfDevices)
-                        .fill(0)
-                        .map((_, index) => ({
-                          name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                          style: { background: '#F9F9FB' },
-                          minWidth: 80,
+                      // --- Update defaultTableData header if it exists
+                      if (currentSetting.defaultTableData) {
+                        const updatedHeader = Array(newNumberOfDevices)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
+
+                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                      }));
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          defaultTableData: {
+                            ...currentSetting.defaultTableData,
+                            header: updatedHeader,
+                            data: updatedData,
+                          },
+                        });
+                      }
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          header: updatedHeader,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
-                    }
-                  }}
-                >
-                  <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
-                </button>
-              </div>
-            </dd>
-          </dl>
+                      // --- Update openingHoursTableData if it exists
+                      if (currentSetting.openingHoursTableData) {
+                        const updatedHeader = Array(newNumberOfDevices)
+                          .fill(0)
+                          .map((_, index) => ({
+                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
+                            style: { background: '#F9F9FB' },
+                            minWidth: 80,
+                          }));
+
+                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                          ...item,
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
+                        }));
+
+                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                          openingHoursTableData: {
+                            ...currentSetting.openingHoursTableData,
+                            header: updatedHeader,
+                            data: updatedOpeningHoursData,
+                          },
+                        });
+                      }
+                    }}
+                  >
+                    <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
+                  </button>
+                </div>
+              </dd>
+            </dl>
+          )}
 
           {/* =============== PROCESSING TIME =============== */}
           <dl className="flex flex-grow flex-col gap-[5px]">
@@ -470,68 +585,77 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           </dl>
 
           {/* =============== MAXIMUM QUEUES =============== */}
-          <dl className="flex flex-grow flex-col gap-[5px]">
-            <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">Maximum queues allowed per desks</h4>
-            </dt>
+          {currentSetting?.facilityType === 'limited_facility' && (
+            <dl className="flex flex-grow flex-col gap-[5px]">
+              <dt>
+                <h4 className="pl-[10px] text-sm font-semibold">
+                  Maximum queues allowed per {procedures[selectedSecondTab].nameText}
+                </h4>
+              </dt>
 
-            <dd>
-              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
-                <button
-                  onClick={() => {
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer - 1,
-                    });
-                  }}
-                >
-                  <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
-                </button>
+              <dd>
+                <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+                  <button
+                    onClick={() => {
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                        maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer - 1,
+                      });
+                    }}
+                  >
+                    <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
+                  </button>
 
-                <Input
-                  type="text"
-                  placeholder=""
-                  value={String(currentSetting.maximumQueuesAllowedPer)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      maximumQueuesAllowedPer: Number(e.target.value),
-                    });
-                  }}
-                  className="!border-0 text-center focus:!outline-none"
-                />
+                  <Input
+                    type="text"
+                    placeholder=""
+                    value={String(currentSetting.maximumQueuesAllowedPer)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                        maximumQueuesAllowedPer: Number(e.target.value),
+                      });
+                    }}
+                    className="!border-0 text-center focus:!outline-none"
+                  />
 
-                <button
-                  onClick={() => {
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer + 1,
-                    });
-                  }}
-                >
-                  <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
-                </button>
-              </div>
-            </dd>
-          </dl>
+                  <button
+                    onClick={() => {
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                        maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer + 1,
+                      });
+                    }}
+                  >
+                    <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
+                  </button>
+                </div>
+              </dd>
+            </dl>
+          )}
         </div>
 
         {/* =============== DESKS DETAILS TABLE =============== */}
-        <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Desks details</h4>
-        {currentSetting.defaultTableData ? (
-          <div>
-            <SimulationGridTable
-              type={'text'}
-              titleWidth={120}
-              header={currentSetting.defaultTableData?.header || []}
-              data={currentSetting.defaultTableData?.data || []}
-              onDataChange={(data) => {
-                const newTableData = { ...currentSetting.defaultTableData, data };
+        {currentSetting.facilityType === 'limited_facility' && (
+          <>
+            <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Desks details</h4>
 
-                updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                  defaultTableData: { ...newTableData, header: newTableData.header || [] },
-                });
-              }}
-            />
-          </div>
-        ) : null}
+            {currentSetting.defaultTableData && (
+              <div className="overflow-auto">
+                <SimulationGridTable
+                  type={'text'}
+                  titleWidth={120}
+                  header={currentSetting.defaultTableData?.header || []}
+                  data={currentSetting.defaultTableData?.data || []}
+                  onDataChange={(data) => {
+                    const newTableData = { ...currentSetting.defaultTableData, data };
+
+                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                      defaultTableData: { ...newTableData, header: newTableData.header || [] },
+                    });
+                  }}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* =============== SET OPENING HOURS =============== */}
@@ -570,15 +694,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           </div> */}
         </div>
 
-        <div className={`table-wrap mt-[10px] overflow-hidden rounded-md`}>
-          <div className={cn('relative h-[600px] pr-[400px]', barChartData ? 'overflow-auto' : 'overflow-hidden')}>
-            {/* =============== TABLE & HORIZONTAL BAR CHART =============== */}
-            {barChartData ? (
-              <>
+        {/* =============== TABLE & HORIZONTAL BAR CHART =============== */}
+        {barChartData ? (
+          <>
+            <div className="flex h-[40rem]">
+              <div ref={tableRef} className="opening-hours-table w-full max-w-5xl overflow-auto scrollbar-hide">
                 <SimulationGridTable
                   type={currentSetting.automaticInput ? 'checkbox' : 'text'}
                   title="Opening Time"
-                  titleWidth={92}
+                  titleWidth={120}
                   headerHeight={TABLE_HEADER_HEIGHT}
                   stickyTopRows={1}
                   header={currentSetting.openingHoursTableData?.header || []}
@@ -593,50 +717,53 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     });
                   }}
                 />
+              </div>
 
-                <div style={{ marginTop: vChartMarginTop, top: vChartTop, right: 0, position: 'absolute' }}>
-                  <div style={{ overflow: 'hidden', height: vChartParentHeight }}>
-                    <BarChart
+              <div ref={chartRef} className="overflow-auto">
+                <PlotlyChart
+                  chartData={[
+                    {
+                      type: 'bar',
+                      orientation: 'h',
+                      marker: { color: '#6941C6' },
                       // HACK: 이 부분은 나중에 개선 필요
-                      chartData={[
-                        {
-                          type: 'bar',
-                          orientation: 'h',
-                          marker: { color: '#6941C6', opacity: 1 },
-                          x: [
-                            ...barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-                              procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                            ]?.y,
-                          ].reverse(),
-                          y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
-                        },
-                        {
-                          mode: 'lines',
-                          marker: { color: '#FF0000', opacity: 1 },
-                          x: [...(currentSetting.lineChartData?.y || [])].reverse(),
-                          y: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`).reverse(),
-                        },
-                      ]}
-                      chartLayout={{
-                        width: 390,
-                        height: vChartHeight,
-                        margin: { l: 50, r: 0, t: 64, b: 0 },
-                        barmode: 'overlay',
-                        bargap: 0.4,
-                        showlegend: false,
-                        yaxis: { dtick: 1 },
-                      }}
-                      config={{ displayModeBar: false }}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </div>
-        </div>
+                      x: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
+                        procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
+                      ]?.y,
+                      y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
+                    },
+                    {
+                      type: 'scatter',
+                      mode: 'lines',
+                      marker: { color: '#FF0000' },
+                      x: currentSetting.lineChartData?.y,
+                      y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
+                    },
+                  ]}
+                  chartLayout={{
+                    width: 256,
+                    height: calculatedTableHeight,
+                    margin: { l: 64, r: 0, t: TABLE_HEADER_HEIGHT, b: 0 },
+                    barmode: 'overlay',
+                    showlegend: false,
+                    xaxis: {
+                      fixedrange: true,
+                    },
+                    yaxis: {
+                      fixedrange: true,
+                      autorange: false,
+                      range: [143.5, -0.5],
+                      type: 'category',
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {/* ================= BAR CHART =============== */}
+      {/* ================= PASSENGER INFLOW CHART =============== */}
       <div>
         <hr />
         <div className="mt-[34px] flex flex-row justify-between">
@@ -656,32 +783,29 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
               </ul>
             </div>
 
-            <BarChart
+            <PlotlyChart
               chartData={
-                // HACK: 이 부분은 나중에 개선 필요
                 currentSetting.lineChartData
                   ? [
                       {
                         type: 'bar',
                         marker: { color: '#6941C6', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`),
-                        y:
-                          barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-                            procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                          ]?.y || [],
+                        x: currentSetting.openingHoursTableData?.data?.map((d) => d.name),
+                        // HACK: 이 부분은 나중에 개선 필요
+                        // prettier-ignore
+                        y: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]]?.y || [],
                       },
                       {
                         type: 'scatter',
                         mode: 'lines',
                         marker: { color: '#FF0000', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data?.map((val) => `${val.name}`),
+                        x: currentSetting.openingHoursTableData?.data?.map((d) => `${d.name}`),
                         y: currentSetting.lineChartData?.y || [],
                       },
                     ]
                   : []
               }
               chartLayout={{
-                // height: 390,
                 margin: { l: 30, r: 10, t: 0, b: 60 },
                 barmode: 'overlay',
                 legend: { x: 1, y: 1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
@@ -689,7 +813,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                 showlegend: false,
                 xaxis: { dtick: 6 },
               }}
-              config={{ displayModeBar: false }}
+              chartConfig={{ displayModeBar: false }}
             />
           </div>
         ) : null}
