@@ -1,113 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchAlertIssues,
-  fetchFacilityDetails,
-  fetchHistogram,
-  fetchLineChart,
-  fetchPassengerPoints,
-  fetchSankeyChart,
-  fetchSummaries,
-} from '@/services/homes';
+import { fetchCommonHomeData, fetchKpiHomeData } from '@/services/homes';
 
-const usePassengerPoints = ({ scenarioId }: { scenarioId?: string }) => {
+// 공통 데이터 (KPI와 무관한 데이터: alert_issues, flow_chart, histogram, sankey_diagram)
+const useCommonHomeData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
   return useQuery({
-    queryKey: ['passenger-points', scenarioId],
+    queryKey: ['common-home-data', scenarioId],
     queryFn: async () => {
-      const { data: { data } = {} } = await fetchPassengerPoints({ scenarioId });
+      const { data: { data } = {} } = await fetchCommonHomeData({ scenarioId });
       return data;
     },
-    enabled: !!scenarioId,
+    enabled: enabled && !!scenarioId,
   });
 };
 
-const useSummaries = ({
+// KPI 의존적 데이터 (summary, facility_details)
+const useKpiHomeData = ({
   calculate_type,
   percentile,
   scenarioId,
+  enabled = true,
 }: {
   calculate_type: string;
   percentile: number | null;
   scenarioId?: string;
+  enabled?: boolean;
 }) => {
   return useQuery({
-    queryKey: ['summaries', scenarioId, calculate_type, percentile],
+    queryKey: ['kpi-home-data', scenarioId, calculate_type, percentile],
     queryFn: async () => {
-      const { data: { data } = {} } = await fetchSummaries({ calculate_type, percentile, scenarioId });
+      const { data: { data } = {} } = await fetchKpiHomeData({ calculate_type, percentile, scenarioId });
       return data;
     },
-    enabled: !!scenarioId,
+    enabled: enabled && !!scenarioId,
   });
 };
 
-const useAlertIssues = ({ scenarioId }: { scenarioId?: string }) => {
-  return useQuery({
-    queryKey: ['alert-issues', scenarioId],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchAlertIssues({ scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-const useFacilityDetails = ({
-  calculate_type,
-  percentile,
-  scenarioId,
-}: {
-  calculate_type: string;
-  percentile: number | null;
-  scenarioId?: string;
-}) => {
-  return useQuery({
-    queryKey: ['facility-details', scenarioId, calculate_type, percentile],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchFacilityDetails({ calculate_type, percentile, scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-const useLineChart = ({ scenarioId }: { scenarioId?: string }) => {
-  return useQuery({
-    queryKey: ['home-line-chart', scenarioId],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchLineChart({ scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-const useHistogramChart = ({ scenarioId }: { scenarioId?: string }) => {
-  return useQuery({
-    queryKey: ['home-histogram-chart', scenarioId],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchHistogram({ scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-const useSankeyChart = ({ scenarioId }: { scenarioId?: string }) => {
-  return useQuery({
-    queryKey: ['home-sankey-chart', scenarioId],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchSankeyChart({ scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-export {
-  useAlertIssues,
-  useFacilityDetails,
-  useHistogramChart,
-  useLineChart,
-  usePassengerPoints,
-  useSankeyChart,
-  useSummaries,
-};
+export { useCommonHomeData, useKpiHomeData };

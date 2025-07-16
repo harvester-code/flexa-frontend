@@ -3,7 +3,6 @@ import dynamic from 'next/dynamic';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import { useLineChart } from '@/queries/homeQueries';
 import Checkbox from '@/components/Checkbox';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -40,10 +39,14 @@ const hexToRgba = (hex: string, alpha: number) => {
 
 interface HomeChartHourlyTrendsProps {
   scenario: ScenarioData | null;
+  data?: any; // 배치 API에서 받은 flow_chart 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeChartHourlyTrends({ scenario }: HomeChartHourlyTrendsProps) {
-  const { data: hourlyTrendsData, isLoading: isFlowChartLoading } = useLineChart({ scenarioId: scenario?.id });
+function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: HomeChartHourlyTrendsProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const hourlyTrendsData = data;
+  const isFlowChartLoading = propIsLoading || false;
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
   const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
   const [chartLayout, setChartLayout] = useState<Partial<Plotly.Layout>>({

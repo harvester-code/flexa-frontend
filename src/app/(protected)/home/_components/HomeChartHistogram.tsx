@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import { useHistogramChart } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Button, ButtonGroup } from '@/components/ui/Button';
@@ -14,10 +13,14 @@ import HomeNoScenario from './HomeNoScenario';
 
 interface HomeChartHistogramProps {
   scenario: ScenarioData | null;
+  data?: any; // 배치 API에서 받은 histogram 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeChartHistogram({ scenario }: HomeChartHistogramProps) {
-  const { data: histogramData, isLoading: isHistogramLoading } = useHistogramChart({ scenarioId: scenario?.id });
+function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeChartHistogramProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const histogramData = data;
+  const isHistogramLoading = propIsLoading || false;
 
   const FACILITY_OPTIONS = useMemo(() => {
     if (!histogramData) return [];

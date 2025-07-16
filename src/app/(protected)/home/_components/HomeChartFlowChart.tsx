@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ScenarioData } from '@/types/simulations';
-import { useSankeyChart } from '@/queries/homeQueries';
 import { SANKEY_COLOR_SCALES } from '@/constants';
 import { formatFlowChartLayout } from './HomeFormat';
 import HomeLoading from './HomeLoading';
@@ -11,10 +10,15 @@ const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { s
 
 interface HomeChartFlowChartProps {
   scenario: ScenarioData | null;
+  data?: any; // 배치 API에서 받은 sankey_diagram 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeChartFlowChart({ scenario }: HomeChartFlowChartProps) {
-  const { data: sankey, isLoading: isSankeyChartLoading } = useSankeyChart({ scenarioId: scenario?.id });
+function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeChartFlowChartProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const sankey = data;
+  const isSankeyChartLoading = propIsLoading || false;
+
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
   const [layerTitles, setLayerTitles] = useState<string[]>([]);
   useEffect(() => {

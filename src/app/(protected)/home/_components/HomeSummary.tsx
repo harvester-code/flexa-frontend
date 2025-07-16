@@ -3,7 +3,6 @@
 import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import { useSummaries } from '@/queries/homeQueries';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import {
   PassengerQueue,
@@ -15,7 +14,6 @@ import {
 } from '@/components/icons';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import HomeErrors from './HomeErrors';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
@@ -32,14 +30,14 @@ interface HomeSummaryProps {
   scenario: ScenarioData | null;
   calculate_type: string;
   percentile: number | null;
+  data?: any; // 배치 API에서 받은 summary 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps) {
-  const {
-    data: summaryData,
-    isLoading,
-    isError,
-  } = useSummaries({ calculate_type, percentile, scenarioId: scenario?.id });
+function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: propIsLoading }: HomeSummaryProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const summaryData = data;
+  const isLoading = propIsLoading || false;
 
   const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
 
@@ -84,10 +82,6 @@ function HomeSummary({ scenario, calculate_type, percentile }: HomeSummaryProps)
 
   if (isLoading) {
     return <HomeLoading />;
-  }
-
-  if (isError) {
-    return <HomeErrors />;
   }
 
   if (!summaryData) {

@@ -7,7 +7,6 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ChevronDown } from 'lucide-react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
-import { useAlertIssues } from '@/queries/homeQueries';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { capitalizeFirst, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
@@ -19,10 +18,14 @@ dayjs.extend(customParseFormat);
 
 interface HomeWarningProps {
   scenario: ScenarioData | null;
+  data?: any; // 배치 API에서 받은 alert_issues 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeWarning({ scenario }: HomeWarningProps) {
-  const { data: alertIssueData, isLoading } = useAlertIssues({ scenarioId: scenario?.id });
+function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const alertIssueData = data;
+  const isLoading = propIsLoading || false;
 
   // Build options directly from alertIssueData keys
   const facilityOptions = useMemo(() => {

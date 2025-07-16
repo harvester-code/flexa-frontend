@@ -1,0 +1,399 @@
+'use client';
+
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import dayjs from 'dayjs';
+import {
+  Ban,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Link2,
+  Plus,
+  Search,
+} from 'lucide-react';
+import { ScenarioData } from '@/types/simulations';
+import { Button } from '@/components/ui/Button';
+import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
+import { Separator } from '@/components/ui/Separator';
+import { cn } from '@/lib/utils';
+
+interface HomeScenarioProps {
+  className?: string;
+  data: { master_scenario: ScenarioData[]; user_scenario: ScenarioData[] };
+  scenario: ScenarioData | null;
+  onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
+}
+
+// 페이지당 표시할 시나리오 개수 (이 값을 변경하면 팝업 크기가 자동으로 조정됩니다)
+const ITEMS_PER_PAGE = 5;
+
+function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScenarioProps) {
+  const router = useRouter();
+  const [isOpened, setIsOpened] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  // 마스터 시나리오 ID 목록 생성
+  const masterScenarioIds = useMemo(() => new Set(data.master_scenario.map((s) => s.id)), [data.master_scenario]);
+
+  // 모든 시나리오 합치기 + 중복 제거 + 검색 필터링 + 날짜 필터링
+  const filteredScenarios = useMemo(() => {
+    // 마스터 시나리오
+    const masterScenarios = data.master_scenario.map((s) => ({ ...s, isMaster: true }));
+
+    // 사용자 시나리오 (마스터와 중복되지 않는 것만)
+    const userScenarios = data.user_scenario
+      .filter((s) => !masterScenarioIds.has(s.id))
+      .map((s) => ({ ...s, isMaster: false }));
+
+    let allScenarios = [...masterScenarios, ...userScenarios];
+
+    // 날짜 필터링
+    if (selectedDate) {
+      const selectedDateStr = dayjs(selectedDate).format('YYYY-MM-DD');
+      allScenarios = allScenarios.filter(
+        (s) => s.simulation_start_at && dayjs(s.simulation_start_at).format('YYYY-MM-DD') === selectedDateStr
+      );
+    }
+
+    // 검색 필터링
+    if (searchKeyword) {
+      allScenarios = allScenarios.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+          s.airport.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+          s.terminal.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+          (s.memo && s.memo.toLowerCase().includes(searchKeyword.toLowerCase()))
+      );
+    }
+
+    return allScenarios;
+  }, [data, searchKeyword, masterScenarioIds, selectedDate]);
+
+  // 페이지네이션
+  const totalPages = Math.ceil(filteredScenarios.length / ITEMS_PER_PAGE);
+  const currentScenarios = filteredScenarios.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const selectScenario = (selectedScenario: ScenarioData) => {
+    onSelectScenario(selectedScenario);
+    setIsOpened(false);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchKeyword(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setCurrentPage(1);
+  };
+
+  const handleNewScenario = () => {
+    router.push('/simulation');
+  };
+
+  // 고정된 팝업 높이 계산 (ITEMS_PER_PAGE 기준)
+  const getDialogHeight = () => {
+    const headerHeight = 120; // 헤더 영역
+    const filterHeight = 80; // 필터 영역
+    const tableHeaderHeight = 50; // 테이블 헤더
+    const rowHeight = 60; // 각 행의 높이
+    const paginationHeight = 80; // 페이지네이션 높이
+    const padding = 40; // 여백
+
+    return headerHeight + filterHeight + tableHeaderHeight + ITEMS_PER_PAGE * rowHeight + paginationHeight + padding;
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex min-h-20 flex-col rounded-md border border-default-200 px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
+        className
+      )}
+    >
+      <div className="flex w-full flex-row items-center justify-center gap-2.5 text-center sm:gap-4 md:w-auto md:justify-start md:text-left">
+        <div className="flex items-center gap-2.5">
+          <span>Scenario:</span>
+          <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            {scenario?.name || 'None Selected'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span>Date:</span>
+          <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            {scenario?.simulation_start_at ? dayjs(scenario.simulation_start_at).format('MMM-DD-YYYY') : 'No Date'}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-2 flex w-full justify-center md:mt-0 md:w-auto md:justify-end">
+        <Dialog open={isOpened} onOpenChange={setIsOpened}>
+          <DialogTrigger asChild>
+            <Button>
+              <Link2 className="mr-2 h-4 w-4" />
+              Select Scenario
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent
+            className="max-w-[95%] overflow-hidden xl:max-w-[80rem]"
+            style={{ height: `${getDialogHeight()}px`, minWidth: '900px', maxHeight: `${getDialogHeight()}px` }}
+          >
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle className="flex items-baseline justify-between pt-1.5">
+                <span>Select Scenario</span>
+                <Button type="button" onClick={handleNewScenario}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Scenario
+                </Button>
+              </DialogTitle>
+              <DialogDescription>Select the scenario you&apos;d like to review.</DialogDescription>
+            </DialogHeader>
+
+            <Separator className="flex-shrink-0" />
+
+            {/* 고정된 필터 섹션 */}
+            <div className="flex-shrink-0" style={{ height: '80px' }}>
+              <div className="flex h-full items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length}{' '}
+                  scenarios
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <Popover modal>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="min-w-[180px] justify-start shadow-none">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Target Date {selectedDate && `(${dayjs(selectedDate).format('MMM-DD-YYYY')})`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="z-50 w-auto p-0"
+                      align="end"
+                      side="bottom"
+                      sideOffset={4}
+                      alignOffset={0}
+                      avoidCollisions={false}
+                      sticky="always"
+                    >
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        initialFocus
+                      />
+                      {selectedDate && (
+                        <div className="border-t p-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDateSelect(undefined)}
+                            className="w-full"
+                          >
+                            Clear Filter
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="flex max-w-72 items-center border-b p-2.5">
+                    <Input
+                      className="max-h-6 border-none shadow-none focus-visible:ring-transparent"
+                      placeholder="Search"
+                      value={searchKeyword}
+                      onChange={(e) => handleSearch(e.target.value)}
+                    />
+                    <Search className="ml-1 h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 테이블 영역 (고정 높이, 스크롤 없음) */}
+            <div className="flex-1 overflow-hidden" style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}>
+              <table className="w-full table-fixed">
+                <thead
+                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-default-100 text-left text-sm"
+                  style={{ height: '50px' }}
+                >
+                  <tr>
+                    <th className="w-[30%] px-3 py-3 font-medium">Name</th>
+                    <th className="w-[12%] px-3 py-3 font-medium">Airport</th>
+                    <th className="w-[12%] px-3 py-3 font-medium">Terminal</th>
+                    <th className="w-[16%] px-3 py-3 font-medium">Created at</th>
+                    <th className="w-[16%] px-3 py-3 font-medium">Updated at</th>
+                    <th className="w-[14%] px-3 py-3 font-medium">Memo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredScenarios.length > 0 ? (
+                    Array.from({ length: ITEMS_PER_PAGE }, (_, index) => {
+                      const item = currentScenarios[index];
+                      if (!item) {
+                        // 빈 행으로 채워서 높이 일정하게 유지
+                        return (
+                          <tr key={`empty-${index}`} className="border-b border-gray-100" style={{ height: '60px' }}>
+                            <td colSpan={6} className="px-3 py-3 text-sm">
+                              &nbsp;
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className="border-b border-gray-100 hover:bg-accent-50"
+                          style={{ height: '60px' }}
+                        >
+                          <td className="px-3 py-3 text-sm">
+                            <div
+                              className="flex cursor-pointer items-center gap-2.5 hover:font-bold"
+                              onClick={() => selectScenario(item)}
+                            >
+                              <Link2 className="h-5 w-5 flex-shrink-0" />
+                              <span className="truncate">{item.name}</span>
+                              {item.isMaster && (
+                                <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                                  Master
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="truncate px-3 py-3 text-sm">{item.airport}</td>
+                          <td className="truncate px-3 py-3 text-sm">
+                            <i>{item.terminal}</i>
+                          </td>
+                          <td className="truncate px-3 py-3 text-sm">
+                            {dayjs(item.created_at).format('MMM-DD-YYYY HH:mm')}
+                          </td>
+                          <td className="truncate px-3 py-3 text-sm">
+                            {dayjs(item.updated_at).format('MMM-DD-YYYY HH:mm')}
+                          </td>
+                          <td className="px-3 py-3 text-sm">
+                            <span className="block truncate" title={item.memo || ''}>
+                              {item.memo || '-'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr style={{ height: `${ITEMS_PER_PAGE * 60}px` }}>
+                      <td colSpan={6} className="px-3 py-3 text-center text-gray-500">
+                        <div
+                          className="flex flex-col items-center justify-center"
+                          style={{ height: `${ITEMS_PER_PAGE * 60}px` }}
+                        >
+                          <Ban className="mx-auto mb-4 h-12 w-12" />
+                          <p className="text-lg font-medium">No data</p>
+                          <p className="text-sm">There are no scenarios available at the moment.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 고정된 페이지네이션 */}
+            <div className="mt-4 flex flex-shrink-0 justify-center border-t pt-4" style={{ height: '80px' }}>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (currentPage > 1) setCurrentPage(1);
+                  }}
+                  type="button"
+                  className="transition-colors hover:bg-gray-100"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (currentPage > 1) setCurrentPage(Math.max(1, currentPage - 1));
+                  }}
+                  type="button"
+                  className="transition-colors hover:bg-gray-100"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                {totalPages > 0 ? (
+                  Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    return page <= totalPages ? (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                          if (page !== currentPage) setCurrentPage(page);
+                        }}
+                        type="button"
+                        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-gray-100'}
+                      >
+                        {page}
+                      </Button>
+                    ) : null;
+                  })
+                ) : (
+                  <Button variant="default" size="sm" type="button" className="transition-colors">
+                    1
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (currentPage < totalPages && totalPages > 1)
+                      setCurrentPage(Math.min(totalPages, currentPage + 1));
+                  }}
+                  type="button"
+                  className="transition-colors hover:bg-gray-100"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (currentPage < totalPages && totalPages > 1) setCurrentPage(totalPages);
+                  }}
+                  type="button"
+                  className="transition-colors hover:bg-gray-100"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}
+
+export default HomeScenario;

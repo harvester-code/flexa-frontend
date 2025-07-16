@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { pascalCase } from 'change-case';
 import { ChevronRight, Clock4, LockOpen } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
-import { useFacilityDetails } from '@/queries/homeQueries';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import './HomeDetails.css';
@@ -20,6 +19,8 @@ interface HomeDetailsProps {
   scenario: ScenarioData | null;
   calculate_type: string;
   percentile: number | null;
+  data?: any; // 배치 API에서 받은 facility_details 데이터
+  isLoading?: boolean; // 배치 API 로딩 상태
 }
 
 // Tooltip helper
@@ -29,8 +30,10 @@ const getTooltipText = (type: string, percentile: number | null, base: string) =
   return base;
 };
 
-function HomeDetails({ scenario, calculate_type, percentile }: HomeDetailsProps) {
-  const { data: details, isLoading } = useFacilityDetails({ calculate_type, percentile, scenarioId: scenario?.id });
+function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: propIsLoading }: HomeDetailsProps) {
+  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
+  const details = data;
+  const isLoading = propIsLoading || false;
 
   const [openIndexes, setOpenIndexes] = useState<number[]>([]);
 
