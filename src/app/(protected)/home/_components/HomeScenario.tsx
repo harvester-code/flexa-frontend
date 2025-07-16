@@ -38,7 +38,59 @@ interface HomeScenarioProps {
 }
 
 // 페이지당 표시할 시나리오 개수 (이 값을 변경하면 팝업 크기가 자동으로 조정됩니다)
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
+
+/**
+ * 페이지네이션 범위를 계산하는 함수
+ * @param currentPage 현재 페이지
+ * @param totalPages 총 페이지 수
+ * @param maxVisible 최대 표시할 페이지 수 (기본값: 5)
+ * @returns { startPage, endPage } 표시할 페이지 범위
+ */
+const getPaginationRange = (currentPage: number, totalPages: number, maxVisible: number = 5) => {
+  // 총 페이지가 최대 표시 개수보다 적으면 모든 페이지 표시
+  if (totalPages <= maxVisible) {
+    return { startPage: 1, endPage: totalPages };
+  }
+
+  // 현재 페이지가 최대 표시 개수 이하면 처음부터 고정 표시
+  if (currentPage <= maxVisible) {
+    return { startPage: 1, endPage: maxVisible };
+  }
+
+  // 슬라이딩 구간: 현재 페이지가 마지막에 오도록
+  return {
+    startPage: currentPage - maxVisible + 1,
+    endPage: currentPage,
+  };
+};
+
+/**
+ * 페이지네이션 버튼들을 생성하는 함수
+ * @param currentPage 현재 페이지
+ * @param totalPages 총 페이지 수
+ * @param onPageClick 페이지 클릭 핸들러
+ * @returns JSX.Element[] 페이지 버튼 배열
+ */
+const renderPaginationButtons = (currentPage: number, totalPages: number, onPageClick: (page: number) => void) => {
+  const { startPage, endPage } = getPaginationRange(currentPage, totalPages);
+
+  return Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+    const page = startPage + i;
+    return (
+      <Button
+        key={page}
+        variant={page === currentPage ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => onPageClick(page)}
+        type="button"
+        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-gray-100'}
+      >
+        {page}
+      </Button>
+    );
+  });
+};
 
 function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScenarioProps) {
   const router = useRouter();
@@ -332,7 +384,9 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (currentPage > 1) setCurrentPage(Math.max(1, currentPage - 1));
+                    if (currentPage > 1) {
+                      setCurrentPage(currentPage - 1);
+                    }
                   }}
                   type="button"
                   className="transition-colors hover:bg-gray-100"
@@ -340,36 +394,18 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                {totalPages > 0 ? (
-                  Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                    return page <= totalPages ? (
-                      <Button
-                        key={page}
-                        variant={page === currentPage ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          if (page !== currentPage) setCurrentPage(page);
-                        }}
-                        type="button"
-                        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-gray-100'}
-                      >
-                        {page}
-                      </Button>
-                    ) : null;
-                  })
-                ) : (
-                  <Button variant="default" size="sm" type="button" className="transition-colors">
-                    1
-                  </Button>
-                )}
+                {/* 슬라이딩 페이지 번호 (최대 5개) */}
+                <div className="flex items-center justify-center gap-2">
+                  {renderPaginationButtons(currentPage, totalPages, setCurrentPage)}
+                </div>
 
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (currentPage < totalPages && totalPages > 1)
-                      setCurrentPage(Math.min(totalPages, currentPage + 1));
+                    if (currentPage < totalPages) {
+                      setCurrentPage(currentPage + 1);
+                    }
                   }}
                   type="button"
                   className="transition-colors hover:bg-gray-100"
@@ -380,7 +416,9 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (currentPage < totalPages && totalPages > 1) setCurrentPage(totalPages);
+                    if (currentPage < totalPages && totalPages > 1) {
+                      setCurrentPage(totalPages);
+                    }
                   }}
                   type="button"
                   className="transition-colors hover:bg-gray-100"

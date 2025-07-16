@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 
 interface KpiSelectorValue {
@@ -70,12 +71,12 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
   return (
     <div className="flex items-center gap-2">
       <span className="ml-2 text-base font-medium text-gray-700">Select a KPI Value:</span>
-      <button type="button" className={segBtn(value.type === 'mean')} onClick={() => handleTypeChange('mean')}>
+      <Button type="button" className={segBtn(value.type === 'mean')} onClick={() => handleTypeChange('mean')}>
         Mean
-      </button>
-      <button type="button" className={segBtn(value.type === 'top')} onClick={() => handleTypeChange('top')}>
+      </Button>
+      <Button type="button" className={segBtn(value.type === 'top')} onClick={() => handleTypeChange('top')}>
         Top N%
-      </button>
+      </Button>
       {value.type === 'top' && (
         <Popover open={!!errorMessage}>
           <PopoverTrigger asChild>
