@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useKPISummary } from '@/queries/facilityQueries';
-import Input from '@/components/Input';
 import TheDropdownMenu from '@/components/TheDropdownMenu';
+import TheInput from '@/components/TheInput';
 import TheTable from '@/components/TheTable';
 import { useDebounce } from '@/hooks/useDebounce';
 import HomeLoading from '../../home/_components/HomeLoading';
@@ -64,7 +64,7 @@ function FacilityKPISummaryTable({ scenarioId, process }: FacilityKPISummaryTabl
               <span>Top</span>
               <div className="max-w-20">
                 {/* FIXME: 컴포넌트 수정하기 */}
-                <Input
+                <TheInput
                   className="input-rounded text-center text-sm"
                   type="text"
                   placeholder="0-100"

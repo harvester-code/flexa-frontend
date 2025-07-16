@@ -19,9 +19,9 @@ import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import ConditionsBase from '@/components/Conditions';
-import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import TabDefault from '@/components/TabDefault';
+import TheInput from '@/components/TheInput';
 import SimulationGridTable, { checkNotEmptyRows } from './SimulationGridTable';
 import SimulationTabNavigation from './SimulationTabNavigation';
 
@@ -771,7 +771,7 @@ export default function TabFacilityConnection({ simulationId, visible }: Facilit
               </p>
 
               <div className="relative mt-[10px]">
-                <Input
+                <TheInput
                   className="input-rounded"
                   placeholder=""
                   type="number"

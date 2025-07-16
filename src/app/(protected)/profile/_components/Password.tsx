@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle2, Circle } from 'lucide-react';
 import Button from '@/components/Button';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/utils/supabase/browser';
@@ -252,7 +252,7 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <Input
+              <TheInput
                 type="password"
                 placeholder="Current Password"
                 value={currentPassword}
@@ -270,7 +270,7 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <Input
+              <TheInput
                 type="password"
                 placeholder="New Password"
                 value={newPassword}
@@ -308,7 +308,7 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <Input
+              <TheInput
                 type="password"
                 placeholder="Confirm New Password"
                 value={confirmPassword}

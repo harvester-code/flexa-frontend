@@ -14,7 +14,7 @@ interface InputProps {
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-const Input: React.FC<InputProps> = ({
+const TheInput: React.FC<InputProps> = ({
   id,
   type,
   placeholder,
@@ -50,4 +50,4 @@ const Input: React.FC<InputProps> = ({
   );
 };
 
-export default Input;
+export default TheInput;

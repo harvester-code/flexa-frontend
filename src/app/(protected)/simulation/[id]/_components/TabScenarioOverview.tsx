@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { updateScenarioMetadata } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 import { timeToRelativeTime } from '@/lib/utils';
 
 const PAGE_ROW_AMOUNT = 5;

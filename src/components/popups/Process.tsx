@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import { X } from 'lucide-react';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 
 interface ProcessProps {
   open: boolean;
@@ -27,7 +27,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
         <ul className="mt-[5px] flex w-full flex-col border-b border-default-200 pb-[5px]">
           <li className="flex h-[40px] w-full items-center justify-start gap-[8px] px-[10px]">
             <span className="w-[50px] flex-none text-sm font-semibold">Step. 1</span>
-            <Input
+            <TheInput
               type="text"
               placeholder="Enter the Process"
               value={firstProcess}
@@ -37,7 +37,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
           </li>
           <li className="flex h-[40px] w-full items-center justify-start gap-[8px] px-[10px]">
             <span className="w-[50px] flex-none text-sm font-semibold">Step. 2</span>
-            <Input
+            <TheInput
               type="text"
               placeholder="Enter the Process"
               value={secondProcess}
@@ -47,7 +47,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
           </li>
           <li className="flex h-[40px] w-full items-center justify-start gap-[8px] px-[10px]">
             <span className="w-[50px] flex-none text-sm font-semibold">Step. 3</span>
-            <Input
+            <TheInput
               type="text"
               placeholder="Enter the Process"
               value={thirdProcess}
@@ -57,7 +57,7 @@ const Process: React.FC<ProcessProps> = ({ open, onClose }) => {
           </li>
           <li className="flex h-[40px] w-full items-center justify-start gap-[8px] px-[10px]">
             <span className="w-[50px] flex-none text-sm font-semibold">Step. 4</span>
-            <Input
+            <TheInput
               type="text"
               placeholder="Enter the Process"
               value={fourthProcess}

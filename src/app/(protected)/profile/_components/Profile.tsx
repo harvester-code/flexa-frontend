@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import { useUser } from '@/queries/userQueries';
 import Button from '@/components/Button';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/utils/supabase/browser';
 
@@ -316,7 +316,7 @@ export default function Profile() {
             <div className="grid grid-cols-2 items-center justify-between gap-10">
               <div className="flex flex-col gap-1">
                 <p>First Name</p>
-                <Input
+                <TheInput
                   type="text"
                   placeholder="First Name"
                   value={firstName}
@@ -326,7 +326,7 @@ export default function Profile() {
               </div>
               <div className="flex flex-col gap-1">
                 <p>Last Name</p>
-                <Input
+                <TheInput
                   type="text"
                   placeholder="Last Name"
                   value={lastName}
@@ -347,7 +347,7 @@ export default function Profile() {
             </dl>
           </div>
           <div className="form-item-content">
-            <Input
+            <TheInput
               type="email"
               placeholder="Email Address"
               value={email}
@@ -478,7 +478,7 @@ export default function Profile() {
             </dl>
           </div>
           <div className="form-item-content">
-            <Input
+            <TheInput
               type="text"
               placeholder="Position"
               value={position}

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { popModal, pushModal } from '@/app/provider';
 import { createScenario } from '@/services/simulations';
 import { useUser } from '@/queries/userQueries';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 import { PopupAlert } from '@/components/popups/PopupAlert';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
@@ -121,7 +121,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
               <dl key={field.key}>
                 <dt className="mb-1 pl-2.5 text-sm font-normal">{field.label}</dt>
                 <dd>
-                  <Input
+                  <TheInput
                     type="text"
                     placeholder={field.placeholder}
                     value={formData[field.key]}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Divider, Menu, MenuItem, Typography } from '@mui/material';
 import { Download, EllipsisVertical, Paperclip, Plus, Search, Smile, SquarePen, Trash2, X } from 'lucide-react';
-import Input from '@/components/Input';
+import TheInput from '@/components/TheInput';
 import AddPeople from '@/components/popups/addPeople';
 import './styles.css';
 
@@ -55,7 +55,7 @@ const MessengerPage: React.FC = () => {
               </button>
             </div>
             <div className="search-msg">
-              <Input
+              <TheInput
                 type="text"
                 placeholder="Search"
                 value={searchValue}
@@ -81,9 +81,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item active">
@@ -99,9 +99,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -119,9 +119,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -139,9 +139,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -157,9 +157,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -175,9 +175,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -193,9 +193,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
               <div className="chat-list-item">
@@ -211,9 +211,9 @@ const MessengerPage: React.FC = () => {
                   <p className="time">5min ago</p>
                 </div>
                 <p className="last-chat">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat
-                  sapiente voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque
-                  laudantium sed dolorem pariatur? Placeat, vero eaque?
+                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Labore itaque libero quaerat sapiente
+                  voluptas reiciendis quas doloremque, repellat vero illo a perspiciatis. Doloremque laudantium sed
+                  dolorem pariatur? Placeat, vero eaque?
                 </p>
               </div>
             </div>
@@ -322,8 +322,8 @@ const MessengerPage: React.FC = () => {
                       <dd>Thursday 11:40am</dd>
                     </dl>
                     <div className="msg">
-                      Hey Olivia, I ve finished with the requirements doc! I made some notes in the gdoc as well
-                      for Phoenix to look over.
+                      Hey Olivia, I ve finished with the requirements doc! I made some notes in the gdoc as well for
+                      Phoenix to look over.
                     </div>
                   </div>
                 </div>
@@ -411,7 +411,7 @@ const MessengerPage: React.FC = () => {
             </div>
             <div className="chat-box-footer">
               <div className="chat-block">
-                <Input
+                <TheInput
                   type="text"
                   placeholder="Type a message"
                   value={message}

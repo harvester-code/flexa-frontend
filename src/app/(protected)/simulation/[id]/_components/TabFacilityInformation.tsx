@@ -12,8 +12,8 @@ import { getFacilityInfoLineChartData } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Checkbox from '@/components/Checkbox';
 import { Dropdown } from '@/components/Conditions';
-import Input from '@/components/Input';
 import TabDefault from '@/components/TabDefault';
+import TheInput from '@/components/TheInput';
 import TheRadioGroup from '@/components/TheRadioGroup';
 import { cn } from '@/lib/utils';
 import SimulationGridTable from './SimulationGridTable';
@@ -316,7 +316,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
                   </button>
 
-                  <Input
+                  <TheInput
                     className="!border-0 text-center focus:!outline-none"
                     type="text"
                     placeholder=""
@@ -493,7 +493,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
                 </button>
 
-                <Input
+                <TheInput
                   className="!border-0 text-center focus:!outline-none"
                   type="text"
                   placeholder=""
@@ -605,7 +605,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
                   </button>
 
-                  <Input
+                  <TheInput
                     type="text"
                     placeholder=""
                     value={String(currentSetting.maximumQueuesAllowedPer)}

@@ -11,8 +11,8 @@ import { Procedure } from '@/types/scenarios';
 import { getProcessingProcedures } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
-import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
+import TheInput from '@/components/TheInput';
 import Tooltip from '@/components/Tooltip';
 import SimulationLoading from '../../_components/SimulationLoading';
 
@@ -238,7 +238,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
 
                               {/* ========== 컴포넌트 입력 ========== */}
                               <p className="item-name">
-                                <Input
+                                <TheInput
                                   id={`${proc.id}_${index}_input_name`}
                                   className={`${proc.editable ? '' : 'hidden'} text-2xl`}
                                   type="text"
@@ -307,7 +307,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
                                 </dt>
 
                                 <dd>
-                                  <Input
+                                  <TheInput
                                     type="text"
                                     value={proc.nodesText}
                                     onBlur={(e) => {
