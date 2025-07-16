@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ScenariosDataResponse } from '@/types/simulations';
 import { fetchScenarios } from '@/services/simulations';
 
-const useScenarios = (groupId?: number, page: number = 1) => {
+const useScenarios = () => {
   const response = useQuery({
-    queryKey: ['scenarios', groupId, page],
+    queryKey: ['scenarios'],
     queryFn: () =>
-      fetchScenarios(groupId, page).then<ScenariosDataResponse>(({ data }) => {
+      fetchScenarios().then<ScenariosDataResponse>(({ data }) => {
         const masterScenarios = {};
         for (const rowCur of data?.master_scenario || []) if (rowCur?.id) masterScenarios[rowCur.id] = rowCur;
         return {
@@ -17,13 +17,10 @@ const useScenarios = (groupId?: number, page: number = 1) => {
           ],
         };
       }),
-    enabled: !!groupId,
   });
 
   return {
     ...response,
-    page: response?.data?.page || 1,
-    totalCount: response?.data?.total_count || 0,
     scenarios: response?.data?.scenarios || [],
   };
 };

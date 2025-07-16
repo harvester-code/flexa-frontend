@@ -21,7 +21,7 @@ const TABS: Option[] = [
 
 function FacilityPage() {
   const { data: user } = useUser();
-  const { data: scenarios } = useScenarios(user?.groupId);
+  const { data: scenarios } = useScenarios();
   const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
 
   const [scenario, setScenario] = useState<ScenarioData | null>(null);

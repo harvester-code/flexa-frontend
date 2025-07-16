@@ -27,26 +27,27 @@ export const createScenario = (params: CreateScenarioParams) => {
   return instanceWithAuth.post(`${BASE_URL}/scenarios`, params);
 };
 
-export const fetchScenarios = (group_id?: number, page: number = 1) => {
-  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios/group-id/${group_id}`, {
-    params: { page },
-  });
+export const fetchScenarios = () => {
+  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios`);
 };
 
-export const modifyScenario = (params: { simulation_name?: string; memo?: string }, scenario_id: string) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenarios/scenario-id/${scenario_id}/edit`, params);
+export const modifyScenario = (
+  params: { name?: string; terminal?: string; airport?: string; memo?: string },
+  scenario_id: string
+) => {
+  return instanceWithAuth.put(`${BASE_URL}/scenarios/${scenario_id}`, params);
 };
 
 export const deleteScenario = (scenario_ids: string[]) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenarios/deactivate`, { scenario_ids });
+  return instanceWithAuth.delete(`${BASE_URL}/scenarios`, { data: { scenario_ids } });
 };
 
 export const duplicateScenario = (params: { editor: string }, scenario_id: string) => {
   return instanceWithAuth.post(`${BASE_URL}/scenarios/scenario-id/${scenario_id}/duplicate`, params);
 };
 
-export const setMasterScenario = (group_id: string, scenario_id: string) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenarios/masters/group-id/${group_id}/scenario-id/${scenario_id}`);
+export const setMasterScenario = (scenario_id: string) => {
+  return instanceWithAuth.patch(`${BASE_URL}/scenarios/${scenario_id}/master`);
 };
 
 // =======================================================================

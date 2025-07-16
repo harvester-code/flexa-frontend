@@ -15,6 +15,8 @@ interface ScenarioData {
   terminal: string;
   updated_at: string;
   user_id: string;
+  simulation_start_at: string | null;
+  simulation_end_at: string | null;
 }
 
 interface ScenariosDataResponse {
