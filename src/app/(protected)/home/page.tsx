@@ -6,6 +6,7 @@ import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import { useUser } from '@/queries/userQueries';
 import TheContentHeader from '@/components/TheContentHeader';
+import AemosTemplate from './_components/AemosTemplate';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -13,7 +14,6 @@ import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
-import AemosTemplate from './_components/AemosTemplate';
 
 function HomePage() {
   const { data: user } = useUser();
@@ -107,8 +107,6 @@ function HomePage() {
       </HomeAccordion>
 
       <AemosTemplate scenario={scenario} />
-
-
     </div>
   );
 }
