@@ -25,6 +25,7 @@ interface DropdownProps {
   onChange?: (item: Option[]) => void;
 }
 
+// TODO: 컴포넌트 이름 변경 & 분리 필요
 export function Dropdown({
   multiSelect = false,
   disabled = false,
@@ -65,9 +66,6 @@ export function Dropdown({
             tempItems[defaultId] = true;
           }
         }
-
-        // console.log('tempItems', tempItems);
-        // console.log(items.filter((item) => item.id in tempItems));
 
         // `items` 배열에서 선택된 항목만 필터링
         setSelItems(items.filter((item) => item.id in tempItems));
