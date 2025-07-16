@@ -1,0 +1,42 @@
+{
+  "_img_info": {
+    "img": "/image/T1_landside_white.png",
+    "W": 5846,
+    "H": 1760
+  },
+  "_service_point_info": {
+    "A": {
+      "component_name": "Check in",
+      "node_name": "A",
+      "front_start_point_x": 289,
+      "front_start_point_y": 165,
+      "front_end_point_x": 317,
+      "front_end_point_y": 215,
+      "direction": "forward",
+      "num_of_fronts": 15,
+      "num_of_rows": 10
+    },
+    "B": {
+      "component_name": "Check in",
+      "node_name": "B",
+      "front_start_point_x": 385,
+      "front_start_point_y": 129,
+      "front_end_point_x": 402,
+      "front_end_point_y": 183,
+      "direction": "forward",
+      "num_of_fronts": 15,
+      "num_of_rows": 10
+    },
+    "C": {
+      "component_name": "Check in",
+      "node_name": "C",
+      "front_start_point_x": 482,
+      "front_start_point_y": 100,
+      "front_end_point_x": 494,
+      "front_end_point_y": 155,
+      "direction": "forward",
+      "num_of_fronts": 15,
+      "num_of_rows": 10
+    }
+  }
+}
