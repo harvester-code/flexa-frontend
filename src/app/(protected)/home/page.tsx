@@ -13,6 +13,7 @@ import HomeDetails from './_components/HomeDetails';
 import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
+import HomeTopView from './_components/HomeTopView';
 import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
@@ -104,6 +105,10 @@ function HomePage() {
           data={allHomeData?.facility_details}
           isLoading={isKpiLoading}
         />
+      </HomeAccordion>
+
+      <HomeAccordion title="Top View" className="mt-4">
+        <HomeTopView scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
       </HomeAccordion>
 
       <AemosTemplate scenario={scenario} />
