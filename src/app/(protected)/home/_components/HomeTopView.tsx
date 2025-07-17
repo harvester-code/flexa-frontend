@@ -26,16 +26,15 @@ interface LayoutData {
 
 interface HomeTopViewProps {
   scenario: any;
-  calculate_type: string;
-  percentile: number | null;
+  data?: {[key: string]: {[componentName: string]: {[servicePoint: string]: number}}};
+  isLoading?: boolean;
 }
 
-function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps) {
+function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
   const [layoutData, setLayoutData] = useState<LayoutData | null>(null);
   const [topViewData, setTopViewData] = useState<{[key: string]: {[componentName: string]: {[servicePoint: string]: number}}} | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [timeIndex, setTimeIndex] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null); // 실제 표시할 이미지 URL
@@ -49,36 +48,54 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
   const [hasMoved, setHasMoved] = useState(false);
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
 
+  // Set topview data from props
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // layout.json과 topview_data.json을 병렬로 fetch
-        const [layoutResponse, topViewResponse] = await Promise.all([
-          fetch('/layout.json'),
-          fetch('/topview_data.json')
-        ]);
+    if (data) {
+      setTopViewData(data);
+    }
+  }, [data]);
 
+  // Set default time when topViewData changes
+  useEffect(() => {
+    if (topViewData) {
+      const times = Object.keys(topViewData).sort();
+      if (times.length > 0) {
+        // 대기인원이 있는 시간을 찾아서 기본으로 설정
+        const timeWithQueue = times.find(time => {
+          const timeData = topViewData[time];
+          return Object.values(timeData).some(component => {
+            if (typeof component === 'object' && component !== null) {
+              return Object.values(component as Record<string, number>).some(count => count > 0);
+            }
+            return false;
+          });
+        });
+        
+        if (timeWithQueue) {
+          const timeIndex = times.indexOf(timeWithQueue);
+          setSelectedTime(timeWithQueue);
+          setTimeIndex(timeIndex);
+        } else {
+          setSelectedTime(times[0]);
+          setTimeIndex(0);
+        }
+      }
+    }
+  }, [topViewData]);
+
+  useEffect(() => {
+    const fetchLayoutData = async () => {
+      try {
+        // layout.json 만 fetch (topview_data.json은 props로 받음)
+        const layoutResponse = await fetch('/layout.json');
         
         if (!layoutResponse.ok) {
           throw new Error('Failed to fetch layout.json');
         }
-        if (!topViewResponse.ok) {
-          throw new Error('Failed to fetch topview_data.json');
-        }
 
         const layoutData = await layoutResponse.json();
-        const topViewData = await topViewResponse.json();
-
         setLayoutData(layoutData);
-        setTopViewData(topViewData);
-        
-        // 디버깅용 로그
-        console.log('Layout data loaded:', layoutData);
-        console.log('TopView data loaded:', topViewData);
-        console.log('Service points:', Object.keys(layoutData._service_point_info || {}));
-        console.log('Available times:', Object.keys(topViewData || {}));
+
         
         // 이미지 URL 설정
         if (layoutData._img_info) {
@@ -116,40 +133,12 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
             img.src = imageUrl;
           }
         }
-        
-        // 실제 대기인원이 있는 시간을 기본 선택 (예: 2025-07-01 04:20:00)
-        const times = Object.keys(topViewData).sort();
-        if (times.length > 0) {
-          // 대기인원이 있는 시간을 찾아서 기본으로 설정
-          const timeWithQueue = times.find(time => {
-            const timeData = topViewData[time];
-            return Object.values(timeData).some(component => {
-              if (typeof component === 'object' && component !== null) {
-                return Object.values(component as Record<string, number>).some(count => count > 0);
-              }
-              return false;
-            });
-          });
-          
-          if (timeWithQueue) {
-            const timeIndex = times.indexOf(timeWithQueue);
-            setSelectedTime(timeWithQueue);
-            setTimeIndex(timeIndex);
-            console.log('Selected time with queue data:', timeWithQueue, 'at index', timeIndex);
-          } else {
-            setSelectedTime(times[0]);
-            setTimeIndex(0);
-            console.log('No queue data found, using first time:', times[0]);
-          }
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchLayoutData();
   }, []);
 
   // Global mouse event handlers for proper drag behavior (LayoutSetting과 동일)
@@ -261,34 +250,17 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
   // 특정 위치에 사람이 있는지 확인하는 함수
   const isPersonAtPosition = (servicePointKey: string, frontIndex: number, rowIndex: number): boolean => {
     if (!topViewData || !selectedTime || !layoutData) {
-      console.log('Missing data:', { topViewData: !!topViewData, selectedTime, layoutData: !!layoutData });
       return false;
     }
     
     // component_name을 layout.json에서 찾기
     const point = layoutData._service_point_info[servicePointKey];
     if (!point) {
-      console.log('Point not found:', servicePointKey);
       return false;
     }
     
     const componentName = point.component_name;
     const queueCount = topViewData[selectedTime]?.[componentName]?.[servicePointKey] || 0;
-    
-    // 강화된 디버깅 로그
-    if (frontIndex === 0 && rowIndex === 0) {
-      console.log('=== DEBUGGING QUEUE DATA ===');
-      console.log('Service Point Key:', servicePointKey);
-      console.log('Component Name:', componentName);
-      console.log('Selected Time:', selectedTime);
-      console.log('Queue Count:', queueCount);
-      console.log('Available times:', Object.keys(topViewData).slice(0, 5), '...');
-      console.log('Available components for this time:', Object.keys(topViewData[selectedTime] || {}));
-      console.log('Available service points for component:', Object.keys(topViewData[selectedTime]?.[componentName] || {}));
-      console.log('All service points in layout:', Object.keys(layoutData._service_point_info));
-      console.log('Full data for this time/component:', topViewData[selectedTime]?.[componentName]);
-      console.log('=============================');
-    }
 
     const numFronts = point.num_of_fronts;
     // front 라인부터 채우는 로직으로 변경 (row별로 front를 모두 채우고 다음 row로)
@@ -296,7 +268,6 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
     
     const hasPersonHere = totalPositionIndex < queueCount;
     
-    // 테스트용 점 제거 (실제 데이터만 표시)
     return hasPersonHere;
   };
 
@@ -437,6 +408,8 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
           // 해당 위치에 사람이 있는지 확인
           const isActive = isPersonAtPosition(node, i, j);
           
+
+          
           if (isActive) {
             // All dots same size (LayoutSetting 방식과 동일, 최소 크기 보장으로 원 깨짐 방지)
             const currentDotSize = dotSize;
@@ -467,17 +440,7 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
                 />
               );
             
-            // 디버깅용: 첫 번째 점에 대한 로그
-            if (i === 0 && j === 0) {
-              console.log('Rendering point:', {
-                node,
-                pointX,
-                pointY,
-                dotSizePx,
-                dotColor,
-                isActive: true
-              });
-            }
+
           }
         }
       }
@@ -490,7 +453,12 @@ function HomeTopView({ scenario, calculate_type, percentile }: HomeTopViewProps)
     return (
       <div className="space-y-6">
         <div className="rounded-lg border bg-gray-50 p-6">
-          <p>Loading layout.json...</p>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+              <div className="mt-2 text-sm text-gray-600">Loading topview data...</div>
+            </div>
+          </div>
         </div>
       </div>
     );

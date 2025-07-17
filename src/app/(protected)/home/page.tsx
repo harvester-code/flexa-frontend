@@ -109,6 +109,7 @@ function HomePage() {
         />
       </HomeAccordion>
 
+
       <HomeAccordion title="Top View" className="mt-4">
         {/* View/Setting 토글 - AEMOS TEMPLATE 스타일 */}
         <div className="mb-4 flex items-center gap-2">
@@ -128,9 +129,9 @@ function HomePage() {
           </button>
         </div>
         {viewMode === 'view' ? (
-          <HomeTopView scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
+          <HomeTopView scenario={scenario} data={allHomeData?.topview_data} isLoading={isLoading} />
         ) : (
-          <HomeTopViewLayoutSetting />
+          <HomeTopViewLayoutSetting scenario={scenario} data={allHomeData?.topview_service_point} isLoading={isLoading} />
         )}
       </HomeAccordion>
 

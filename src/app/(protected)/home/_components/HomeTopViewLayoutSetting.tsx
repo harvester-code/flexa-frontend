@@ -10,6 +10,12 @@ interface ServicePointData {
   [component: string]: string[];
 }
 
+interface HomeTopViewLayoutSettingProps {
+  scenario: any;
+  data?: ServicePointData;
+  isLoading?: boolean;
+}
+
 // Dot color array (different for each node)
 const dotColors = [
   'bg-blue-500',
@@ -32,12 +38,12 @@ function getRandomPersonEmoji() {
   return peopleEmojis[idx];
 }
 
-const HomeTopViewLayoutSetting: React.FC = () => {
+const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ scenario, data, isLoading }) => {
   // Image upload state
   const [image, setImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  // service_point.json data
+  // service_point data from props
   const [servicePoints, setServicePoints] = useState<ServicePointData>({});
   // Tab state
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
@@ -71,17 +77,15 @@ const HomeTopViewLayoutSetting: React.FC = () => {
   // Image natural size state
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
 
-  // service_point.json fetch
+  // Initialize servicePoints from props data
   useEffect(() => {
-    fetch("/service_point.json")
-      .then((res) => res.json())
-      .then((data) => {
-        setServicePoints(data);
-        const firstComponent = Object.keys(data)[0];
-        setSelectedComponent(firstComponent);
-        setSelectedNode(data[firstComponent][0]);
-      });
-  }, []);
+    if (data) {
+      setServicePoints(data);
+      const firstComponent = Object.keys(data)[0];
+      setSelectedComponent(firstComponent);
+      setSelectedNode(data[firstComponent]?.[0]);
+    }
+  }, [data]);
 
   // Initialize input values and set defaults when node is selected
   useEffect(() => {
@@ -698,82 +702,95 @@ const HomeTopViewLayoutSetting: React.FC = () => {
 
   return (
     <div className="rounded-lg border bg-default-100 p-6 shadow space-y-8">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+            <div className="mt-2 text-sm text-gray-600">Loading service point data...</div>
+          </div>
+        </div>
+      )}
+      
       {/* Image Uploader */}
-      <div className="mb-6">
-        <label className="block font-semibold mb-2">Upload Topview Image</label>
-        <Input type="file" accept="image/*" onChange={handleImageChange} className="w-full" />
-        
-                  {/* Controls */}
-        {image && (
-          <div className="mt-4 mb-4 space-y-3">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Map Dot Size:</label>
-              <input
-                type="range"
-                min="0.005"
-                max="1"
-                step="0.005"
-                value={dotSize}
-                onChange={(e) => setDotSize(Number(e.target.value))}
-                className="w-32"
-              />
-              <span className="text-sm text-gray-600">{dotSize}</span>
+      {!isLoading && Object.keys(servicePoints).length > 0 && (
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Upload Topview Image</label>
+          <Input type="file" accept="image/*" onChange={handleImageChange} className="w-full" />
+          
+          {/* Controls */}
+          {image && (
+            <div className="mt-4 mb-4 space-y-3">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Map Dot Size:</label>
+                <input
+                  type="range"
+                  min="0.005"
+                  max="1"
+                  step="0.005"
+                  value={dotSize}
+                  onChange={(e) => setDotSize(Number(e.target.value))}
+                  className="w-32"
+                />
+                <span className="text-sm text-gray-600">{dotSize}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Map View:</label>
+                <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
+                <button
+                  onClick={resetView}
+                  className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Reset View
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">
+                💡 Mouse wheel: zoom | Drag: pan | Double-click: reset | 🖱️ button: coordinate select mode
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Map View:</label>
-              <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
-              <button
-                onClick={resetView}
-                className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+          )}
+          
+          {image && (
+            <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
+              <div
+                className="inline-block relative"
+                onClick={handleImageClick}
+                onDoubleClick={resetView}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+                onDragStart={handleDragStart}
+                style={{ 
+                  cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
+                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                  transformOrigin: 'center center',
+                  userSelect: 'none'
+                }}
               >
-                Reset View
-              </button>
+                <img 
+                  src={image} 
+                  alt="Topview Preview" 
+                  className="block border rounded-lg shadow" 
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
+                />
+                {renderAllNodeDots()}
+                
+                {mousePosition && (
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
+                    Mouse Position: ({mousePosition.x}, {mousePosition.y})
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-gray-500">
-              💡 Mouse wheel: zoom | Drag: pan | Double-click: reset | 🖱️ button: coordinate select mode
-            </div>
-          </div>
-        )}
-        
-        {image && (
-          <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
-            <div
-              className="inline-block relative"
-              onClick={handleImageClick}
-              onDoubleClick={resetView}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              onWheel={handleWheel}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-              onDragStart={handleDragStart}
-              style={{ 
-                cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
-                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                transformOrigin: 'center center',
-                userSelect: 'none'
-              }}
-            >
-              <img 
-                src={image} 
-                alt="Topview Preview" 
-                className="block border rounded-lg shadow" 
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-              />
-              {renderAllNodeDots()}
-              
-              {mousePosition && (
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
-                  Mouse Position: ({mousePosition.x}, {mousePosition.y})
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {/* Component/Node Tab UI */}
-      <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
+      {!isLoading && Object.keys(servicePoints).length > 0 && (
+        <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
         <TabsList className="mb-4">
           {Object.keys(servicePoints).map((component) => (
             <TabsTrigger key={component} value={component} className="text-base px-4 py-2">
@@ -804,15 +821,19 @@ const HomeTopViewLayoutSetting: React.FC = () => {
           </TabsContent>
         ))}
       </Tabs>
-              {/* Apply Button */}
-      <div className="flex justify-end mt-6">
-        <Button
-          className="px-6 py-2 font-semibold"
-          onClick={handleApply}
-        >
-          Apply (Save layout.json → S3로 Save 하는 함수 필요)
-        </Button>
-      </div>
+      )}
+      
+      {/* Apply Button */}
+      {!isLoading && Object.keys(servicePoints).length > 0 && (
+        <div className="flex justify-end mt-6">
+          <Button
+            className="px-6 py-2 font-semibold"
+            onClick={handleApply}
+          >
+            Apply (Save layout.json → S3로 Save 하는 함수 필요)
+          </Button>
+        </div>
+      )}
               {/* Modal */}
       <AlertDialog open={showModal} onOpenChange={setShowModal}>
         <AlertDialogContent>
