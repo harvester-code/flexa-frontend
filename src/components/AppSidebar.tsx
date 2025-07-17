@@ -48,13 +48,13 @@ function AppSidebar() {
           </Link>
         </li>
 
-        <li className={pathname === '/facility' ? 'active' : ''}>
+        {/* <li className={pathname === '/facility' ? 'active' : ''}>
           <Link href="/facility">
             <NavIcon02 />
             <span className="text">Detailed Facilities</span>
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
           </Link>
-        </li>
+        </li> */}
 
         <li className={pathname === '/simulation' ? 'active' : ''}>
           <Link href="/simulation">
@@ -67,7 +67,7 @@ function AppSidebar() {
 
       <hr />
 
-      <ul className="gnb-list">
+      {/* <ul className="gnb-list">
         <li className={`settings ${isOpen ? 'active' : ''}`}>
           <a onClick={() => setIsOpen((prev) => !prev)}>
             <NavIcon06 />
@@ -87,7 +87,7 @@ function AppSidebar() {
             </li>
           </ul>
         </li>
-      </ul>
+      </ul> */}
 
       <div className={`my-menu ${isMyMenuOpen ? 'active' : ''}`}>
         <button
