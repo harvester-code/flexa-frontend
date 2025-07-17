@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { SimulationResponse } from '@/types/simulations';
 import { fetchSimulation, getSimulationOverview, requestSimulation } from '@/services/simulations';
@@ -15,6 +14,7 @@ import { SANKEY_COLOR_SCALES } from '@/constants';
 import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
+import SimulationLoading from '../../_components/SimulationLoading';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -392,9 +392,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       </div>
 
       {loadingSimulation ? (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-        </div>
+        <SimulationLoading minHeight="min-h-[200px]" />
       ) : Object.keys(simulationData).length > 0 ? (
         <div className="my-8">
           <h2 className="title-sm">Most Recent Simulation Result</h2>

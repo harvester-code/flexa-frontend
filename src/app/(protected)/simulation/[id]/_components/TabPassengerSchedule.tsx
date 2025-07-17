@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { Filter, FilterOptions, NormalDistributionParam, Option } from '@/types/scenarios';
 import { PassengerSchedulesParams, getPassengerSchedules } from '@/services/simulations';
@@ -16,6 +15,7 @@ import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { numberWithCommas } from '@/lib/utils';
+import SimulationLoading from '../../_components/SimulationLoading';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -504,9 +504,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       </p>
 
       {loadingPassengerSchedules ? (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-        </div>
+        <SimulationLoading minHeight="min-h-[200px]" />
       ) : isLoadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
           <Image width={16} height={16} src="/image/ico-error.svg" alt="" />

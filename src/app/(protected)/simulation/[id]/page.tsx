@@ -4,7 +4,6 @@ import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { getScenarioMetadata, updateScenarioMetadata } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
@@ -13,6 +12,7 @@ import TabDefault from '@/components/TabDefault';
 import TheContentHeader from '@/components/TheContentHeader';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
+import SimulationLoading from '../_components/SimulationLoading';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -213,9 +213,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           <TabSimulation visible={currentScenarioTab === 6} simulationId={simulationId} />
         </React.Fragment>
       ) : (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-        </div>
+        <SimulationLoading minHeight="min-h-[200px]" />
       )}
     </div>
   );

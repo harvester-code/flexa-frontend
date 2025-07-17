@@ -6,7 +6,6 @@ import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import _ from 'lodash';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { Procedure } from '@/types/scenarios';
 import { getProcessingProcedures } from '@/services/simulations';
@@ -15,6 +14,7 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SelectBox from '@/components/SelectBox';
 import Tooltip from '@/components/Tooltip';
+import SimulationLoading from '../../_components/SimulationLoading';
 
 const DATA_CONNECTION_CRITERIAS = ['I/D', 'Airline', 'Country', 'Region'];
 
@@ -182,9 +182,7 @@ export default function TabProcessingProcedures({ visible }: TabProcessingProced
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-        </div>
+        <SimulationLoading minHeight="min-h-[200px]" />
       ) : isLoadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
           <Image width={16} height={16} src="/image/ico-error.svg" alt="" />

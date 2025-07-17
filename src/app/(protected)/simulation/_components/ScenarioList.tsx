@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Search } from 'lucide-react';
-import { OrbitProgress } from 'react-loading-indicators';
 import { modifyScenario } from '@/services/simulations';
 import Checkbox from '@/components/Checkbox';
 import { PopupAlert } from '@/components/popups/PopupAlert';
@@ -16,6 +15,7 @@ import { Input } from '@/components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
 import DeleteScenario from './DeleteScenario';
+import SimulationLoading from './SimulationLoading';
 import { PushSuccessPopup } from './Success';
 
 interface EditingScenario {
@@ -367,9 +367,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
             {isLoading ? (
               <tr>
                 <td colSpan={9}>
-                  <div className="flex flex-1 flex-col items-center justify-center">
-                    <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-                  </div>
+                  <SimulationLoading size={50} minHeight="h-64" />
                 </td>
               </tr>
             ) : currentScenarios && currentScenarios.length > 0 ? (

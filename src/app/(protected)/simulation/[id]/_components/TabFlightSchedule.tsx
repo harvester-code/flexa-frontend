@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
-import { OrbitProgress } from 'react-loading-indicators';
 import { useShallow } from 'zustand/react/shallow';
 import { FilterOptions, FilterOptionsResponse, OperatorItem, Option, ValueItem } from '@/types/scenarios';
 import { getFlightSchedules } from '@/services/simulations';
@@ -20,6 +19,7 @@ import { Calendar } from '@/components/ui/Calendar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
+import SimulationLoading from '../../_components/SimulationLoading';
 import _jsonAirport from '../_json/airport_constants.json';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -439,9 +439,7 @@ export default function TabFlightSchedule({ simulationId, visible }: TabFlightSc
       ) : null}
 
       {loadingFlightSchedule ? (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <OrbitProgress color="#32cd32" size="medium" text="" textColor="" />
-        </div>
+        <SimulationLoading minHeight="min-h-[200px]" />
       ) : flightScheduleChartData && flightScheduleChartData.total > 0 ? (
         <>
           <div className="mt-[30px] flex items-center justify-between">
