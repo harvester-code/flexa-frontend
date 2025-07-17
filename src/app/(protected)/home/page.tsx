@@ -14,6 +14,7 @@ import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
 import HomeTopView from './_components/HomeTopView';
+import HomeTopViewLayoutSetting from './_components/HomeTopViewLayoutSetting';
 import HomeWarning from './_components/HomeWarning';
 
 function HomePage() {
@@ -21,6 +22,7 @@ function HomePage() {
   const { data: scenarios } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
+  const [viewMode, setViewMode] = useState<'view' | 'setting'>('view');
 
   // 공통 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const { data: commonData, isLoading: isCommonLoading } = useCommonHomeData({
@@ -108,7 +110,28 @@ function HomePage() {
       </HomeAccordion>
 
       <HomeAccordion title="Top View" className="mt-4">
-        <HomeTopView scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
+        {/* View/Setting 토글 - AEMOS TEMPLATE 스타일 */}
+        <div className="mb-4 flex items-center gap-2">
+          <button
+            className={`rounded-lg border-none px-6 py-2 font-bold shadow transition focus:outline-none ${viewMode === 'view' ? 'bg-[#7C3AED] text-white' : 'bg-[#E5E7EB] text-[#7C3AED]'} hover:brightness-95`}
+            style={{ minWidth: '120px', fontSize: '1.05rem' }}
+            onClick={() => setViewMode('view')}
+          >
+            View
+          </button>
+          <button
+            className={`rounded-lg border-none px-6 py-2 font-bold shadow transition focus:outline-none ${viewMode === 'setting' ? 'bg-[#7C3AED] text-white' : 'bg-[#E5E7EB] text-[#7C3AED]'} hover:brightness-95`}
+            style={{ minWidth: '120px', fontSize: '1.05rem' }}
+            onClick={() => setViewMode('setting')}
+          >
+            Setting
+          </button>
+        </div>
+        {viewMode === 'view' ? (
+          <HomeTopView scenario={scenario} calculate_type={kpi.type} percentile={kpi.percentile ?? null} />
+        ) : (
+          <HomeTopViewLayoutSetting />
+        )}
       </HomeAccordion>
 
       <AemosTemplate scenario={scenario} />
