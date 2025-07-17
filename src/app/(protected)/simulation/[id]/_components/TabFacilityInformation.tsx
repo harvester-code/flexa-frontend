@@ -147,6 +147,67 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
   useDebounce(() => loadLineChartData(), 500, [currentSetting?.openingHoursTableData]);
 
+  // ====================================================================================================
+  const generateChartData = () => {
+    const chartData = {
+      type: 'bar' as const,
+      marker: { color: '#6941C6', opacity: 1 },
+      x: currentSetting?.openingHoursTableData?.data?.map((d) => d.name),
+      // HACK: 이 부분은 나중에 개선 필요
+      y:
+        barChartData?.[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
+          procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
+        ]?.y || [],
+    };
+
+    // Limited facility이고 lineChartData가 있으면 capacity line도 추가
+    if (currentSetting?.facilityType === 'limited_facility' && currentSetting?.lineChartData) {
+      return [
+        chartData,
+        {
+          type: 'scatter' as const,
+          mode: 'lines' as const,
+          marker: { color: '#FF0000', opacity: 1 },
+          x: currentSetting.openingHoursTableData?.data?.map((d) => `${d.name}`),
+          y: currentSetting.lineChartData?.y || [],
+        },
+      ];
+    }
+
+    return [chartData];
+  };
+
+  // ====================================================================================================
+  const generateHorizontalChartData = () => {
+    const chartData = {
+      type: 'bar' as const,
+      orientation: 'h' as const,
+      marker: { color: '#6941C6' },
+      // HACK: 이 부분은 나중에 개선 필요
+      x: barChartData?.[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
+        procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
+      ]?.y,
+      y: currentSetting?.openingHoursTableData?.data?.map((val) => val.name),
+    };
+
+    // Limited facility이고 lineChartData가 있으면 capacity line도 추가
+    if (currentSetting?.facilityType === 'limited_facility' && currentSetting?.lineChartData) {
+      return [
+        chartData,
+        {
+          type: 'scatter' as const,
+          mode: 'lines' as const,
+          marker: { color: '#FF0000' },
+          x: currentSetting.lineChartData?.y,
+          y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
+        },
+      ];
+    }
+
+    // 기본적으로는 horizontal bar chart만 반환
+    return [chartData];
+  };
+
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Facility Information</h2>
@@ -721,25 +782,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
 
               <div ref={chartRef} className="overflow-auto">
                 <PlotlyChart
-                  chartData={[
-                    {
-                      type: 'bar',
-                      orientation: 'h',
-                      marker: { color: '#6941C6' },
-                      // HACK: 이 부분은 나중에 개선 필요
-                      x: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-                        procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-                      ]?.y,
-                      y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
-                    },
-                    {
-                      type: 'scatter',
-                      mode: 'lines',
-                      marker: { color: '#FF0000' },
-                      x: currentSetting.lineChartData?.y,
-                      y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
-                    },
-                  ]}
+                  chartData={generateHorizontalChartData()}
                   chartLayout={{
                     width: 256,
                     height: calculatedTableHeight,
@@ -784,27 +827,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
             </div>
 
             <PlotlyChart
-              chartData={
-                currentSetting.lineChartData
-                  ? [
-                      {
-                        type: 'bar',
-                        marker: { color: '#6941C6', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data?.map((d) => d.name),
-                        // HACK: 이 부분은 나중에 개선 필요
-                        // prettier-ignore
-                        y: barChartData[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]]?.y || [],
-                      },
-                      {
-                        type: 'scatter',
-                        mode: 'lines',
-                        marker: { color: '#FF0000', opacity: 1 },
-                        x: currentSetting.openingHoursTableData?.data?.map((d) => `${d.name}`),
-                        y: currentSetting.lineChartData?.y || [],
-                      },
-                    ]
-                  : []
-              }
+              chartData={generateChartData()}
               chartLayout={{
                 margin: { l: 30, r: 10, t: 0, b: 60 },
                 barmode: 'overlay',
