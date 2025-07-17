@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface InputProps {
   id?: string;
@@ -30,7 +31,7 @@ const TheInput: React.FC<InputProps> = ({
   return (
     <input
       id={id}
-      className={`${className} font-normal`}
+      className={cn('w-full rounded-md border border-default-300 px-3.5 py-2.5 font-normal', className)}
       type={type}
       placeholder={placeholder}
       value={value}
@@ -40,12 +41,6 @@ const TheInput: React.FC<InputProps> = ({
       onChange={readOnly || disabled ? undefined : onChange}
       onKeyDown={onKeyDown}
       onFocus={onFocus}
-      style={{
-        padding: '10px 14px',
-        border: '1px solid #D0D5DD',
-        borderRadius: '8px',
-        width: '100%',
-      }}
     />
   );
 };
