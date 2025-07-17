@@ -5,6 +5,9 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Pencil, Plus, X } from 'lucide-react';
+import { useDebounce } from 'react-use';
+import { v4 as uuidv4 } from 'uuid';
 import { useShallow } from 'zustand/react/shallow';
 import { Filter, FilterOptions, NormalDistributionParam, Option } from '@/types/scenarios';
 import { PassengerSchedulesParams, getPassengerSchedules } from '@/services/simulations';
@@ -13,9 +16,12 @@ import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import Checkbox from '@/components/Checkbox';
 import Conditions, { Dropdown } from '@/components/Conditions';
+import TheInput from '@/components/TheInput';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
+import { Separator } from '@/components/ui/Separator';
 import { numberWithCommas } from '@/lib/utils';
 import SimulationLoading from '../../_components/SimulationLoading';
+import SimulationGridTable from './SimulationGridTable';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -200,11 +206,16 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     availableScenarioTab,
     setAvailableScenarioTab,
     filterOptions,
-    isPriorityFilterEnabled,
-    passengerScheduleChartData,
-    passengerScheduleColorCriteria,
     selectedFilters,
+    passengerScheduleColorCriteria,
+    passengerScheduleChartData,
+    isPriorityFilterEnabled,
     selectedPriorities,
+    isPassengerPropertyEnabled,
+    passengerPropertyParams,
+    setPassengerPropertyParam,
+    setPassengerPropertyParams,
+    setIsPassengerPropertyEnabled,
     distributionData,
     vlineData,
     setDistributionData,
@@ -222,12 +233,22 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       currentScenarioTab: s.scenarioProfile.currentScenarioTab,
       availableScenarioTab: s.scenarioProfile.availableScenarioTab,
       setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
+      //
       filterOptions: s.passengerSchedule.filterOptions,
-      isPriorityFilterEnabled: s.passengerSchedule.isFilterEnabled,
-      passengerScheduleChartData: s.passengerSchedule.chartData,
-      passengerScheduleColorCriteria: s.passengerSchedule.selectedCriteria,
       selectedFilters: s.flightSchedule.selectedFilters,
+      passengerScheduleColorCriteria: s.passengerSchedule.selectedCriteria,
+      passengerScheduleChartData: s.passengerSchedule.chartData,
+      //
+      isPriorityFilterEnabled: s.passengerSchedule.isFilterEnabled,
       selectedPriorities: s.passengerSchedule.normalDistributionParams,
+      //
+      isPassengerPropertyEnabled: s.passengerSchedule.isPassengerPropertyEnabled,
+      setIsPassengerPropertyEnabled: s.passengerSchedule.actions.setIsPassengerPropertyEnabled,
+      //
+      passengerPropertyParams: s.passengerSchedule.passengerPropertyParams,
+      setPassengerPropertyParam: s.passengerSchedule.actions.setPassengerPropertyParam,
+      setPassengerPropertyParams: s.passengerSchedule.actions.setPassengerPropertyParams,
+      //
       distributionData: s.passengerSchedule.distributionData,
       vlineData: s.passengerSchedule.vlineData,
       setDistributionData: s.passengerSchedule.actions.setDistributionData,
@@ -327,13 +348,54 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
     }
   };
 
+  // ====================================================================================================
+  const [localIndex, setLocalIndex] = useState<number | null>(null);
+
+  // 컬럼 변경 시 테이블 데이터를 재생성하는 함수
+  const regenerateTableData = () => {
+    if (localIndex === null) return;
+
+    const param = passengerPropertyParams[localIndex];
+
+    // 컬럼 문자열을 파싱하여 헤더 배열 생성
+    const newHeader = param.columns
+      .split(',')
+      .map((col) => ({ name: col.trim() }))
+      .filter((col) => col.name);
+
+    // 각 행에 대해 균등하게 분배된 값으로 새로운 데이터 생성
+    const equalDistributionValue = (100 / newHeader.length).toFixed(2);
+    const newData = Array.from({ length: param.rows.length }).map(() => ({
+      name: '',
+      values: Array(newHeader.length).fill(equalDistributionValue),
+    }));
+
+    // 업데이트된 테이블 데이터로 파라미터 갱신
+    setPassengerPropertyParam(localIndex, {
+      ...param,
+      tableData: {
+        data: newData,
+        header: newHeader,
+      },
+    });
+
+    setLocalIndex(null);
+  };
+
+  // 컬럼 변경 시 300ms 지연 후 테이블 데이터 재생성
+  useDebounce(
+    regenerateTableData,
+    300,
+    [passengerPropertyParams.map((param) => param.columns)] // 컬럼 변경 시 트리거
+  );
+
   return !visible ? null : (
     <div>
       <h2 className="title-sm mt-[25px]">Passenger Schedule</h2>
 
       <p className="mt-[30px] text-[40px] text-xl font-semibold text-default-800">Passenger Show-up Patterns</p>
 
-      {/* ========== 데이터 필터링 섹션 ========== */}
+      {/* ==================== 데이터 필터링 섹션 ==================== */}
       <div className="mt-5 flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-conditions"
@@ -494,7 +556,130 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         </div>
       </div>
 
-      <p className="mt-5 flex justify-end">
+      {/* ==================== ADD PROPERTIES 섹션 ==================== */}
+      <div className="mt-5 flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
+        <Checkbox
+          id="add-properties"
+          className="checkbox-toggle"
+          label=""
+          checked={isPassengerPropertyEnabled}
+          onChange={() => setIsPassengerPropertyEnabled(!isPassengerPropertyEnabled)}
+        />
+        <dl>
+          <dt className="font-semibold">Add Passengers Properties</dt>
+          <dd className="text-sm font-medium text-default-400">
+            Give the passengers different properties, such as seat class, nationality, and PRM status.
+          </dd>
+        </dl>
+      </div>
+
+      {isPassengerPropertyEnabled ? (
+        <>
+          <h1 className="my-8 text-2xl">Passengers Properties</h1>
+
+          {passengerPropertyParams.map((param, idx) => (
+            <div className="[&:not(:last-child)]:mb-10" key={`property_${param.id}`}>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl font-semibold">Property {idx + 1}</span>
+
+                <div className="select-none rounded-full bg-default-100 p-2 hover:cursor-pointer hover:bg-default-200">
+                  <Pencil size={14} />
+                </div>
+
+                <div
+                  className="select-none rounded-full bg-default-100 p-2 hover:cursor-pointer hover:bg-default-200"
+                  onClick={() => {
+                    const filteredPropertyParams = passengerPropertyParams.filter((_, i) => i !== idx);
+                    if (filteredPropertyParams.length === 0) {
+                      setIsPassengerPropertyEnabled(false);
+                    }
+                    setPassengerPropertyParams(filteredPropertyParams);
+                  }}
+                >
+                  <X size={14} />
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-5">
+                <div className="flex-1">
+                  <p className="mb-1.5">
+                    Row <span className="text-brand">*</span>
+                  </p>
+
+                  <Dropdown
+                    multiSelect
+                    items={filterOptions?.criteriaItems || []}
+                    defaultId={param.rows}
+                    onChange={(e) => {
+                      console.log(e);
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1">
+                  <p className="mb-1.5">
+                    Columns <span className="text-brand">*</span>
+                  </p>
+
+                  <TheInput
+                    className="rounded-full"
+                    type="text"
+                    value={param.columns}
+                    onChange={(e) => {
+                      setLocalIndex(idx);
+                      setPassengerPropertyParam(idx, { ...param, columns: e.target.value });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <SimulationGridTable
+                  data={param.tableData?.data || []}
+                  header={param.tableData?.header || []}
+                  onDataChange={() => {}}
+                />
+              </div>
+            </div>
+          ))}
+
+          <div className="relative mt-16">
+            <Separator />
+
+            <div
+              className="absolute -top-6 right-1/2 inline-block rounded-full border border-default-300 bg-white p-2 hover:cursor-pointer hover:bg-default-50"
+              onClick={() => {
+                const initialRows = filterOptions?.criteriaItems[0].id || '';
+                const initialColumns = 'EX1, EX2';
+                const initialTableData = {
+                  header: initialColumns.split(',').map((col) => ({ name: col.trim() })),
+                  data: [
+                    { name: '1', values: ['50', '50'] },
+                    { name: '2', values: ['50', '50'] },
+                    { name: '3', values: ['50', '50'] },
+                  ],
+                };
+
+                const newProperty = {
+                  id: uuidv4(),
+                  rows: initialRows,
+                  columns: initialColumns,
+                  tableData: initialTableData,
+                };
+
+                console.log(newProperty);
+
+                setPassengerPropertyParams([...passengerPropertyParams, newProperty]);
+              }}
+            >
+              <Plus size={30} />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {/* ==================== APPLY 버튼 ==================== */}
+      <p className="mt-10 flex justify-end">
         <Button
           className="btn-md btn-tertiary"
           text="Apply"
@@ -503,6 +688,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
         />
       </p>
 
+      {/* ==================== 그래프 섹션 ==================== */}
       {loadingPassengerSchedules ? (
         <SimulationLoading minHeight="min-h-[200px]" />
       ) : isLoadError ? (
@@ -543,7 +729,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             </dd>
           </dl>
 
-          {/* =============== 여객 정규분포 차트 =============== */}
+          {/* ========== 여객 정규분포 차트 ========== */}
           <div className="mt-[10px] rounded-md bg-white">
             <LineChart
               // HACK: structuredClone is used to avoid mutating the original data
@@ -573,7 +759,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             />
           </div>
 
-          {/* =============== 여객 SHOW-UP 차트 =============== */}
+          {/* ========== 여객 SHOW-UP 차트 ========== */}
           <div className="mt-[50px]">
             <div className="flex items-center justify-end pl-[35px]">
               <div className="flex flex-col">

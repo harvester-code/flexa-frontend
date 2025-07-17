@@ -141,11 +141,13 @@ export interface FlightScheduleChartData {
 // ======================================================
 
 export interface PassengerSchedule {
-  isFilterEnabled: boolean;
-
   filterOptions: FilterOptions | null;
 
+  isFilterEnabled: boolean;
   normalDistributionParams: NormalDistributionParam[];
+
+  isPassengerPropertyEnabled: boolean;
+  passengerPropertyParams: PassengerPropertyParam[];
 
   distributionData: Plotly.Data[] | null;
   vlineData: { x: number; minY: number; maxY: number; color: string }[] | null;
@@ -168,6 +170,16 @@ export interface NormalDistributionParam {
   conditions: Filter[];
   mean: number;
   stddev: number;
+}
+
+export interface PassengerPropertyParam {
+  id: string;
+  rows: string | string[];
+  columns: string;
+  tableData: {
+    header: AllocationTableHeader[];
+    data: AllocationTableRow[];
+  } | null;
 }
 
 // ======================================================

@@ -85,7 +85,10 @@ interface PassengerScheduleSliceActions {
   setFilters: (options: PassengerSchedule['filterOptions']) => void;
   setNormalDistributionParam: (index: number, param: PassengerSchedule['normalDistributionParams'][number]) => void;
   setNormalDistributionParams: (params: PassengerSchedule['normalDistributionParams']) => void;
+  setPassengerPropertyParam: (index: number, param: PassengerSchedule['passengerPropertyParams'][number]) => void;
+  setPassengerPropertyParams: (params: PassengerSchedule['passengerPropertyParams']) => void;
   setIsFilterEnabled: (isEnabled: PassengerSchedule['isFilterEnabled']) => void;
+  setIsPassengerPropertyEnabled: (isEnabled: PassengerSchedule['isPassengerPropertyEnabled']) => void;
   resetState: () => void; // Reset state to initial values
 }
 interface PassengerScheduleSlice {
@@ -384,14 +387,19 @@ const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) 
 
 // ==================== Passenger Schedule Slice Creator ====================
 const initialPassengerSchedule: Omit<PassengerScheduleSlice['passengerSchedule'], 'actions'> = {
-  isFilterEnabled: false,
   filterOptions: null,
+  criterias: [],
+  selectedCriteria: '',
+  //
+  isFilterEnabled: false,
   normalDistributionParams: [{ conditions: [], mean: 120, stddev: 30 }],
+  //
+  isPassengerPropertyEnabled: false,
+  passengerPropertyParams: [],
+  //
   distributionData: null,
   vlineData: null,
   chartData: null,
-  criterias: [],
-  selectedCriteria: '',
 };
 
 const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set, get) => ({
@@ -493,6 +501,35 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
           },
           false,
           'passengerSchedule/setNormalDistributionParams'
+        ),
+
+      setIsPassengerPropertyEnabled: (isEnabled) =>
+        set(
+          (state) => {
+            state.passengerSchedule.isPassengerPropertyEnabled = isEnabled;
+          },
+          false,
+          'passengerSchedule/setIsPassengerPropertyEnabled'
+        ),
+
+      setPassengerPropertyParam: (index, param) =>
+        set(
+          (state) => {
+            if (index >= 0 && index < state.passengerSchedule.passengerPropertyParams.length) {
+              state.passengerSchedule.passengerPropertyParams[index] = param;
+            }
+          },
+          false,
+          'passengerSchedule/setPassengerPropertyParam'
+        ),
+
+      setPassengerPropertyParams: (params) =>
+        set(
+          (state) => {
+            state.passengerSchedule.passengerPropertyParams = params;
+          },
+          false,
+          'passengerSchedule/setPassengerPropertyParams'
         ),
 
       resetState: () =>
