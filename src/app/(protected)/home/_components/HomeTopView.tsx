@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Slider } from '@/components/ui/Slider';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
+import HomeTopViewMap from './HomeTopViewMap';
 
 interface LayoutData {
   _img_info: {
@@ -28,9 +32,11 @@ interface HomeTopViewProps {
   scenario: any;
   data?: {[key: string]: {[componentName: string]: {[servicePoint: string]: number}}};
   isLoading?: boolean;
+  viewMode: 'view' | 'setting';
+  setViewMode: (mode: 'view' | 'setting') => void;
 }
 
-function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
+function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeTopViewProps) {
   const [layoutData, setLayoutData] = useState<LayoutData | null>(null);
   const [topViewData, setTopViewData] = useState<{[key: string]: {[componentName: string]: {[servicePoint: string]: number}}} | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -41,12 +47,29 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
   
   // Zoom and Pan state (동일한 LayoutSetting 방식)
   const [dotSize, setDotSize] = useState<number>(0.5); // LayoutSetting과 동일한 초기값
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasMoved, setHasMoved] = useState(false);
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
+
+  // 프레임(뷰포트) 크기 동적 관리
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
+
+  // ResizeObserver로 프레임 크기 감지
+  useEffect(() => {
+    if (!frameRef.current) return;
+    const handleResize = () => {
+      const rect = frameRef.current!.getBoundingClientRect();
+      setFrameSize({ width: rect.width, height: rect.height });
+    };
+    handleResize();
+    const observer = new window.ResizeObserver(handleResize);
+    observer.observe(frameRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Set topview data from props
   useEffect(() => {
@@ -99,25 +122,10 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
         
         // 이미지 URL 설정
         if (layoutData._img_info) {
-          if (layoutData._img_info.img) {
-            // base64 이미지 데이터가 있는 경우 (기존 방식)
-            setImageUrl(layoutData._img_info.img);
-          } else if (layoutData._img_info.img_path) {
-            // 이미지 파일 경로가 있는 경우 (새로운 방식)
-            // uploads 폴더에서 이미지 로드 시도
-            const imagePath = `/uploads/${layoutData._img_info.img_path}`;
-            try {
-              const imageResponse = await fetch(imagePath);
-              if (imageResponse.ok) {
-                setImageUrl(imagePath);
-              } else {
-                // uploads에 없으면 public에서 시도
-                setImageUrl(`/${layoutData._img_info.img_path}`);
-              }
-            } catch {
-              // 오류 발생 시 public에서 시도
-              setImageUrl(`/${layoutData._img_info.img_path}`);
-            }
+          if (layoutData._img_info.img_path) {
+            setImageUrl(`/${layoutData._img_info.img_path}`);
+          } else {
+            setImageUrl(null);
           }
         }
         
@@ -127,8 +135,8 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
           img.onload = () => {
             setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
           };
-          if (layoutData._img_info.img) {
-            img.src = layoutData._img_info.img;
+          if (layoutData._img_info.img_path) {
+            img.src = `/${layoutData._img_info.img_path}`;
           } else if (imageUrl) {
             img.src = imageUrl;
           }
@@ -140,6 +148,20 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
 
     fetchLayoutData();
   }, []);
+
+  // 이미지 natural size와 frameSize가 세팅될 때 프레임에 fit되도록 zoom/pan 자동 계산
+  useEffect(() => {
+    if (imageNaturalSize && frameSize.width && frameSize.height) {
+      const scaleX = frameSize.width / imageNaturalSize.width;
+      const scaleY = frameSize.height / imageNaturalSize.height;
+      const initialZoom = Math.min(scaleX, scaleY, 1);
+      setZoomLevel(initialZoom);
+
+      const offsetX = (frameSize.width - imageNaturalSize.width * initialZoom) / 2;
+      const offsetY = (frameSize.height - imageNaturalSize.height * initialZoom) / 2;
+      setPanOffset({ x: offsetX, y: offsetY });
+    }
+  }, [imageNaturalSize, frameSize]);
 
   // Global mouse event handlers for proper drag behavior (LayoutSetting과 동일)
   useEffect(() => {
@@ -449,10 +471,23 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
     });
   };
 
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const wheelBlocker = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    frame.addEventListener('wheel', wheelBlocker, { passive: false });
+    return () => {
+      frame.removeEventListener('wheel', wheelBlocker);
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-gray-50 p-6">
+        <div className="rounded-lg border bg-gray-50 p-6 mt-[14px]">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
@@ -467,7 +502,7 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-red-50 p-6">
+        <div className="rounded-lg border bg-red-50 p-6 mt-[14px]">
           <p className="text-red-600">Error: {error}</p>
         </div>
       </div>
@@ -478,7 +513,7 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
   if (!imgInfo || !imageUrl) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-gray-50 p-6">
+        <div className="rounded-lg border bg-gray-50 p-6 mt-[14px]">
           <p>No image information available</p>
         </div>
       </div>
@@ -503,167 +538,156 @@ function HomeTopView({ scenario, data, isLoading }: HomeTopViewProps) {
     return combinedData;
   })() : {};
 
+  // 슬라이더 스타일: primary color(#7C3AED) bar, 흰색 thumb
+  const sliderStyle = `
+  input[type=range].slider {
+    accent-color: #7C3AED;
+  }
+  input[type=range].slider::-webkit-slider-thumb {
+    background: #fff;
+    border: 2px solid #7C3AED;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  input[type=range].slider::-moz-range-thumb {
+    background: #fff;
+    border: 2px solid #7C3AED;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  input[type=range].slider::-ms-thumb {
+    background: #fff;
+    border: 2px solid #7C3AED;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  input[type=range].slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #7C3AED 0%, #7C3AED VAR_PCT%, #E5E7EB VAR_PCT%, #E5E7EB 100%);
+  }
+  input[type=range].slider::-ms-fill-lower {
+    background: #7C3AED;
+  }
+  input[type=range].slider::-ms-fill-upper {
+    background: #E5E7EB;
+  }
+  input[type=range].slider:focus {
+    outline: none;
+  }
+`;
+
+  // 렌더링 부분 리팩터링 시작
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-gray-50 p-6">
-        <h3 className="text-lg font-semibold mb-4">Airport Layout - Real-time Queue Status</h3>
+      <div className="rounded-lg border bg-white p-6 mt-[14px]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">View</h3>
+          <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
+            <TabsList>
+              <TabsTrigger value="view">View</TabsTrigger>
+              <TabsTrigger value="setting">Setting</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         
 
         
         {/* Controls (LayoutSetting과 동일한 UI) */}
-        {imageUrl && (
-          <div className="mt-4 mb-4 space-y-3">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Map Dot Size:</label>
-              <input
-                type="range"
-                min="0.005"
-                max="1"
-                step="0.005"
-                value={dotSize}
-                onChange={(e) => setDotSize(Number(e.target.value))}
-                className="w-32"
-              />
-              <span className="text-sm text-gray-600">{dotSize}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Map View:</label>
-              <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
-              <button
-                onClick={resetView}
-                className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-              >
-                Reset View
-              </button>
-            </div>
-            <div className="text-xs text-gray-500">
-              💡 Mouse wheel: zoom | Drag: pan | Double-click: reset
-            </div>
-          </div>
+        {viewMode === 'view' && imageUrl && layoutData && (
+          <HomeTopViewMap
+            layoutData={layoutData}
+            imageUrl={imageUrl}
+            dotSize={dotSize}
+            setDotSize={setDotSize}
+            zoomLevel={zoomLevel}
+            setZoomLevel={setZoomLevel}
+            panOffset={panOffset}
+            setPanOffset={setPanOffset}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            dragStart={dragStart}
+            setDragStart={setDragStart}
+            hasMoved={hasMoved}
+            setHasMoved={setHasMoved}
+            imageNaturalSize={imageNaturalSize}
+            setImageNaturalSize={setImageNaturalSize}
+            renderServicePoints={renderServicePoints}
+            mousePosition={mousePosition}
+            setMousePosition={setMousePosition}
+            resetView={resetView}
+          />
         )}
-
-        {/* 이미지와 서비스 포인트 오버레이 (LayoutSetting 방식과 동일) */}
-        <div className="mb-6 w-full">
-          {imageUrl && (
-            <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
-              <div
-                className="inline-block relative"
-                onDoubleClick={resetView}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
-                onDragStart={handleDragStart}
-                style={{ 
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                  transformOrigin: 'center center',
-                  userSelect: 'none'
-                }}
-              >
-                <img 
-                  src={imageUrl} 
-                  alt="Airport Layout" 
-                  className="block border rounded-lg shadow" 
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-                {renderServicePoints()}
-                
-                {mousePosition && (
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
-                    Mouse Position: ({mousePosition.x}, {mousePosition.y})
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="mt-2 text-sm text-gray-600">
-            Service Points: {Object.entries(layoutData._service_point_info).map(([key, point], index) => {
-              const colors = [
-                'text-blue-600', 'text-green-600', 'text-purple-600', 
-                'text-yellow-600', 'text-pink-600', 'text-indigo-600', 'text-orange-600'
-              ];
-              const colorClass = colors[index % colors.length];
-              return (
-                <span key={key} className={`${colorClass} mr-4`}>
-                  ● {key}({point.num_of_fronts}×{point.num_of_rows})
-                </span>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 현재 대기인원 정보 */}
-        {availableTimes.length > 0 && (
-          <div className="mt-6 mb-4">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-medium text-gray-700">Current Queue:</span>
-              {Object.entries(currentQueueData).map(([servicePoint, count]) => {
-                // layoutData에서 서비스 포인트의 실제 순서 찾기
-                const servicePointKeys = Object.keys(layoutData._service_point_info);
-                const servicePointIndex = servicePointKeys.indexOf(servicePoint);
-                const backgroundColors = [
-                  'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-purple-100 text-purple-800',
-                  'bg-yellow-100 text-yellow-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-orange-100 text-orange-800'
-                ];
-                const colorClass = backgroundColors[servicePointIndex % backgroundColors.length];
-                return (
-                  <span key={servicePoint} className={`${colorClass} px-2 py-1 rounded font-medium`}>
-                    {servicePoint}: {count} people
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
+        {/* 나머지 컨트롤, 슬라이더, JSON 데이터 등은 HomeTopView에서 관리 */}
         {/* 시간 선택 슬라이더 */}
         {availableTimes.length > 0 && (
           <div className="mb-4 space-y-3">
-            <div className="flex items-center gap-4">
-              <label htmlFor="time-slider" className="font-medium text-gray-700">
-                Select Time:
-              </label>
+            <div className="mt-2 block w-full text-sm"
+              style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span className="font-medium text-gray-700">Current Queue:</span>
+              {Object.entries(currentQueueData).length > 0 ? (
+                Object.entries(currentQueueData).map(([servicePoint, count]) => {
+                  const servicePointKeys = Object.keys(layoutData._service_point_info);
+                  const servicePointIndex = servicePointKeys.indexOf(servicePoint);
+                  const backgroundColors = [
+                    'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-purple-100 text-purple-800',
+                    'bg-yellow-100 text-yellow-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-orange-100 text-orange-800'
+                  ];
+                  const colorClass = backgroundColors[servicePointIndex % backgroundColors.length];
+                  return (
+                    <span key={servicePoint} className={`${colorClass} px-2 py-1 rounded font-medium`}>
+                      {servicePoint}: {count} pax
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-gray-400">-</span>
+              )}
             </div>
-            <div className="relative">
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-gray-500">{availableTimes[0]}</span>
-                <input
-                  id="time-slider"
-                  type="range"
+            <div className="flex items-center w-full gap-2 relative">
+              <span className="text-xs text-gray-500 min-w-[90px] text-left">{availableTimes[0]}</span>
+              <div className="relative flex-1">
+                <Slider
                   min={0}
                   max={availableTimes.length - 1}
-                  value={timeIndex}
-                  onChange={(e) => {
-                    const newIndex = parseInt(e.target.value);
-                    setTimeIndex(newIndex);
-                    setSelectedTime(availableTimes[newIndex]);
+                  step={1}
+                  value={[timeIndex]}
+                  onValueChange={([val]) => {
+                    setTimeIndex(val);
+                    setSelectedTime(availableTimes[val]);
                   }}
-                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(timeIndex / (availableTimes.length - 1)) * 100}%, #e5e7eb ${(timeIndex / (availableTimes.length - 1)) * 100}%, #e5e7eb 100%)`
-                  }}
+                  className="w-full"
                 />
-                <span className="text-xs text-gray-500">{availableTimes[availableTimes.length - 1]}</span>
+                {/* shadcn/ui Tooltip: thumb 위에 항상 표시 */}
+                <Tooltip open>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute left-0 w-0 h-0"
+                      style={{
+                        top: '20px', // thumb 바로 아래로 위치
+                        left: `calc(${(timeIndex / (availableTimes.length - 1)) * 100}% )`,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center" sideOffset={6}>
+                    {selectedTime}
+                  </TooltipContent>
+                </Tooltip>
               </div>
-              
-              {/* 인터랙티브 시간 표시 - 슬라이더 점 위치에 따라 움직임 */}
-              <div 
-                className="absolute -top-8 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg font-mono whitespace-nowrap pointer-events-none"
-                style={{
-                  left: `calc(2rem + ${(timeIndex / (availableTimes.length - 1)) * (100 - 4)}%)`,
-                  zIndex: 10
-                }}
-              >
-                {selectedTime}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-blue-600"></div>
-              </div>
-            </div>
-            
-            <div className="text-xs text-gray-500 text-center">
-              {timeIndex + 1} / {availableTimes.length}
+              <span className="text-xs text-gray-500 min-w-[90px] text-right">{availableTimes[availableTimes.length - 1]}</span>
             </div>
           </div>
         )}

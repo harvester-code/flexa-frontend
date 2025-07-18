@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
@@ -14,6 +14,8 @@ interface HomeTopViewLayoutSettingProps {
   scenario: any;
   data?: ServicePointData;
   isLoading?: boolean;
+  viewMode: 'view' | 'setting';
+  setViewMode: (mode: 'view' | 'setting') => void;
 }
 
 // Dot color array (different for each node)
@@ -38,7 +40,7 @@ function getRandomPersonEmoji() {
   return peopleEmojis[idx];
 }
 
-const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ scenario, data, isLoading }) => {
+const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ scenario, data, isLoading, viewMode, setViewMode }) => {
   // Image upload state
   const [image, setImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -76,6 +78,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   const [hasMoved, setHasMoved] = useState(false);
   // Image natural size state
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const zoomableRef = useRef<HTMLDivElement>(null);
 
   // Initialize servicePoints from props data
   useEffect(() => {
@@ -700,148 +704,175 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     generateAndDownloadJSON(undefined);
   };
 
+  useEffect(() => {
+    const zoomable = zoomableRef.current;
+    if (!zoomable) return;
+    const wheelBlocker = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    zoomable.addEventListener('wheel', wheelBlocker, { passive: false });
+    return () => {
+      zoomable.removeEventListener('wheel', wheelBlocker);
+    };
+  }, []);
+
   return (
-    <div className="rounded-lg border bg-default-100 p-6 shadow space-y-8">
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-            <div className="mt-2 text-sm text-gray-600">Loading service point data...</div>
-          </div>
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-white p-6 mt-[14px]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Setting</h3>
+          <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
+            <TabsList>
+              <TabsTrigger value="view">View</TabsTrigger>
+              <TabsTrigger value="setting">Setting</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      )}
-      
-      {/* Image Uploader */}
-      {!isLoading && Object.keys(servicePoints).length > 0 && (
-        <div className="mb-6">
-          <label className="block font-semibold mb-2">Upload Topview Image</label>
-          <Input type="file" accept="image/*" onChange={handleImageChange} className="w-full" />
-          
-          {/* Controls */}
-          {image && (
-            <div className="mt-4 mb-4 space-y-3">
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium">Map Dot Size:</label>
-                <input
-                  type="range"
-                  min="0.005"
-                  max="1"
-                  step="0.005"
-                  value={dotSize}
-                  onChange={(e) => setDotSize(Number(e.target.value))}
-                  className="w-32"
-                />
-                <span className="text-sm text-gray-600">{dotSize}</span>
+        {/* 기존 카드 내부 내용 시작 */}
+        {/* Image Uploader */}
+        {!isLoading && Object.keys(servicePoints).length > 0 && (
+          <div className="mb-6">
+            <label className="block font-semibold mb-2">Upload Topview Image</label>
+            <div className="flex items-center gap-4">
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                파일 선택
+              </Button>
+              <span className="text-sm text-muted-foreground truncate max-w-xs">
+                {imageFileName || '선택된 파일 없음'}
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+            {/* Controls */}
+            {image && (
+              <div className="mt-4 mb-4 space-y-3">
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium">Map Dot Size:</label>
+                  <input
+                    type="range"
+                    min="0.005"
+                    max="1"
+                    step="0.005"
+                    value={dotSize}
+                    onChange={(e) => setDotSize(Number(e.target.value))}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-gray-600">{dotSize}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium">Map View:</label>
+                  <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
+                  <button
+                    onClick={resetView}
+                    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    Reset View
+                  </button>
+                </div>
+                <div className="text-xs text-gray-500">
+                  💡 Mouse wheel: zoom | Drag: pan | Double-click: reset | 🖱️ button: coordinate select mode
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium">Map View:</label>
-                <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
-                <button
-                  onClick={resetView}
-                  className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+            )}
+            {image && (
+              <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
+                <div
+                  ref={zoomableRef}
+                  className="inline-block relative"
+                  onClick={handleImageClick}
+                  onDoubleClick={resetView}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseUp={handleMouseUp}
+                  onDragStart={handleDragStart}
+                  style={{
+                    cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
+                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                    transformOrigin: 'center center',
+                    userSelect: 'none'
+                  }}
                 >
-                  Reset View
-                </button>
+                  <img
+                    src={image}
+                    alt="Topview Preview"
+                    className="block border rounded-lg shadow"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                  />
+                  {renderAllNodeDots()}
+                  {mousePosition && (
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
+                      Mouse Position: ({mousePosition.x}, {mousePosition.y})
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="text-xs text-gray-500">
-                💡 Mouse wheel: zoom | Drag: pan | Double-click: reset | 🖱️ button: coordinate select mode
-              </div>
-            </div>
-          )}
-          
-          {image && (
-            <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
-              <div
-                className="inline-block relative"
-                onClick={handleImageClick}
-                onDoubleClick={resetView}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
-                onDragStart={handleDragStart}
-                style={{ 
-                  cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
-                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                  transformOrigin: 'center center',
-                  userSelect: 'none'
-                }}
-              >
-                <img 
-                  src={image} 
-                  alt="Topview Preview" 
-                  className="block border rounded-lg shadow" 
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-                {renderAllNodeDots()}
-                
-                {mousePosition && (
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
-                    Mouse Position: ({mousePosition.x}, {mousePosition.y})
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      {/* Component/Node Tab UI */}
-      {!isLoading && Object.keys(servicePoints).length > 0 && (
-        <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
-        <TabsList className="mb-4">
-          {Object.keys(servicePoints).map((component) => (
-            <TabsTrigger key={component} value={component} className="text-base px-4 py-2">
-              {component}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {Object.keys(servicePoints).map((component) => (
-          <TabsContent key={component} value={component} className="w-full">
-            <Tabs defaultValue={selectedNode || ''} value={selectedNode || ''} onValueChange={setSelectedNode} className="w-full">
-              <TabsList className="mb-4">
-                {servicePoints[component].map((node) => (
-                  <TabsTrigger key={node} value={node} className="text-base px-4 py-2">
-                    {node}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {servicePoints[component].map((node) => (
-                <TabsContent key={node} value={node} className="w-full">
-                  {/* Input Form */}
-                  <div className="space-y-4 p-4 border rounded-lg bg-white">
-                    <div className="font-semibold mb-2">{component} - {node} Settings</div>
-                    {renderEmojiGrid(node)}
-                  </div>
-                </TabsContent>
+            )}
+          </div>
+        )}
+        {/* Component/Node Tab UI */}
+        {!isLoading && Object.keys(servicePoints).length > 0 && (
+          <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
+            <TabsList className="mb-4">
+              {Object.keys(servicePoints).map((component) => (
+                <TabsTrigger key={component} value={component}>
+                  {component}
+                </TabsTrigger>
               ))}
-            </Tabs>
-          </TabsContent>
-        ))}
-      </Tabs>
-      )}
-      
-      {/* Apply Button */}
-      {!isLoading && Object.keys(servicePoints).length > 0 && (
-        <div className="flex justify-end mt-6">
-          <Button
-            className="px-6 py-2 font-semibold"
-            onClick={handleApply}
-          >
-            Apply (Save layout.json → S3로 Save 하는 함수 필요)
-          </Button>
-        </div>
-      )}
-              {/* Modal */}
-      <AlertDialog open={showModal} onOpenChange={setShowModal}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Missing Input Values</AlertDialogTitle>
-          <AlertDialogDescription>Please fill in all empty fields.</AlertDialogDescription>
-          <AlertDialogAction onClick={() => setShowModal(false)}>OK</AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
+            </TabsList>
+            {Object.keys(servicePoints).map((component) => (
+              <TabsContent key={component} value={component} className="w-full">
+                <Tabs defaultValue={selectedNode || ''} value={selectedNode || ''} onValueChange={setSelectedNode} className="w-full">
+                  <TabsList className="mb-4">
+                    {servicePoints[component].map((node) => (
+                      <TabsTrigger key={node} value={node}>
+                        {node}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {servicePoints[component].map((node) => (
+                    <TabsContent key={node} value={node} className="w-full">
+                      {/* Input Form */}
+                      <div className="space-y-4 p-4 border rounded-lg bg-white">
+                        <div className="font-semibold mb-2">{component} - {node} Settings</div>
+                        {renderEmojiGrid(node)}
+                      </div>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
+        {/* Apply Button */}
+        {!isLoading && Object.keys(servicePoints).length > 0 && (
+          <div className="flex justify-end mt-6">
+            <Button
+              className="px-6 py-2 font-semibold"
+              onClick={handleApply}
+            >
+              Apply (Save layout.json → S3로 Save 하는 함수 필요)
+            </Button>
+          </div>
+        )}
+        {/* Modal */}
+        <AlertDialog open={showModal} onOpenChange={setShowModal}>
+          <AlertDialogContent>
+            <AlertDialogTitle>Missing Input Values</AlertDialogTitle>
+            <AlertDialogDescription>Please fill in all empty fields.</AlertDialogDescription>
+            <AlertDialogAction onClick={() => setShowModal(false)}>OK</AlertDialogAction>
+          </AlertDialogContent>
+        </AlertDialog>
+        {/* 기존 카드 내부 내용 끝 */}
+      </div>
     </div>
   );
 };
