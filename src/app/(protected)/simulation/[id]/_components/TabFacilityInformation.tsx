@@ -15,7 +15,6 @@ import { Dropdown } from '@/components/Conditions';
 import TabDefault from '@/components/TabDefault';
 import TheInput from '@/components/TheInput';
 import TheRadioGroup from '@/components/TheRadioGroup';
-import { cn } from '@/lib/utils';
 import SimulationGridTable from './SimulationGridTable';
 
 const PlotlyChart = dynamic(() => import('@/components/ThePlotlyChart'), { ssr: false });
@@ -249,15 +248,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
           const numberOfEachDevices = value === 'limited_facility' ? 5 : 1;
           const maximumQueuesAllowedPer = value === 'limited_facility' ? 200 : 1;
 
-          updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+          const newFacilitySettings: Record<string, unknown> = {
             facilityType: value as (typeof INFINITE_FACILITY_OPTIONS)[number]['value'],
             numberOfEachDevices,
             maximumQueuesAllowedPer,
-          });
+          };
 
           // --- Update defaultTableData header if it exists
           if (currentSetting.defaultTableData) {
-            const updatedHeader = Array(numberOfEachDevices)
+            const newDefaultTableHeader = Array(numberOfEachDevices)
               .fill(0)
               .map((_, index) => ({
                 name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -265,23 +264,21 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                 minWidth: 80,
               }));
 
-            const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+            const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
               ...item,
               values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
             }));
 
-            updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-              defaultTableData: {
-                ...currentSetting.defaultTableData,
-                header: updatedHeader,
-                data: updatedData,
-              },
-            });
+            newFacilitySettings.defaultTableData = {
+              ...currentSetting.defaultTableData,
+              header: newDefaultTableHeader,
+              data: newDefaultTableData,
+            };
           }
 
           // --- Update openingHoursTableData if it exists
           if (currentSetting.openingHoursTableData) {
-            const updatedHeader = Array(numberOfEachDevices)
+            const newOpeningHoursHeader = Array(numberOfEachDevices)
               .fill(0)
               .map((_, index) => ({
                 name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -289,19 +286,19 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                 minWidth: 80,
               }));
 
-            const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+            const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
               ...item,
               values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
             }));
 
-            updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-              openingHoursTableData: {
-                ...currentSetting.openingHoursTableData,
-                header: updatedHeader,
-                data: updatedOpeningHoursData,
-              },
-            });
+            newFacilitySettings.openingHoursTableData = {
+              ...currentSetting.openingHoursTableData,
+              header: newOpeningHoursHeader,
+              data: newOpeningHoursData,
+            };
           }
+
+          updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], newFacilitySettings);
         }}
       />
 
@@ -322,13 +319,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     onClick={() => {
                       const newNumberOfDevices = Math.max(currentSetting.numberOfEachDevices - 1, 1);
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                      const updatedSettings: Record<string, unknown> = {
                         numberOfEachDevices: newNumberOfDevices,
-                      });
+                      };
 
                       // --- Update defaultTableData header if it exists
                       if (currentSetting.defaultTableData) {
-                        const updatedHeader = Array(newNumberOfDevices)
+                        const newDefaultTableHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -336,22 +333,21 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
                           ...item,
                           values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          defaultTableData: {
-                            ...currentSetting.defaultTableData,
-                            header: updatedHeader,
-                            data: updatedData,
-                          },
-                        });
+                        updatedSettings.defaultTableData = {
+                          ...currentSetting.defaultTableData,
+                          header: newDefaultTableHeader,
+                          data: newDefaultTableData,
+                        };
                       }
+
                       // --- Update openingHoursTableData if it exists
                       if (currentSetting.openingHoursTableData) {
-                        const updatedHeader = Array(newNumberOfDevices)
+                        const newOpeningHoursHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -359,19 +355,19 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                           ...item,
                           values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          openingHoursTableData: {
-                            ...currentSetting.openingHoursTableData,
-                            header: updatedHeader,
-                            data: updatedOpeningHoursData,
-                          },
-                        });
+                        updatedSettings.openingHoursTableData = {
+                          ...currentSetting.openingHoursTableData,
+                          header: newOpeningHoursHeader,
+                          data: newOpeningHoursData,
+                        };
                       }
+
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                     }}
                   >
                     <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
@@ -383,15 +379,15 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     placeholder=""
                     value={String(currentSetting.numberOfEachDevices)}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const inputValue = Number(e.target.value);
+                      const newNumberOfDevices = Number(e.target.value);
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        numberOfEachDevices: inputValue,
-                      });
+                      const updatedSettings: Record<string, unknown> = {
+                        numberOfEachDevices: newNumberOfDevices,
+                      };
 
                       // --- Update defaultTableData header if it exists
                       if (currentSetting.defaultTableData) {
-                        const updatedHeader = Array(inputValue)
+                        const newDefaultTableHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -399,23 +395,21 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
                           ...item,
-                          values: Array(inputValue).fill(currentSetting.processingTime),
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          defaultTableData: {
-                            ...currentSetting.defaultTableData,
-                            header: updatedHeader,
-                            data: updatedData,
-                          },
-                        });
+                        updatedSettings.defaultTableData = {
+                          ...currentSetting.defaultTableData,
+                          header: newDefaultTableHeader,
+                          data: newDefaultTableData,
+                        };
                       }
 
                       // --- Update openingHoursTableData if it exists
                       if (currentSetting.openingHoursTableData) {
-                        const updatedHeader = Array(inputValue)
+                        const newOpeningHoursHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -423,19 +417,19 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                           ...item,
-                          values: Array(inputValue).fill(currentSetting.processingTime),
+                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          openingHoursTableData: {
-                            ...currentSetting.openingHoursTableData,
-                            header: updatedHeader,
-                            data: updatedOpeningHoursData,
-                          },
-                        });
+                        updatedSettings.openingHoursTableData = {
+                          ...currentSetting.openingHoursTableData,
+                          header: newOpeningHoursHeader,
+                          data: newOpeningHoursData,
+                        };
                       }
+
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                     }}
                   />
 
@@ -443,13 +437,13 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                     onClick={() => {
                       const newNumberOfDevices = currentSetting.numberOfEachDevices + 1;
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                      const updatedSettings: Record<string, unknown> = {
                         numberOfEachDevices: newNumberOfDevices,
-                      });
+                      };
 
                       // --- Update defaultTableData header if it exists
                       if (currentSetting.defaultTableData) {
-                        const updatedHeader = Array(newNumberOfDevices)
+                        const newDefaultTableHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -457,23 +451,21 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedData = currentSetting.defaultTableData.data?.map((item) => ({
+                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
                           ...item,
                           values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          defaultTableData: {
-                            ...currentSetting.defaultTableData,
-                            header: updatedHeader,
-                            data: updatedData,
-                          },
-                        });
+                        updatedSettings.defaultTableData = {
+                          ...currentSetting.defaultTableData,
+                          header: newDefaultTableHeader,
+                          data: newDefaultTableData,
+                        };
                       }
 
                       // --- Update openingHoursTableData if it exists
                       if (currentSetting.openingHoursTableData) {
-                        const updatedHeader = Array(newNumberOfDevices)
+                        const newOpeningHoursHeader = Array(newNumberOfDevices)
                           .fill(0)
                           .map((_, index) => ({
                             name: `Desk ${String(index + 1).padStart(2, '0')}`,
@@ -481,19 +473,19 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                             minWidth: 80,
                           }));
 
-                        const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                           ...item,
                           values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
                         }));
 
-                        updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                          openingHoursTableData: {
-                            ...currentSetting.openingHoursTableData,
-                            header: updatedHeader,
-                            data: updatedOpeningHoursData,
-                          },
-                        });
+                        updatedSettings.openingHoursTableData = {
+                          ...currentSetting.openingHoursTableData,
+                          header: newOpeningHoursHeader,
+                          data: newOpeningHoursData,
+                        };
                       }
+
+                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                     }}
                   >
                     <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
@@ -515,40 +507,40 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   onClick={() => {
                     const newProcessingTime = currentSetting.processingTime - 1;
 
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                    const updatedSettings: Record<string, unknown> = {
                       processingTime: newProcessingTime,
-                    });
+                    };
 
                     // --------------------------------------------------------------
-                    const updatedValues: string[] = Array(currentSetting.numberOfEachDevices).fill(newProcessingTime);
+                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
+                      newProcessingTime
+                    );
 
                     // --- Update defaultTableData values if it exists
                     if (currentSetting.defaultTableData) {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data?.map((item) => ({
-                            ...item,
-                            values: updatedValues,
-                          })),
-                        },
-                      });
+                      updatedSettings.defaultTableData = {
+                        ...currentSetting.defaultTableData,
+                        data: currentSetting.defaultTableData?.data?.map((item) => ({
+                          ...item,
+                          values: newProcessingTimeValues,
+                        })),
+                      };
                     }
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
                       }));
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
+                      updatedSettings.openingHoursTableData = {
+                        ...currentSetting.openingHoursTableData,
+                        data: newOpeningHoursData,
+                      };
                     }
+
+                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                   }}
                 >
                   <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
@@ -560,42 +552,42 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   placeholder=""
                   value={String(currentSetting.processingTime)}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const inputValue = Number(e.target.value);
+                    const newProcessingTime = Number(e.target.value);
 
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      processingTime: Number(e.target.value),
-                    });
+                    const updatedSettings: Record<string, unknown> = {
+                      processingTime: newProcessingTime,
+                    };
 
                     // --------------------------------------------------------------
-                    const updatedValues: string[] = Array(currentSetting.numberOfEachDevices).fill(inputValue);
+                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
+                      newProcessingTime
+                    );
 
                     // --- Update defaultTableData values if it exists
                     if (currentSetting.defaultTableData) {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data?.map((item) => ({
-                            ...item,
-                            values: updatedValues,
-                          })),
-                        },
-                      });
+                      updatedSettings.defaultTableData = {
+                        ...currentSetting.defaultTableData,
+                        data: currentSetting.defaultTableData?.data?.map((item) => ({
+                          ...item,
+                          values: newProcessingTimeValues,
+                        })),
+                      };
                     }
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
-                        values: Array(currentSetting.numberOfEachDevices).fill(inputValue),
+                        values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
                       }));
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
+                      updatedSettings.openingHoursTableData = {
+                        ...currentSetting.openingHoursTableData,
+                        data: newOpeningHoursData,
+                      };
                     }
+
+                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                   }}
                 />
 
@@ -603,40 +595,40 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
                   onClick={() => {
                     const newProcessingTime = currentSetting.processingTime + 1;
 
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
+                    const updatedSettings: Record<string, unknown> = {
                       processingTime: newProcessingTime,
-                    });
+                    };
 
                     // --------------------------------------------------------------
-                    const updatedValues: string[] = Array(currentSetting.numberOfEachDevices).fill(newProcessingTime);
+                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
+                      newProcessingTime
+                    );
 
                     // --- Update defaultTableData values if it exists
                     if (currentSetting.defaultTableData) {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        defaultTableData: {
-                          ...currentSetting.defaultTableData,
-                          data: currentSetting.defaultTableData?.data?.map((item) => ({
-                            ...item,
-                            values: updatedValues,
-                          })),
-                        },
-                      });
+                      updatedSettings.defaultTableData = {
+                        ...currentSetting.defaultTableData,
+                        data: currentSetting.defaultTableData?.data?.map((item) => ({
+                          ...item,
+                          values: newProcessingTimeValues,
+                        })),
+                      };
                     }
 
                     // --- Update openingHoursTableData values if it exists
                     if (currentSetting.openingHoursTableData) {
-                      const updatedOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
+                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
                         ...item,
                         values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
                       }));
 
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        openingHoursTableData: {
-                          ...currentSetting.openingHoursTableData,
-                          data: updatedOpeningHoursData,
-                        },
-                      });
+                      updatedSettings.openingHoursTableData = {
+                        ...currentSetting.openingHoursTableData,
+                        data: newOpeningHoursData,
+                      };
                     }
+
+                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
                   }}
                 >
                   <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
