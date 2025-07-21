@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from '@/components/ui/AlertDialog';
+import HomeTopViewMap from './HomeTopViewMap';
 
 interface ServicePointData {
   [component: string]: string[];
@@ -45,6 +46,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   const [image, setImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   // service_point data from props
   const [servicePoints, setServicePoints] = useState<ServicePointData>({});
   // Tab state
@@ -79,7 +81,6 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   // Image natural size state
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const zoomableRef = useRef<HTMLDivElement>(null);
 
   // Initialize servicePoints from props data
   useEffect(() => {
@@ -90,6 +91,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       setSelectedNode(data[firstComponent]?.[0]);
     }
   }, [data]);
+
+
 
   // Initialize input values and set defaults when node is selected
   useEffect(() => {
@@ -157,9 +160,12 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const url = URL.createObjectURL(file);
+      
+      // Reset states
+      setImageError(null);
       setImage(url);
-      setImageFileName(file.name); // 파일명 저장
-      setImageFile(file); // 원본 파일 객체 저장
+      setImageFileName(file.name);
+      setImageFile(file);
       
       // Reset zoom and pan when new image is loaded
       setZoomLevel(1);
@@ -167,10 +173,69 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       setIsDragging(false);
       setHasMoved(false);
       
-      // Measure image natural size
+      // Measure image natural size with better error handling
       const img = new Image();
       img.onload = () => {
-        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+        console.log('이미지 로딩 완료:', file.name, file.type);
+        console.log('원본 크기:', img.naturalWidth, img.naturalHeight);
+        
+        // SVG의 경우 viewBox나 width/height 속성을 확인
+        if (file.type === 'image/svg+xml') {
+          // SVG 파일의 크기를 더 정확하게 측정
+          const svgElement = img as any;
+          let width = svgElement.naturalWidth;
+          let height = svgElement.naturalHeight;
+          
+          console.log('SVG 원본 크기:', width, height);
+          
+          // SVG의 viewBox나 width/height 속성이 없는 경우 기본값 사용
+          if (!width || !height) {
+            console.log('SVG 크기 정보 없음, 파일 내용 분석 중...');
+            // SVG 파일 내용을 읽어서 viewBox 확인
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const svgContent = e.target?.result as string;
+              const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)["']/);
+              const widthMatch = svgContent.match(/width=["']([^"']+)["']/);
+              const heightMatch = svgContent.match(/height=["']([^"']+)["']/);
+              
+              if (viewBoxMatch) {
+                const [, viewBox] = viewBoxMatch;
+                const [, , w, h] = viewBox.split(' ');
+                width = parseFloat(w) || 800;
+                height = parseFloat(h) || 600;
+                console.log('viewBox에서 크기 추출:', width, height);
+              } else if (widthMatch && heightMatch) {
+                width = parseFloat(widthMatch[1]) || 800;
+                height = parseFloat(heightMatch[1]) || 600;
+                console.log('width/height에서 크기 추출:', width, height);
+              } else {
+                width = 800;
+                height = 600;
+                console.log('기본 크기 사용:', width, height);
+              }
+              
+              // SVG 크기 설정 (HomeTopViewMap에서 컨테이너에 맞게 조정됨)
+              setImageNaturalSize({ width, height });
+            };
+            reader.readAsText(file);
+            return;
+          }
+          
+          // SVG 크기 설정 (HomeTopViewMap에서 컨테이너에 맞게 조정됨)
+          setImageNaturalSize({ width, height });
+        } else {
+          setImageNaturalSize({ 
+            width: img.naturalWidth, 
+            height: img.naturalHeight 
+          });
+        }
+      };
+      img.onerror = () => {
+        setImageError('이미지를 로드할 수 없습니다. 파일 형식을 확인해주세요.');
+        setImage(null);
+        setImageFileName(null);
+        setImageFile(null);
       };
       img.src = url;
     }
@@ -244,11 +309,23 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       return;
     }
     
-    if (!selecting || !selectedNode || !imageNaturalSize) return;
+    if (!selecting || !selectedNode || !imageNaturalSize) {
+      console.log('Click ignored:', { selecting, selectedNode, imageNaturalSize });
+      return;
+    }
+    
+    console.log('Image click detected:', selecting, selectedNode);
     
     // Get the image element's actual position after transforms
-    const imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
-    if (!imgElement) return;
+    // Try both possible alt texts
+    let imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
+    if (!imgElement) {
+      imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
+    }
+    if (!imgElement) {
+      console.error('Image element not found');
+      return;
+    }
     
     // Get the transformed image bounds (this includes all CSS transforms)
     const imgRect = imgElement.getBoundingClientRect();
@@ -265,9 +342,12 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     const x = Math.round(normalizedX * imageNaturalSize.width);
     const y = Math.round(normalizedY * imageNaturalSize.height);
     
+    console.log('Coordinates calculated:', { x, y, imageNaturalSize, imgRect });
+    
     setNodeInputs((prev) => {
       const nodeData = prev[selectedNode] || {};
       if (selecting === 'front_start') {
+        console.log('Setting front_start:', { x, y });
         return {
           ...prev,
           [selectedNode]: {
@@ -277,6 +357,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
           },
         };
       } else if (selecting === 'front_end') {
+        console.log('Setting front_end:', { x, y });
         return {
           ...prev,
           [selectedNode]: {
@@ -346,7 +427,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
             </span>
             <Input type="number" placeholder="x" value={nodeData.front_start_point_x ?? ''} onChange={e => handleInputChange('front_start_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Input type="number" placeholder="y" value={nodeData.front_start_point_y ?? ''} onChange={e => handleInputChange('front_start_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
-            <Button type="button" size="icon" variant={selecting === 'front_start' ? 'secondary' : 'outline'} onClick={() => setSelecting(selecting === 'front_start' ? null : 'front_start')} title="Select with mouse">
+            <Button 
+              type="button" 
+              size="icon" 
+              variant={selecting === 'front_start' ? 'secondary' : 'outline'} 
+              onClick={() => setSelecting(selecting === 'front_start' ? null : 'front_start')} 
+              title="Select with mouse"
+              className={selecting === 'front_start' ? 'bg-blue-500 text-white' : ''}
+            >
               <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
@@ -356,7 +444,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
             </span>
             <Input type="number" placeholder="x" value={nodeData.front_end_point_x ?? ''} onChange={e => handleInputChange('front_end_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Input type="number" placeholder="y" value={nodeData.front_end_point_y ?? ''} onChange={e => handleInputChange('front_end_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
-            <Button type="button" size="icon" variant={selecting === 'front_end' ? 'secondary' : 'outline'} onClick={() => setSelecting(selecting === 'front_end' ? null : 'front_end')} title="Select with mouse">
+            <Button 
+              type="button" 
+              size="icon" 
+              variant={selecting === 'front_end' ? 'secondary' : 'outline'} 
+              onClick={() => setSelecting(selecting === 'front_end' ? null : 'front_end')} 
+              title="Select with mouse"
+              className={selecting === 'front_end' ? 'bg-blue-500 text-white' : ''}
+            >
               <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
@@ -498,11 +593,21 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
 
   // Render colored dot array on map (only when both front_start and front_end are filled)
   const renderAllNodeDots = () => {
-    if (!image || !imageNaturalSize) return null;
+    if (!image || !imageNaturalSize) {
+      console.log('renderAllNodeDots: Missing image or imageNaturalSize');
+      return null;
+    }
     
     // Get current displayed image size
-    const imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
-    if (!imgElement) return null;
+    // Try both possible alt texts
+    let imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
+    if (!imgElement) {
+      imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
+    }
+    if (!imgElement) {
+      console.log('renderAllNodeDots: Image element not found');
+      return null;
+    }
     
     // Get the image's original display size (before transform)
     // Since dots are children of the image element, they inherit the transform
@@ -512,10 +617,18 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     const scaleX = originalDisplayWidth / imageNaturalSize.width;
     const scaleY = originalDisplayHeight / imageNaturalSize.height;
     
+    console.log('renderAllNodeDots: Scale factors:', { scaleX, scaleY, zoomLevel, imageNaturalSize });
+    
     const allNodes = Object.values(servicePoints).flat();
+    console.log('renderAllNodeDots: All nodes:', allNodes);
+    
     return allNodes.map((node) => {
       const nodeData = nodeInputs[node];
-      if (!nodeData) return null;
+      if (!nodeData) {
+        console.log(`renderAllNodeDots: No data for node ${node}`);
+        return null;
+      }
+      
       // Check if both front_start and front_end values are filled
       const requiredFields = [
         'front_start_point_x',
@@ -526,9 +639,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
         'num_of_fronts',
         'num_of_rows',
       ];
-      if (!requiredFields.every((f) => nodeData[f] !== '' && nodeData[f] !== undefined && nodeData[f] !== null)) {
+      
+      const hasAllFields = requiredFields.every((f) => nodeData[f] !== '' && nodeData[f] !== undefined && nodeData[f] !== null);
+      if (!hasAllFields) {
+        console.log(`renderAllNodeDots: Missing fields for node ${node}:`, nodeData);
         return null;
       }
+      
+      console.log(`renderAllNodeDots: Rendering dots for node ${node}:`, nodeData);
       
       // Convert coordinates from actual image size to current display size
       const startX = Number(nodeData.front_start_point_x) * scaleX;
@@ -537,11 +655,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       const endY = Number(nodeData.front_end_point_y) * scaleY;
       const numFronts = Number(nodeData.num_of_fronts);
       const numRows = Number(nodeData.num_of_rows);
+      
       if (numFronts < 1 || numRows < 1) return null;
+      
       const directionVectorX = endX - startX;
       const directionVectorY = endY - startY;
       const length = Math.sqrt(directionVectorX * directionVectorX + directionVectorY * directionVectorY);
       if (length === 0) return null;
+      
       const normalizedDirX = directionVectorX / length;
       const normalizedDirY = directionVectorY / length;
       const isForward = nodeData.direction === 'forward';
@@ -549,24 +670,27 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       const normalY = isForward ? normalizedDirX : -normalizedDirX;
       const frontSpacing = length / (numFronts - 1);
       const rowSpacing = frontSpacing;
+      
       // Color for each node
       const allNodesFlat = Object.values(servicePoints).flat();
       const nodeIdx = allNodesFlat.indexOf(node);
       const dotColor = dotColors[nodeIdx % dotColors.length];
       const isSelected = node === selectedNode;
       const dots: React.ReactElement[] = [];
+      
       for (let i = 0; i < numFronts; i++) {
         const t = numFronts === 1 ? 0 : i / (numFronts - 1);
         const baseX = startX + t * directionVectorX;
         const baseY = startY + t * directionVectorY;
+        
         for (let j = 0; j < numRows; j++) {
           const offsetDistance = j * rowSpacing;
           const pointX = baseX + normalX * offsetDistance;
           const pointY = baseY + normalY * offsetDistance;
           
           // Distinguish Start and End points
-                  const isStartPoint = i === 0 && j === 0; // front_start position
-        const isEndPoint = i === numFronts - 1 && j === 0; // front_end position (same front line)
+          const isStartPoint = i === 0 && j === 0; // front_start position
+          const isEndPoint = i === numFronts - 1 && j === 0; // front_end position (same front line)
           
           let backgroundColor, opacity, zIndex;
           
@@ -589,7 +713,6 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
           
           // All dots same size (최소 크기 보장으로 원 깨짐 방지)
           const currentDotSize = dotSize;
-          
           const dotSizePx = Math.max(currentDotSize * 10, 2); // 최소 2px로 원 깨짐 방지
           
           dots.push(
@@ -619,6 +742,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
           );
         }
       }
+      
+      console.log(`renderAllNodeDots: Created ${dots.length} dots for node ${node}`);
       return dots;
     });
   };
@@ -704,18 +829,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     generateAndDownloadJSON(undefined);
   };
 
-  useEffect(() => {
-    const zoomable = zoomableRef.current;
-    if (!zoomable) return;
-    const wheelBlocker = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    zoomable.addEventListener('wheel', wheelBlocker, { passive: false });
-    return () => {
-      zoomable.removeEventListener('wheel', wheelBlocker);
-    };
-  }, []);
+
 
   return (
     <div className="space-y-6">
@@ -749,8 +863,30 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
                 className="hidden"
               />
             </div>
-            {/* Controls */}
+            {/* Error Display */}
+            {imageError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{imageError}</p>
+              </div>
+            )}
+            
+            {/* Debug Info */}
             {image && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                <p><strong>디버그 정보:</strong></p>
+                <p>이미지 URL: {image.substring(0, 50)}...</p>
+                <p>파일 타입: {imageFile?.type}</p>
+                <p>파일명: {imageFileName}</p>
+                <p>이미지 크기: {imageNaturalSize ? `${imageNaturalSize.width}×${imageNaturalSize.height}` : '로딩 중...'}</p>
+                <p>선택 모드: {selecting || '없음'}</p>
+                <p>선택된 노드: {selectedNode || '없음'}</p>
+                <p>노드 데이터: {selectedNode ? JSON.stringify(nodeInputs[selectedNode], null, 2) : '없음'}</p>
+                <p>모든 노드: {Object.keys(nodeInputs).join(', ')}</p>
+              </div>
+            )}
+            
+            {/* Controls */}
+            {image && !imageError && (
               <div className="mt-4 mb-4 space-y-3">
                 <div className="flex items-center gap-4">
                   <label className="text-sm font-medium">Map Dot Size:</label>
@@ -765,56 +901,42 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
                   />
                   <span className="text-sm text-gray-600">{dotSize}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <label className="text-sm font-medium">Map View:</label>
-                  <span className="text-sm text-gray-600">Zoom: {zoomLevel.toFixed(1)}x</span>
-                  <button
-                    onClick={resetView}
-                    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-                  >
-                    Reset View
-                  </button>
-                </div>
-                <div className="text-xs text-gray-500">
-                  💡 Mouse wheel: zoom | Drag: pan | Double-click: reset | 🖱️ button: coordinate select mode
-                </div>
               </div>
             )}
-            {image && (
-              <div className="mt-4 relative flex justify-center overflow-auto max-h-96 border rounded-lg">
-                <div
-                  ref={zoomableRef}
-                  className="inline-block relative"
-                  onClick={handleImageClick}
-                  onDoubleClick={resetView}
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
-                  onWheel={handleWheel}
-                  onMouseDown={handleMouseDown}
-                  onMouseUp={handleMouseUp}
-                  onDragStart={handleDragStart}
-                  style={{
-                    cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
-                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                    transformOrigin: 'center center',
-                    userSelect: 'none'
-                  }}
-                >
-                  <img
-                    src={image}
-                    alt="Topview Preview"
-                    className="block border rounded-lg shadow"
-                    draggable={false}
-                    onDragStart={(e) => e.preventDefault()}
-                  />
-                  {renderAllNodeDots()}
-                  {mousePosition && (
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none">
-                      Mouse Position: ({mousePosition.x}, {mousePosition.y})
-                    </div>
-                  )}
-                </div>
-              </div>
+            {image && !imageError && (
+              <>
+                {selecting && (
+                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm font-medium">
+                      🎯 좌표 선택 모드: {selecting === 'front_start' ? '시작점' : '끝점'}을 이미지에서 클릭하세요
+                    </p>
+                  </div>
+                )}
+                <HomeTopViewMap
+                  imageFile={imageFile}
+                  imageUrl={image}
+                  dotSize={dotSize}
+                  setDotSize={setDotSize}
+                  zoomLevel={zoomLevel}
+                  setZoomLevel={setZoomLevel}
+                  panOffset={panOffset}
+                  setPanOffset={setPanOffset}
+                  isDragging={isDragging}
+                  setIsDragging={setIsDragging}
+                  dragStart={dragStart}
+                  setDragStart={setDragStart}
+                  hasMoved={hasMoved}
+                  setHasMoved={setHasMoved}
+                  imageNaturalSize={imageNaturalSize}
+                  setImageNaturalSize={setImageNaturalSize}
+                  renderServicePoints={renderAllNodeDots}
+                  mousePosition={mousePosition}
+                  setMousePosition={setMousePosition}
+                  resetView={resetView}
+                  onImageClick={handleImageClick}
+                  selecting={selecting !== null}
+                />
+              </>
             )}
           </div>
         )}

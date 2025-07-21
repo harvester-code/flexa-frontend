@@ -1,30 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-interface LayoutData {
-  _img_info: {
-    img?: string;
-    img_path?: string;
-    W: number;
-    H: number;
-  } | null;
-  _service_point_info: {
-    [key: string]: {
-      component_name: string;
-      node_name: string;
-      front_start_point_x: number;
-      front_start_point_y: number;
-      front_end_point_x: number;
-      front_end_point_y: number;
-      direction: string;
-      num_of_fronts: number;
-      num_of_rows: number;
-    };
-  };
-}
-
 interface HomeTopViewMapProps {
-  layoutData: LayoutData;
-  imageUrl: string;
+  imageFile: File | null;
+  imageUrl: string | null;
   dotSize: number;
   setDotSize: (v: number) => void;
   zoomLevel: number;
@@ -43,10 +21,12 @@ interface HomeTopViewMapProps {
   mousePosition: { x: number; y: number } | null;
   setMousePosition: (v: { x: number; y: number } | null) => void;
   resetView: () => void;
+  onImageClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  selecting?: boolean;
 }
 
 const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
-  layoutData,
+  imageFile,
   imageUrl,
   dotSize,
   setDotSize,
@@ -66,11 +46,19 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   mousePosition,
   setMousePosition,
   resetView,
+  onImageClick,
+  selecting = false,
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
   const zoomLevelRef = useRef(zoomLevel);
   useEffect(() => { zoomLevelRef.current = zoomLevel; }, [zoomLevel]);
+
+  // Resize handle state
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStartY, setResizeStartY] = useState(0);
+  const [resizeStartHeight, setResizeStartHeight] = useState(0);
+  const [customHeight, setCustomHeight] = useState<number | null>(null);
 
   useEffect(() => {
     if (!frameRef.current) return;
@@ -83,6 +71,94 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
     observer.observe(frameRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // 이미지 크기 측정 로직 (파일 업로드 또는 URL)
+  useEffect(() => {
+    if (imageUrl && !imageNaturalSize) {
+      const img = new Image();
+      img.onload = () => {
+        if (imageFile) {
+          console.log('이미지 로딩 완료:', imageFile.name, imageFile.type);
+          console.log('원본 크기:', img.naturalWidth, img.naturalHeight);
+          
+          // SVG의 경우 viewBox나 width/height 속성을 확인
+          if (imageFile.type === 'image/svg+xml') {
+            const svgElement = img as any;
+            let width = svgElement.naturalWidth;
+            let height = svgElement.naturalHeight;
+            
+            console.log('SVG 원본 크기:', width, height);
+            
+            // SVG의 viewBox나 width/height 속성이 없는 경우 기본값 사용
+            if (!width || !height) {
+              console.log('SVG 크기 정보 없음, 파일 내용 분석 중...');
+              // SVG 파일 내용을 읽어서 viewBox 확인
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const svgContent = e.target?.result as string;
+                const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)["']/);
+                const widthMatch = svgContent.match(/width=["']([^"']+)["']/);
+                const heightMatch = svgContent.match(/height=["']([^"']+)["']/);
+                
+                if (viewBoxMatch) {
+                  const [, viewBox] = viewBoxMatch;
+                  const [, , w, h] = viewBox.split(' ');
+                  width = parseFloat(w) || 800;
+                  height = parseFloat(h) || 600;
+                  console.log('viewBox에서 크기 추출:', width, height);
+                } else if (widthMatch && heightMatch) {
+                  width = parseFloat(widthMatch[1]) || 800;
+                  height = parseFloat(heightMatch[1]) || 600;
+                  console.log('width/height에서 크기 추출:', width, height);
+                } else {
+                  width = 800;
+                  height = 600;
+                  console.log('기본 크기 사용:', width, height);
+                }
+                
+                // SVG를 컨테이너 폭에 맞게 조정
+                const aspectRatio = height / width;
+                const adjustedWidth = frameSize.width || 800;
+                const adjustedHeight = (frameSize.width || 800) * aspectRatio;
+                
+                console.log('조정된 크기:', adjustedWidth, adjustedHeight);
+                setImageNaturalSize({ width: adjustedWidth, height: adjustedHeight });
+              };
+              reader.readAsText(imageFile);
+              return;
+            }
+            
+            // SVG를 컨테이너 폭에 맞게 조정
+            const aspectRatio = height / width;
+            const adjustedWidth = frameSize.width || 800;
+            const adjustedHeight = (frameSize.width || 800) * aspectRatio;
+            
+            console.log('조정된 크기:', adjustedWidth, adjustedHeight);
+            setImageNaturalSize({ width: adjustedWidth, height: adjustedHeight });
+          } else {
+            setImageNaturalSize({ 
+              width: img.naturalWidth, 
+              height: img.naturalHeight 
+            });
+          }
+        } else {
+          // URL에서 로드된 이미지 (HomeTopView에서 사용)
+          setImageNaturalSize({ 
+            width: img.naturalWidth, 
+            height: img.naturalHeight 
+          });
+        }
+      };
+      img.onerror = () => {
+        if (imageFile) {
+          console.error('이미지 로딩 실패:', imageFile.name);
+        } else {
+          console.error('이미지 로딩 실패:', imageUrl);
+        }
+      };
+      img.src = imageUrl;
+    }
+  }, [imageFile, imageUrl, imageNaturalSize, frameSize.width]);
 
   useEffect(() => {
     if (imageNaturalSize && frameSize.width && frameSize.height) {
@@ -153,6 +229,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   }, [imageNaturalSize, panOffset]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (selecting) return; // Don't pan when in coordinate selection mode
     e.preventDefault();
     setIsDragging(true);
     setHasMoved(false);
@@ -184,17 +261,59 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
     setHasMoved(false);
   };
 
+  // Resize handle event handlers
+  const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeStartY(e.clientY);
+    setResizeStartHeight(frameSize.height);
+  };
+
+  const handleResizeMouseMove = (e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const deltaY = e.clientY - resizeStartY;
+    const newHeight = Math.max(200, resizeStartHeight + deltaY); // 최소 높이 200px
+    setCustomHeight(newHeight);
+  };
+
+  const handleResizeMouseUp = () => {
+    setIsResizing(false);
+  };
+
+  // Global resize event listeners
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMouseMove);
+      document.addEventListener('mouseup', handleResizeMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMouseMove);
+      document.removeEventListener('mouseup', handleResizeMouseUp);
+    };
+  }, [isResizing, resizeStartY, resizeStartHeight]);
+
   // Compute dynamic height based on image aspect ratio, but clamp to max 16:15
   const [frameWidth, setFrameWidth] = useState<number | null>(null);
-  useEffect(() => {
-    const handleResize = () => {
-      if (!frameRef.current) return;
-      setFrameWidth(frameRef.current.clientWidth);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+  const handleResize = React.useCallback(() => {
+    const frame = frameRef.current;
+    if (!frame) {
+      setFrameWidth(null);
+      return;
+    }
+    setFrameWidth(frame.clientWidth);
   }, []);
+
+  React.useLayoutEffect(() => {
+    window.addEventListener('resize', handleResize);
+    handleResize(); // initial
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [handleResize]);
+  
   // Default: 16:9
   let aspectRatio = 9 / 16;
   if (imageNaturalSize) {
@@ -206,7 +325,9 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       aspectRatio = 9 / 16;
     }
   }
-  const frameHeight = frameWidth ? frameWidth * aspectRatio : undefined;
+  
+  // Use custom height if set, otherwise use calculated height
+  const frameHeight = customHeight || (frameWidth ? frameWidth * aspectRatio : undefined);
 
   return (
     <div className="mb-6 w-full">
@@ -217,7 +338,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
           width: '100%',
           // aspectRatio: '16 / 9', // REMOVE THIS
           height: frameHeight,
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
           background: '#f2f2f2',
         }}
@@ -237,19 +358,26 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             left: 0,
             top: 0,
           }}
+          onClick={onImageClick}
         >
           <img
-            src={imageUrl}
+            src={imageUrl || ''}
             alt="Airport Layout"
             draggable={false}
             style={{
               width: '100%',
               height: '100%',
               display: 'block',
-              pointerEvents: 'none',
+              pointerEvents: selecting ? 'auto' : 'none', // Allow clicks when in selecting mode
+              objectFit: 'contain',
             }}
           />
-          {renderServicePoints()}
+          {(() => {
+            console.log('HomeTopViewMap: Rendering service points');
+            const result = renderServicePoints();
+            console.log('HomeTopViewMap: Service points result:', result);
+            return result;
+          })()}
         </div>
         {/* Move Mouse Position tooltip to the frame's bottom-left */}
         {mousePosition && (
@@ -257,6 +385,23 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             Mouse Position: ({mousePosition.x}, {mousePosition.y})
           </div>
         )}
+        
+        {/* Resize handle */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 bg-gray-300 hover:bg-gray-400 cursor-ns-resize flex items-center justify-center"
+          onMouseDown={handleResizeMouseDown}
+          style={{
+            zIndex: 100,
+            opacity: isResizing ? 0.8 : 0.6,
+          }}
+        >
+          <div className="w-8 h-1 bg-gray-500 rounded-full"></div>
+          {isResizing && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded pointer-events-none">
+              Height: {Math.round(frameHeight || 0)}px
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

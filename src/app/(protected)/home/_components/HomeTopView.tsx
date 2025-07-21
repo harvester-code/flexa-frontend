@@ -8,8 +8,7 @@ import HomeTopViewMap from './HomeTopViewMap';
 
 interface LayoutData {
   _img_info: {
-    img?: string;        // base64 이미지 데이터 (기존 방식)
-    img_path?: string;   // 이미지 파일 경로 (새로운 방식)
+    img_path: string;   // 이미지 파일 경로
     W: number;
     H: number;
   } | null;
@@ -43,7 +42,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   const [timeIndex, setTimeIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null); // 실제 표시할 이미지 URL
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // Zoom and Pan state (동일한 LayoutSetting 방식)
   const [dotSize, setDotSize] = useState<number>(0.5); // LayoutSetting과 동일한 초기값
@@ -109,7 +108,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   useEffect(() => {
     const fetchLayoutData = async () => {
       try {
-        // layout.json 만 fetch (topview_data.json은 props로 받음)
+        // layout.json fetch
         const layoutResponse = await fetch('/layout.json');
         
         if (!layoutResponse.ok) {
@@ -119,27 +118,16 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         const layoutData = await layoutResponse.json();
         setLayoutData(layoutData);
 
-        
         // 이미지 URL 설정
-        if (layoutData._img_info) {
-          if (layoutData._img_info.img_path) {
-            setImageUrl(`/${layoutData._img_info.img_path}`);
-          } else {
-            setImageUrl(null);
-          }
-        }
-        
-        // 이미지 natural size 측정
-        if (layoutData._img_info) {
+        if (layoutData._img_info?.img_path) {
+          setImageUrl(`/${layoutData._img_info.img_path}`);
+          
+          // 이미지 natural size 측정
           const img = new Image();
           img.onload = () => {
             setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
           };
-          if (layoutData._img_info.img_path) {
-            img.src = `/${layoutData._img_info.img_path}`;
-          } else if (imageUrl) {
-            img.src = imageUrl;
-          }
+          img.src = `/${layoutData._img_info.img_path}`;
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -608,7 +596,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         {/* Controls (LayoutSetting과 동일한 UI) */}
         {viewMode === 'view' && imageUrl && layoutData && (
           <HomeTopViewMap
-            layoutData={layoutData}
+            imageFile={null}
             imageUrl={imageUrl}
             dotSize={dotSize}
             setDotSize={setDotSize}

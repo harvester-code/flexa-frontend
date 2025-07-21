@@ -88,6 +88,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: pr
     return <HomeNoData />;
   }
 
+  console.log(summaryData)
   return (
     <>
       <div className="my-[14px] grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
@@ -124,7 +125,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: pr
           icon={RatioIcon01}
           title={
             <span className="flex items-center">
-              Activated / Installed Ratio (AIR)
+              Activated / Installed Ratio (A/I Ratio)
               <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
                 <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
               </HomeTooltip>
@@ -141,7 +142,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: pr
           icon={RatioIcon02}
           title={
             <span className="flex items-center">
-              Processed / Activated Ratio (PAR)
+              Processed / Activated Ratio (P/A Ratio)
               <HomeTooltip content="The ratio of processed capacity to activated capacity.">
                 <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
               </HomeTooltip>
@@ -158,7 +159,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: pr
           icon={RatioIcon03}
           title={
             <span className="flex items-center">
-              Processed / Installed Ratio (PIR)
+              Processed / Installed Ratio (P/I Ratio)
               <HomeTooltip content="The ratio of processed capacity to total installed capacity.">
                 <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
               </HomeTooltip>
@@ -171,6 +172,23 @@ function HomeSummary({ scenario, calculate_type, percentile, data, isLoading: pr
             </>
           }
         />
+        <HomeSummaryCard
+          icon={RatioIcon03}
+          title={
+            <span className="flex items-center">
+              Sample
+              <HomeTooltip content="The ratio of processed capacity to total installed capacity.">
+                <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
+              </HomeTooltip>
+            </span>
+          }
+          value={
+            <>
+              {Math.round(Number(summaryData?.throughput))}
+              {formatUnit('%')}
+            </>
+          }
+          />
       </div>
 
       <div className="rounded border border-default-200 px-5 py-3">
