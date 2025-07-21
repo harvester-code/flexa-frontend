@@ -61,101 +61,80 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   const [customHeight, setCustomHeight] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!frameRef.current) return;
     const handleResize = () => {
-      const rect = frameRef.current!.getBoundingClientRect();
+      if (!frameRef.current) return;
+      const rect = frameRef.current.getBoundingClientRect();
       setFrameSize({ width: rect.width, height: rect.height });
     };
-    handleResize();
-    const observer = new window.ResizeObserver(handleResize);
-    observer.observe(frameRef.current);
-    return () => observer.disconnect();
+    if (frameRef.current) {
+      handleResize();
+      const observer = new window.ResizeObserver(() => {
+        if (!frameRef.current) return;
+        handleResize();
+      });
+      observer.observe(frameRef.current);
+      return () => observer.disconnect();
+    }
   }, []);
+
+  // 1. SVG viewBox/width/height 파싱 함수 추가
+  async function fetchSvgNaturalSize(url: string): Promise<{ width: number; height: number } | null> {
+    try {
+      const res = await fetch(url);
+      const svgText = await res.text();
+      const viewBoxMatch = svgText.match(/viewBox=["']([^"']+)["']/);
+      if (viewBoxMatch) {
+        const [, viewBox] = viewBoxMatch;
+        const [, , w, h] = viewBox.split(' ');
+        return { width: parseFloat(w), height: parseFloat(h) };
+      }
+      const widthMatch = svgText.match(/width=["']([^"']+)["']/);
+      const heightMatch = svgText.match(/height=["']([^"']+)["']/);
+      if (widthMatch && heightMatch) {
+        return { width: parseFloat(widthMatch[1]), height: parseFloat(heightMatch[1]) };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
 
   // 이미지 크기 측정 로직 (파일 업로드 또는 URL)
   useEffect(() => {
-    if (imageUrl && !imageNaturalSize) {
+    // 1. imageFile이 있으면 기존 로직 (파일 업로드)
+    if (imageFile && imageUrl && !imageNaturalSize) {
       const img = new Image();
       img.onload = () => {
-        if (imageFile) {
-          console.log('이미지 로딩 완료:', imageFile.name, imageFile.type);
-          console.log('원본 크기:', img.naturalWidth, img.naturalHeight);
-          
-          // SVG의 경우 viewBox나 width/height 속성을 확인
-          if (imageFile.type === 'image/svg+xml') {
-            const svgElement = img as any;
-            let width = svgElement.naturalWidth;
-            let height = svgElement.naturalHeight;
-            
-            console.log('SVG 원본 크기:', width, height);
-            
-            // SVG의 viewBox나 width/height 속성이 없는 경우 기본값 사용
-            if (!width || !height) {
-              console.log('SVG 크기 정보 없음, 파일 내용 분석 중...');
-              // SVG 파일 내용을 읽어서 viewBox 확인
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const svgContent = e.target?.result as string;
-                const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)["']/);
-                const widthMatch = svgContent.match(/width=["']([^"']+)["']/);
-                const heightMatch = svgContent.match(/height=["']([^"']+)["']/);
-                
-                if (viewBoxMatch) {
-                  const [, viewBox] = viewBoxMatch;
-                  const [, , w, h] = viewBox.split(' ');
-                  width = parseFloat(w) || 800;
-                  height = parseFloat(h) || 600;
-                  console.log('viewBox에서 크기 추출:', width, height);
-                } else if (widthMatch && heightMatch) {
-                  width = parseFloat(widthMatch[1]) || 800;
-                  height = parseFloat(heightMatch[1]) || 600;
-                  console.log('width/height에서 크기 추출:', width, height);
-                } else {
-                  width = 800;
-                  height = 600;
-                  console.log('기본 크기 사용:', width, height);
-                }
-                
-                // SVG를 컨테이너 폭에 맞게 조정
-                const aspectRatio = height / width;
-                const adjustedWidth = frameSize.width || 800;
-                const adjustedHeight = (frameSize.width || 800) * aspectRatio;
-                
-                console.log('조정된 크기:', adjustedWidth, adjustedHeight);
-                setImageNaturalSize({ width: adjustedWidth, height: adjustedHeight });
-              };
-              reader.readAsText(imageFile);
-              return;
-            }
-            
-            // SVG를 컨테이너 폭에 맞게 조정
-            const aspectRatio = height / width;
-            const adjustedWidth = frameSize.width || 800;
-            const adjustedHeight = (frameSize.width || 800) * aspectRatio;
-            
-            console.log('조정된 크기:', adjustedWidth, adjustedHeight);
-            setImageNaturalSize({ width: adjustedWidth, height: adjustedHeight });
-          } else {
-            setImageNaturalSize({ 
-              width: img.naturalWidth, 
-              height: img.naturalHeight 
-            });
-          }
-        } else {
-          // URL에서 로드된 이미지 (HomeTopView에서 사용)
-          setImageNaturalSize({ 
-            width: img.naturalWidth, 
-            height: img.naturalHeight 
-          });
-        }
+        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
       };
-      img.onerror = () => {
-        if (imageFile) {
-          console.error('이미지 로딩 실패:', imageFile.name);
-        } else {
-          console.error('이미지 로딩 실패:', imageUrl);
-        }
+      img.onerror = () => {};
+      img.src = imageUrl;
+      return;
+    }
+    // 2. imageFile이 없고 imageUrl이 SVG일 때 viewBox/width/height 파싱 (View에서 사용)
+    if (
+      imageUrl &&
+      !imageFile &&
+      imageUrl.toLowerCase().endsWith('.svg') &&
+      !imageNaturalSize
+    ) {
+      fetchSvgNaturalSize(imageUrl).then((size) => {
+        if (size) setImageNaturalSize(size);
+      });
+      return; // 반드시 return해서 아래 코드 실행 방지
+    }
+    // 3. 그 외에는 기존 방식 (이미지 naturalWidth/naturalHeight)
+    if (
+      imageUrl &&
+      !imageFile &&
+      !imageUrl.toLowerCase().endsWith('.svg') &&
+      !imageNaturalSize
+    ) {
+      const img = new Image();
+      img.onload = () => {
+        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
       };
+      img.onerror = () => {};
       img.src = imageUrl;
     }
   }, [imageFile, imageUrl, imageNaturalSize, frameSize.width]);
@@ -379,12 +358,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             return result;
           })()}
         </div>
-        {/* Move Mouse Position tooltip to the frame's bottom-left */}
-        {mousePosition && (
-          <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md pointer-events-none z-50">
-            Mouse Position: ({mousePosition.x}, {mousePosition.y})
-          </div>
-        )}
+
         
         {/* Resize handle */}
         <div

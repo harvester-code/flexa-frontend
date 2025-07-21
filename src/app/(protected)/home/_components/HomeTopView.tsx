@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Slider } from '@/components/ui/Slider';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import HomeTopViewMap from './HomeTopViewMap';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from '@/components/ui/AlertDialog';
 
 interface LayoutData {
   _img_info: {
@@ -36,6 +37,7 @@ interface HomeTopViewProps {
 }
 
 function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeTopViewProps) {
+  // 모든 useState, useRef, useEffect 등 Hook 선언
   const [layoutData, setLayoutData] = useState<LayoutData | null>(null);
   const [topViewData, setTopViewData] = useState<{[key: string]: {[componentName: string]: {[servicePoint: string]: number}}} | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -43,33 +45,18 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   const [error, setError] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  
-  // Zoom and Pan state (동일한 LayoutSetting 방식)
-  const [dotSize, setDotSize] = useState<number>(0.5); // LayoutSetting과 동일한 초기값
+  const [dotSize, setDotSize] = useState<number>(0.5);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasMoved, setHasMoved] = useState(false);
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
-
-  // 프레임(뷰포트) 크기 동적 관리
+  const [showLayoutWarning, setShowLayoutWarning] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
 
-  // ResizeObserver로 프레임 크기 감지
-  useEffect(() => {
-    if (!frameRef.current) return;
-    const handleResize = () => {
-      const rect = frameRef.current!.getBoundingClientRect();
-      setFrameSize({ width: rect.width, height: rect.height });
-    };
-    handleResize();
-    const observer = new window.ResizeObserver(handleResize);
-    observer.observe(frameRef.current);
-    return () => observer.disconnect();
-  }, []);
-
+  // 모든 useEffect 등 Hook 호출
   // Set topview data from props
   useEffect(() => {
     if (data) {
@@ -278,15 +265,38 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     
     const hasPersonHere = totalPositionIndex < queueCount;
     
+    // 로그 추가
+    console.log('isPersonAtPosition', {
+      servicePointKey,
+      frontIndex,
+      rowIndex,
+      queueCount,
+      totalPositionIndex,
+      hasPersonHere,
+      selectedTime,
+      componentName,
+      topViewData: topViewData[selectedTime]?.[componentName],
+    });
+
     return hasPersonHere;
   };
+
+  // 색상 매핑 통일: dot과 text를 함께 관리
+  const servicePointColors = [
+    { dot: 'bg-blue-500', text: 'bg-blue-100 text-blue-800' },
+    { dot: 'bg-green-500', text: 'bg-green-100 text-green-800' },
+    { dot: 'bg-purple-500', text: 'bg-purple-100 text-purple-800' },
+    { dot: 'bg-yellow-500', text: 'bg-yellow-100 text-yellow-800' },
+    { dot: 'bg-pink-500', text: 'bg-pink-100 text-pink-800' },
+    { dot: 'bg-indigo-500', text: 'bg-indigo-100 text-indigo-800' },
+    { dot: 'bg-orange-500', text: 'bg-orange-100 text-orange-800' },
+  ];
 
   const renderServicePoints = () => {
     if (!layoutData?._service_point_info || !imageNaturalSize) return null;
 
     const servicePoints = layoutData._service_point_info;
     const imgInfo = layoutData._img_info;
-    
     if (!imgInfo) return null;
 
     // Get current displayed image size (LayoutSetting 방식과 동일)
@@ -301,24 +311,12 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     const scaleX = originalDisplayWidth / imageNaturalSize.width;
     const scaleY = originalDisplayHeight / imageNaturalSize.height;
 
-
-
-    // 서비스 포인트별 색상 정의 (LayoutSetting과 동일)
-    const dotColors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-yellow-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-orange-500',
-    ];
-
+    // 서비스 포인트별 색상 정의 (servicePointColors 사용)
     const allNodes = Object.keys(servicePoints);
-    
-    return allNodes.map((node) => {
+    const allPoints: React.ReactNode[] = [];
+    allNodes.forEach((node) => {
       const nodeData = servicePoints[node];
-      if (!nodeData) return null;
+      if (!nodeData) return;
       
       // 좌표를 현재 display size로 변환
       const startX = Number(nodeData.front_start_point_x) * scaleX;
@@ -328,14 +326,14 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       const numFronts = Number(nodeData.num_of_fronts);
       const numRows = Number(nodeData.num_of_rows);
       
-      if (numFronts < 1 || numRows < 1) return null;
+      if (numFronts < 1 || numRows < 1) return;
 
       // 방향 벡터 계산
       const directionVectorX = endX - startX;
       const directionVectorY = endY - startY;
       const length = Math.sqrt(directionVectorX * directionVectorX + directionVectorY * directionVectorY);
       
-      if (length === 0) return null;
+      if (length === 0) return;
       
       // 정규화된 방향 벡터
       const normalizedDirX = directionVectorX / length;
@@ -352,17 +350,15 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
       // Color for each node
       const nodeIdx = allNodes.indexOf(node);
-      const dotColor = dotColors[nodeIdx % dotColors.length];
+      const dotColor = servicePointColors[nodeIdx % servicePointColors.length].dot;
 
-      const points: React.ReactNode[] = [];
-      
       // Start/End 포인트 표시 (dotSize에 따라 크기 조절, 최소 크기 보장)
       const markerSize = Math.max(dotSize * 10, 2); // 최소 2px로 원 깨짐 방지
       
-              points.push(
-          <div
+              allPoints.push(
+          (<div
             key={`${node}-start-marker`}
-            className="absolute rounded-full"
+            className={`absolute rounded-full`}
             style={{
               width: `${markerSize}px`,
               height: `${markerSize}px`,
@@ -379,13 +375,13 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
             }}
             title={`${node} Start Point`}
-          />
+          />) as React.ReactNode
         );
         
-        points.push(
-          <div
+        allPoints.push(
+          (<div
             key={`${node}-end-marker`}
-            className="absolute rounded-full"
+            className={`absolute rounded-full`}
             style={{
               width: `${markerSize}px`,
               height: `${markerSize}px`,
@@ -402,7 +398,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
             }}
             title={`${node} End Point`}
-          />
+          />) as React.ReactNode
         );
 
       for (let i = 0; i < numFronts; i++) {
@@ -417,46 +413,38 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
           // 해당 위치에 사람이 있는지 확인
           const isActive = isPersonAtPosition(node, i, j);
-          
-
+          console.log('dot 조건 체크', { node, i, j, isActive });
           
           if (isActive) {
-            // All dots same size (LayoutSetting 방식과 동일, 최소 크기 보장으로 원 깨짐 방지)
-            const currentDotSize = dotSize;
-            const dotSizePx = Math.max(currentDotSize * 10, 2); // 최소 2px로 원 깨짐 방지
-            
-                          points.push(
-                <div
-                  key={`dot-${node}-${i}-${j}`}
-                  className={`absolute rounded-full shadow-lg ${dotColor}`}
-                  style={{
-                    width: `${dotSizePx}px`,
-                    height: `${dotSizePx}px`,
-                    left: `${pointX - dotSizePx/2}px`,
-                    top: `${pointY - dotSizePx/2}px`,
-                    opacity: '0.9',
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                    boxShadow: dotSizePx >= 4 ? '0 2px 4px rgba(0,0,0,0.3)' : 'none', // 작은 점은 그림자 제거
-                    // 원 깨짐 방지를 위한 CSS 최적화
-                    borderRadius: '50%',
-                    minWidth: '2px',
-                    minHeight: '2px',
-                    transform: 'translateZ(0)', // 하드웨어 가속
-                    backfaceVisibility: 'hidden', // 렌더링 최적화
-                    WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
-                  }}
-                  title={`${node} Front[${i+1}/${numFronts}] Row[${j+1}/${numRows}] - OCCUPIED - (${Math.round(pointX / scaleX)}, ${Math.round(pointY / scaleY)})`}
-                />
-              );
-            
+            // 이미지 표시 크기 기준으로 dot 좌표 변환
+            const scaleX = imgElement.clientWidth / imageNaturalSize.width;
+            const scaleY = imgElement.clientHeight / imageNaturalSize.height;
+            const displayX = pointX * scaleX;
+            const displayY = pointY * scaleY;
 
+            allPoints.push(
+              (<div
+                key={`dot-${node}-${i}-${j}`}
+                className={`absolute ${dotColor}`}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  left: `${displayX - 12}px`,
+                  top: `${displayY - 12}px`,
+                  opacity: 1,
+                  zIndex: 100,
+                  border: '2px solid yellow',
+                  borderRadius: '50%',
+                  pointerEvents: 'none',
+                }}
+                title={`${node} Front[${i+1}/${numFronts}] Row[${j+1}/${numRows}] - OCCUPIED`}
+              />) as React.ReactNode
+            );
           }
         }
       }
-
-      return points;
     });
+    return allPoints;
   };
 
   useEffect(() => {
@@ -472,14 +460,44 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     };
   }, []);
 
-  if (isLoading) {
+  // 데이터 가공, 변수 선언
+  const currentQueueData = selectedTime && topViewData ? (() => {
+    const timeData = topViewData[selectedTime];
+    if (!timeData) return {};
+    const combinedData: {[servicePoint: string]: number} = {};
+    Object.values(timeData).forEach(componentData => {
+      Object.entries(componentData).forEach(([servicePoint, count]) => {
+        combinedData[servicePoint] = count;
+      });
+    });
+    return combinedData;
+  })() : {};
+  const imgInfo = layoutData?._img_info;
+  const availableTimes = topViewData ? Object.keys(topViewData).sort() : [];
+  const servicePointKeys = layoutData && layoutData._service_point_info ? Object.keys(layoutData._service_point_info) : [];
+  const currentQueueKeys = Object.keys(currentQueueData);
+  const hasMismatch = currentQueueKeys.some(key => !servicePointKeys.includes(key));
+
+  useEffect(() => {
+    if (hasMismatch && viewMode === 'view') {
+      setShowLayoutWarning(true);
+    }
+  }, [hasMismatch, viewMode]);
+
+  // 조건부 return(모달)은 모든 Hook 호출 이후에 위치
+  if (hasMismatch && viewMode === 'view') {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-gray-50 p-6 mt-[14px]">
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-              <div className="mt-2 text-sm text-gray-600">Loading topview data...</div>
+        <div className="rounded-lg border bg-white p-6 mt-[14px] flex flex-col items-center justify-center min-h-[300px]">
+          <div className="w-full max-w-md mx-auto flex flex-col items-center gap-4">
+            <div className="bg-white text-gray-800 rounded-lg px-4 py-5 text-center text-base font-medium flex flex-col items-center gap-4">
+              <span>To see the Top View, complete the Layout setting.</span>
+              <button
+                className="px-6 py-2 border border-violet-600 text-violet-600 bg-white rounded-lg font-semibold hover:bg-violet-50 transition"
+                onClick={() => setViewMode('setting')}
+              >
+                Go to Setting
+              </button>
             </div>
           </div>
         </div>
@@ -487,18 +505,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     );
   }
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-lg border bg-red-50 p-6 mt-[14px]">
-          <p className="text-red-600">Error: {error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const imgInfo = layoutData?._img_info;
-  if (!imgInfo || !imageUrl) {
+  if (!imgInfo || !imageUrl || !layoutData) {
     return (
       <div className="space-y-6">
         <div className="rounded-lg border bg-gray-50 p-6 mt-[14px]">
@@ -507,24 +514,6 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       </div>
     );
   }
-
-  const availableTimes = topViewData ? Object.keys(topViewData).sort() : [];
-  
-  // 새로운 JSON 구조에서 모든 component의 서비스 포인트 데이터를 합치기
-  const currentQueueData = selectedTime && topViewData ? (() => {
-    const timeData = topViewData[selectedTime];
-    if (!timeData) return {};
-    
-    const combinedData: {[servicePoint: string]: number} = {};
-    // 모든 component의 서비스 포인트를 하나로 합치기
-    Object.values(timeData).forEach(componentData => {
-      Object.entries(componentData).forEach(([servicePoint, count]) => {
-        combinedData[servicePoint] = count;
-      });
-    });
-    
-    return combinedData;
-  })() : {};
 
   // 슬라이더 스타일: primary color(#7C3AED) bar, 흰색 thumb
   const sliderStyle = `
@@ -629,11 +618,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 Object.entries(currentQueueData).map(([servicePoint, count]) => {
                   const servicePointKeys = Object.keys(layoutData._service_point_info);
                   const servicePointIndex = servicePointKeys.indexOf(servicePoint);
-                  const backgroundColors = [
-                    'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-purple-100 text-purple-800',
-                    'bg-yellow-100 text-yellow-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-orange-100 text-orange-800'
-                  ];
-                  const colorClass = backgroundColors[servicePointIndex % backgroundColors.length];
+                  const colorClass = servicePointColors[servicePointIndex % servicePointColors.length].text;
                   return (
                     <span key={servicePoint} className={`${colorClass} px-2 py-1 rounded font-medium`}>
                       {servicePoint}: {count} pax

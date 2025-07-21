@@ -41,6 +41,33 @@ function getRandomPersonEmoji() {
   return peopleEmojis[idx];
 }
 
+// 1. SVG viewBox 추출 함수 추가
+async function getSvgViewBox(file: File): Promise<{width: number, height: number}> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const svgText = e.target?.result as string;
+      const viewBoxMatch = svgText.match(/viewBox=["']([^"']+)["']/);
+      if (viewBoxMatch) {
+        const [, viewBox] = viewBoxMatch;
+        const [, , w, h] = viewBox.split(' ');
+        resolve({ width: parseFloat(w), height: parseFloat(h) });
+      } else {
+        // fallback: width/height 속성
+        const widthMatch = svgText.match(/width=["']([^"']+)["']/);
+        const heightMatch = svgText.match(/height=["']([^"']+)["']/);
+        if (widthMatch && heightMatch) {
+          resolve({ width: parseFloat(widthMatch[1]), height: parseFloat(heightMatch[1]) });
+        } else {
+          reject('SVG viewBox or width/height not found');
+        }
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
 const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ scenario, data, isLoading, viewMode, setViewMode }) => {
   // Image upload state
   const [image, setImage] = useState<string | null>(null);
@@ -155,89 +182,29 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     };
   }, [isDragging, dragStart, selecting, panOffset]);
 
-  // Image upload handler
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 2. 이미지 업로드 핸들러 수정
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      
-      // Reset states
-      setImageError(null);
-      setImage(url);
-      setImageFileName(file.name);
       setImageFile(file);
-      
-      // Reset zoom and pan when new image is loaded
-      setZoomLevel(1);
-      setPanOffset({ x: 0, y: 0 });
-      setIsDragging(false);
-      setHasMoved(false);
-      
-      // Measure image natural size with better error handling
-      const img = new Image();
-      img.onload = () => {
-        console.log('이미지 로딩 완료:', file.name, file.type);
-        console.log('원본 크기:', img.naturalWidth, img.naturalHeight);
-        
-        // SVG의 경우 viewBox나 width/height 속성을 확인
-        if (file.type === 'image/svg+xml') {
-          // SVG 파일의 크기를 더 정확하게 측정
-          const svgElement = img as any;
-          let width = svgElement.naturalWidth;
-          let height = svgElement.naturalHeight;
-          
-          console.log('SVG 원본 크기:', width, height);
-          
-          // SVG의 viewBox나 width/height 속성이 없는 경우 기본값 사용
-          if (!width || !height) {
-            console.log('SVG 크기 정보 없음, 파일 내용 분석 중...');
-            // SVG 파일 내용을 읽어서 viewBox 확인
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const svgContent = e.target?.result as string;
-              const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)["']/);
-              const widthMatch = svgContent.match(/width=["']([^"']+)["']/);
-              const heightMatch = svgContent.match(/height=["']([^"']+)["']/);
-              
-              if (viewBoxMatch) {
-                const [, viewBox] = viewBoxMatch;
-                const [, , w, h] = viewBox.split(' ');
-                width = parseFloat(w) || 800;
-                height = parseFloat(h) || 600;
-                console.log('viewBox에서 크기 추출:', width, height);
-              } else if (widthMatch && heightMatch) {
-                width = parseFloat(widthMatch[1]) || 800;
-                height = parseFloat(heightMatch[1]) || 600;
-                console.log('width/height에서 크기 추출:', width, height);
-              } else {
-                width = 800;
-                height = 600;
-                console.log('기본 크기 사용:', width, height);
-              }
-              
-              // SVG 크기 설정 (HomeTopViewMap에서 컨테이너에 맞게 조정됨)
-              setImageNaturalSize({ width, height });
-            };
-            reader.readAsText(file);
-            return;
-          }
-          
-          // SVG 크기 설정 (HomeTopViewMap에서 컨테이너에 맞게 조정됨)
+      setImageFileName(file.name);
+      setImage(URL.createObjectURL(file));
+      setImageError(null);
+
+      if (file.type === 'image/svg+xml') {
+        try {
+          const { width, height } = await getSvgViewBox(file);
           setImageNaturalSize({ width, height });
-        } else {
-          setImageNaturalSize({ 
-            width: img.naturalWidth, 
-            height: img.naturalHeight 
-          });
+        } catch (err) {
+          setImageError('SVG viewBox를 읽을 수 없습니다.');
         }
-      };
-      img.onerror = () => {
-        setImageError('이미지를 로드할 수 없습니다. 파일 형식을 확인해주세요.');
-        setImage(null);
-        setImageFileName(null);
-        setImageFile(null);
-      };
-      img.src = url;
+      } else {
+        const img = new window.Image();
+        img.onload = () => {
+          setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+        };
+        img.src = URL.createObjectURL(file);
+      }
     }
   };
 
@@ -749,7 +716,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   };
 
   // Helper function to generate and download JSON
-  const generateAndDownloadJSON = (imgInfo: { img: string; W: number; H: number } | undefined) => {
+  const generateAndDownloadJSON = (imgInfo: { img_path: string; W: number; H: number } | undefined) => {
     // layout.json 포맷 생성
     const layoutJson = {
       _img_info: imgInfo || {},
@@ -806,24 +773,16 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       setShowModal(true);
       return;
     }
-    // 이미지 정보 - Base64로 직접 저장
-    let imgInfo: { img: string; W: number; H: number } | undefined = undefined;
+    // 이미지 정보 - 파일명(경로)로 저장
+    let imgInfo: { img_path: string; W: number; H: number } | undefined = undefined;
     if (imageFile && imageNaturalSize) {
-      // FileReader로 이미지를 Base64로 변환
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64String = e.target?.result as string;
-        imgInfo = {
-          img: base64String, // data:image/jpeg;base64,... 형태
-          W: imageNaturalSize.width,
-          H: imageNaturalSize.height,
-        };
-        
-        // Base64 변환 완료 후 JSON 생성 및 다운로드
-        generateAndDownloadJSON(imgInfo);
+      imgInfo = {
+        img_path: imageFile.name, // 파일명만 저장 (필요시 경로 조합 가능)
+        W: imageNaturalSize.width,
+        H: imageNaturalSize.height,
       };
-      reader.readAsDataURL(imageFile);
-      return; // async 처리를 위해 여기서 리턴
+      generateAndDownloadJSON(imgInfo);
+      return;
     }
     // 이미지가 없는 경우 바로 JSON 생성
     generateAndDownloadJSON(undefined);
@@ -981,7 +940,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
               className="px-6 py-2 font-semibold"
               onClick={handleApply}
             >
-              Apply (Save layout.json → S3로 Save 하는 함수 필요)
+              Apply
             </Button>
           </div>
         )}

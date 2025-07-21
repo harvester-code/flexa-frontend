@@ -1,74 +1,74 @@
 {
   "_img_info": {
-    "img_path": "image/T1_landside_white.png",
-    "W": 5846,
-    "H": 1760
+    "img_path": "maps/T1_L5_LS.svg",
+    "W": 10180.45,
+    "H": 7884.71
   },
   "_service_point_info": {
     "A": {
       "component_name": "check_in",
       "node_name": "A",
-      "front_start_point_x": 5340,
-      "front_start_point_y": 1352,
-      "front_end_point_x": 5184,
-      "front_end_point_y": 1567,
+      "front_start_point_x": 7999,
+      "front_start_point_y": 5866,
+      "front_end_point_x": 7759,
+      "front_end_point_y": 6198,
       "direction": "backward",
       "num_of_fronts": 20,
-      "num_of_rows": 10
+      "num_of_rows": 7
     },
     "B": {
       "component_name": "check_in",
       "node_name": "B",
-      "front_start_point_x": 5006,
-      "front_start_point_y": 1128,
-      "front_end_point_x": 4854,
-      "front_end_point_y": 1343,
-      "direction": "backward",
-      "num_of_fronts": 22,
-      "num_of_rows": 12
+      "front_start_point_x": 7552,
+      "front_start_point_y": 5565,
+      "front_end_point_x": 7345,
+      "front_end_point_y": 5946,
+      "direction": "forward",
+      "num_of_fronts": 20,
+      "num_of_rows": 7
     },
     "C": {
       "component_name": "check_in",
       "node_name": "C",
-      "front_start_point_x": 4617,
-      "front_start_point_y": 917,
-      "front_end_point_x": 4511,
-      "front_end_point_y": 1140,
-      "direction": "backward",
+      "front_start_point_x": 6558,
+      "front_start_point_y": 5126,
+      "front_end_point_x": 6467,
+      "front_end_point_y": 5523,
+      "direction": "forward",
       "num_of_fronts": 20,
-      "num_of_rows": 9
+      "num_of_rows": 7
     },
     "D": {
       "component_name": "check_in",
       "node_name": "D",
-      "front_start_point_x": 4241,
-      "front_start_point_y": 748,
-      "front_end_point_x": 4152,
-      "front_end_point_y": 1005,
-      "direction": "backward",
+      "front_start_point_x": 6053,
+      "front_start_point_y": 4993,
+      "front_end_point_x": 5987,
+      "front_end_point_y": 5391,
+      "direction": "forward",
       "num_of_fronts": 20,
-      "num_of_rows": 8
+      "num_of_rows": 7
     },
     "PC1": {
       "component_name": "passport",
       "node_name": "PC1",
-      "front_start_point_x": 3971,
-      "front_start_point_y": 417,
-      "front_end_point_x": 3956,
-      "front_end_point_y": 464,
+      "front_start_point_x": 7535,
+      "front_start_point_y": 5332,
+      "front_end_point_x": 7515,
+      "front_end_point_y": 5371,
       "direction": "backward",
-      "num_of_fronts": 3,
-      "num_of_rows": 40
+      "num_of_fronts": 2,
+      "num_of_rows": 20
     },
     "PC2": {
       "component_name": "passport",
       "node_name": "PC2",
-      "front_start_point_x": 1890,
-      "front_start_point_y": 409,
-      "front_end_point_x": 1913,
-      "front_end_point_y": 465,
-      "direction": "forward",
-      "num_of_fronts": 3,
+      "front_start_point_x": 6417,
+      "front_start_point_y": 4885,
+      "front_end_point_x": 6404,
+      "front_end_point_y": 4924,
+      "direction": "backward",
+      "num_of_fronts": 2,
       "num_of_rows": 20
     }
   }
