@@ -108,13 +108,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         // 이미지 URL 설정
         if (layoutData._img_info?.img_path) {
           setImageUrl(`/${layoutData._img_info.img_path}`);
-          
-          // 이미지 natural size 측정
-          const img = new Image();
-          img.onload = () => {
-            setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-          };
-          img.src = `/${layoutData._img_info.img_path}`;
+          // imageNaturalSize는 HomeTopViewMap에서 자동 측정
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -663,27 +657,6 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
             </div>
           </div>
         )}
-
-        {/* JSON 데이터 표시 */}
-        <div className="mt-4 space-y-4">
-          <details>
-            <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-              layout.json
-            </summary>
-            <pre className="mt-2 text-sm bg-white p-4 rounded border overflow-auto max-h-96">
-              {JSON.stringify(layoutData, null, 2)}
-            </pre>
-          </details>
-
-          <details>
-            <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-              topview_data.json
-            </summary>
-            <pre className="mt-2 text-sm bg-white p-4 rounded border overflow-auto max-h-96">
-              {JSON.stringify(topViewData, null, 2)}
-            </pre>
-          </details>
-        </div>
       </div>
     </div>
   );

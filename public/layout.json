@@ -1,75 +1,73 @@
 {
   "_img_info": {
-    "img_path": "maps/T1+T2.png",
-    "W": 2480,
-    "H": 3508
+    "img_path": "maps/T1_L5_LS.svg"
   },
   "_service_point_info": {
     "A": {
       "component_name": "check_in",
       "node_name": "A",
-      "front_start_point_x": 1684,
-      "front_start_point_y": 2996,
-      "front_end_point_x": 1897,
-      "front_end_point_y": 2912,
-      "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 7
+      "front_start_point_x": 8034,
+      "front_start_point_y": 6016,
+      "front_end_point_x": 7829,
+      "front_end_point_y": 6284,
+      "direction": "backward",
+      "num_of_fronts": 30,
+      "num_of_rows": 15
     },
     "B": {
       "component_name": "check_in",
       "node_name": "B",
-      "front_start_point_x": 1020,
-      "front_start_point_y": 2973,
-      "front_end_point_x": 1268,
-      "front_end_point_y": 2939,
-      "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 7
+      "front_start_point_x": 7663,
+      "front_start_point_y": 5636,
+      "front_end_point_x": 7431,
+      "front_end_point_y": 6002,
+      "direction": "backward",
+      "num_of_fronts": 30,
+      "num_of_rows": 15
     },
     "C": {
       "component_name": "check_in",
       "node_name": "C",
-      "front_start_point_x": 297,
-      "front_start_point_y": 3059,
-      "front_end_point_x": 613,
-      "front_end_point_y": 3026,
-      "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 7
+      "front_start_point_x": 7199,
+      "front_start_point_y": 5381,
+      "front_end_point_x": 7015,
+      "front_end_point_y": 5763,
+      "direction": "backward",
+      "num_of_fronts": 30,
+      "num_of_rows": 11
     },
     "D": {
       "component_name": "check_in",
       "node_name": "D",
-      "front_start_point_x": 1360,
-      "front_start_point_y": 2591,
-      "front_end_point_x": 1537,
-      "front_end_point_y": 2560,
-      "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 7
+      "front_start_point_x": 6712,
+      "front_start_point_y": 5173,
+      "front_end_point_x": 6565,
+      "front_end_point_y": 5586,
+      "direction": "backward",
+      "num_of_fronts": 30,
+      "num_of_rows": 15
     },
     "PC1": {
       "component_name": "passport",
       "node_name": "PC1",
-      "front_start_point_x": 393,
-      "front_start_point_y": 2472,
-      "front_end_point_x": 692,
-      "front_end_point_y": 2476,
+      "front_start_point_x": 7221,
+      "front_start_point_y": 4920,
+      "front_end_point_x": 7515,
+      "front_end_point_y": 5049,
       "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 3
+      "num_of_fronts": 50,
+      "num_of_rows": 30
     },
     "PC2": {
       "component_name": "passport",
       "node_name": "PC2",
-      "front_start_point_x": 995,
-      "front_start_point_y": 2265,
-      "front_end_point_x": 1246,
-      "front_end_point_y": 2200,
+      "front_start_point_x": 6117,
+      "front_start_point_y": 4575,
+      "front_end_point_x": 6367,
+      "front_end_point_y": 4604,
       "direction": "forward",
-      "num_of_fronts": 20,
-      "num_of_rows": 3
+      "num_of_fronts": 50,
+      "num_of_rows": 30
     }
   }
 }

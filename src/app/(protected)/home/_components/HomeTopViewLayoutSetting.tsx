@@ -147,6 +147,51 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     }
   }, [data]);
 
+  // layout.json 자동 불러오기 및 적용
+  useEffect(() => {
+    async function loadLayoutJson() {
+      try {
+        const res = await fetch('/layout.json');
+        if (!res.ok) return; // 파일 없으면 무시
+        const json = await res.json();
+        // 이미지 경로
+        const imgPath = json?._img_info?.img_path;
+        if (imgPath) {
+          // 이미지 파일 존재 확인
+          const imgRes = await fetch(`/${imgPath}`);
+          if (!imgRes.ok) {
+            setImageError('Image file not found in the maps folder.');
+            return;
+          }
+          setImage(`/${imgPath}`);
+          setImageFileName(imgPath.split('/').pop() || imgPath);
+          setImageFile(null); // 업로드 파일은 없음
+          setImageError(null);
+          // 이미지 크기 자동 측정은 HomeTopViewMap에서 처리
+        }
+        // 좌표/행/열/방향 등 노드 정보
+        const spInfo = json?._service_point_info || {};
+        setNodeInputs(() => {
+          const newInputs: typeof nodeInputs = {};
+          Object.entries(spInfo).forEach(([node, values]: [string, any]) => {
+            newInputs[node] = {
+              front_start_point_x: values.front_start_point_x ?? '',
+              front_start_point_y: values.front_start_point_y ?? '',
+              front_end_point_x: values.front_end_point_x ?? '',
+              front_end_point_y: values.front_end_point_y ?? '',
+              direction: values.direction ?? 'forward',
+              num_of_fronts: values.num_of_fronts ?? 5,
+              num_of_rows: values.num_of_rows ?? 7,
+            };
+          });
+          return newInputs;
+        });
+      } catch (e) {
+        // 파일 없으면 무시
+      }
+    }
+    loadLayoutJson();
+  }, []);
 
 
   // Initialize input values and set defaults when node is selected
@@ -721,7 +766,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   };
 
   // Helper function to generate and download JSON
-  const generateAndDownloadJSON = (imgInfo: { img_path: string; W: number; H: number } | undefined) => {
+  const generateAndDownloadJSON = (imgInfo: { img_path: string; W?: number; H?: number } | undefined) => {
     // layout.json 포맷 생성
     const layoutJson = {
       _img_info: imgInfo || {},
@@ -779,12 +824,10 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
       return;
     }
     // 이미지 정보 - 파일명(경로)로 저장
-    let imgInfo: { img_path: string; W: number; H: number } | undefined = undefined;
-    if (imageFile && imageNaturalSize) {
+    let imgInfo: { img_path: string } | undefined = undefined;
+    if (imageFile) {
       imgInfo = {
         img_path: `maps/${imageFile.name}`,
-        W: imageNaturalSize.width,
-        H: imageNaturalSize.height,
       };
       generateAndDownloadJSON(imgInfo);
       return;
