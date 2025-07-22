@@ -570,8 +570,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-6 mt-[14px]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">View</h3>
+        <div className="flex items-center mb-4">
           <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
             <TabsList>
               <TabsTrigger value="view">View</TabsTrigger>

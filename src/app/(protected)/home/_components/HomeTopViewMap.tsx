@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
+import { Button } from '@/components/ui/Button';
+import { Slider } from '@/components/ui/Slider';
+import { X } from 'lucide-react';
 
 interface HomeTopViewMapProps {
   imageFile: File | null;
@@ -308,6 +312,9 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   // Use custom height if set, otherwise use calculated height
   const frameHeight = customHeight || (frameWidth ? frameWidth * aspectRatio : undefined);
 
+  // Dot Size Modal 상태
+  const [showDotSizePopover, setShowDotSizePopover] = useState(false);
+
   return (
     <div className="mb-6 w-full">
       <div
@@ -375,6 +382,38 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
               Height: {Math.round(frameHeight || 0)}px
             </div>
           )}
+        </div>
+        {/* 우측 하단 설정 버튼 + Popover */}
+        <div className="absolute bottom-4 right-4 z-[200]">
+          <Popover open={showDotSizePopover} onOpenChange={setShowDotSizePopover}>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="icon" title="Dot Size Setting">
+                <span role="img" aria-label="settings">⚙️</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" side="top" className="w-72 relative">
+              <button
+                type="button"
+                className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                onClick={() => setShowDotSizePopover(false)}
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex flex-col gap-4 items-center">
+                <span className="font-semibold">Dot Size</span>
+                <Slider
+                  min={0.005}
+                  max={1}
+                  step={0.005}
+                  value={[dotSize]}
+                  onValueChange={([v]) => setDotSize(v)}
+                  className="w-64"
+                />
+                <span className="text-sm text-gray-600">{dotSize}</span>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>

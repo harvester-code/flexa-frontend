@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from '@/components/ui/AlertDialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter, DialogClose } from '@/components/ui/Dialog';
 import HomeTopViewMap from './HomeTopViewMap';
+import { Slider } from '@/components/ui/Slider';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
+import { Info } from 'lucide-react';
 
 interface ServicePointData {
   [component: string]: string[];
@@ -38,6 +42,15 @@ const peopleEmojis = [
 ];
 function getRandomPersonEmoji() {
   const idx = Math.floor(Math.random() * peopleEmojis.length);
+  return peopleEmojis[idx];
+}
+
+// getSeededPersonEmoji 함수 추가
+function getSeededPersonEmoji(rowIdx: number, colIdx: number, node: string, seed: number) {
+  let hash = 0;
+  for (let i = 0; i < node.length; i++) hash += node.charCodeAt(i);
+  // seed를 더해주고, 충분히 섞이도록 곱셈/나눗셈
+  const idx = Math.abs((rowIdx * 31 + colIdx * 17 + hash + Math.floor(seed / 1000))) % peopleEmojis.length;
   return peopleEmojis[idx];
 }
 
@@ -108,6 +121,21 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
   // Image natural size state
   const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Modal state for file upload
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  // Temp state for file upload in modal
+  const [tempImageFile, setTempImageFile] = useState<File | null>(null);
+  const [tempImage, setTempImage] = useState<string | null>(null);
+  const [tempImageFileName, setTempImageFileName] = useState<string | null>(null);
+  const [tempImageError, setTempImageError] = useState<string | null>(null);
+  const [tempImageNaturalSize, setTempImageNaturalSize] = useState<{width: number; height: number} | null>(null);
+
+  // Modal file input ref
+  const modalFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // 이모지 배열 seed: cols/rows가 바뀔 때마다 갱신
+  const [emojiSeed, setEmojiSeed] = useState(Date.now());
 
   // Initialize servicePoints from props data
   useEffect(() => {
@@ -206,6 +234,55 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
         img.src = URL.createObjectURL(file);
       }
     }
+  };
+
+  // Modal file change handler
+  const handleModalImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setTempImageFile(file);
+      setTempImageFileName(file.name);
+      setTempImage(URL.createObjectURL(file));
+      setTempImageError(null);
+      if (file.type === 'image/svg+xml') {
+        try {
+          const { width, height } = await getSvgViewBox(file);
+          setTempImageNaturalSize({ width, height });
+        } catch (err) {
+          setTempImageError('SVG viewBox를 읽을 수 없습니다.');
+        }
+      } else {
+        const img = new window.Image();
+        img.onload = () => {
+          setTempImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+        };
+        img.src = URL.createObjectURL(file);
+      }
+    }
+  };
+
+  // Modal apply handler
+  const handleModalApply = () => {
+    if (!tempImageFile || !tempImageNaturalSize) {
+      setTempImageError('이미지 파일을 선택하세요.');
+      return;
+    }
+    setImageFile(tempImageFile);
+    setImageFileName(tempImageFileName);
+    setImage(tempImage);
+    setImageNaturalSize(tempImageNaturalSize);
+    setImageError(tempImageError);
+    setShowUploadModal(false);
+  };
+
+  // Modal close handler (reset temp states)
+  const handleModalClose = () => {
+    setShowUploadModal(false);
+    setTempImageFile(null);
+    setTempImage(null);
+    setTempImageFileName(null);
+    setTempImageError(null);
+    setTempImageNaturalSize(null);
   };
 
   // Mouse wheel zoom handler
@@ -368,6 +445,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
         num_of_fronts: Math.max(1, value),
       },
     }));
+    setEmojiSeed(Date.now());
   };
   const handleChangeRows = (node: string, value: number) => {
     setNodeInputs((prev) => ({
@@ -377,6 +455,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
         num_of_rows: Math.max(1, value),
       },
     }));
+    setEmojiSeed(Date.now());
   };
 
   // Render emoji grid (Start/End/Direction on left, visualization with First Row Passengers in center on right)
@@ -385,13 +464,13 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     const numFronts = Number(nodeData.num_of_fronts) || 5;
     const numRows = Number(nodeData.num_of_rows) || 7;
     return (
-      <div className="flex flex-row items-start justify-center gap-8 mt-4 w-full">
-        {/* Input Form (Left) */}
-        <div className="flex flex-col gap-3 min-w-[220px] max-w-[320px] mt-32">
-          <div className="flex gap-2 items-center">
-            <span className="text-xs font-semibold mr-1 min-w-[60px] flex items-center gap-1">
-              🚩 Start
-            </span>
+      <div className="grid grid-cols-2 gap-x-12 gap-y-4 min-w-[700px] max-w-full items-center">
+        {/* 왼쪽: Start/End Point 세로 */}
+        <div className="flex flex-col gap-4">
+          {/* Start Point */}
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🚩</span>
+            <span className="font-medium">Start Point</span>
             <Input type="number" placeholder="x" value={nodeData.front_start_point_x ?? ''} onChange={e => handleInputChange('front_start_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Input type="number" placeholder="y" value={nodeData.front_start_point_y ?? ''} onChange={e => handleInputChange('front_start_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Button 
@@ -400,15 +479,15 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
               variant={selecting === 'front_start' ? 'secondary' : 'outline'} 
               onClick={() => setSelecting(selecting === 'front_start' ? null : 'front_start')} 
               title="Select with mouse"
-              className={selecting === 'front_start' ? 'bg-blue-500 text-white' : ''}
+              className={selecting === 'front_start' ? 'bg-primary text-primary-foreground' : ''}
             >
               <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
-          <div className="flex gap-2 items-center">
-            <span className="text-xs font-semibold mr-1 min-w-[60px] flex items-center gap-1">
-              🏁 End
-            </span>
+          {/* End Point */}
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏁</span>
+            <span className="font-medium">End Point</span>
             <Input type="number" placeholder="x" value={nodeData.front_end_point_x ?? ''} onChange={e => handleInputChange('front_end_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Input type="number" placeholder="y" value={nodeData.front_end_point_y ?? ''} onChange={e => handleInputChange('front_end_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
             <Button 
@@ -417,141 +496,67 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
               variant={selecting === 'front_end' ? 'secondary' : 'outline'} 
               onClick={() => setSelecting(selecting === 'front_end' ? null : 'front_end')} 
               title="Select with mouse"
-              className={selecting === 'front_end' ? 'bg-blue-500 text-white' : ''}
+              className={selecting === 'front_end' ? 'bg-primary text-primary-foreground' : ''}
             >
               <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
-          <div className="flex gap-2 items-center">
-            <span className="text-xs font-semibold mr-1 min-w-[60px]">Direction</span>
-            <select value={nodeData.direction ?? 'forward'} onChange={e => handleInputChange('direction', e.target.value)} className="input input-bordered w-20 rounded border-gray-300">
-              <option value="forward">Forward</option>
-              <option value="backward">Backward</option>
-            </select>
-          </div>
         </div>
-        
-        {/* Visualization (Right) */}
-        <div className="flex flex-col items-center gap-4">
-          {/* First Row Passengers Input (Top of visualization) */}
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-xs text-gray-500 font-medium">First Row Passengers</span>
-            <Input 
-              type="number" 
-              min={1} 
-              value={numFronts} 
-              onChange={e => handleChangeFronts(node, Number(e.target.value))} 
-              className="w-16 h-8 text-center bg-white border-2 border-blue-200 rounded-lg shadow-md font-medium text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all" 
-            />
+        {/* 오른쪽: Direction, Pax Layout 세로 */}
+        <div className="flex flex-col gap-4 h-full justify-center">
+          {/* Direction */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Direction</span>
+            <Button type="button" variant={nodeData.direction === 'forward' ? 'default' : 'outline'} onClick={() => handleInputChange('direction', 'forward')}>Forward</Button>
+            <Button type="button" variant={nodeData.direction === 'backward' ? 'default' : 'outline'} onClick={() => handleInputChange('direction', 'backward')}>Reverse</Button>
           </div>
-          
-          {/* Emoji Grid (Bottom) - Fixed Size Container */}
-          <div className="relative flex flex-col items-center justify-center bg-white rounded-lg shadow-sm border border-gray-100">
-            {/* Fixed Size Area */}
-            <div className="w-80 h-60 flex items-center justify-center relative">
-              {/* Row Count Counter (Right Center) */}
-              <div className="absolute right-[-4rem] top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-                <span className="text-xs text-gray-500 font-medium">Rows</span>
-                <Input 
-                  type="number" 
-                  min={1} 
-                  value={numRows} 
-                  onChange={e => handleChangeRows(node, Number(e.target.value))} 
-                  className="w-16 h-8 text-center bg-white border-2 border-blue-200 rounded-lg shadow-md font-medium text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all" 
-                />
-              </div>
-            
-                          {/* Scalable Content Area */}
-              <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                                  {/* Emoji Array */}
-                <div 
-                  className="flex flex-col transform-gpu" 
-                  style={{ 
-                    fontFamily: `'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif`,
-                    transform: `scale(${Math.min(0.76, 190 / Math.max(numFronts * 20, numRows * 20, 80))})`,
-                    transformOrigin: 'center center'
-                  }}
-                >
-                  {(() => {
-                    // Fixed size calculation
-                    const baseFontSize = 1.2; // Larger base size
-                    const fontSize = baseFontSize;
-                    
-                    // Display as dots when total people exceeds 100
-                    const totalPeople = numFronts * numRows;
-                    const useRectangle = totalPeople > 100;
-                    
-                                          if (useRectangle) {
-                        // Display as blue dots (over 100 people)
-                      const dotSpacing = 1.5;
-                      const rowHeight = dotSpacing;
-                      
-                      return Array.from({ length: numRows }).map((_, rowIdx) => (
-                        <div
-                          key={rowIdx}
-                          className="flex justify-center"
-                          style={{ minHeight: `${rowHeight}rem`, alignItems: 'center', gap: '0.3rem' }}
-                        >
-                          {Array.from({ length: numFronts }).map((_, colIdx) => {
-                            if (rowIdx === 0 && colIdx === 0) {
-                              // front_start position (hot pink dot)
-                              return (
-                                <div 
-                                  key={colIdx} 
-                                  className="w-3 h-3 bg-pink-500 rounded-full" 
-                                  title="Start"
-                                />
-                              );
-                            } else if (rowIdx === 0 && colIdx === numFronts - 1) {
-                              // front_end position (gray dot)
-                              return (
-                                <div 
-                                  key={colIdx} 
-                                  className="w-3 h-3 bg-gray-500 rounded-full" 
-                                  title="End"
-                                />
-                              );
-                            } else {
-                              // Regular dot (blue)
-                              return (
-                                <div 
-                                  key={colIdx} 
-                                  className="w-2 h-2 bg-blue-500 rounded-full" 
-                                />
-                              );
-                            }
-                          })}
-                        </div>
-                      ));
-                                          } else {
-                        // Display as emojis (100 people or less)
-                      const baseRowHeight = 1.5;
-                      const rowHeight = baseRowHeight;
-                      
-                      return Array.from({ length: numRows }).map((_, rowIdx) => (
-                        <div
-                          key={rowIdx}
-                          className="flex justify-center"
-                          style={{ minHeight: `${rowHeight}rem`, alignItems: 'center', gap: '0.1rem' }}
-                        >
-                          {Array.from({ length: numFronts }).map((_, colIdx) => {
-                            if (rowIdx === 0 && colIdx === 0) {
-                              // front_start position (front line start)
-                              return <span key={colIdx} style={{ fontSize: `${fontSize}rem`, lineHeight: 1, display: 'inline-block' }} title="Start">🚩</span>;
-                            } else if (rowIdx === 0 && colIdx === numFronts - 1) {
-                              // front_end position (front line end)
-                              return <span key={colIdx} style={{ fontSize: `${fontSize}rem`, lineHeight: 1, display: 'inline-block' }} title="End">🏁</span>;
-                            } else {
-                              return <span key={colIdx} style={{ fontSize: `${fontSize}rem`, lineHeight: 1, display: 'inline-block' }}>{getRandomPersonEmoji()}</span>;
-                            }
-                          })}
-                        </div>
-                      ));
-                    }
-                  })()}
+          {/* Pax Layout */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Pax Layout</span>
+            <Input type="number" min={1} value={numFronts} onChange={e => handleChangeFronts(node, Number(e.target.value))} className="w-14 text-center" />
+            <span>cols ×</span>
+            <Input type="number" min={1} value={numRows} onChange={e => handleChangeRows(node, Number(e.target.value))} className="w-14 text-center" />
+            <span>rows</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="ml-1 p-1 rounded-full hover:bg-gray-100 focus:outline-none" title="Show layout example">
+                  <span className="text-lg align-middle">ⓘ</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="center"
+                className="p-4 flex flex-col items-center bg-white z-[201] min-w-fit max-w-[90vw]"
+                style={{ width: 'auto', maxWidth: '90vw' }}
+              >
+                <div className="flex flex-row items-center">
+                  {/* 왼쪽 rows 텍스트 (vertical, 중앙정렬) */}
+                  <span
+                    className="text-sm text-black mr-2 flex items-center justify-center"
+                    style={{
+                      writingMode: 'vertical-lr',
+                      transform: 'rotate(180deg)',
+                      height: `${numRows * 1.6}em`,
+                      minWidth: '1.5em',
+                    }}
+                  >
+                    {numRows} rows
+                  </span>
+                  {/* 이모지 배열 */}
+                  <div className="flex flex-col">
+                    {Array.from({ length: numRows }).map((_, rowIdx) => (
+                      <div key={rowIdx} className="flex flex-row justify-center">
+                        {Array.from({ length: numFronts }).map((_, colIdx) => (
+                          <span key={colIdx} style={{ fontSize: '1.6em', lineHeight: 1 }}>{getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}</span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+                {/* 하단 rows 텍스트 */}
+                <span className="text-sm text-black mt-2">{numFronts} cols</span>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -777,7 +782,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     let imgInfo: { img_path: string; W: number; H: number } | undefined = undefined;
     if (imageFile && imageNaturalSize) {
       imgInfo = {
-        img_path: imageFile.name, // 파일명만 저장 (필요시 경로 조합 가능)
+        img_path: `maps/${imageFile.name}`,
         W: imageNaturalSize.width,
         H: imageNaturalSize.height,
       };
@@ -794,83 +799,30 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-6 mt-[14px]">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Setting</h3>
           <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
             <TabsList>
               <TabsTrigger value="view">View</TabsTrigger>
               <TabsTrigger value="setting">Setting</TabsTrigger>
             </TabsList>
           </Tabs>
+          <Button type="button" variant="outline" onClick={() => setShowUploadModal(true)}>
+            {image ? 'Change Image' : 'Upload Image'}
+          </Button>
         </div>
         {/* 기존 카드 내부 내용 시작 */}
         {/* Image Uploader */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
           <div className="mb-6">
-            <label className="block font-semibold mb-2">Upload Topview Image</label>
-            <div className="flex items-center gap-4">
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                파일 선택
-              </Button>
-              <span className="text-sm text-muted-foreground truncate max-w-xs">
-                {imageFileName || '선택된 파일 없음'}
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
-            </div>
+            {/* Top View Image 텍스트와 버튼 라인 삭제 */}
             {/* Error Display */}
             {imageError && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm">{imageError}</p>
               </div>
             )}
-            
-            {/* Debug Info */}
-            {image && (
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                <p><strong>디버그 정보:</strong></p>
-                <p>이미지 URL: {image.substring(0, 50)}...</p>
-                <p>파일 타입: {imageFile?.type}</p>
-                <p>파일명: {imageFileName}</p>
-                <p>이미지 크기: {imageNaturalSize ? `${imageNaturalSize.width}×${imageNaturalSize.height}` : '로딩 중...'}</p>
-                <p>선택 모드: {selecting || '없음'}</p>
-                <p>선택된 노드: {selectedNode || '없음'}</p>
-                <p>노드 데이터: {selectedNode ? JSON.stringify(nodeInputs[selectedNode], null, 2) : '없음'}</p>
-                <p>모든 노드: {Object.keys(nodeInputs).join(', ')}</p>
-              </div>
-            )}
-            
-            {/* Controls */}
-            {image && !imageError && (
-              <div className="mt-4 mb-4 space-y-3">
-                <div className="flex items-center gap-4">
-                  <label className="text-sm font-medium">Map Dot Size:</label>
-                  <input
-                    type="range"
-                    min="0.005"
-                    max="1"
-                    step="0.005"
-                    value={dotSize}
-                    onChange={(e) => setDotSize(Number(e.target.value))}
-                    className="w-32"
-                  />
-                  <span className="text-sm text-gray-600">{dotSize}</span>
-                </div>
-              </div>
-            )}
+            {/* Controls, Map, etc. (기존 코드 유지) */}
             {image && !imageError && (
               <>
-                {selecting && (
-                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800 text-sm font-medium">
-                      🎯 좌표 선택 모드: {selecting === 'front_start' ? '시작점' : '끝점'}을 이미지에서 클릭하세요
-                    </p>
-                  </div>
-                )}
                 <HomeTopViewMap
                   imageFile={imageFile}
                   imageUrl={image}
@@ -895,43 +847,98 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
                   onImageClick={handleImageClick}
                   selecting={selecting !== null}
                 />
+                {selecting && (
+                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm font-medium">
+                      🎯 Coordinate selection mode: {selecting === 'front_start' ? 'start point' : 'end point'} in the image.
+                    </p>
+                  </div>
+                )}
               </>
             )}
+            {/* Upload Modal */}
+            <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload Image</DialogTitle>
+                  <DialogDescription>Please upload a topview image for the service point map.</DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                  <Button type="button" variant="outline" onClick={() => modalFileInputRef.current?.click()}>
+                    Choose File
+                  </Button>
+                  <input
+                    ref={modalFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleModalImageChange}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-muted-foreground text-center w-full">
+                    {tempImageFileName || 'No file selected'}
+                  </span>
+                  {tempImageError && (
+                    <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm">{tempImageError}</p>
+                    </div>
+                  )}
+                  {tempImage && (
+                    <img src={tempImage} alt="Preview" className="w-full max-h-60 object-contain rounded border" />
+                  )}
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="ghost" onClick={handleModalClose}>Cancel</Button>
+                  </DialogClose>
+                  <Button type="button" onClick={handleModalApply} disabled={!tempImageFile || !tempImageNaturalSize}>
+                    Apply
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
-        {/* Component/Node Tab UI */}
+        {/* Component/Node Tab UI + Settings 폼을 한 줄에 배치 */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
-          <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
-            <TabsList className="mb-4">
-              {Object.keys(servicePoints).map((component) => (
-                <TabsTrigger key={component} value={component}>
-                  {component}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {Object.keys(servicePoints).map((component) => (
-              <TabsContent key={component} value={component} className="w-full">
-                <Tabs defaultValue={selectedNode || ''} value={selectedNode || ''} onValueChange={setSelectedNode} className="w-full">
-                  <TabsList className="mb-4">
-                    {servicePoints[component].map((node) => (
-                      <TabsTrigger key={node} value={node}>
-                        {node}
+          <div className="flex flex-col md:flex-row gap-4 items-stretch mb-6">
+            {/* 왼쪽: 탭 네비게이션 */}
+            <div className="w-full md:w-1/3 flex-shrink-0">
+              <div className="h-full">
+                <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
+                  {/* 1 depth TabsList (check_in, passport 등) */}
+                  <TabsList className={`mb-4 w-full grid grid-cols-${Object.keys(servicePoints).length} gap-2`}>
+                    {Object.keys(servicePoints).map((component) => (
+                      <TabsTrigger key={component} value={component} className="w-full">
+                        {component}
                       </TabsTrigger>
                     ))}
                   </TabsList>
-                  {servicePoints[component].map((node) => (
-                    <TabsContent key={node} value={node} className="w-full">
-                      {/* Input Form */}
-                      <div className="space-y-4 p-4 border rounded-lg bg-white">
-                        <div className="font-semibold mb-2">{component} - {node} Settings</div>
-                        {renderEmojiGrid(node)}
-                      </div>
+                  {Object.keys(servicePoints).map((component) => (
+                    <TabsContent key={component} value={component} className="w-full">
+                      <Tabs defaultValue={selectedNode || ''} value={selectedNode || ''} onValueChange={setSelectedNode} className="w-full">
+                        {/* 2 depth TabsList (A,B,C,D 등) */}
+                        <TabsList className="mb-4 flex gap-2">
+                          {servicePoints[component].map((node) => (
+                            <TabsTrigger key={node} value={node}>
+                              {node}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                      </Tabs>
                     </TabsContent>
                   ))}
                 </Tabs>
-              </TabsContent>
-            ))}
-          </Tabs>
+              </div>
+            </div>
+            {/* 오른쪽: Settings 폼 */}
+            <div className="w-full md:w-2/3 flex-1">
+              {selectedComponent && selectedNode && (
+                <div className="rounded-lg border bg-white p-6 h-full flex flex-col">
+                  {renderEmojiGrid(selectedNode)}
+                </div>
+              )}
+            </div>
+          </div>
         )}
         {/* Apply Button */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
