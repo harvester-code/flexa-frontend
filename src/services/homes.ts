@@ -24,7 +24,7 @@ const fetchKpiHomeData = ({
 };
 
 const fetchAemosTemplate = ({ scenarioId }: { scenarioId?: string }) => {
-  return instanceWithAuth.get(`${BASE_URL}/aemos_template/${scenarioId}`);
+  return instanceWithAuth.get(`${BASE_URL}/aemos-template/${scenarioId}`);
 };
 
 export { fetchCommonHomeData, fetchKpiHomeData, fetchAemosTemplate };

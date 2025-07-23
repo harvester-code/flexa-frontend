@@ -1,15 +1,21 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@/components/ui/AlertDialog';
 import { Slider } from '@/components/ui/Slider';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import HomeTopViewMap from './HomeTopViewMap';
-import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from '@/components/ui/AlertDialog';
 
 interface LayoutData {
   _img_info: {
-    img_path: string;   // 이미지 파일 경로
+    img_path: string; // 이미지 파일 경로
     W: number;
     H: number;
   } | null;
@@ -30,7 +36,7 @@ interface LayoutData {
 
 interface HomeTopViewProps {
   scenario: any;
-  data?: {[key: string]: {[componentName: string]: {[servicePoint: string]: number}}};
+  data?: { [key: string]: { [componentName: string]: { [servicePoint: string]: number } } };
   isLoading?: boolean;
   viewMode: 'view' | 'setting';
   setViewMode: (mode: 'view' | 'setting') => void;
@@ -39,7 +45,9 @@ interface HomeTopViewProps {
 function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeTopViewProps) {
   // 모든 useState, useRef, useEffect 등 Hook 선언
   const [layoutData, setLayoutData] = useState<LayoutData | null>(null);
-  const [topViewData, setTopViewData] = useState<{[key: string]: {[componentName: string]: {[servicePoint: string]: number}}} | null>(null);
+  const [topViewData, setTopViewData] = useState<{
+    [key: string]: { [componentName: string]: { [servicePoint: string]: number } };
+  } | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [timeIndex, setTimeIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +59,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasMoved, setHasMoved] = useState(false);
-  const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
+  const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [showLayoutWarning, setShowLayoutWarning] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
@@ -70,16 +78,16 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       const times = Object.keys(topViewData).sort();
       if (times.length > 0) {
         // 대기인원이 있는 시간을 찾아서 기본으로 설정
-        const timeWithQueue = times.find(time => {
+        const timeWithQueue = times.find((time) => {
           const timeData = topViewData[time];
-          return Object.values(timeData).some(component => {
+          return Object.values(timeData).some((component) => {
             if (typeof component === 'object' && component !== null) {
-              return Object.values(component as Record<string, number>).some(count => count > 0);
+              return Object.values(component as Record<string, number>).some((count) => count > 0);
             }
             return false;
           });
         });
-        
+
         if (timeWithQueue) {
           const timeIndex = times.indexOf(timeWithQueue);
           setSelectedTime(timeWithQueue);
@@ -97,7 +105,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       try {
         // layout.json fetch
         const layoutResponse = await fetch('/layout.json');
-        
+
         if (!layoutResponse.ok) {
           throw new Error('Failed to fetch layout.json');
         }
@@ -138,19 +146,18 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       if (isDragging) {
         const newPanOffset = {
           x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y
+          y: e.clientY - dragStart.y,
         };
-        
+
         // Check if there's actual movement (more than 3 pixels)
         const moveDistance = Math.sqrt(
-          Math.pow(newPanOffset.x - panOffset.x, 2) + 
-          Math.pow(newPanOffset.y - panOffset.y, 2)
+          Math.pow(newPanOffset.x - panOffset.x, 2) + Math.pow(newPanOffset.y - panOffset.y, 2)
         );
-        
+
         if (moveDistance > 3) {
           setHasMoved(true);
         }
-        
+
         setPanOffset(newPanOffset);
       }
     };
@@ -190,26 +197,26 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageNaturalSize) return;
-    
+
     // Get the image element's actual position after transforms
     const imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
     if (!imgElement) return;
-    
+
     // Get the transformed image bounds (this includes all CSS transforms)
     const imgRect = imgElement.getBoundingClientRect();
-    
+
     // Mouse position relative to the transformed image
     const imageX = e.clientX - imgRect.left;
     const imageY = e.clientY - imgRect.top;
-    
+
     // Convert to normalized coordinates (0-1) within the image
     const normalizedX = imageX / imgRect.width;
     const normalizedY = imageY / imgRect.height;
-    
+
     // Convert to actual image pixel coordinates
     const x = Math.round(normalizedX * imageNaturalSize.width);
     const y = Math.round(normalizedY * imageNaturalSize.height);
-    
+
     setMousePosition({ x, y });
   };
 
@@ -243,22 +250,22 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     if (!topViewData || !selectedTime || !layoutData) {
       return false;
     }
-    
+
     // component_name을 layout.json에서 찾기
     const point = layoutData._service_point_info[servicePointKey];
     if (!point) {
       return false;
     }
-    
+
     const componentName = point.component_name;
     const queueCount = topViewData[selectedTime]?.[componentName]?.[servicePointKey] || 0;
 
     const numFronts = point.num_of_fronts;
     // front 라인부터 채우는 로직으로 변경 (row별로 front를 모두 채우고 다음 row로)
     const totalPositionIndex = rowIndex * point.num_of_fronts + frontIndex;
-    
+
     const hasPersonHere = totalPositionIndex < queueCount;
-    
+
     // 로그 추가
     console.log('isPersonAtPosition', {
       servicePointKey,
@@ -296,7 +303,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     // Get current displayed image size (LayoutSetting 방식과 동일)
     const imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
     if (!imgElement) return null;
-    
+
     // Get the image's original display size (before transform)
     // Since dots are children of the image element, they inherit the transform
     const imgRect = imgElement.getBoundingClientRect();
@@ -311,7 +318,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     allNodes.forEach((node) => {
       const nodeData = servicePoints[node];
       if (!nodeData) return;
-      
+
       // 좌표를 현재 display size로 변환
       const startX = Number(nodeData.front_start_point_x) * scaleX;
       const startY = Number(nodeData.front_start_point_y) * scaleY;
@@ -319,20 +326,20 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       const endY = Number(nodeData.front_end_point_y) * scaleY;
       const numFronts = Number(nodeData.num_of_fronts);
       const numRows = Number(nodeData.num_of_rows);
-      
+
       if (numFronts < 1 || numRows < 1) return;
 
       // 방향 벡터 계산
       const directionVectorX = endX - startX;
       const directionVectorY = endY - startY;
       const length = Math.sqrt(directionVectorX * directionVectorX + directionVectorY * directionVectorY);
-      
+
       if (length === 0) return;
-      
+
       // 정규화된 방향 벡터
       const normalizedDirX = directionVectorX / length;
       const normalizedDirY = directionVectorY / length;
-      
+
       // 법선 벡터 (direction에 따라 위쪽 또는 아래쪽)
       const isForward = nodeData.direction === 'forward';
       const normalX = isForward ? -normalizedDirY : normalizedDirY;
@@ -348,16 +355,17 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
       // Start/End 포인트 표시 (dotSize에 따라 크기 조절, 최소 크기 보장)
       const markerSize = Math.max(dotSize * 10, 2); // 최소 2px로 원 깨짐 방지
-      
-              allPoints.push(
-          (<div
+
+      allPoints.push(
+        (
+          <div
             key={`${node}-start-marker`}
             className={`absolute rounded-full`}
             style={{
               width: `${markerSize}px`,
               height: `${markerSize}px`,
-              left: `${startX - markerSize/2}px`,
-              top: `${startY - markerSize/2}px`,
+              left: `${startX - markerSize / 2}px`,
+              top: `${startY - markerSize / 2}px`,
               backgroundColor: 'rgba(239, 68, 68, 0.6)', // 빨간색 투명
               zIndex: 15,
               // 원 깨짐 방지를 위한 CSS 최적화
@@ -369,18 +377,20 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
             }}
             title={`${node} Start Point`}
-          />) as React.ReactNode
-        );
-        
-        allPoints.push(
-          (<div
+          />
+        ) as React.ReactNode
+      );
+
+      allPoints.push(
+        (
+          <div
             key={`${node}-end-marker`}
             className={`absolute rounded-full`}
             style={{
               width: `${markerSize}px`,
               height: `${markerSize}px`,
-              left: `${endX - markerSize/2}px`,
-              top: `${endY - markerSize/2}px`,
+              left: `${endX - markerSize / 2}px`,
+              top: `${endY - markerSize / 2}px`,
               backgroundColor: 'rgba(107, 114, 128, 0.6)', // 회색 투명
               zIndex: 15,
               // 원 깨짐 방지를 위한 CSS 최적화
@@ -392,8 +402,9 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
             }}
             title={`${node} End Point`}
-          />) as React.ReactNode
-        );
+          />
+        ) as React.ReactNode
+      );
 
       for (let i = 0; i < numFronts; i++) {
         const t = numFronts === 1 ? 0 : i / (numFronts - 1);
@@ -408,7 +419,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
           // 해당 위치에 사람이 있는지 확인
           const isActive = isPersonAtPosition(node, i, j);
           console.log('dot 조건 체크', { node, i, j, isActive });
-          
+
           if (isActive) {
             // 이미지 표시 크기 기준으로 dot 좌표 변환
             const scaleX = imgElement.clientWidth / imageNaturalSize.width;
@@ -417,22 +428,24 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
             const displayY = pointY * scaleY;
 
             allPoints.push(
-              (<div
-                key={`dot-${node}-${i}-${j}`}
-                className={`absolute ${dotColor}`}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  left: `${displayX - 12}px`,
-                  top: `${displayY - 12}px`,
-                  opacity: 1,
-                  zIndex: 100,
-                  border: '2px solid yellow',
-                  borderRadius: '50%',
-                  pointerEvents: 'none',
-                }}
-                title={`${node} Front[${i+1}/${numFronts}] Row[${j+1}/${numRows}] - OCCUPIED`}
-              />) as React.ReactNode
+              (
+                <div
+                  key={`dot-${node}-${i}-${j}`}
+                  className={`absolute ${dotColor}`}
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    left: `${displayX - 12}px`,
+                    top: `${displayY - 12}px`,
+                    opacity: 1,
+                    zIndex: 100,
+                    border: '2px solid yellow',
+                    borderRadius: '50%',
+                    pointerEvents: 'none',
+                  }}
+                  title={`${node} Front[${i + 1}/${numFronts}] Row[${j + 1}/${numRows}] - OCCUPIED`}
+                />
+              ) as React.ReactNode
             );
           }
         }
@@ -455,22 +468,26 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   }, []);
 
   // 데이터 가공, 변수 선언
-  const currentQueueData = selectedTime && topViewData ? (() => {
-    const timeData = topViewData[selectedTime];
-    if (!timeData) return {};
-    const combinedData: {[servicePoint: string]: number} = {};
-    Object.values(timeData).forEach(componentData => {
-      Object.entries(componentData).forEach(([servicePoint, count]) => {
-        combinedData[servicePoint] = count;
-      });
-    });
-    return combinedData;
-  })() : {};
+  const currentQueueData =
+    selectedTime && topViewData
+      ? (() => {
+          const timeData = topViewData[selectedTime];
+          if (!timeData) return {};
+          const combinedData: { [servicePoint: string]: number } = {};
+          Object.values(timeData).forEach((componentData) => {
+            Object.entries(componentData).forEach(([servicePoint, count]) => {
+              combinedData[servicePoint] = count;
+            });
+          });
+          return combinedData;
+        })()
+      : {};
   const imgInfo = layoutData?._img_info;
   const availableTimes = topViewData ? Object.keys(topViewData).sort() : [];
-  const servicePointKeys = layoutData && layoutData._service_point_info ? Object.keys(layoutData._service_point_info) : [];
+  const servicePointKeys =
+    layoutData && layoutData._service_point_info ? Object.keys(layoutData._service_point_info) : [];
   const currentQueueKeys = Object.keys(currentQueueData);
-  const hasMismatch = currentQueueKeys.some(key => !servicePointKeys.includes(key));
+  const hasMismatch = currentQueueKeys.some((key) => !servicePointKeys.includes(key));
 
   useEffect(() => {
     if (hasMismatch && viewMode === 'view') {
@@ -482,12 +499,12 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   if (hasMismatch && viewMode === 'view') {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-white p-6 mt-[14px] flex flex-col items-center justify-center min-h-[300px]">
-          <div className="w-full max-w-md mx-auto flex flex-col items-center gap-4">
-            <div className="bg-white text-gray-800 rounded-lg px-4 py-5 text-center text-base font-medium flex flex-col items-center gap-4">
+        <div className="mt-[14px] flex min-h-[300px] flex-col items-center justify-center rounded-lg border bg-white p-6">
+          <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-base font-medium text-gray-800">
               <span>To see the Top View, complete the Layout setting.</span>
               <button
-                className="px-6 py-2 border border-violet-600 text-violet-600 bg-white rounded-lg font-semibold hover:bg-violet-50 transition"
+                className="rounded-lg border border-violet-600 bg-white px-6 py-2 font-semibold text-violet-600 transition hover:bg-violet-50"
                 onClick={() => setViewMode('setting')}
               >
                 Go to Setting
@@ -502,7 +519,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   if (!imgInfo || !imageUrl || !layoutData) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border bg-gray-50 p-6 mt-[14px]">
+        <div className="mt-[14px] rounded-lg border bg-gray-50 p-6">
           <p>No image information available</p>
         </div>
       </div>
@@ -563,18 +580,16 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   // 렌더링 부분 리팩터링 시작
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6 mt-[14px]">
-        <div className="flex items-center mb-4">
-          <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
+      <div className="mt-[14px] rounded-lg border bg-white p-6">
+        <div className="mb-4 flex items-center">
+          <Tabs value={viewMode} onValueChange={(val) => setViewMode(val as 'view' | 'setting')}>
             <TabsList>
               <TabsTrigger value="view">View</TabsTrigger>
               <TabsTrigger value="setting">Setting</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
-        
 
-        
         {/* Controls (LayoutSetting과 동일한 UI) */}
         {viewMode === 'view' && imageUrl && layoutData && (
           <HomeTopViewMap
@@ -604,8 +619,10 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         {/* 시간 선택 슬라이더 */}
         {availableTimes.length > 0 && (
           <div className="mb-4 space-y-3">
-            <div className="mt-2 block w-full text-sm"
-              style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              className="mt-2 block w-full text-sm"
+              style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}
+            >
               <span className="font-medium text-gray-700">Current Queue:</span>
               {Object.entries(currentQueueData).length > 0 ? (
                 Object.entries(currentQueueData).map(([servicePoint, count]) => {
@@ -613,7 +630,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   const servicePointIndex = servicePointKeys.indexOf(servicePoint);
                   const colorClass = servicePointColors[servicePointIndex % servicePointColors.length].text;
                   return (
-                    <span key={servicePoint} className={`${colorClass} px-2 py-1 rounded font-medium`}>
+                    <span key={servicePoint} className={`${colorClass} rounded px-2 py-1 font-medium`}>
                       {servicePoint}: {count} pax
                     </span>
                   );
@@ -622,8 +639,8 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 <span className="text-gray-400">-</span>
               )}
             </div>
-            <div className="flex items-center w-full gap-2 relative">
-              <span className="text-xs text-gray-500 min-w-[90px] text-left">{availableTimes[0]}</span>
+            <div className="relative flex w-full items-center gap-2">
+              <span className="min-w-[90px] text-left text-xs text-gray-500">{availableTimes[0]}</span>
               <div className="relative flex-1">
                 <Slider
                   min={0}
@@ -640,7 +657,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 <Tooltip open>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute left-0 w-0 h-0"
+                      className="absolute left-0 h-0 w-0"
                       style={{
                         top: '20px', // thumb 바로 아래로 위치
                         left: `calc(${(timeIndex / (availableTimes.length - 1)) * 100}% )`,
@@ -653,7 +670,9 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <span className="text-xs text-gray-500 min-w-[90px] text-right">{availableTimes[availableTimes.length - 1]}</span>
+              <span className="min-w-[90px] text-right text-xs text-gray-500">
+                {availableTimes[availableTimes.length - 1]}
+              </span>
             </div>
           </div>
         )}
@@ -662,4 +681,4 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   );
 }
 
-export default HomeTopView; 
+export default HomeTopView;

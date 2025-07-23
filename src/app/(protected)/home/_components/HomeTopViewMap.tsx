@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
-import { Button } from '@/components/ui/Button';
-import { Slider } from '@/components/ui/Slider';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
+import { Slider } from '@/components/ui/Slider';
 
 interface HomeTopViewMapProps {
   imageFile: File | null;
@@ -56,7 +56,9 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
   const zoomLevelRef = useRef(zoomLevel);
-  useEffect(() => { zoomLevelRef.current = zoomLevel; }, [zoomLevel]);
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
 
   // Resize handle state
   const [isResizing, setIsResizing] = useState(false);
@@ -116,24 +118,14 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       return;
     }
     // 2. imageFile이 없고 imageUrl이 SVG일 때 viewBox/width/height 파싱 (View에서 사용)
-    if (
-      imageUrl &&
-      !imageFile &&
-      imageUrl.toLowerCase().endsWith('.svg') &&
-      !imageNaturalSize
-    ) {
+    if (imageUrl && !imageFile && imageUrl.toLowerCase().endsWith('.svg') && !imageNaturalSize) {
       fetchSvgNaturalSize(imageUrl).then((size) => {
         if (size) setImageNaturalSize(size);
       });
       return; // 반드시 return해서 아래 코드 실행 방지
     }
     // 3. 그 외에는 기존 방식 (이미지 naturalWidth/naturalHeight)
-    if (
-      imageUrl &&
-      !imageFile &&
-      !imageUrl.toLowerCase().endsWith('.svg') &&
-      !imageNaturalSize
-    ) {
+    if (imageUrl && !imageFile && !imageUrl.toLowerCase().endsWith('.svg') && !imageNaturalSize) {
       const img = new Image();
       img.onload = () => {
         setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
@@ -255,7 +247,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
 
   const handleResizeMouseMove = (e: MouseEvent) => {
     if (!isResizing) return;
-    
+
     const deltaY = e.clientY - resizeStartY;
     const newHeight = Math.max(200, resizeStartHeight + deltaY); // 최소 높이 200px
     setCustomHeight(newHeight);
@@ -296,7 +288,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       window.removeEventListener('resize', handleResize);
     };
   }, [handleResize]);
-  
+
   // Default: 16:9
   let aspectRatio = 9 / 16;
   if (imageNaturalSize) {
@@ -308,7 +300,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       aspectRatio = 9 / 16;
     }
   }
-  
+
   // Use custom height if set, otherwise use calculated height
   const frameHeight = customHeight || (frameWidth ? frameWidth * aspectRatio : undefined);
 
@@ -319,7 +311,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
     <div className="mb-6 w-full">
       <div
         ref={frameRef}
-        className="relative overflow-hidden border rounded-lg"
+        className="relative overflow-hidden rounded-lg border"
         style={{
           width: '100%',
           // aspectRatio: '16 / 9', // REMOVE THIS
@@ -366,19 +358,18 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
           })()}
         </div>
 
-        
         {/* Resize handle */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-2 bg-gray-300 hover:bg-gray-400 cursor-ns-resize flex items-center justify-center"
+          className="absolute bottom-0 left-0 right-0 flex h-2 cursor-ns-resize items-center justify-center bg-gray-300 hover:bg-gray-400"
           onMouseDown={handleResizeMouseDown}
           style={{
             zIndex: 100,
             opacity: isResizing ? 0.8 : 0.6,
           }}
         >
-          <div className="w-8 h-1 bg-gray-500 rounded-full"></div>
+          <div className="h-1 w-8 rounded-full bg-gray-500"></div>
           {isResizing && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded pointer-events-none">
+            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded bg-black bg-opacity-70 px-2 py-1 text-xs text-white">
               Height: {Math.round(frameHeight || 0)}px
             </div>
           )}
@@ -388,19 +379,21 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
           <Popover open={showDotSizePopover} onOpenChange={setShowDotSizePopover}>
             <PopoverTrigger asChild>
               <Button type="button" variant="outline" size="icon" title="Dot Size Setting">
-                <span role="img" aria-label="settings">⚙️</span>
+                <span role="img" aria-label="settings">
+                  ⚙️
+                </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" side="top" className="w-72 relative">
+            <PopoverContent align="end" side="top" className="relative w-72">
               <button
                 type="button"
-                className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                className="absolute right-2 top-2 rounded p-1 hover:bg-gray-100 focus:outline-none"
                 onClick={() => setShowDotSizePopover(false)}
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
-              <div className="flex flex-col gap-4 items-center">
+              <div className="flex flex-col items-center gap-4">
                 <span className="font-semibold">Dot Size</span>
                 <Slider
                   min={0.005}
@@ -420,4 +413,4 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   );
 };
 
-export default HomeTopViewMap; 
+export default HomeTopViewMap;

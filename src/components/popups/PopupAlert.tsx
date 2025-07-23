@@ -20,12 +20,7 @@ interface PopupAlertProps {
 }
 
 export class PopupAlert {
-  static confirm(
-    content: React.ReactNode,
-    buttonText: string = 'Confirm',
-    onClick?: () => void,
-    title?: string
-  ) {
+  static confirm(content: React.ReactNode, buttonText: string = 'Confirm', onClick?: () => void, title?: string) {
     const modalId = pushModal({
       component: (
         <PopupComponent
@@ -82,14 +77,7 @@ export class PopupAlert {
   }
 }
 
-const PopupComponent: React.FC<PopupAlertProps> = ({
-  title,
-  content,
-  iconPath,
-  onClose,
-  buttonPos,
-  buttonNeg,
-}) => {
+const PopupComponent: React.FC<PopupAlertProps> = ({ title, content, iconPath, onClose, buttonPos, buttonNeg }) => {
   return (
     <Dialog
       open={true}

@@ -35,10 +35,7 @@ const DONUT_CHART_OPTIONS = [
 const defaultData: Rank[] = [];
 const columnHelper = createColumnHelper<Rank>();
 
-function FacilityPassengerAnalysisDonutChart({
-  process,
-  scenarioId,
-}: FacilityPassengerAnalysisDonutChartProps) {
+function FacilityPassengerAnalysisDonutChart({ process, scenarioId }: FacilityPassengerAnalysisDonutChartProps) {
   const { data: passengerAnalysisDonutChartData } = usePassengerAnalysesDonutChart({ scenarioId, process });
 
   const [activeCharts, setActiveCharts] = useState<number[]>([0]);
@@ -121,12 +118,10 @@ function FacilityPassengerAnalysisDonutChart({
     <>
       <div className="mt-8 flex justify-between">
         <dl className="flex flex-col gap-2.5">
-          <dt className="text-xl font-semibold leading-none text-default-800">
-            Passenger Processing Analysis Chart
-          </dt>
+          <dt className="text-xl font-semibold leading-none text-default-800">Passenger Processing Analysis Chart</dt>
           <dd className="font-medium leading-none text-default-600">
-            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can
-            select up to two indicators.
+            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can select
+            up to two indicators.
           </dd>
         </dl>
       </div>
@@ -149,9 +144,7 @@ function FacilityPassengerAnalysisDonutChart({
           ))}
         </ButtonGroup>
 
-        <div className="my-10 text-xl font-semibold text-default-900">
-          Total Queue Pax: {totalQueueLength} Pax
-        </div>
+        <div className="my-10 text-xl font-semibold text-default-900">Total Queue Pax: {totalQueueLength} Pax</div>
 
         <div className="grid grid-cols-2 items-start gap-x-20 overflow-hidden">
           <DonutChart
@@ -174,9 +167,7 @@ function FacilityPassengerAnalysisDonutChart({
                         key={header.id}
                         className={cn(header.column.columnDef.meta?.className, 'bg-default-100 py-3')}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
                   </tr>

@@ -77,10 +77,7 @@ export default async function LoginPage() {
                 </Label>
               </div>
 
-              <Link
-                href="/auth/forgot-password"
-                className="font-semibold text-brand underline underline-offset-2"
-              >
+              <Link href="/auth/forgot-password" className="font-semibold text-brand underline underline-offset-2">
                 Forgot Password?
               </Link>
             </div>

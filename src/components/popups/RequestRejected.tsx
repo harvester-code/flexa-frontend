@@ -21,8 +21,8 @@ const RequestRejected: React.FC<RequestRejectedProps> = ({ open, onClose }) => {
       <DialogContent>
         <div className="popup-contents">
           <p className="text">
-            The approval request sent to danny@datamarketing.co.kr was not approved. Please check the details
-            and resubmit your request.
+            The approval request sent to danny@datamarketing.co.kr was not approved. Please check the details and
+            resubmit your request.
           </p>
         </div>
         <div className="popup-btn-wrap">

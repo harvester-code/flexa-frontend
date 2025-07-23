@@ -27,7 +27,9 @@ function TheTable({ data }) {
           {/* --------------------------- */}
           {data?.header.subColumns && (
             <tr className="[&>*]:h-10 [&>*]:w-[172px] [&>*]:px-5 [&>*]:py-3">
-              {data?.header.subColumns.map((subCol, idx) => <th key={idx}>{subCol.label}</th>)}
+              {data?.header.subColumns.map((subCol, idx) => (
+                <th key={idx}>{subCol.label}</th>
+              ))}
             </tr>
           )}
         </thead>

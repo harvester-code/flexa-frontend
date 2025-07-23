@@ -133,14 +133,7 @@ function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummar
         handleLineChartData(chartData, option, yaxis[i]);
       });
     }
-  }, [
-    activeCharts,
-    chartKeyOption,
-    kpiLineChartData,
-    handleChartLayout,
-    handleBarChartData,
-    handleLineChartData,
-  ]);
+  }, [activeCharts, chartKeyOption, kpiLineChartData, handleChartLayout, handleBarChartData, handleLineChartData]);
 
   return (
     <>
@@ -148,8 +141,8 @@ function FacilityKPISummaryMixedChart({ process, scenarioId }: FacilityKPISummar
         <dl>
           <dt className="text-xl font-semibold leading-8">Passenger Processing Analysis Chart</dt>
           <dd className="text-sm">
-            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can
-            select up to two indicators.
+            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can select
+            up to two indicators.
           </dd>
         </dl>
       </div>

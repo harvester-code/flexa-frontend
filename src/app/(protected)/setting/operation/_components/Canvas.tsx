@@ -319,10 +319,7 @@ const Canvas = () => {
 
   return (
     <>
-      <div
-        ref={canvasContainerRef}
-        className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-gray-200"
-      >
+      <div ref={canvasContainerRef} className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-gray-200">
         <Stage
           draggable={mode === 'grab'}
           ref={canvasStageRef}
@@ -403,9 +400,7 @@ const Canvas = () => {
                 />
                 {rect.childs.length > 0 &&
                   rect.childs.map((child, idx) => {
-                    return (
-                      <Circle key={idx} x={child.x} y={child.y} radius={nodes[index].circleSize} fill="green" />
-                    );
+                    return <Circle key={idx} x={child.x} y={child.y} radius={nodes[index].circleSize} fill="green" />;
                   })}
               </React.Fragment>
             ))}

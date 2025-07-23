@@ -35,12 +35,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
       <dl>
         <dt>
           <div className="flex items-center space-x-10">
-            <Checkbox
-              id="agreeToAll"
-              checked={agreeToAll}
-              onCheckedChange={handleAgreeToAll}
-              className="checkbox"
-            />
+            <Checkbox id="agreeToAll" checked={agreeToAll} onCheckedChange={handleAgreeToAll} className="checkbox" />
             <Label htmlFor="agreeToAll" className="text-base font-semibold">
               Agree to All
             </Label>

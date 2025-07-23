@@ -32,10 +32,7 @@ const AnalysisPopup: React.FC<LogOutProps> = ({ open, onClose }) => {
         <p className="text mb-[20px] min-h-[40px]">Click on the analytics page you want to go to</p>
         <ul className="checkbtn-list">
           <li>
-            <button
-              className={activeButton === 'Home' ? 'active' : ''}
-              onClick={() => handleButtonClick('Home')}
-            >
+            <button className={activeButton === 'Home' ? 'active' : ''} onClick={() => handleButtonClick('Home')}>
               <p className="checkbtn"></p>
               <dl>
                 <dt>Home</dt>

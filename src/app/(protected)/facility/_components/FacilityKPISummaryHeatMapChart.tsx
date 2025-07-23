@@ -90,8 +90,8 @@ function FacilityKPISummaryHeatMapChart({ process, scenarioId }: FacilityKPISumm
         <dl>
           <dt className="text-xl font-semibold leading-8">Passenger Processing Heat Map</dt>
           <dd className="text-sm">
-            Visualize and display the performance of the selected Check-In facility. Color density makes it easy
-            to see changes in data values and relative differences.
+            Visualize and display the performance of the selected Check-In facility. Color density makes it easy to see
+            changes in data values and relative differences.
           </dd>
         </dl>
       </div>
@@ -109,9 +109,7 @@ function FacilityKPISummaryHeatMapChart({ process, scenarioId }: FacilityKPISumm
               key={option.value}
               onClick={() => handleActiveCharts(idx)}
             >
-              {activeCharts.includes(idx) && (
-                <Circle className="!size-2.5" fill={option.color} stroke="transparent" />
-              )}
+              {activeCharts.includes(idx) && <Circle className="!size-2.5" fill={option.color} stroke="transparent" />}
               <span>{option.label}</span>
             </Button>
           ))}

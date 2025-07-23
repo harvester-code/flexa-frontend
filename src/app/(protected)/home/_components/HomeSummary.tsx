@@ -5,15 +5,16 @@ import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import {
+  NavIcon01,
+  NavIcon02,
   PassengerQueue,
   PassengerThroughput,
   RatioIcon01,
   RatioIcon02,
   RatioIcon03,
   WaitTime,
-  NavIcon01,
-  NavIcon02,
 } from '@/components/icons';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
@@ -22,7 +23,6 @@ import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 import HomeSummaryCard from './HomeSummaryCard';
 import HomeTooltip from './HomeTooltip';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 
 const CHART_OPTIONS: Option[] = [
   { label: 'Wait Time', value: 'waiting_time' },
@@ -38,7 +38,14 @@ interface HomeSummaryProps {
   isLoading?: boolean; // 배치 API 로딩 상태
 }
 
-function HomeSummary({ scenario, calculate_type, percentile, data, commonData, isLoading: propIsLoading }: HomeSummaryProps) {
+function HomeSummary({
+  scenario,
+  calculate_type,
+  percentile,
+  data,
+  commonData,
+  isLoading: propIsLoading,
+}: HomeSummaryProps) {
   // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
   const summaryData = data;
   const isLoading = propIsLoading || false;
@@ -93,11 +100,11 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
     return <HomeNoData />;
   }
 
-  console.log(summaryData)
+  console.log(summaryData);
   return (
     <>
       {/* Pax Experience를 KPI 카드보다 위로 이동 */}
-      <div className="rounded border border-default-200 px-5 py-3 my-[14px]">
+      <div className="my-[14px] rounded border border-default-200 px-5 py-3">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-xl font-semibold">Pax Experience</div>
           <ButtonGroup>
@@ -208,9 +215,16 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
       <div className="mt-[14px]">
         {/* open 상태에 따라 트리거(화살표)를 상단/하단에 한 번만 렌더링 */}
         {!accordionOpen && (
-          <div className="flex justify-center mt-[14px]">
+          <div className="mt-[14px] flex justify-center">
             <button onClick={() => setAccordionOpen(true)} className="px-0 py-0">
-              <svg className="h-6 w-6 text-muted-foreground transition-transform duration-200" style={{ transform: 'rotate(0deg)' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg
+                className="h-6 w-6 text-muted-foreground transition-transform duration-200"
+                style={{ transform: 'rotate(0deg)' }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -218,7 +232,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
         )}
         <Accordion type="single" collapsible value={accordionOpen ? 'metrics' : undefined}>
           <AccordionItem value="metrics" className="border-none">
-            <AccordionContent className="px-0 pt-0 pb-0">
+            <AccordionContent className="px-0 pb-0 pt-0">
               <div className="my-0 grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
                 <HomeSummaryCard
                   icon={PassengerQueue}
@@ -283,7 +297,9 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
                   }
                   value={
                     <>
-                      {commonData?.etc_info?.commercial_info?.['commercial_facility_usage_time_avg(min)']?.value?.toLocaleString()}
+                      {commonData?.etc_info?.commercial_info?.[
+                        'commercial_facility_usage_time_avg(min)'
+                      ]?.value?.toLocaleString()}
                       {formatUnit('min')}
                     </>
                   }
@@ -298,11 +314,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
                       </HomeTooltip>
                     </span>
                   }
-                  value={
-                    <>
-                      {commonData?.etc_info?.commercial_info?.shopping_available?.value}
-                    </>
-                  }
+                  value={<>{commonData?.etc_info?.commercial_info?.shopping_available?.value}</>}
                 />
                 <HomeSummaryCard
                   icon={RatioIcon03}
@@ -314,11 +326,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
                       </HomeTooltip>
                     </span>
                   }
-                  value={
-                    <>
-                      {commonData?.etc_info?.operational_insights?.rush_hour?.value}
-                    </>
-                  }
+                  value={<>{commonData?.etc_info?.operational_insights?.rush_hour?.value}</>}
                 />
                 <HomeSummaryCard
                   icon={() => <NavIcon02 />} // 병목 프로세스
@@ -330,11 +338,7 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
                       </HomeTooltip>
                     </span>
                   }
-                  value={
-                    <>
-                      {capitalizeFirst(commonData?.etc_info?.operational_insights?.bottleneck_process?.value)}
-                    </>
-                  }
+                  value={<>{capitalizeFirst(commonData?.etc_info?.operational_insights?.bottleneck_process?.value)}</>}
                 />
                 <HomeSummaryCard
                   icon={() => <NavIcon01 />} // 얼리버드 비율
@@ -359,9 +363,15 @@ function HomeSummary({ scenario, calculate_type, percentile, data, commonData, i
         </Accordion>
         {/* open 상태에 따라 하단에만 화살표 렌더링 */}
         {accordionOpen && (
-          <div className="flex justify-center mt-[14px]">
+          <div className="mt-[14px] flex justify-center">
             <button onClick={() => setAccordionOpen(false)} className="px-0 py-0">
-              <svg className="h-6 w-6 text-muted-foreground transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg
+                className="h-6 w-6 rotate-180 text-muted-foreground transition-transform duration-200"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>

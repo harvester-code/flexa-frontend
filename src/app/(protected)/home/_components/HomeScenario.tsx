@@ -205,13 +205,17 @@ function HomeScenario({ className, data, scenario, onSelectScenario, commonData 
         <div className="flex items-center gap-1">
           <span>Target Date:</span>
           <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-            {commonData?.etc_info?.simulation_basic_info?.first_showup_passenger?.value ? dayjs(commonData.etc_info.simulation_basic_info.first_showup_passenger.value).format('YYYY-MM-DD') : 'N/A'}
+            {commonData?.etc_info?.simulation_basic_info?.first_showup_passenger?.value
+              ? dayjs(commonData.etc_info.simulation_basic_info.first_showup_passenger.value).format('YYYY-MM-DD')
+              : 'N/A'}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <span>Last Run:</span>
           <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-            {commonData?.etc_info?.simulation_basic_info?.last_showup_passenger?.value ? dayjs(commonData.etc_info.simulation_basic_info.last_showup_passenger.value).format('YYYY-MM-DD HH:mm') : 'N/A'}
+            {commonData?.etc_info?.simulation_basic_info?.last_showup_passenger?.value
+              ? dayjs(commonData.etc_info.simulation_basic_info.last_showup_passenger.value).format('YYYY-MM-DD HH:mm')
+              : 'N/A'}
           </span>
         </div>
       </div>
@@ -345,7 +349,9 @@ function HomeScenario({ className, data, scenario, onSelectScenario, commonData 
                               onClick={() => selectScenario(item)}
                             >
                               <Link2 className="h-5 w-5 flex-shrink-0" />
+
                               <span className="truncate">{item.name}</span>
+
                               {item.isMaster && (
                                 <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
                                   Master
@@ -353,16 +359,21 @@ function HomeScenario({ className, data, scenario, onSelectScenario, commonData 
                               )}
                             </div>
                           </td>
+
                           <td className="truncate px-3 py-3 text-sm">{item.airport}</td>
+
                           <td className="truncate px-3 py-3 text-sm">
                             <i>{item.terminal}</i>
                           </td>
+
                           <td className="truncate px-3 py-3 text-sm">
                             {dayjs(item.created_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
+
                           <td className="truncate px-3 py-3 text-sm">
                             {dayjs(item.updated_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
+
                           <td className="px-3 py-3 text-sm">
                             <span className="block truncate" title={item.memo || ''}>
                               {item.memo || '-'}
@@ -403,6 +414,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, commonData 
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -435,6 +447,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, commonData 
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"

@@ -5,12 +5,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { ChevronDown, EllipsisVertical, PencilLineIcon, Plus, Trash2 } from 'lucide-react';
 import Button from '@/components/Button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 
 const Canvas = dynamic(() => import('./_components/Canvas'), { ssr: false });
 
@@ -30,8 +25,7 @@ function SettingOperationPage() {
       <div className="mt-[30px] flex flex-col border-b border-default-300 pb-[20px]">
         <h2 className="title-sm">Operation Settings</h2>
         <p className="text-sm text-default-500">
-          Enter the current facility information for the airport to set the default values that apply to all
-          members.
+          Enter the current facility information for the airport to set the default values that apply to all members.
         </p>
       </div>
       <div className="mt-[25px] flex h-[40px] items-center gap-[10px]">
@@ -75,12 +69,7 @@ function SettingOperationPage() {
             </div>
           ))}
         </div>
-        <Button
-          className="btn-md btn-default"
-          icon={<Plus className="size-4" />}
-          text="Terminal"
-          onClick={() => {}}
-        />
+        <Button className="btn-md btn-default" icon={<Plus className="size-4" />} text="Terminal" onClick={() => {}} />
       </div>
       <div className="process-wrap mt-[29px]">
         <div className="process-item-block">

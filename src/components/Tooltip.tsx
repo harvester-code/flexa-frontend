@@ -1,12 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { TooltipData } from '@/types/tooltip';
-import {
-  Tooltip as TooltipBase,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/Tooltip';
+import { Tooltip as TooltipBase, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 
 interface TooltipProps extends TooltipData {
   className?: string;

@@ -81,12 +81,10 @@ function FacilityPassengerAnalysisBarChart({ process, scenarioId }: FacilityPass
     <>
       <div className="mt-10 flex justify-between">
         <dl className="flex flex-col gap-2.5">
-          <dt className="text-xl font-semibold leading-none text-default-800">
-            Passenger Processing Analysis Chart
-          </dt>
+          <dt className="text-xl font-semibold leading-none text-default-800">Passenger Processing Analysis Chart</dt>
           <dd className="font-medium leading-none text-default-600">
-            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can
-            select up to two indicators.
+            Analyze the sum of the performances of the selected Check-In facilities for each indicator. You can select
+            up to two indicators.
           </dd>
         </dl>
 
