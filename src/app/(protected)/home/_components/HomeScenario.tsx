@@ -35,6 +35,7 @@ interface HomeScenarioProps {
   data: { master_scenario: ScenarioData[]; user_scenario: ScenarioData[] };
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
+  commonData?: any; // commonData prop 추가
 }
 
 // 페이지당 표시할 시나리오 개수 (이 값을 변경하면 팝업 크기가 자동으로 조정됩니다)
@@ -92,7 +93,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
   });
 };
 
-function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScenarioProps) {
+function HomeScenario({ className, data, scenario, onSelectScenario, commonData }: HomeScenarioProps) {
   const router = useRouter();
   const [isOpened, setIsOpened] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,17 +182,36 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
         className
       )}
     >
-      <div className="flex w-full flex-row items-center justify-center gap-2.5 text-center sm:gap-4 md:w-auto md:justify-start md:text-left">
-        <div className="flex items-center gap-2.5">
-          <span>Scenario:</span>
+      <div className="flex w-full flex-row items-center justify-center gap-5 text-center sm:gap-8 md:w-auto md:justify-start md:text-left">
+        <div className="flex items-center gap-1">
+          <span>Scenario Name:</span>
           <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
             {scenario?.name || 'None Selected'}
           </span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <span>Date:</span>
+        <div className="flex items-center gap-1">
+          <span>Airport Code:</span>
           <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
-            {scenario?.simulation_start_at ? dayjs(scenario.simulation_start_at).format('MMM-DD-YYYY') : 'No Date'}
+            {commonData?.etc_info?.simulation_basic_info?.airport_code?.value || 'N/A'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>Terminal:</span>
+          <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            {/* 추후 commonData에서 terminal 값을 받아오도록 수정 예정 */}
+            {'N/A'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>Target Date:</span>
+          <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            {commonData?.etc_info?.simulation_basic_info?.first_showup_passenger?.value ? dayjs(commonData.etc_info.simulation_basic_info.first_showup_passenger.value).format('YYYY-MM-DD') : 'N/A'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>Last Run:</span>
+          <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            {commonData?.etc_info?.simulation_basic_info?.last_showup_passenger?.value ? dayjs(commonData.etc_info.simulation_basic_info.last_showup_passenger.value).format('YYYY-MM-DD HH:mm') : 'N/A'}
           </span>
         </div>
       </div>

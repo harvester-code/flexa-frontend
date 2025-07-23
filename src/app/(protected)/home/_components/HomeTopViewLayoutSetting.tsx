@@ -581,7 +581,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
                     style={{
                       writingMode: 'vertical-lr',
                       transform: 'rotate(180deg)',
-                      height: `${numRows * 1.6}em`,
+                      height: `${numRows * 0.8}em`,
                       minWidth: '1.5em',
                     }}
                   >
@@ -592,7 +592,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ sce
                     {Array.from({ length: numRows }).map((_, rowIdx) => (
                       <div key={rowIdx} className="flex flex-row justify-center">
                         {Array.from({ length: numFronts }).map((_, colIdx) => (
-                          <span key={colIdx} style={{ fontSize: '1.6em', lineHeight: 1 }}>{getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}</span>
+                          <span key={colIdx} style={{ fontSize: '0.8em', lineHeight: 1 }}>{getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}</span>
                         ))}
                       </div>
                     ))}

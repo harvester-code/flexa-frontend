@@ -1,0 +1,56 @@
+{
+  "etc_info": {
+    "simulation_basic_info": {
+      "airport_code": {
+        "value": "ICN",
+        "description": "Airport IATA code (e.g., ICN, NRT)"
+      },
+      "first_showup_passenger": {
+        "value": "2025-06-30 21:13:36",
+        "description": "Arrival time of the first passenger at the airport"
+      },
+      "last_showup_passenger": {
+        "value": "2025-07-01 11:57:26",
+        "description": "Arrival time of the last passenger at the airport"
+      }
+    },
+    "performance_kpi": {
+      "missed_flight_passengers": {
+        "value": 48792,
+        "description": "Number of passengers who completed final process after flight departure time"
+      },
+      "ontime_flight_passengers": {
+        "value": 6359,
+        "description": "Number of passengers who completed all processes before flight departure"
+      },
+      "avg_airport_dwell_time(min)": {
+        "value": 1041,
+        "description": "Average passenger dwell time at airport (arrival to actual departure from airport)"
+      }
+    },
+    "commercial_info": {
+      "commercial_facility_usage_time_avg(min)": {
+        "value": -909,
+        "description": "Average available time for commercial facilities after final process completion"
+      },
+      "shopping_available": {
+        "value": "Impossible",
+        "description": "Shopping availability based on average spare time (Possible if positive, Impossible if negative)"
+      }
+    },
+    "operational_insights": {
+      "rush_hour": {
+        "value": "07:00-08:00",
+        "description": "Peak hour when most passengers arrive at the airport"
+      },
+      "bottleneck_process": {
+        "value": "check_in",
+        "description": "Process with the longest average waiting time (improvement priority)"
+      },
+      "early_bird_ratio(%)": {
+        "value": 51.54,
+        "description": "Percentage of passengers arriving 2+ hours before departure"
+      }
+    }
+  }
+}
