@@ -38,7 +38,7 @@ interface HomeScenarioProps {
 }
 
 // 페이지당 표시할 시나리오 개수 (이 값을 변경하면 팝업 크기가 자동으로 조정됩니다)
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 5;
 
 /**
  * 페이지네이션 범위를 계산하는 함수
@@ -367,7 +367,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             </div>
 
             {/* 고정된 페이지네이션 */}
-            <div className="mt-4 flex flex-shrink-0 justify-center border-t pt-4" style={{ height: '80px' }}>
+            <div className="flex flex-shrink-0 justify-center border-t" style={{ height: '80px' }}>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
