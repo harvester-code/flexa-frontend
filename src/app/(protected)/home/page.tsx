@@ -53,6 +53,7 @@ function HomePage() {
   return (
     <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
       <TheContentHeader text="Home" />
+
       <HomeScenario
         className="mt-8"
         data={{
@@ -66,6 +67,7 @@ function HomePage() {
       <div className="mt-4 flex items-center justify-start gap-2">
         <HomeKpiSelector value={kpi} onChange={setKpi} />
       </div>
+
       <HomeAccordion title="Summary" className="mt-4" open={true}>
         <HomeSummary
           scenario={scenario}

@@ -220,7 +220,7 @@ function SimulationOverview({ className, items, scenario, onSelectScenario }: Si
                 <p className="text-2xl font-semibold">No Simulation Result Exists.</p>
 
                 <p className="mt-3 font-medium text-default-600">
-                  No results match the search term "New LCC_241030".
+                  No results match the search term &quot;New LCC_241030&quot;.
                   <br />
                   Please try again or create a new scenario.
                 </p>
