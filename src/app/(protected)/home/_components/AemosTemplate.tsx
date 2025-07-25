@@ -135,7 +135,7 @@ const Table = ({ data }: { data: any[] }) => (
 );
 
 function AemosTemplate({ scenario }: AemosTemplateProps) {
-  const { data: aemos_dict, isLoading, isError } = useAemosTemplate({ scenarioId: scenario?.id });
+  const { data: aemos_dict, isLoading, isError } = useAemosTemplate({ scenarioId: scenario?.scenario_id });
   const [showTables, setShowTables] = useState(false);
 
   if (isLoading) return <div style={{ marginTop: '2rem' }}>AEMOS loading...</div>;
