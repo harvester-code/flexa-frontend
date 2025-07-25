@@ -557,7 +557,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
       </div>
 
       {/* ==================== ADD PROPERTIES 섹션 ==================== */}
-      <div className="mt-5 flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
+      {/* <div className="mt-5 flex items-center gap-[10px] rounded-md border border-gray-200 bg-gray-50 p-[15px]">
         <Checkbox
           id="add-properties"
           className="checkbox-toggle"
@@ -676,7 +676,7 @@ export default function TabPassengerSchedule({ simulationId, visible }: TabPasse
             </div>
           </div>
         </>
-      ) : null}
+      ) : null} */}
 
       {/* ==================== APPLY 버튼 ==================== */}
       <p className="mt-10 flex justify-end">
