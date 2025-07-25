@@ -6,7 +6,7 @@ interface ScenarioData {
   airport: string;
   created_at: string;
   editor: string;
-  id: string;
+  scenario_id: string;
   is_active: boolean;
   memo: string;
   name: string;

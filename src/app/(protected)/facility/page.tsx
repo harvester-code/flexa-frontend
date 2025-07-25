@@ -22,7 +22,7 @@ const TABS: Option[] = [
 function FacilityPage() {
   const { data: user } = useUser();
   const { data: scenarios } = useScenarios();
-  const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.id });
+  const { data: processes } = useProcesses({ scenarioId: scenarios?.scenarios?.[0]?.scenario_id });
 
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [process, setProcess] = useState<Option>();
@@ -65,11 +65,19 @@ function FacilityPage() {
 
         <AppTabs className="mt-[30px]" tabs={TABS}>
           <TabsContent value={TABS[0].value}>
-            <FacilityKPISummary key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
+            <FacilityKPISummary
+              key={scenario?.scenario_id}
+              process={process?.value}
+              scenarioId={scenario?.scenario_id}
+            />
           </TabsContent>
 
           <TabsContent value={TABS[1].value}>
-            <FacilityPassengerAnalysis key={scenario?.id} process={process?.value} scenarioId={scenario?.id} />
+            <FacilityPassengerAnalysis
+              key={scenario?.scenario_id}
+              process={process?.value}
+              scenarioId={scenario?.scenario_id}
+            />
           </TabsContent>
         </AppTabs>
       </div>

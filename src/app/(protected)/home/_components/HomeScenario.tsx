@@ -100,7 +100,10 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   // 마스터 시나리오 ID 목록 생성
-  const masterScenarioIds = useMemo(() => new Set(data.master_scenario.map((s) => s.id)), [data.master_scenario]);
+  const masterScenarioIds = useMemo(
+    () => new Set(data.master_scenario.map((s) => s.scenario_id)),
+    [data.master_scenario]
+  );
 
   // 모든 시나리오 합치기 + 중복 제거 + 검색 필터링 + 날짜 필터링
   const filteredScenarios = useMemo(() => {
@@ -109,7 +112,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
 
     // 사용자 시나리오 (마스터와 중복되지 않는 것만)
     const userScenarios = data.user_scenario
-      .filter((s) => !masterScenarioIds.has(s.id))
+      .filter((s) => !masterScenarioIds.has(s.scenario_id))
       .map((s) => ({ ...s, isMaster: false }));
 
     let allScenarios = [...masterScenarios, ...userScenarios];
@@ -312,7 +315,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
 
                       return (
                         <tr
-                          key={item.id}
+                          key={item.scenario_id}
                           className="border-b border-gray-100 hover:bg-accent-50"
                           style={{ height: '60px' }}
                         >

@@ -173,7 +173,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
 
   const handleDeleteConfirm = async () => {
     const selIds = isScenarioSelected
-      .map((selected, i) => selected && filteredScenarios[i]?.id)
+      .map((selected, i) => selected && filteredScenarios[i]?.scenario_id)
       .filter(Boolean) as string[];
 
     await onDeleteScenario(selIds);
@@ -410,7 +410,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                       ) : (
                         <div
                           className="cursor-pointer hover:font-semibold"
-                          onClick={() => router.push(`${pathname}/${scenario.id}`)}
+                          onClick={() => router.push(`${pathname}/${scenario.scenario_id}`)}
                         >
                           {scenario.name}
                         </div>

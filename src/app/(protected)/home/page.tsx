@@ -22,13 +22,13 @@ function HomePage() {
 
   // 공통 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const { data: commonData, isLoading: isCommonLoading } = useCommonHomeData({
-    scenarioId: scenario?.id,
+    scenarioId: scenario?.scenario_id,
     enabled: !!scenario,
   });
 
   // KPI 의존적 데이터 (KPI 변경 시 재요청)
   const { data: kpiData, isLoading: isKpiLoading } = useKpiHomeData({
-    scenarioId: scenario?.id,
+    scenarioId: scenario?.scenario_id,
     calculate_type: kpi.type,
     percentile: kpi.percentile ?? null,
     enabled: !!scenario,
@@ -57,7 +57,8 @@ function HomePage() {
       <HomeScenario
         className="mt-8"
         data={{
-          master_scenario: scenarios?.scenarios?.filter((s) => s.id === scenarios?.scenarios?.[0]?.id) ?? [],
+          master_scenario:
+            scenarios?.scenarios?.filter((s) => s.scenario_id === scenarios?.scenarios?.[0]?.scenario_id) ?? [],
           user_scenario: scenarios?.scenarios ?? [],
         }}
         scenario={scenario}

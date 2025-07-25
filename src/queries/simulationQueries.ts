@@ -8,12 +8,13 @@ const useScenarios = () => {
     queryFn: () =>
       fetchScenarios().then<ScenariosDataResponse>(({ data }) => {
         const masterScenarios = {};
-        for (const rowCur of data?.master_scenario || []) if (rowCur?.id) masterScenarios[rowCur.id] = rowCur;
+        for (const rowCur of data?.master_scenario || [])
+          if (rowCur?.scenario_id) masterScenarios[rowCur.scenario_id] = rowCur;
         return {
           ...data,
           scenarios: [
             ...(data?.master_scenario.filter((val) => val != null) || []),
-            ...(data?.user_scenario?.filter((val) => val.id in masterScenarios == false) || []),
+            ...(data?.user_scenario?.filter((val) => val.scenario_id in masterScenarios == false) || []),
           ],
         };
       }),
