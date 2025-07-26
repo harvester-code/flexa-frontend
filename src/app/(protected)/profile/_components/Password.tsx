@@ -61,8 +61,6 @@ export default function Password() {
         error: userError,
       } = await supabase.auth.getUser();
 
-      console.log('로그인 기록 쿼리 user.id:', user?.id); // user.id 값 확인
-
       if (userError) {
         console.error('사용자 정보 조회 실패:', userError.message);
         toast({

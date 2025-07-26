@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { ScenarioData } from '@/types/simulations';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
-import { useUser } from '@/queries/userQueries';
 import TheContentHeader from '@/components/TheContentHeader';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
@@ -14,8 +13,9 @@ import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
 
+// FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
+
 function HomePage() {
-  const { data: user } = useUser();
   const { data: scenarios } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
@@ -40,10 +40,7 @@ function HomePage() {
     ...kpiData,
   };
 
-  // KPI 변경 시에는 공통 데이터 로딩 스피너 제외
-  const isLoading = isCommonLoading || isKpiLoading;
-
-  // NOTE: 처음 랜더링될 때 무조건 MASTER SCENARIO가 선택됨.
+  // 처음 랜더링될 때 시나리오 중 가장 최근 실행된 시나리오를 선택
   useEffect(() => {
     if (scenarios?.scenarios?.[0]) {
       setScenario(scenarios.scenarios[0]);

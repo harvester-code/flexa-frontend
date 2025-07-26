@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Option } from '@/types/commons';
 import { ScenarioData } from '@/types/simulations';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
@@ -14,7 +14,7 @@ import {
   RatioIcon03,
   WaitTime,
 } from '@/components/icons';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
+import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/Accordion';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
@@ -51,7 +51,7 @@ function HomeSummary({
   const isLoading = propIsLoading || false;
 
   const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
-  const [accordionOpen, setAccordionOpen] = useState(true);
+  const [accordionOpen, setAccordionOpen] = useState(false);
 
   const chartData = useMemo(() => {
     if (!summaryData?.pax_experience) return [];
@@ -100,7 +100,6 @@ function HomeSummary({
     return <HomeNoData />;
   }
 
-  console.log(summaryData);
   return (
     <>
       {/* Pax Experience를 KPI 카드보다 위로 이동 */}
@@ -139,6 +138,7 @@ function HomeSummary({
             </>
           }
         />
+
         <HomeSummaryCard
           icon={WaitTime}
           title={<span>Wait Time</span>}
@@ -146,6 +146,7 @@ function HomeSummary({
           kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'top' ? 'top' : undefined}
           percentile={calculate_type === 'top' ? (percentile ?? undefined) : undefined}
         />
+
         <HomeSummaryCard
           icon={PassengerQueue}
           title={<span>Queue Pax</span>}
@@ -158,6 +159,7 @@ function HomeSummary({
           kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'top' ? 'top' : undefined}
           percentile={calculate_type === 'top' ? (percentile ?? undefined) : undefined}
         />
+
         <HomeSummaryCard
           icon={RatioIcon01}
           title={
@@ -175,6 +177,7 @@ function HomeSummary({
             </>
           }
         />
+
         <HomeSummaryCard
           icon={RatioIcon02}
           title={
@@ -192,6 +195,7 @@ function HomeSummary({
             </>
           }
         />
+
         <HomeSummaryCard
           icon={RatioIcon03}
           title={
@@ -230,6 +234,7 @@ function HomeSummary({
             </button>
           </div>
         )}
+
         <Accordion type="single" collapsible value={accordionOpen ? 'metrics' : undefined}>
           <AccordionItem value="metrics" className="border-none">
             <AccordionContent className="px-0 pb-0 pt-0">
@@ -361,6 +366,7 @@ function HomeSummary({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
         {/* open 상태에 따라 하단에만 화살표 렌더링 */}
         {accordionOpen && (
           <div className="mt-[14px] flex justify-center">
