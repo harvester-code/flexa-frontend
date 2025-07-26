@@ -57,9 +57,8 @@ function HomePage() {
       <HomeScenario
         className="mt-8"
         data={{
-          master_scenario:
-            scenarios?.scenarios?.filter((s) => s.scenario_id === scenarios?.scenarios?.[0]?.scenario_id) ?? [],
-          user_scenario: scenarios?.scenarios ?? [],
+          master_scenario: scenarios?.master_scenario ?? [],
+          user_scenario: scenarios?.user_scenario ?? [],
         }}
         scenario={scenario}
         onSelectScenario={setScenario}

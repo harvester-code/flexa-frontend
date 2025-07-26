@@ -10,7 +10,7 @@ interface ScenarioData {
   is_active: boolean;
   memo: string;
   name: string;
-  status: 'done' | 'yet';
+  status: 'yet' | 'running' | 'done';
   target_flight_schedule_date: string | null;
   terminal: string;
   updated_at: string;

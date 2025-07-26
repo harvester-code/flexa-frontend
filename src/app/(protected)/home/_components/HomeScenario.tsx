@@ -6,13 +6,16 @@ import dayjs from 'dayjs';
 import {
   Ban,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Link2,
+  Loader2,
   Plus,
   Search,
+  XCircle,
 } from 'lucide-react';
 import { ScenarioData } from '@/types/simulations';
 import { Button } from '@/components/ui/Button';
@@ -344,10 +347,25 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                         >
                           <td className="px-3 py-3 text-sm">
                             <div
-                              className="flex cursor-pointer items-center gap-2.5 hover:font-bold"
-                              onClick={() => selectScenario(item)}
+                              className={cn(
+                                'flex cursor-pointer items-center gap-2.5',
+                                item.status === 'done'
+                                  ? 'cursor-pointer hover:font-bold'
+                                  : 'cursor-not-allowed line-through'
+                              )}
+                              onClick={() => {
+                                if (item.status === 'done') {
+                                  selectScenario(item);
+                                }
+                              }}
                             >
-                              <Link2 className="h-5 w-5 flex-shrink-0" />
+                              {item.status === 'done' ? (
+                                <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-500" />
+                              ) : item.status === 'running' ? (
+                                <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-yellow-500" />
+                              ) : (
+                                <XCircle className="text-red-500 h-5 w-5 flex-shrink-0" />
+                              )}
 
                               <span className="truncate">{item.name}</span>
 
