@@ -20,6 +20,7 @@ import { PushSuccessPopup } from './Success';
 
 interface EditingScenario {
   id: string;
+  scenario_id: string;
   name: string;
   airport: string;
   terminal: string;
@@ -184,6 +185,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
   const startEdit = (scenario: any) => {
     setEditingScenario({
       id: scenario.id,
+      scenario_id: scenario.scenario_id,
       name: scenario.name,
       airport: scenario.airport,
       terminal: scenario.terminal,
@@ -227,7 +229,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
               terminal: editingScenario.terminal,
               memo: editingScenario.memo,
             },
-            editingScenario.id
+            editingScenario.scenario_id
           );
 
           PushSuccessPopup({
@@ -466,9 +468,9 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                     <td className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}
                           className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
                           title={isEditing ? 'Cancel' : 'Edit'}
+                          onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}
                         >
                           <Edit3 className={cn('size-5', isEditing ? 'text-gray-600' : 'text-primary')} />
                         </button>
