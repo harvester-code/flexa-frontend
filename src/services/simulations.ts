@@ -13,7 +13,7 @@ import {
 import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
 
-const BASE_URL = 'api/v1/simulations';
+const BASE_URL = '/api/v1/simulations';
 
 interface CreateScenarioParams {
   name: string;
