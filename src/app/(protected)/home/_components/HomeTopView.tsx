@@ -35,15 +35,14 @@ interface LayoutData {
 }
 
 interface HomeTopViewProps {
+  isLoading?: boolean;
   scenario: any;
   data?: { [key: string]: { [componentName: string]: { [servicePoint: string]: number } } };
-  isLoading?: boolean;
   viewMode: 'view' | 'setting';
   setViewMode: (mode: 'view' | 'setting') => void;
 }
 
 function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeTopViewProps) {
-  // 모든 useState, useRef, useEffect 등 Hook 선언
   const [layoutData, setLayoutData] = useState<LayoutData | null>(null);
   const [topViewData, setTopViewData] = useState<{
     [key: string]: { [componentName: string]: { [servicePoint: string]: number } };
@@ -267,17 +266,17 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
     const hasPersonHere = totalPositionIndex < queueCount;
 
     // 로그 추가
-    console.log('isPersonAtPosition', {
-      servicePointKey,
-      frontIndex,
-      rowIndex,
-      queueCount,
-      totalPositionIndex,
-      hasPersonHere,
-      selectedTime,
-      componentName,
-      topViewData: topViewData[selectedTime]?.[componentName],
-    });
+    // console.log('isPersonAtPosition', {
+    //   servicePointKey,
+    //   frontIndex,
+    //   rowIndex,
+    //   queueCount,
+    //   totalPositionIndex,
+    //   hasPersonHere,
+    //   selectedTime,
+    //   componentName,
+    //   topViewData: topViewData[selectedTime]?.[componentName],
+    // });
 
     return hasPersonHere;
   };
@@ -418,7 +417,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
           // 해당 위치에 사람이 있는지 확인
           const isActive = isPersonAtPosition(node, i, j);
-          console.log('dot 조건 체크', { node, i, j, isActive });
+          // console.log('dot 조건 체크', { node, i, j, isActive });
 
           if (isActive) {
             // 이미지 표시 크기 기준으로 dot 좌표 변환
@@ -628,7 +627,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 Object.entries(currentQueueData).map(([servicePoint, count]) => {
                   const servicePointKeys = Object.keys(layoutData._service_point_info);
                   const servicePointIndex = servicePointKeys.indexOf(servicePoint);
-                  const colorClass = servicePointColors[servicePointIndex % servicePointColors.length].text;
+                  const colorClass = servicePointColors[servicePointIndex % servicePointColors.length]?.text;
                   return (
                     <span key={servicePoint} className={`${colorClass} rounded px-2 py-1 font-medium`}>
                       {servicePoint}: {count} pax
@@ -641,6 +640,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
             </div>
             <div className="relative flex w-full items-center gap-2">
               <span className="min-w-[90px] text-left text-xs text-gray-500">{availableTimes[0]}</span>
+
               <div className="relative flex-1">
                 <Slider
                   min={0}
@@ -653,8 +653,9 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   }}
                   className="w-full"
                 />
+
                 {/* shadcn/ui Tooltip: thumb 위에 항상 표시 */}
-                <Tooltip open>
+                {/* <Tooltip open>
                   <TooltipTrigger asChild>
                     <div
                       className="absolute left-0 h-0 w-0"
@@ -668,8 +669,9 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   <TooltipContent side="bottom" align="center" sideOffset={6}>
                     {selectedTime}
                   </TooltipContent>
-                </Tooltip>
+                </Tooltip> */}
               </div>
+
               <span className="min-w-[90px] text-right text-xs text-gray-500">
                 {availableTimes[availableTimes.length - 1]}
               </span>

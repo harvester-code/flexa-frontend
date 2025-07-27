@@ -7,26 +7,35 @@ import { Slider } from '@/components/ui/Slider';
 interface HomeTopViewMapProps {
   imageFile: File | null;
   imageUrl: string | null;
-  dotSize: number;
-  setDotSize: (v: number) => void;
-  zoomLevel: number;
-  setZoomLevel: (v: number) => void;
-  panOffset: { x: number; y: number };
-  setPanOffset: (v: { x: number; y: number }) => void;
-  isDragging: boolean;
-  setIsDragging: (v: boolean) => void;
-  dragStart: { x: number; y: number };
-  setDragStart: (v: { x: number; y: number }) => void;
-  hasMoved: boolean;
-  setHasMoved: (v: boolean) => void;
   imageNaturalSize: { width: number; height: number } | null;
   setImageNaturalSize: (v: { width: number; height: number } | null) => void;
-  renderServicePoints: () => React.ReactNode;
+
+  dotSize: number;
+  setDotSize: (v: number) => void;
+
+  zoomLevel: number;
+  setZoomLevel: (v: number) => void;
+
+  panOffset: { x: number; y: number };
+  setPanOffset: (v: { x: number; y: number }) => void;
+
+  isDragging: boolean;
+  setIsDragging: (v: boolean) => void;
+
+  dragStart: { x: number; y: number };
+  setDragStart: (v: { x: number; y: number }) => void;
+
+  hasMoved: boolean;
+  setHasMoved: (v: boolean) => void;
+
   mousePosition: { x: number; y: number } | null;
   setMousePosition: (v: { x: number; y: number } | null) => void;
+
+  renderServicePoints: () => React.ReactNode;
   resetView: () => void;
-  onImageClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+
   selecting?: boolean;
+  onImageClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
@@ -174,6 +183,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
+
     const wheelHandler = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -196,8 +206,10 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       setZoomLevel(newZoom);
       setPanOffset({ x: newOffsetX, y: newOffsetY });
     };
+
     frame.removeEventListener('wheel', wheelHandler, { capture: true } as any);
     frame.addEventListener('wheel', wheelHandler, { passive: false, capture: true });
+
     return () => {
       frame.removeEventListener('wheel', wheelHandler, { capture: true } as any);
     };
@@ -350,10 +362,12 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
               objectFit: 'contain',
             }}
           />
+
           {(() => {
-            console.log('HomeTopViewMap: Rendering service points');
+            // console.log('HomeTopViewMap: Rendering service points');
             const result = renderServicePoints();
-            console.log('HomeTopViewMap: Service points result:', result);
+
+            // console.log('HomeTopViewMap: Service points result:', result);
             return result;
           })()}
         </div>
