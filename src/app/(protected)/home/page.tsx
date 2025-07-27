@@ -21,6 +21,7 @@ function HomePage() {
   const { data: scenarios } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
+  const [topViewMode, setTopViewMode] = useState<'view' | 'setting'>('view');
 
   // HACK: 뷰 모드 설정 (view: TopView, setting: TopView 설정)
   const [viewMode, setViewMode] = useState<'view' | 'setting'>('view');
@@ -86,6 +87,7 @@ function HomePage() {
           calculate_type={kpi.type}
           percentile={kpi.percentile ?? null}
           data={allHomeData?.summary}
+          commonData={commonData}
           isLoading={isKpiLoading}
         />
       </HomeAccordion>
