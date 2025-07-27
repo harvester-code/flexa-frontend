@@ -251,7 +251,8 @@ function HomeSummary({
                   }
                   value={
                     <>
-                      {commonData?.etc_info?.performance_kpi?.missed_flight_passengers?.value?.toLocaleString()}
+                      {commonData?.etc_info?.performance_kpi?.missed_flight_passengers?.value?.toLocaleString() ||
+                        'N/A'}
                       {formatUnit('pax')}
                     </>
                   }
@@ -268,7 +269,8 @@ function HomeSummary({
                   }
                   value={
                     <>
-                      {commonData?.etc_info?.performance_kpi?.ontime_flight_passengers?.value?.toLocaleString()}
+                      {commonData?.etc_info?.performance_kpi?.ontime_flight_passengers?.value?.toLocaleString() ||
+                        'N/A'}
                       {formatUnit('pax')}
                     </>
                   }
@@ -285,7 +287,9 @@ function HomeSummary({
                   }
                   value={
                     <>
-                      {commonData?.etc_info?.performance_kpi?.['avg_airport_dwell_time(min)']?.value?.toLocaleString()}
+                      {commonData?.etc_info?.performance_kpi?.[
+                        'avg_airport_dwell_time(min)'
+                      ]?.value?.toLocaleString() || 'N/A'}
                       {formatUnit('min')}
                     </>
                   }
@@ -304,7 +308,7 @@ function HomeSummary({
                     <>
                       {commonData?.etc_info?.commercial_info?.[
                         'commercial_facility_usage_time_avg(min)'
-                      ]?.value?.toLocaleString()}
+                      ]?.value?.toLocaleString() || 'N/A'}
                       {formatUnit('min')}
                     </>
                   }
@@ -319,7 +323,7 @@ function HomeSummary({
                       </HomeTooltip>
                     </span>
                   }
-                  value={<>{commonData?.etc_info?.commercial_info?.shopping_available?.value}</>}
+                  value={<>{commonData?.etc_info?.commercial_info?.shopping_available?.value || 'N/A'}</>}
                 />
                 <HomeSummaryCard
                   icon={RatioIcon03}
@@ -331,7 +335,7 @@ function HomeSummary({
                       </HomeTooltip>
                     </span>
                   }
-                  value={<>{commonData?.etc_info?.operational_insights?.rush_hour?.value}</>}
+                  value={<>{commonData?.etc_info?.operational_insights?.rush_hour?.value || 'N/A'}</>}
                 />
                 <HomeSummaryCard
                   icon={() => <NavIcon02 />} // 병목 프로세스
@@ -343,7 +347,11 @@ function HomeSummary({
                       </HomeTooltip>
                     </span>
                   }
-                  value={<>{capitalizeFirst(commonData?.etc_info?.operational_insights?.bottleneck_process?.value)}</>}
+                  value={
+                    <>
+                      {capitalizeFirst(commonData?.etc_info?.operational_insights?.bottleneck_process?.value) || 'N/A'}
+                    </>
+                  }
                 />
                 <HomeSummaryCard
                   icon={() => <NavIcon01 />} // 얼리버드 비율
@@ -357,7 +365,8 @@ function HomeSummary({
                   }
                   value={
                     <>
-                      {commonData?.etc_info?.operational_insights?.['early_bird_ratio(%)']?.value?.toLocaleString()}
+                      {commonData?.etc_info?.operational_insights?.['early_bird_ratio(%)']?.value?.toLocaleString() ||
+                        'N/A'}
                       {formatUnit('%')}
                     </>
                   }
