@@ -11,6 +11,7 @@ import {
 import { Slider } from '@/components/ui/Slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
+import HomeTopViewLayoutSetting from './HomeTopViewLayoutSetting';
 import HomeTopViewMap from './HomeTopViewMap';
 
 interface LayoutData {
@@ -265,19 +266,6 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
     const hasPersonHere = totalPositionIndex < queueCount;
 
-    // 로그 추가
-    // console.log('isPersonAtPosition', {
-    //   servicePointKey,
-    //   frontIndex,
-    //   rowIndex,
-    //   queueCount,
-    //   totalPositionIndex,
-    //   hasPersonHere,
-    //   selectedTime,
-    //   componentName,
-    //   topViewData: topViewData[selectedTime]?.[componentName],
-    // });
-
     return hasPersonHere;
   };
 
@@ -417,7 +405,6 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
           // 해당 위치에 사람이 있는지 확인
           const isActive = isPersonAtPosition(node, i, j);
-          // console.log('dot 조건 체크', { node, i, j, isActive });
 
           if (isActive) {
             // 이미지 표시 크기 기준으로 dot 좌표 변환
@@ -512,6 +499,33 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Setting 모드일 때 HomeTopViewLayoutSetting 컴포넌트 렌더링
+  if (viewMode === 'setting') {
+    // layout.json에서 service point 구조를 추출하여 ServicePointData 형태로 변환
+    const servicePointData: { [component: string]: string[] } = {};
+    if (layoutData?._service_point_info) {
+      Object.entries(layoutData._service_point_info).forEach(([nodeName, nodeInfo]: [string, any]) => {
+        const componentName = nodeInfo.component_name;
+        if (componentName) {
+          if (!servicePointData[componentName]) {
+            servicePointData[componentName] = [];
+          }
+          servicePointData[componentName].push(nodeName);
+        }
+      });
+    }
+
+    return (
+      <HomeTopViewLayoutSetting
+        scenario={scenario}
+        data={servicePointData}
+        isLoading={isLoading}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
     );
   }
 

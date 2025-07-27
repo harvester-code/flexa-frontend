@@ -1,29 +1,15 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Info } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from '@/components/ui/AlertDialog';
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from '@/components/ui/Button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { Slider } from '@/components/ui/Slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from '@/components/ui/AlertDialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter, DialogClose } from '@/components/ui/Dialog';
 import HomeTopViewMap from './HomeTopViewMap';
+import { Slider } from '@/components/ui/Slider';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
+import { Info } from 'lucide-react';
 
 interface ServicePointData {
   [component: string]: string[];
@@ -50,30 +36,9 @@ const dotColors = [
 
 // Array of people emojis with various races, genders, hair, and ages
 const peopleEmojis = [
-  '🧑',
-  '👩',
-  '👨',
-  '👧',
-  '👦',
-  '👩‍🦰',
-  '👨‍🦱',
-  '👩‍🦳',
-  '👨‍🦳',
-  '🧑‍🦱',
-  '🧑‍🦰',
-  '🧑‍🦳',
-  '🧑‍🦲',
-  '👵',
-  '👴',
-  '👩‍🦲',
-  '👨‍🦲',
-  '👩‍🦱',
-  '👨‍🦱',
-  '🧒',
-  '👩‍🦰',
-  '👨‍🦰',
-  '👩‍🦳',
-  '👨‍🦳',
+  '🧑', '👩', '👨', '👧', '👦', '👩‍🦰', '👨‍🦱', '👩‍🦳', '👨‍🦳',
+  '🧑‍🦱', '🧑‍🦰', '🧑‍🦳', '🧑‍🦲', '👵', '👴', '👩‍🦲', '👨‍🦲',
+  '👩‍🦱', '👨‍🦱', '🧒', '👩‍🦰', '👨‍🦰', '👩‍🦳', '👨‍🦳',
 ];
 function getRandomPersonEmoji() {
   const idx = Math.floor(Math.random() * peopleEmojis.length);
@@ -85,12 +50,12 @@ function getSeededPersonEmoji(rowIdx: number, colIdx: number, node: string, seed
   let hash = 0;
   for (let i = 0; i < node.length; i++) hash += node.charCodeAt(i);
   // seed를 더해주고, 충분히 섞이도록 곱셈/나눗셈
-  const idx = Math.abs(rowIdx * 31 + colIdx * 17 + hash + Math.floor(seed / 1000)) % peopleEmojis.length;
+  const idx = Math.abs((rowIdx * 31 + colIdx * 17 + hash + Math.floor(seed / 1000))) % peopleEmojis.length;
   return peopleEmojis[idx];
 }
 
 // 1. SVG viewBox 추출 함수 추가
-async function getSvgViewBox(file: File): Promise<{ width: number; height: number }> {
+async function getSvgViewBox(file: File): Promise<{width: number, height: number}> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -116,13 +81,7 @@ async function getSvgViewBox(file: File): Promise<{ width: number; height: numbe
   });
 }
 
-const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
-  scenario,
-  data,
-  isLoading,
-  viewMode,
-  setViewMode,
-}) => {
+const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({ scenario, data, isLoading, viewMode, setViewMode }) => {
   // Image upload state
   const [image, setImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -160,7 +119,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasMoved, setHasMoved] = useState(false);
   // Image natural size state
-  const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [imageNaturalSize, setImageNaturalSize] = useState<{width: number; height: number} | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Modal state for file upload
@@ -170,7 +129,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [tempImageFileName, setTempImageFileName] = useState<string | null>(null);
   const [tempImageError, setTempImageError] = useState<string | null>(null);
-  const [tempImageNaturalSize, setTempImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [tempImageNaturalSize, setTempImageNaturalSize] = useState<{width: number; height: number} | null>(null);
 
   // Modal file input ref
   const modalFileInputRef = React.useRef<HTMLInputElement>(null);
@@ -234,6 +193,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
     loadLayoutJson();
   }, []);
 
+
   // Initialize input values and set defaults when node is selected
   useEffect(() => {
     if (selectedComponent && selectedNode) {
@@ -261,18 +221,19 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       if (isDragging && !selecting) {
         const newPanOffset = {
           x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
+          y: e.clientY - dragStart.y
         };
-
+        
         // Check if there's actual movement (more than 3 pixels)
         const moveDistance = Math.sqrt(
-          Math.pow(newPanOffset.x - panOffset.x, 2) + Math.pow(newPanOffset.y - panOffset.y, 2)
+          Math.pow(newPanOffset.x - panOffset.x, 2) + 
+          Math.pow(newPanOffset.y - panOffset.y, 2)
         );
-
+        
         if (moveDistance > 3) {
           setHasMoved(true);
         }
-
+        
         setPanOffset(newPanOffset);
       }
     };
@@ -389,26 +350,26 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
   // Display coordinates when mouse moves over image
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageNaturalSize) return;
-
+    
     // Get the image element's actual position after transforms
     const imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
     if (!imgElement) return;
-
+    
     // Get the transformed image bounds (this includes all CSS transforms)
     const imgRect = imgElement.getBoundingClientRect();
-
+    
     // Mouse position relative to the transformed image
     const imageX = e.clientX - imgRect.left;
     const imageY = e.clientY - imgRect.top;
-
+    
     // Convert to normalized coordinates (0-1) within the image
     const normalizedX = imageX / imgRect.width;
     const normalizedY = imageY / imgRect.height;
-
+    
     // Convert to actual image pixel coordinates
     const x = Math.round(normalizedX * imageNaturalSize.width);
     const y = Math.round(normalizedY * imageNaturalSize.height);
-
+    
     setMousePosition({ x, y });
   };
 
@@ -436,14 +397,11 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       setHasMoved(false);
       return;
     }
-
+    
     if (!selecting || !selectedNode || !imageNaturalSize) {
-      console.log('Click ignored:', { selecting, selectedNode, imageNaturalSize });
       return;
     }
-
-    console.log('Image click detected:', selecting, selectedNode);
-
+    
     // Get the image element's actual position after transforms
     // Try both possible alt texts
     let imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
@@ -454,28 +412,25 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       console.error('Image element not found');
       return;
     }
-
+    
     // Get the transformed image bounds (this includes all CSS transforms)
     const imgRect = imgElement.getBoundingClientRect();
-
+    
     // Mouse position relative to the transformed image
     const imageX = e.clientX - imgRect.left;
     const imageY = e.clientY - imgRect.top;
-
+    
     // Convert to normalized coordinates (0-1) within the image
     const normalizedX = imageX / imgRect.width;
     const normalizedY = imageY / imgRect.height;
-
+    
     // Convert to actual image pixel coordinates
     const x = Math.round(normalizedX * imageNaturalSize.width);
     const y = Math.round(normalizedY * imageNaturalSize.height);
-
-    console.log('Coordinates calculated:', { x, y, imageNaturalSize, imgRect });
-
+    
     setNodeInputs((prev) => {
       const nodeData = prev[selectedNode] || {};
       if (selecting === 'front_start') {
-        console.log('Setting front_start:', { x, y });
         return {
           ...prev,
           [selectedNode]: {
@@ -485,7 +440,6 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
           },
         };
       } else if (selecting === 'front_end') {
-        console.log('Setting front_end:', { x, y });
         return {
           ...prev,
           [selectedNode]: {
@@ -548,139 +502,75 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
     const numFronts = Number(nodeData.num_of_fronts) || 5;
     const numRows = Number(nodeData.num_of_rows) || 7;
     return (
-      <div className="grid min-w-[700px] max-w-full grid-cols-2 items-center gap-x-12 gap-y-4">
+      <div className="grid grid-cols-2 gap-x-12 gap-y-4 min-w-[700px] max-w-full items-center">
         {/* 왼쪽: Start/End Point 세로 */}
         <div className="flex flex-col gap-4">
           {/* Start Point */}
           <div className="flex items-center gap-2">
             <span className="text-lg">🚩</span>
             <span className="font-medium">Start Point</span>
-            <Input
-              type="number"
-              placeholder="x"
-              value={nodeData.front_start_point_x ?? ''}
-              onChange={(e) =>
-                handleInputChange('front_start_point_x', e.target.value === '' ? '' : Number(e.target.value))
-              }
-              className="w-20"
-            />
-            <Input
-              type="number"
-              placeholder="y"
-              value={nodeData.front_start_point_y ?? ''}
-              onChange={(e) =>
-                handleInputChange('front_start_point_y', e.target.value === '' ? '' : Number(e.target.value))
-              }
-              className="w-20"
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant={selecting === 'front_start' ? 'secondary' : 'outline'}
-              onClick={() => setSelecting(selecting === 'front_start' ? null : 'front_start')}
+            <Input type="number" placeholder="x" value={nodeData.front_start_point_x ?? ''} onChange={e => handleInputChange('front_start_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
+            <Input type="number" placeholder="y" value={nodeData.front_start_point_y ?? ''} onChange={e => handleInputChange('front_start_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
+            <Button 
+              type="button" 
+              size="icon" 
+              variant={selecting === 'front_start' ? 'secondary' : 'outline'} 
+              onClick={() => setSelecting(selecting === 'front_start' ? null : 'front_start')} 
               title="Select with mouse"
               className={selecting === 'front_start' ? 'bg-primary text-primary-foreground' : ''}
             >
-              <span role="img" aria-label="mouse">
-                🖱️
-              </span>
+              <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
           {/* End Point */}
           <div className="flex items-center gap-2">
             <span className="text-lg">🏁</span>
             <span className="font-medium">End Point</span>
-            <Input
-              type="number"
-              placeholder="x"
-              value={nodeData.front_end_point_x ?? ''}
-              onChange={(e) =>
-                handleInputChange('front_end_point_x', e.target.value === '' ? '' : Number(e.target.value))
-              }
-              className="w-20"
-            />
-            <Input
-              type="number"
-              placeholder="y"
-              value={nodeData.front_end_point_y ?? ''}
-              onChange={(e) =>
-                handleInputChange('front_end_point_y', e.target.value === '' ? '' : Number(e.target.value))
-              }
-              className="w-20"
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant={selecting === 'front_end' ? 'secondary' : 'outline'}
-              onClick={() => setSelecting(selecting === 'front_end' ? null : 'front_end')}
+            <Input type="number" placeholder="x" value={nodeData.front_end_point_x ?? ''} onChange={e => handleInputChange('front_end_point_x', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
+            <Input type="number" placeholder="y" value={nodeData.front_end_point_y ?? ''} onChange={e => handleInputChange('front_end_point_y', e.target.value === '' ? '' : Number(e.target.value))} className="w-20" />
+            <Button 
+              type="button" 
+              size="icon" 
+              variant={selecting === 'front_end' ? 'secondary' : 'outline'} 
+              onClick={() => setSelecting(selecting === 'front_end' ? null : 'front_end')} 
               title="Select with mouse"
               className={selecting === 'front_end' ? 'bg-primary text-primary-foreground' : ''}
             >
-              <span role="img" aria-label="mouse">
-                🖱️
-              </span>
+              <span role="img" aria-label="mouse">🖱️</span>
             </Button>
           </div>
         </div>
         {/* 오른쪽: Direction, Pax Layout 세로 */}
-        <div className="flex h-full flex-col justify-center gap-4">
+        <div className="flex flex-col gap-4 h-full justify-center">
           {/* Direction */}
           <div className="flex items-center gap-2">
             <span className="font-medium">Direction</span>
-            <Button
-              type="button"
-              variant={nodeData.direction === 'forward' ? 'default' : 'outline'}
-              onClick={() => handleInputChange('direction', 'forward')}
-            >
-              Forward
-            </Button>
-            <Button
-              type="button"
-              variant={nodeData.direction === 'backward' ? 'default' : 'outline'}
-              onClick={() => handleInputChange('direction', 'backward')}
-            >
-              Reverse
-            </Button>
+            <Button type="button" variant={nodeData.direction === 'forward' ? 'default' : 'outline'} onClick={() => handleInputChange('direction', 'forward')}>Forward</Button>
+            <Button type="button" variant={nodeData.direction === 'backward' ? 'default' : 'outline'} onClick={() => handleInputChange('direction', 'backward')}>Reverse</Button>
           </div>
           {/* Pax Layout */}
           <div className="flex items-center gap-2">
             <span className="font-medium">Pax Layout</span>
-            <Input
-              type="number"
-              min={1}
-              value={numFronts}
-              onChange={(e) => handleChangeFronts(node, Number(e.target.value))}
-              className="w-14 text-center"
-            />
+            <Input type="number" min={1} value={numFronts} onChange={e => handleChangeFronts(node, Number(e.target.value))} className="w-14 text-center" />
             <span>cols ×</span>
-            <Input
-              type="number"
-              min={1}
-              value={numRows}
-              onChange={(e) => handleChangeRows(node, Number(e.target.value))}
-              className="w-14 text-center"
-            />
+            <Input type="number" min={1} value={numRows} onChange={e => handleChangeRows(node, Number(e.target.value))} className="w-14 text-center" />
             <span>rows</span>
             <Popover>
               <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="ml-1 rounded-full p-1 hover:bg-gray-100 focus:outline-none"
-                  title="Show layout example"
-                >
-                  <span className="align-middle text-lg">ⓘ</span>
+                <button type="button" className="ml-1 p-1 rounded-full hover:bg-gray-100 focus:outline-none" title="Show layout example">
+                  <span className="text-lg align-middle">ⓘ</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent
                 side="top"
                 align="center"
-                className="z-[201] flex min-w-fit max-w-[90vw] flex-col items-center bg-white p-4"
+                className="p-4 flex flex-col items-center bg-white z-[201] min-w-fit max-w-[90vw]"
                 style={{ width: 'auto', maxWidth: '90vw' }}
               >
                 <div className="flex flex-row items-center">
                   {/* 왼쪽 rows 텍스트 (vertical, 중앙정렬) */}
                   <span
-                    className="mr-2 flex items-center justify-center text-sm text-black"
+                    className="text-sm text-black mr-2 flex items-center justify-center"
                     style={{
                       writingMode: 'vertical-lr',
                       transform: 'rotate(180deg)',
@@ -695,16 +585,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     {Array.from({ length: numRows }).map((_, rowIdx) => (
                       <div key={rowIdx} className="flex flex-row justify-center">
                         {Array.from({ length: numFronts }).map((_, colIdx) => (
-                          <span key={colIdx} style={{ fontSize: '0.8em', lineHeight: 1 }}>
-                            {getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}
-                          </span>
+                          <span key={colIdx} style={{ fontSize: '0.8em', lineHeight: 1 }}>{getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}</span>
                         ))}
                       </div>
                     ))}
                   </div>
                 </div>
                 {/* 하단 rows 텍스트 */}
-                <span className="mt-2 text-sm text-black">{numFronts} cols</span>
+                <span className="text-sm text-black mt-2">{numFronts} cols</span>
               </PopoverContent>
             </Popover>
           </div>
@@ -716,10 +604,9 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
   // Render colored dot array on map (only when both front_start and front_end are filled)
   const renderAllNodeDots = () => {
     if (!image || !imageNaturalSize) {
-      console.log('renderAllNodeDots: Missing image or imageNaturalSize');
       return null;
     }
-
+    
     // Get current displayed image size
     // Try both possible alt texts
     let imgElement = document.querySelector('img[alt="Airport Layout"]') as HTMLImageElement;
@@ -727,10 +614,9 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
     }
     if (!imgElement) {
-      console.log('renderAllNodeDots: Image element not found');
       return null;
     }
-
+    
     // Get the image's original display size (before transform)
     // Since dots are children of the image element, they inherit the transform
     const imgRect = imgElement.getBoundingClientRect();
@@ -738,19 +624,15 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
     const originalDisplayHeight = imgRect.height / zoomLevel;
     const scaleX = originalDisplayWidth / imageNaturalSize.width;
     const scaleY = originalDisplayHeight / imageNaturalSize.height;
-
-    console.log('renderAllNodeDots: Scale factors:', { scaleX, scaleY, zoomLevel, imageNaturalSize });
-
+    
     const allNodes = Object.values(servicePoints).flat();
-    console.log('renderAllNodeDots: All nodes:', allNodes);
-
+    
     return allNodes.map((node) => {
       const nodeData = nodeInputs[node];
       if (!nodeData) {
-        console.log(`renderAllNodeDots: No data for node ${node}`);
         return null;
       }
-
+      
       // Check if both front_start and front_end values are filled
       const requiredFields = [
         'front_start_point_x',
@@ -761,17 +643,12 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         'num_of_fronts',
         'num_of_rows',
       ];
-
-      const hasAllFields = requiredFields.every(
-        (f) => nodeData[f] !== '' && nodeData[f] !== undefined && nodeData[f] !== null
-      );
+      
+      const hasAllFields = requiredFields.every((f) => nodeData[f] !== '' && nodeData[f] !== undefined && nodeData[f] !== null);
       if (!hasAllFields) {
-        console.log(`renderAllNodeDots: Missing fields for node ${node}:`, nodeData);
         return null;
       }
-
-      console.log(`renderAllNodeDots: Rendering dots for node ${node}:`, nodeData);
-
+      
       // Convert coordinates from actual image size to current display size
       const startX = Number(nodeData.front_start_point_x) * scaleX;
       const startY = Number(nodeData.front_start_point_y) * scaleY;
@@ -779,14 +656,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       const endY = Number(nodeData.front_end_point_y) * scaleY;
       const numFronts = Number(nodeData.num_of_fronts);
       const numRows = Number(nodeData.num_of_rows);
-
+      
       if (numFronts < 1 || numRows < 1) return null;
-
+      
       const directionVectorX = endX - startX;
       const directionVectorY = endY - startY;
       const length = Math.sqrt(directionVectorX * directionVectorX + directionVectorY * directionVectorY);
       if (length === 0) return null;
-
+      
       const normalizedDirX = directionVectorX / length;
       const normalizedDirY = directionVectorY / length;
       const isForward = nodeData.direction === 'forward';
@@ -794,30 +671,30 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       const normalY = isForward ? normalizedDirX : -normalizedDirX;
       const frontSpacing = length / (numFronts - 1);
       const rowSpacing = frontSpacing;
-
+      
       // Color for each node
       const allNodesFlat = Object.values(servicePoints).flat();
       const nodeIdx = allNodesFlat.indexOf(node);
       const dotColor = dotColors[nodeIdx % dotColors.length];
       const isSelected = node === selectedNode;
       const dots: React.ReactElement[] = [];
-
+      
       for (let i = 0; i < numFronts; i++) {
         const t = numFronts === 1 ? 0 : i / (numFronts - 1);
         const baseX = startX + t * directionVectorX;
         const baseY = startY + t * directionVectorY;
-
+        
         for (let j = 0; j < numRows; j++) {
           const offsetDistance = j * rowSpacing;
           const pointX = baseX + normalX * offsetDistance;
           const pointY = baseY + normalY * offsetDistance;
-
+          
           // Distinguish Start and End points
           const isStartPoint = i === 0 && j === 0; // front_start position
           const isEndPoint = i === numFronts - 1 && j === 0; // front_end position (same front line)
-
+          
           let backgroundColor, opacity, zIndex;
-
+          
           if (isStartPoint) {
             // Start: light red color
             backgroundColor = 'rgba(239, 68, 68, 0.6)'; // light red color
@@ -834,11 +711,11 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             opacity = '0.9';
             zIndex = 1;
           }
-
+          
           // All dots same size (최소 크기 보장으로 원 깨짐 방지)
           const currentDotSize = dotSize;
           const dotSizePx = Math.max(currentDotSize * 10, 2); // 최소 2px로 원 깨짐 방지
-
+          
           dots.push(
             <div
               key={`dot-${node}-${i}-${j}`}
@@ -846,8 +723,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
               style={{
                 width: `${dotSizePx}px`,
                 height: `${dotSizePx}px`,
-                left: `${pointX - dotSizePx / 2}px`,
-                top: `${pointY - dotSizePx / 2}px`,
+                left: `${pointX - dotSizePx/2}px`,
+                top: `${pointY - dotSizePx/2}px`,
                 backgroundColor: backgroundColor || undefined,
                 opacity,
                 pointerEvents: 'none',
@@ -866,8 +743,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
           );
         }
       }
-
-      console.log(`renderAllNodeDots: Created ${dots.length} dots for node ${node}`);
+      
       return dots;
     });
   };
@@ -897,7 +773,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         return acc;
       }, {} as any),
     };
-
+    
     // JSON 파일 다운로드
     const blob = new Blob([JSON.stringify(layoutJson, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -943,11 +819,13 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
     generateAndDownloadJSON(undefined);
   };
 
+
+
   return (
     <div className="space-y-6">
-      <div className="mt-[14px] rounded-lg border bg-white p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <Tabs value={viewMode} onValueChange={(val) => setViewMode(val as 'view' | 'setting')}>
+      <div className="rounded-lg border bg-white p-6 mt-[14px]">
+        <div className="flex items-center justify-between mb-4">
+          <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'view' | 'setting')}>
             <TabsList>
               <TabsTrigger value="view">View</TabsTrigger>
               <TabsTrigger value="setting">Setting</TabsTrigger>
@@ -964,7 +842,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             {/* Top View Image 텍스트와 버튼 라인 삭제 */}
             {/* Error Display */}
             {imageError && (
-              <div className="bg-red-50 border-red-200 mt-4 rounded-lg border p-3">
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm">{imageError}</p>
               </div>
             )}
@@ -996,10 +874,9 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                   selecting={selecting !== null}
                 />
                 {selecting && (
-                  <div className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                    <p className="text-sm font-medium text-yellow-800">
-                      🎯 Coordinate selection mode: {selecting === 'front_start' ? 'start point' : 'end point'} in the
-                      image.
+                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm font-medium">
+                      🎯 Coordinate selection mode: {selecting === 'front_start' ? 'start point' : 'end point'} in the image.
                     </p>
                   </div>
                 )}
@@ -1023,23 +900,21 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     onChange={handleModalImageChange}
                     className="hidden"
                   />
-                  <span className="w-full text-center text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground text-center w-full">
                     {tempImageFileName || 'No file selected'}
                   </span>
                   {tempImageError && (
-                    <div className="bg-red-50 border-red-200 rounded-lg border p-2">
+                    <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-red-600 text-sm">{tempImageError}</p>
                     </div>
                   )}
                   {tempImage && (
-                    <img src={tempImage} alt="Preview" className="max-h-60 w-full rounded border object-contain" />
+                    <img src={tempImage} alt="Preview" className="w-full max-h-60 object-contain rounded border" />
                   )}
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button type="button" variant="ghost" onClick={handleModalClose}>
-                      Cancel
-                    </Button>
+                    <Button type="button" variant="ghost" onClick={handleModalClose}>Cancel</Button>
                   </DialogClose>
                   <Button type="button" onClick={handleModalApply} disabled={!tempImageFile || !tempImageNaturalSize}>
                     Apply
@@ -1051,21 +926,13 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         )}
         {/* Component/Node Tab UI + Settings 폼을 한 줄에 배치 */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
-          <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch mb-6">
             {/* 왼쪽: 탭 네비게이션 */}
-            <div className="w-full flex-shrink-0 md:w-1/3">
+            <div className="w-full md:w-1/3 flex-shrink-0">
               <div className="h-full">
-                <Tabs
-                  defaultValue={selectedComponent || ''}
-                  value={selectedComponent || ''}
-                  onValueChange={(val) => {
-                    setSelectedComponent(val);
-                    setSelectedNode(servicePoints[val][0]);
-                  }}
-                  className="w-full"
-                >
+                <Tabs defaultValue={selectedComponent || ''} value={selectedComponent || ''} onValueChange={val => { setSelectedComponent(val); setSelectedNode(servicePoints[val][0]); }} className="w-full">
                   {/* 1 depth TabsList (check_in, passport 등) */}
-                  <TabsList className={`mb-4 grid w-full grid-cols-${Object.keys(servicePoints).length} gap-2`}>
+                  <TabsList className={`mb-4 w-full grid grid-cols-${Object.keys(servicePoints).length} gap-2`}>
                     {Object.keys(servicePoints).map((component) => (
                       <TabsTrigger key={component} value={component} className="w-full">
                         {component}
@@ -1074,12 +941,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                   </TabsList>
                   {Object.keys(servicePoints).map((component) => (
                     <TabsContent key={component} value={component} className="w-full">
-                      <Tabs
-                        defaultValue={selectedNode || ''}
-                        value={selectedNode || ''}
-                        onValueChange={setSelectedNode}
-                        className="w-full"
-                      >
+                      <Tabs defaultValue={selectedNode || ''} value={selectedNode || ''} onValueChange={setSelectedNode} className="w-full">
                         {/* 2 depth TabsList (A,B,C,D 등) */}
                         <TabsList className="mb-4 flex gap-2">
                           {servicePoints[component].map((node) => (
@@ -1095,9 +957,9 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
               </div>
             </div>
             {/* 오른쪽: Settings 폼 */}
-            <div className="w-full flex-1 md:w-2/3">
+            <div className="w-full md:w-2/3 flex-1">
               {selectedComponent && selectedNode && (
-                <div className="flex h-full flex-col rounded-lg border bg-white p-6">
+                <div className="rounded-lg border bg-white p-6 h-full flex flex-col">
                   {renderEmojiGrid(selectedNode)}
                 </div>
               )}
@@ -1106,8 +968,11 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         )}
         {/* Apply Button */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
-          <div className="mt-6 flex justify-end">
-            <Button className="px-6 py-2 font-semibold" onClick={handleApply}>
+          <div className="flex justify-end mt-6">
+            <Button
+              className="px-6 py-2 font-semibold"
+              onClick={handleApply}
+            >
               Apply
             </Button>
           </div>
@@ -1126,4 +991,4 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
   );
 };
 
-export default HomeTopViewLayoutSetting;
+export default HomeTopViewLayoutSetting; 

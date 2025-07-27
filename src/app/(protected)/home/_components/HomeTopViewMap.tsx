@@ -362,14 +362,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
               objectFit: 'contain',
             }}
           />
-
-          {(() => {
-            // console.log('HomeTopViewMap: Rendering service points');
-            const result = renderServicePoints();
-
-            // console.log('HomeTopViewMap: Service points result:', result);
-            return result;
-          })()}
+          {renderServicePoints()}
         </div>
 
         {/* Resize handle */}
