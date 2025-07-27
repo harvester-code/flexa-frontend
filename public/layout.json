@@ -1,54 +1,54 @@
 {
   "_img_info": {
-    "img_path": "maps/T1_L5_LS.svg"
+    "img_path": "maps/MNL_T3_L3.jpg"
   },
   "_service_point_info": {
     "A": {
       "component_name": "check_in",
       "node_name": "A",
-      "front_start_point_x": 8034,
-      "front_start_point_y": 6016,
-      "front_end_point_x": 7829,
-      "front_end_point_y": 6284,
-      "direction": "backward",
-      "num_of_fronts": 30,
-      "num_of_rows": 15
+      "front_start_point_x": 800,
+      "front_start_point_y": 385,
+      "front_end_point_x": 800,
+      "front_end_point_y": 770,
+      "direction": "forward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
     },
     "B": {
       "component_name": "check_in",
       "node_name": "B",
-      "front_start_point_x": 7663,
-      "front_start_point_y": 5636,
-      "front_end_point_x": 7431,
-      "front_end_point_y": 6002,
+      "front_start_point_x": 955,
+      "front_start_point_y": 385,
+      "front_end_point_x": 955,
+      "front_end_point_y": 770,
       "direction": "backward",
-      "num_of_fronts": 30,
-      "num_of_rows": 15
+      "num_of_fronts": 35,
+      "num_of_rows": 10
     },
     "C": {
       "component_name": "check_in",
       "node_name": "C",
-      "front_start_point_x": 7199,
-      "front_start_point_y": 5381,
-      "front_end_point_x": 7015,
-      "front_end_point_y": 5763,
-      "direction": "backward",
-      "num_of_fronts": 30,
-      "num_of_rows": 11
+      "front_start_point_x": 1268,
+      "front_start_point_y": 385,
+      "front_end_point_x": 1268,
+      "front_end_point_y": 770,
+      "direction": "forward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
     },
     "D": {
       "component_name": "check_in",
       "node_name": "D",
-      "front_start_point_x": 6712,
-      "front_start_point_y": 5173,
-      "front_end_point_x": 6565,
-      "front_end_point_y": 5586,
+      "front_start_point_x": 1430,
+      "front_start_point_y": 385,
+      "front_end_point_x": 1430,
+      "front_end_point_y": 770,
       "direction": "backward",
-      "num_of_fronts": 30,
-      "num_of_rows": 15
+      "num_of_fronts": 35,
+      "num_of_rows": 10
     },
     "PC1": {
-      "component_name": "passport",
+      "component_name": "",
       "node_name": "PC1",
       "front_start_point_x": 7221,
       "front_start_point_y": 4920,
@@ -59,7 +59,7 @@
       "num_of_rows": 30
     },
     "PC2": {
-      "component_name": "passport",
+      "component_name": "",
       "node_name": "PC2",
       "front_start_point_x": 6117,
       "front_start_point_y": 4575,
@@ -68,6 +68,127 @@
       "direction": "forward",
       "num_of_fronts": 50,
       "num_of_rows": 30
+    },
+    "E": {
+      "component_name": "check_in",
+      "node_name": "E",
+      "front_start_point_x": 1735,
+      "front_start_point_y": 385,
+      "front_end_point_x": 1735,
+      "front_end_point_y": 770,
+      "direction": "forward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "F": {
+      "component_name": "check_in",
+      "node_name": "F",
+      "front_start_point_x": 1900,
+      "front_start_point_y": 385,
+      "front_end_point_x": 1900,
+      "front_end_point_y": 770,
+      "direction": "backward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "G": {
+      "component_name": "check_in",
+      "node_name": "G",
+      "front_start_point_x": 2210,
+      "front_start_point_y": 385,
+      "front_end_point_x": 2210,
+      "front_end_point_y": 770,
+      "direction": "forward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "H": {
+      "component_name": "check_in",
+      "node_name": "H",
+      "front_start_point_x": 2375,
+      "front_start_point_y": 385,
+      "front_end_point_x": 2375,
+      "front_end_point_y": 770,
+      "direction": "backward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "J": {
+      "component_name": "check_in",
+      "node_name": "J",
+      "front_start_point_x": 2680,
+      "front_start_point_y": 385,
+      "front_end_point_x": 2680,
+      "front_end_point_y": 770,
+      "direction": "forward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "K": {
+      "component_name": "check_in",
+      "node_name": "K",
+      "front_start_point_x": 2850,
+      "front_start_point_y": 385,
+      "front_end_point_x": 2850,
+      "front_end_point_y": 770,
+      "direction": "backward",
+      "num_of_fronts": 35,
+      "num_of_rows": 10
+    },
+    "CT-Xray": {
+      "component_name": "security",
+      "node_name": "CT-Xray",
+      "front_start_point_x": 1254,
+      "front_start_point_y": 1100,
+      "front_end_point_x": 1815,
+      "front_end_point_y": 1100,
+      "direction": "backward",
+      "num_of_fronts": 60,
+      "num_of_rows": 8
+    },
+    "Norm-Xray": {
+      "component_name": "security",
+      "node_name": "Norm-Xray",
+      "front_start_point_x": 1826,
+      "front_start_point_y": 1100,
+      "front_end_point_x": 2376,
+      "front_end_point_y": 1100,
+      "direction": "backward",
+      "num_of_fronts": 60,
+      "num_of_rows": 8
+    },
+    "Imm-Man": {
+      "component_name": "passport",
+      "node_name": "Imm-Man",
+      "front_start_point_x": 1521,
+      "front_start_point_y": 1480,
+      "front_end_point_x": 1979,
+      "front_end_point_y": 1480,
+      "direction": "backward",
+      "num_of_fronts": 45,
+      "num_of_rows": 12
+    },
+    "E-Gate": {
+      "component_name": "passport",
+      "node_name": "E-Gate",
+      "front_start_point_x": 1992,
+      "front_start_point_y": 1480,
+      "front_end_point_x": 2282,
+      "front_end_point_y": 1480,
+      "direction": "backward",
+      "num_of_fronts": 30,
+      "num_of_rows": 13
+    },
+    "Mobile": {
+      "component_name": "check_in",
+      "node_name": "Mobile",
+      "front_start_point_x": 3110,
+      "front_start_point_y": 402,
+      "front_end_point_x": 3110,
+      "front_end_point_y": 861,
+      "direction": "backward",
+      "num_of_fronts": 50,
+      "num_of_rows": 8
     }
   }
 }
