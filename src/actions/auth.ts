@@ -47,12 +47,7 @@ export const signInAction = async (formData: FormData) => {
 
   // TODO: 에러 케이스에 따른 핸들링 추가하기
   if (error) {
-    console.log('===== 로그인 에러 =====');
-    console.log(`error.code = ${error.code}`);
-    console.log(`error.message = ${error.message}`);
-    console.log(`error.name = ${error.name}`);
-    console.log(`error.status = ${error.status}`);
-    console.log('===== 로그인 에러 =====');
+
     return redirect('/auth/login?error-message=login-failed');
   }
 
