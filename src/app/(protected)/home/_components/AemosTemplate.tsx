@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
-import { abort } from 'process';
-import * as XLSX from 'xlsx';
+import { utils, writeFile } from 'xlsx';
 import { ScenarioData } from '@/types/simulations';
 import { useAemosTemplate } from '@/queries/homeQueries';
+import HomeLoading from './HomeLoading';
+import HomeNoScenario from './HomeNoScenario';
 
 interface AemosTemplateProps {
   scenario: ScenarioData | null;
 }
 
 function downloadExcel(data: any, filename: string) {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-  XLSX.writeFile(wb, filename);
+  const ws = utils.json_to_sheet(data);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, 'Sheet1');
+  writeFile(wb, filename);
 }
 
 // ✅ 공통 스타일
@@ -65,6 +65,131 @@ const buttonStyle = {
   boxShadow: '0 0.125rem 0.5rem rgba(124,58,237,0.06)',
   transition: 'background 0.18s',
 };
+
+function AemosTemplate({ scenario }: AemosTemplateProps) {
+  const { data: aemos_dict, isLoading, isError } = useAemosTemplate({ scenarioId: scenario?.scenario_id });
+
+  const { metric_dict: metric, template_dict, service_point_info_dict } = aemos_dict || {};
+
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
+  }
+
+  // HACK
+  if (isError || !aemos_dict || !metric) {
+    return <HomeNoScenario />;
+  }
+
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        minHeight: '100vh',
+        fontFamily: 'Inter, Pretendard, Noto Sans KR, sans-serif',
+        color: '#22223B',
+      }}
+    >
+      <div style={{ padding: '0rem', margin: '0 auto' }}>
+        <div style={containerStyle}>
+          <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+            <p className="mb-5 text-default-500">
+              Preparation of a survey template by the Survey Agent for participation in ACI AEMOS program.
+            </p>
+
+            <div style={cardStyle}>
+              {Object.entries(metric).map(([label, value]) => (
+                <div key={label} style={{ minWidth: '10.625rem', flex: '1 1 10.625rem' }}>
+                  <div
+                    style={{
+                      color: '#6B7280',
+                      fontSize: '0.938rem',
+                      marginBottom: '0.438rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {label.replace(/_/g, ' ')}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: '2.375rem',
+                      fontWeight: 700,
+                      color: '#22223B',
+                    }}
+                  >
+                    {String(value)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <SectionWithDownload
+              title="Survey Template"
+              data={template_dict}
+              filename={`Survey_Template_${scenario?.name?.replace(/\s+/g, '_') || 'Unknown'}.xlsx`}
+            />
+
+            <SectionWithDownload
+              title="Service-Point Information"
+              data={service_point_info_dict}
+              filename={`Service_Point_Info_${scenario?.name?.replace(/\s+/g, '_') || 'Unknown'}.xlsx`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ 공통 다운로드 섹션 컴포넌트
+const SectionWithDownload = ({ title, data, filename }: { title: string; data: any[]; filename: string }) => (
+  <>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: '4.375rem',
+      }}
+    >
+      <h2
+        style={{
+          fontSize: '1.375rem',
+          color: '#22223B',
+          fontWeight: 700,
+        }}
+      >
+        {title}
+      </h2>
+
+      <button
+        style={buttonStyle}
+        onClick={() => downloadExcel(data, filename)}
+        onMouseOver={(e) => (e.currentTarget.style.background = '#6D28D9')}
+        onMouseOut={(e) => (e.currentTarget.style.background = '#7C3AED')}
+      >
+        Excel download
+      </button>
+    </div>
+
+    <div
+      style={{
+        color: '#6B7280',
+        fontSize: '0.938rem',
+        marginTop: '0.625rem',
+        fontWeight: 400,
+      }}
+    >
+      Please download the file, fill in the blanks, and upload it to Notion.
+    </div>
+
+    <Table data={data} />
+  </>
+);
 
 const Table = ({ data }: { data: any[] }) => (
   <div
@@ -132,198 +257,6 @@ const Table = ({ data }: { data: any[] }) => (
       </tbody>
     </table>
   </div>
-);
-
-function AemosTemplate({ scenario }: AemosTemplateProps) {
-  const { data: aemos_dict, isLoading, isError } = useAemosTemplate({ scenarioId: scenario?.scenario_id });
-  const [showTables, setShowTables] = useState(false);
-
-  if (isLoading) return <div style={{ marginTop: '2rem' }}>AEMOS loading...</div>;
-
-  if (isError) return <div style={{ marginTop: '2rem', color: 'red' }}>Error loading AEMOS data</div>;
-
-  if (!aemos_dict) return <div style={{ marginTop: '2rem' }}>No AEMOS data available</div>;
-
-  const { metric_dict: metric, template_dict, service_point_info_dict } = aemos_dict;
-
-  // metric이 undefined인지 체크
-  if (!metric) return <div>Metric data not available</div>;
-
-  return (
-    <div
-      style={{
-        background: '#FFFFFF',
-        minHeight: '100vh',
-        fontFamily: 'Inter, Pretendard, Noto Sans KR, sans-serif',
-        color: '#22223B',
-      }}
-    >
-      <div style={{ padding: '0rem', margin: '0 auto' }}>
-        {/* ✅ 토글 + 내용 컨테이너 */}
-        <div style={containerStyle}>
-          <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
-            {/* ✅ 토글 */}
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1.4rem',
-              }}
-            >
-              <span
-                style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '3rem',
-                  height: '1.75rem',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={showTables}
-                  onChange={() => setShowTables((v) => !v)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span
-                  style={{
-                    position: 'absolute',
-                    cursor: 'pointer',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: showTables ? '#7C5CE0' : '#E5E7EB',
-                    borderRadius: '1.125rem',
-                    transition: 'background-color 0.2s',
-                    border: '0.094rem solid #E5E7EB',
-                  }}
-                ></span>
-                <span
-                  style={{
-                    position: 'absolute',
-                    left: showTables ? '1.375rem' : '0.188rem',
-                    top: '0.188rem',
-                    width: '1.375rem',
-                    height: '1.375rem',
-                    backgroundColor: '#fff',
-                    borderRadius: '50%',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 0.063rem 0.25rem rgba(0,0,0,0.1)',
-                  }}
-                ></span>
-              </span>
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: '1.25rem',
-                  color: '#22223B',
-                  letterSpacing: -0.031,
-                }}
-              >
-                AEMOS TEMPLATE
-              </span>
-            </label>
-            <div
-              style={{
-                color: '#6B7280',
-                marginTop: '1.125rem',
-                marginLeft: '3.875rem',
-                fontSize: '1rem',
-                fontWeight: 400,
-              }}
-            >
-              Preparation of a survey template by the Survey Agent for participation in ACI AEMOS program.
-            </div>
-
-            {showTables && (
-              <>
-                {/* ✅ KPI 카드 */}
-                <div style={cardStyle}>
-                  {Object.entries(metric).map(([label, value]) => (
-                    <div key={label} style={{ minWidth: '10.625rem', flex: '1 1 10.625rem' }}>
-                      <div
-                        style={{
-                          color: '#6B7280',
-                          fontSize: '0.938rem',
-                          marginBottom: '0.438rem',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {label.replace(/_/g, ' ')}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: '2.375rem',
-                          fontWeight: 700,
-                          color: '#22223B',
-                        }}
-                      >
-                        {String(value)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ✅ Survey Template */}
-                <SectionWithDownload title="Survey Template" data={template_dict} filename="Survey Template.xlsx" />
-
-                {/* ✅ Service-Point Information */}
-                <SectionWithDownload
-                  title="Service-Point Information"
-                  data={service_point_info_dict}
-                  filename="Service-Point Info.xlsx"
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ✅ 공통 다운로드 섹션 컴포넌트
-const SectionWithDownload = ({ title, data, filename }: { title: string; data: any[]; filename: string }) => (
-  <>
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '4.375rem',
-      }}
-    >
-      <h2
-        style={{
-          fontSize: '1.375rem',
-          color: '#22223B',
-          fontWeight: 700,
-        }}
-      >
-        {title}
-      </h2>
-      <button
-        style={buttonStyle}
-        onClick={() => downloadExcel(data, filename)}
-        onMouseOver={(e) => (e.currentTarget.style.background = '#6D28D9')}
-        onMouseOut={(e) => (e.currentTarget.style.background = '#7C3AED')}
-      >
-        Excel download
-      </button>
-    </div>
-    <div
-      style={{
-        color: '#6B7280',
-        fontSize: '0.938rem',
-        marginTop: '0.625rem',
-        fontWeight: 400,
-      }}
-    >
-      Please download the file, fill in the blanks, and upload it to Notion.
-    </div>
-    <Table data={data} />
-  </>
 );
 
 export default AemosTemplate;

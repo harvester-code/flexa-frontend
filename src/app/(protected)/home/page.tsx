@@ -5,6 +5,7 @@ import { ScenarioData } from '@/types/simulations';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
+import AemosTemplate from './_components/AemosTemplate';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -99,6 +100,10 @@ function HomePage() {
           data={allHomeData?.facility_details}
           isLoading={isKpiLoading}
         />
+      </HomeAccordion>
+
+      <HomeAccordion title="AEMOS Template" open={true}>
+        <AemosTemplate scenario={scenario} />
       </HomeAccordion>
     </div>
   );
