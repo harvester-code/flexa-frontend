@@ -131,7 +131,10 @@ export const getFacilityConns = (scenario_id: string, params: FacilityConnsParam
   );
 };
 
-export const getFacilityInfoLineChartData = (params: { time_unit?: number; facility_schedules?: number[][] }) => {
+export const getFacilityInfoLineChartData = (params: {
+  time_unit: number;
+  facility_schedules: (number | null)[][];
+}) => {
   return instanceWithAuth.post<FacilityInfoLineChartResponse>(`${BASE_URL}/facility-info/charts/line`, params);
 };
 

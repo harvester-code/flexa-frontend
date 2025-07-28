@@ -244,11 +244,12 @@ export default function SimulationGridTable({
     if (onDataChange) onDataChange(newData);
   };
 
-  const handleChangeText = (changes: CellParams[]) => {
+  const handleChangeText = (modifiedCells: CellParams[]) => {
     const newData = structuredClone(data);
 
-    for (const changeCur of changes) {
-      newData[changeCur.rowIndex].values[changeCur.colIndex] = changeCur.value || 'NaN';
+    for (const modifiedCell of modifiedCells) {
+      // 입력된 값이 없는 경우, 빈 문자열 대신 '·'로 처리
+      newData[modifiedCell.rowIndex].values[modifiedCell.colIndex] = modifiedCell.value || '·';
     }
     if (onDataChange) onDataChange(newData);
   };

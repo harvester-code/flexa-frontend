@@ -119,16 +119,16 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
       return null;
     }
 
-    const facilitySchedules = currentSetting?.openingHoursTableData?.data.map((item) =>
-      item.values.map((val) => {
+    const facilitySchedules = currentSetting?.openingHoursTableData?.data.map((row) =>
+      row.values.map((val) => {
         const num = Number(val);
-        return num > 0 ? num : 0.0000000001;
+        return Number.isNaN(num) ? null : num;
       })
     );
 
     const params = {
-      time_unit: currentSetting.timeUnit || DEFAULT_TIME_UNIT,
       facility_schedules: facilitySchedules,
+      time_unit: currentSetting.timeUnit || DEFAULT_TIME_UNIT,
     };
 
     try {
@@ -144,6 +144,7 @@ export default function TabFacilityInformation({ simulationId, visible }: TabFac
     }
   };
 
+  // Opening Hours table data가 변경되면 라인 차트 데이터를 로드합니다.
   useDebounce(() => loadLineChartData(), 500, [currentSetting?.openingHoursTableData]);
 
   // ====================================================================================================
