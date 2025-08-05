@@ -201,7 +201,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
     if (!editingScenario) return;
 
     // 원본 시나리오 찾기
-    const originalScenario = filteredScenarios.find((s) => s.id === editingScenario.id);
+    const originalScenario = filteredScenarios.find((s) => s.scenario_id === editingScenario.id);
     if (!originalScenario) return;
 
     // 변경사항 확인
@@ -374,11 +374,11 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
               </tr>
             ) : currentScenarios && currentScenarios.length > 0 ? (
               currentScenarios.map((scenario, idx) => {
-                const isEditing = editingScenario?.id === scenario.id;
+                const isEditing = editingScenario?.id === scenario.scenario_id;
 
                 return (
                   <tr
-                    key={scenario.id}
+                    key={scenario.scenario_id}
                     className={cn(
                       'border-b text-sm hover:bg-default-100',
                       isScenarioSelected[(currentPage - 1) * ITEMS_PER_PAGE + idx] ? 'active' : ''
@@ -411,9 +411,12 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                         />
                       ) : (
                         <div
-                          className="cursor-pointer hover:font-semibold"
-                          onClick={() => router.push(`${pathname}/${scenario.scenario_id}`)}
+                          className="flex cursor-pointer items-center gap-2 hover:font-semibold"
+                          onClick={() => handleScenarioClick(scenario.scenario_id, scenario.name)}
                         >
+                          {navigatingToId === scenario.scenario_id && (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          )}
                           {scenario.name}
                         </div>
                       )}
