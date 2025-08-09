@@ -31,23 +31,15 @@ export interface Condition {
   value: string[];
 }
 
+// 새로운 간소화된 조건 타입 (백엔드 API 변경에 따름)
+export interface SimplifiedCondition {
+  criteria: string;
+  value: string[];
+}
+
 export interface ConditionState {
   index?: number;
   conditions: Condition[];
   mean?: number;
   standard_deviation?: number;
 }
-
-// export interface ConditionParams {
-//   name: string;
-//   operator: string[];
-//   value: string[];
-// }
-
-// export interface ConditionState {
-//   criteria: string;
-//   operator: string;
-//   value: string[];
-//   logic?: string;
-//   logicVisible?: boolean;
-// }
