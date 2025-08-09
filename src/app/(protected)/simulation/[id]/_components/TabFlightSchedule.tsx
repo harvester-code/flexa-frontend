@@ -1,573 +1,368 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import dayjs from 'dayjs';
-import { useShallow } from 'zustand/react/shallow';
-import { FilterOptions, FilterOptionsResponse, OperatorItem, Option, ValueItem } from '@/types/scenarios';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/scenarios';
 import { getFlightSchedules } from '@/services/simulations';
-import { useScenarioStore } from '@/stores/useScenarioStore';
-import Button from '@/components/Button';
-import Checkbox from '@/components/Checkbox';
-import Conditions from '@/components/Conditions';
-import selectBoxStyles from '@/components/SelectBox.module.css';
-import TabDefault from '@/components/TabDefault';
-import { Calendar } from '@/components/ui/Calendar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { cn } from '@/lib/utils';
-import SimulationLoading from '../../_components/SimulationLoading';
-import _jsonAirport from '../_json/airport_constants.json';
-
-const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
-
-const SUB_TABS: { text: string; number: number }[] = [
-  { text: 'Connect Cirium®', number: 0 },
-  { text: 'Connect OAG®', number: 1 },
-  { text: 'Direct Upload', number: 2 },
-];
-
-const JSON_AIRPORTS = _jsonAirport.map((item) => ({
-  iata: item.iata,
-  name: item.name,
-  searchText: `${item.iata}/${item.name}`.toUpperCase(),
-}));
-
-const parseFilterOptions = (conditionData: FilterOptionsResponse[]): FilterOptions => {
-  const logicItems: Option[] = [{ id: 'AND', text: 'AND' }];
-  const criteriaItems: Option[] = [];
-  const operatorItems: { [key: string]: OperatorItem[] } = {};
-  const valueItems: { [key: string]: ValueItem[] } = {};
-
-  for (const criteriaCur of conditionData) {
-    const idCur = criteriaCur.name;
-
-    criteriaItems.push({ id: idCur, text: criteriaCur.name });
-    criteriaCur.operator.map((val) => {
-      if (val === '=') {
-        operatorItems[idCur] = [{ id: val, text: val, multiSelect: false }];
-      } else if (val === 'is in') {
-        operatorItems[idCur] = [{ id: val, text: val, multiSelect: true }];
-      }
-    });
-
-    valueItems[idCur] = [];
-
-    for (const valueCur of criteriaCur.value) {
-      if (typeof valueCur == 'object' && valueCur['iata']) {
-        valueItems[idCur].push({
-          id: valueCur['iata'],
-          text: valueCur['iata'],
-          fullText: `${valueCur['iata']} : ${valueCur['name']}`,
-        });
-      } else {
-        valueItems[idCur].push({ id: valueCur, text: valueCur });
-      }
-    }
-  }
-
-  return { logicItems, criteriaItems, operatorItems, valueItems };
-};
+import { useFlightScheduleData } from '@/hooks/useTabData';
+import { useTabReset } from '../_hooks/useTabReset';
+import NextButton from './NextButton';
+import TabFlightScheduleChart from './TabFlightScheduleChart';
+import TabFlightScheduleFilterConditions from './TabFlightScheduleFilterConditions';
+import TabFlightScheduleLoadData from './TabFlightScheduleLoadData';
 
 interface TabFlightScheduleProps {
   simulationId: string;
   visible: boolean;
+  apiRequestLog: APIRequestLog | null;
+  setApiRequestLog: (log: APIRequestLog | null) => void;
 }
 
-export default function TabFlightSchedule({ simulationId, visible }: TabFlightScheduleProps) {
+function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabFlightScheduleProps) {
+  // 표준화된 훅으로 데이터와 액션들 가져오기
   const {
-    colorCriteria,
-    currentScenarioTab,
-    availableScenarioTab,
-    setAvailableScenarioTab,
-    filterOptions,
-    flightScheduleChartData,
-    isFilterEnabled,
-    selectedDatasource,
-    selectedFilters,
-    targetAirport,
-    targetDate,
-    setColorCriteria,
-    setCurrentScenarioTab,
-    setFlightScheduleFilters,
-    setFlightScheduleChartData,
-    setIsFilterEnabled,
-    setFlightScheduleSelectedFilters,
-    setPassengerScheduleFilters,
-    setPassengerScheduleSelectedFilters,
-    setTargetAirport,
-    setTargetDate,
-    resetPassengerSchedule,
-    resetAirportProcessing,
-    resetFacilityConnection,
-    resetFacilityCapacity,
-    resetScenarioOverview,
-  } = useScenarioStore(
-    useShallow((s) => ({
-      colorCriteria: s.flightSchedule.selectedCriteria,
-      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
-      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
-      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
-      filterOptions: s.flightSchedule.filterOptions,
-      flightScheduleChartData: s.flightSchedule.chartData,
-      isFilterEnabled: s.flightSchedule.isFilterEnabled,
-      selectedDatasource: s.flightSchedule.datasource,
-      selectedFilters: s.flightSchedule.selectedFilters,
-      targetAirport: s.flightSchedule.targetAirport,
-      targetDate: s.flightSchedule.targetDate,
-      setColorCriteria: s.flightSchedule.actions.setSelectedCriteria,
-      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
-      setFlightScheduleFilters: s.flightSchedule.actions.setFilters,
-      setFlightScheduleChartData: s.flightSchedule.actions.setChartData,
-      setPassengerScheduleFilters: s.passengerSchedule.actions.setFilters,
-      setPassengerScheduleSelectedFilters: s.passengerSchedule.actions.setNormalDistributionParams,
-      setIsFilterEnabled: s.flightSchedule.actions.setIsFilterEnabled,
-      setFlightScheduleSelectedFilters: s.flightSchedule.actions.setSelectedFilters,
-      setTargetAirport: s.flightSchedule.actions.setTargetAirport,
-      setTargetDate: s.flightSchedule.actions.setTargetDate,
-      resetPassengerSchedule: s.passengerSchedule.actions.resetState,
-      resetAirportProcessing: s.airportProcessing.actions.resetState,
-      resetFacilityConnection: s.facilityConnection.actions.resetState,
-      resetFacilityCapacity: s.facilityCapacity.actions.resetState,
-      resetScenarioOverview: s.scenarioOverview.actions.resetState,
-    }))
-  );
+    airport,
+    date,
+    availableConditions,
+    selectedConditions: zustandSelectedConditions,
+    chartData,
+    actions: { setAirport, setDate, setAvailableConditions, setSelectedConditions, setChartData, setIsCompleted },
+  } = useFlightScheduleData();
 
+  // 새로운 Tab Reset 시스템 사용
+  const { resetByTab } = useTabReset();
+
+  // 로컬 상태로 selectedConditions 관리 (Apply Filter 버튼 누를 때까지 zustand에 저장하지 않음)
+  const [selectedConditions, setLocalSelectedConditions] = useState<SelectedConditions>({
+    types: [],
+    terminal: [],
+    selectedAirlines: [],
+  });
+
+  // UI 상태 관리 (최소화)
   const [loadError, setLoadError] = useState(false);
   const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
   const [isSomethingChanged, setIsSomethingChanged] = useState(false);
+  const [showConditions, setShowConditions] = useState(false);
 
-  // ‼️ 시리움에서 데이터를 불러온다.
-  const loadFlightSchedule = async () => {
-    if (!simulationId) return;
+  // 터미널 표시 형태를 raw 값으로 변환하는 함수 (API 요청용)
+  const getTerminalRawValue = useCallback((displayName: string) => {
+    if (displayName === 'Unknown') {
+      return 'unknown';
+    }
+    // "Terminal 1" → "1"
+    const match = displayName.match(/Terminal\s+(.+)/);
+    return match ? match[1] : displayName;
+  }, []);
 
-    // TODO: 아래와 같은 경우 사용자에게 메세지 주기
-    if (!targetAirport) return;
+  // 선택된 조건들을 API 형태로 변환 (Terminal 조건은 제외)
+  const buildConditions = useCallback(() => {
+    const conditions: Array<{ criteria: string; value: string[] }> = [];
 
-    setFlightScheduleChartData(null);
-
-    if (isSomethingChanged) {
-      setIsFilterEnabled(false);
+    if (selectedConditions.types.length > 0) {
+      conditions.push({
+        criteria: 'types',
+        value: selectedConditions.types,
+      });
     }
 
-    // FIXME: 해당 탭에서 처음 로드할 때만 탭 인덱스를 설정하도록 변경
-    // setAvailableTabIndex(tabIndex);
+    if (selectedConditions.selectedAirlines.length > 0) {
+      conditions.push({
+        criteria: 'airline',
+        value: selectedConditions.selectedAirlines.map((airline) => airline.iata),
+      });
+    }
 
-    try {
-      setLoadingFlightSchedule(true);
+    return conditions;
+  }, [selectedConditions]);
 
+  // API에서 데이터를 불러온다.
+  // isAirportOrDateChanged: true면 새로운 공항/날짜로 로드(빈 조건), false면 기존 데이터에 필터만 적용
+  const loadFlightSchedule = useCallback(
+    async (isAirportOrDateChanged: boolean = false) => {
+      if (!simulationId) return;
+      if (!airport) return;
+
+      setChartData(null);
+      setLoadError(false);
+
+      // API 요청 파라미터와 타임스탬프를 미리 준비 (스코프 밖에서 정의)
       const params = {
-        airport: targetAirport.iata,
-        date: dayjs(targetDate).format('YYYY-MM-DD'),
-        condition: isSomethingChanged ? [] : isFilterEnabled ? selectedFilters : [],
+        airport,
+        date,
+        condition: isAirportOrDateChanged ? [] : buildConditions(), // 공항/날짜 변경시에는 빈 조건, 필터 적용시에만 조건 포함
       };
+      const timestamp = new Date().toISOString();
 
-      const { data } = await getFlightSchedules(simulationId, params);
+      try {
+        setLoadingFlightSchedule(true);
+        setApiRequestLog({
+          timestamp,
+          request: params,
+          response: null,
+          status: 'loading',
+        });
 
-      // ========================================================
-      // 처음 항공기 스케줄 로드할 때 or 사용자 입력값이 변했을 때
-      if (!filterOptions || isSomethingChanged) {
-        // 항공기 스케줄 데이터를 위한 필터 옵션 처리
-        setFlightScheduleFilters(parseFilterOptions(data.add_conditions));
-        setFlightScheduleSelectedFilters([]);
-      }
+        const { data } = await getFlightSchedules(simulationId, params);
 
-      // 여객 스케줄 데이터를 위한 필터 옵션 처리
-      setPassengerScheduleFilters(parseFilterOptions(data.add_priorities));
-      setPassengerScheduleSelectedFilters([{ conditions: [], mean: 120, stddev: 30 }]);
+        // API 응답 로그 업데이트 (timestamp 기준으로 새 객체 생성)
+        setApiRequestLog({
+          timestamp,
+          request: params,
+          response: data,
+          status: 'success',
+        });
 
-      // ========================================================
-      if (data?.chart_x_data && data?.chart_y_data) {
-        for (const criteriaCur in data?.chart_y_data) {
-          const criteriaDataCur = data?.chart_y_data[criteriaCur].sort((a, b) => a.order - b.order);
-          const acc_y = Array(criteriaDataCur[0].y.length).fill(0);
+        // Available conditions 추출 - 실제 API 응답 구조에 맞춤
 
-          for (const itemCur of criteriaDataCur) {
-            itemCur.acc_y = Array(itemCur.y.length).fill(0);
+        // API 응답이 배열인지 객체인지 확인하고 처리
+        const allAirlines: Array<AirlineInfo> = [];
+        let typesData: { International: AirlineInfo[]; Domestic: AirlineInfo[] } = { International: [], Domestic: [] };
+        let terminalsData: { [terminalName: string]: AirlineInfo[] } = {};
 
-            for (let i = 0; i < itemCur.y.length; i++) {
-              acc_y[i] += itemCur.y[i];
-              itemCur.acc_y[i] = Number(acc_y[i]);
+        // Case 1: 응답이 직접 항공사 배열인 경우
+        if (Array.isArray(data)) {
+          data.forEach((airline: AirlineInfo) => {
+            if (airline && airline.iata && airline.name) {
+              allAirlines.push({ iata: airline.iata, name: airline.name });
             }
+          });
+        }
+        // Case 2: 기존 구조 (types, terminals 등이 있는 경우)
+        else if (data && typeof data === 'object') {
+          typesData = (data as { types?: { International: AirlineInfo[]; Domestic: AirlineInfo[] } })?.types || {
+            International: [],
+            Domestic: [],
+          };
+          terminalsData = (data as { terminals?: { [terminalName: string]: AirlineInfo[] } })?.terminals || {};
+
+          // Types에서 항공사 정보 추출
+          const typesAirlines = [...Array.from(typesData.International || []), ...Array.from(typesData.Domestic || [])];
+
+          typesAirlines.forEach((airline: AirlineInfo) => {
+            if (
+              airline &&
+              airline.iata &&
+              airline.name &&
+              !allAirlines.find((a) => a.iata === airline.iata && a.name === airline.name)
+            ) {
+              allAirlines.push({ ...airline });
+            }
+          });
+
+          // Terminals에서 항공사 정보 추출
+          Object.values(terminalsData).forEach((terminalAirlines: AirlineInfo[]) => {
+            Array.from(terminalAirlines || []).forEach((airline: AirlineInfo) => {
+              if (
+                airline &&
+                airline.iata &&
+                airline.name &&
+                !allAirlines.find((a) => a.iata === airline.iata && a.name === airline.name)
+              ) {
+                allAirlines.push({ ...airline });
+              }
+            });
+          });
+        }
+
+        // 항공사 리스트 정렬 (IATA 코드 기준) - null 값 안전 처리
+        allAirlines.sort((a, b) => {
+          const aIata = a.iata || '';
+          const bIata = b.iata || '';
+          return aIata.localeCompare(bIata);
+        });
+
+        // 터미널 리스트 생성 (unknown 제외하고 정렬)
+        const availableTerminals = Object.keys(terminalsData)
+          .filter((terminal) => terminal !== 'unknown')
+          .sort((a, b) => {
+            // raw 값("1", "2")을 숫자로 정렬
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
+
+        // 공항/날짜 변경일 때만 조건 설정 및 UI 표시
+        if (isAirportOrDateChanged) {
+          setAvailableConditions({
+            types: {
+              International: Array.from(typesData.International || []).map((airline: AirlineInfo) => ({ ...airline })),
+              Domestic: Array.from(typesData.Domestic || []).map((airline: AirlineInfo) => ({ ...airline })),
+            },
+            terminals: Object.fromEntries(
+              Object.entries(terminalsData).map(([key, airlines]: [string, AirlineInfo[]]) => [
+                key,
+                Array.from(airlines || []).map((airline: AirlineInfo) => ({ ...airline })),
+              ])
+            ),
+            airlines: allAirlines.map((airline: AirlineInfo) => ({ ...airline })),
+          });
+
+          // zustand에도 동일한 데이터 저장
+          setAvailableConditions({
+            types: {
+              International: Array.from(typesData.International || []).map((airline: AirlineInfo) => ({ ...airline })),
+              Domestic: Array.from(typesData.Domestic || []).map((airline: AirlineInfo) => ({ ...airline })),
+            },
+            terminals: Object.fromEntries(
+              Object.entries(terminalsData).map(([key, airlines]: [string, AirlineInfo[]]) => [
+                key,
+                Array.from(airlines || []).map((airline: AirlineInfo) => ({ ...airline })),
+              ])
+            ),
+            airlines: allAirlines.map((airline: AirlineInfo) => ({ ...airline })),
+          });
+
+          // 초기 selectedConditions 설정 - 로컬 상태에만 설정
+          setLocalSelectedConditions({
+            types: [],
+            terminal: [],
+            selectedAirlines: [],
+          });
+
+          // 차트 데이터가 있으면 조건 UI도 표시
+          const hasTypes = typesData.International.length > 0 || typesData.Domestic.length > 0;
+          const hasTerminals = availableTerminals.length > 0;
+          const hasAirlines = allAirlines.length > 0;
+
+          if (hasTypes || hasTerminals || hasAirlines) {
+            setShowConditions(true);
           }
         }
 
-        const newChartData = { total: data?.total, x: data?.chart_x_data, data: data?.chart_y_data };
-        setFlightScheduleChartData(newChartData);
+        if (data?.chart_x_data && data?.chart_y_data) {
+          // 차트 데이터를 안전하게 복사하고 처리
+          const chartYDataCopy = JSON.parse(JSON.stringify(data.chart_y_data));
 
-        const newColorCriterias = Object.keys(newChartData?.data);
-        setColorCriteria(newColorCriterias[0]);
+          for (const criteriaCur in chartYDataCopy) {
+            const criteriaDataCur = chartYDataCopy[criteriaCur].sort((a, b) => a.order - b.order);
+            const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
+
+            for (const itemCur of criteriaDataCur) {
+              itemCur.acc_y = Array(itemCur.y?.length || 0).fill(0);
+
+              for (let i = 0; i < (itemCur.y?.length || 0); i++) {
+                acc_y[i] += itemCur.y[i] || 0;
+                itemCur.acc_y[i] = Number(acc_y[i]);
+              }
+            }
+          }
+
+          const newChartData = {
+            total: data?.total,
+            x: Array.from(data?.chart_x_data || []),
+            data: chartYDataCopy,
+          };
+          setChartData(newChartData); // zustand에 전체 chartData 저장
+
+          // Flight Schedule 탭 완료 상태 설정
+          setIsCompleted(true);
+        }
+      } catch (error) {
+        // API 에러 로그 업데이트 (timestamp와 request 정보 유지)
+        setApiRequestLog({
+          timestamp,
+          request: params,
+          response: null,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        setLoadError(true);
+      } finally {
+        setIsSomethingChanged(false);
+        setLoadingFlightSchedule(false);
       }
-    } catch (error) {
-      console.error(error);
-      setLoadError(true);
-    } finally {
-      setIsSomethingChanged(false);
-      setLoadingFlightSchedule(false);
-    }
-  };
+    },
+    [
+      simulationId,
+      airport,
+      date,
+      buildConditions,
+      setApiRequestLog,
+      setAvailableConditions,
+      setChartData,
+      setShowConditions,
+      setIsCompleted,
+    ]
+  );
 
-  // ===============================================================
-  const [isTypingAirport, setIsTypingAirport] = useState(false);
-  const [userInputAirport, setUserInputAirport] = useState('');
-  const [filteredAirports, setFilteredAirports] = useState<{ iata: string; name: string; searchText: string }[]>([]);
-
+  // 차트 데이터 로드 시 자동으로 조건 UI 표시
   useEffect(() => {
-    if (userInputAirport?.length > 2) {
-      setFilteredAirports(
-        JSON_AIRPORTS.filter((item) => {
-          return item?.searchText?.indexOf(userInputAirport.toUpperCase()) >= 0;
-        })
-      );
+    if (chartData && Object.keys(chartData).length > 0) {
+      const hasTypes =
+        availableConditions.types.International.length > 0 || availableConditions.types.Domestic.length > 0;
+      const hasTerminals = Object.keys(availableConditions.terminals).length > 0;
+      const hasAirlines = availableConditions.airlines.length > 0;
+
+      if (hasTypes || hasTerminals || hasAirlines) {
+        setShowConditions(true);
+      }
     }
-  }, [userInputAirport]);
+  }, [chartData, availableConditions]);
+
+  // 데이터 로드 핸들러
+  const handleLoadData = useCallback(() => {
+    // 새로운 Tab Reset 시스템: FlightSchedule 탭의 변경에 따른 자동 reset
+    resetByTab('FlightSchedule');
+    // 조건 초기화 (로컬 상태와 zustand 모두)
+    const initialConditions = { types: [], terminal: [], selectedAirlines: [] };
+    setLocalSelectedConditions(initialConditions);
+    setSelectedConditions(initialConditions as any); // 타입 캐스팅 (availableAirlines는 계산으로 처리)
+    setShowConditions(false);
+    // 바로 데이터 로드 (confirm 팝업 제거) - 공항/날짜가 바뀌었으므로 빈 조건으로 요청
+    return loadFlightSchedule(true);
+  }, [resetByTab, setShowConditions, loadFlightSchedule, setSelectedConditions]);
+
+  // 필터 적용 핸들러 - 여기서 zustand에 selectedConditions 저장
+  const handleApplyFilters = useCallback(() => {
+    // 새로운 Tab Reset 시스템: FlightSchedule 탭의 변경에 따른 자동 reset
+    resetByTab('FlightSchedule');
+    // Apply Filter 버튼을 누를 때만 zustand에 selectedConditions 저장
+    setSelectedConditions(selectedConditions as any); // 타입 캐스팅 (availableAirlines는 계산으로 처리)
+    return loadFlightSchedule(false); // 필터만 적용하므로 기존 조건 사용
+  }, [resetByTab, loadFlightSchedule, selectedConditions, setSelectedConditions]);
 
   return !visible ? null : (
-    <div>
-      <h2 className="title-sm mt-[25px]">Flight Schedule</h2>
-
-      {/* TODO: 아직 사용 불가한 데이터 소스에 대해서 not yet UI 추가하기 */}
-      <TabDefault
-        className="tab-secondary mt-[25px]"
-        tabs={SUB_TABS.map((tab) => ({ text: tab.text }))}
-        tabCount={SUB_TABS.length}
-        currentTab={selectedDatasource}
-        availableTabs={0}
+    <div className="space-y-6 pt-8">
+      {/* Load Flight Schedule Data Section */}
+      <TabFlightScheduleLoadData
+        airport={airport}
+        date={date}
+        loadingFlightSchedule={loadingFlightSchedule}
+        setAirport={setAirport}
+        setDate={setDate}
+        setIsSomethingChanged={setIsSomethingChanged}
+        onLoadData={handleLoadData}
       />
 
-      <div className="mt-[40px] flex items-center justify-between">
-        <p className="text-xl font-semibold text-default-800">Load Flight Schedule Data</p>
+      {/* Condition Filter Section */}
+      <TabFlightScheduleFilterConditions
+        showConditions={showConditions}
+        chartData={chartData}
+        selectedConditions={selectedConditions}
+        availableConditions={availableConditions}
+        loadingFlightSchedule={loadingFlightSchedule}
+        setSelectedConditions={setLocalSelectedConditions}
+        onApplyFilters={handleApplyFilters}
+      />
 
-        <div className="flex items-center gap-2.5">
-          {/* =============== 공항 검색 버튼 =============== */}
-          {isTypingAirport ? (
-            <div className="relative">
-              <div className="relative">
-                <input
-                  id="input-airport"
-                  type="text"
-                  placeholder=""
-                  value={userInputAirport}
-                  className="btn-md btn-default !w-[314px] !pl-[40px]"
-                  onChange={(e) => setUserInputAirport(e.target.value)}
-                  onBlur={() => {
-                    if (userInputAirport.length < 3) {
-                      setIsTypingAirport(false);
-                      setFilteredAirports([]);
-                      setUserInputAirport('');
-                    }
-                  }}
-                />
-                <div className="absolute bottom-0 left-[14px] top-0 flex flex-col justify-center">
-                  <Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />
-                </div>
-              </div>
+      {/* Chart & Results Section */}
+      <TabFlightScheduleChart
+        loadingFlightSchedule={loadingFlightSchedule}
+        chartData={chartData}
+        loadError={loadError}
+      />
 
-              {filteredAirports.length > 0 ? (
-                <div
-                  className={cn(
-                    selectBoxStyles.selectBox,
-                    filteredAirports.length > 0 && selectBoxStyles['active'],
-                    `top-[-40px] !h-0 !rounded-none !border-none !py-0`
-                  )}
-                >
-                  <div className={cn(selectBoxStyles.selectItem, `max-h-[400px]`)}>
-                    <ul className={cn(selectBoxStyles.selectOptionCont)}>
-                      {filteredAirports?.map((airport, i) => (
-                        <li
-                          className={cn(selectBoxStyles.selectOptionItem)}
-                          key={i}
-                          onClick={() => {
-                            setIsSomethingChanged(targetAirport.iata !== airport.iata);
-                            setTargetAirport(airport);
-
-                            // 값 초기화
-                            setIsTypingAirport(false);
-                            setFilteredAirports([]);
-                            setUserInputAirport('');
-                          }}
-                        >
-                          <button className={cn(selectBoxStyles.selectOptionBtn, `text-left`)}>
-                            <span>{airport.iata}</span>
-                            <span className="ml-2.5 text-default-500">{airport.name}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <Button
-              className="btn-md btn-default"
-              icon={<Image width={20} height={20} src="/image/ico-search-s.svg" alt="" />}
-              text={targetAirport?.iata || ''}
-              textSub={targetAirport?.name}
-              onClick={() => {
-                setIsTypingAirport(true);
-                setTimeout(() => document.getElementById('input-airport')?.focus(), 50);
-              }}
-            />
-          )}
-
-          {/* =============== 날짜 검색 버튼 =============== */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div>
-                <Button
-                  className="btn-md btn-default !min-w-36"
-                  icon={<Image width={16} height={16} src="/image/ico-calendar.svg" alt="" />}
-                  text={dayjs(targetDate).format('MMM DD, YYYY')}
-                  onClick={() => {}}
-                />
-              </div>
-            </PopoverTrigger>
-
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dayjs(targetDate).toDate()}
-                defaultMonth={dayjs(targetDate).toDate()}
-                onSelect={(date) => {
-                  if (date) {
-                    setIsSomethingChanged(targetDate !== dayjs(date).format('YYYY-MM-DD'));
-                    setTargetDate(dayjs(date).format('YYYY-MM-DD'));
-                  }
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* =============== 데이터 호출 버튼 =============== */}
-          <Button
-            className="btn-md btn-primary"
-            text="Load"
-            iconRight={<Image width={20} height={20} src="/image/ico-search-w.svg" alt="" />}
-            onClick={() => {
-              setAvailableScenarioTab(2);
-
-              if (!flightScheduleChartData) {
-                return loadFlightSchedule();
-              }
-
-              if (confirm('If you load the data again, you will lose the current scenario settings. Is that okay?')) {
-                resetPassengerSchedule(); // 여객 스케줄 데이터 초기화
-                resetFacilityConnection(); // 시설 연결 데이터 초기화
-                resetFacilityCapacity(); // 시설 용량 데이터 초기화
-                // resetAirportProcessing(); // 공항 프로세스 데이터 초기화
-                resetScenarioOverview(); // 시나리오 개요 데이터 초기화
-
-                return loadFlightSchedule();
-              }
-            }}
-          />
-        </div>
-      </div>
-
-      {/* ========== 데이터 필터링 섹션 ========== */}
-      <p className="mt-5 text-xl font-semibold">Flight Schedule Data Filtering</p>
-
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-md border border-gray-200 bg-gray-50 p-[15px]">
-        {!filterOptions ? (
-          <p>⚠️ Load the flight schedule data first to enable filtering options.</p>
-        ) : (
-          <>
-            <Checkbox
-              id="add-conditions"
-              className="checkbox-toggle"
-              label=""
-              checked={isFilterEnabled}
-              onChange={() => setIsFilterEnabled(!isFilterEnabled)}
-              disabled={!filterOptions}
-            />
-            <dl>
-              <dt className="font-semibold">Add Conditions</dt>
-              <dd className="text-sm font-medium text-default-400">
-                Enable the option to set conditions for filtering passenger data.
-              </dd>
-            </dl>
-          </>
-        )}
-      </div>
-
-      {isFilterEnabled && filterOptions ? (
-        <Conditions
-          className="mt-[30px] rounded-lg border border-gray-200"
-          conditions={selectedFilters}
-          logicItems={filterOptions.logicItems}
-          criteriaItems={filterOptions.criteriaItems}
-          operatorItems={filterOptions.operatorItems}
-          valueItems={filterOptions.valueItems}
-          // TODO: 아래 코드를 함수화해서 재사용할 수 있도록 개선
-          onChange={({ states, what, index }) => {
-            if (index === undefined) return;
-
-            const updatedFilters = selectedFilters.map((filter, i) => {
-              if (i !== index) return filter;
-
-              if (what === 'criteria') {
-                const newCriteria = states[0].id;
-                const defaultOperator = filterOptions.operatorItems[newCriteria][0].id;
-
-                return { ...filter, criteria: newCriteria, operator: defaultOperator, value: [] };
-              }
-
-              if (what === 'value') {
-                return { ...filter, value: states.map((s) => s.id) };
-              }
-
-              return filter;
-            });
-
-            setFlightScheduleSelectedFilters(updatedFilters);
-          }}
-          onDelete={(index) => {
-            const updatedFilters = selectedFilters.filter((_, i) => i !== index);
-
-            if (updatedFilters.length === 0) {
-              setIsFilterEnabled(false);
-            }
-
-            setFlightScheduleSelectedFilters(updatedFilters);
-          }}
-          onAddCondition={(newFilter) => setFlightScheduleSelectedFilters([...selectedFilters, newFilter])}
-        />
-      ) : null}
-
-      {loadingFlightSchedule ? (
-        <SimulationLoading minHeight="min-h-[200px]" />
-      ) : flightScheduleChartData && flightScheduleChartData.total > 0 ? (
-        <>
-          <div className="mt-[30px] flex items-center justify-between">
-            <p className="text-lg font-semibold">Total: {flightScheduleChartData?.total} Flights</p>
-            <div className="flex flex-col">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="flex h-[30px] flex-row items-center pb-2.5">
-                    <Button
-                      className="btn-lg btn-default text-sm"
-                      icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                      text={`Color by : ${colorCriteria}`}
-                      onClick={() => {}}
-                    />
-                  </div>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent className="cursor-pointer bg-white">
-                  {Object.keys(flightScheduleChartData?.data).map((text, index) => (
-                    <div key={index} className="flex flex-col">
-                      <DropdownMenuItem
-                        className="flex cursor-pointer flex-row px-[14px] py-2.5 pl-[14px]"
-                        style={{ width: 143 }}
-                        onClick={() => setColorCriteria(text)}
-                      >
-                        <span className="ml-2.5 text-base font-medium text-gray-800">{text}</span>
-                      </DropdownMenuItem>
-                    </div>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          <div className="z-10 mt-2.5 rounded-md bg-white">
-            <BarChart
-              chartData={
-                // HACK: 현재는 간단히 구현하기 위해서 얕은 복사를 사용했지만
-                // 추후에는 Zustand 자체에서 정렬된 데이터를 가져오게 개선이 필요하다.
-                [...flightScheduleChartData?.data?.[colorCriteria || '']]
-                  .sort((a, b) => b.order - a.order)
-                  .map((item, index) => {
-                    return {
-                      x: flightScheduleChartData?.x,
-                      y: item.y,
-                      name: item.name,
-                      type: 'bar',
-                      marker: { opacity: 1, cornerradius: 7 },
-                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                    };
-                  })
-              }
-              chartLayout={{
-                barmode: 'stack',
-                margin: { l: 30, r: 10, t: 0, b: 30 },
-                legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
-                bargap: 0.4,
-              }}
-              config={{ displayModeBar: false }}
-            />
-          </div>
-        </>
-      ) : flightScheduleChartData && flightScheduleChartData.total < 1 ? (
-        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <Image width={16} height={16} src="/image/ico-info.svg" alt="" />
-
-          <p className="title-sm" style={{ color: '#30374F' }}>
-            No data available
-          </p>
-
-          <p className="text-sm font-medium text-default-600">
-            There are no flight schedules available for the selected conditions.
-          </p>
-
-          <p className="mt-[50px] flex items-center justify-center gap-2.5">
-            <Button className="btn-md btn-default text-md" text="Clear Search" onClick={() => {}} />
-            <Button
-              className="btn-md btn-secondary text-md"
-              text="Inquire About Data Access"
-              icon={<Image width={16} height={16} src="/image/ico-question.svg" alt="" />}
-              onClick={() => {}}
-            />
-          </p>
-        </div>
-      ) : loadError ? (
-        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
-
-          <p className="title-sm" style={{ color: '#30374F' }}>
-            Unable to load data
-          </p>
-
-          <p className="text-sm font-medium text-default-600">
-            Please check the airport name or date and re-enter the information
-          </p>
-
-          <p className="mt-[50px] flex items-center justify-center gap-2.5">
-            <Button className="btn-md btn-default text-md" text="Clear Search" onClick={() => {}} />
-            <Button
-              className="btn-md btn-secondary text-md"
-              text="Inquire About Data Access"
-              icon={<Image width={16} height={16} src="/image/ico-question.svg" alt="" />}
-              onClick={() => {}}
-            />
-          </p>
-        </div>
-      ) : null}
-
-      {/* =============== 탭 이동 버튼 =============== */}
-      <div className="mt-[30px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Scenario Overview</span>
-        </button>
-
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
-          disabled={availableScenarioTab < 2}
-          onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
-        >
-          <span className="flex flex-grow items-center justify-center">Passenger Schedule</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
+      {/* Navigation */}
+      <div className="mt-8 flex justify-end">
+        <NextButton />
       </div>
     </div>
   );
 }
+
+// React.memo로 컴포넌트 최적화 (props가 동일하면 리렌더링 방지)
+export default React.memo(TabFlightSchedule);
