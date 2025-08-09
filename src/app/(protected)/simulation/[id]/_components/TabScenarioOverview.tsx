@@ -6,11 +6,11 @@ import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { useShallow } from 'zustand/react/shallow';
-import { updateScenarioMetadata } from '@/services/simulations';
 import { useScenarioStore } from '@/stores/useScenarioStore';
 import Button from '@/components/Button';
 import TheInput from '@/components/TheInput';
 import { timeToRelativeTime } from '@/lib/utils';
+import NextButton from './NextButton';
 
 const PAGE_ROW_AMOUNT = 5;
 
@@ -63,7 +63,6 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
     lastPage: history ? Math.ceil(history.length / PAGE_ROW_AMOUNT) : 1,
   };
 
-  // const handleUpdateMemo = () => updateScenarioMetadata(false);
   // const handleMemoChange = (index: number, newMemo: string) => {
   //   if (history) {
   //     setHistoryItem(
@@ -77,7 +76,7 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
   // };
 
   return !visible ? null : (
-    <div>
+    <div className="pt-8">
       <h2 className="title-sm mt-[25px]">Scenario Overview</h2>
       {scenarioMatrix && scenarioMatrix.length > 0 ? (
         <div className="overview-wrap mt-[10px]">
@@ -183,24 +182,9 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
         </p>
       </div> */}
 
-      <div className="mt-[30px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => {
-            router.replace(`/simulation`);
-          }}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Scenario List</span>
-        </button>
-
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
-        >
-          <span className="flex flex-grow items-center justify-center">Flight Schedule</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
+      {/* Navigation */}
+      <div className="mt-8 flex justify-end">
+        <NextButton />
       </div>
     </div>
   );
