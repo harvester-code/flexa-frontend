@@ -1,39 +1,94 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import dayjs from 'dayjs';
-import { useDebounce } from 'react-use';
-import { useShallow } from 'zustand/react/shallow';
-import { getFacilityInfoLineChartData } from '@/services/simulations';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Clock, Clock3, Copy, Moon, Settings, Sun } from 'lucide-react';
 import { useScenarioStore } from '@/stores/useScenarioStore';
-import Checkbox from '@/components/Checkbox';
-import { Dropdown } from '@/components/Conditions';
-import TabDefault from '@/components/TabDefault';
-import TheInput from '@/components/TheInput';
-import TheRadioGroup from '@/components/TheRadioGroup';
-import SimulationGridTable from './SimulationGridTable';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { cn } from '@/lib/utils';
+import NextButton from './NextButton';
 
-const PlotlyChart = dynamic(() => import('@/components/ThePlotlyChart'), { ssr: false });
+// Counter Operations Settings interfaces
+interface DeskOperation {
+  deskId: string;
+  isActive: boolean;
+  operatingHours: {
+    open: string;
+    close: string;
+  };
+  capacity: {
+    [timeSlot: string]: number;
+  };
+}
 
-const DEFAULT_TIME_UNIT = 10;
+interface CounterOperation {
+  counterId: string;
+  numberOfDevices: number;
+  processingTimePerPerson: number; // seconds
+  maxQueueCapacity: number;
+  desks: Record<string, DeskOperation>;
+}
 
-const TABLE_HEADER_HEIGHT = 52;
-const TABLE_ROW_HEIGHT = 36;
+interface CounterConfig {
+  numberOfDevices: number;
+  processingTimePerPerson: number;
+  maxQueueCapacity: number;
+}
 
-const INFINITE_FACILITY_OPTIONS = [
+interface OperatingPreset {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  description: string;
+  hours: { open: string; close: string };
+}
+
+// Generate time slots (10-minute intervals)
+const generateTimeSlots = (): string[] => {
+  const slots: string[] = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 10) {
+      const timeStart = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const nextMinute = minute + 10;
+      const nextHour = nextMinute >= 60 ? hour + 1 : hour;
+      const adjustedMinute = nextMinute >= 60 ? 0 : nextMinute;
+
+      if (nextHour >= 24) break;
+
+      const timeEnd = `${nextHour.toString().padStart(2, '0')}:${adjustedMinute.toString().padStart(2, '0')}`;
+      slots.push(`${timeStart}-${timeEnd}`);
+    }
+  }
+  return slots;
+};
+
+const TIME_SLOTS = generateTimeSlots();
+
+// Quick presets for operating hours
+const OPERATING_PRESETS: OperatingPreset[] = [
   {
-    value: 'limited_facility' as const,
-    label: 'Limited Facility',
-    description: 'Set it to a facility with limited physical capacity, such as check-in · security',
+    id: '24_7',
+    name: '24/7',
+    icon: <Clock3 className="h-4 w-4" />,
+    description: 'Round the clock',
+    hours: { open: '00:00', close: '23:59' },
   },
   {
-    value: 'unlimited_facility' as const,
-    label: 'Unlimited Facility',
-    description: 'Set it to a facility with unlimited physical capacity, such as mobile check-in · hallway',
+    id: 'business',
+    name: 'Business Hours',
+    icon: <Sun className="h-4 w-4" />,
+    description: '06:00 - 22:00',
+    hours: { open: '06:00', close: '22:00' },
+  },
+  {
+    id: 'night',
+    name: 'Night Shift',
+    icon: <Moon className="h-4 w-4" />,
+    description: '22:00 - 06:00',
+    hours: { open: '22:00', close: '06:00' },
   },
 ];
 
@@ -43,816 +98,603 @@ interface TabFacilityInformationProps {
 }
 
 export default function TabFacilityInformation({ simulationId, visible }: TabFacilityInformationProps) {
-  const {
-    targetDate,
-    currentScenarioTab,
-    setCurrentScenarioTab,
-    procedures,
-    selectedSecondTab,
-    setSelectedSecondTab,
-    selectedNodes,
-    updateSelectedNode,
-    settings,
-    updateSetting,
-    barChartData,
-  } = useScenarioStore(
-    useShallow((s) => ({
-      targetDate: s.flightSchedule.targetDate,
-      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
-      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
-      procedures: s.airportProcessing.procedures,
-      selectedSecondTab: s.facilityCapacity.selectedSecondTab,
-      setSelectedSecondTab: s.facilityCapacity.actions.setSelectedSecondTab,
-      selectedNodes: s.facilityCapacity.selectedNodes,
-      updateSelectedNode: s.facilityCapacity.actions.updateSelectedNode,
-      settings: s.facilityCapacity.settings,
-      updateSetting: s.facilityCapacity.actions.updateSetting,
-      barChartData: s.facilityCapacity.barChartData,
-    }))
+  // Get check-in counters from facilityConnection processes
+  const processes = useScenarioStore((s) => s.facilityConnection.processes);
+
+  // Find check-in process and extract counter nodes
+  const checkInCounters = useMemo(() => {
+    if (!processes) return [];
+
+    // Find the check-in process (usually has name "check-in")
+    const checkInProcess = Object.values(processes).find(
+      (process) => process.name === 'check-in' || process.name === 'check_in'
+    );
+
+    return checkInProcess?.nodes || [];
+  }, [processes]);
+
+  // Counter Operations Settings state
+  const [counterOperations, setCounterOperations] = useState<Record<string, CounterOperation>>({});
+  const [expandedCounters, setExpandedCounters] = useState<Set<string>>(new Set());
+
+  // Remove duplicates and ensure unique counters from facility connection processes
+  const uniqueCounters = [...new Set(checkInCounters)].filter(Boolean).sort();
+
+  // Initialize default operations for counters that don't exist
+  const getCounterOperation = useCallback(
+    (counterId: string): CounterOperation => {
+      if (counterOperations[counterId]) {
+        return counterOperations[counterId];
+      }
+
+      // Create default counter with desks
+      const numberOfDevices = 20;
+      const desks: Record<string, DeskOperation> = {};
+
+      for (let i = 1; i <= numberOfDevices; i++) {
+        const deskId = i.toString().padStart(2, '0');
+        desks[deskId] = {
+          deskId,
+          isActive: true,
+          operatingHours: { open: '06:00', close: '22:00' },
+          capacity: {},
+        };
+      }
+
+      return {
+        counterId,
+        numberOfDevices,
+        processingTimePerPerson: 120,
+        maxQueueCapacity: 400,
+        desks,
+      };
+    },
+    [counterOperations]
   );
 
-  const currentSetting = settings?.[`${selectedSecondTab}_${selectedNodes[selectedSecondTab]}`];
+  // Handle counter operation updates
+  const handleCounterOperationUpdate = useCallback((counterId: string, operation: CounterOperation) => {
+    setCounterOperations((prev) => ({
+      ...prev,
+      [counterId]: operation,
+    }));
+  }, []);
 
-  // ====================================================================================================
-  const calculatedTableHeight = currentSetting?.openingHoursTableData
-    ? currentSetting.openingHoursTableData?.data?.length * TABLE_ROW_HEIGHT + TABLE_HEADER_HEIGHT + 2
-    : 0;
+  // Calculate default capacity based on configuration
+  const calculateDefaultCapacity = (config: CounterConfig): number => {
+    const { numberOfDevices, processingTimePerPerson } = config;
+    // Capacity per 10 minutes = (devices * 600 seconds) / processing time per person
+    return Math.floor((numberOfDevices * 600) / processingTimePerPerson);
+  };
 
-  // ====================================================================================================
-  const tableRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
+  // Handle counter configuration change
+  const handleCounterConfigChange = (counterId: string, field: keyof CounterConfig, value: number) => {
+    const currentOperation = getCounterOperation(counterId);
+    const updatedOperation = { ...currentOperation, [field]: value };
 
-  useEffect(() => {
-    if (!visible) return;
-
-    const handleTableScroll = () => {
-      if (tableRef.current && chartRef.current) {
-        chartRef.current.scrollTop = tableRef.current.scrollTop;
+    // If numberOfDevices changed, update desks
+    if (field === 'numberOfDevices') {
+      const newDesks: Record<string, DeskOperation> = {};
+      for (let i = 1; i <= value; i++) {
+        const deskId = i.toString().padStart(2, '0');
+        newDesks[deskId] = currentOperation.desks[deskId] || {
+          deskId,
+          isActive: true,
+          operatingHours: { open: '06:00', close: '22:00' },
+          capacity: {},
+        };
       }
-    };
-
-    const handleChartScroll = () => {
-      if (chartRef.current && tableRef.current) {
-        tableRef.current.scrollTop = chartRef.current.scrollTop;
-      }
-    };
-
-    const tableElement = tableRef.current;
-    const chartElement = chartRef.current;
-
-    tableElement?.addEventListener('scroll', handleTableScroll);
-    chartElement?.addEventListener('scroll', handleChartScroll);
-
-    return () => {
-      tableElement?.removeEventListener('scroll', handleTableScroll);
-      chartElement?.removeEventListener('scroll', handleChartScroll);
-    };
-  }, [visible]);
-
-  // ====================================================================================================
-  const loadLineChartData = async () => {
-    if (!currentSetting?.openingHoursTableData) {
-      return null;
+      updatedOperation.desks = newDesks;
     }
 
-    if (currentSetting?.facilityType === 'unlimited_facility') {
-      return null;
-    }
+    handleCounterOperationUpdate(counterId, updatedOperation);
+  };
 
-    const facilitySchedules = currentSetting?.openingHoursTableData?.data.map((row) =>
-      row.values.map((val) => {
-        const num = Number(val);
-        return Number.isNaN(num) ? null : num;
+  // Handle bulk settings for all desks in a counter
+  const handleBulkSettings = (counterId: string, preset: OperatingPreset) => {
+    const currentOperation = getCounterOperation(counterId);
+    const updatedDesks = { ...currentOperation.desks };
+
+    Object.keys(updatedDesks).forEach((deskId) => {
+      updatedDesks[deskId] = {
+        ...updatedDesks[deskId],
+        isActive: true,
+        operatingHours: preset.hours,
+      };
+    });
+
+    handleCounterOperationUpdate(counterId, {
+      ...currentOperation,
+      desks: updatedDesks,
+    });
+  };
+
+  // Handle individual desk settings
+  const handleDeskToggle = (counterId: string, deskId: string) => {
+    const currentOperation = getCounterOperation(counterId);
+    const updatedDesks = { ...currentOperation.desks };
+
+    updatedDesks[deskId] = {
+      ...updatedDesks[deskId],
+      isActive: !updatedDesks[deskId].isActive,
+    };
+
+    handleCounterOperationUpdate(counterId, {
+      ...currentOperation,
+      desks: updatedDesks,
+    });
+  };
+
+  // Handle desk operating hours change
+  const handleDeskHoursChange = (counterId: string, deskId: string, field: 'open' | 'close', value: string) => {
+    const currentOperation = getCounterOperation(counterId);
+    const updatedDesks = { ...currentOperation.desks };
+
+    updatedDesks[deskId] = {
+      ...updatedDesks[deskId],
+      operatingHours: {
+        ...updatedDesks[deskId].operatingHours,
+        [field]: value,
+      },
+    };
+
+    handleCounterOperationUpdate(counterId, {
+      ...currentOperation,
+      desks: updatedDesks,
+    });
+  };
+
+  // Fill all time slots with default capacity for all active desks
+  const handleFillAllSlots = (counterId: string) => {
+    const currentOperation = getCounterOperation(counterId);
+    const defaultCapacityPerDesk = Math.floor(
+      calculateDefaultCapacity({
+        numberOfDevices: 1, // Per desk capacity
+        processingTimePerPerson: currentOperation.processingTimePerPerson,
+        maxQueueCapacity: currentOperation.maxQueueCapacity,
       })
     );
 
-    const params = {
-      facility_schedules: facilitySchedules,
-      time_unit: currentSetting.timeUnit || DEFAULT_TIME_UNIT,
+    const updatedDesks = { ...currentOperation.desks };
+
+    Object.keys(updatedDesks).forEach((deskId) => {
+      if (updatedDesks[deskId].isActive) {
+        const newCapacity: { [timeSlot: string]: number } = {};
+        TIME_SLOTS.forEach((timeSlot) => {
+          // Only set capacity during operating hours
+          if (isWithinOperatingHours(timeSlot, updatedDesks[deskId].operatingHours)) {
+            newCapacity[timeSlot] = defaultCapacityPerDesk;
+          } else {
+            newCapacity[timeSlot] = 0;
+          }
+        });
+        updatedDesks[deskId].capacity = newCapacity;
+      }
+    });
+
+    handleCounterOperationUpdate(counterId, {
+      ...currentOperation,
+      desks: updatedDesks,
+    });
+  };
+
+  // Check if time slot is within operating hours
+  const isWithinOperatingHours = (timeSlot: string, operatingHours: { open: string; close: string }): boolean => {
+    const [startTime] = timeSlot.split('-');
+    const [openHour, openMinute] = operatingHours.open.split(':').map(Number);
+    const [closeHour, closeMinute] = operatingHours.close.split(':').map(Number);
+    const [slotHour, slotMinute] = startTime.split(':').map(Number);
+
+    const openMinutes = openHour * 60 + openMinute;
+    let closeMinutes = closeHour * 60 + closeMinute;
+    const slotMinutes = slotHour * 60 + slotMinute;
+
+    // Handle overnight shifts (e.g., 22:00 - 06:00)
+    if (closeMinutes <= openMinutes) {
+      closeMinutes += 24 * 60; // Add 24 hours
+      return slotMinutes >= openMinutes || slotMinutes <= closeMinutes - 24 * 60;
+    }
+
+    return slotMinutes >= openMinutes && slotMinutes < closeMinutes;
+  };
+
+  // Handle capacity input change for individual desk
+  const handleDeskCapacityChange = (timeSlot: string, counterId: string, deskId: string, value: string) => {
+    const currentOperation = getCounterOperation(counterId);
+    const capacity = parseInt(value, 10) || 0;
+    const updatedDesks = { ...currentOperation.desks };
+
+    updatedDesks[deskId] = {
+      ...updatedDesks[deskId],
+      capacity: {
+        ...updatedDesks[deskId].capacity,
+        [timeSlot]: capacity,
+      },
     };
 
-    try {
-      const { data } = await getFacilityInfoLineChartData(params);
+    handleCounterOperationUpdate(counterId, {
+      ...currentOperation,
+      desks: updatedDesks,
+    });
+  };
 
-      // NOTE: Zustand 상태 업데이트
-      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-        lineChartData: data,
+  // Get total capacity for a counter across all active desks
+  const getCounterTotalCapacity = useCallback(
+    (counterId: string) => {
+      const operation = getCounterOperation(counterId);
+      const totalCapacity: { [timeSlot: string]: number } = {};
+
+      TIME_SLOTS.forEach((timeSlot) => {
+        let total = 0;
+        Object.values(operation.desks).forEach((desk) => {
+          if (desk.isActive && isWithinOperatingHours(timeSlot, desk.operatingHours)) {
+            total += desk.capacity[timeSlot] || 0;
+          }
+        });
+        totalCapacity[timeSlot] = total;
       });
-    } catch (error) {
-      console.error('Error fetching line chart data:', error);
-      return null;
-    }
-  };
 
-  // Opening Hours table data가 변경되면 라인 차트 데이터를 로드합니다.
-  useDebounce(() => loadLineChartData(), 500, [currentSetting?.openingHoursTableData]);
-
-  // ====================================================================================================
-  const generateChartData = () => {
-    const chartData = {
-      type: 'bar' as const,
-      marker: { color: '#6941C6', opacity: 1 },
-      x: currentSetting?.openingHoursTableData?.data?.map((d) => d.name),
-      // HACK: 이 부분은 나중에 개선 필요
-      y:
-        barChartData?.[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-          procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-        ]?.y || [],
-    };
-
-    // Limited facility이고 lineChartData가 있으면 capacity line도 추가
-    if (currentSetting?.facilityType === 'limited_facility' && currentSetting?.lineChartData) {
-      return [
-        chartData,
-        {
-          type: 'scatter' as const,
-          mode: 'lines' as const,
-          marker: { color: '#FF0000', opacity: 1 },
-          x: currentSetting.openingHoursTableData?.data?.map((d) => `${d.name}`),
-          y: currentSetting.lineChartData?.y || [],
-        },
-      ];
-    }
-
-    return [chartData];
-  };
-
-  // ====================================================================================================
-  const generateHorizontalChartData = () => {
-    const chartData = {
-      type: 'bar' as const,
-      orientation: 'h' as const,
-      marker: { color: '#6941C6' },
-      // HACK: 이 부분은 나중에 개선 필요
-      x: barChartData?.[procedures[selectedSecondTab].nameText!]?.bar_chart_y_data[
-        procedures[selectedSecondTab].nodes[selectedNodes[selectedSecondTab]]
-      ]?.y,
-      y: currentSetting?.openingHoursTableData?.data?.map((val) => val.name),
-    };
-
-    // Limited facility이고 lineChartData가 있으면 capacity line도 추가
-    if (currentSetting?.facilityType === 'limited_facility' && currentSetting?.lineChartData) {
-      return [
-        chartData,
-        {
-          type: 'scatter' as const,
-          mode: 'lines' as const,
-          marker: { color: '#FF0000' },
-          x: currentSetting.lineChartData?.y,
-          y: currentSetting.openingHoursTableData?.data?.map((val) => val.name),
-        },
-      ];
-    }
-
-    // 기본적으로는 horizontal bar chart만 반환
-    return [chartData];
-  };
-
-  return !visible ? null : (
-    <div>
-      <h2 className="title-sm mt-[25px]">Facility Information</h2>
-
-      {/* =============== SUB TABS =============== */}
-      <TabDefault
-        className="tab-secondary mt-[25px]"
-        tabCount={procedures.length}
-        currentTab={selectedSecondTab}
-        tabs={procedures.map((proc, i) => ({ text: proc.nameText || '' }))}
-        onTabChange={setSelectedSecondTab}
-      />
-
-      {/* =============== NODE TABS =============== */}
-      <ul className="gate-list grid-cols-5">
-        {procedures[selectedSecondTab]?.nodes?.map((node, i) => (
-          <li key={i} className={`${i === selectedNodes[selectedSecondTab] ? 'active' : ''}`}>
-            <button
-              onClick={() => {
-                if (i !== selectedNodes[selectedSecondTab]) updateSelectedNode(selectedSecondTab, i);
-              }}
-            >
-              {node}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {/* =============== FACILITY SETTINGS =============== */}
-      <div className="mt-[30px] flex items-center justify-between">
-        <h2 className="title-sm">Facility Default Settings</h2>
-      </div>
-
-      <TheRadioGroup
-        items={INFINITE_FACILITY_OPTIONS}
-        defaultValue={INFINITE_FACILITY_OPTIONS[0].value}
-        selectedValue={currentSetting.facilityType}
-        onValueChange={(value) => {
-          const numberOfEachDevices = value === 'limited_facility' ? 5 : 1;
-          const maximumQueuesAllowedPer = value === 'limited_facility' ? 200 : 1;
-
-          const newFacilitySettings: Record<string, unknown> = {
-            facilityType: value as (typeof INFINITE_FACILITY_OPTIONS)[number]['value'],
-            numberOfEachDevices,
-            maximumQueuesAllowedPer,
-          };
-
-          // --- Update defaultTableData header if it exists
-          if (currentSetting.defaultTableData) {
-            const newDefaultTableHeader = Array(numberOfEachDevices)
-              .fill(0)
-              .map((_, index) => ({
-                name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                style: { background: '#F9F9FB' },
-                minWidth: 80,
-              }));
-
-            const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
-              ...item,
-              values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
-            }));
-
-            newFacilitySettings.defaultTableData = {
-              ...currentSetting.defaultTableData,
-              header: newDefaultTableHeader,
-              data: newDefaultTableData,
-            };
-          }
-
-          // --- Update openingHoursTableData if it exists
-          if (currentSetting.openingHoursTableData) {
-            const newOpeningHoursHeader = Array(numberOfEachDevices)
-              .fill(0)
-              .map((_, index) => ({
-                name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                style: { background: '#F9F9FB' },
-                minWidth: 80,
-              }));
-
-            const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-              ...item,
-              values: Array(numberOfEachDevices).fill(currentSetting.processingTime),
-            }));
-
-            newFacilitySettings.openingHoursTableData = {
-              ...currentSetting.openingHoursTableData,
-              header: newOpeningHoursHeader,
-              data: newOpeningHoursData,
-            };
-          }
-
-          updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], newFacilitySettings);
-        }}
-      />
-
-      <div className="process-item-content mt-[17px] rounded-lg border border-default-300 bg-gray-100 p-[20px]">
-        <div className="flex justify-between gap-[20px]">
-          {/* =============== DESK =============== */}
-          {currentSetting?.facilityType === 'limited_facility' && (
-            <dl className="flex flex-grow flex-col gap-[5px]">
-              <dt>
-                <h4 className="pl-[10px] text-sm font-semibold">
-                  Number of each devices in {procedures[selectedSecondTab].nameText}
-                </h4>
-              </dt>
-
-              <dd>
-                <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
-                  <button
-                    onClick={() => {
-                      const newNumberOfDevices = Math.max(currentSetting.numberOfEachDevices - 1, 1);
-
-                      const updatedSettings: Record<string, unknown> = {
-                        numberOfEachDevices: newNumberOfDevices,
-                      };
-
-                      // --- Update defaultTableData header if it exists
-                      if (currentSetting.defaultTableData) {
-                        const newDefaultTableHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.defaultTableData = {
-                          ...currentSetting.defaultTableData,
-                          header: newDefaultTableHeader,
-                          data: newDefaultTableData,
-                        };
-                      }
-
-                      // --- Update openingHoursTableData if it exists
-                      if (currentSetting.openingHoursTableData) {
-                        const newOpeningHoursHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.openingHoursTableData = {
-                          ...currentSetting.openingHoursTableData,
-                          header: newOpeningHoursHeader,
-                          data: newOpeningHoursData,
-                        };
-                      }
-
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                    }}
-                  >
-                    <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
-                  </button>
-
-                  <TheInput
-                    className="!border-0 text-center focus:!outline-none"
-                    type="text"
-                    placeholder=""
-                    value={String(currentSetting.numberOfEachDevices)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newNumberOfDevices = Number(e.target.value);
-
-                      const updatedSettings: Record<string, unknown> = {
-                        numberOfEachDevices: newNumberOfDevices,
-                      };
-
-                      // --- Update defaultTableData header if it exists
-                      if (currentSetting.defaultTableData) {
-                        const newDefaultTableHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.defaultTableData = {
-                          ...currentSetting.defaultTableData,
-                          header: newDefaultTableHeader,
-                          data: newDefaultTableData,
-                        };
-                      }
-
-                      // --- Update openingHoursTableData if it exists
-                      if (currentSetting.openingHoursTableData) {
-                        const newOpeningHoursHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.openingHoursTableData = {
-                          ...currentSetting.openingHoursTableData,
-                          header: newOpeningHoursHeader,
-                          data: newOpeningHoursData,
-                        };
-                      }
-
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                    }}
-                  />
-
-                  <button
-                    onClick={() => {
-                      const newNumberOfDevices = currentSetting.numberOfEachDevices + 1;
-
-                      const updatedSettings: Record<string, unknown> = {
-                        numberOfEachDevices: newNumberOfDevices,
-                      };
-
-                      // --- Update defaultTableData header if it exists
-                      if (currentSetting.defaultTableData) {
-                        const newDefaultTableHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newDefaultTableData = currentSetting.defaultTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.defaultTableData = {
-                          ...currentSetting.defaultTableData,
-                          header: newDefaultTableHeader,
-                          data: newDefaultTableData,
-                        };
-                      }
-
-                      // --- Update openingHoursTableData if it exists
-                      if (currentSetting.openingHoursTableData) {
-                        const newOpeningHoursHeader = Array(newNumberOfDevices)
-                          .fill(0)
-                          .map((_, index) => ({
-                            name: `Desk ${String(index + 1).padStart(2, '0')}`,
-                            style: { background: '#F9F9FB' },
-                            minWidth: 80,
-                          }));
-
-                        const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                          ...item,
-                          values: Array(newNumberOfDevices).fill(currentSetting.processingTime),
-                        }));
-
-                        updatedSettings.openingHoursTableData = {
-                          ...currentSetting.openingHoursTableData,
-                          header: newOpeningHoursHeader,
-                          data: newOpeningHoursData,
-                        };
-                      }
-
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                    }}
-                  >
-                    <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
-                  </button>
-                </div>
-              </dd>
-            </dl>
-          )}
-
-          {/* =============== PROCESSING TIME =============== */}
-          <dl className="flex flex-grow flex-col gap-[5px]">
-            <dt>
-              <h4 className="pl-[10px] text-sm font-semibold">Processing time (sec)</h4>
-            </dt>
-
-            <dd>
-              <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
-                <button
-                  onClick={() => {
-                    const newProcessingTime = currentSetting.processingTime - 1;
-
-                    const updatedSettings: Record<string, unknown> = {
-                      processingTime: newProcessingTime,
-                    };
-
-                    // --------------------------------------------------------------
-                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
-                      newProcessingTime
-                    );
-
-                    // --- Update defaultTableData values if it exists
-                    if (currentSetting.defaultTableData) {
-                      updatedSettings.defaultTableData = {
-                        ...currentSetting.defaultTableData,
-                        data: currentSetting.defaultTableData?.data?.map((item) => ({
-                          ...item,
-                          values: newProcessingTimeValues,
-                        })),
-                      };
-                    }
-
-                    // --- Update openingHoursTableData values if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
-                      }));
-
-                      updatedSettings.openingHoursTableData = {
-                        ...currentSetting.openingHoursTableData,
-                        data: newOpeningHoursData,
-                      };
-                    }
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                  }}
-                >
-                  <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
-                </button>
-
-                <TheInput
-                  className="!border-0 text-center focus:!outline-none"
-                  type="text"
-                  placeholder=""
-                  value={String(currentSetting.processingTime)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const newProcessingTime = Number(e.target.value);
-
-                    const updatedSettings: Record<string, unknown> = {
-                      processingTime: newProcessingTime,
-                    };
-
-                    // --------------------------------------------------------------
-                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
-                      newProcessingTime
-                    );
-
-                    // --- Update defaultTableData values if it exists
-                    if (currentSetting.defaultTableData) {
-                      updatedSettings.defaultTableData = {
-                        ...currentSetting.defaultTableData,
-                        data: currentSetting.defaultTableData?.data?.map((item) => ({
-                          ...item,
-                          values: newProcessingTimeValues,
-                        })),
-                      };
-                    }
-
-                    // --- Update openingHoursTableData values if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
-                      }));
-
-                      updatedSettings.openingHoursTableData = {
-                        ...currentSetting.openingHoursTableData,
-                        data: newOpeningHoursData,
-                      };
-                    }
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                  }}
-                />
-
-                <button
-                  onClick={() => {
-                    const newProcessingTime = currentSetting.processingTime + 1;
-
-                    const updatedSettings: Record<string, unknown> = {
-                      processingTime: newProcessingTime,
-                    };
-
-                    // --------------------------------------------------------------
-                    const newProcessingTimeValues: string[] = Array(currentSetting.numberOfEachDevices).fill(
-                      newProcessingTime
-                    );
-
-                    // --- Update defaultTableData values if it exists
-                    if (currentSetting.defaultTableData) {
-                      updatedSettings.defaultTableData = {
-                        ...currentSetting.defaultTableData,
-                        data: currentSetting.defaultTableData?.data?.map((item) => ({
-                          ...item,
-                          values: newProcessingTimeValues,
-                        })),
-                      };
-                    }
-
-                    // --- Update openingHoursTableData values if it exists
-                    if (currentSetting.openingHoursTableData) {
-                      const newOpeningHoursData = currentSetting.openingHoursTableData.data?.map((item) => ({
-                        ...item,
-                        values: Array(currentSetting.numberOfEachDevices).fill(newProcessingTime),
-                      }));
-
-                      updatedSettings.openingHoursTableData = {
-                        ...currentSetting.openingHoursTableData,
-                        data: newOpeningHoursData,
-                      };
-                    }
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], updatedSettings);
-                  }}
-                >
-                  <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
-                </button>
-              </div>
-            </dd>
-          </dl>
-
-          {/* =============== MAXIMUM QUEUES =============== */}
-          {currentSetting?.facilityType === 'limited_facility' && (
-            <dl className="flex flex-grow flex-col gap-[5px]">
-              <dt>
-                <h4 className="pl-[10px] text-sm font-semibold">
-                  Maximum queues allowed per {procedures[selectedSecondTab].nameText}
-                </h4>
-              </dt>
-
-              <dd>
-                <div className="flex h-[50px] w-full items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
-                  <button
-                    onClick={() => {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer - 1,
-                      });
-                    }}
-                  >
-                    <Image src="/image/ico-num-minus.svg" alt="-" width={30} height={30} />
-                  </button>
-
-                  <TheInput
-                    type="text"
-                    placeholder=""
-                    value={String(currentSetting.maximumQueuesAllowedPer)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        maximumQueuesAllowedPer: Number(e.target.value),
-                      });
-                    }}
-                    className="!border-0 text-center focus:!outline-none"
-                  />
-
-                  <button
-                    onClick={() => {
-                      updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                        maximumQueuesAllowedPer: currentSetting.maximumQueuesAllowedPer + 1,
-                      });
-                    }}
-                  >
-                    <Image src="/image/ico-num-plus.svg" alt="+" width={30} height={30} />
-                  </button>
-                </div>
-              </dd>
-            </dl>
-          )}
-        </div>
-
-        {/* =============== DESKS DETAILS TABLE =============== */}
-        {currentSetting.facilityType === 'limited_facility' && (
-          <>
-            <h4 className="mt-[30px] pl-[10px] text-sm font-semibold">Desks details</h4>
-
-            {currentSetting.defaultTableData && (
-              <div className="overflow-auto">
-                <SimulationGridTable
-                  type={'text'}
-                  titleWidth={120}
-                  header={currentSetting.defaultTableData?.header || []}
-                  data={currentSetting.defaultTableData?.data || []}
-                  onDataChange={(data) => {
-                    const newTableData = { ...currentSetting.defaultTableData, data };
-
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      defaultTableData: { ...newTableData, header: newTableData.header || [] },
-                    });
-                  }}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* =============== SET OPENING HOURS =============== */}
-      <div className={`${currentSetting?.openingHoursTableData ? '' : 'hidden'}`}>
-        <div className={`mt-[30px] flex items-center justify-between`}>
-          <h2 className="title-sm">Set Opening Hours</h2>
-
-          {/* <div className="flex items-center gap-[20px]">
-            <Checkbox
-              id="Automatic"
-              label="Check-box"
-              checked={!!currentSetting.automaticInput}
-              onChange={() =>
-                updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                  automaticInput: !currentSetting.automaticInput,
-                })
-              }
-              className="checkbox-toggle"
-            />
-
-            <dl className="flex items-center gap-[10px]">
-              <dt>Time Unit</dt>
-              <dd>
-                <Dropdown
-                  items={[
-                    { id: '10', text: '10 Min' },
-                    { id: '30', text: '30 Min' },
-                    { id: '60', text: '60 Min' },
-                  ]}
-                  defaultId={'10'}
-                  className="min-w-[200px]"
-                  onChange={(items) => {}}
-                />
-              </dd>
-            </dl>
-          </div> */}
-        </div>
-
-        {/* =============== TABLE & HORIZONTAL BAR CHART =============== */}
-        {barChartData ? (
-          <>
-            <div className="flex h-[40rem]">
-              <div ref={tableRef} className="opening-hours-table w-full max-w-5xl overflow-auto scrollbar-hide">
-                <SimulationGridTable
-                  type={currentSetting.automaticInput ? 'checkbox' : 'text'}
-                  title="Opening Time"
-                  titleWidth={120}
-                  headerHeight={TABLE_HEADER_HEIGHT}
-                  stickyTopRows={1}
-                  header={currentSetting.openingHoursTableData?.header || []}
-                  data={currentSetting.openingHoursTableData?.data || []}
-                  onDataChange={(newData) => {
-                    const newTableData = {
-                      ...currentSetting.openingHoursTableData,
-                      data: newData,
-                    };
-                    updateSetting(selectedSecondTab, selectedNodes[selectedSecondTab], {
-                      openingHoursTableData: { ...newTableData, header: newTableData.header || [] },
-                    });
-                  }}
-                />
-              </div>
-
-              <div ref={chartRef} className="overflow-auto">
-                <PlotlyChart
-                  chartData={generateHorizontalChartData()}
-                  chartLayout={{
-                    width: 256,
-                    height: calculatedTableHeight,
-                    margin: { l: 64, r: 0, t: TABLE_HEADER_HEIGHT, b: 0 },
-                    barmode: 'overlay',
-                    showlegend: false,
-                    xaxis: {
-                      fixedrange: true,
-                    },
-                    yaxis: {
-                      fixedrange: true,
-                      autorange: false,
-                      range: [143.5, -0.5],
-                      type: 'category',
-                    },
-                  }}
-                />
-              </div>
+      return totalCapacity;
+    },
+    [getCounterOperation]
+  );
+
+  // If no check-in counters are found, show a message
+  if (!visible) return null;
+
+  if (checkInCounters.length === 0) {
+    return (
+      <div className="pt-8">
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="text-center text-muted-foreground">
+              <Settings className="mx-auto mb-4 h-12 w-12 opacity-50" />
+              <h3 className="mb-2 text-lg font-medium">No Check-in Counters Found</h3>
+              <p className="text-sm">
+                Please configure check-in counters in the <span className="font-medium">Facility Connection</span> tab
+                first.
+              </p>
             </div>
-          </>
-        ) : null}
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
 
-      {/* ================= PASSENGER INFLOW CHART =============== */}
-      <div>
-        <hr />
-        <div className="mt-[34px] flex flex-row justify-between">
-          <h3 className="title-sm">Estimated Passenger Inflow by Time</h3>
+  return (
+    <div className="pt-8">
+      {/* Counter Operations Settings */}
+      {uniqueCounters.length > 0 && (
+        <div>
+          <Card className="border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Settings className="h-5 w-5 text-primary" />
+                Counter Operations Settings
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure operating hours and capacity for each counter and individual desks.
+                <br />
+                <strong>Tip:</strong> Use bulk settings to quickly configure all desks, then fine-tune individual desks
+                as needed.
+              </p>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              {/* Counter Configuration */}
+              <div className="space-y-6">
+                {uniqueCounters.map((counterId) => {
+                  const operation = getCounterOperation(counterId);
+                  const activeDesksCount = Object.values(operation.desks).filter((desk) => desk.isActive).length;
+                  const totalCapacity = getCounterTotalCapacity(counterId);
+                  const totalActiveSlots = Object.values(totalCapacity).filter((c) => c > 0).length;
+                  const totalCapacitySum = Object.values(totalCapacity).reduce((sum, c) => sum + c, 0);
+                  const isExpanded = expandedCounters.has(counterId);
+
+                  return (
+                    <Card key={counterId} className="border-primary/20">
+                      <CardHeader
+                        className="cursor-pointer pb-4"
+                        onClick={() =>
+                          setExpandedCounters((prev) => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(counterId)) {
+                              newSet.delete(counterId);
+                            } else {
+                              newSet.add(counterId);
+                            }
+                            return newSet;
+                          })
+                        }
+                      >
+                        <CardTitle className="flex items-center justify-between text-foreground">
+                          <div className="flex items-center gap-2">
+                            <Settings className="h-5 w-5 text-primary" />
+                            <span>
+                              Counter {counterId} ({operation.numberOfDevices} desks)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-xs text-muted-foreground">
+                              <span className="font-medium">{activeDesksCount}</span> active •
+                              <span className="font-medium"> {totalActiveSlots}</span> slots •
+                              <span className="font-medium"> {totalCapacitySum}</span> pax/hr
+                            </div>
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+
+                      {isExpanded && (
+                        <CardContent className="space-y-6">
+                          {/* Basic Configuration */}
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`devices-${counterId}`} className="text-xs text-muted-foreground">
+                                Number of desks
+                              </Label>
+                              <Input
+                                id={`devices-${counterId}`}
+                                type="number"
+                                value={operation.numberOfDevices}
+                                onChange={(e) =>
+                                  handleCounterConfigChange(counterId, 'numberOfDevices', parseInt(e.target.value) || 1)
+                                }
+                                className="h-8"
+                                min="1"
+                                max="50"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`processing-${counterId}`} className="text-xs text-muted-foreground">
+                                Processing time (sec)
+                              </Label>
+                              <Input
+                                id={`processing-${counterId}`}
+                                type="number"
+                                value={operation.processingTimePerPerson}
+                                onChange={(e) =>
+                                  handleCounterConfigChange(
+                                    counterId,
+                                    'processingTimePerPerson',
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                className="h-8"
+                                min="1"
+                                max="600"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`queue-${counterId}`} className="text-xs text-muted-foreground">
+                                Max queue capacity
+                              </Label>
+                              <Input
+                                id={`queue-${counterId}`}
+                                type="number"
+                                value={operation.maxQueueCapacity}
+                                onChange={(e) =>
+                                  handleCounterConfigChange(
+                                    counterId,
+                                    'maxQueueCapacity',
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="h-8"
+                                min="0"
+                                max="1000"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Bulk Settings */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Copy className="h-4 w-4 text-primary" />
+                              <Label className="text-sm font-medium">Bulk Settings</Label>
+                            </div>
+                            <div className="flex gap-2">
+                              {OPERATING_PRESETS.map((preset) => (
+                                <Button
+                                  key={preset.id}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleBulkSettings(counterId, preset)}
+                                  className="flex h-8 items-center gap-2 text-xs"
+                                >
+                                  {preset.icon}
+                                  <div className="text-left">
+                                    <div className="font-medium">{preset.name}</div>
+                                    <div className="text-xs text-muted-foreground">{preset.description}</div>
+                                  </div>
+                                </Button>
+                              ))}
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleFillAllSlots(counterId)}
+                                className="h-8 text-xs"
+                              >
+                                Fill All Slots
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Individual Desks */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Settings className="h-4 w-4 text-primary" />
+                                <Label className="text-sm font-medium">Individual Desks</Label>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {activeDesksCount} of {operation.numberOfDevices} active
+                              </div>
+                            </div>
+
+                            <div className="grid max-h-40 grid-cols-4 gap-2 overflow-y-auto">
+                              {Object.values(operation.desks).map((desk) => (
+                                <div
+                                  key={desk.deskId}
+                                  className={cn(
+                                    'flex items-center justify-between rounded border p-2 text-xs transition-colors',
+                                    desk.isActive ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/20'
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={desk.isActive}
+                                      onChange={() => handleDeskToggle(counterId, desk.deskId)}
+                                      className="h-3 w-3"
+                                    />
+                                    <span className="font-medium">Desk {desk.deskId}</span>
+                                  </div>
+                                  {desk.isActive && (
+                                    <div className="flex gap-1">
+                                      <input
+                                        type="time"
+                                        value={desk.operatingHours.open}
+                                        onChange={(e) =>
+                                          handleDeskHoursChange(counterId, desk.deskId, 'open', e.target.value)
+                                        }
+                                        className="w-16 border-0 bg-transparent text-xs"
+                                      />
+                                      <span>-</span>
+                                      <input
+                                        type="time"
+                                        value={desk.operatingHours.close}
+                                        onChange={(e) =>
+                                          handleDeskHoursChange(counterId, desk.deskId, 'close', e.target.value)
+                                        }
+                                        className="w-16 border-0 bg-transparent text-xs"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Capacity Timeline Summary */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium">Total Capacity Timeline (All Counters Combined)</Label>
+                </div>
+
+                <div className="rounded-md border border-border bg-background">
+                  <div className="max-h-96 overflow-auto">
+                    <table className="w-full border-collapse">
+                      <thead className="sticky top-0 border-b border-border bg-muted/50">
+                        <tr>
+                          <th className="w-20 border-r border-border p-2 text-left text-xs font-medium text-muted-foreground">
+                            Time
+                          </th>
+                          {uniqueCounters.map((counterId) => (
+                            <th
+                              key={counterId}
+                              className="w-20 border-r border-border p-2 text-center text-xs font-medium text-muted-foreground"
+                            >
+                              Counter {counterId}
+                            </th>
+                          ))}
+                          <th className="w-20 border-r border-border p-2 text-center text-xs font-medium text-primary">
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {TIME_SLOTS.map((timeSlot) => {
+                          let totalForSlot = 0;
+                          return (
+                            <tr key={timeSlot} className="border-b border-border/50 hover:bg-muted/20">
+                              <td className="border-r border-border p-2 font-mono text-xs text-muted-foreground">
+                                {timeSlot.split('-')[0]}
+                              </td>
+                              {uniqueCounters.map((counterId) => {
+                                const counterTotal = getCounterTotalCapacity(counterId);
+                                const slotCapacity = counterTotal[timeSlot] || 0;
+                                totalForSlot += slotCapacity;
+                                return (
+                                  <td key={counterId} className="border-r border-border p-2 text-center text-xs">
+                                    {slotCapacity || 0}
+                                  </td>
+                                );
+                              })}
+                              <td className="border-r border-border p-2 text-center text-xs font-medium text-primary">
+                                {totalForSlot}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div
+                className={cn(
+                  'grid gap-4',
+                  uniqueCounters.length === 1 && 'grid-cols-1',
+                  uniqueCounters.length === 2 && 'grid-cols-2',
+                  uniqueCounters.length === 3 && 'grid-cols-3',
+                  uniqueCounters.length === 4 && 'grid-cols-4',
+                  uniqueCounters.length >= 5 && 'grid-cols-5'
+                )}
+              >
+                {uniqueCounters.map((counterId) => {
+                  const operation = getCounterOperation(counterId);
+                  const activeDesks = Object.values(operation.desks).filter((desk) => desk.isActive).length;
+                  const totalCapacity = getCounterTotalCapacity(counterId);
+                  const activeSlots = Object.values(totalCapacity).filter((c) => c > 0).length;
+                  const totalCapacitySum = Object.values(totalCapacity).reduce((sum, c) => sum + c, 0);
+
+                  return (
+                    <div key={counterId} className="rounded-md border border-primary/20 bg-primary/5 p-3">
+                      <div className="mb-1 text-xs font-semibold text-foreground">Counter {counterId}</div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium">Total Desks:</span> {operation.numberOfDevices}
+                        </div>
+                        <div>
+                          <span className="font-medium">Active Desks:</span> {activeDesks}
+                        </div>
+                        <div>
+                          <span className="font-medium">Processing:</span> {operation.processingTimePerPerson}s
+                        </div>
+                        <div>
+                          <span className="font-medium">Max Queue:</span> {operation.maxQueueCapacity}
+                        </div>
+                        <div>
+                          <span className="font-medium">Active Slots:</span> {activeSlots}
+                        </div>
+                        <div>
+                          <span className="font-medium">Total Capacity:</span> {totalCapacitySum} pax/hr
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      )}
 
-        {barChartData ? (
-          <div className="min-h-[300px] w-full">
-            <div className="mt-[15px] flex justify-end">
-              <ul className="chart-info">
-                <li>
-                  <span className="dot" style={{ backgroundColor: '#6941C6' }}></span>Passenger
-                </li>
-                <li>
-                  <span className="dot" style={{ backgroundColor: '#FF0000' }}></span>Capacity
-                </li>
-              </ul>
-            </div>
-
-            <PlotlyChart
-              chartData={generateChartData()}
-              chartLayout={{
-                margin: { l: 30, r: 10, t: 0, b: 60 },
-                barmode: 'overlay',
-                legend: { x: 1, y: 1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
-                bargap: 0.4,
-                showlegend: false,
-                xaxis: { dtick: 6 },
-              }}
-              chartConfig={{ displayModeBar: false }}
-            />
-          </div>
-        ) : null}
-      </div>
-
-      {/* =============== NAVIGATION BUTTONS =============== */}
-      <div className="mt-[30px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
-        </button>
-
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          // disabled={!simulationAvairable}
-          onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
-        >
-          <span className="flex flex-grow items-center justify-center">Simulation</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
+      {/* Navigation */}
+      <div className="mt-8 flex justify-end">
+        <NextButton />
       </div>
     </div>
   );
