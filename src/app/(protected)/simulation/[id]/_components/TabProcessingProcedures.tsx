@@ -1,426 +1,659 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { faAngleLeft, faAngleRight, faCheck, faEquals } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import _ from 'lodash';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { useShallow } from 'zustand/react/shallow';
-import { Procedure } from '@/types/scenarios';
-import { getProcessingProcedures } from '@/services/simulations';
+import React, { useState } from 'react';
+import { ArrowUpDown, CheckSquare, ChevronDown, Plane, Plus, Route, Settings2, Trash2, Users } from 'lucide-react';
 import { useScenarioStore } from '@/stores/useScenarioStore';
-import Button from '@/components/Button';
-import SelectBox from '@/components/SelectBox';
-import TheInput from '@/components/TheInput';
-import Tooltip from '@/components/Tooltip';
-import SimulationLoading from '../../_components/SimulationLoading';
-
-const DATA_CONNECTION_CRITERIAS = ['I/D', 'Airline', 'Country', 'Region'];
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { useTabReset } from '../_hooks/useTabReset';
+import NextButton from './NextButton';
 
 interface TabProcessingProceduresProps {
+  simulationId: string;
   visible: boolean;
 }
 
-export default function TabProcessingProcedures({ visible }: TabProcessingProceduresProps) {
-  const {
-    currentScenarioTab,
-    setCurrentScenarioTab,
-    availableScenarioTab,
-    setAvailableScenarioTab,
-    procedures,
-    dataConnectionCriteria,
-    setProcedures,
-    setDataConnectionCriteria,
-    resetFacilityConnection,
-    resetFacilityCapacity,
-  } = useScenarioStore(
-    useShallow((s) => ({
-      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
-      availableScenarioTab: s.scenarioProfile.availableScenarioTab,
-      setAvailableScenarioTab: s.scenarioProfile.actions.setAvailableScenarioTab,
-      dataConnectionCriteria: s.airportProcessing.dataConnectionCriteria,
-      procedures: s.airportProcessing.procedures,
-      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
-      setDataConnectionCriteria: s.airportProcessing.actions.setDataConnectionCriteria,
-      setProcedures: s.airportProcessing.actions.setProcedures,
-      resetFacilityConnection: s.facilityConnection.actions.resetState,
-      resetFacilityCapacity: s.facilityCapacity.actions.resetState,
-    }))
-  );
+export default function TabProcessingProcedures({ simulationId, visible }: TabProcessingProceduresProps) {
+  // 모든 hooks를 조건부 리턴 이전에 위치
+  const procedures = useScenarioStore((s) => s.airportProcessing.procedures);
+  const entryType = useScenarioStore((s) => s.airportProcessing.entryType);
+  const isCompleted = useScenarioStore((s) => s.airportProcessing.isCompleted);
+  const setProcedures = useScenarioStore((s) => s.airportProcessing.actions.setProcedures);
+  const setEntryType = useScenarioStore((s) => s.airportProcessing.actions.setEntryType);
+  const setIsCompleted = useScenarioStore((s) => s.airportProcessing.actions.setIsCompleted);
+  const generateProcesses = useScenarioStore((s) => s.facilityConnection.actions.generateProcessesFromProcedures);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadError, setIsLoadError] = useState(false);
+  const [isCreatingProcess, setIsCreatingProcess] = useState(false);
+  const [newProcessName, setNewProcessName] = useState('');
+  const [newProcessFacilities, setNewProcessFacilities] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
+  const [editProcessName, setEditProcessName] = useState('');
+  const [editProcessFacilities, setEditProcessFacilities] = useState('');
+  const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
+  const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
 
-  const [tempPrevProcedures, setTempPrevProcedures] = useState<Procedure[]>([]);
+  // Tab Reset Hook
+  const { resetByTab } = useTabReset();
 
-  const onClickAdd = () => {
-    setProcedures([
-      ...procedures,
-      {
-        name: '',
-        nameText: '',
-        nodes: [],
-        nodesText: '',
-        id: String(procedures.length),
-        editable: true,
-      },
-    ]);
+  // 조건부 리턴을 모든 hooks 이후에 위치
+  if (!visible) return null;
+
+  // 시설 타입 정의
+  type FacilityItem = {
+    name: string;
+    isActive: boolean;
   };
 
-  const calcProcedures = (procedures: Procedure[]): Procedure[] => {
-    return procedures.map((proc, i) => ({
-      ...proc,
-      id: String(i),
-      nameText: proc.name,
-      nodesText: proc.nodes.join(','),
-      editable: false,
-    }));
-  };
+  // 시설명 확장 함수 (DG1~5 → DG1,DG2,DG3,DG4,DG5)
+  const expandFacilityNames = (input: string): FacilityItem[] => {
+    let expanded = input.toUpperCase(); // 모든 입력을 대문자로 변환
 
-  const onClickDelete = (index: number) => {
-    setProcedures(procedures.filter((item, idx) => index != idx));
-  };
+    // 숫자 패턴 처리 (예: DG1~5, SC1~8)
+    expanded = expanded.replace(/([A-Za-z]*)(\d+)~(\d+)/g, (match, prefix, start, end) => {
+      const startNum = parseInt(start);
+      const endNum = parseInt(end);
 
-  const onDragEnd = ({ source, destination }) => {
-    if (!destination) return;
+      if (startNum > endNum) return match; // 잘못된 범위는 그대로 반환
 
-    const steps = Array.from(procedures);
-
-    // 동일 위치 드래그 방지 (불필요한 상태 업데이트 방지)
-    if (source.index === destination.index) return;
-
-    const [movedItem] = steps.splice(source.index, 1);
-    steps.splice(destination.index, 0, movedItem);
-
-    // setProcedures({ ...procedures, procedures });
-  };
-
-  useEffect(() => {
-    const loadProcessingProcedures = async () => {
-      try {
-        setIsLoading(true);
-
-        const { data } = await getProcessingProcedures();
-
-        if (!data.process) {
-          setIsLoadError(true);
-          return;
-        }
-
-        const processedProcedures: Procedure[] = data.process.map((proc, i) => ({
-          ...proc,
-          id: String(i),
-          name: proc.name.toLowerCase().replace(/[\s-]+/g, '_'),
-          nameText: proc.name,
-          nodesText: proc.nodes.join(','),
-          editable: false,
-        }));
-
-        setDataConnectionCriteria(DATA_CONNECTION_CRITERIAS[0]);
-        setProcedures(processedProcedures);
-        // +++
-
-        setIsLoadError(false);
-      } catch (error) {
-        setIsLoadError(true);
-      } finally {
-        setIsLoading(false);
+      const items: string[] = [];
+      for (let i = startNum; i <= endNum; i++) {
+        items.push(prefix + i);
       }
+      return items.join(',');
+    });
+
+    // 알파벳 패턴 처리 (예: A~E, SC_A~SC_E)
+    expanded = expanded.replace(/([A-Za-z]*)([A-Z])~([A-Z])/g, (match, prefix, start, end) => {
+      const startCode = start.charCodeAt(0);
+      const endCode = end.charCodeAt(0);
+
+      if (startCode > endCode) return match; // 잘못된 범위는 그대로 반환
+
+      const items: string[] = [];
+      for (let i = startCode; i <= endCode; i++) {
+        items.push(prefix + String.fromCharCode(i));
+      }
+      return items.join(',');
+    });
+
+    // 최종 시설 목록 생성 (모든 시설이 기본적으로 활성화됨)
+    const facilities = expanded
+      .split(',')
+      .map((f) => f.trim())
+      .filter((f) => f.length > 0)
+      .map((name) => ({
+        name,
+        isActive: true,
+      }));
+
+    return facilities;
+  };
+
+  const createNewProcess = () => {
+    if (!newProcessName.trim() || currentFacilities.length === 0) return;
+
+    const activeFacilities = currentFacilities.filter((f) => f.isActive).map((f) => f.name);
+
+    const newProcedure = {
+      order: procedures.length + 1,
+      process: newProcessName,
+      facility_names: activeFacilities,
     };
 
-    if (procedures.length === 0) {
-      loadProcessingProcedures();
-    } else {
-      setTempPrevProcedures(procedures);
-    }
-  }, []);
+    setProcedures([...procedures, newProcedure]);
 
-  // ================================================================
-
-  const isProceduresChanged = (oldVal: Procedure[], newVal: Procedure[]) => {
-    const oldValWithoutEditable = oldVal.map((proc) => ({ ...proc, editable: false }));
-    const newValWithoutEditable = newVal.map((proc) => ({ ...proc, editable: false }));
-    return !_.isEqual(oldValWithoutEditable, newValWithoutEditable);
+    // Reset form
+    setNewProcessName('');
+    setNewProcessFacilities('');
+    setCurrentFacilities([]);
+    setIsCreatingProcess(false);
   };
 
-  useEffect(() => {
-    if (!visible) return;
+  const selectProcess = (index: number) => {
+    const process = procedures[index];
+    setSelectedProcessIndex(index);
+    setEditProcessName(process.process);
+    setEditProcessFacilities(process.facility_names.join(','));
 
-    if (currentScenarioTab >= availableScenarioTab) return;
+    // facility_names에서 facility 정보 생성
+    const facilitiesFromNames = process.facility_names.map((name) => ({
+      name: name,
+      isActive: true,
+    }));
+    setEditingFacilities(facilitiesFromNames);
 
-    if (isProceduresChanged(tempPrevProcedures, procedures)) {
-      setAvailableScenarioTab(availableScenarioTab - 1);
+    setIsCreatingProcess(false);
+  };
+
+  const updateProcess = () => {
+    if (selectedProcessIndex === null || !editProcessName.trim() || editingFacilities.length === 0) return;
+
+    const activeFacilities = editingFacilities.filter((f) => f.isActive).map((f) => f.name);
+
+    const newProcedures = [...procedures];
+    newProcedures[selectedProcessIndex] = {
+      ...newProcedures[selectedProcessIndex],
+      process: editProcessName,
+      facility_names: activeFacilities,
+    };
+
+    setProcedures(newProcedures);
+
+    // Reset form
+    setSelectedProcessIndex(null);
+    setEditProcessName('');
+    setEditProcessFacilities('');
+    setEditingFacilities([]);
+  };
+
+  const cancelEdit = () => {
+    setSelectedProcessIndex(null);
+    setEditProcessName('');
+    setEditProcessFacilities('');
+    setEditingFacilities([]);
+    setIsCreatingProcess(false);
+    setNewProcessName('');
+    setNewProcessFacilities('');
+    setCurrentFacilities([]);
+  };
+
+  // 시설명 입력 변경 시 시설 리스트 업데이트
+  const handleFacilityInputChange = (value: string, isCreating: boolean = true) => {
+    if (isCreating) {
+      setNewProcessFacilities(value);
+    } else {
+      setEditProcessFacilities(value);
     }
-  }, [currentScenarioTab, availableScenarioTab, procedures, tempPrevProcedures, setAvailableScenarioTab, visible]);
 
-  return !visible ? null : (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="mt-[25px] flex justify-between">
-        <div>
-          <h2 className="title-sm">Processing Procedures</h2>
-          <p className="text-sm text-default-500">
-            You can check and modify the current airport procedures. <br />
-            Match processing procedures according to airport operations and needs using this input.
-          </p>
-        </div>
+    if (value.trim()) {
+      const facilities = expandFacilityNames(value);
+      if (isCreating) {
+        setCurrentFacilities(facilities);
+      } else {
+        setEditingFacilities(facilities);
+      }
+    } else {
+      if (isCreating) {
+        setCurrentFacilities([]);
+      } else {
+        setEditingFacilities([]);
+      }
+    }
+  };
 
-        {/* <p className="flex gap-[10px]">
+  // 시설 토글 함수
+  const toggleFacility = (facilityName: string, isCreating: boolean = true) => {
+    const targetFacilities = isCreating ? currentFacilities : editingFacilities;
+    const setTargetFacilities = isCreating ? setCurrentFacilities : setEditingFacilities;
+
+    const updatedFacilities = targetFacilities.map((facility) =>
+      facility.name === facilityName ? { ...facility, isActive: !facility.isActive } : facility
+    );
+
+    setTargetFacilities(updatedFacilities);
+  };
+
+  // 엔터키 핸들러
+  const handleKeyDown = (e: React.KeyboardEvent, isCreating: boolean = true) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      if (isCreating) {
+        // 새 프로세스 생성 모드
+        if (newProcessName.trim() && newProcessFacilities.trim()) {
+          createNewProcess();
+        }
+      } else {
+        // 기존 프로세스 수정 모드
+        if (editProcessName.trim() && editProcessFacilities.trim()) {
+          updateProcess();
+        }
+      }
+    }
+  };
+
+  const removeProcedure = (index: number) => {
+    const newProcedures = procedures.filter((_, i) => i !== index);
+    setProcedures(newProcedures);
+
+    // 삭제된 프로세스가 선택되어 있었다면 선택 해제
+    if (selectedProcessIndex === index) {
+      setSelectedProcessIndex(null);
+      setEditProcessName('');
+      setEditProcessFacilities('');
+    } else if (selectedProcessIndex !== null && selectedProcessIndex > index) {
+      // 삭제된 프로세스보다 뒤에 있는 프로세스가 선택되어 있다면 인덱스 조정
+      setSelectedProcessIndex(selectedProcessIndex - 1);
+    }
+  };
+
+  // 드래그앤드롭 함수들
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // 배열 재배열
+    const newProcedures = [...procedures];
+    const [draggedItem] = newProcedures.splice(draggedIndex, 1);
+    newProcedures.splice(dropIndex, 0, draggedItem);
+
+    setProcedures(newProcedures);
+
+    // 선택된 프로세스 인덱스 업데이트 (간단한 방식)
+    if (selectedProcessIndex !== null) {
+      if (selectedProcessIndex === draggedIndex) {
+        // 드래그된 프로세스가 선택되어 있었다면 새 위치로 업데이트
+        setSelectedProcessIndex(dropIndex);
+      } else {
+        // 다른 프로세스의 경우 인덱스 조정이 필요할 수 있지만
+        // 현재는 단순하게 선택 해제
+        setSelectedProcessIndex(null);
+      }
+    }
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const canComplete = procedures.length > 0;
+
+  return (
+    <div className="space-y-6 pt-8">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Route className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Processing Procedures</CardTitle>
+              <p className="text-sm text-gray-600">
+                Configure passenger flow simulation path through airport facilities
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Process Flow Layout */}
+      <div className="grid h-[600px] grid-cols-2 gap-6">
+        {/* Left Panel - Process Flow */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg">Process Flow</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[500px] space-y-4 overflow-y-auto">
+            {/* Entry (Fixed) */}
+            <div className="flex items-center gap-4 rounded-lg bg-white p-3 shadow-sm">
+              <div className="flex items-center text-sm font-medium text-primary">
+                <Users className="mr-2 h-5 w-5" />
+                Entry
+              </div>
+              <div className="flex flex-1 justify-end">
+                <Select value={entryType} onValueChange={setEntryType}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Select entry type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Airline">Airline</SelectItem>
+                    <SelectItem value="International/Domestic">International/Domestic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Vertical arrow */}
+            <div className="flex justify-center">
+              <ChevronDown className="h-6 w-6 text-primary" />
+            </div>
+
+            {/* Procedures */}
+            {procedures.map((proc, index) => (
+              <div key={index}>
+                <div
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onClick={() => selectProcess(index)}
+                  className={`group flex cursor-pointer items-center justify-between rounded-lg border-2 bg-white p-3 shadow-sm transition-all ${draggedIndex === index ? 'border-primary/40 opacity-50' : 'border-transparent'} ${dragOverIndex === index && draggedIndex !== index ? 'border-primary/60 bg-primary/5' : ''} ${draggedIndex === null ? 'hover:border-primary/20' : ''} `}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className="mr-2 cursor-move text-primary hover:text-primary/80"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragEnd={handleDragEnd}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ArrowUpDown className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">{proc.process}</div>
+                      <div className="text-xs text-gray-600">({proc.facility_names.length} facilities)</div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-500 text-red-500 hover:bg-red-50 hover:border-red-600 hover:text-red-600 h-6 w-6 rounded-full p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeProcedure(index);
+                    }}
+                    title="Remove this process"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {/* Vertical arrow after each procedure */}
+                <div className="flex justify-center py-2">
+                  <ChevronDown className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+            ))}
+
+            {/* Add Process Button */}
             <Button
-              className="btn-md btn-default"
-              icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
-              text="Edit Procedures"
-              onClick={() => {}}
-            />
-            <Button
-              className="btn-md btn-primary"
-              icon={<FontAwesomeIcon className="nav-icon" size="sm" icon={faEquals} />}
-              text="Confirm"
-              onClick={() => {}}
-            />
-          </p> */}
-      </div>
-
-      {isLoading ? (
-        <SimulationLoading minHeight="min-h-[200px]" />
-      ) : isLoadError ? (
-        <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
-
-          <p className="title-sm" style={{ color: '#30374F' }}>
-            Unable to load data
-          </p>
-        </div>
-      ) : dataConnectionCriteria ? (
-        <>
-          <dl className="mt-[40px]">
-            <dt className="tooltip-line">
-              Data connection criteria <span className="text-accent-600">*</span>
-              <button>
-                <Tooltip text={'test'} />
-              </button>
-            </dt>
-
-            <dd>
-              <SelectBox
-                className="select-default"
-                options={DATA_CONNECTION_CRITERIAS}
-                selectedOption={dataConnectionCriteria}
-                onSelectedOption={setDataConnectionCriteria}
-              />
-            </dd>
-          </dl>
-
-          <div className="processing-wrap mt-[10px]">
-            <Droppable
-              droppableId="droppable"
-              isDropDisabled={false}
-              isCombineEnabled={true}
-              ignoreContainerClipping={true}
-              direction={'vertical'}
+              variant="outline"
+              className="flex w-full items-center justify-center gap-2 border-2 border-dashed border-primary/30 p-3 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => setIsCreatingProcess(true)}
             >
-              {(provided) => (
-                <ul ref={provided.innerRef} {...provided.droppableProps}>
-                  {procedures?.map((proc, index) => {
+              <Plus className="h-5 w-5" />
+              Add Process
+            </Button>
+
+            {/* Vertical arrow to Gate */}
+            <div className="flex justify-center">
+              <ChevronDown className="h-6 w-6 text-primary" />
+            </div>
+
+            {/* Gate (Fixed) */}
+            <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm">
+              <div className="flex items-center text-sm font-medium text-primary">
+                <Plane className="mr-2 h-5 w-5" />
+                Gate
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right Panel - Process Details */}
+        <Card className="relative">
+          <CardHeader>
+            <CardTitle className="text-lg">Process Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[500px] overflow-y-auto pb-16">
+            {isCreatingProcess ? (
+              <div className="space-y-6">
+                <div className="text-sm text-gray-600">Create a new process step</div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Process Name</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., Check-In, Security, Immigration"
+                      value={newProcessName}
+                      onChange={(e) => setNewProcessName(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, true)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Facility Names</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., A~E, DG1~5, SC1,SC2,SC3"
+                      value={newProcessFacilities}
+                      onChange={(e) => handleFacilityInputChange(e.target.value, true)}
+                      onKeyDown={(e) => handleKeyDown(e, true)}
+                      required
+                    />
+
+                    {/* 시설 뱃지 표시 */}
+                    {currentFacilities.length > 0 && (
+                      <div className="mt-3">
+                        <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentFacilities.map((facility) => (
+                            <button
+                              key={facility.name}
+                              type="button"
+                              onClick={() => toggleFacility(facility.name, true)}
+                              className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                                facility.isActive
+                                  ? 'bg-primary text-white hover:bg-primary/80'
+                                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                              }`}
+                            >
+                              {facility.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={createNewProcess}
+                    disabled={!newProcessName.trim() || !newProcessFacilities.trim()}
+                    className="flex-1"
+                  >
+                    Create Process
+                  </Button>
+                  <Button variant="outline" onClick={cancelEdit} className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : selectedProcessIndex !== null ? (
+              <div className="space-y-6">
+                <div className="text-sm text-gray-600">Edit process step</div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Process Name</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., Check-In, Security, Immigration"
+                      value={editProcessName}
+                      onChange={(e) => setEditProcessName(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, false)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Facility Names</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., A~E, DG1~5, SC1,SC2,SC3"
+                      value={editProcessFacilities}
+                      onChange={(e) => handleFacilityInputChange(e.target.value, false)}
+                      onKeyDown={(e) => handleKeyDown(e, false)}
+                      required
+                    />
+
+                    {/* 시설 뱃지 표시 */}
+                    {editingFacilities.length > 0 && (
+                      <div className="mt-3">
+                        <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editingFacilities.map((facility) => (
+                            <button
+                              key={facility.name}
+                              type="button"
+                              onClick={() => toggleFacility(facility.name, false)}
+                              className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                                facility.isActive
+                                  ? 'bg-primary text-white hover:bg-primary/80'
+                                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                              }`}
+                            >
+                              {facility.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={updateProcess}
+                    disabled={!editProcessName.trim() || !editProcessFacilities.trim()}
+                    className="flex-1"
+                  >
+                    Update Process
+                  </Button>
+                  <Button variant="outline" onClick={cancelEdit} className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : procedures.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                  <p>Add a process to configure facilities</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  {procedures.length} process{procedures.length > 1 ? 'es' : ''} configured
+                </div>
+
+                <div className="space-y-3">
+                  {procedures.map((proc, index) => {
+                    const extendedProc = proc as any;
                     return (
-                      <Draggable key={`${proc.id}_${index}`} index={index} draggableId={proc.id}>
-                        {(provided) => (
-                          <li
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{ ...provided.draggableProps.style, marginTop: index > 0 ? 10 : 0 }}
-                          >
-                            <div key={proc.id} className="processing-item bg-red-500 overflow-hidden">
-                              <button className="item-move">
-                                <FontAwesomeIcon size="sm" icon={faEquals} />
-                              </button>
+                      <div
+                        key={index}
+                        className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                          selectedProcessIndex === index
+                            ? 'border-primary/30 bg-primary/10'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                        }`}
+                        onClick={() => selectProcess(index)}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900">{proc.process}</h4>
+                          <span className="text-xs text-gray-500">
+                            {extendedProc.facilitiesStatus
+                              ? extendedProc.facilitiesStatus.filter((f) => f.isActive).length
+                              : proc.facility_names.length}{' '}
+                            facilities
+                          </span>
+                        </div>
 
-                              {/* ========== 컴포넌트 입력 ========== */}
-                              <p className="item-name">
-                                <TheInput
-                                  id={`${proc.id}_${index}_input_name`}
-                                  className={`${proc.editable ? '' : 'hidden'} text-2xl`}
-                                  type="text"
-                                  value={proc.nameText}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    const newText = e.target.value.replace(/[^A-Za-z0-9-_ ]/g, '');
-
-                                    // HACK: 더 좋은 코드가 있을 것 같은데...
-                                    setProcedures(
-                                      procedures.map((item, i) =>
-                                        i === index
-                                          ? {
-                                              ...item,
-                                              name: newText.toLowerCase().replace(/[\s-]+/g, '_'),
-                                              nameText: newText,
-                                            }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                    if (e.key === 'Enter') {
-                                      // HACK: 더 좋은 코드가 있을 것 같은데...
-                                      setProcedures(
-                                        procedures.map((item, i) => (i === index ? { ...item, editable: false } : item))
-                                      );
-
-                                      (e.target as HTMLInputElement).blur();
-                                    }
-                                  }}
-                                />
-
-                                {!proc.editable ? (
-                                  <span className="break-all leading-[1.1]">{proc.nameText}</span>
-                                ) : null}
-
-                                <button
-                                  onClick={() => {
-                                    // HACK: 더 좋은 코드가 있을 것 같은데...
-                                    setProcedures(
-                                      procedures.map((proc, i) =>
-                                        i === index ? { ...proc, editable: !proc.editable } : proc
-                                      )
-                                    );
-                                    if (!proc.editable) {
-                                      setTimeout(
-                                        () => document.getElementById(`${proc.id}_${index}_input_name`)?.focus(),
-                                        50
-                                      );
-                                    }
-                                  }}
+                        {/* 시설 뱃지 표시 */}
+                        <div className="mb-2">
+                          {extendedProc.facilitiesStatus ? (
+                            <div className="flex flex-wrap gap-1">
+                              {extendedProc.facilitiesStatus.map((facility) => (
+                                <span
+                                  key={facility.name}
+                                  className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${
+                                    facility.isActive
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'bg-gray-100 text-gray-400 line-through'
+                                  }`}
                                 >
-                                  {proc.editable ? (
-                                    <FontAwesomeIcon className="nav-icon ml-[8px]" size="sm" icon={faCheck} />
-                                  ) : (
-                                    <Image width={30} height={30} src="/image/ico-write.svg" alt="modify" />
-                                  )}
-                                </button>
-                              </p>
-
-                              {/* ========== 시설 리스트 입력 ========== */}
-                              <dl className="ml-[40px] mr-[300px] flex-grow">
-                                <dt className="tooltip-line">
-                                  Enter the {proc.nameText} desks <span className="text-accent-600">*</span>
-                                  {/* <button><Tooltip text={'test'} /></button> */}
-                                </dt>
-
-                                <dd>
-                                  <TheInput
-                                    type="text"
-                                    value={proc.nodesText}
-                                    onBlur={(e) => {
-                                      const newNodes = e.target.value.trim();
-                                      const trimmedNodes = newNodes
-                                        .split(',')
-                                        .map((n) => n.trim())
-                                        .filter((n) => n !== '');
-
-                                      setProcedures(
-                                        procedures.map((proc, prodIndex) =>
-                                          prodIndex === index
-                                            ? {
-                                                ...proc,
-                                                nodes: trimmedNodes,
-                                                nodesText: trimmedNodes.join(','),
-                                              }
-                                            : proc
-                                        )
-                                      );
-                                    }}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                      const newText = e.target.value.replace(/[^A-Za-z0-9-_,() ]/g, '');
-
-                                      setProcedures(
-                                        procedures.map((item, i) =>
-                                          i === index
-                                            ? {
-                                                ...item,
-                                                nodesText: newText,
-                                              }
-                                            : item
-                                        )
-                                      );
-                                    }}
-                                  />
-                                </dd>
-                              </dl>
-
-                              <button onClick={() => onClickDelete(index)}>
-                                <Image width={30} height={30} src="/image/ico-delete-line.svg" alt="" />
-                              </button>
+                                  {facility.name}
+                                </span>
+                              ))}
                             </div>
-                          </li>
-                        )}
-                      </Draggable>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {proc.facility_names.map((name) => (
+                                <span
+                                  key={name}
+                                  className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
-                  {provided.placeholder}
-                </ul>
-              )}
-            </Droppable>
-          </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
 
-          <p className="add-item">
-            <button onClick={onClickAdd}>
-              <Image width={48} height={48} src="/image/ico-add-item.svg" alt="add item" />
-            </button>
-          </p>
-
-          <div className="mt-5 flex justify-end">
+          {/* Complete Setup - Fixed at bottom right */}
+          <div className="absolute bottom-4 right-4">
             <Button
-              className="btn-md btn-tertiary"
-              text="Apply"
               onClick={() => {
-                setProcedures(procedures.map((proc) => ({ ...proc, editable: false })));
+                // Processing Procedures 변경시 후속 탭들 초기화 (먼저 실행)
+                resetByTab('ProcessingProcedures');
 
-                // NOTE: 이전 절차와 현재 절차가 동일
-                if (!isProceduresChanged(tempPrevProcedures, procedures)) {
-                  setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 4));
-                  return;
-                }
+                // 리셋이 완전히 완료된 후 processes 생성
+                setTimeout(() => {
+                  generateProcesses(procedures, entryType);
+                }, 0);
 
-                const isGranted = confirm(
-                  'If you change the desk, previous connection setting will be deleted.Do you want to continue?'
-                );
-
-                // NOTE: 이전 절차와 현재 절차가 동일하지 않지만, 사용자가 변경을 승인한 경우
-                if (isGranted) {
-                  setAvailableScenarioTab(Math.min(availableScenarioTab + 1, 4));
-                  setTempPrevProcedures(procedures);
-                  resetFacilityConnection();
-                  resetFacilityCapacity();
-                  return;
-                }
-
-                // NOTE: 이전 절차와 현재 절차가 동일하지 않지만, 사용자가 변경을 승인하지 않은 경우
-                setProcedures(tempPrevProcedures);
+                setIsCompleted(true);
               }}
-            />
-          </div>
-
-          <div className="mt-[30px] flex justify-between">
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
+              disabled={!canComplete}
+              className="bg-primary hover:bg-primary/90"
             >
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-              <span className="flex flex-grow items-center justify-center">Filght Schedule</span>
-            </button>
-
-            <button
-              className="btn-md btn-default btn-rounded w-[210px] justify-between"
-              // HACK: 추후 탭 인덱스 값을 Props로 받아서 처리하도록 개선 (하드코딩 제거)
-              disabled={isProceduresChanged(tempPrevProcedures, procedures) || availableScenarioTab < 4}
-              onClick={() => setCurrentScenarioTab(currentScenarioTab + 1)}
-            >
-              <span className="flex flex-grow items-center justify-center">Facility Connection</span>
-              <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-            </button>
+              {isCompleted ? (
+                <>
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Completed
+                </>
+              ) : (
+                'Complete Setup'
+              )}
+            </Button>
           </div>
-        </>
-      ) : null}
-    </DragDropContext>
+        </Card>
+      </div>
+
+      {/* Navigation */}
+      <div className="mt-8 flex justify-end">
+        <NextButton disabled={!isCompleted} />
+      </div>
+    </div>
   );
 }
