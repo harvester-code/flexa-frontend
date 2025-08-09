@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Search } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Search } from 'lucide-react';
 import { modifyScenario } from '@/services/simulations';
 import Checkbox from '@/components/Checkbox';
 import { PopupAlert } from '@/components/popups/PopupAlert';
@@ -102,6 +102,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
   const [isScenarioSelected, setIsScenarioSelected] = useState<boolean[]>([]);
   const [editingScenario, setEditingScenario] = useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -263,6 +264,14 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
       ...editingScenario,
       [field]: value,
     });
+  };
+
+  const handleScenarioClick = (scenarioId: string, scenarioName?: string) => {
+    setNavigatingToId(scenarioId);
+    const url = scenarioName
+      ? `${pathname}/${scenarioId}?name=${encodeURIComponent(scenarioName)}`
+      : `${pathname}/${scenarioId}`;
+    router.push(url);
   };
 
   return (

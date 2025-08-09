@@ -23,21 +23,24 @@ export default function TabDefault({
       {tabs.slice(0, tabCount).map((tab, index) => (
         <button
           key={index}
-          className={cn('tab-button', index === currentTab ? 'active' : '', index > availableTabs ? 'opacity-50' : '')}
+          className={cn(
+            index === currentTab ? 'active' : '',
+            index > availableTabs ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          )}
           onClick={() => {
             if (!onTabChange) return;
 
+            // 개발 모드에서는 모든 탭 활성화
             if (availableTabs === 999) {
               onTabChange(index);
               return;
             }
 
-            if (index > availableTabs) {
-              return;
+            // isCompleted 기반 탭 접근성 제어
+            // availableTabs 이하의 탭만 클릭 가능
+            if (index <= availableTabs) {
+              onTabChange(index);
             }
-
-            onTabChange(index);
-            return;
           }}
         >
           {tab.text} {tab.number ? <span>{tab.number}</span> : null}
