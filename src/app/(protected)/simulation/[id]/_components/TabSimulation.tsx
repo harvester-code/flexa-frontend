@@ -15,6 +15,7 @@ import Button from '@/components/Button';
 import TabDefault from '@/components/TabDefault';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import SimulationLoading from '../../_components/SimulationLoading';
+import TabNavigation from './TabNavigation';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
@@ -39,9 +40,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     scenarioTerminal,
     matrix,
     setMatrix,
-    flightScheduleFilters,
-    targetAirport,
-    targetDate,
+    airport,
+    date,
+    condition,
     normalDistributionParams,
     procedures,
     dataConnectionCriteria,
@@ -59,9 +60,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
       setMatrix: s.scenarioOverview.actions.setMatrix,
 
       // Flight Schedule
-      flightScheduleFilters: s.flightSchedule.selectedFilters,
-      targetAirport: s.flightSchedule.targetAirport,
-      targetDate: s.flightSchedule.targetDate,
+      airport: s.flightSchedule.airport,
+      date: s.flightSchedule.date,
+      condition: s.flightSchedule.condition,
 
       // Passenger Schedule
       normalDistributionParams: s.passengerSchedule.normalDistributionParams,
@@ -238,9 +239,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         standard_deviation: stddev,
       })),
       flight_schedule: {
-        airport: targetAirport.iata,
-        date: targetDate,
-        condition: flightScheduleFilters,
+        airport,
+        date,
+        condition,
       },
       processes: {
         '0': {
@@ -269,7 +270,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     isInitialized,
     allocationTables,
     dataConnectionCriteria,
-    flightScheduleFilters,
+    condition,
     loadSimulationOutput,
     loadSimulationOverview,
     normalDistributionParams,
@@ -277,8 +278,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
     setMatrix,
     settings,
     simulationId,
-    targetAirport.iata,
-    targetDate,
+    airport,
+    date,
     matrix,
   ]);
 
@@ -332,7 +333,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   // const lineChartDate = dayjs(chartDataCurrent?.inbound?.chart_x_data?.[chartDataCurrent?.inbound?.chart_x_data.length / 2]).format('YYYY-MM-DD');
 
   return !visible ? null : (
-    <div>
+    <div className="pt-8">
       <div className="mt-[25px] flex items-center justify-between">
         <h2 className="title-sm">Overview</h2>
         <Button
@@ -371,25 +372,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         </div>
       )}
 
-      {/* 하단버튼 */}
-      <div className="mt-[30px] flex justify-between">
-        <button
-          className="btn-md btn-default btn-rounded w-[210px] justify-between"
-          onClick={() => setCurrentScenarioTab(currentScenarioTab - 1)}
-        >
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          <span className="flex flex-grow items-center justify-center">Facility Information</span>
-        </button>
-
-        <button
-          className="btn-md btn-tertiary btn-rounded w-[210px] justify-between"
-          onClick={runSimulation}
-          // disabled={matrix.length < 1}
-        >
-          <span className="flex flex-grow items-center justify-center">Run Simulation</span>
-          <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-        </button>
-      </div>
+      {/* Navigation */}
+      <TabNavigation />
 
       {loadingSimulation ? (
         <SimulationLoading minHeight="min-h-[200px]" />
