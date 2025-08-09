@@ -1,128 +1,56 @@
-import dayjs from 'dayjs';
-import { Condition, ConditionState } from '@/types/conditions';
-import { FlightScheduleResponse, PassengerScheduleResponse, ScenarioMetadataResponse } from '@/types/scenarios';
+import { FlightScheduleResponse, PassengerScheduleResponse, PassengerShowUpResponse } from '@/types/scenarios';
 import {
+  CreateScenarioParams,
   FacilityConnectionResponse,
+  FacilityConnsParams,
   FacilityInfoLineChartResponse,
-  ProcessingProceduresResponse,
-  ScenarioHistory,
+  FlightSchedulesParams,
+  MetadataLoadResponse,
+  MetadataSaveResponse,
+  PassengerSchedulesParams,
   ScenariosDataResponse,
   SimulationOverviewResponse,
+  SimulationParams,
   SimulationResponse,
 } from '@/types/simulations';
-import { useSimulationMetadata, useSimulationStore } from '@/stores/simulation';
 import { instanceWithAuth } from '@/lib/axios';
 
 const BASE_URL = '/api/v1/simulations';
 
-interface CreateScenarioParams {
-  name: string;
-  airport: string;
-  terminal: string;
-  editor: string;
-  memo: string;
-}
-
 export const createScenario = (params: CreateScenarioParams) => {
-  return instanceWithAuth.post(`${BASE_URL}/scenarios`, params);
+  return instanceWithAuth.post(`${BASE_URL}/`, params);
 };
 
 export const fetchScenarios = () => {
-  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios`);
+  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/`);
 };
 
 export const modifyScenario = (
   params: { name?: string; terminal?: string; airport?: string; memo?: string },
   scenario_id: string
 ) => {
-  return instanceWithAuth.put(`${BASE_URL}/scenarios/${scenario_id}`, params);
+  return instanceWithAuth.put(`${BASE_URL}/${scenario_id}`, params);
 };
 
 export const deleteScenario = (scenario_ids: string[]) => {
-  return instanceWithAuth.delete(`${BASE_URL}/scenarios`, { data: { scenario_ids } });
-};
-
-export const duplicateScenario = (params: { editor: string }, scenario_id: string) => {
-  return instanceWithAuth.post(`${BASE_URL}/scenarios/scenario-id/${scenario_id}/duplicate`, params);
+  return instanceWithAuth.delete(`${BASE_URL}/`, { data: { scenario_ids } });
 };
 
 export const setMasterScenario = (scenario_id: string) => {
-  return instanceWithAuth.patch(`${BASE_URL}/scenarios/${scenario_id}/master`);
+  return instanceWithAuth.patch(`${BASE_URL}/${scenario_id}/master`);
 };
-
-// =======================================================================
-
-export const getScenarioMetadata = (scenario_id: string) => {
-  return instanceWithAuth.get<ScenarioMetadataResponse>(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`);
-};
-
-export const updateScenarioMetadata = (
-  scenario_id: string,
-  params: {
-    overview: unknown;
-    history: {
-      checkpoint: string;
-      error_count: number;
-      memo: string;
-      simulation: string; // FIXME: simulation: 'done' | 'yet';
-    }[];
-    flight_schedule: unknown;
-    passenger_schedule: unknown;
-    processing_procedures: unknown;
-    facility_connection: unknown;
-    facility_information: unknown;
-  }
-) => {
-  return instanceWithAuth.put(`${BASE_URL}/scenarios/metadatas/scenario-id/${scenario_id}`, params);
-};
-
-// =======================================================================
-
-interface FlightSchedulesParams {
-  airport: string;
-  date: string;
-  condition: Condition[];
-}
 
 export const getFlightSchedules = (scenario_id: string, params: FlightSchedulesParams) => {
-  return instanceWithAuth.post<FlightScheduleResponse>(
-    `${BASE_URL}/flight-schedules/scenario-id/${scenario_id}`,
-    params
-  );
+  return instanceWithAuth.post<FlightScheduleResponse>(`${BASE_URL}/${scenario_id}/flight-schedules`, params);
 };
-
-export interface PassengerSchedulesParams {
-  flight_schedule: FlightSchedulesParams;
-  destribution_conditions: ConditionState[];
-}
 
 export const getPassengerSchedules = (scenarioId: string, params: PassengerSchedulesParams) => {
-  return instanceWithAuth.post<PassengerScheduleResponse>(
-    `${BASE_URL}/passenger-schedules/scenario-id/${scenarioId}`,
-    params
-  );
+  return instanceWithAuth.post<PassengerScheduleResponse>(`${BASE_URL}/${scenarioId}/show-up-passenger`, params);
 };
 
-export const getProcessingProcedures = () => {
-  return instanceWithAuth.post<ProcessingProceduresResponse>(`${BASE_URL}/processing-procedures`);
+export const createPassengerShowUp = (scenarioId: string, params: { destribution_conditions: any[] }) => {
+  return instanceWithAuth.post<PassengerShowUpResponse>(`${BASE_URL}/${scenarioId}/show-up-passenger`, params);
 };
-
-interface FacilityConnsParams extends PassengerSchedulesParams {
-  processes: {
-    [index: string]: {
-      name: string;
-      nodes: string[];
-      source: string | null;
-      destination: string;
-      wait_time: number | null;
-      default_matrix?: { [row: string]: { [col: string]: number } } | null;
-      priority_matrix?: Array<{
-        condition: Array<{ criteria: string; operator: string; value: string[] }>;
-        matrix: { [row: string]: { [col: string]: number } };
-      }> | null;
-    };
-  };
-}
 
 export const getFacilityConns = (scenario_id: string, params: FacilityConnsParams) => {
   return instanceWithAuth.post<FacilityConnectionResponse>(
@@ -137,20 +65,6 @@ export const getFacilityInfoLineChartData = (params: {
 }) => {
   return instanceWithAuth.post<FacilityInfoLineChartResponse>(`${BASE_URL}/facility-info/charts/line`, params);
 };
-
-interface SimulationParams extends FacilityConnsParams {
-  scenario_id: string;
-  components: Array<{
-    name: string;
-    nodes: Array<{
-      id: number;
-      name: string;
-      max_queue_length: number;
-      facility_count: number;
-      facility_schedules: number[][];
-    }>;
-  }>;
-}
 
 export const getSimulationOverview = (scenario_id: string, params: SimulationParams) => {
   return instanceWithAuth.post<SimulationOverviewResponse>(
@@ -169,4 +83,14 @@ export const fetchSimulation = (scenario_id: string) => {
 
 export const runSimulation = (params: SimulationParams) => {
   return instanceWithAuth.post<SimulationResponse>(`${BASE_URL}/run-simulation/temp`, params);
+};
+
+// =======================================================================
+
+export const saveScenarioMetadata = (scenario_id: string, metadata: any) => {
+  return instanceWithAuth.post<MetadataSaveResponse>(`${BASE_URL}/${scenario_id}/metadata`, metadata);
+};
+
+export const loadScenarioMetadata = (scenario_id: string) => {
+  return instanceWithAuth.get<MetadataLoadResponse>(`${BASE_URL}/${scenario_id}/metadata`);
 };

@@ -9,7 +9,6 @@ import {
   FacilityConnection,
   FlightSchedule,
   PassengerSchedule,
-  Procedure,
   ScenarioOverview,
 } from '@/types/scenarios';
 
@@ -58,14 +57,12 @@ interface ScenarioOverviewSlice {
 // ==================== FlightSchedule ====================
 interface FlightScheduleSliceActions {
   loadMetadata: (metadata: any) => void;
-  setTargetAirport: (airport: FlightSchedule['targetAirport']) => void;
-  setTargetDate: (date: FlightSchedule['targetDate']) => void;
-  setChartData: (data: FlightSchedule['chartData']) => void;
-  setCriterias: (criterias: FlightSchedule['criterias']) => void;
-  setSelectedCriteria: (criteria: FlightSchedule['selectedCriteria']) => void;
-  setFilters: (filters: FlightSchedule['filterOptions']) => void;
-  setSelectedFilters: (filters: FlightSchedule['selectedFilters']) => void;
-  setIsFilterEnabled: (isEnabled: FlightSchedule['isFilterEnabled']) => void;
+  setAirport: (airport: FlightSchedule['airport']) => void;
+  setDate: (date: FlightSchedule['date']) => void;
+  setAvailableConditions: (availableConditions: FlightSchedule['availableConditions']) => void;
+  setSelectedConditions: (selectedConditions: FlightSchedule['selectedConditions']) => void;
+  setChartData: (chartData: FlightSchedule['chartData']) => void;
+  setIsCompleted: (isCompleted: boolean) => void;
 }
 interface FlightScheduleSlice {
   flightSchedule: FlightSchedule & {
@@ -77,19 +74,10 @@ interface FlightScheduleSlice {
 // ==================== PassengerSchedule ====================
 interface PassengerScheduleSliceActions {
   loadMetadata: (metadata: any) => void;
-  setDistributionData: (data: PassengerSchedule['distributionData']) => void;
-  setVlineData: (data: PassengerSchedule['vlineData']) => void;
-  setChartData: (data: PassengerSchedule['chartData']) => void;
-  setCriterias: (criterias: PassengerSchedule['criterias']) => void;
-  setSelectedCriteria: (criteria: PassengerSchedule['selectedCriteria']) => void;
-  setFilters: (options: PassengerSchedule['filterOptions']) => void;
-  setNormalDistributionParam: (index: number, param: PassengerSchedule['normalDistributionParams'][number]) => void;
-  setNormalDistributionParams: (params: PassengerSchedule['normalDistributionParams']) => void;
-  setPassengerPropertyParam: (index: number, param: PassengerSchedule['passengerPropertyParams'][number]) => void;
-  setPassengerPropertyParams: (params: PassengerSchedule['passengerPropertyParams']) => void;
-  setIsFilterEnabled: (isEnabled: PassengerSchedule['isFilterEnabled']) => void;
-  setIsPassengerPropertyEnabled: (isEnabled: PassengerSchedule['isPassengerPropertyEnabled']) => void;
+  setDestributionConditions: (conditions: PassengerSchedule['destribution_conditions']) => void;
+  setApiResponseData: (data: PassengerSchedule['apiResponseData']) => void;
   resetState: () => void; // Reset state to initial values
+  setIsCompleted: (isCompleted: boolean) => void;
 }
 interface PassengerScheduleSlice {
   passengerSchedule: PassengerSchedule & {
@@ -101,9 +89,10 @@ interface PassengerScheduleSlice {
 // ==================== AirportProcessing ====================
 interface AirportProcessingSliceActions {
   loadMetadata: (metadata: any) => void;
-  setProcedures: (procedures: Procedure[]) => void;
-  setDataConnectionCriteria: (criteria: string) => void;
+  setProcedures: (procedures: Array<{ order: number; process: string; facility_names: string[] }>) => void;
+  setEntryType: (entryType: string) => void;
   resetState: () => void; // Reset state to initial values
+  setIsCompleted: (isCompleted: boolean) => void;
 }
 
 interface AirportProcessingSlice {
@@ -116,12 +105,13 @@ interface AirportProcessingSlice {
 // ==================== FacilityConnection ====================
 interface FacilityConnectionSliceActions {
   loadMetadata: (metadata: any) => void;
-  setAllocationTables: (tables: FacilityConnection['allocationTables']) => void;
-  setSelectedSecondTab: (index: number) => void;
-  setSnapshot: (snapshot: FacilityConnection['snapshot']) => void;
-  setAllocationConditions: (conditions: FacilityConnection['allocationConditions']) => void;
-  setAllocationConditionsEnabled: (conditions: FacilityConnection['allocationConditionsEnabled']) => void;
+  setProcesses: (processes: FacilityConnection['processes']) => void;
+  generateProcessesFromProcedures: (
+    procedures: Array<{ order: number; process: string; facility_names: string[] }>,
+    entryType: string
+  ) => void;
   resetState: () => void; // Reset state to initial values
+  setIsCompleted: (isCompleted: boolean) => void;
 }
 
 interface FacilityConnectionSlice {
@@ -133,17 +123,30 @@ interface FacilityConnectionSlice {
 // ==================== FacilityCapacity ====================
 interface FacilityCapacitySliceActions {
   loadMetadata: (metadata: any) => void;
-  setSelectedSecondTab: (index: number) => void;
   setSelectedNodes: (nodes: number[]) => void;
-  updateSelectedNode: (tabIndex: number, nodeIndex: number) => void;
   setSettings: (settings: FacilityCapacity['settings']) => void;
   updateSetting: (tabIndex: number, nodeIndex: number, setting: Partial<FacilityCapacitySetting>) => void;
-  setBarChartData: (data: FacilityCapacity['barChartData']) => void;
   resetState: () => void; // Reset state to initial values
+  setIsCompleted: (isCompleted: boolean) => void;
+  // UI-only actions removed: setSelectedSecondTab, updateSelectedNode, setBarChartData
 }
 interface FacilityCapacitySlice {
   facilityCapacity: FacilityCapacity & {
     actions: FacilityCapacitySliceActions;
+  };
+}
+
+// ==================== Tab Validation ====================
+interface TabValidationSlice {
+  tabValidation: {
+    isScenarioOverviewValid: () => boolean;
+    isFlightScheduleValid: () => boolean;
+    isPassengerScheduleValid: () => boolean;
+    isProcessingProceduresValid: () => boolean;
+    isFacilityConnectionValid: () => boolean;
+    isFacilityInformationValid: () => boolean;
+    isTabValid: (tabIndex: number) => boolean;
+    getValidTabCount: () => number;
   };
 }
 
@@ -154,7 +157,10 @@ type ScenarioStore = ScenarioProfileSlice &
   PassengerScheduleSlice &
   AirportProcessingSlice &
   FacilityConnectionSlice &
-  FacilityCapacitySlice;
+  FacilityCapacitySlice &
+  TabValidationSlice & {
+    loadCompleteS3Metadata: (s3Response: any) => void;
+  };
 
 // Ref: https://github.com/pmndrs/zustand/discussions/1796
 type SliceCreator<T> = StateCreator<ScenarioStore, [['zustand/devtools', never], ['zustand/immer', never]], [], T>;
@@ -167,7 +173,7 @@ const initialScenarioProfile: Omit<ScenarioProfileSlice['scenarioProfile'], 'act
   scenarioHistory: [],
   currentScenarioTab: 0,
   // availableScenarioTab: process.env.NODE_ENV === 'development' ? 999 : 0,
-  availableScenarioTab: 1,
+  availableScenarioTab: 2, // Flight Schedule 탭(인덱스 1)까지는 항상 활성화
 };
 
 const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get) => ({
@@ -187,6 +193,7 @@ const createScenarioProfileSlice: SliceCreator<ScenarioProfileSlice> = (set, get
           false,
           'scenarioProfile/loadMetadata'
         ),
+
       setCheckpoint: (checkpoint) =>
         set(
           (state) => {
@@ -280,17 +287,21 @@ const createScenarioOverviewSlice: SliceCreator<ScenarioOverviewSlice> = (set, g
 
 // ==================== Flight Schedule Slice Creator ====================
 const initialFlightSchedule: Omit<FlightScheduleSlice['flightSchedule'], 'actions'> = {
-  datasource: 0,
-  targetAirport: { iata: 'ICN', name: '', searchText: '' },
-  targetDate: dayjs().format('YYYY-MM-DD'),
-  //
-  isFilterEnabled: false,
-  filterOptions: null,
-  selectedFilters: [],
-  //
-  criterias: [],
-  selectedCriteria: '',
+  airport: 'ICN',
+  date: dayjs().format('YYYY-MM-DD'),
+  availableConditions: {
+    types: { International: [], Domestic: [] },
+    terminals: {},
+    airlines: [],
+  },
+  selectedConditions: {
+    types: [],
+    terminal: [],
+    selectedAirlines: [],
+  },
+  total: 0,
   chartData: null,
+  isCompleted: false,
 };
 
 const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) => ({
@@ -310,22 +321,22 @@ const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) 
           false,
           'flightSchedule/loadMetadata'
         ),
-      setTargetAirport: (airport) =>
+      setAirport: (airport) =>
         set(
           (state) => {
-            state.flightSchedule.targetAirport = airport;
+            state.flightSchedule.airport = airport;
           },
           false,
-          'flightSchedule/setTargetAirport'
+          'flightSchedule/setAirport'
         ),
 
-      setTargetDate: (date) =>
+      setDate: (date) =>
         set(
           (state) => {
-            state.flightSchedule.targetDate = date;
+            state.flightSchedule.date = date;
           },
           false,
-          'flightSchedule/setTargetDate'
+          'flightSchedule/setDate'
         ),
 
       setChartData: (chartData) =>
@@ -336,50 +347,74 @@ const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) 
           false,
           'flightSchedule/setChartData'
         ),
-
-      setCriterias: (criterias) =>
+      setAvailableConditions: (availableConditions) =>
         set(
           (state) => {
-            state.flightSchedule.criterias = criterias;
+            state.flightSchedule.availableConditions = availableConditions;
+
+            // S3에서 로드된 경우가 아닌 초기 상태에서만 자동 계산
+            // isCompleted가 이미 true라면 S3에서 로드된 것으로 간주하고 유지
+            if (!state.flightSchedule.isCompleted) {
+              // availableConditions에 값이 하나라도 채워져 있으면 완료 상태로 설정
+              const hasData =
+                availableConditions.types.International.length > 0 ||
+                availableConditions.types.Domestic.length > 0 ||
+                Object.keys(availableConditions.terminals).some(
+                  (key) =>
+                    Array.isArray(availableConditions.terminals[key]) && availableConditions.terminals[key].length > 0
+                ) ||
+                availableConditions.airlines.length > 0;
+
+              state.flightSchedule.isCompleted = hasData;
+            }
           },
           false,
-          'flightSchedule/setCriterias'
+          'flightSchedule/setAvailableConditions'
         ),
-
-      setSelectedCriteria: (selectedCriteria) =>
+      setSelectedConditions: (selectedConditions) =>
         set(
           (state) => {
-            state.flightSchedule.selectedCriteria = selectedCriteria;
+            state.flightSchedule.selectedConditions = selectedConditions;
+            // 조건 변경 시에는 적용 상태를 초기화하지 않음 (Apply 후에만 상태 변경)
           },
           false,
-          'flightSchedule/setSelectedCriteria'
+          'flightSchedule/setSelectedConditions'
         ),
-
-      setFilters: (filters) =>
+      setIsCompleted: (isCompleted) =>
         set(
           (state) => {
-            state.flightSchedule.filterOptions = filters;
-          },
-          false,
-          'flightSchedule/setFilters'
-        ),
+            const wasCompleted = state.flightSchedule.isCompleted;
+            state.flightSchedule.isCompleted = isCompleted;
 
-      setSelectedFilters: (selectedFilters) =>
-        set(
-          (state) => {
-            state.flightSchedule.selectedFilters = selectedFilters;
-          },
-          false,
-          'flightSchedule/setSelectedFilters'
-        ),
+            // 상태가 변경되고 완료된 경우에만 후속 탭 초기화 (탭 인덱스 1: Flight Schedule)
+            if (isCompleted && wasCompleted !== isCompleted) {
+              // Passenger Schedule (탭 2) 초기화
+              state.passengerSchedule = {
+                ...initialPassengerSchedule,
+                actions: state.passengerSchedule.actions,
+              };
 
-      setIsFilterEnabled: (isEnabled) =>
-        set(
-          (state) => {
-            state.flightSchedule.isFilterEnabled = isEnabled;
+              // Processing Procedures (탭 3) 초기화
+              state.airportProcessing = {
+                ...initialAirportProcessing,
+                actions: state.airportProcessing.actions,
+              };
+
+              // Facility Connection (탭 4) 초기화
+              state.facilityConnection = {
+                ...initialFacilityConnection,
+                actions: state.facilityConnection.actions,
+              };
+
+              // Facility Information (탭 5) 초기화
+              state.facilityCapacity = {
+                ...initialFacilityCapacity,
+                actions: state.facilityCapacity.actions,
+              };
+            }
           },
           false,
-          'flightSchedule/setIsFilterEnabled'
+          'flightSchedule/setIsCompleted'
         ),
     },
   },
@@ -387,19 +422,9 @@ const createFlightScheduleSlice: SliceCreator<FlightScheduleSlice> = (set, get) 
 
 // ==================== Passenger Schedule Slice Creator ====================
 const initialPassengerSchedule: Omit<PassengerScheduleSlice['passengerSchedule'], 'actions'> = {
-  filterOptions: null,
-  criterias: [],
-  selectedCriteria: '',
-  //
-  isFilterEnabled: false,
-  normalDistributionParams: [{ conditions: [], mean: 120, stddev: 30 }],
-  //
-  isPassengerPropertyEnabled: false,
-  passengerPropertyParams: [],
-  //
-  distributionData: null,
-  vlineData: null,
-  chartData: null,
+  destribution_conditions: [],
+  isCompleted: false,
+  apiResponseData: null,
 };
 
 const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set, get) => ({
@@ -420,116 +445,22 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
           'passengerSchedule/loadMetadata'
         ),
 
-      setDistributionData: (distributionData) =>
+      setDestributionConditions: (conditions) =>
         set(
           (state) => {
-            state.passengerSchedule.distributionData = distributionData;
+            state.passengerSchedule.destribution_conditions = conditions;
           },
           false,
-          'passengerSchedule/setDistributionData'
+          'passengerSchedule/setDestributionConditions'
         ),
 
-      setVlineData: (vlineData) =>
+      setApiResponseData: (data) =>
         set(
           (state) => {
-            state.passengerSchedule.vlineData = vlineData;
+            state.passengerSchedule.apiResponseData = data;
           },
           false,
-          'passengerSchedule/setVlineData'
-        ),
-
-      setChartData: (chartData) =>
-        set(
-          (state) => {
-            state.passengerSchedule.chartData = chartData;
-          },
-          false,
-          'passengerSchedule/setChartData'
-        ),
-
-      setCriterias: (criterias) =>
-        set(
-          (state) => {
-            state.passengerSchedule.criterias = criterias;
-          },
-          false,
-          'passengerSchedule/setCriterias'
-        ),
-
-      setSelectedCriteria: (selectedCriteria) =>
-        set(
-          (state) => {
-            state.passengerSchedule.selectedCriteria = selectedCriteria;
-          },
-          false,
-          'passengerSchedule/setSelectedCriteria'
-        ),
-
-      setIsFilterEnabled: (isEnabled) =>
-        set(
-          (state) => {
-            state.passengerSchedule.isFilterEnabled = isEnabled;
-          },
-          false,
-          'passengerSchedule/setIsFilterEnabled'
-        ),
-
-      setFilters: (filterOptions) =>
-        set(
-          (state) => {
-            state.passengerSchedule.filterOptions = filterOptions;
-          },
-          false,
-          'passengerSchedule/setFilterOptions'
-        ),
-
-      setNormalDistributionParam: (index, param) =>
-        set(
-          (state) => {
-            if (index >= 0 && index < state.passengerSchedule.normalDistributionParams.length) {
-              state.passengerSchedule.normalDistributionParams[index] = param;
-            }
-          },
-          false,
-          'passengerSchedule/setNormalDistributionParam'
-        ),
-
-      setNormalDistributionParams: (params) =>
-        set(
-          (state) => {
-            state.passengerSchedule.normalDistributionParams = params;
-          },
-          false,
-          'passengerSchedule/setNormalDistributionParams'
-        ),
-
-      setIsPassengerPropertyEnabled: (isEnabled) =>
-        set(
-          (state) => {
-            state.passengerSchedule.isPassengerPropertyEnabled = isEnabled;
-          },
-          false,
-          'passengerSchedule/setIsPassengerPropertyEnabled'
-        ),
-
-      setPassengerPropertyParam: (index, param) =>
-        set(
-          (state) => {
-            if (index >= 0 && index < state.passengerSchedule.passengerPropertyParams.length) {
-              state.passengerSchedule.passengerPropertyParams[index] = param;
-            }
-          },
-          false,
-          'passengerSchedule/setPassengerPropertyParam'
-        ),
-
-      setPassengerPropertyParams: (params) =>
-        set(
-          (state) => {
-            state.passengerSchedule.passengerPropertyParams = params;
-          },
-          false,
-          'passengerSchedule/setPassengerPropertyParams'
+          'passengerSchedule/setApiResponseData'
         ),
 
       resetState: () =>
@@ -543,6 +474,36 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
           false,
           'passengerSchedule/resetState'
         ),
+      setIsCompleted: (isCompleted) =>
+        set(
+          (state) => {
+            const wasCompleted = state.passengerSchedule.isCompleted;
+            state.passengerSchedule.isCompleted = isCompleted;
+
+            // 상태가 변경되고 완료된 경우에만 후속 탭 초기화 (탭 인덱스 2: Passenger Schedule)
+            if (isCompleted && wasCompleted !== isCompleted) {
+              // Processing Procedures (탭 3) 초기화
+              state.airportProcessing = {
+                ...initialAirportProcessing,
+                actions: state.airportProcessing.actions,
+              };
+
+              // Facility Connection (탭 4) 초기화
+              state.facilityConnection = {
+                ...initialFacilityConnection,
+                actions: state.facilityConnection.actions,
+              };
+
+              // Facility Information (탭 5) 초기화
+              state.facilityCapacity = {
+                ...initialFacilityCapacity,
+                actions: state.facilityCapacity.actions,
+              };
+            }
+          },
+          false,
+          'passengerSchedule/setIsCompleted'
+        ),
     },
   },
 });
@@ -550,8 +511,9 @@ const createPassengerScheduleSlice: SliceCreator<PassengerScheduleSlice> = (set,
 // ==================== Airport Processing Slice Creator ====================
 
 const initialAirportProcessing: Omit<AirportProcessingSlice['airportProcessing'], 'actions'> = {
-  dataConnectionCriteria: '',
   procedures: [],
+  entryType: 'Airline',
+  isCompleted: false,
 };
 
 const createAirportProcessingSlice: SliceCreator<AirportProcessingSlice> = (set, get) => ({
@@ -580,13 +542,13 @@ const createAirportProcessingSlice: SliceCreator<AirportProcessingSlice> = (set,
           'airportProcessing/setProcedures'
         ),
 
-      setDataConnectionCriteria: (criteria) =>
+      setEntryType: (entryType) =>
         set(
           (state) => {
-            state.airportProcessing.dataConnectionCriteria = criteria;
+            state.airportProcessing.entryType = entryType;
           },
           false,
-          'airportProcessing/setDataConnectionCriteria'
+          'airportProcessing/setEntryType'
         ),
 
       resetState: () =>
@@ -600,18 +562,38 @@ const createAirportProcessingSlice: SliceCreator<AirportProcessingSlice> = (set,
           false,
           'airportProcessing/resetState'
         ),
+      setIsCompleted: (isCompleted) =>
+        set(
+          (state) => {
+            const wasCompleted = state.airportProcessing.isCompleted;
+            state.airportProcessing.isCompleted = isCompleted;
+
+            // 상태가 변경되고 완료된 경우에만 후속 탭 초기화 (탭 인덱스 3: Processing Procedures)
+            if (isCompleted && wasCompleted !== isCompleted) {
+              // Facility Connection (탭 4) 초기화
+              state.facilityConnection = {
+                ...initialFacilityConnection,
+                actions: state.facilityConnection.actions,
+              };
+
+              // Facility Information (탭 5) 초기화
+              state.facilityCapacity = {
+                ...initialFacilityCapacity,
+                actions: state.facilityCapacity.actions,
+              };
+            }
+          },
+          false,
+          'airportProcessing/setIsCompleted'
+        ),
     },
   },
 });
 
 // ==================== Facility Connection Slice Creator ====================
 const initialFacilityConnection: Omit<FacilityConnectionSlice['facilityConnection'], 'actions'> = {
-  selectedSecondTab: 0,
-  activedSecondTab: process.env.NODE_ENV === 'development' ? 999 : 0,
-  allocationTables: [],
-  allocationConditions: [],
-  allocationConditionsEnabled: [],
-  snapshot: null,
+  processes: {},
+  isCompleted: false,
 };
 
 const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (set, get) => ({
@@ -631,45 +613,50 @@ const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (se
           false,
           'facilityConnection/loadMetadata'
         ),
-      setAllocationTables: (tables) =>
+      setProcesses: (processes) =>
         set(
           (state) => {
-            state.facilityConnection.allocationTables = tables;
+            state.facilityConnection.processes = processes;
           },
           false,
-          'facilityConnection/setAllocations'
+          'facilityConnection/setProcesses'
         ),
-      setSelectedSecondTab: (index) =>
+
+      generateProcessesFromProcedures: (procedures, entryType) =>
         set(
           (state) => {
-            state.facilityConnection.selectedSecondTab = index;
+            console.log('🔧 generateProcessesFromProcedures called:', { procedures, entryType });
+
+            const processesObj: Record<string, any> = {};
+
+            // Entry process (항상 인덱스 0)
+            processesObj['0'] = {
+              name: entryType,
+              nodes: [],
+              source: null,
+              destination: procedures.length > 0 ? '1' : null,
+              default_matrix: null,
+              priority_matrix: null,
+            };
+
+            // 사용자가 추가한 프로세스들
+            procedures.forEach((procedure, index) => {
+              const processIndex = (index + 1).toString();
+              processesObj[processIndex] = {
+                name: procedure.process.toLowerCase().replace(/\s+/g, '_'),
+                nodes: procedure.facility_names,
+                source: index === 0 ? '0' : index.toString(),
+                destination: index === procedures.length - 1 ? null : (index + 2).toString(),
+                default_matrix: {}, // 빈 객체로 초기화
+                priority_matrix: null,
+              };
+            });
+
+            console.log('🚀 Generated processes:', processesObj);
+            state.facilityConnection.processes = processesObj;
           },
           false,
-          'facilityConnection/setSelectedSecondTab'
-        ),
-      setSnapshot: (snapshot) =>
-        set(
-          (state) => {
-            state.facilityConnection.snapshot = snapshot;
-          },
-          false,
-          'facilityConnection/setSnapshot'
-        ),
-      setAllocationConditions: (conditions) =>
-        set(
-          (state) => {
-            state.facilityConnection.allocationConditions = conditions;
-          },
-          false,
-          'facilityConnection/setAllocationConditions'
-        ),
-      setAllocationConditionsEnabled: (conditionsEnabled) =>
-        set(
-          (state) => {
-            state.facilityConnection.allocationConditionsEnabled = conditionsEnabled;
-          },
-          false,
-          'facilityConnection/setAllocationConditionsEnabled'
+          'facilityConnection/generateProcessesFromProcedures'
         ),
 
       resetState: () =>
@@ -683,6 +670,24 @@ const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (se
           false,
           'facilityConnection/resetState'
         ),
+      setIsCompleted: (isCompleted) =>
+        set(
+          (state) => {
+            const wasCompleted = state.facilityConnection.isCompleted;
+            state.facilityConnection.isCompleted = isCompleted;
+
+            // 상태가 변경되고 완료된 경우에만 후속 탭 초기화 (탭 인덱스 4: Facility Connection)
+            if (isCompleted && wasCompleted !== isCompleted) {
+              // Facility Information (탭 5) 초기화
+              state.facilityCapacity = {
+                ...initialFacilityCapacity,
+                actions: state.facilityCapacity.actions,
+              };
+            }
+          },
+          false,
+          'facilityConnection/setIsCompleted'
+        ),
     },
   },
 });
@@ -690,11 +695,9 @@ const createFacilityConnectionSlice: SliceCreator<FacilityConnectionSlice> = (se
 // ==================== Facility Capacity Slice Creator ====================
 
 const initialFacilityCapacity: Omit<FacilityCapacitySlice['facilityCapacity'], 'actions'> = {
-  selectedSecondTab: 0,
-  availableSecondTab: process.env.NODE_ENV === 'development' ? 999 : 0,
   selectedNodes: [],
   settings: {},
-  barChartData: null,
+  isCompleted: false,
 };
 
 const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, get) => ({
@@ -714,14 +717,7 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
           false,
           'facilityCapacity/loadMetadata'
         ),
-      setSelectedSecondTab: (index) =>
-        set(
-          (state) => {
-            state.facilityCapacity.selectedSecondTab = index;
-          },
-          false,
-          'facilityCapacity/setSelectedSecondTab'
-        ),
+      // UI-only actions removed: setSelectedSecondTab, updateSelectedNode
 
       setSelectedNodes: (nodes) =>
         set(
@@ -730,20 +726,6 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
           },
           false,
           'facilityCapacity/setSelectedNodes'
-        ),
-
-      updateSelectedNode: (tabIndex, nodeIndex) =>
-        set(
-          (state) => {
-            const selectedNodes = state.facilityCapacity.selectedNodes;
-            if (selectedNodes[tabIndex] !== nodeIndex) {
-              selectedNodes[tabIndex] = nodeIndex;
-            } else {
-              selectedNodes[tabIndex] = -1; // 선택 해제
-            }
-          },
-          false,
-          'facilityCapacity/updateSelectedNode'
         ),
 
       setSettings: (settings) =>
@@ -767,14 +749,7 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
           'facilityCapacity/updateSetting'
         ),
 
-      setBarChartData: (data) =>
-        set(
-          (state) => {
-            state.facilityCapacity.barChartData = data;
-          },
-          false,
-          'facilityCapacity/setBarChartData'
-        ),
+      // UI-only action removed: setBarChartData
 
       resetState: () =>
         set(
@@ -787,6 +762,86 @@ const createFacilityCapacitySlice: SliceCreator<FacilityCapacitySlice> = (set, g
           false,
           'facilityCapacity/resetState'
         ),
+      setIsCompleted: (isCompleted) =>
+        set(
+          (state) => {
+            const wasCompleted = state.facilityCapacity.isCompleted;
+            state.facilityCapacity.isCompleted = isCompleted;
+
+            // 마지막 탭이므로 후속 탭 초기화 없음 (탭 인덱스 5: Facility Information)
+            if (isCompleted && wasCompleted !== isCompleted) {
+            }
+          },
+          false,
+          'facilityCapacity/setIsCompleted'
+        ),
+    },
+  },
+});
+
+// ==================== Tab Validation Slice Creator ====================
+const createTabValidationSlice: SliceCreator<TabValidationSlice> = (set, get) => ({
+  tabValidation: {
+    isScenarioOverviewValid: () => {
+      const state = get();
+      return !!(state.scenarioProfile.scenarioName && state.scenarioProfile.scenarioTerminal);
+    },
+
+    isFlightScheduleValid: () => {
+      // Flight Schedule 탭은 항상 활성화
+      return true;
+    },
+
+    isPassengerScheduleValid: () => {
+      const state = get();
+      const ps = state.passengerSchedule;
+      return (
+        ps.destribution_conditions.length > 0 &&
+        ps.destribution_conditions.every((p) => p.mean > 0 && p.standard_deviation > 0)
+      );
+    },
+
+    isProcessingProceduresValid: () => {
+      const state = get();
+      const ap = state.airportProcessing;
+      // procedures 배열에 프로세스가 있는지 확인
+      return ap.procedures.length > 0;
+    },
+
+    isFacilityConnectionValid: () => {
+      const state = get();
+      const fc = state.facilityConnection;
+      return fc.allocationTables.length > 0;
+    },
+
+    isFacilityInformationValid: () => {
+      const state = get();
+      const fi = state.facilityCapacity;
+      return fi.selectedNodes.length > 0 && Object.keys(fi.settings).length > 0;
+    },
+
+    isTabValid: (tabIndex: number) => {
+      const validation = get().tabValidation;
+      const validationMap = {
+        0: validation.isScenarioOverviewValid,
+        1: validation.isFlightScheduleValid,
+        2: validation.isPassengerScheduleValid,
+        3: validation.isProcessingProceduresValid,
+        4: validation.isFacilityConnectionValid,
+        5: validation.isFacilityInformationValid,
+        6: () => true, // Simulation tab - always available if reached
+      };
+      return validationMap[tabIndex]?.() || false;
+    },
+
+    getValidTabCount: () => {
+      const validation = get().tabValidation;
+      for (let i = 0; i < 7; i++) {
+        if (!validation.isTabValid(i)) {
+          return i;
+        }
+      }
+      return 7; // All tabs valid
     },
   },
 });
@@ -802,6 +857,75 @@ export const useScenarioStore = create<ScenarioStore>()(
       ...createAirportProcessingSlice(set, get, ...rest),
       ...createFacilityConnectionSlice(set, get, ...rest),
       ...createFacilityCapacitySlice(set, get, ...rest),
+      ...createTabValidationSlice(set, get, ...rest),
+
+      // ==================== Global S3 Metadata Loader ====================
+      loadCompleteS3Metadata: (s3Response: any) => {
+        set(
+          (state) => {
+            const metadata = s3Response?.metadata || {};
+            const tabs = metadata?.tabs || {};
+
+            // ScenarioProfile 데이터 로드
+            const overview = tabs.overview || {};
+            if (overview.scenarioName) state.scenarioProfile.scenarioName = overview.scenarioName;
+            if (overview.scenarioTerminal) state.scenarioProfile.scenarioTerminal = overview.scenarioTerminal;
+            if (typeof overview.currentScenarioTab === 'number')
+              state.scenarioProfile.currentScenarioTab = overview.currentScenarioTab;
+            if (typeof overview.availableScenarioTab === 'number')
+              state.scenarioProfile.availableScenarioTab = overview.availableScenarioTab;
+            if (overview.scenarioHistory) state.scenarioProfile.scenarioHistory = overview.scenarioHistory;
+            if (overview.checkpoint) state.scenarioProfile.checkpoint = overview.checkpoint;
+
+            // ScenarioOverview 데이터 로드
+            if (overview.matrix) state.scenarioOverview.matrix = overview.matrix;
+
+            // FlightSchedule 데이터 로드
+            const flightSchedule = tabs.flightSchedule || {};
+            if (flightSchedule.airport) state.flightSchedule.airport = flightSchedule.airport;
+            if (flightSchedule.date) state.flightSchedule.date = flightSchedule.date;
+            if (flightSchedule.availableConditions)
+              state.flightSchedule.availableConditions = flightSchedule.availableConditions;
+            if (flightSchedule.selectedConditions)
+              state.flightSchedule.selectedConditions = flightSchedule.selectedConditions;
+            if (flightSchedule.chartData) state.flightSchedule.chartData = flightSchedule.chartData;
+            if (typeof flightSchedule.isCompleted === 'boolean')
+              state.flightSchedule.isCompleted = flightSchedule.isCompleted;
+
+            // PassengerSchedule 데이터 로드
+            const passengerSchedule = tabs.passengerSchedule || {};
+            if (passengerSchedule.destribution_conditions)
+              state.passengerSchedule.destribution_conditions = passengerSchedule.destribution_conditions;
+            if (passengerSchedule.apiResponseData)
+              state.passengerSchedule.apiResponseData = passengerSchedule.apiResponseData;
+            if (typeof passengerSchedule.isCompleted === 'boolean')
+              state.passengerSchedule.isCompleted = passengerSchedule.isCompleted;
+
+            // AirportProcessing 데이터 로드
+            const processingProcedures = tabs.processingProcedures || {};
+            if (processingProcedures.procedures) state.airportProcessing.procedures = processingProcedures.procedures;
+            if (processingProcedures.entryType) state.airportProcessing.entryType = processingProcedures.entryType;
+            if (typeof processingProcedures.isCompleted === 'boolean')
+              state.airportProcessing.isCompleted = processingProcedures.isCompleted;
+
+            // FacilityConnection 데이터 로드
+            const facilityConnection = tabs.facilityConnection || {};
+            if (facilityConnection.processes) state.facilityConnection.processes = facilityConnection.processes;
+            if (typeof facilityConnection.isCompleted === 'boolean')
+              state.facilityConnection.isCompleted = facilityConnection.isCompleted;
+
+            // FacilityCapacity 데이터 로드
+            const facilityInformation = tabs.facilityInformation || {};
+            if (facilityInformation.selectedNodes)
+              state.facilityCapacity.selectedNodes = facilityInformation.selectedNodes;
+            if (facilityInformation.settings) state.facilityCapacity.settings = facilityInformation.settings;
+            if (typeof facilityInformation.isCompleted === 'boolean')
+              state.facilityCapacity.isCompleted = facilityInformation.isCompleted;
+          },
+          false,
+          'loadCompleteS3Metadata'
+        );
+      },
     })),
     { name: 'ScenarioStore', enabled: process.env.NODE_ENV === 'development' }
   )
