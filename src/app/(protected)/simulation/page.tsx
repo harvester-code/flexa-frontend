@@ -23,8 +23,9 @@ const SimulationPage = () => {
           queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete scenarios:', error);
+      console.error('Error details:', error.response?.data);
     }
   };
 
