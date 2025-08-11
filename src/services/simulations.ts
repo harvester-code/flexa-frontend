@@ -22,7 +22,7 @@ export const createScenario = (params: CreateScenarioParams) => {
 };
 
 export const fetchScenarios = () => {
-  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/`);
+  return instanceWithAuth.get<ScenariosDataResponse>(`${BASE_URL}/scenarios`);
 };
 
 export const modifyScenario = (
