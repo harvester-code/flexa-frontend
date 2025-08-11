@@ -2,12 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { APIRequestLog } from '@/types/scenarios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { useFlightScheduleData, usePassengerScheduleData } from '@/hooks/useTabData';
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
-import TabPassengerScheduleGroupConfiguration, { ConfiguredGroup } from './TabPassengerScheduleGroupConfiguration';
+import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
+import TabPassengerScheduleVirtualProfiles from './TabPassengerScheduleVirtualProfiles';
 
 interface TabPassengerScheduleProps {
   simulationId: string;
@@ -160,6 +161,8 @@ export default function TabPassengerSchedule({
   return (
     <div className="font-pretendard pt-8">
       <div className="space-y-6">
+        <TabPassengerScheduleVirtualProfiles />
+
         {/* Airline Selector */}
         <TabPassengerScheduleAirlineSelector
           availableAirlines={selectedConditions.selectedAirlines || []}
