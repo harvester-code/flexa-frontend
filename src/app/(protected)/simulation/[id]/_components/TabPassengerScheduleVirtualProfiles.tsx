@@ -391,141 +391,150 @@ interface AddGroupModalProps {
   //   onCreateGroup: (selectedOptions: GroupOption[]) => void;
 }
 
+const initialGroupOptions = [
+  {
+    id: 0,
+    isActive: true,
+    category: 'Nationality',
+    sections: [
+      {
+        id: 0,
+        category: null,
+        items: [
+          {
+            id: 0,
+            isActive: false,
+            label: 'Domestic',
+            description: 'Local/domestic passengers and crew',
+            icon: '🏠',
+          },
+          {
+            id: 1,
+            isActive: false,
+            label: 'International',
+            description: 'International passengers and crew',
+            icon: '🌍',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 1,
+    isActive: true,
+    category: 'Profiles',
+    sections: [
+      {
+        id: 0,
+        category: 'Job',
+        items: [
+          {
+            id: 0,
+            isActive: false,
+            label: 'Cabin Crew',
+            description: 'Flight attendants and cabin staff',
+            icon: '👩‍✈️',
+          },
+          {
+            id: 1,
+            isActive: false,
+            label: 'Pilots',
+            description: 'Captains and first officers',
+            icon: '👨‍✈️',
+          },
+          {
+            id: 2,
+            isActive: false,
+            label: 'Ground Crew',
+            description: 'Ground handling and maintenance staff',
+            icon: '👷',
+          },
+          {
+            id: 3,
+            isActive: false,
+            label: 'Passengers',
+            description: 'Regular passengers',
+            icon: '👤',
+          },
+        ],
+      },
+      {
+        id: 1,
+        category: 'Special Requirements',
+        items: [
+          {
+            id: 0,
+            isActive: false,
+            label: 'PRM',
+            description: 'Passengers with Reduced Mobility',
+            icon: '♿',
+          },
+          {
+            id: 1,
+            isActive: false,
+            label: 'VIP',
+            description: 'VIP passengers and special guests',
+            icon: '⭐',
+          },
+          {
+            id: 2,
+            isActive: false,
+            label: 'Unaccompanied Minors',
+            description: 'Children traveling alone',
+            icon: '👶',
+          },
+          {
+            id: 3,
+            isActive: false,
+            label: 'Medical Cases',
+            description: 'Passengers requiring medical assistance',
+            icon: '🏥',
+          },
+        ],
+      },
+      {
+        id: 2,
+        category: 'Service Classes',
+        items: [
+          {
+            id: 0,
+            isActive: false,
+            label: 'Economy',
+            description: 'Economy class passengers',
+            icon: '💺',
+          },
+          {
+            id: 1,
+            isActive: false,
+            label: 'Business',
+            description: 'Business class passengers',
+            icon: '💼',
+          },
+          {
+            id: 2,
+            isActive: false,
+            label: 'First Class',
+            description: 'First class passengers',
+            icon: '👑',
+          },
+        ],
+      },
+    ],
+  },
+];
+
 export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOptions, setSelectedOptions] = useState<Section[]>([]);
+  const [groupOptions, setGroupOptions] = useState<CategoryGroup[]>(initialGroupOptions);
 
-  const [groupOptions, setGroupOptions] = useState<CategoryGroup[]>([
-    {
-      id: 0,
-      isActive: true,
-      category: 'Nationality',
-      sections: [
-        {
-          id: 0,
-          category: null,
-          items: [
-            {
-              id: 0,
-              isActive: false,
-              label: 'Domestic',
-              description: 'Local/domestic passengers and crew',
-              icon: '🏠',
-            },
-            {
-              id: 1,
-              isActive: false,
-              label: 'International',
-              description: 'International passengers and crew',
-              icon: '🌍',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 1,
-      isActive: true,
-      category: 'Profiles',
-      sections: [
-        {
-          id: 0,
-          category: 'Job',
-          items: [
-            {
-              id: 0,
-              isActive: false,
-              label: 'Cabin Crew',
-              description: 'Flight attendants and cabin staff',
-              icon: '👩‍✈️',
-            },
-            {
-              id: 1,
-              isActive: false,
-              label: 'Pilots',
-              description: 'Captains and first officers',
-              icon: '👨‍✈️',
-            },
-            {
-              id: 2,
-              isActive: false,
-              label: 'Ground Crew',
-              description: 'Ground handling and maintenance staff',
-              icon: '👷',
-            },
-            {
-              id: 3,
-              isActive: false,
-              label: 'Passengers',
-              description: 'Regular passengers',
-              icon: '👤',
-            },
-          ],
-        },
-        {
-          id: 1,
-          category: 'Special Requirements',
-          items: [
-            {
-              id: 0,
-              isActive: false,
-              label: 'PRM',
-              description: 'Passengers with Reduced Mobility',
-              icon: '♿',
-            },
-            {
-              id: 1,
-              isActive: false,
-              label: 'VIP',
-              description: 'VIP passengers and special guests',
-              icon: '⭐',
-            },
-            {
-              id: 2,
-              isActive: false,
-              label: 'Unaccompanied Minors',
-              description: 'Children traveling alone',
-              icon: '👶',
-            },
-            {
-              id: 3,
-              isActive: false,
-              label: 'Medical Cases',
-              description: 'Passengers requiring medical assistance',
-              icon: '🏥',
-            },
-          ],
-        },
-        {
-          id: 2,
-          category: 'Service Classes',
-          items: [
-            {
-              id: 0,
-              isActive: false,
-              label: 'Economy',
-              description: 'Economy class passengers',
-              icon: '💺',
-            },
-            {
-              id: 1,
-              isActive: false,
-              label: 'Business',
-              description: 'Business class passengers',
-              icon: '💼',
-            },
-            {
-              id: 2,
-              isActive: false,
-              label: 'First Class',
-              description: 'First class passengers',
-              icon: '👑',
-            },
-          ],
-        },
-      ],
-    },
-  ]);
+  useEffect(() => {
+    // 모달이 닫힐 때 상태 초기화
+    if (!isOpen) {
+      setSearchTerm('');
+      setGroupOptions(initialGroupOptions);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
