@@ -549,23 +549,24 @@ export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
   const toggleOption = (groupId: number, sectionId: number, itemId: number) => {
     setGroupOptions((prev) => {
       // 먼저 토글된 새로운 상태를 계산
-      const toggledGroups = prev.map((group) =>
-        group.id !== groupId
-          ? { ...group, isActive: false } // 다른 그룹은 비활성화
-          : {
-              ...group,
-              isActive: true, // 현재 그룹은 활성화
-              sections: group.sections.map((section) =>
-                section.id !== sectionId
-                  ? section
-                  : {
-                      ...section,
-                      items: section.items.map((item) =>
-                        item.id === itemId ? { ...item, isActive: !item.isActive } : item
-                      ),
-                    }
-              ),
-            }
+      const toggledGroups = prev.map(
+        (group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                isActive: true, // 선택된 그룹은 활성화
+                sections: group.sections.map((section) =>
+                  section.id !== sectionId
+                    ? section
+                    : {
+                        ...section,
+                        items: section.items.map((item) =>
+                          item.id === itemId ? { ...item, isActive: !item.isActive } : item
+                        ),
+                      }
+                ),
+              }
+            : { ...group, isActive: false } // 다른 그룹은 비활성화
       );
 
       // 선택된 group 찾기
