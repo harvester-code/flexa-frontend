@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Check, ChevronDown, MoreHorizontal, PersonStanding, Plus, X } from 'lucide-react';
+import { Check, ChevronDown, Lock, MoreHorizontal, PersonStanding, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
-import { cn } from '@/lib/utils';
 import sampletable from './sampletable.png';
 
 export interface FilterCondition {
@@ -20,6 +19,11 @@ export interface FilterGroup {
   logicalOperator: 'AND' | 'OR';
   conditions: (FilterCondition | FilterGroup)[];
   defaultValues?: Record<string, string[]>; // Default values for each field
+  metadata?: {
+    selectedOptions?: any[];
+    name?: string;
+    categories?: string[];
+  };
 }
 
 export interface FilterField {
@@ -364,241 +368,183 @@ export function FilterConditionComponent({
 
 // ===================================================================================
 
-interface Item {
-  id: number;
-  isActive: boolean;
+interface GroupOption {
+  id: string;
   label: string;
   description: string;
   icon: string;
-}
-
-interface Section {
-  id: number;
-  category: string | null;
-  items: Item[];
-}
-
-interface CategoryGroup {
-  id: number;
-  isActive: boolean;
-  category: string | null;
-  sections: Section[];
+  category: string;
 }
 
 interface AddGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  //   onCreateGroup: (selectedOptions: GroupOption[]) => void;
+  onCreateGroup: (selectedOptions: GroupOption[]) => void;
+  existingGroups: any[]; // To check for existing nationality groups
 }
 
-const initialGroupOptions = [
+const groupOptions: GroupOption[] = [
+  // Nationality Options
   {
-    id: 0,
-    isActive: true,
+    id: 'nationality_domestic',
+    label: 'Domestic',
+    description: 'Local/domestic passengers and crew',
+    icon: '🏠',
     category: 'Nationality',
-    sections: [
-      {
-        id: 0,
-        category: null,
-        items: [
-          {
-            id: 0,
-            isActive: false,
-            label: 'Domestic',
-            description: 'Local/domestic passengers and crew',
-            icon: '🏠',
-          },
-          {
-            id: 1,
-            isActive: false,
-            label: 'International',
-            description: 'International passengers and crew',
-            icon: '🌍',
-          },
-        ],
-      },
-    ],
   },
   {
-    id: 1,
-    isActive: true,
+    id: 'nationality_international',
+    label: 'International',
+    description: 'International passengers and crew',
+    icon: '🌍',
+    category: 'Nationality',
+  },
+
+  // Profile Options
+  {
+    id: 'profile_cabin_crew',
+    label: 'Cabin Crew',
+    description: 'Flight attendants and cabin staff',
+    icon: '👩‍✈️',
     category: 'Profiles',
-    sections: [
-      {
-        id: 0,
-        category: 'Job',
-        items: [
-          {
-            id: 0,
-            isActive: false,
-            label: 'Cabin Crew',
-            description: 'Flight attendants and cabin staff',
-            icon: '👩‍✈️',
-          },
-          {
-            id: 1,
-            isActive: false,
-            label: 'Pilots',
-            description: 'Captains and first officers',
-            icon: '👨‍✈️',
-          },
-          {
-            id: 2,
-            isActive: false,
-            label: 'Ground Crew',
-            description: 'Ground handling and maintenance staff',
-            icon: '👷',
-          },
-          {
-            id: 3,
-            isActive: false,
-            label: 'Passengers',
-            description: 'Regular passengers',
-            icon: '👤',
-          },
-        ],
-      },
-      {
-        id: 1,
-        category: 'Special Requirements',
-        items: [
-          {
-            id: 0,
-            isActive: false,
-            label: 'PRM',
-            description: 'Passengers with Reduced Mobility',
-            icon: '♿',
-          },
-          {
-            id: 1,
-            isActive: false,
-            label: 'VIP',
-            description: 'VIP passengers and special guests',
-            icon: '⭐',
-          },
-          {
-            id: 2,
-            isActive: false,
-            label: 'Unaccompanied Minors',
-            description: 'Children traveling alone',
-            icon: '👶',
-          },
-          {
-            id: 3,
-            isActive: false,
-            label: 'Medical Cases',
-            description: 'Passengers requiring medical assistance',
-            icon: '🏥',
-          },
-        ],
-      },
-      {
-        id: 2,
-        category: 'Service Classes',
-        items: [
-          {
-            id: 0,
-            isActive: false,
-            label: 'Economy',
-            description: 'Economy class passengers',
-            icon: '💺',
-          },
-          {
-            id: 1,
-            isActive: false,
-            label: 'Business',
-            description: 'Business class passengers',
-            icon: '💼',
-          },
-          {
-            id: 2,
-            isActive: false,
-            label: 'First Class',
-            description: 'First class passengers',
-            icon: '👑',
-          },
-        ],
-      },
-    ],
+  },
+  {
+    id: 'profile_pilots',
+    label: 'Pilots',
+    description: 'Captains and first officers',
+    icon: '👨‍✈️',
+    category: 'Profiles',
+  },
+  {
+    id: 'profile_ground_crew',
+    label: 'Ground Crew',
+    description: 'Ground handling and maintenance staff',
+    icon: '👷',
+    category: 'Profiles',
+  },
+  {
+    id: 'profile_passengers',
+    label: 'Passengers',
+    description: 'Regular passengers',
+    icon: '👤',
+    category: 'Profiles',
+  },
+
+  // Special Requirements
+  {
+    id: 'special_prm',
+    label: 'PRM',
+    description: 'Passengers with Reduced Mobility',
+    icon: '♿',
+    category: 'Special Requirements',
+  },
+  {
+    id: 'special_vip',
+    label: 'VIP',
+    description: 'VIP passengers and special guests',
+    icon: '⭐',
+    category: 'Special Requirements',
+  },
+  {
+    id: 'special_unaccompanied',
+    label: 'Unaccompanied Minors',
+    description: 'Children traveling alone',
+    icon: '👶',
+    category: 'Special Requirements',
+  },
+  {
+    id: 'special_medical',
+    label: 'Medical Cases',
+    description: 'Passengers requiring medical assistance',
+    icon: '🏥',
+    category: 'Special Requirements',
+  },
+
+  // Service Classes
+  {
+    id: 'class_economy',
+    label: 'Economy',
+    description: 'Economy class passengers',
+    icon: '💺',
+    category: 'Service Classes',
+  },
+  {
+    id: 'class_business',
+    label: 'Business',
+    description: 'Business class passengers',
+    icon: '💼',
+    category: 'Service Classes',
+  },
+  {
+    id: 'class_first',
+    label: 'First Class',
+    description: 'First class passengers',
+    icon: '👑',
+    category: 'Service Classes',
   },
 ];
 
-export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
+export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }: AddGroupModalProps) {
+  const [selectedOptions, setSelectedOptions] = useState<GroupOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOptions, setSelectedOptions] = useState<Section[]>([]);
-  const [groupOptions, setGroupOptions] = useState<CategoryGroup[]>(initialGroupOptions);
-
-  useEffect(() => {
-    // 모달이 닫힐 때 상태 초기화
-    if (!isOpen) {
-      setSearchTerm('');
-      setGroupOptions(initialGroupOptions);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  //   const categories = Array.from(new Set(groupOptions.map((option) => option.category)));
+  // Check if nationality group already exists
+  const hasNationalityGroup = existingGroups.some((group) => group.metadata?.categories?.includes('Nationality'));
 
-  //   const filteredOptions = groupOptions.filter(
-  //     (option) =>
-  //       option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       option.description.toLowerCase().includes(searchTerm.toLowerCase())
-  //   );
+  // Get selected categories
+  const selectedCategories = Array.from(new Set(selectedOptions.map((option) => option.category)));
+  const hasNationalitySelected = selectedCategories.includes('Nationality');
+  const hasNonNationalitySelected = selectedCategories.some((category) => category !== 'Nationality');
 
-  //   const filteredOptions = groupOptions.flatMap((group) =>
-  //     group.options.filter(
-  //       (option) =>
-  //         option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //         option.description.toLowerCase().includes(searchTerm.toLowerCase())
-  //     )
-  //   );
+  // Filter options based on rules
+  const getFilteredOptions = () => {
+    let filtered = groupOptions.filter(
+      (option) =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        option.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-  // HACK: 코드 개선이 필요할 수도 있다.
-  const toggleOption = (groupId: number, sectionId: number, itemId: number) => {
-    setGroupOptions((prev) => {
-      // 먼저 토글된 새로운 상태를 계산
-      const toggledGroups = prev.map(
-        (group) =>
-          group.id === groupId
-            ? {
-                ...group,
-                isActive: true, // 선택된 그룹은 활성화
-                sections: group.sections.map((section) =>
-                  section.id !== sectionId
-                    ? section
-                    : {
-                        ...section,
-                        items: section.items.map((item) =>
-                          item.id === itemId ? { ...item, isActive: !item.isActive } : item
-                        ),
-                      }
-                ),
-              }
-            : { ...group, isActive: false } // 다른 그룹은 비활성화
-      );
+    // Rule 1: If nationality is selected, hide all other categories
+    if (hasNationalitySelected) {
+      filtered = filtered.filter((option) => option.category === 'Nationality');
+    }
 
-      // 선택된 group 찾기
-      const selectedGroup = toggledGroups.find((g) => g.id === groupId);
-      const allItemsInactive =
-        selectedGroup?.sections.every((section) => section.items.every((item) => !item.isActive)) ?? false;
+    // Rule 2: If nationality group already exists, hide nationality options
+    if (hasNationalityGroup) {
+      filtered = filtered.filter((option) => option.category !== 'Nationality');
+    }
 
-      // 만약 모두 비활성이라면 모든 group을 다시 isActive: true
-      if (allItemsInactive) {
-        return toggledGroups.map((group) => ({ ...group, isActive: true }));
+    // Rule 3: If any non-nationality option is selected, hide nationality options
+    if (hasNonNationalitySelected) {
+      filtered = filtered.filter((option) => option.category !== 'Nationality');
+    }
+
+    return filtered;
+  };
+
+  const filteredOptions = getFilteredOptions();
+  const categories = Array.from(new Set(filteredOptions.map((option) => option.category)));
+
+  const toggleOption = (option: GroupOption) => {
+    setSelectedOptions((prev) => {
+      const isSelected = prev.some((selected) => selected.id === option.id);
+      if (isSelected) {
+        return prev.filter((selected) => selected.id !== option.id);
+      } else {
+        return [...prev, option];
       }
-
-      return toggledGroups;
     });
   };
 
   const handleCreateGroup = () => {
-    // if (selectedOptions.length > 0) {
-    //   onCreateGroup(selectedOptions);
-    //   setSelectedOptions([]);
-    //   setSearchTerm('');
-    //   onClose();
-    // }
+    if (selectedOptions.length > 0) {
+      onCreateGroup(selectedOptions);
+      setSelectedOptions([]);
+      setSearchTerm('');
+      onClose();
+    }
   };
 
   const handleCancel = () => {
@@ -607,14 +553,58 @@ export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
     onClose();
   };
 
+  // Get disabled categories info
+  const getDisabledCategoryInfo = (category: string) => {
+    if (category === 'Nationality' && hasNationalityGroup) {
+      return {
+        disabled: true,
+        reason: 'Nationality group already exists',
+      };
+    }
+    if (category === 'Nationality' && hasNonNationalitySelected) {
+      return {
+        disabled: true,
+        reason: 'Cannot mix Nationality with other categories',
+      };
+    }
+    if (category !== 'Nationality' && hasNationalitySelected) {
+      return {
+        disabled: true,
+        reason: 'Cannot mix with Nationality selection',
+      };
+    }
+    return { disabled: false, reason: '' };
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Create New Group</h2>
-            <p className="mt-1 text-sm text-gray-600">Select the options you want to include in this group</p>
+            <h2 className="text-lg font-semibold text-gray-900">Create New Filter Group</h2>
+            <p className="mt-1 text-sm text-gray-600">Select the options you want to include in this filter group</p>
+            {/* Rules Display */}
+            <div className="mt-2 space-y-1">
+              {hasNationalityGroup && (
+                <div className="flex items-center gap-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-700">
+                  <Lock className="h-3 w-3" />
+                  <span>Nationality group already exists - nationality options disabled</span>
+                </div>
+              )}
+              {hasNationalitySelected && (
+                <div className="flex items-center gap-2 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                  <span>🌍</span>
+                  <span>Nationality selected - only nationality options available</span>
+                </div>
+              )}
+              {hasNonNationalitySelected && (
+                <div className="flex items-center gap-2 rounded bg-purple-50 px-2 py-1 text-xs text-purple-700">
+                  <Lock className="h-3 w-3" />
+                  <span>Other categories selected - nationality options disabled</span>
+                </div>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -637,7 +627,7 @@ export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
         </div>
 
         {/* Selected Options Summary */}
-        {/* {selectedOptions.length > 0 && (
+        {selectedOptions.length > 0 && (
           <div className="border-b border-blue-200 bg-blue-50 px-6 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-blue-900">Selected ({selectedOptions.length}):</span>
@@ -659,86 +649,125 @@ export function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
               ))}
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Options Grid */}
         <div className="max-h-96 overflow-y-auto px-6 py-4">
-          {groupOptions.map((group) => (
-            <div key={`group-${group.id}`} className="mb-6">
-              <h3 className="flex items-center gap-2 font-semibold text-gray-900">{group.category}</h3>
+          {categories.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="mb-2 text-gray-400">
+                <Lock className="mx-auto h-8 w-8" />
+              </div>
+              <p className="text-sm text-gray-600">No options available</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {hasNationalityGroup
+                  ? 'Nationality group already exists'
+                  : hasNonNationalitySelected
+                    ? 'Nationality cannot be mixed with other categories'
+                    : 'Try adjusting your search or selection'}
+              </p>
+            </div>
+          ) : (
+            categories.map((category) => {
+              const categoryOptions = filteredOptions.filter((option) => option.category === category);
+              const disabledInfo = getDisabledCategoryInfo(category);
 
-              <Separator className="my-4" />
-
-              <div className="space-y-4">
-                {group.sections.map((section) => (
-                  <React.Fragment key={`section-${section.id}`}>
-                    {section.category && (
-                      <h4 className="mb-3 gap-2 text-sm font-semibold text-gray-900">
-                        {section.category}
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-                          {section.items.length}
-                        </span>
-                      </h4>
+              return (
+                <div key={category} className="mb-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                      {category}
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                        {categoryOptions.length}
+                      </span>
+                    </h3>
+                    {disabledInfo.disabled && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Lock className="h-3 w-3" />
+                        <span>{disabledInfo.reason}</span>
+                      </div>
                     )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {categoryOptions.map((option) => {
+                      const isSelected = selectedOptions.some((selected) => selected.id === option.id);
+                      const isDisabled = disabledInfo.disabled;
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                      {section.items.map((item) => {
-                        return (
-                          <div
-                            key={`item-${item.id}`}
-                            className={cn(
-                              'relative cursor-pointer rounded-lg border p-4 transition-all duration-150',
-                              !group.isActive && 'pointer-events-none rounded bg-gray-200 p-4 opacity-50',
-                              item.isActive
-                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            )}
-                            onClick={() => toggleOption(group.id, section.id, item.id)}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 text-2xl">{item.icon}</div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="truncate text-sm font-medium text-gray-900">{item.label}</h4>
-
-                                  {/* {isSelected && (
-                                <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600">
-                                  <Check className="h-3 w-3 text-white" />
-                                </div>
-                              )} */}
-                                </div>
-                                <p className="mt-1 line-clamp-2 text-xs text-gray-600">{item.description}</p>
+                      return (
+                        <div
+                          key={option.id}
+                          className={`relative rounded-lg border p-4 transition-all duration-150 ${
+                            isDisabled
+                              ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-60'
+                              : isSelected
+                                ? 'cursor-pointer border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                : 'cursor-pointer border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          } `}
+                          onClick={() => !isDisabled && toggleOption(option)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 text-2xl">{option.icon}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4
+                                  className={`truncate text-sm font-medium ${
+                                    isDisabled ? 'text-gray-500' : 'text-gray-900'
+                                  }`}
+                                >
+                                  {option.label}
+                                </h4>
+                                {isSelected && !isDisabled && (
+                                  <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600">
+                                    <Check className="h-3 w-3 text-white" />
+                                  </div>
+                                )}
+                                {isDisabled && (
+                                  <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-gray-400">
+                                    <Lock className="h-3 w-3 text-white" />
+                                  </div>
+                                )}
                               </div>
+                              <p
+                                className={`mt-1 line-clamp-2 text-xs ${
+                                  isDisabled ? 'text-gray-400' : 'text-gray-600'
+                                }`}
+                              >
+                                {option.description}
+                              </p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
           <div className="text-sm text-gray-600">
             {selectedOptions.length} option{selectedOptions.length !== 1 ? 's' : ''} selected
+            {hasNationalitySelected && <span className="ml-2 font-medium text-blue-600">• Nationality Group</span>}
+            {hasNonNationalitySelected && <span className="ml-2 font-medium text-purple-600">• Mixed Categories</span>}
           </div>
+
           <div className="flex items-center gap-3">
             <button
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               type="button"
               onClick={handleCancel}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Cancel
             </button>
+
             <button
-              type="button"
-              onClick={handleCreateGroup}
-              disabled={selectedOptions.length === 0}
               className="rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              disabled={selectedOptions.length === 0}
+              onClick={handleCreateGroup}
             >
               Create Group ({selectedOptions.length})
             </button>
@@ -919,16 +948,66 @@ export default function TabPassengerScheduleVirtualProfiles() {
     setFilterGroups(newGroups);
   };
 
-  const handleApplyDefaults = (defaultData: Record<string, Record<string, number | string>>) => {
-    console.log('Applying default values:', defaultData);
-    // Here you could apply the default values to all  groups
-    // or create new groups based on the default matrix
-  };
-
   const handleGroupChange = (index: number, updatedGroup: FilterGroup) => {
     const newGroups = [...filterGroups];
     newGroups[index] = updatedGroup;
     setFilterGroups(newGroups);
+  };
+
+  const handleCreateGroup = (selectedOptions: GroupOption[]) => {
+    // Create a new group based on selected options
+    const newGroup: FilterGroup = {
+      id: `group-${Date.now()}`,
+      logicalOperator: 'AND',
+      conditions: [],
+      // Store selected options as metadata
+      metadata: {
+        selectedOptions: selectedOptions,
+        name: selectedOptions.map((opt) => opt.label).join(', '),
+        categories: Array.from(new Set(selectedOptions.map((opt) => opt.category))),
+      },
+    };
+
+    // Add some default conditions based on selected options
+    selectedOptions.forEach((option, index) => {
+      // Create conditions based on the option type
+      let fieldId = 'assignee'; // default
+      const values = [option.id];
+
+      // Map option categories to appropriate fields
+      switch (option.category) {
+        case 'Profiles':
+          fieldId = 'assignee';
+          break;
+        case 'Nationality':
+          fieldId = 'project'; // or create a nationality field
+          break;
+        case 'Special Requirements':
+          fieldId = 'type';
+          break;
+        case 'Service Classes':
+          fieldId = 'priority';
+          break;
+        case 'Operations':
+          fieldId = 'status';
+          break;
+      }
+
+      newGroup.conditions.push({
+        id: `condition-${Date.now()}-${index}`,
+        field: fieldId,
+        operator: 'is',
+        values: values,
+      });
+    });
+
+    setFilterGroups([...filterGroups, newGroup]);
+  };
+
+  const handleApplyDefaults = (defaultData: Record<string, Record<string, number | string>>) => {
+    console.log('Applying default values:', defaultData);
+    // Here you could apply the default values to all  groups
+    // or create new groups based on the default matrix
   };
 
   return (
@@ -958,8 +1037,8 @@ export default function TabPassengerScheduleVirtualProfiles() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  type="button"
                   className="rounded bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="button"
                   onClick={() => {
                     const newGroups = [...filterGroups];
                     newGroups[index].logicalOperator = group.logicalOperator === 'AND' ? 'OR' : 'AND';
@@ -968,15 +1047,14 @@ export default function TabPassengerScheduleVirtualProfiles() {
                 >
                   {group.logicalOperator}
                 </button>
-                {filterGroups.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeGroup(index)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded px-2 py-1 text-xs transition-colors duration-150"
-                  >
-                    Remove Group
-                  </button>
-                )}
+
+                <button
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded px-2 py-1 text-xs transition-colors duration-150"
+                  type="button"
+                  onClick={() => removeGroup(index)}
+                >
+                  Remove Group
+                </button>
               </div>
             </div>
 
@@ -999,7 +1077,12 @@ export default function TabPassengerScheduleVirtualProfiles() {
         </Button>
       </CardContent>
 
-      <AddGroupModal isOpen={showAddGroupModal} onClose={() => setShowAddGroupModal(false)} />
+      <AddGroupModal
+        isOpen={showAddGroupModal}
+        existingGroups={filterGroups}
+        onClose={() => setShowAddGroupModal(false)}
+        onCreateGroup={handleCreateGroup}
+      />
     </Card>
   );
 }
