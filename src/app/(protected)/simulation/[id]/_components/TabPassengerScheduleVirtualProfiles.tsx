@@ -4,6 +4,7 @@ import { Check, ChevronDown, Lock, MoreHorizontal, PersonStanding, Plus, X } fro
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
+import SimulationGridTableNew from './SimulationGridTableNew';
 import sampletable from './sampletable.png';
 
 export interface FilterCondition {
@@ -919,10 +920,35 @@ export function FilterGroupComponent({ group, onChange, onRemove, level = 0 }: F
 
       <Separator />
 
-      {/* @@@@@@@@@@@@@@@@@@@@@@ */}
       <div>
         <p>Default Value Matrix</p>
-        <Image src={sampletable} alt="Description" width={0} height={0} sizes="100vw" />
+
+        {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
+        {/* 여기서 부터 하면 된다!!! */}
+        {/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@ */}
+        <SimulationGridTableNew
+          connections={[
+            {
+              sourceId: '0',
+              destinationId: '1',
+              sourceName: '',
+              destinationName: '',
+              sourceNodes: [''],
+              destinationNodes: ['Domestic', 'International'],
+            },
+          ]}
+          connectionMatrices={{
+            '0-1': {
+              '': {
+                Domestic: { enabled: false, percentage: 0 },
+                International: { enabled: false, percentage: 0 },
+              },
+            },
+          }}
+          getTotalPercentage={() => 0}
+          onToggleConnection={() => {}}
+          onUpdatePercentage={() => {}}
+        />
       </div>
     </div>
   );
