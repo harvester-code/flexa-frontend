@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import Button from '@/components/Button';
+import { Button } from '@/components/ui/Button';
 
 const ErrorPage: React.FC = () => {
   const router = useRouter();
@@ -25,12 +25,16 @@ const ErrorPage: React.FC = () => {
 
         <div className="mx-auto mt-5 flex w-80 gap-2.5">
           <Button
-            className="btn-lg btn-default"
-            text="Go back"
-            icon={<ChevronLeft className="size-4" />}
+            variant="btn-default"
+            size="btn-lg"
             onClick={() => router.back()}
-          />
-          <Button className="btn-lg btn-primary" text="Take me home" onClick={() => router.push('/home')} />
+          >
+            <ChevronLeft className="size-4" />
+            Go back
+          </Button>
+          <Button variant="btn-primary" size="btn-lg" onClick={() => router.push('/home')}>
+            Take me home
+          </Button>
         </div>
       </div>
     </div>

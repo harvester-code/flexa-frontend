@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server';
-import { updateSession } from '@/utils/supabase/middleware';
+import { updateSession } from '@/lib/auth/middleware';
 
 // 참고: https://supabase.com/docs/guides/auth/server-side/nextjs
 export async function middleware(request: NextRequest) {
