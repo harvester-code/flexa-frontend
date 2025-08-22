@@ -10,7 +10,6 @@ import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
 import { NavIcon01, NavIcon02, NavIcon04, NavIcon06 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
-import './AppSidebar.css';
 
 function AppSidebar() {
   const pathname = usePathname();

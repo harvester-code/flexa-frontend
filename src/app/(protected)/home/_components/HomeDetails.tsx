@@ -7,7 +7,6 @@ import { ChevronRight, Clock4, LockOpen } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import './HomeDetails.css';
 import { formatImageSize, formatNumberWithComma, formatPercent, formatTimeTaken, formatUnit } from './HomeFormat';
 import { badgeBtnSm } from './HomeKpiSelector';
 import HomeLoading from './HomeLoading';

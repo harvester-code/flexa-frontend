@@ -4,7 +4,6 @@ import React, { useEffect, useRef } from 'react';
 import { CellStyle, Column, NumberCell, Range, ReactGrid, Row, TextCell } from '@silevis/reactgrid';
 import { AllocationTableHeader, AllocationTableRow } from '@/types/simulationTypes';
 import { useResize } from '../_hooks/useResize';
-import './gridTable.css';
 
 interface CellParams {
   rowIndex: number;

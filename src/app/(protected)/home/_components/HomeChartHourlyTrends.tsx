@@ -6,7 +6,6 @@ import { ScenarioData } from '@/types/homeTypes';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
-import './HomeCss.css';
 import { capitalizeFirst } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';

@@ -3,7 +3,6 @@ import Image from 'next/image';
 import { popModal, pushModal } from '@/app/provider';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
-import './PopupAlert.css';
 
 interface ButtonProps {
   text: string;
