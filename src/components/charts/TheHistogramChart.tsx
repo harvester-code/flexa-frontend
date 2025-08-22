@@ -1,8 +1,8 @@
 import { capitalCase } from 'change-case';
 import { capitalizeFirst } from '@/app/(protected)/home/_components/HomeFormat';
-import { PRIMARY_COLOR_SCALES } from '@/constants';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
+import { PRIMARY_COLOR_SCALES } from './colors';
 
 // 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
 function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): number[] {
