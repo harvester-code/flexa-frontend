@@ -14,12 +14,27 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
+        // 기존 CSS 클래스들과 매칭되는 variants 추가
+        'btn-default': 'border border-default-200 bg-white text-default-700 hover:bg-default-50',
+        'btn-primary': 'bg-gradient-to-b from-[#9e77ed] to-[#7f56d9] text-white shadow-sm hover:opacity-90',
+        'btn-gradient': 'bg-[var(--bg-gradient)] text-white hover:bg-[var(--brand)] transition-colors',
+        'btn-secondary': 'bg-default-900 text-white',
+        'btn-tertiary': 'border border-accent-600 bg-white text-accent-600 min-w-25 px-5 shadow-sm hover:bg-accent-50',
+        'btn-red-line': 'border border-red-500 bg-white text-red-500 min-w-25 px-5 shadow-sm',
+        'btn-green-line': 'border border-green-500 bg-white text-green-500 min-w-25 px-5 shadow-sm',
+        'btn-delete': 'bg-red-100 border border-red-500 text-red-500 px-4 rounded-full h-8 hover:opacity-80',
+        'btn-link': 'inline-flex items-center gap-2.5 text-sm font-semibold underline hover:text-[var(--brand)]',
+        'btn-brand': 'bg-[var(--brand)] text-white hover:bg-[var(--brand-dark)] transition-colors',
       },
       size: {
         default: 'h-9 px-4 py-2',
         sm: 'h-8 rounded-md px-3 text-xs',
         lg: 'h-10 rounded-md px-8',
         icon: 'h-9 w-9',
+        // 기존 CSS 클래스들과 매칭되는 sizes 추가
+        'btn-sm': 'h-9 px-3.5 gap-1.5 rounded-lg bg-white font-semibold',
+        'btn-md': 'h-10 px-3.5 min-w-24 gap-1.5 rounded-lg bg-white text-sm font-semibold shadow-sm',
+        'btn-lg': 'h-11 w-full px-3.5 gap-1.5 font-semibold',
       },
     },
     defaultVariants: {
