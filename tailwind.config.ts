@@ -23,7 +23,7 @@ export default {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
         },
-        tertiary: 'hsl(var(--tertiary))',
+
         white: 'hsl(var(--white))',
         brand: {
           25: 'hsl(var(--brand-25))',
@@ -39,7 +39,6 @@ export default {
           900: 'hsl(var(--brand-900))',
           DEFAULT: 'hsl(var(--brand-600))',
         },
-        brandDark: 'hsl(var(--brand-dark))',
 
         warning: 'hsl(var(--warning))',
         default: {
@@ -59,28 +58,19 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
-        bg: {
-          tertiary: 'hsl(var(--bg-tertiary))',
-          gradient: 'var(--bg-gradient)',
-        },
+
         btn: {
           primary: {
-            DEFAULT: 'var(--brand-600)',
-            hover: '#f00',
-            active: '#5B3DB5',
-            disabled: '#A8A8A8',
+            DEFAULT: 'hsl(var(--brand-600))',
+            hover: 'hsl(var(--brand-700))',
+            active: 'hsl(var(--brand-800))',
+            disabled: 'hsl(var(--default-400))',
           },
           secondary: {
-            DEFAULT: '#F3F4F6',
-            hover: '#E5E7EB',
-            active: '#D1D5DB',
-            disabled: '#A8A8A8',
-          },
-          danger: {
-            DEFAULT: '#EF4444',
-            hover: '#DC2626',
-            active: '#B91C1C',
-            disabled: '#A8A8A8',
+            DEFAULT: 'hsl(var(--secondary))',
+            hover: 'hsl(var(--default-100))',
+            active: 'hsl(var(--default-200))',
+            disabled: 'hsl(var(--default-400))',
           },
         },
         background: 'hsl(var(--background))',

@@ -59,29 +59,25 @@
     /* color */
     --primary: 262 67% 59%;
     --secondary: 230 10% 50%;
-    --tertiary: 220 18% 34%;
-    --white: 0 0% 100%;
 
-    --brand-dark: 258 65% 52%;
+    --white: 0 0% 100%;
 
     --warning: 25 87% 59%;
 
     /* bg */
-    --bg-gradient: linear-gradient(180deg, hsl(262 79% 69%) 0%, hsl(262 67% 59%) 100%);
-    --bg-tertiary: 225 23% 95%;
 
-    /* color-theme */
-    --default-25: 240 9% 98%;
-    --default-50: 240 13% 98%;
-    --default-100: 223 23% 95%;
-    --default-200: 224 25% 89%;
-    --default-300: 225 24% 79%;
-    --default-400: 225 18% 60%;
-    --default-500: 225 25% 48%;
-    --default-600: 225 24% 38%;
-    --default-700: 225 23% 33%;
-    --default-800: 225 24% 25%;
-    --default-900: 225 35% 13%;
+    /* color-theme - unified with shadcn standards */
+    --default-25: 220 14.3% 95.9%; /* lightest bg */
+    --default-50: 210 40% 96.1%; /* = muted */
+    --default-100: 214.3 31.8% 91.4%; /* = border */
+    --default-200: 214.3 31.8% 91.4%; /* = input */
+    --default-300: 213.4 20% 82%; /* subtle border */
+    --default-400: 215.4 16.3% 46.9%; /* = muted-foreground */
+    --default-500: 220 8.9% 46.1%; /* medium text */
+    --default-600: 220.9 39.3% 11%; /* dark text */
+    --default-700: 222.2 84% 4.9%; /* = foreground */
+    --default-800: 224 71.4% 4.1%; /* darkest */
+    --default-900: 224 71.4% 4.1%; /* darkest */
 
     --brand-25: 262 30% 98%;
     --brand-50: 262 40% 95%;
@@ -222,10 +218,10 @@ h1 {
   @apply mt-[40px] flex items-center justify-center gap-[10px];
   .arrow-button {
     border-radius: 8px;
-    border: 1px solid var(--default-200);
+    border: 1px solid hsl(var(--default-200));
     @apply flex h-[40px] w-[40px] items-center justify-center;
     &:hover {
-      background: #f9f9fb;
+      background: hsl(var(--default-50));
     }
   }
   .paging-button {
@@ -260,7 +256,7 @@ input::placeholder {
   background: linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff;
   @apply flex flex-grow items-center justify-center;
   .loginBlock {
-    border-left: 2px solid #fff;
+    border-left: 2px solid hsl(var(--white));
     background: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(45px);
     width: 560px;
@@ -323,7 +319,7 @@ button {
   }
 }
 .btn-tertiary {
-  border: 1px solid var(--brand-600);
+  border: 1px solid hsl(var(--brand-600));
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
@@ -355,29 +351,32 @@ button {
   border-radius: 100px;
 }
 .btn-primary {
-  background: linear-gradient(180deg, #9e77ed 0%, #7f56d9 100%);
+  background: hsl(var(--brand-600));
   box-shadow:
     0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply rounded-[8px] text-white;
   &:hover {
-    background: var(--brand-600);
+    background: hsl(var(--brand-700));
   }
 }
 .btn-secondary {
-  background: var(--default-900);
-  @apply text-white;
+  background: hsl(var(--secondary));
+  @apply text-secondary-foreground;
+  &:hover {
+    background: hsl(var(--secondary) / 0.8);
+  }
 }
 .btn-gradient {
-  background: var(--bg-gradient);
+  background: linear-gradient(180deg, hsl(var(--brand-500)) 0%, hsl(var(--brand-700)) 100%);
   transition: background 0.2s ease;
   &:hover {
-    background: var(--brand-600);
+    background: hsl(var(--brand-600));
   }
 }
 .btn-delete {
-  background: #fecdca;
+  background: hsl(var(--destructive) / 0.1);
   padding: 0 18px;
   border: 1px solid hsl(var(--destructive));
   height: 34px;
@@ -385,16 +384,16 @@ button {
   @apply flex items-center gap-[2px] text-xs font-semibold text-destructive;
 }
 button:disabled {
-  border: 1px solid #dcdfea !important;
-  background: #eff1f5 !important;
-  color: #dcdfea !important;
+  border: 1px solid hsl(var(--default-200)) !important;
+  background: hsl(var(--default-100)) !important;
+  color: hsl(var(--default-200)) !important;
 }
 .resend-button {
-  border: 1px solid var(--brand-600);
+  border: 1px solid hsl(var(--brand-600));
   border-radius: 15px;
-  @apply flex h-[30px] w-[120px] items-center justify-center text-sm text-brandDark;
+  @apply text-brand-700 flex h-[30px] w-[120px] items-center justify-center text-sm;
   &:hover {
-    background: #f9f5ff;
+    background: hsl(var(--brand-25));
   }
 }
 .btn-link {
@@ -460,7 +459,7 @@ input[type='checkbox'] {
 }
 .input-mail {
   padding-left: 42px !important;
-  background: #fff url('/image/ico-mail.svg') no-repeat 14px center;
+  background: hsl(var(--white)) url('/image/ico-mail.svg') no-repeat 14px center;
   background-size: 20px 20px;
 }
 .checkbox input[type='checkbox'] + label {
@@ -538,7 +537,7 @@ textarea {
     top: 48px;
     padding: 6px;
     box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.08);
-    border: 1px solid #dcdfea;
+    border: 1px solid hsl(var(--default-200));
     @apply absolute left-0 hidden w-full overflow-auto rounded-md bg-white;
     ul {
       @apply flex flex-col gap-[4px];
@@ -637,7 +636,7 @@ textarea {
 .title {
   font-size: 30px;
   line-height: 150%;
-  @apply font-bold text-brandDark;
+  @apply text-brand-700 font-bold;
 }
 .signUpContainer {
   @apply flex flex-col items-center justify-center pb-[60px] pt-[60px];
@@ -651,7 +650,7 @@ textarea {
       @apply flex flex-col items-center;
       img {
         border-radius: 50%;
-        border: 5px solid #fff;
+        border: 5px solid hsl(var(--white));
       }
       &:after {
         content: '';
@@ -671,7 +670,7 @@ textarea {
     .active {
       @apply text-brand;
       img {
-        border: 5px solid #f4ebff;
+        border: 5px solid hsl(var(--brand-100));
       }
     }
     .bar-on:after {
@@ -684,13 +683,13 @@ textarea {
   @apply mt-[30px];
 }
 .checkboxContainer {
-  background-color: #f9f9fb;
+  background-color: hsl(var(--default-50));
   border-radius: 8px;
-  border: 1px solid #dcdfea;
+  border: 1px solid hsl(var(--default-200));
   @apply mt-[20px] flex flex-col;
   dt {
-    background-color: #eff1f5;
-    border-bottom: 1px solid #dcdfea;
+    background-color: hsl(var(--default-100));
+    border-bottom: 1px solid hsl(var(--default-200));
     padding: 12px;
     display: flex;
   }
@@ -712,13 +711,13 @@ textarea {
   .code-input {
     width: 80px;
     height: 80px;
-    border: 1px solid var(--brand-600);
+    border: 1px solid hsl(var(--brand-600));
     border-radius: 8px;
     text-align: center;
     outline: none;
     font-size: 48px;
     font-weight: 500;
-    color: var(--brand-dark);
+    color: hsl(var(--brand-700));
     &:focus {
     }
   }
@@ -762,11 +761,11 @@ textarea {
 
 /* simulation */
 .tag-sm {
-  @apply bg-brand-50 flex h-[30px] items-center justify-between gap-[5px] rounded-md px-[10px] text-xs font-semibold text-brandDark;
+  @apply bg-brand-50 text-brand-700 flex h-[30px] items-center justify-between gap-[5px] rounded-md px-[10px] text-xs font-semibold;
 }
 #content {
   .simSearch {
-    border-bottom: 1px solid var(--default-400);
+    border-bottom: 1px solid hsl(var(--default-400));
     height: 44px;
     @apply flex w-[300px] items-center gap-[10px] pl-[10px] pr-[10px];
     input {
@@ -783,7 +782,7 @@ textarea {
 }
 .tag-full {
   border-radius: 100px;
-  background: #fee4e2;
+  background: hsl(var(--destructive) / 0.1);
   padding: 0 5px 0 20px;
   height: 44px;
   @apply flex flex-grow items-center justify-between;
@@ -795,7 +794,7 @@ textarea {
     @apply bg-default-100;
     tr {
       th {
-        border-bottom: 1px solid #9e77ed;
+        border-bottom: 1px solid hsl(var(--brand-500));
         padding-left: 4px;
         padding-right: 4px;
         @apply h-[50px] text-sm font-medium text-default-600;
@@ -829,7 +828,7 @@ textarea {
   thead {
     tr {
       th {
-        background: #f9f9fb;
+        background: hsl(var(--default-50));
         @apply min-h-[40px] border-b border-default-300 px-[20px] py-[10px] text-sm font-semibold text-default-600;
         &:first-of-type {
           border-radius: 8px 0px 0px 0px;
@@ -861,7 +860,7 @@ textarea {
   thead {
     tr {
       th {
-        border-bottom: 1px solid #9e77ed;
+        border-bottom: 1px solid hsl(var(--brand-500));
         @apply h-[50px] bg-default-100 px-[6px] text-sm font-medium text-default-600;
         button {
           @apply flex items-center gap-[6px] text-xs font-medium text-default-600;
@@ -895,7 +894,7 @@ textarea {
   dd {
     @apply flex h-[40px] items-center gap-[20px] text-xl font-semibold text-default-800;
     span {
-      border: 1px solid var(--default-200);
+      border: 1px solid hsl(var(--default-200));
       background: var(--default-50);
       border-radius: 100px;
       @apply inline-flex h-[30px] items-center px-[15px] text-sm font-medium text-default-800;
@@ -952,7 +951,7 @@ textarea {
   width: calc(100% + 60px);
   @apply grid grid-cols-6 gap-[10px] bg-default-100 p-[30px];
   .overview-item {
-    border: 1px solid var(--default-200);
+    border: 1px solid hsl(var(--default-200));
     aspect-ratio: 200/120;
     @apply flex w-full cursor-default flex-col rounded-md bg-white p-[10px];
     dl {
@@ -980,9 +979,9 @@ textarea {
 
 .badge {
   border-radius: 100px;
-  border: 1px solid #abefc6;
-  background: #ecfdf3;
-  color: #067647;
+  border: 1px solid hsl(var(--success) / 0.3);
+  background: hsl(var(--success) / 0.05);
+  color: hsl(var(--success));
   width: 70px;
   height: 30px;
   @apply inline-flex items-center justify-center text-xs font-semibold;
@@ -991,9 +990,9 @@ textarea {
     padding: 0 16px;
   }
   &.yellow {
-    border: 1px solid #fedf89;
-    background: #fffaeb;
-    color: #b54708;
+    border: 1px solid hsl(var(--warning) / 0.3);
+    background: hsl(var(--warning) / 0.05);
+    color: hsl(var(--warning));
   }
 }
 
@@ -1041,13 +1040,13 @@ textarea {
   .profile-header {
     @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
     .profile-img {
-      border: 4px solid #fff;
-      background: #fcfcfd;
+      border: 4px solid hsl(var(--white));
+      background: hsl(var(--background));
       box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
       @apply flex items-center justify-center rounded-full font-semibold;
       p {
         font-size: 60px;
-        border: 1px solid var(--default-300);
+        border: 1px solid hsl(var(--default-300));
         @apply flex h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full font-semibold text-default-700;
         img {
           @apply h-full w-full object-cover;
@@ -1215,13 +1214,13 @@ textarea {
       @apply text-sm font-semibold text-default-700;
     }
     .MuiTooltip-arrow {
-      color: #f5f5f9;
+      color: hsl(var(--default-25));
     }
   }
   .MuiTooltip-arrow::before {
-    box-shadow: 0 0 0 1px #ccc;
-    background-color: #fff;
-    border-color: var(--default-300);
+    box-shadow: 0 0 0 1px hsl(var(--default-300));
+    background-color: hsl(var(--white));
+    border-color: hsl(var(--default-300));
   }
 }
 
@@ -1330,7 +1329,7 @@ textarea {
     }
     &.check {
       button {
-        background-color: #f9f5ff;
+        background-color: hsl(var(--brand-25));
         @apply text-black;
       }
     }
@@ -1392,11 +1391,11 @@ textarea {
         }
       }
       &.active {
-        background: #f4ebff;
+        background: hsl(var(--brand-100));
 
         @apply border-brand-600;
         .checkbtn {
-          border: 5px solid #7f56d9;
+          border: 5px solid hsl(var(--brand-700));
         }
       }
     }
@@ -1406,7 +1405,12 @@ textarea {
 .support-wrap {
   @apply flex flex-col;
   .support-header {
-    background: linear-gradient(262deg, #f9f5ff 0%, #d6bbfb 100%, #d6bbfb 100%);
+    background: linear-gradient(
+      262deg,
+      hsl(var(--brand-25)) 0%,
+      hsl(var(--brand-200)) 100%,
+      hsl(var(--brand-200)) 100%
+    );
     padding: 100px 0;
     margin-left: -30px;
     width: calc(100% + 60px);
@@ -1607,7 +1611,7 @@ textarea {
         @apply pointer-events-none;
       }
       &.item-red {
-        color: #d92d20;
+        color: hsl(var(--destructive));
       }
       span {
         @apply hidden;
@@ -1845,15 +1849,15 @@ dl.process-item-title {
 
               .stats-close {
                 @apply ml-2.5 hidden items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium;
-                border: 1px solid #fecdca;
-                background-color: #fef3f2;
-                color: #b42318;
+                border: 1px solid hsl(var(--destructive) / 0.2);
+                background-color: hsl(var(--destructive) / 0.05);
+                color: hsl(var(--destructive));
               }
               .stats-open {
                 @apply ml-2.5 items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium;
-                border: 1px solid #bbf7d0;
-                background-color: #f0fdf4;
-                color: #027a48;
+                border: 1px solid hsl(var(--success) / 0.3);
+                background-color: hsl(var(--success) / 0.05);
+                color: hsl(var(--success));
               }
             }
 
@@ -1877,13 +1881,13 @@ dl.process-item-title {
                   }
                   dd {
                     @apply text-sm font-semibold;
-                    /* color: #34c759; */
+                    /* color: success green */
                   }
                 }
 
                 &:last-child {
                   dd {
-                    /* color: #ff9500; */
+                    /* color: warning orange */
                   }
                 }
               }
@@ -2364,82 +2368,82 @@ dl.process-item-title {
   padding-right: 12px;
   z-index: 50;
   @apply fixed left-0 top-0 flex h-dvh w-[260px] flex-none flex-col items-center overflow-hidden bg-white pt-[30px];
-  
+
   h1 {
     img {
       width: 80px;
       @apply max-w-none;
     }
   }
-  
+
   hr {
     border-top: 1px solid hsl(var(--default-200));
     @apply mb-[10px] mt-[10px] w-full;
   }
-  
+
   .search-box {
     height: 44px;
     padding: 0 12px;
     @apply mt-[50px] flex w-full items-center justify-between gap-[10px] rounded-md border border-default-200 bg-white;
-    
+
     input {
       @apply h-full w-full;
       &:focus {
         outline: none;
       }
     }
-    
+
     button {
       @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
     }
-    
+
     &.active {
-      border: 1px solid var(--brand-dark);
+      border: 1px solid hsl(var(--brand-700));
       .search-icon svg path {
         fill: hsl(var(--default-700));
       }
     }
   }
-  
+
   .gnb-list {
     @apply flex w-full flex-col gap-[10px];
-    
+
     > li {
       border-radius: 8px;
-      
+
       > a {
         height: 48px;
         padding: 0 12px 0 26px;
         border-radius: 8px;
         line-height: 100%;
         @apply flex cursor-pointer items-center justify-between gap-[10px] font-semibold text-secondary;
-        
+
         > .text {
           margin-top: 2px;
           @apply whitespace-nowrap;
         }
-        
+
         > .nav-icon {
           @apply opacity-0;
         }
-        
+
         &:hover {
           background: hsl(var(--brand-100));
-          @apply text-brandDark;
-          
+          @apply text-brand-700;
+
           svg path {
             fill: hsl(var(--brand-700));
           }
-          
+
           .nav-icon {
             @apply opacity-100;
           }
         }
-        
+
         > :last-child {
           @apply ml-auto;
         }
-        
+
         .number {
           min-width: 24px;
           height: 24px;
@@ -2450,88 +2454,88 @@ dl.process-item-title {
         }
       }
     }
-    
+
     .active {
       > a {
         background: hsl(var(--brand-100));
-        @apply text-brandDark;
-        
+        @apply text-brand-700;
+
         svg path {
           fill: hsl(var(--brand-700));
         }
-        
+
         .nav-icon {
           @apply opacity-100;
         }
       }
     }
-    
+
     .settings {
       > a {
         .nav-icon {
           @apply opacity-100;
         }
       }
-      
+
       .sub-menu {
         @apply hidden flex-col;
-        
+
         li {
           border-bottom: 1px solid hsl(var(--default-50));
           @apply flex items-center justify-between;
-          
+
           a {
             color: hsl(var(--default-700));
             padding-left: 28px;
             @apply flex h-[40px] items-center pr-[20px] text-sm;
-            
+
             &:hover {
-              @apply text-brandDark;
+              @apply text-brand-700;
             }
           }
         }
-        
+
         li:last-child {
           border-bottom: none;
         }
       }
-      
+
       &.active {
         box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.15);
-        
+
         > a {
           background: hsl(var(--brand-100));
-          @apply text-brandDark;
-          
+          @apply text-brand-700;
+
           svg path {
             fill: hsl(var(--brand-700));
           }
-          
+
           .nav-icon {
             transform: rotate(180deg);
           }
         }
-        
+
         .sub-menu {
           @apply flex;
         }
       }
     }
   }
-  
+
   .my-menu {
     border-top: 1px solid hsl(var(--default-200));
     @apply mt-auto flex w-full flex-none flex-col pb-[20px] pt-[10px];
-    
+
     > button {
       padding: 0 12px 0 13px;
       @apply flex h-[60px] w-full items-center justify-center gap-[10px];
-      
+
       .profile-icon {
         background-color: hsl(var(--background));
         border: 1px solid hsl(var(--default-300));
-        @apply flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
-        
+        @apply flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
+
         img {
           width: 100%;
           height: 100%;
@@ -2539,17 +2543,17 @@ dl.process-item-title {
         }
       }
     }
-    
+
     &.active {
       button .up-down-icon {
         transform: rotateZ(180deg);
       }
-      
+
       .my-menu-list {
         @apply flex;
       }
     }
-    
+
     .my-menu-list {
       bottom: 91px;
       padding: 0 12px 20px 12px;
@@ -2562,38 +2566,38 @@ dl.process-item-title {
         padding: 16px 12px;
         gap: 12px;
         @apply flex items-center;
-        
+
         dl {
           @apply flex flex-col;
-          
+
           dt {
             line-height: 20px;
             @apply font-semibold;
           }
-          
+
           dd {
             line-height: 20px;
             color: hsl(var(--default-400));
             @apply text-xs;
           }
         }
-        
+
         .profile-photo {
           @apply relative h-[40px] w-[40px];
-          
+
           .photo {
             background-color: hsl(var(--background));
             border: 1px solid hsl(var(--default-300));
             line-height: 100%;
-            @apply relative flex h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-tertiary;
-            
+            @apply relative flex h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
+
             img {
               width: 100%;
               height: 100%;
               object-fit: cover;
             }
           }
-          
+
           .online {
             border: 3px solid hsl(var(--white));
             box-sizing: content-box;
@@ -2601,30 +2605,30 @@ dl.process-item-title {
           }
         }
       }
-      
+
       .my-menu-nav {
         a {
           border-radius: 4px;
           gap: 8px;
           @apply flex h-[40px] w-full items-center pl-[10px] pr-[10px] text-secondary;
-          
+
           &:hover {
             background: hsl(var(--brand-25));
             @apply text-primary;
           }
         }
-        
+
         hr {
           @apply mb-[5px] mt-[5px];
         }
       }
-      
+
       .logout {
         border: 1px solid hsl(var(--default-200));
         border-radius: 8px;
         gap: 8px;
-        @apply flex h-[40px] w-full items-center justify-center text-sm font-medium text-tertiary;
-        
+        @apply flex h-[40px] w-full items-center justify-center text-sm font-medium text-muted-foreground;
+
         &:hover {
           border: 1px solid hsl(var(--default-500));
           background: hsl(var(--default-50));
@@ -2632,38 +2636,38 @@ dl.process-item-title {
       }
     }
   }
-  
+
   #navigation:not(.active) {
     @apply w-[100px];
   }
-  
+
   &.default {
     @apply w-[100px];
-    
+
     .search-box {
       border: none;
       @apply justify-center;
-      
+
       input {
         @apply hidden;
       }
-      
+
       button {
         @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
       }
     }
-    
+
     .gnb-list {
       @apply flex w-full flex-col gap-[10px];
-      
+
       > li {
         > a {
           @apply relative flex items-center justify-center p-0;
-          
+
           > .text {
             @apply hidden;
           }
-          
+
           > .number {
             overflow: hidden;
             text-indent: -9999px;
@@ -2675,24 +2679,24 @@ dl.process-item-title {
             left: 45px;
             @apply absolute p-0;
           }
-          
+
           > .nav-icon {
             @apply hidden;
           }
         }
       }
     }
-    
+
     .my-menu {
       button {
         span:nth-child(2) {
           @apply hidden;
         }
-        
+
         .up-down-icon {
           @apply hidden;
         }
-        
+
         @apply justify-center p-0;
       }
     }
