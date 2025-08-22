@@ -1,58 +1,71 @@
-@font-face {
-  font-family: 'Pretendard';
-  font-weight: 700;
-  font-display: swap;
-  src:
-    local('Pretendard Bold'),
-    url(/fonts/woff2/Pretendard-Bold.woff2) format('woff2'),
-    url(/fonts/woff/Pretendard-Bold.woff) format('woff');
-}
-@font-face {
-  font-family: 'Pretendard';
-  font-weight: 600;
-  font-display: swap;
-  src:
-    local('Pretendard SemiBold'),
-    url(/fonts/woff2/Pretendard-SemiBold.woff2) format('woff2'),
-    url(/fonts/woff/Pretendard-SemiBold.woff) format('woff');
-}
-@font-face {
-  font-family: 'Pretendard';
-  font-weight: 500;
-  font-display: swap;
-  src:
-    local('Pretendard Medium'),
-    url(/fonts/woff2/Pretendard-Medium.woff2) format('woff2'),
-    url(/fonts/woff/Pretendard-Medium.woff) format('woff');
-}
+/* ================================================================
+   🎨 FLEXA GLOBAL STYLES - 올바른 CSS 작성 순서
+   ================================================================ */
 
-@font-face {
-  font-family: 'Pretendard';
-  font-weight: 400;
-  font-display: swap;
-  src:
-    local('Pretendard Regular'),
-    url(/fonts/woff2/Pretendard-Regular.woff2) format('woff2'),
-    url(/fonts/woff/Pretendard-Regular.woff) format('woff');
-}
-
-@font-face {
-  font-family: 'Pretendard';
-  font-weight: 300;
-  font-display: swap;
-  src:
-    local('Pretendard Light'),
-    url(/fonts/woff2/Pretendard-Light.woff2) format('woff2'),
-    url(/fonts/woff/Pretendard-Light.woff) format('woff');
-}
-
-/* 2️⃣ TAILWIND IMPORTS */
+/* 1️⃣ TAILWIND IMPORTS (맨 먼저) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 3️⃣ CSS VARIABLES & BASE STYLES */
+/* 2️⃣ CSS VARIABLES & THEME SYSTEM */
 @layer base {
+  /* 📁 PRETENDARD FONT DEFINITIONS */
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-display: swap;
+    src:
+      local('Pretendard Bold'),
+      url(/fonts/woff2-subset/Pretendard-Bold.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Bold.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 600;
+    font-display: swap;
+    src:
+      local('Pretendard SemiBold'),
+      url(/fonts/woff2-subset/Pretendard-SemiBold.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-SemiBold.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 500;
+    font-display: swap;
+    src:
+      local('Pretendard Medium'),
+      url(/fonts/woff2-subset/Pretendard-Medium.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Medium.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 400;
+    font-display: swap;
+    src:
+      local('Pretendard Regular'),
+      url(/fonts/woff2-subset/Pretendard-Regular.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Regular.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 800;
+    font-display: swap;
+    src:
+      local('Pretendard ExtraBold'),
+      url(/fonts/woff2-subset/Pretendard-ExtraBold.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-ExtraBold.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 300;
+    font-display: swap;
+    src:
+      local('Pretendard Light'),
+      url(/fonts/woff2-subset/Pretendard-Light.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Light.subset.woff) format('woff');
+  }
+
+  /* 🌈 COLOR SYSTEM & CSS VARIABLES */
   :root {
     /* radius */
     --rounded-xl: 0.75rem;
@@ -88,6 +101,7 @@
     --brand-700: 262 67% 50%;
     --brand-800: 262 67% 40%;
     --brand-900: 262 67% 30%;
+    --white: 0 0% 100%;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -114,6 +128,7 @@
     --radius: 0.5rem;
   }
   .dark {
+    --white: 0 0% 100%;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -226,7 +241,7 @@ input::placeholder {
   @apply relative flex min-h-dvh flex-col pl-[100px];
 } */
 #content {
-  @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-7 pr-7;
+  @apply flex flex-grow flex-col bg-white pb-[70px] pl-7 pr-7;
 }
 
 .login-title {
@@ -480,7 +495,7 @@ textarea {
       li {
         @apply flex items-center;
         button {
-          border-radius: 2px;
+          @apply rounded-sm;
           @apply hover:bg-brand-100 flex h-10 flex-grow items-center justify-start p-2.5 text-base font-medium text-default-600;
         }
       }
@@ -889,9 +904,9 @@ textarea {
 .progress-bar {
   @apply mt-1 flex h-5 w-full items-center gap-2.5;
   .progress-bar-inner {
-    @apply flex h-[8px] flex-none flex-grow items-center rounded-full bg-default-200;
+    @apply flex h-2 flex-none flex-grow items-center rounded-full bg-default-200;
     p {
-      @apply bg-brand-700 h-[8px] rounded-full;
+      @apply bg-brand-700 h-2 rounded-full;
     }
   }
   p {
@@ -971,7 +986,7 @@ textarea {
   li {
     @apply flex items-center gap-1;
     span {
-      @apply flex h-[8px] w-[8px] rounded-full bg-default-200;
+      @apply flex h-2 w-2 rounded-full bg-default-200;
     }
   }
 }
@@ -1126,7 +1141,7 @@ textarea {
     font-family: 'Pretendard', sans-serif;
   }
   box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
-  @apply mt-[10px] w-[135px] rounded-md border border-default-200 px-2.5 transition-none;
+  @apply mt-2.5 w-[135px] rounded-md border border-default-200 px-2.5 transition-none;
   ul {
     @apply py-1;
     hr {
@@ -1451,7 +1466,7 @@ dl.process-item-title {
   border-style: solid;
   border-color: hsl(var(--brand-600));
   border-width: 2px;
-  padding: 0 4px;
+  @apply px-1;
 }
 
 .rg-number-celleditor input {
@@ -1561,7 +1576,7 @@ dl.process-item-title {
   background-color: hsl(var(--white));
   border-radius: 4px;
   box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.5);
-  margin-bottom: 8px;
+  @apply mb-2;
   @apply mt-0.5;
   position: absolute;
   width: 100%;
@@ -1638,7 +1653,7 @@ dl.process-item-title {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  padding: 0 4px;
+  @apply px-1;
   outline: none;
   touch-action: auto;
   border-color: hsl(var(--border));
@@ -1818,14 +1833,14 @@ dl.process-item-title {
 .reactgrid-content .rg-column-resize-hint {
   background-color: hsl(var(--brand-400));
   position: absolute;
-  padding: 5px;
+  @apply p-1;
   border-radius: 0 5px 5px 0;
 }
 
 .reactgrid-content .rg-row-resize-hint {
   background-color: hsl(var(--brand-400));
   position: absolute;
-  padding: 5px;
+  @apply p-1;
   border-radius: 0 5px 5px 0;
 }
 
@@ -1860,8 +1875,8 @@ dl.process-item-title {
 /* AppSidebar.css - Navigation Styles */
 #navigation {
   border-right: 1px solid hsl(var(--default-100));
-  padding-left: 12px;
-  padding-right: 12px;
+  @apply pl-3;
+  @apply pr-3;
   z-index: 50;
   @apply fixed left-0 top-0 flex h-dvh w-[260px] flex-none flex-col items-center overflow-hidden bg-white pt-[30px];
 
@@ -1874,12 +1889,12 @@ dl.process-item-title {
 
   hr {
     border-top: 1px solid hsl(var(--default-200));
-    @apply mb-[10px] mt-[10px] w-full;
+    @apply mb-[10px] mt-2.5 w-full;
   }
 
   .search-box {
     @apply h-11;
-    padding: 0 12px;
+    @apply px-3;
     @apply mt-[50px] flex w-full items-center justify-between gap-2.5 rounded-md border border-default-200 bg-white;
 
     input {
