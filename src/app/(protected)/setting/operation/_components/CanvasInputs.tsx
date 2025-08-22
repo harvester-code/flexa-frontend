@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+
 function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines }) {
   return (
     <div className="mx-auto mt-6 flex w-[1280px] flex-col gap-4 overflow-hidden bg-gray-200 p-4">
@@ -7,7 +10,8 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
 
           <div className="flex flex-col">
             <label htmlFor="lineCount">Circle Size:</label>
-            <input
+            <Input
+              variant="custom"
               id="circleSize"
               className="border border-green-600"
               type="number"
@@ -24,7 +28,8 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
 
           <div className="flex flex-col">
             <label htmlFor="passengerCount">Passenger Count:</label>
-            <input
+            <Input
+              variant="custom"
               id="passengerCount"
               className="border border-blue-600"
               type="number"
@@ -41,7 +46,8 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
 
           <div className="flex flex-col">
             <label htmlFor="lineCount">Line Count:</label>
-            <input
+            <Input
+              variant="custom"
               id="lineCount"
               className="border border-green-600"
               type="number"
@@ -56,15 +62,17 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
             />
           </div>
 
-          <button
+          <Button
+            variant="btn-secondary"
             disabled={rectangles.length < idx + 1}
             className="bg-slate-300 px-4 py-2"
             onClick={() => drawLines(idx)}
           >
             Apply
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="btn-delete"
             disabled={rectangles.length !== idx + 1}
             className="bg-rose-300 px-4 py-2"
             onClick={() => {
@@ -76,7 +84,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
             }}
           >
             Delete
-          </button>
+          </Button>
         </div>
       ))}
     </div>

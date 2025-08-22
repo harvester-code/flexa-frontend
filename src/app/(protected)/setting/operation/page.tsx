@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { ChevronDown, EllipsisVertical, PencilLineIcon, Plus, Trash2 } from 'lucide-react';
-import Button from '@/components/Button';
+import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 
 const Canvas = dynamic(() => import('./_components/Canvas'), { ssr: false });
@@ -38,17 +38,17 @@ function SettingOperationPage() {
           onChange={(e) => setAirportName(e.target.value)}
           className="h-[40px] w-[150px] bg-transparent text-xl font-semibold text-default-900 !outline-none"
         />
-        <button>
+        <Button variant="btn-link">
           <PencilLineIcon />
-        </button>
+        </Button>
       </div>
       <div className="mt-[40px] flex justify-between gap-[20px]">
         <div className="tab-setting">
           {terminals.map((terminal, index) => (
             <div key={`tab${index}`} className={`tab ${terminalIndex === index ? 'active' : ''}`}>
-              <button className="tab-btn" onClick={() => setTerminalIndex(index)}>
+              <Button variant="btn-link" className="tab-btn" onClick={() => setTerminalIndex(index)}>
                 {terminal}
-              </button>
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <div className="btn-more">
@@ -69,7 +69,10 @@ function SettingOperationPage() {
             </div>
           ))}
         </div>
-        <Button className="btn-md btn-default" icon={<Plus className="size-4" />} text="Terminal" onClick={() => {}} />
+        <Button variant="btn-default" size="btn-md" onClick={() => {}}>
+          <Plus className="size-4" />
+          Terminal
+        </Button>
       </div>
       <div className="process-wrap mt-[29px]">
         <div className="process-item-block">
@@ -102,9 +105,9 @@ function SettingOperationPage() {
               <div className="tab-setting tab-black">
                 {processes?.[terminalIndex]?.map((process, index) => (
                   <div key={`tab${index}`} className={`tab ${processIndex === index ? 'active' : ''}`}>
-                    <button className="tab-btn" onClick={() => setProcessIndex(index)}>
+                    <Button variant="btn-link" className="tab-btn" onClick={() => setProcessIndex(index)}>
                       {process}
-                    </button>
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger>
                         <div className="btn-more">
@@ -125,12 +128,10 @@ function SettingOperationPage() {
                   </div>
                 ))}
               </div>
-              <Button
-                className="btn-md btn-default"
-                icon={<Plus className="size-4" />}
-                text="Process"
-                onClick={() => {}}
-              />
+              <Button variant="btn-default" size="btn-md" onClick={() => {}}>
+                <Plus className="size-4" />
+                Process
+              </Button>
             </div>
             <div className="mt-[30px] flex items-center justify-between">
               <h3 className="text-xl font-semibold">Number of Facilities in the Process</h3>
@@ -182,13 +183,13 @@ function SettingOperationPage() {
                 <div className="process-item-title">
                   <div className="flex items-center gap-[10px]">
                     Zone H
-                    <button>
+                    <Button variant="btn-link">
                       <PencilLineIcon />
-                    </button>
+                    </Button>
                   </div>
-                  <button>
+                  <Button variant="btn-link">
                     <ChevronDown />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -197,12 +198,10 @@ function SettingOperationPage() {
       </div>
       <Canvas />;
       <div className="mt-[50px] flex justify-end">
-        <Button
-          className="btn-md btn-primary w-[120px]"
-          icon={<Image width={20} height={20} src="/image/ico-re.svg" alt="" />}
-          text="Update"
-          onClick={() => {}}
-        />
+        <Button variant="btn-primary" size="btn-md" className="w-[120px]" onClick={() => {}}>
+          <Image width={20} height={20} src="/image/ico-re.svg" alt="" />
+          Update
+        </Button>
       </div>
     </div>
   );

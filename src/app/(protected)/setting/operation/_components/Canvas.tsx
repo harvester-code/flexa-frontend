@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Image, Layer, Rect, Stage, Transformer } from 'react-konva';
 import useImage from 'use-image';
+import { Button } from '@/components/ui/Button';
 import CanvasController from './CanvasController';
 import CanvasInputs from './CanvasInputs';
 
