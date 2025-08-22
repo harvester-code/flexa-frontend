@@ -96,7 +96,7 @@ function AppSidebar() {
           }}
         >
           <span className="profile-icon">{userInfo?.initials}</span>
-          <span className="text-sm font-semibold text-tertiary">{userInfo?.fullName}</span>
+          <span className="text-sm font-semibold text-muted-foreground">{userInfo?.fullName}</span>
           <div className="up-down-icon ml-auto">
             <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleUp} />
           </div>
