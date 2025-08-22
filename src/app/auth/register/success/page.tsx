@@ -7,7 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { signUpAction } from '@/actions/auth';
-import { SubmitButton } from '@/components/SubmitButton';
+import { Button } from '@/components/ui/Button';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 
 function RegisterSuccessContent() {
   const searchParams = useSearchParams();
@@ -24,12 +25,16 @@ function RegisterSuccessContent() {
       <p className="mt-10 font-medium">Didn&apos;t receive the email?</p>
       <form>
         <input type="hidden" name="email" value={email || ''} />
-        <SubmitButton formAction={signUpAction}>Resend Code</SubmitButton>
+        <SubmitButton variant="btn-brand" formAction={signUpAction}>
+          Resend Code
+        </SubmitButton>
       </form>
-      <Link href="/" className="btn-link mt-10">
-        <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
-        Back to Login
-      </Link>
+      <Button asChild variant="btn-link" className="mt-10">
+        <Link href="/">
+          <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
+          Back to Login
+        </Link>
+      </Button>
     </div>
   );
 }

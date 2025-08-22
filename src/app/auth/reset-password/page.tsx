@@ -1,9 +1,12 @@
 import Image from 'next/image';
+import Link from 'next/link';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { resetPasswordAction } from '@/actions/auth';
-import { BackToLogin } from '@/components/BackToLogin';
-import { SubmitButton } from '@/components/SubmitButton';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 
 export default function ResetPassword() {
   return (
@@ -50,9 +53,16 @@ export default function ResetPassword() {
             Including letters and numbers
           </li>
         </ul>
-        <SubmitButton formAction={resetPasswordAction}>Reset password</SubmitButton>
+        <SubmitButton variant="btn-brand" formAction={resetPasswordAction}>
+          Reset password
+        </SubmitButton>
       </form>
-      <BackToLogin className="mt-30" />
+      <Button asChild variant="btn-link" className="mt-30">
+        <Link href="/">
+          <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
+          Back to Login
+        </Link>
+      </Button>
     </div>
   );
 }

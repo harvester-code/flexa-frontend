@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getSavedEmail, signInAction } from '@/actions/auth';
-import { SubmitButton } from '@/components/SubmitButton';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 
 // TODO: 로그인 에러에 대해서 사용자에게 안내하는 UI 필요
 export default async function LoginPage() {
@@ -82,19 +82,10 @@ export default async function LoginPage() {
               </Link>
             </div>
 
-            <SubmitButton className="mt-10" formAction={signInAction}>
+            <SubmitButton className="mt-10" variant="btn-brand" formAction={signInAction}>
               Sign In
             </SubmitButton>
           </form>
-
-          {/* <div className="mt-[30px] flex justify-center">
-            <p className="flex gap-[10px] text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="font-semibold text-brand underline">
-                Sign Up
-              </Link>
-            </p>
-          </div> */}
         </div>
 
         <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-secondary">

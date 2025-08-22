@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { signUpAction } from '@/actions/auth';
-import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 import { AgreementForm } from './agreement-form';
 
 export function RegisterForm() {
@@ -37,7 +37,7 @@ export function RegisterForm() {
         <Input type="password" name="password" placeholder="Enter your Password" required minLength={6} />
       </div>
       <AgreementForm onAgreeAll={setIsAgreed} />
-      <SubmitButton formAction={signUpAction} disabled={!isAgreed} pendingText="Signing up...">
+      <SubmitButton variant="btn-brand" formAction={signUpAction} disabled={!isAgreed} pendingText="Signing up...">
         Sign Up
       </SubmitButton>
     </form>

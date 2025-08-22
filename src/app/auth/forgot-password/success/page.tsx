@@ -7,7 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { forgotPasswordAction } from '@/actions/auth';
-import { SubmitButton } from '@/components/SubmitButton';
+import { Button } from '@/components/ui/Button';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 
 function ForgotPasswordSuccessContent() {
   const searchParams = useSearchParams();
@@ -24,12 +25,16 @@ function ForgotPasswordSuccessContent() {
       <p className="mt-10 font-medium">Didn&apos;t receive the email?</p>
       <form>
         <input type="hidden" name="email" value={email || ''} />
-        <SubmitButton formAction={forgotPasswordAction}>Resend Code</SubmitButton>
+        <SubmitButton variant="btn-brand" formAction={forgotPasswordAction}>
+          Resend Code
+        </SubmitButton>
       </form>
-      <Link href="/login" className="btn-link mt-10">
-        <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
-        Back to Login
-      </Link>
+      <Button asChild variant="btn-link" className="mt-10">
+        <Link href="/login">
+          <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
+          Back to Login
+        </Link>
+      </Button>
     </div>
   );
 }
