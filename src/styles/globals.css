@@ -46,15 +46,17 @@
     url(/fonts/woff/Pretendard-Light.woff) format('woff');
 }
 
+/* 2️⃣ TAILWIND IMPORTS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 3️⃣ CSS VARIABLES & BASE STYLES */
 @layer base {
   :root {
     /* radius */
-    --rounded-xl: 12px;
-    --rounded-md: 8px;
+    --rounded-xl: 0.75rem;
+    --rounded-md: 0.5rem;
 
     /* color */
     --primary: 262 67% 59%;
@@ -142,8 +144,8 @@
 }
 
 body::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  @apply w-2;
+  @apply h-2;
   background: hsl(var(--default-300));
 }
 
@@ -160,7 +162,7 @@ body::-webkit-scrollbar-thumb {
   @apply flex-grow overflow-y-auto;
 }
 .scroll-list::-webkit-scrollbar {
-  width: 6px;
+  @apply w-1.5;
   background: transparent !important;
 }
 
@@ -195,17 +197,23 @@ h1 {
 
 .title-sm {
   font-size: 24px;
-  @apply inline-flex h-[40px] items-center font-semibold text-default-900;
+  @apply inline-flex h-10 items-center font-semibold text-default-900;
 }
 
 .text-40 {
-  @apply flex h-[40px] items-center font-medium text-default-800;
+  @apply flex h-10 items-center font-medium text-default-800;
 }
 .text-xl {
   font-size: 20px;
 }
 
-/* form */
+/* ================================================================
+   5️⃣ BUTTON COMPONENTS (복잡 → 일반 CSS + @apply 조합)
+   ================================================================ */
+/* ================================================================
+   6️⃣ FORM & INPUT COMPONENTS
+   ================================================================ */
+
 input::placeholder {
   color: hsl(var(--default-400));
 }
@@ -218,11 +226,11 @@ input::placeholder {
   @apply relative flex min-h-dvh flex-col pl-[100px];
 } */
 #content {
-  @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-[30px] pr-[30px];
+  @apply flex flex-grow flex-col bg-default-25 pb-[70px] pl-7 pr-7;
 }
 
 .login-title {
-  font-size: 40px;
+  font-size: 36px;
   line-height: 100%;
   @apply font-bold text-brand;
 }
@@ -235,25 +243,27 @@ button {
   :disabled {
   }
 }
+/* 🎨 Button Base (간단) */
 .btn-sm {
-  height: 36px;
-  padding: 0 14px;
-  @apply gap-[5px] rounded-[8px] bg-white font-semibold;
+  @apply h-9;
+  @apply px-3.5;
+  @apply gap-1 rounded-lg bg-white font-semibold;
 }
 .btn-md {
-  height: 40px;
-  padding: 0 14px;
+  @apply h-10;
+  @apply px-3.5;
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-[90px] gap-[5px] rounded-[8px] bg-white text-sm font-semibold;
+  @apply min-w-[90px] gap-1 rounded-lg bg-white text-sm font-semibold;
 }
 .btn-lg {
-  height: 44px;
+  @apply h-11;
   width: 100%;
-  padding: 0 14px;
-  @apply gap-[5px] font-semibold;
+  @apply px-3.5;
+  @apply gap-1 font-semibold;
 }
+/* 🎭 Button Variants (복잡) */
 .btn-default {
   border: 1px solid var(--default-200);
 
@@ -267,7 +277,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply text-brand-600 min-w-[100px] bg-white px-[20px];
+  @apply text-brand-600 min-w-[100px] bg-white px-5;
   &:hover {
     background: var(--brand-25);
   }
@@ -278,7 +288,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-[100px] bg-white px-[20px];
+  @apply min-w-[100px] bg-white px-5;
 }
 .btn-green-line {
   border: 1px solid hsl(var(--primary));
@@ -286,7 +296,7 @@ button {
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-[100px] bg-white px-[20px];
+  @apply min-w-[100px] bg-white px-5;
 }
 .text-base {
   font-size: 16px !important;
@@ -300,7 +310,7 @@ button {
     0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply rounded-[8px] text-white;
+  @apply rounded-lg text-white;
   &:hover {
     background: hsl(var(--brand-700));
   }
@@ -321,11 +331,11 @@ button {
 }
 .btn-delete {
   background: hsl(var(--destructive) / 0.1);
-  padding: 0 18px;
+  @apply px-4;
   border: 1px solid hsl(var(--destructive));
-  height: 34px;
+  @apply h-8;
   border-radius: 100px;
-  @apply flex items-center gap-[2px] text-xs font-semibold text-destructive;
+  @apply flex items-center gap-0.5 text-xs font-semibold text-destructive;
 }
 button:disabled {
   border: 1px solid hsl(var(--default-200)) !important;
@@ -334,17 +344,17 @@ button:disabled {
 }
 
 .btn-link {
-  @apply inline-flex items-center gap-[10px] text-sm font-semibold underline;
+  @apply inline-flex items-center gap-2.5 text-sm font-semibold underline;
   &:hover {
     @apply text-brand;
   }
 }
 .btn-more {
-  @apply inline-flex h-[30px] w-[30px] flex-col items-center justify-center gap-[2px] rounded-full;
+  @apply inline-flex h-7 w-7 flex-col items-center justify-center gap-0.5 rounded-full;
   svg {
-    margin-top: 2px;
-    width: 11px;
-    height: 11px;
+    @apply mt-0.5;
+    @apply w-3;
+    @apply h-3;
   }
   &:hover {
     @apply bg-default-100;
@@ -366,7 +376,7 @@ input[type='tel'] {
   &.error {
     outline: 1px solid hsl(var(--destructive));
     + .msg-error {
-      @apply mt-[5px] flex text-destructive;
+      @apply mt-1 flex text-destructive;
     }
   }
 }
@@ -380,19 +390,23 @@ input[type='checkbox'] {
 }
 
 .input-mail {
-  padding-left: 42px !important;
+  @apply pl-10 !important;
   background: white url('/image/ico-mail.svg') no-repeat 14px center;
   background-size: 20px 20px;
 }
+/* ================================================================
+   7️⃣ FORM COMPONENTS (복잡한 중첩 구조)
+   ================================================================ */
+
 .checkbox input[type='checkbox'] + label {
-  gap: 8px;
+  @apply gap-2;
   @apply flex cursor-pointer items-center;
 }
 .checkbox input[type='checkbox'] + label:before {
   content: '';
   display: flex;
-  width: 20px;
-  height: 20px;
+  @apply w-5;
+  @apply h-5;
   background: url('/image/ico-checkbox.svg') no-repeat center center;
   background-size: 20px 20px;
 }
@@ -402,14 +416,14 @@ input[type='checkbox'] {
 }
 
 .checkbox-toggle input[type='checkbox'] + label {
-  gap: 8px;
+  @apply gap-2;
   @apply flex cursor-pointer items-center;
 }
 .checkbox-toggle input[type='checkbox'] + label:before {
   content: '';
   display: flex;
-  width: 36px;
-  height: 20px;
+  @apply w-9;
+  @apply h-5;
   background: url('/image/ico-checkbox-toggle.svg') no-repeat center center;
   background-size: 36px 20px;
 }
@@ -419,33 +433,33 @@ input[type='checkbox'] {
 }
 
 textarea {
-  @apply w-full rounded-md border border-default-200 bg-white p-[15px] text-base text-default-800;
+  @apply w-full rounded-md border border-default-200 bg-white p-4 text-base text-default-800;
   &:focus {
     outline: 1px solid var(--brand-600);
   }
 }
 .select {
-  @apply h-[40px] flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-[15px];
+  @apply h-10 flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-4;
   background: url('/image/ico-arrow-down.svg') no-repeat right 12px center;
   &:focus {
     outline: 1px solid var(--brand-600);
   }
 }
 .select-box {
-  height: 44px;
-  @apply relative flex flex-grow cursor-pointer items-center gap-[20px] rounded-full border border-default-300 bg-white px-[15px];
+  @apply h-11;
+  @apply relative flex flex-grow cursor-pointer items-center gap-5 rounded-full border border-default-300 bg-white px-4;
   .select-line {
     @apply flex flex-grow text-base font-medium text-default-800;
     .btn-list {
-      @apply flex items-center gap-[8px];
+      @apply flex items-center gap-2;
       li {
         @apply flex items-center;
         button {
-          height: 24px;
-          @apply inline-flex items-center gap-[2px] rounded-full border border-default-300 bg-default-25 pl-[10px] pr-[6px] font-medium text-default-700 hover:text-default-900;
+          @apply h-6;
+          @apply inline-flex items-center gap-0.5 rounded-full border border-default-300 bg-default-25 pl-2.5 pr-1.5 font-medium text-default-700 hover:text-default-900;
           .nav-icon {
-            width: 12px;
-            height: 12px;
+            @apply w-3;
+            @apply h-3;
             @apply text-default-400;
           }
         }
@@ -453,21 +467,21 @@ textarea {
     }
   }
   .select-btn {
-    @apply ml-auto h-[20px] w-[20px];
+    @apply ml-auto h-5 w-5;
   }
   .select-item {
     top: 48px;
-    padding: 6px;
+    @apply p-1.5;
     box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.08);
     border: 1px solid hsl(var(--default-200));
     @apply absolute left-0 hidden w-full overflow-auto rounded-md bg-white;
     ul {
-      @apply flex flex-col gap-[4px];
+      @apply flex flex-col gap-1;
       li {
         @apply flex items-center;
         button {
           border-radius: 2px;
-          @apply hover:bg-brand-100 flex h-[40px] flex-grow items-center justify-start p-[10px] text-base font-medium text-default-600;
+          @apply hover:bg-brand-100 flex h-10 flex-grow items-center justify-start p-2.5 text-base font-medium text-default-600;
         }
       }
     }
@@ -486,7 +500,7 @@ textarea {
     .btn-list {
       li {
         button {
-          @apply h-[30px];
+          @apply h-7;
         }
       }
     }
@@ -495,7 +509,7 @@ textarea {
     }
   }
   &.select-sm {
-    height: 40px;
+    @apply h-10;
     @apply text-sm;
     .select-line {
       @apply text-sm;
@@ -503,17 +517,17 @@ textarea {
     .btn-list {
       li {
         button {
-          @apply h-[30px];
+          @apply h-7;
         }
       }
     }
     .select-item {
       top: 44px;
       ul {
-        @apply gap-[2px];
+        @apply gap-0.5;
         li {
           button {
-            @apply h-[30px] py-[5px] text-sm;
+            @apply h-7 py-1 text-sm;
           }
         }
       }
@@ -522,7 +536,7 @@ textarea {
   &.select-color {
     background: url('/image/ico-button-menu.svg') no-repeat 15px center;
     background-size: 20px 20px;
-    @apply flex items-center gap-[10px] pl-[40px];
+    @apply flex items-center gap-2.5 pl-[40px];
     .select-line {
       @apply flex-grow justify-center;
     }
@@ -543,11 +557,11 @@ textarea {
 .signUpContainer {
   @apply flex flex-col items-center justify-center pb-[60px] pt-[60px];
   .loginStep {
-    gap: 17px;
-    @apply flex pb-[85px] pt-[35px] text-sm font-semibold text-secondary;
+    @apply gap-4;
+    @apply flex pb-[85px] pt-9 text-sm font-semibold text-secondary;
     li {
       width: 240px;
-      gap: 7px;
+      @apply gap-2;
       position: relative;
       @apply flex flex-col items-center;
       img {
@@ -560,7 +574,7 @@ textarea {
         left: 152px;
         top: 20px;
         width: 194px;
-        height: 10px;
+        @apply h-2;
         background: url('/image/bg-bar.svg') no-repeat center center;
       }
     }
@@ -582,58 +596,58 @@ textarea {
 }
 .signUpForm {
   width: 360px;
-  @apply mt-[30px];
+  @apply mt-7;
 }
 .checkboxContainer {
   background-color: hsl(var(--default-50));
   border-radius: 8px;
   border: 1px solid hsl(var(--default-200));
-  @apply mt-[20px] flex flex-col;
+  @apply mt-5 flex flex-col;
   dt {
     background-color: hsl(var(--default-100));
     border-bottom: 1px solid hsl(var(--default-200));
-    padding: 12px;
+    @apply p-3;
     display: flex;
   }
   dd {
-    padding: 16px 12px;
-    @apply flex flex-col gap-[10px];
+    @apply px-3 py-4;
+    @apply flex flex-col gap-2.5;
   }
 }
 
 .password-Feedback {
-  @apply mt-[10px] flex flex-col gap-[10px];
+  @apply mt-2.5 flex flex-col gap-2.5;
   li {
-    @apply flex items-center gap-[8px] text-sm;
+    @apply flex items-center gap-2 text-sm;
     span {
-      @apply flex h-[20px] w-[20px];
+      @apply flex h-5 w-5;
     }
   }
 }
 
 .icon-lg {
   width: 24px;
-  height: 24px;
+  @apply h-6;
 }
 .icon-md {
-  width: 20px;
-  height: 20px;
+  @apply w-5;
+  @apply h-5;
 }
 .nav-icon {
   font-size: 16px;
-  width: 16px;
-  height: 16px;
+  @apply w-4;
+  @apply h-4;
   display: inline;
 }
 .icon-14 {
-  width: 14px;
-  height: 14px;
+  @apply w-3;
+  @apply h-3;
   display: inline;
 }
 
 /* simulation */
 .tag-sm {
-  @apply bg-brand-50 text-brand-700 flex h-[30px] items-center justify-between gap-[5px] rounded-md px-[10px] text-xs font-semibold;
+  @apply bg-brand-50 text-brand-700 flex h-7 items-center justify-between gap-1 rounded-md px-2.5 text-xs font-semibold;
 }
 
 .table-default {
@@ -643,14 +657,14 @@ textarea {
     tr {
       th {
         border-bottom: 1px solid hsl(var(--brand-500));
-        padding-left: 4px;
-        padding-right: 4px;
-        @apply h-[50px] text-sm font-medium text-default-600;
+        @apply pl-1;
+        @apply pr-1;
+        @apply h-12 text-sm font-medium text-default-600;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-[5px];
+          @apply mb-1;
         }
         button {
-          @apply flex items-center gap-[6px] text-sm font-medium text-default-600;
+          @apply flex items-center gap-1.5 text-sm font-medium text-default-600;
         }
       }
     }
@@ -661,11 +675,11 @@ textarea {
         @apply bg-brand-50;
       }
       td {
-        padding: 10px 4px;
+        @apply px-1 py-2.5;
         line-height: 20px;
         @apply h-[60px] font-medium text-default-700;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-[5px];
+          @apply mb-1;
         }
       }
     }
@@ -677,10 +691,10 @@ textarea {
     tr {
       th {
         background: hsl(var(--default-50));
-        @apply min-h-[40px] border-b border-default-300 px-[20px] py-[10px] text-sm font-semibold text-default-600;
+        @apply min-h-10 border-b border-default-300 px-5 py-2.5 text-sm font-semibold text-default-600;
         &:first-of-type {
           border-radius: 8px 0px 0px 0px;
-          @apply border-r border-default-300 pl-[25px] pr-[25px];
+          @apply border-r border-default-300 pl-6 pr-6;
         }
         &:last-of-type {
           border-radius: 0px 8px 0px 0px;
@@ -692,7 +706,7 @@ textarea {
     @apply bg-white;
     tr {
       td {
-        padding: 16px 4px;
+        @apply px-1 py-4;
         line-height: 20px;
         @apply h-[60px] border-t border-default-200 font-medium text-default-600;
         &:first-of-type {
@@ -709,9 +723,9 @@ textarea {
     tr {
       th {
         border-bottom: 1px solid hsl(var(--brand-500));
-        @apply h-[50px] bg-default-100 px-[6px] text-sm font-medium text-default-600;
+        @apply h-12 bg-default-100 px-1.5 text-sm font-medium text-default-600;
         button {
-          @apply flex items-center gap-[6px] text-xs font-medium text-default-600;
+          @apply flex items-center gap-1.5 text-xs font-medium text-default-600;
         }
       }
     }
@@ -720,14 +734,14 @@ textarea {
     tr {
       @apply text-sm;
       th {
-        @apply border-b border-default-200 bg-default-50 px-[6px] text-left text-sm font-semibold text-default-800;
+        @apply border-b border-default-200 bg-default-50 px-1.5 text-left text-sm font-semibold text-default-800;
       }
       td {
-        padding: 10px 4px;
+        @apply px-1 py-2.5;
         line-height: 20px;
-        @apply h-[70px] border-b border-default-200 bg-white px-[6px] font-medium text-default-700;
+        @apply h-[70px] border-b border-default-200 bg-white px-1.5 font-medium text-default-700;
         .checkbox input[type='checkbox'] + label:before {
-          @apply mb-[5px];
+          @apply mb-1;
         }
       }
     }
@@ -737,28 +751,28 @@ textarea {
 .sub-title {
   @apply flex flex-col;
   dt {
-    @apply h-[20px] text-sm font-medium text-default-500;
+    @apply h-5 text-sm font-medium text-default-500;
   }
   dd {
-    @apply flex h-[40px] items-center gap-[20px] text-xl font-semibold text-default-800;
+    @apply flex h-10 items-center gap-5 text-xl font-semibold text-default-800;
     span {
       border: 1px solid hsl(var(--default-200));
       background: var(--default-50);
       border-radius: 100px;
-      @apply inline-flex h-[30px] items-center px-[15px] text-sm font-medium text-default-800;
+      @apply inline-flex h-7 items-center px-4 text-sm font-medium text-default-800;
     }
   }
 }
 
 .tab-default {
   border-bottom: 1px solid var(--default-100);
-  @apply flex flex-grow items-center justify-center gap-[10px] px-[10px];
+  @apply flex flex-grow items-center justify-center gap-2.5 px-2.5;
   button {
     border-bottom: 3px solid transparent;
-    padding-bottom: 13px;
+    @apply pb-3;
     line-height: 100%;
-    height: 40px;
-    @apply flex-1 pt-[4px] text-sm font-medium text-default-400;
+    @apply h-10;
+    @apply flex-1 pt-1 text-sm font-medium text-default-400;
     &:hover {
       @apply text-brand-700;
     }
@@ -770,16 +784,16 @@ textarea {
       }
     }
     span {
-      height: 22px;
-      padding: 0 8px;
-      margin-left: 4px;
+      @apply h-5;
+      @apply px-2;
+      @apply ml-1;
       @apply inline-flex items-center justify-center rounded-full border border-default-200 bg-default-50 text-xs font-medium text-default-600;
     }
   }
   &.tab-secondary {
     button {
       border-bottom: 2px solid transparent;
-      @apply h-[50px] text-base font-semibold text-default-400;
+      @apply h-12 text-base font-semibold text-default-400;
       &.active {
         border-bottom: 2px solid var(--default-800);
         @apply text-default-800;
@@ -797,16 +811,16 @@ textarea {
 .overview-wrap {
   margin-left: -30px;
   width: calc(100% + 60px);
-  @apply grid grid-cols-6 gap-[10px] bg-default-100 p-[30px];
+  @apply grid grid-cols-6 gap-2.5 bg-default-100 p-7;
   .overview-item {
     border: 1px solid hsl(var(--default-200));
     aspect-ratio: 200/120;
-    @apply flex w-full cursor-default flex-col rounded-md bg-white p-[10px];
+    @apply flex w-full cursor-default flex-col rounded-md bg-white p-2.5;
     dl {
-      @apply flex flex-1 flex-col gap-[8px];
+      @apply flex flex-1 flex-col gap-2;
       dt {
         line-height: 30px;
-        @apply h-[30px] font-semibold text-default-500;
+        @apply h-7 font-semibold text-default-500;
       }
       dd {
         line-height: 30px;
@@ -830,12 +844,12 @@ textarea {
   border: 1px solid hsl(var(--primary) / 0.3);
   background: hsl(var(--primary) / 0.05);
   color: hsl(var(--primary));
-  width: 70px;
-  height: 30px;
+  @apply w-[70px];
+  @apply h-7;
   @apply inline-flex items-center justify-center text-xs font-semibold;
   &.error {
     width: fit-content;
-    padding: 0 16px;
+    @apply px-4;
   }
   &.yellow {
     border: 1px solid hsl(var(--primary) / 0.3);
@@ -873,7 +887,7 @@ textarea {
 
 /* profile */
 .progress-bar {
-  @apply mt-[5px] flex h-[20px] w-full items-center gap-[10px];
+  @apply mt-1 flex h-5 w-full items-center gap-2.5;
   .progress-bar-inner {
     @apply flex h-[8px] flex-none flex-grow items-center rounded-full bg-default-200;
     p {
@@ -886,7 +900,7 @@ textarea {
 }
 .profile-wrap {
   .profile-header {
-    @apply flex flex-col items-center gap-[20px] pl-[30px] pr-[30px] md:flex-row;
+    @apply flex flex-col items-center gap-5 pl-7 pr-7 md:flex-row;
     .profile-img {
       border: 4px solid white;
       background: hsl(var(--background));
@@ -902,7 +916,7 @@ textarea {
       }
     }
     .profile-info {
-      @apply mt-[20px] flex flex-col gap-[4px] text-center md:text-left;
+      @apply mt-5 flex flex-col gap-1 text-center md:text-left;
       dt {
         font-size: 30px;
         line-height: 38px;
@@ -917,20 +931,20 @@ textarea {
   .tab-default {
     @apply mx-auto w-full md:mx-0 md:w-[200px];
     button {
-      height: 32px;
+      @apply h-8;
       @apply w-full;
     }
   }
   .profile-form {
     @apply border-t border-default-300 text-sm;
     .form-item {
-      @apply flex items-start justify-between gap-[30px] border-b border-default-100 pb-[20px] pt-[20px];
+      @apply flex items-start justify-between gap-7 border-b border-default-100 pb-[20px] pt-[20px];
       .form-item-title {
         @apply flex w-[280px] flex-none items-center;
         dl {
           @apply flex flex-col;
           dt {
-            @apply flex items-center gap-[5px] whitespace-nowrap font-semibold text-default-800;
+            @apply flex items-center gap-1 whitespace-nowrap font-semibold text-default-800;
             span {
               @apply text-brand-600 w-[280px] flex-none;
             }
@@ -949,13 +963,13 @@ textarea {
 }
 
 .current-device {
-  @apply inline-flex items-center gap-[4px] rounded-full border border-default-200 bg-white px-[8px] text-xs font-medium text-default-800;
+  @apply inline-flex items-center gap-1 rounded-full border border-default-200 bg-white px-[8px] text-xs font-medium text-default-800;
 }
 
 .chart-info {
-  @apply flex items-center gap-[15px] text-sm font-medium text-default-800;
+  @apply flex items-center gap-4 text-sm font-medium text-default-800;
   li {
-    @apply flex items-center gap-[5px];
+    @apply flex items-center gap-1;
     span {
       @apply flex h-[8px] w-[8px] rounded-full bg-default-200;
     }
@@ -966,7 +980,7 @@ textarea {
   line-height: 1.5;
   @apply text-xs text-default-600;
   > div {
-    padding: 12px;
+    @apply p-3;
     border-radius: 8px;
   }
   .MuiTooltip-tooltip {
@@ -989,14 +1003,14 @@ textarea {
 .select-block {
   @apply min-w-[100px] flex-grow;
   dt {
-    gap: 3px;
-    @apply mb-[5px] flex items-center pl-[15px] text-sm font-medium text-default-800;
+    @apply gap-1;
+    @apply mb-1 flex items-center pl-[15px] text-sm font-medium text-default-800;
     button {
-      @apply ml-[2px];
+      @apply ml-0.5;
     }
   }
   .select-box {
-    @apply h-[40px];
+    @apply h-10;
     .select-item {
       top: 44px;
     }
@@ -1010,7 +1024,7 @@ textarea {
 }
 
 .input-rounded {
-  @apply h-[40px] rounded-full border border-default-300 !important;
+  @apply h-10 rounded-full border border-default-300 !important;
 }
 
 .input-default {
@@ -1038,14 +1052,14 @@ textarea {
 
 .gate-list {
   width: calc(100%);
-  @apply grid flex-row justify-between gap-x-[20px] gap-y-[10px] bg-gray-100 px-[40px] py-[10px];
+  @apply grid flex-row justify-between gap-x-[20px] gap-y-[10px] bg-gray-100 px-[40px] py-2.5;
   li {
     @apply flex flex-grow;
     button {
-      @apply flex h-[40px] flex-grow items-center justify-center gap-[8px] rounded-full border border-default-200 bg-white text-default-400;
+      @apply flex h-10 flex-grow items-center justify-center gap-2 rounded-full border border-default-200 bg-white text-default-400;
       span {
-        height: 24px;
-        @apply flex items-center justify-center rounded-full border border-default-200 bg-default-50 px-[10px] text-xs font-medium text-default-700;
+        @apply h-6;
+        @apply flex items-center justify-center rounded-full border border-default-200 bg-default-50 px-2.5 text-xs font-medium text-default-700;
       }
     }
     &.active {
@@ -1064,12 +1078,12 @@ textarea {
 
 /* indicator */
 .indicator {
-  @apply flex flex-col gap-[20px] rounded-xl bg-default-100 p-[20px];
+  @apply flex flex-col gap-5 rounded-xl bg-default-100 p-[20px];
   .indicator-list {
     @apply grid;
     dl {
-      padding: 24px;
-      @apply flex h-[120px] flex-col gap-[10px] rounded-xl border border-default-200 bg-white;
+      @apply p-6;
+      @apply flex h-[120px] flex-col gap-2.5 rounded-xl border border-default-200 bg-white;
       dt {
         @apply text-sm font-medium text-default-600;
       }
@@ -1082,16 +1096,16 @@ textarea {
 }
 
 .location {
-  @apply mt-[20px] flex h-[50px] items-center gap-[15px] rounded-md border border-default-200 bg-default-50 px-[20px] font-medium;
+  @apply mt-5 flex h-12 items-center gap-4 rounded-md border border-default-200 bg-default-50 px-5 font-medium;
   span:first-child {
     @apply inline-flex text-default-600;
   }
   span {
-    @apply inline-flex items-center gap-[15px] text-default-800;
+    @apply inline-flex items-center gap-4 text-default-800;
     &::after {
       content: '';
-      width: 18px;
-      height: 18px;
+      @apply w-4;
+      @apply h-4;
       background: url('/image/ico-arrow-right.svg') no-repeat center center;
       @apply text-default-400 opacity-60;
     }
@@ -1106,20 +1120,20 @@ textarea {
 
 .MuiPaper-root.sub-menu {
   h6 {
-    @apply flex h-[40px] items-center pl-[10px] text-base font-semibold text-default-800;
+    @apply flex h-10 items-center pl-2.5 text-base font-semibold text-default-800;
   }
   * {
     font-family: 'Pretendard', sans-serif;
   }
   box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
-  @apply mt-[10px] w-[135px] rounded-md border border-default-200 px-[10px] transition-none;
+  @apply mt-[10px] w-[135px] rounded-md border border-default-200 px-2.5 transition-none;
   ul {
-    @apply py-[5px];
+    @apply py-1;
     hr {
       @apply m-0 border-default-200;
     }
     li {
-      @apply flex h-[40px] items-center gap-[5px] px-[5px] py-0 text-base leading-none;
+      @apply flex h-10 items-center gap-1 px-[5px] py-0 text-base leading-none;
       &.text {
         @apply pointer-events-none;
       }
@@ -1140,7 +1154,7 @@ textarea {
   @apply flex flex-grow items-center;
   .tab {
     border-bottom: 2px solid var(--default-200);
-    @apply relative flex h-[40px] flex-grow items-center justify-center gap-[10px] pr-[30px] font-semibold text-default-400;
+    @apply relative flex h-10 flex-grow items-center justify-center gap-2.5 pr-7 font-semibold text-default-400;
     .tab-btn {
       @apply flex h-full flex-grow items-center justify-center;
     }
@@ -1166,11 +1180,11 @@ textarea {
 }
 
 .process-list {
-  @apply mt-[5px] flex flex-col;
+  @apply mt-1 flex flex-col;
   .process-item {
-    @apply flex flex-col justify-between gap-[20px] border-b border-default-200 pb-[25px] pt-[25px];
+    @apply flex flex-col justify-between gap-5 border-b border-default-200 pb-[25px] pt-[25px];
     dl {
-      @apply flex flex-col gap-[10px];
+      @apply flex flex-col gap-2.5;
       dt {
         @apply text-xl font-semibold leading-none text-default-800;
       }
@@ -1179,19 +1193,19 @@ textarea {
       }
     }
     .add-precess {
-      @apply flex h-[40px] w-full items-center justify-center gap-[5px] rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
+      @apply flex h-10 w-full items-center justify-center gap-1 rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
     }
   }
 }
 
 .setting-process-list {
-  @apply mt-[30px] flex flex-col gap-[10px];
+  @apply mt-7 flex flex-col gap-2.5;
   .process-item {
     @apply flex flex-col;
     .process-item-title {
-      @apply flex items-center justify-between rounded-md bg-default-100 px-[15px] py-[10px] text-lg font-semibold text-default-800;
+      @apply flex items-center justify-between rounded-md bg-default-100 px-4 py-2.5 text-lg font-semibold text-default-800;
       button {
-        @apply ml-auto flex h-[20px] w-[20px] items-center justify-center;
+        @apply ml-auto flex h-5 w-5 items-center justify-center;
       }
     }
     .process-item-content {
@@ -1201,7 +1215,7 @@ textarea {
 }
 
 dl.process-item-title {
-  @apply flex flex-col gap-[10px];
+  @apply flex flex-col gap-2.5;
 
   dt {
     @apply text-xl font-semibold leading-none text-default-800;
@@ -1276,10 +1290,10 @@ dl.process-item-title {
       @apply flex flex-col gap-2.5;
 
       > .summary {
-        @apply gap-3 rounded-md border border-default-200 bg-white px-[10px] py-[10px];
+        @apply gap-3 rounded-md border border-default-200 bg-white px-2.5 py-2.5;
 
         > div {
-          @apply relative flex items-center gap-2.5 px-[10px];
+          @apply relative flex items-center gap-2.5 px-2.5;
 
           &::after {
             display: none;
@@ -1354,7 +1368,7 @@ dl.process-item-title {
               @apply mt-5 grid grid-cols-2 gap-x-1 gap-y-4;
 
               > div {
-                @apply flex items-center gap-[5px];
+                @apply flex items-center gap-1;
 
                 dl {
                   @apply flex flex-col justify-center gap-0.5;
@@ -1422,7 +1436,7 @@ dl.process-item-title {
   height: 100%;
   border: 0;
   padding: 0;
-  margin: 0;
+  @apply m-0;
   background: transparent;
   font-size: 1em;
   outline: none;
@@ -1463,14 +1477,14 @@ dl.process-item-title {
   align-items: center;
   justify-content: center;
   padding: 0;
-  margin: 0;
+  @apply m-0;
   background: transparent;
   pointer-events: auto;
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell input {
-  width: 20px;
-  height: 20px;
+  @apply w-5;
+  @apply h-5;
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell {
@@ -1479,31 +1493,31 @@ dl.process-item-title {
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell label {
   position: relative;
-  height: 18px;
-  width: 18px;
+  @apply h-4;
+  @apply w-4;
   cursor: pointer;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  margin: 0;
+  @apply m-0;
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell label input {
   position: absolute;
   opacity: 0;
   cursor: pointer;
-  margin: 0;
-  height: 18px;
-  width: 18px;
+  @apply m-0;
+  @apply h-4;
+  @apply w-4;
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell span {
   position: absolute;
   top: 0;
   left: 0;
-  height: 18px;
-  width: 18px;
+  @apply h-4;
+  @apply w-4;
   background-color: hsl(var(--default-100));
 }
 
@@ -1529,7 +1543,7 @@ dl.process-item-title {
   left: 7px;
   top: 2px;
   width: 4px;
-  height: 12px;
+  @apply h-3;
   border: solid white;
   border-width: 0 3px 3px 0;
   -webkit-transform: rotate(45deg);
@@ -1548,7 +1562,7 @@ dl.process-item-title {
   border-radius: 4px;
   box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.5);
   margin-bottom: 8px;
-  margin-top: 2px;
+  @apply mt-0.5;
   position: absolute;
   width: 100%;
   z-index: 1;
@@ -1635,7 +1649,7 @@ dl.process-item-title {
   position: absolute;
   top: 0;
   right: 0;
-  width: 11px;
+  @apply w-3;
   height: 100%;
   pointer-events: auto;
 }
@@ -1643,7 +1657,7 @@ dl.process-item-title {
 .reactgrid-content .rg-pane .rg-cell .rg-touch-column-resize-handle .rg-resize-handle {
   position: absolute;
   right: 0;
-  width: 6px;
+  @apply w-1.5;
   height: 100%;
 }
 
@@ -1656,7 +1670,7 @@ dl.process-item-title {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 11px;
+  @apply h-3;
   width: 100%;
   pointer-events: auto;
 }
@@ -1693,7 +1707,7 @@ dl.process-item-title {
 .reactgrid-content .rg-pane .rg-touch-fill-handle {
   position: absolute;
   width: 40px;
-  height: 40px;
+  @apply h-10;
   background-color: rgba(255, 255, 255, 0.01);
   touch-action: none;
   pointer-events: auto;
@@ -1834,7 +1848,7 @@ dl.process-item-title {
 .reactgrid-content .rg-hidden-element {
   border: 0;
   padding: 0;
-  margin: 0;
+  @apply m-0;
   position: fixed;
   width: 1px;
   height: 1px;
@@ -1864,9 +1878,9 @@ dl.process-item-title {
   }
 
   .search-box {
-    height: 44px;
+    @apply h-11;
     padding: 0 12px;
-    @apply mt-[50px] flex w-full items-center justify-between gap-[10px] rounded-md border border-default-200 bg-white;
+    @apply mt-[50px] flex w-full items-center justify-between gap-2.5 rounded-md border border-default-200 bg-white;
 
     input {
       @apply h-full w-full;
@@ -1876,7 +1890,7 @@ dl.process-item-title {
     }
 
     button {
-      @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
+      @apply flex h-7 w-7 items-center justify-center rounded-full;
     }
 
     &.active {
@@ -1888,7 +1902,7 @@ dl.process-item-title {
   }
 
   .gnb-list {
-    @apply flex w-full flex-col gap-[10px];
+    @apply flex w-full flex-col gap-2.5;
 
     > li {
       border-radius: 8px;
@@ -1898,10 +1912,10 @@ dl.process-item-title {
         padding: 0 12px 0 26px;
         border-radius: 8px;
         line-height: 100%;
-        @apply flex cursor-pointer items-center justify-between gap-[10px] font-semibold text-secondary;
+        @apply flex cursor-pointer items-center justify-between gap-2.5 font-semibold text-secondary;
 
         > .text {
-          margin-top: 2px;
+          @apply mt-0.5;
           @apply whitespace-nowrap;
         }
 
@@ -1928,10 +1942,10 @@ dl.process-item-title {
 
         .number {
           min-width: 24px;
-          height: 24px;
+          @apply h-6;
           border-radius: 12px;
           font-size: 10px;
-          padding: 0 5px 0 5px;
+          @apply px-1;
           @apply bg-brand-600 inline-flex items-center justify-center font-normal text-white;
         }
       }
@@ -1969,7 +1983,7 @@ dl.process-item-title {
           a {
             color: hsl(var(--default-700));
             padding-left: 28px;
-            @apply flex h-[40px] items-center pr-[20px] text-sm;
+            @apply flex h-10 items-center pr-[20px] text-sm;
 
             &:hover {
               @apply text-brand-700;
@@ -2011,12 +2025,12 @@ dl.process-item-title {
 
     > button {
       padding: 0 12px 0 13px;
-      @apply flex h-[60px] w-full items-center justify-center gap-[10px];
+      @apply flex h-[60px] w-full items-center justify-center gap-2.5;
 
       .profile-icon {
         background-color: hsl(var(--background));
         border: 1px solid hsl(var(--default-300));
-        @apply flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
+        @apply flex h-12 w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
 
         img {
           width: 100%;
@@ -2041,12 +2055,12 @@ dl.process-item-title {
       padding: 0 12px 20px 12px;
       border-radius: 10px 10px 0 0;
       box-shadow: 0px -1px 4px 0px rgba(0, 0, 0, 0.15);
-      @apply absolute left-0 hidden w-full flex-col gap-[5px] bg-white text-sm;
+      @apply absolute left-0 hidden w-full flex-col gap-1 bg-white text-sm;
 
       .my-name {
         border-bottom: 1px solid hsl(var(--default-200));
-        padding: 16px 12px;
-        gap: 12px;
+        @apply px-3 py-4;
+        @apply gap-3;
         @apply flex items-center;
 
         dl {
@@ -2065,13 +2079,13 @@ dl.process-item-title {
         }
 
         .profile-photo {
-          @apply relative h-[40px] w-[40px];
+          @apply relative h-10 w-[40px];
 
           .photo {
             background-color: hsl(var(--background));
             border: 1px solid hsl(var(--default-300));
             line-height: 100%;
-            @apply relative flex h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
+            @apply relative flex h-10 w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
 
             img {
               width: 100%;
@@ -2091,8 +2105,8 @@ dl.process-item-title {
       .my-menu-nav {
         a {
           border-radius: 4px;
-          gap: 8px;
-          @apply flex h-[40px] w-full items-center pl-[10px] pr-[10px] text-secondary;
+          @apply gap-2;
+          @apply flex h-10 w-full items-center pl-2.5 pr-[10px] text-secondary;
 
           &:hover {
             background: hsl(var(--brand-25));
@@ -2101,15 +2115,15 @@ dl.process-item-title {
         }
 
         hr {
-          @apply mb-[5px] mt-[5px];
+          @apply mb-1 mt-1;
         }
       }
 
       .logout {
         border: 1px solid hsl(var(--default-200));
         border-radius: 8px;
-        gap: 8px;
-        @apply flex h-[40px] w-full items-center justify-center text-sm font-medium text-muted-foreground;
+        @apply gap-2;
+        @apply flex h-10 w-full items-center justify-center text-sm font-medium text-muted-foreground;
 
         &:hover {
           border: 1px solid hsl(var(--default-500));
@@ -2135,12 +2149,12 @@ dl.process-item-title {
       }
 
       button {
-        @apply flex h-[30px] w-[30px] items-center justify-center rounded-full;
+        @apply flex h-7 w-7 items-center justify-center rounded-full;
       }
     }
 
     .gnb-list {
-      @apply flex w-full flex-col gap-[10px];
+      @apply flex w-full flex-col gap-2.5;
 
       > li {
         > a {
@@ -2153,10 +2167,10 @@ dl.process-item-title {
           > .number {
             overflow: hidden;
             text-indent: -9999px;
-            width: 8px;
-            height: 8px;
+            @apply w-2;
+            @apply h-2;
             min-width: auto;
-            margin: 0;
+            @apply m-0;
             top: 9px;
             left: 45px;
             @apply absolute p-0;
