@@ -5,14 +5,14 @@ import { pascalCase } from 'change-case';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ChevronDown } from 'lucide-react';
-import { Option } from '@/types/commons';
-import { ScenarioData } from '@/types/simulations';
-import TheDropdownMenu from '@/components/TheDropdownMenu';
+import { Option } from '@/types/homeTypes';
+import { ScenarioData } from '@/types/homeTypes';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { capitalizeFirst, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
+import TheDropdownMenu from './TheDropdownMenu';
 
 dayjs.extend(customParseFormat);
 

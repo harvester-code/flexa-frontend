@@ -392,14 +392,15 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" side="top" className="relative w-72">
-              <button
+              <Button
+                variant="btn-link"
                 type="button"
                 className="absolute right-2 top-2 rounded p-1 hover:bg-gray-100 focus:outline-none"
                 onClick={() => setShowDotSizePopover(false)}
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
               <div className="flex flex-col items-center gap-4">
                 <span className="font-semibold">Dot Size</span>
                 <Slider

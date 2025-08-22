@@ -1,4 +1,4 @@
-import { ScenarioData } from '@/types/simulations';
+import { ScenarioData } from '@/types/homeTypes';
 import HomeChartFlowChart from './HomeChartFlowChart';
 import HomeChartHistogram from './HomeChartHistogram';
 import HomeChartHourlyTrends from './HomeChartHourlyTrends';

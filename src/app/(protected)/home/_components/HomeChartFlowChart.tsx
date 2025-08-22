@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ScenarioData } from '@/types/simulations';
-import { SANKEY_COLOR_SCALES } from '@/constants';
+import { ScenarioData } from '@/types/homeTypes';
+import { SANKEY_COLOR_SCALES } from '@/components/charts/colors';
 import { formatFlowChartLayout } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';

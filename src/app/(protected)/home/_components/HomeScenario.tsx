@@ -17,7 +17,7 @@ import {
   Search,
   XCircle,
 } from 'lucide-react';
-import { ScenarioData } from '@/types/simulations';
+import { ScenarioData } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
 import {

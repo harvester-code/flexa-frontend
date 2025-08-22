@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { pascalCase } from 'change-case';
 import { ChevronRight, Clock4, LockOpen } from 'lucide-react';
-import { ScenarioData } from '@/types/simulations';
+import { ScenarioData } from '@/types/homeTypes';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import './HomeDetails.css';

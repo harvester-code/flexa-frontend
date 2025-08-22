@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Option } from '@/types/commons';
-import { ScenarioData } from '@/types/simulations';
-import TheDropdownMenu from '@/components/TheDropdownMenu';
+import { Option } from '@/types/homeTypes';
+import { ScenarioData } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -10,6 +9,7 @@ import './HomeCss.css';
 import { capitalizeFirst, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
+import TheDropdownMenu from './TheDropdownMenu';
 
 interface HomeChartHistogramProps {
   scenario: ScenarioData | null;

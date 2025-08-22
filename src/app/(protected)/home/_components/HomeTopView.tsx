@@ -667,23 +667,6 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   }}
                   className="w-full"
                 />
-
-                {/* shadcn/ui Tooltip: thumb 위에 항상 표시 */}
-                {/* <Tooltip open>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="absolute left-0 h-0 w-0"
-                      style={{
-                        top: '20px', // thumb 바로 아래로 위치
-                        left: `calc(${(timeIndex / (availableTimes.length - 1)) * 100}% )`,
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="center" sideOffset={6}>
-                    {selectedTime}
-                  </TooltipContent>
-                </Tooltip> */}
               </div>
 
               <span className="min-w-[90px] text-right text-xs text-gray-500">

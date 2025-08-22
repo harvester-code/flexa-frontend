@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ChevronDown, Circle } from 'lucide-react';
-import { Option } from '@/types/commons';
-import { ScenarioData } from '@/types/simulations';
-import Checkbox from '@/components/Checkbox';
-import TheDropdownMenu from '@/components/TheDropdownMenu';
+import { Option } from '@/types/homeTypes';
+import { ScenarioData } from '@/types/homeTypes';
 import { Button, ButtonGroup } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
 import './HomeCss.css';
 import { capitalizeFirst } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
+import TheDropdownMenu from './TheDropdownMenu';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
@@ -308,9 +308,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           <Checkbox
             id="chart-type"
             className="checkbox-toggle"
-            label=""
             checked={chartType}
-            onChange={() => setChartType(!chartType)}
+            onCheckedChange={() => setChartType(!chartType)}
           />
           <span>Line Chart</span>
         </div>

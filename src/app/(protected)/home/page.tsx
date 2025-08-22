@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ScenarioData } from '@/types/simulations';
+import { ScenarioData } from '@/types/homeTypes';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';

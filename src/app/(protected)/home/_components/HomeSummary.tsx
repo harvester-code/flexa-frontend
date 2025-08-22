@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Option } from '@/types/commons';
-import { ScenarioData } from '@/types/simulations';
+import { Option } from '@/types/homeTypes';
+import { ScenarioData } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import {
   NavIcon01,
@@ -220,7 +220,7 @@ function HomeSummary({
         {/* open 상태에 따라 트리거(화살표)를 상단/하단에 한 번만 렌더링 */}
         {!accordionOpen && (
           <div className="mt-[14px] flex justify-center">
-            <button onClick={() => setAccordionOpen(true)} className="px-0 py-0">
+            <Button variant="btn-link" onClick={() => setAccordionOpen(true)} className="px-0 py-0">
               <svg
                 className="h-6 w-6 text-muted-foreground transition-transform duration-200"
                 style={{ transform: 'rotate(0deg)' }}
@@ -231,7 +231,7 @@ function HomeSummary({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
 
@@ -379,7 +379,7 @@ function HomeSummary({
         {/* open 상태에 따라 하단에만 화살표 렌더링 */}
         {accordionOpen && (
           <div className="mt-[14px] flex justify-center">
-            <button onClick={() => setAccordionOpen(false)} className="px-0 py-0">
+            <Button variant="btn-link" onClick={() => setAccordionOpen(false)} className="px-0 py-0">
               <svg
                 className="h-6 w-6 rotate-180 text-muted-foreground transition-transform duration-200"
                 fill="none"
@@ -389,7 +389,7 @@ function HomeSummary({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
       </div>
