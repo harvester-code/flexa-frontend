@@ -6,10 +6,10 @@ import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import { useShallow } from 'zustand/react/shallow';
-import { useScenarioStore } from '@/stores/useScenarioStore';
-import Button from '@/components/Button';
-import TheInput from '@/components/TheInput';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { timeToRelativeTime } from '@/lib/utils';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import NextButton from './NextButton';
 
 const PAGE_ROW_AMOUNT = 5;
@@ -104,83 +104,6 @@ export default function TabScenarioOverview({ visible }: TabScenarioOverviewProp
           ))}
         </div>
       )}
-
-      {/* ---------- 아래 History 관련 UI는 잠시 주석 처리 ---------- */}
-      {/* <h2 className="title-sm mt-[40px]">Scenario Modification History</h2>
-      <div className="table-wrap mt-[10px]">
-        <table className="table-default">
-          <thead>
-            <tr className="border-b">
-              <th className="w-[210px] text-left">Checkpoint</th>
-              <th className="w-[180px] text-left">Modification Date</th>
-              <th className="w-[120px] text-center">Simulation</th>
-              <th className="!pl-[20px] text-left">Memo</th>
-              <th className="w-[120px] text-center">Error</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history?.map((item, index) => {
-              const checkpoint = dayjs(item.checkpoint);
-              const relTime = timeToRelativeTime(item.checkpoint);
-
-              return index >= historyPageData.start && index < historyPageData.end ? (
-                <tr key={index} className="border-b">
-                  <td className="">
-                    <span className="font-semibold">{checkpoint.format('YYYY-MM-DD')}</span>
-                    <span className="ml-[5px] font-normal">{checkpoint.format('hh:mm:ss')}</span>
-                  </td>
-                  <td className="">{relTime} ago</td>
-                  <td className="text-center">
-                    <span className={`badge ${item.simulation == 'Done' ? 'green' : 'yellow'}`}>{item.simulation}</span>
-                  </td>
-                  <td className="">
-                    <Input
-                      type="text"
-                      placeholder=""
-                      value={history[index].memo}
-                      className="!border-none bg-transparent !text-default-700"
-                      onChange={(e) => handleMemoChange(index, e.target.value)}
-                      onBlur={() => handleUpdateMemo()}
-                      disabled={true}
-                    />
-                  </td>
-                  <td className="text-center">
-                    <span className={`badge error ${item.error_count > 0 ? 'yellow' : 'green'}`}>
-                      {item.error_count || 'None'}
-                    </span>
-                  </td>
-                </tr>
-              ) : null;
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="pagingFraction mt-[20px] flex items-center justify-end gap-[20px]">
-        <p className="text-sm font-medium">
-          Page {historyPageData.lastPage > 0 ? historyPage + 1 : 0} of {historyPageData.lastPage}
-        </p>
-
-        <p className="flex gap-[10px]">
-          <button
-            className="flex h-[40px] w-[40px] items-center justify-center rounded-md border border-default-200"
-            onClick={() => {
-              if (historyPage - 1 >= 0) setHistoryPage(historyPage - 1);
-            }}
-          >
-            <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleLeft} />
-          </button>
-
-          <button
-            className="flex h-[40px] w-[40px] items-center justify-center rounded-md border border-default-200"
-            onClick={() => {
-              if (historyPage + 1 < historyPageData.lastPage) setHistoryPage(historyPage + 1);
-            }}
-          >
-            <FontAwesomeIcon className="nav-icon" size="sm" icon={faAngleRight} />
-          </button>
-        </p>
-      </div> */}
 
       {/* Navigation */}
       <div className="mt-8 flex justify-end">

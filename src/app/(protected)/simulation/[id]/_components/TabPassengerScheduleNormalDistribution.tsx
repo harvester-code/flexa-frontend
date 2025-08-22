@@ -2,9 +2,10 @@
 
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { CHART_DEFAULTS } from '@/components/charts/colors';
 
 // PlotlyChart를 동적으로 로드
-const PlotlyChart = dynamic(() => import('@/components/ThePlotlyChart'), { ssr: false });
+const PlotlyChart = dynamic(() => import('./ThePlotlyChart'), { ssr: false });
 
 // 차트 설정 상수
 const CHART_CONSTANTS = {
@@ -14,12 +15,6 @@ const CHART_CONSTANTS = {
   DEFAULT_X_MAX: 50,
   DEFAULT_ALPHA: 0.1,
   LINE_WIDTH: 2,
-  COLORS: {
-    DEFAULT: '#6366f1',
-    TEXT_PRIMARY: '#374151',
-    TEXT_SECONDARY: '#6b7280',
-    GRID: '#f1f5f9',
-  },
   FONTS: {
     FAMILY: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
     SIZE_LARGE: 13,
@@ -132,7 +127,7 @@ function hexToRgba(hex: string, alpha: number): string {
 export default function TabPassengerScheduleNormalDistribution({
   mean,
   stdDev,
-  color = '#6366f1',
+  color = CHART_DEFAULTS.PRIMARY,
   airlineParams,
   title = 'Normal Distribution',
   xAxisTitle = 'Time before departure (minutes)',
@@ -146,7 +141,7 @@ export default function TabPassengerScheduleNormalDistribution({
   standardDeviationRange = CHART_CONSTANTS.STANDARD_DEVIATION_RANGE,
   defaultXRange = { min: CHART_CONSTANTS.DEFAULT_X_MIN, max: CHART_CONSTANTS.DEFAULT_X_MAX },
   showGrid = true,
-  gridColor = CHART_CONSTANTS.COLORS.GRID,
+  gridColor = CHART_DEFAULTS.GRID,
 }: TabPassengerScheduleNormalDistributionProps) {
   // 차트 데이터 생성
   const chartData = useMemo(() => {
@@ -162,7 +157,7 @@ export default function TabPassengerScheduleNormalDistribution({
 
         // 색상 처리
         let fillColor = `rgba(99, 102, 241, ${fillOpacity})`;
-        let lineColor: string = CHART_CONSTANTS.COLORS.DEFAULT;
+        let lineColor: string = CHART_DEFAULTS.PRIMARY;
 
         if (param.color) {
           lineColor = param.color;

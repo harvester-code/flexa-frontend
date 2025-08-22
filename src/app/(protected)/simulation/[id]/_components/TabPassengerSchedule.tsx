@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { APIRequestLog } from '@/types/scenarios';
+import { APIRequestLog } from '@/types/simulationTypes';
 import { Card, CardContent } from '@/components/ui/Card';
-import { useFlightScheduleData, usePassengerScheduleData } from '@/hooks/useTabData';
+import { useFlightScheduleData, usePassengerScheduleData } from '../../_hooks/useTabData';
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';

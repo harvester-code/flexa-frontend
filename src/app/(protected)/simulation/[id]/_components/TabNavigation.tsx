@@ -3,8 +3,8 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { useScenarioStore } from '@/stores/useScenarioStore';
 import { Button } from '@/components/ui/Button';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 
 interface TabNavigationProps {
   className?: string;

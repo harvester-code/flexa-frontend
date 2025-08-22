@@ -2,10 +2,10 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckSquare, Network } from 'lucide-react';
-import { useScenarioStore } from '@/stores/useScenarioStore';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import NextButton from './NextButton';
 import TabFacilityConnectionTable from './TabFacilityConnectionTable';
 

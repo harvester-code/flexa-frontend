@@ -6,15 +6,12 @@ import Image from 'next/image';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useShallow } from 'zustand/react/shallow';
-import { SimulationResponse } from '@/types/simulations';
-import { fetchSimulation, getSimulationOverview, requestSimulation } from '@/services/simulations';
-import { BarColors } from '@/stores/simulation';
-import { useScenarioStore } from '@/stores/useScenarioStore';
-import { SANKEY_COLOR_SCALES } from '@/constants';
-import Button from '@/components/Button';
-import TabDefault from '@/components/TabDefault';
+import { BarColors, SANKEY_COLOR_SCALES } from '@/components/charts/colors';
+import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import SimulationLoading from '../../_components/SimulationLoading';
+import { useScenarioStore } from '../../_store/useScenarioStore';
+import TabDefault from './TabDefault';
 import TabNavigation from './TabNavigation';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
@@ -94,54 +91,24 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
   const [selGroupCriteria, setSelGroupCriteria] = useState(GROUP_CRITERIAS[0].id);
 
   const runSimulation = async () => {
-    if (!simulationParams) {
-      return console.error('Simulation parameters are not set.');
-    }
-
-    try {
-      await requestSimulation(simulationId, simulationParams);
-      alert('The simulation has started successfully! \nPlease wait a moment while the results are being generated.');
-    } catch (error) {
-      console.error('Error running simulation:', error);
-      return;
-    }
+    // TODO: API 엔드포인트 업데이트 필요 - 현재 비활성화됨
+    console.log('Simulation feature temporarily disabled - API endpoints need to be updated');
+    alert('Simulation feature is temporarily disabled. Please contact support.');
   };
 
   // FIXME: 새롭게 저장된 시뮬레이션 결과가 불러오지 않는 문제 발생.
   const loadSimulationOutput = useCallback(async () => {
-    try {
-      setLoadingSimulation(true);
-
-      const { data } = await fetchSimulation(simulationId);
-      if (data) {
-        setSimulationData(data);
-      }
-    } catch (error) {
-      console.error(error);
-      return null;
-    } finally {
-      setLoadingSimulation(false);
-      setLoadError(false);
-    }
+    // TODO: API 엔드포인트 업데이트 필요 - 현재 비활성화됨
+    console.log('Load simulation output feature temporarily disabled - API endpoints need to be updated');
+    setLoadingSimulation(false);
+    setLoadError(false);
   }, [simulationId]);
 
   const loadSimulationOverview = useCallback((components: any, params: any) => {
-    // HACK: 초기화, 임시방편
+    // TODO: API 엔드포인트 업데이트 필요 - 현재 비활성화됨
+    console.log('Load simulation overview feature temporarily disabled - API endpoints need to be updated');
     setMatrix([]);
-
-    getSimulationOverview(simulationId, {
-      scenario_id: simulationId,
-      components,
-      ...params,
-    })
-      .then(({ data }) => {
-        // HACK: 여기 위치가 맞을까?
-        setMatrix(data.matric);
-      })
-      .catch((e) => {
-        console.error('Error fetching overview data:', e);
-        setLoadError(true);
-      });
+    setLoadError(false);
   }, []);
 
   // ==============================================================================
@@ -338,7 +305,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         <h2 className="title-sm">Overview</h2>
         <Button
           className="btn-md btn-tertiary"
-          text="Reload Data"
           onClick={() => {
             loadSimulationOverview(simulationParams?.components || [], {
               destribution_conditions: simulationParams?.destribution_conditions || [],
@@ -346,7 +312,9 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               processes: simulationParams?.processes || {},
             });
           }}
-        />
+        >
+          Reload Data
+        </Button>
       </div>
 
       {matrix.length > 0 ? (
@@ -431,7 +399,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                 margin: { l: 16, r: 16, b: 16, t: 16 },
                 font: { size: 20 },
               }}
-              // config={{ displayModeBar: false }}
             />
           </div>
 
@@ -450,7 +417,8 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               <ul className="gate-list grid-cols-5">
                 {procedures[selectedProcedure].nodes.map((node, idx) => (
                   <li key={idx} className={`${idx === selectedNodes[selectedProcedure] ? 'active' : ''}`}>
-                    <button
+                    <Button
+                      variant="btn-link"
                       onClick={() => {
                         setSelectedNodes((prev) => {
                           const newSelectedNodes = [...prev];
@@ -460,7 +428,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                       }}
                     >
                       {node}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -497,12 +465,10 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div className="flex h-[30px] flex-row items-center pb-[10px]">
-                        <Button
-                          className="btn-lg btn-default text-sm"
-                          icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                          text={`Color by : ${selColorCriteria}`}
-                          onClick={() => {}}
-                        />
+                        <Button variant="btn-default" size="btn-lg" className="text-sm" onClick={() => {}}>
+                          <Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />
+                          Color by : {selColorCriteria}
+                        </Button>
                       </div>
                     </DropdownMenuTrigger>
 
@@ -565,9 +531,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   barmode: 'stack',
                   bargap: 0.4,
                   legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
-                  // yaxis: { range: [0, inOutChartMaxY] },
                 }}
-                // config={{ displayModeBar: false, doubleClick: false }}
               />
 
               <div className="mb-5 mt-[50px] flex justify-between">
@@ -610,9 +574,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   barmode: 'stack',
                   legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
-                  // yaxis: { range: [0, inOutChartMaxY] },
                 }}
-                // config={{ displayModeBar: false }}
               />
 
               <div className="mb-5 mt-[50px] flex justify-between">
@@ -647,7 +609,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                 }}
-                // config={{ displayModeBar: false }}
               />
 
               <div className="mb-5 mt-[50px] flex justify-between">
@@ -671,7 +632,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                   legend: { x: 1, y: 1.1, xanchor: 'right', yanchor: 'top', orientation: 'h' },
                   bargap: 0.4,
                 }}
-                // config={{ displayModeBar: false }}
               />
             </div>
           ) : (
@@ -683,11 +643,14 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     <DropdownMenuTrigger asChild>
                       <div className="flex h-[30px] flex-row items-center pb-[10px]">
                         <Button
-                          className="btn-lg btn-default text-sm"
-                          icon={<Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />}
-                          text="Group Criteria"
+                          variant="btn-default"
+                          size="btn-lg"
+                          className="text-sm"
                           onClick={() => {}}
-                        />
+                        >
+                          <Image width={20} height={20} src="/image/ico-button-menu.svg" alt="" />
+                          Group Criteria
+                        </Button>
                       </div>
                     </DropdownMenuTrigger>
 
@@ -728,44 +691,6 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
               /> */}
             </>
           )}
-
-          {/* NOTE: 현재는 아래 버튼을 사용하지 않지만, 향후 기능 확장을 위해 주석 처리
-                    필요시 주석을 제거하고 사용하세요. */}
-          {/* <div className="chart-btn mt-[60px]">
-            <button
-              onClick={() => {
-                const popupId = pushModal({
-                  component: (
-                    <AnalysisPopup
-                      open={true}
-                      onClose={() => {
-                        popModal(popupId);
-                      }}
-                    />
-                  ),
-                });
-              }}
-            >
-              <Image width={30} height={30} src="/image/ico-chart-result-01.svg" alt="" />
-              Analyze Results
-            </button>
-
-            <button>
-              <Image width={30} height={30} src="/image/ico-chart-result-02.svg" alt="" />
-              Save Results
-            </button>
-
-            <button>
-              <Image width={30} height={30} src="/image/ico-chart-result-03.svg" alt="" />
-              Share Results
-            </button>
-
-            <button>
-              <Image width={30} height={30} src="/image/ico-chart-result-04.svg" alt="" />
-              View Recommendations
-              <span>Beta</span>
-            </button>
-          </div> */}
         </div>
       ) : loadError ? (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">

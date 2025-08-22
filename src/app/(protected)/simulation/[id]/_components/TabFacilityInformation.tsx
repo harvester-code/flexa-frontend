@@ -2,13 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, Clock, Clock3, Copy, Moon, Settings, Sun } from 'lucide-react';
-import { useScenarioStore } from '@/stores/useScenarioStore';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { cn } from '@/lib/utils';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import NextButton from './NextButton';
 
 // Counter Operations Settings interfaces

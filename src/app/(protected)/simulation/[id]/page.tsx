@@ -4,17 +4,16 @@ import React, { use, useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Save } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { APIRequestLog } from '@/types/scenarios';
-import { saveScenarioMetadata } from '@/services/simulations';
-import { useScenarioStore } from '@/stores/useScenarioStore';
-import TabDefault from '@/components/TabDefault';
+import { APIRequestLog } from '@/types/simulationTypes';
+import { saveScenarioMetadata } from '@/services/simulationService';
 import TheContentHeader from '@/components/TheContentHeader';
 import { Button } from '@/components/ui/Button';
-import { useLoadScenarioData } from '@/hooks/useLoadScenarioData';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
+import { useScenarioStore } from '../_store/useScenarioStore';
 import JSONDebugViewer from './_components/JSONDebugViewer';
+import TabDefault from './_components/TabDefault';
 import TabFacilityConnection from './_components/TabFacilityConnection';
 import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
@@ -22,6 +21,7 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import TabScenarioOverview from './_components/TabScenarioOverview';
 import TabSimulation from './_components/TabSimulation';
+import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 
 const tabs: { text: string; number: number }[] = [
   { text: 'Scenario Overview', number: 0 },

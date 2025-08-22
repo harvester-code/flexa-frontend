@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useScenarioStore } from '@/stores/useScenarioStore';
+import { Button } from '@/components/ui/Button';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 
 interface JSONDebugViewerProps {
   visible: boolean;
@@ -142,13 +143,14 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
     return (
       <div className="mb-4">
-        <button
+        <Button
+          variant="btn-link"
           onClick={() => toggleCollapse(collapsedKey)}
           className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
           <span className={`transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>▶</span>
           {title}
-        </button>
+        </Button>
 
         {!isCollapsed && (
           <pre className={`max-h-80 overflow-auto rounded border ${bgColor} p-2 text-xs`}>

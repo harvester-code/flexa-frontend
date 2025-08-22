@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef } from 'react';
 import { CellStyle, Column, NumberCell, Range, ReactGrid, Row, TextCell } from '@silevis/reactgrid';
-import { AllocationTableHeader, AllocationTableRow } from '@/types/scenarios';
-import { useResize } from '@/hooks/useResize';
+import { AllocationTableHeader, AllocationTableRow } from '@/types/simulationTypes';
+import { useResize } from '../_hooks/useResize';
 import './gridTable.css';
 
 interface CellParams {
@@ -132,8 +132,8 @@ export default function SimulationGridTable({
   const handleCheckAllCol = (colIndex: number) => {
     if (!normalizeRowSum) return;
     const changes: CellParams[] = [];
-    const nextCheck = !(Number(data[0].values[colIndex < 0 ? 0 : colIndex]) > 0);
-    const colIdxs = colIndex < 0 ? data[0].values.map((_, index) => index) : [colIndex];
+    const nextCheck = !(Number((data[0] as any).values[colIndex < 0 ? 0 : colIndex]) > 0);
+    const colIdxs = colIndex < 0 ? (data[0] as any).values.map((_: any, index: number) => index) : [colIndex];
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
       for (const colIdxCur of colIdxs) {
         changes.push({
@@ -149,7 +149,7 @@ export default function SimulationGridTable({
   const handleCheckAllRow = (rowIndex: number) => {
     if (!normalizeRowSum) return;
     const row = data[rowIndex];
-    const nextCheckedAll = !isCheckedAll(row);
+    const nextCheckedAll = !isCheckedAll(row as any);
     const divPer = Math.floor((normalizeRowSum * 100) / header.length) / 100;
     let remainPer = normalizeRowSum;
     let newData = data.map((row, idx) =>

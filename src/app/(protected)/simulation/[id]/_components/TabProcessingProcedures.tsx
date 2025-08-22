@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { ArrowUpDown, CheckSquare, ChevronDown, Plane, Plus, Route, Settings2, Trash2, Users } from 'lucide-react';
-import { useScenarioStore } from '@/stores/useScenarioStore';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import { useTabReset } from '../_hooks/useTabReset';
 import NextButton from './NextButton';
 
@@ -448,8 +448,9 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                         <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
                         <div className="flex flex-wrap gap-2">
                           {currentFacilities.map((facility) => (
-                            <button
+                            <Button
                               key={facility.name}
+                              variant="btn-link"
                               type="button"
                               onClick={() => toggleFacility(facility.name, true)}
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
@@ -459,7 +460,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                               }`}
                             >
                               {facility.name}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>
@@ -514,8 +515,9 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                         <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
                         <div className="flex flex-wrap gap-2">
                           {editingFacilities.map((facility) => (
-                            <button
+                            <Button
                               key={facility.name}
+                              variant="btn-link"
                               type="button"
                               onClick={() => toggleFacility(facility.name, false)}
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
@@ -525,7 +527,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                               }`}
                             >
                               {facility.name}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>

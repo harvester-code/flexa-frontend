@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useScenarioStore } from '@/stores/useScenarioStore';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import { TAB_RESET_MAP, type TabName } from '../_constants/resetMap';
 
 /**

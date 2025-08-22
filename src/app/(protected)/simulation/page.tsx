@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { deleteScenario } from '@/services/simulations';
+import { deleteScenario } from '@/services/simulationService';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
 import { PushCreateScenarioPopup } from './_components/CreateScenario';

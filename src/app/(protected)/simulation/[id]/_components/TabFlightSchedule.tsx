@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/scenarios';
-import { getFlightSchedules } from '@/services/simulations';
-import { useFlightScheduleData } from '@/hooks/useTabData';
+import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/simulationTypes';
+import { getFlightSchedules } from '@/services/simulationService';
+import { useFlightScheduleData } from '../../_hooks/useTabData';
 import { useTabReset } from '../_hooks/useTabReset';
 import NextButton from './NextButton';
 import TabFlightScheduleChart from './TabFlightScheduleChart';

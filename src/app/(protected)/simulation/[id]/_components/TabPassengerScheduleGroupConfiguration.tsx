@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { BarChart3, CheckCircle, Edit2, Settings, Trash2, Users } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { APIRequestLog, DestributionCondition } from '@/types/scenarios';
-import { createPassengerShowUp } from '@/services/simulations';
-import { useScenarioStore } from '@/stores/useScenarioStore';
+import { APIRequestLog, DestributionCondition } from '@/types/simulationTypes';
+import { createPassengerShowUp } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 import { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleNormalDistribution from './TabPassengerScheduleNormalDistribution';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';

@@ -4,29 +4,17 @@ import React, { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { BarChart3 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { PassengerShowUpResponse } from '@/types/scenarios';
-import { useScenarioStore } from '@/stores/useScenarioStore';
+import { PassengerShowUpResponse } from '@/types/simulationTypes';
+import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { useScenarioStore } from '../../_store/useScenarioStore';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
 interface TabPassengerScheduleResultProps {
   data?: PassengerShowUpResponse; // optional로 변경 (zustand에서 가져올 수 있도록)
 }
-
-const colorPalette = [
-  '#3b82f6', // blue
-  '#10b981', // emerald
-  '#8b5cf6', // violet
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#06b6d4', // cyan
-  '#ec4899', // pink
-  '#6366f1', // indigo
-  '#84cc16', // lime
-  '#f97316', // orange
-];
 
 export default function TabPassengerScheduleResult({ data: propData }: TabPassengerScheduleResultProps) {
   // zustand store에서 API 응답 데이터 가져오기
@@ -69,7 +57,7 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
       y: series.y,
       type: 'bar' as const,
       marker: {
-        color: colorPalette[index % colorPalette.length],
+        color: CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
       },
       hovertemplate: '<b>%{fullData.name}</b><br>' + 'Time: %{x}<br>' + 'Passengers: %{y:,}<br>' + '<extra></extra>',
     }));

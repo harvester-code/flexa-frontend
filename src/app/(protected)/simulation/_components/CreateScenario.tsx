@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { popModal, pushModal } from '@/app/provider';
-import { createScenario } from '@/services/simulations';
+import { createScenario } from '@/services/simulationService';
 import { useUser } from '@/queries/userQueries';
-import TheInput from '@/components/TheInput';
-import { PopupAlert } from '@/components/popups/PopupAlert';
+import { PopupAlert } from '@/components/PopupAlert';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
 import { PushSuccessPopup } from './Success';
 
 interface PopupProps {
@@ -121,7 +121,8 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
               <dl key={field.key}>
                 <dt className="mb-1 pl-2.5 text-sm font-normal">{field.label}</dt>
                 <dd>
-                  <TheInput
+                  <Input
+                    variant="custom"
                     type="text"
                     placeholder={field.placeholder}
                     value={formData[field.key]}

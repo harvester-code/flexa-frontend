@@ -6,11 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Search } from 'lucide-react';
-import { modifyScenario } from '@/services/simulations';
-import Checkbox from '@/components/Checkbox';
-import { PopupAlert } from '@/components/popups/PopupAlert';
+import { modifyScenario } from '@/services/simulationService';
+import { PopupAlert } from '@/components/PopupAlert';
 import { Button } from '@/components/ui/Button';
 import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
@@ -185,7 +185,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
 
   const startEdit = (scenario: any) => {
     setEditingScenario({
-      id: scenario.id,
+      id: scenario.scenario_id, // scenario_id를 id로 사용
       scenario_id: scenario.scenario_id,
       name: scenario.name,
       airport: scenario.airport,
@@ -347,14 +347,12 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
               <th className="w-10 text-center">
                 <Checkbox
                   id="selectAll"
-                  label=""
                   checked={isCurrentPageAllSelected}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
+                  onCheckedChange={(checked) => {
                     setIsScenarioSelected((prev) =>
                       prev.map((selected, i) => {
                         if (i >= currentPageStartIdx && i < currentPageEndIdx) {
-                          return checked;
+                          return !!checked;
                         }
                         return selected;
                       })
@@ -397,9 +395,8 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                       <Checkbox
                         id={`check-${idx}`}
                         className="checkbox text-sm"
-                        label=""
                         checked={isScenarioSelected[(currentPage - 1) * ITEMS_PER_PAGE + idx] || false}
-                        onChange={() => {
+                        onCheckedChange={() => {
                           const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + idx;
                           setIsScenarioSelected((prev) =>
                             prev.map((selected, i) => (i === actualIndex ? !selected : selected))
@@ -479,13 +476,14 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
 
                     <td className="text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button
+                        <Button
+                          variant="btn-link"
                           className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
                           title={isEditing ? 'Cancel' : 'Edit'}
                           onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}
                         >
                           <Edit3 className={cn('size-5', isEditing ? 'text-gray-600' : 'text-primary')} />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
