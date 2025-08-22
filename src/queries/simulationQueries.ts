@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScenariosDataResponse } from '@/types/simulations';
-import { fetchScenarios } from '@/services/simulations';
+import { ScenariosDataResponse } from '@/types/homeTypes';
+import { fetchScenarios } from '@/services/simulationService';
 
 const useScenarios = () => {
   const response = useQuery({
