@@ -334,7 +334,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         </div>
       ) : (
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
-          <p className="title-sm" style={{ color: '#30374F' }}>
+          <p className="title-sm text-default-700">
             Waiting for simulation overview data...
           </p>
         </div>
@@ -520,7 +520,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
                     mode: 'lines',
                     name: 'Capacity',
                     marker: {
-                      color: '#FF0000',
+                      color: 'hsl(var(--destructive))',
                       opacity: 1,
                     },
                     orientation: 'h',
@@ -696,7 +696,7 @@ export default function TabSimulation({ simulationId, visible }: TabSimulationPr
         <div className="mt-[25px] flex flex-col items-center justify-center rounded-md border border-default-200 bg-default-50 py-[75px] text-center">
           <Image width={16} height={16} src="/image/ico-error.svg" alt="" />
 
-          <p className="title-sm" style={{ color: '#30374F' }}>
+          <p className="title-sm text-default-700">
             Unable to load data
           </p>
         </div>

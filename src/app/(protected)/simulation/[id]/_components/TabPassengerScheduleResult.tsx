@@ -93,7 +93,7 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
     hoverlabel: {
       font: { family: 'Pretendard, Arial, sans-serif' },
       bgcolor: 'white',
-      bordercolor: '#ccc',
+      bordercolor: 'hsl(var(--default-300))',
     },
   };
 

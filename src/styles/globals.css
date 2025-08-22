@@ -61,16 +61,13 @@
     --secondary: 230 10% 50%;
     --tertiary: 220 18% 34%;
     --white: 0 0% 100%;
-    --brand: 262 67% 59%;
+
     --brand-dark: 258 65% 52%;
-    --red: 8 100% 59%;
-    --deepRed: 3 84% 49%;
+
     --warning: 25 87% 59%;
 
     /* bg */
     --bg-gradient: linear-gradient(180deg, hsl(262 79% 69%) 0%, hsl(262 67% 59%) 100%);
-    --bg-primary: 240 9% 98%;
-    --bg-secondary: 240 13% 98%;
     --bg-tertiary: 225 23% 95%;
 
     /* color-theme */
@@ -86,17 +83,17 @@
     --default-800: 225 24% 25%;
     --default-900: 225 35% 13%;
 
-    --accent-25: 262 30% 98%;
-    --accent-50: 262 40% 95%;
-    --accent-100: 262 50% 92%;
-    --accent-200: 262 55% 88%;
-    --accent-300: 262 60% 82%;
-    --accent-400: 262 65% 75%;
-    --accent-500: 262 67% 70%;
-    --accent-600: 262 67% 59%;
-    --accent-700: 262 67% 50%;
-    --accent-800: 262 67% 40%;
-    --accent-900: 262 67% 30%;
+    --brand-25: 262 30% 98%;
+    --brand-50: 262 40% 95%;
+    --brand-100: 262 50% 92%;
+    --brand-200: 262 55% 88%;
+    --brand-300: 262 60% 82%;
+    --brand-400: 262 65% 75%;
+    --brand-500: 262 67% 70%;
+    --brand-600: 262 67% 59%;
+    --brand-700: 262 67% 50%;
+    --brand-800: 262 67% 40%;
+    --brand-900: 262 67% 30%;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -111,6 +108,8 @@
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
@@ -128,7 +127,8 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    --primary: 262 67% 59%;
+    --brand-600: 262 67% 59%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -138,6 +138,8 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
@@ -152,7 +154,7 @@
 body::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-  background: #b9c0d4;
+  background: hsl(var(--default-300));
 }
 
 body::-webkit-scrollbar-track {
@@ -229,10 +231,10 @@ h1 {
   .paging-button {
     @apply flex h-[40px] w-[40px] items-center justify-center rounded-md text-base;
     &:hover {
-      @apply bg-accent-300;
+      @apply bg-brand-300;
     }
     &.active {
-      background: var(--accent-600);
+      background: var(--brand-600);
       @apply text-white;
     }
   }
@@ -240,7 +242,7 @@ h1 {
 
 /* form */
 input::placeholder {
-  color: #7d89b0;
+  color: hsl(var(--default-400));
 }
 
 #wrapper {
@@ -321,26 +323,26 @@ button {
   }
 }
 .btn-tertiary {
-  border: 1px solid var(--accent-600);
+  border: 1px solid var(--brand-600);
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply min-w-[100px] bg-white px-[20px] text-accent-600;
+  @apply text-brand-600 min-w-[100px] bg-white px-[20px];
   &:hover {
-    background: var(--accent-25);
+    background: var(--brand-25);
   }
 }
 .btn-red-line {
-  border: 1px solid #d92d20;
-  color: #d92d20;
+  border: 1px solid hsl(var(--destructive));
+  color: hsl(var(--destructive));
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply min-w-[100px] bg-white px-[20px];
 }
 .btn-green-line {
-  border: 1px solid #079455;
-  color: #079455;
+  border: 1px solid hsl(var(--success));
+  color: hsl(var(--success));
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
@@ -360,7 +362,7 @@ button {
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply rounded-[8px] text-white;
   &:hover {
-    background: var(--accent-600);
+    background: var(--brand-600);
   }
 }
 .btn-secondary {
@@ -371,16 +373,16 @@ button {
   background: var(--bg-gradient);
   transition: background 0.2s ease;
   &:hover {
-    background: var(--brand);
+    background: var(--brand-600);
   }
 }
 .btn-delete {
   background: #fecdca;
   padding: 0 18px;
-  border: 1px solid var(--deepRed);
+  border: 1px solid hsl(var(--destructive));
   height: 34px;
   border-radius: 100px;
-  @apply flex items-center gap-[2px] text-xs font-semibold text-deepRed;
+  @apply flex items-center gap-[2px] text-xs font-semibold text-destructive;
 }
 button:disabled {
   border: 1px solid #dcdfea !important;
@@ -388,7 +390,7 @@ button:disabled {
   color: #dcdfea !important;
 }
 .resend-button {
-  border: 1px solid var(--brand);
+  border: 1px solid var(--brand-600);
   border-radius: 15px;
   @apply flex h-[30px] w-[120px] items-center justify-center text-sm text-brandDark;
   &:hover {
@@ -423,12 +425,12 @@ input[type='tel'] {
     @apply hidden;
   }
   &:focus {
-    outline: 1px solid var(--accent-600);
+    outline: 1px solid var(--brand-600);
   }
   &.error {
-    outline: 1px solid var(--red);
+    outline: 1px solid hsl(var(--destructive));
     + .msg-error {
-      @apply mt-[5px] flex text-red;
+      @apply mt-[5px] flex text-destructive;
     }
   }
 }
@@ -498,14 +500,14 @@ input[type='checkbox'] {
 textarea {
   @apply w-full rounded-md border border-default-200 bg-white p-[15px] text-base text-default-800;
   &:focus {
-    outline: 1px solid var(--accent-600);
+    outline: 1px solid var(--brand-600);
   }
 }
 .select {
   @apply h-[40px] flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-[15px];
   background: url('/image/ico-arrow-down.svg') no-repeat right 12px center;
   &:focus {
-    outline: 1px solid var(--accent-600);
+    outline: 1px solid var(--brand-600);
   }
 }
 .select-box {
@@ -544,18 +546,18 @@ textarea {
         @apply flex items-center;
         button {
           border-radius: 2px;
-          @apply flex h-[40px] flex-grow items-center justify-start p-[10px] text-base font-medium text-default-600 hover:bg-accent-100;
+          @apply hover:bg-brand-100 flex h-[40px] flex-grow items-center justify-start p-[10px] text-base font-medium text-default-600;
         }
       }
     }
   }
   &.active {
-    @apply border-accent-600;
+    @apply border-brand-600;
     .select-item {
       @apply z-10 block;
     }
     .select-btn {
-      @apply rotate-180 text-accent-500;
+      @apply text-brand-500 rotate-180;
     }
   }
   &.select-lg {
@@ -710,7 +712,7 @@ textarea {
   .code-input {
     width: 80px;
     height: 80px;
-    border: 1px solid var(--brand);
+    border: 1px solid var(--brand-600);
     border-radius: 8px;
     text-align: center;
     outline: none;
@@ -760,7 +762,7 @@ textarea {
 
 /* simulation */
 .tag-sm {
-  @apply flex h-[30px] items-center justify-between gap-[5px] rounded-md bg-accent-50 px-[10px] text-xs font-semibold text-brandDark;
+  @apply bg-brand-50 flex h-[30px] items-center justify-between gap-[5px] rounded-md px-[10px] text-xs font-semibold text-brandDark;
 }
 #content {
   .simSearch {
@@ -775,7 +777,7 @@ textarea {
       }
     }
     &.active {
-      @apply border-accent-600;
+      @apply border-brand-600;
     }
   }
 }
@@ -809,7 +811,7 @@ textarea {
   tbody {
     tr {
       &.active {
-        @apply bg-accent-50;
+        @apply bg-brand-50;
       }
       td {
         padding: 10px 4px;
@@ -911,13 +913,13 @@ textarea {
     height: 40px;
     @apply flex-1 pt-[4px] text-sm font-medium text-default-400;
     &:hover {
-      @apply text-accent-700;
+      @apply text-brand-700;
     }
     &.active {
-      border-bottom: 3px solid var(--accent-700);
-      @apply font-semibold text-accent-700;
+      border-bottom: 3px solid var(--brand-700);
+      @apply text-brand-700 font-semibold;
       span {
-        @apply inline-flex items-center justify-center rounded-full border border-accent-300 bg-accent-100 text-xs font-normal text-accent-700;
+        @apply border-brand-300 bg-brand-100 text-brand-700 inline-flex items-center justify-center rounded-full border text-xs font-normal;
       }
     }
     span {
@@ -1028,7 +1030,7 @@ textarea {
   .progress-bar-inner {
     @apply flex h-[8px] flex-none flex-grow items-center rounded-full bg-default-200;
     p {
-      @apply h-[8px] rounded-full bg-accent-700;
+      @apply bg-brand-700 h-[8px] rounded-full;
     }
   }
   p {
@@ -1083,7 +1085,7 @@ textarea {
           dt {
             @apply flex items-center gap-[5px] whitespace-nowrap font-semibold text-default-800;
             span {
-              @apply w-[280px] flex-none text-accent-600;
+              @apply text-brand-600 w-[280px] flex-none;
             }
           }
           dd {
@@ -1245,9 +1247,9 @@ textarea {
       top: 44px;
     }
     &.active {
-      @apply border-accent-600;
+      @apply border-brand-600;
       .select-btn {
-        @apply text-accent-500;
+        @apply text-brand-500;
       }
     }
   }
@@ -1392,7 +1394,7 @@ textarea {
       &.active {
         background: #f4ebff;
 
-        @apply border-accent-600;
+        @apply border-brand-600;
         .checkbtn {
           border: 5px solid #7f56d9;
         }
@@ -1453,7 +1455,7 @@ textarea {
           @apply text-lg font-semibold text-default-900;
         }
         button {
-          @apply ml-auto text-accent-600;
+          @apply text-brand-600 ml-auto;
         }
       }
       .support-item-content {
@@ -1510,7 +1512,7 @@ textarea {
       }
       .contact-form {
         padding: 60px 30px;
-        @apply flex flex-col gap-[10px] rounded-xl border border-accent-400 bg-accent-50;
+        @apply border-brand-400 bg-brand-50 flex flex-col gap-[10px] rounded-xl border;
         dl {
           @apply gap-[5px];
           dt {
@@ -1611,7 +1613,7 @@ textarea {
         @apply hidden;
       }
       &:hover {
-        @apply bg-accent-50;
+        @apply bg-brand-50;
       }
     }
   }
@@ -1655,8 +1657,8 @@ textarea {
       @apply absolute right-0;
     }
     &.active {
-      @apply text-accent-600;
-      border-bottom: 2px solid var(--accent-600);
+      @apply text-brand-600;
+      border-bottom: 2px solid var(--brand-600);
     }
   }
 
