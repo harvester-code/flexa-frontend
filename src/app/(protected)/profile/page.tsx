@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useUser } from '@/queries/userQueries';
-import TabDefault from '@/components/TabDefault';
 import Password from './_components/Password';
 import Profile from './_components/Profile';
+import TabDefault from './_components/TabDefault';
 
 export default function ProfilePage() {
   const tabs: { text: string; number?: number }[] = [{ text: 'Profile' }, { text: 'Password' }];
@@ -17,20 +17,12 @@ export default function ProfilePage() {
   // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   return (
     <>
-      <div className="-z-50 max-h-52 w-full overflow-hidden">
-        <Image src="https://picsum.photos/2000" alt="thumbnail" width={2440} height={210} />
-      </div>
-
       <div className="profile-wrap -m-9 mx-auto max-w-[1340px] px-[30px] pb-24">
         <div className="profile-header">
           <div className="profile-img">
-            <p>
-              <Image
-                src={userInfo?.profileImageUrl || 'https://picsum.photos/200'}
-                alt="thumbnail"
-                width={200}
-                height={200}
-              />
+            <p className="flex h-40 w-40 items-center justify-center rounded-full bg-default-100 text-2xl font-semibold text-default-600">
+              {userInfo?.firstName?.[0]?.toUpperCase() || 'U'}
+              {userInfo?.lastName?.[0]?.toUpperCase() || ''}
             </p>
           </div>
           <dl className="profile-info">

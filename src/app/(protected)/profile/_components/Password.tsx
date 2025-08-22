@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle2, Circle } from 'lucide-react';
-import Button from '@/components/Button';
-import TheInput from '@/components/TheInput';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/useToast';
-import { createClient } from '@/utils/supabase/browser';
+import { createClient } from '@/lib/auth/client';
 
 // TODO: 헤당 컴포넌트 다시 점검하기
 export default function Password() {
@@ -40,7 +40,7 @@ export default function Password() {
             .single();
 
           if (sessionData) {
-            setCurrentSession(sessionData.session_id);
+            setCurrentSession((sessionData as any).session_id);
           }
         } else {
           setCurrentSession(null);
@@ -230,13 +230,12 @@ export default function Password() {
           <dd className="text-sm">Enter your current password to update it.</dd>
         </dl>
         <div className="flex flex-shrink-0 items-center gap-4">
-          <Button className="btn-md btn-default" text="Cancel" onClick={handleCancel} />
-          <Button
-            className="btn-md btn-primary"
-            text={isLoading ? 'Updating...' : 'Update Password'}
-            onClick={handleUpdatePassword}
-            disabled={isLoading}
-          />
+          <Button variant="btn-default" size="btn-md" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="btn-primary" size="btn-md" onClick={handleUpdatePassword} disabled={isLoading}>
+            {isLoading ? 'Updating...' : 'Update Password'}
+          </Button>
         </div>
       </div>
       <form onSubmit={handleSubmit}>
@@ -250,7 +249,8 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <TheInput
+              <Input
+                variant="custom"
                 type="password"
                 placeholder="Current Password"
                 value={currentPassword}
@@ -268,7 +268,8 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <TheInput
+              <Input
+                variant="custom"
                 type="password"
                 placeholder="New Password"
                 value={newPassword}
@@ -306,7 +307,8 @@ export default function Password() {
               </dl>
             </div>
             <div className="form-item-content pr-500">
-              <TheInput
+              <Input
+                variant="custom"
                 type="password"
                 placeholder="Confirm New Password"
                 value={confirmPassword}
@@ -350,15 +352,6 @@ export default function Password() {
                 </dd>
               </dl>
             </div>
-            {/* {history.session_id !== currentSession && (
-              <button
-                onClick={() => handleDeviceLogout(history.session_id)}
-                className="gap-15 mt-10 flex items-center font-medium text-default-400 hover:text-accent-700"
-              >
-                <span>이 기기에서 로그아웃</span>
-                <Image width={20} height={20} src="/image/ico-logout-device.svg" alt="logout" />
-              </button>
-            )} */}
           </div>
         ))}
       </div>
