@@ -112,7 +112,7 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
       </div>
-      <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+      <div className="flex flex-col rounded-md border border-default-300 bg-white p-5">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <TheDropdownMenu
@@ -136,7 +136,7 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
                 <Button
                   className={cn(
                     selectedChartType === opt.value
-                      ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                      ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                       : ''
                   )}
                   variant="outline"

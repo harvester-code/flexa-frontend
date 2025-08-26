@@ -85,7 +85,7 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
                 key={opt.value}
                 className={
                   target.value === opt.value
-                    ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                    ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                     : ''
                 }
                 variant="outline"
@@ -110,18 +110,18 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
 
             return (
               <div
-                className="relative flex flex-col overflow-hidden rounded-md border border-default-200 bg-white"
+                className="relative flex flex-col overflow-hidden rounded-md border border-default-300 bg-white"
                 key={i}
               >
                 <div className="bg-default-100 px-4 py-2">
                   <dl className="flex items-center justify-between">
                     <dt className="flex items-center gap-2">
-                      <span className="text-brand-500 rounded px-3 py-1 text-base font-semibold">
+                      <span className="text-primary-500 rounded px-3 py-1 text-base font-semibold">
                         {displayZone} {facility}
                       </span>
                     </dt>
                     <dd>
-                      <span className="text-brand-500 rounded px-3 py-1 text-base font-semibold">
+                      <span className="text-primary-500 rounded px-3 py-1 text-base font-semibold">
                         {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
                       </span>
                     </dd>

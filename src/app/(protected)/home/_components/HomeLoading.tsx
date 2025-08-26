@@ -2,7 +2,7 @@ import { ClipLoader } from 'react-spinners';
 
 function HomeLoading() {
   return (
-    <div className="mt-4 flex min-h-64 items-center justify-center gap-2 rounded-md border border-default-200">
+    <div className="mt-4 flex min-h-64 items-center justify-center gap-2 rounded-md border border-default-300">
       <ClipLoader
         color="#8B5CF6"
         size={50}

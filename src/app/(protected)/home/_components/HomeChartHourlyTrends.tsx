@@ -313,7 +313,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           <span>Line Chart</span>
         </div>
       </div>
-      <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+      <div className="flex flex-col rounded-md border border-default-300 bg-white p-5">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <TheDropdownMenu
@@ -338,7 +338,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                   className={cn(
                     'whitespace-nowrap',
                     chartOption1.includes(i)
-                      ? 'bg-default-200 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
+                      ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
                       : ''
                   )}
                   variant="outline"

@@ -180,7 +180,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
   return (
     <div
       className={cn(
-        'flex min-h-20 flex-col rounded-md border border-default-200 px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
+        'flex min-h-20 flex-col rounded-md border border-default-300 px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
         className
       )}
     >

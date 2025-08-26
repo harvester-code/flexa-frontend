@@ -51,7 +51,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
       </div>
-      <div className="flex flex-col rounded-md border border-default-200 bg-white p-5">
+      <div className="flex flex-col rounded-md border border-default-300 bg-white p-5">
         <div className="relative mb-2 h-8 w-full">
           {layerTitles.map((title, i) => {
             const isLast = i === layerTitles.length - 1;
