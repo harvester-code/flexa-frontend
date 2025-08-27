@@ -9,6 +9,11 @@ export default {
   ],
   theme: {
     extend: {
+      // 🎯 폰트 시스템
+      fontFamily: {
+        pretendard: ['Pretendard', 'sans-serif'],
+        sans: ['Pretendard', 'sans-serif'], // 기본 sans-serif를 Pretendard로 설정
+      },
       // 🎯 페이지 레이아웃 시스템
       maxWidth: {
         page: '83.75rem', // 1089px (13px 기준)
