@@ -7,6 +7,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 🎯 근본적 해결책: 전체 UI 크기 조정 */
+:root {
+  font-size: 13px; /* 16px → 13px = 18.75% 축소 (12px → 13px로 8% 증가) */
+}
+
 /* 2️⃣ CSS VARIABLES & THEME SYSTEM */
 @layer base {
   /* 📁 PRETENDARD FONT DEFINITIONS */
@@ -57,6 +62,33 @@
   }
   @font-face {
     font-family: 'Pretendard';
+    font-weight: 900;
+    font-display: swap;
+    src:
+      local('Pretendard Black'),
+      url(/fonts/woff2-subset/Pretendard-Black.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Black.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 100;
+    font-display: swap;
+    src:
+      local('Pretendard Thin'),
+      url(/fonts/woff2-subset/Pretendard-Thin.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-Thin.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 200;
+    font-display: swap;
+    src:
+      local('Pretendard ExtraLight'),
+      url(/fonts/woff2-subset/Pretendard-ExtraLight.subset.woff2) format('woff2'),
+      url(/fonts/woff-subset/Pretendard-ExtraLight.subset.woff) format('woff');
+  }
+  @font-face {
+    font-family: 'Pretendard';
     font-weight: 300;
     font-display: swap;
     src:
@@ -72,35 +104,17 @@
     --rounded-md: 0.5rem;
 
     /* color */
-    --primary: 262 67% 59%;
-    --secondary: 230 10% 50%;
+    --secondary: 210 40% 96.1%;
 
     /* bg */
 
     /* color-theme - unified with shadcn standards */
-    --default-25: 220 14.3% 95.9%; /* lightest bg */
-    --default-50: 210 40% 96.1%; /* = muted */
-    --default-100: 214.3 31.8% 91.4%; /* = border */
-    --default-200: 214.3 31.8% 91.4%; /* = input */
-    --default-300: 213.4 20% 82%; /* subtle border */
-    --default-400: 215.4 16.3% 46.9%; /* = muted-foreground */
-    --default-500: 220 8.9% 46.1%; /* medium text */
-    --default-600: 220.9 39.3% 11%; /* dark text */
-    --default-700: 222.2 84% 4.9%; /* = foreground */
-    --default-800: 224 71.4% 4.1%; /* darkest */
-    --default-900: 224 71.4% 4.1%; /* darkest */
+    --default-500: 215.4 16.3% 46.9%; /* medium text */
+    --default-900: 222.2 84% 4.9%; /* darkest text */
 
-    --brand-25: 262 30% 98%;
-    --brand-50: 262 40% 95%;
-    --brand-100: 262 50% 92%;
-    --brand-200: 262 55% 88%;
-    --brand-300: 262 60% 82%;
-    --brand-400: 262 65% 75%;
-    --brand-500: 262 67% 70%;
-    --brand-600: 262 67% 59%;
-    --brand-700: 262 67% 50%;
-    --brand-800: 262 67% 40%;
-    --brand-900: 262 67% 30%;
+    --primary-50: 262 50% 92%;
+    --primary-500: 262 67% 59%; /* main color */
+    --primary-900: 262 67% 50%;
     --white: 0 0% 100%;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -135,8 +149,6 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 262 67% 59%;
-    --brand-600: 262 67% 59%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -161,16 +173,16 @@
 body::-webkit-scrollbar {
   @apply w-2;
   @apply h-2;
-  background: hsl(var(--default-300));
+  background: hsl(var(--border));
 }
 
 body::-webkit-scrollbar-track {
-  /* @apply bg-default-200; */
+  /* @apply bg-muted; */
   @apply bg-white;
 }
 
 body::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-default-300;
+  @apply rounded-full bg-muted;
 }
 
 .scroll-list {
@@ -182,13 +194,13 @@ body::-webkit-scrollbar-thumb {
 }
 
 .scroll-list::-webkit-scrollbar-track {
-  /* @apply bg-default-200; */
+  /* @apply bg-muted; */
   border: none !important;
   @apply bg-white !important;
 }
 
 .scroll-list::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-default-300;
+  @apply rounded-full bg-muted;
 }
 
 .p-0 {
@@ -198,29 +210,23 @@ body::-webkit-scrollbar-thumb {
 body {
   font-family: 'Pretendard', sans-serif;
   font-weight: 400;
-  font-size: 16px;
-  color: var(--default-700);
+  font-size: 1rem; /* :root 12px 기반으로 자동 계산 */
+  color: var(--default-900);
   webkit-font-smoothing: antialiased;
   line-height: 150%;
 }
 h1 {
-  font-size: 36px;
-  line-height: 38px;
-
-  @apply font-semibold text-default-900;
+  @apply text-lg font-semibold text-default-900; /* Tailwind rem 기반 자동 축소 */
 }
 
 .title-sm {
-  font-size: 24px;
-  @apply inline-flex h-10 items-center font-semibold text-default-900;
+  @apply inline-flex h-10 items-center text-lg font-semibold text-default-900; /* Tailwind rem 기반 자동 축소 */
 }
 
 .text-40 {
-  @apply flex h-10 items-center font-medium text-default-800;
+  @apply flex h-10 items-center font-medium text-default-900;
 }
-.text-xl {
-  font-size: 20px;
-}
+/* .text-xl 클래스 제거 - Tailwind 기본 text-xl 사용 (rem 기반 자동 축소) */
 
 /* ================================================================
    5️⃣ BUTTON COMPONENTS (복잡 → 일반 CSS + @apply 조합)
@@ -230,24 +236,24 @@ h1 {
    ================================================================ */
 
 input::placeholder {
-  color: hsl(var(--default-400));
+  color: hsl(var(--default-500));
 }
 
 #wrapper {
-  min-width: 1440px;
+  min-width: 90rem; /* rem 기반으로 자동 축소 (90rem * 12px = 1080px) */
   @apply ml-auto mr-auto flex min-h-dvh flex-col;
 }
 /* #container {
   @apply relative flex min-h-dvh flex-col pl-[100px];
 } */
 #content {
-  @apply flex flex-grow flex-col bg-white pb-[70px] pl-7 pr-7;
+  @apply flex flex-grow flex-col bg-white pb-[70px];
 }
 
 .login-title {
-  font-size: 36px;
+  font-size: 16px; /* text-lg equivalent */
   line-height: 100%;
-  @apply font-bold text-brand;
+  @apply font-semibold text-primary;
 }
 button {
   @apply inline-flex items-center justify-center;
@@ -280,21 +286,21 @@ button {
 }
 /* 🎭 Button Variants (복잡) */
 .btn-default {
-  border: 1px solid var(--default-200);
+  border: 1px solid var(--border);
 
-  @apply bg-white text-default-700;
+  @apply bg-white text-default-900;
   &:hover {
-    background: var(--default-50);
+    background: var(--muted);
   }
 }
 .btn-tertiary {
-  border: 1px solid hsl(var(--brand-600));
+  border: 1px solid hsl(var(--primary-500));
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  @apply text-brand-600 min-w-[100px] bg-white px-5;
+  @apply min-w-[100px] bg-white px-5 text-primary;
   &:hover {
-    background: var(--brand-25);
+    background: var(--primary-50);
   }
 }
 .btn-red-line {
@@ -306,28 +312,29 @@ button {
   @apply min-w-[100px] bg-white px-5;
 }
 .btn-green-line {
-  border: 1px solid hsl(var(--primary));
-  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary-500));
+  color: hsl(var(--primary-500));
   box-shadow:
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply min-w-[100px] bg-white px-5;
 }
 .text-base {
-  font-size: 16px !important;
+  font-size: 14px !important; /* text-sm equivalent */
+  font-weight: 400 !important; /* font-normal */
 }
 .btn-rounded {
   border-radius: 100px;
 }
 .btn-primary {
-  background: hsl(var(--brand-600));
+  background: hsl(var(--primary-500));
   box-shadow:
     0px 0px 0px 1px rgba(16, 24, 40, 0.18) inset,
     0px -2px 0px 0px rgba(16, 24, 40, 0.05) inset,
     0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   @apply rounded-lg text-white;
   &:hover {
-    background: hsl(var(--brand-700));
+    background: hsl(var(--primary-900));
   }
 }
 .btn-secondary {
@@ -338,10 +345,10 @@ button {
   }
 }
 .btn-gradient {
-  background: linear-gradient(180deg, hsl(var(--brand-500)) 0%, hsl(var(--brand-700)) 100%);
+  background: linear-gradient(180deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-900)) 100%);
   transition: background 0.2s ease;
   &:hover {
-    background: hsl(var(--brand-600));
+    background: hsl(var(--primary-500));
   }
 }
 .btn-delete {
@@ -352,16 +359,11 @@ button {
   border-radius: 100px;
   @apply flex items-center gap-0.5 text-xs font-semibold text-destructive;
 }
-button:disabled {
-  border: 1px solid hsl(var(--default-200)) !important;
-  background: hsl(var(--default-100)) !important;
-  color: hsl(var(--default-200)) !important;
-}
 
 .btn-link {
   @apply inline-flex items-center gap-2.5 text-sm font-semibold underline;
   &:hover {
-    @apply text-brand;
+    @apply text-primary;
   }
 }
 .btn-more {
@@ -372,7 +374,7 @@ button:disabled {
     @apply h-3;
   }
   &:hover {
-    @apply bg-default-100;
+    @apply bg-muted;
   }
 }
 
@@ -381,12 +383,12 @@ input[type='number'],
 input[type='password'],
 input[type='email'],
 input[type='tel'] {
-  @apply border-default-200 !important;
+  @apply border-input !important;
   + .msg-error {
     @apply hidden;
   }
   &:focus {
-    outline: 1px solid var(--brand-600);
+    outline: 1px solid var(--primary-500);
   }
   &.error {
     outline: 1px solid hsl(var(--destructive));
@@ -396,7 +398,7 @@ input[type='tel'] {
   }
 }
 input[type='text']:read-only {
-  @apply text-default-400;
+  @apply text-default-500;
 }
 input[type='checkbox'] {
   opacity: 0;
@@ -448,126 +450,16 @@ input[type='checkbox'] {
 }
 
 textarea {
-  @apply w-full rounded-md border border-default-200 bg-white p-4 text-base text-default-800;
+  @apply w-full rounded-md border border-input bg-white p-4 text-sm font-normal text-default-900;
   &:focus {
-    outline: 1px solid var(--brand-600);
-  }
-}
-.select {
-  @apply h-10 flex-grow cursor-pointer appearance-none rounded-full border border-default-300 bg-white px-4;
-  background: url('/image/ico-arrow-down.svg') no-repeat right 12px center;
-  &:focus {
-    outline: 1px solid var(--brand-600);
-  }
-}
-.select-box {
-  @apply h-11;
-  @apply relative flex flex-grow cursor-pointer items-center gap-5 rounded-full border border-default-300 bg-white px-4;
-  .select-line {
-    @apply flex flex-grow text-base font-medium text-default-800;
-    .btn-list {
-      @apply flex items-center gap-2;
-      li {
-        @apply flex items-center;
-        button {
-          @apply h-6;
-          @apply inline-flex items-center gap-0.5 rounded-full border border-default-300 bg-default-25 pl-2.5 pr-1.5 font-medium text-default-700 hover:text-default-900;
-          .nav-icon {
-            @apply w-3;
-            @apply h-3;
-            @apply text-default-400;
-          }
-        }
-      }
-    }
-  }
-  .select-btn {
-    @apply ml-auto h-5 w-5;
-  }
-  .select-item {
-    top: 48px;
-    @apply p-1.5;
-    box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.08);
-    border: 1px solid hsl(var(--default-200));
-    @apply absolute left-0 hidden w-full overflow-auto rounded-md bg-white;
-    ul {
-      @apply flex flex-col gap-1;
-      li {
-        @apply flex items-center;
-        button {
-          @apply rounded-sm;
-          @apply hover:bg-brand-100 flex h-10 flex-grow items-center justify-start p-2.5 text-base font-medium text-default-600;
-        }
-      }
-    }
-  }
-  &.active {
-    @apply border-brand-600;
-    .select-item {
-      @apply z-10 block;
-    }
-    .select-btn {
-      @apply text-brand-500 rotate-180;
-    }
-  }
-  &.select-lg {
-    height: 50px;
-    .btn-list {
-      li {
-        button {
-          @apply h-7;
-        }
-      }
-    }
-    .select-item {
-      top: 54px;
-    }
-  }
-  &.select-sm {
-    @apply h-10;
-    @apply text-sm;
-    .select-line {
-      @apply text-sm;
-    }
-    .btn-list {
-      li {
-        button {
-          @apply h-7;
-        }
-      }
-    }
-    .select-item {
-      top: 44px;
-      ul {
-        @apply gap-0.5;
-        li {
-          button {
-            @apply h-7 py-1 text-sm;
-          }
-        }
-      }
-    }
-  }
-  &.select-color {
-    background: url('/image/ico-button-menu.svg') no-repeat 15px center;
-    background-size: 20px 20px;
-    @apply flex items-center gap-2.5 pl-[40px];
-    .select-line {
-      @apply flex-grow justify-center;
-    }
-    .select-btn {
-      @apply hidden;
-    }
-  }
-  &.select-square {
-    @apply rounded-md;
+    outline: 1px solid var(--primary-500);
   }
 }
 
 .title {
-  font-size: 30px;
+  font-size: 16px; /* text-lg equivalent */
   line-height: 150%;
-  @apply text-brand-700 font-bold;
+  @apply font-semibold text-primary-900;
 }
 .signUpContainer {
   @apply flex flex-col items-center justify-center pb-[60px] pt-[60px];
@@ -599,9 +491,9 @@ textarea {
       }
     }
     .active {
-      @apply text-brand;
+      @apply text-primary;
       img {
-        border: 5px solid hsl(var(--brand-100));
+        border: 5px solid hsl(var(--primary-50));
       }
     }
     .bar-on:after {
@@ -614,13 +506,13 @@ textarea {
   @apply mt-7;
 }
 .checkboxContainer {
-  background-color: hsl(var(--default-50));
+  background-color: hsl(var(--muted));
   border-radius: 8px;
-  border: 1px solid hsl(var(--default-200));
+  border: 1px solid hsl(var(--border));
   @apply mt-5 flex flex-col;
   dt {
-    background-color: hsl(var(--default-100));
-    border-bottom: 1px solid hsl(var(--default-200));
+    background-color: hsl(var(--muted));
+    border-bottom: 1px solid hsl(var(--border));
     @apply p-3;
     display: flex;
   }
@@ -649,7 +541,7 @@ textarea {
   @apply h-5;
 }
 .nav-icon {
-  font-size: 16px;
+  font-size: 16px; /* already correct for text-lg equivalent */
   @apply w-4;
   @apply h-4;
   display: inline;
@@ -662,24 +554,24 @@ textarea {
 
 /* simulation */
 .tag-sm {
-  @apply bg-brand-50 text-brand-700 flex h-7 items-center justify-between gap-1 rounded-md px-2.5 text-xs font-semibold;
+  @apply flex h-7 items-center justify-between gap-1 rounded-md bg-primary-50 px-2.5 text-xs font-semibold text-primary-900;
 }
 
 .table-default {
   @apply w-full;
   thead {
-    @apply bg-default-100;
+    @apply bg-muted;
     tr {
       th {
-        border-bottom: 1px solid hsl(var(--brand-500));
+        border-bottom: 1px solid hsl(var(--primary-500));
         @apply pl-1;
         @apply pr-1;
-        @apply h-12 text-sm font-medium text-default-600;
+        @apply h-12 text-sm font-medium text-default-900;
         .checkbox input[type='checkbox'] + label:before {
           @apply mb-1;
         }
         button {
-          @apply flex items-center gap-1.5 text-sm font-medium text-default-600;
+          @apply flex items-center gap-1.5 text-sm font-medium text-default-900;
         }
       }
     }
@@ -687,12 +579,12 @@ textarea {
   tbody {
     tr {
       &.active {
-        @apply bg-brand-50;
+        @apply bg-primary-50;
       }
       td {
         @apply px-1 py-2.5;
         line-height: 20px;
-        @apply h-[60px] font-medium text-default-700;
+        @apply h-[60px] font-medium text-default-900;
         .checkbox input[type='checkbox'] + label:before {
           @apply mb-1;
         }
@@ -705,11 +597,11 @@ textarea {
   thead {
     tr {
       th {
-        background: hsl(var(--default-50));
-        @apply min-h-10 border-b border-default-300 px-5 py-2.5 text-sm font-semibold text-default-600;
+        background: hsl(var(--muted));
+        @apply min-h-10 border-b border-input px-5 py-2.5 text-sm font-semibold text-default-900;
         &:first-of-type {
           border-radius: 8px 0px 0px 0px;
-          @apply border-r border-default-300 pl-6 pr-6;
+          @apply border-r border-input pl-6 pr-6;
         }
         &:last-of-type {
           border-radius: 0px 8px 0px 0px;
@@ -723,9 +615,9 @@ textarea {
       td {
         @apply px-1 py-4;
         line-height: 20px;
-        @apply h-[60px] border-t border-default-200 font-medium text-default-600;
+        @apply h-[60px] border-t border-input font-medium text-default-900;
         &:first-of-type {
-          @apply border-r border-default-200;
+          @apply border-r border-input;
         }
       }
     }
@@ -737,10 +629,10 @@ textarea {
   thead {
     tr {
       th {
-        border-bottom: 1px solid hsl(var(--brand-500));
-        @apply h-12 bg-default-100 px-1.5 text-sm font-medium text-default-600;
+        border-bottom: 1px solid hsl(var(--primary-500));
+        @apply h-12 bg-muted px-1.5 text-sm font-medium text-default-900;
         button {
-          @apply flex items-center gap-1.5 text-xs font-medium text-default-600;
+          @apply flex items-center gap-1.5 text-xs font-medium text-default-900;
         }
       }
     }
@@ -749,12 +641,12 @@ textarea {
     tr {
       @apply text-sm;
       th {
-        @apply border-b border-default-200 bg-default-50 px-1.5 text-left text-sm font-semibold text-default-800;
+        @apply border-b border-input bg-muted px-1.5 text-left text-sm font-semibold text-default-900;
       }
       td {
         @apply px-1 py-2.5;
         line-height: 20px;
-        @apply h-[70px] border-b border-default-200 bg-white px-1.5 font-medium text-default-700;
+        @apply h-[70px] border-b border-input bg-white px-1.5 font-medium text-default-900;
         .checkbox input[type='checkbox'] + label:before {
           @apply mb-1;
         }
@@ -769,55 +661,52 @@ textarea {
     @apply h-5 text-sm font-medium text-default-500;
   }
   dd {
-    @apply flex h-10 items-center gap-5 text-xl font-semibold text-default-800;
+    @apply flex h-10 items-center gap-5 text-lg font-semibold text-default-900;
     span {
-      border: 1px solid hsl(var(--default-200));
-      background: var(--default-50);
+      border: 1px solid hsl(var(--border));
+      background: var(--muted);
       border-radius: 100px;
-      @apply inline-flex h-7 items-center px-4 text-sm font-medium text-default-800;
+      @apply inline-flex h-7 items-center px-4 text-sm font-medium text-default-900;
     }
   }
 }
 
 .tab-default {
-  border-bottom: 1px solid var(--default-100);
-  @apply flex flex-grow items-center justify-center gap-2.5 px-2.5;
+  border-bottom: 1px solid var(--muted);
+  @apply flex flex-grow items-center justify-center gap-1 px-2.5;
   button {
-    border-bottom: 3px solid transparent;
-    @apply pb-3;
-    line-height: 100%;
-    @apply h-10;
-    @apply flex-1 pt-1 text-sm font-medium text-default-400;
+    @apply h-12 flex-1 px-4 py-3;
+    @apply text-sm font-medium text-default-500;
+    @apply transition-colors duration-200;
+    line-height: 1.2;
+
     &:hover {
-      @apply text-brand-700;
+      @apply bg-transparent text-primary-900;
     }
     &.active {
-      border-bottom: 3px solid var(--brand-700);
-      @apply text-brand-700 font-semibold;
+      @apply bg-transparent font-semibold text-primary-900;
       span {
-        @apply border-brand-300 bg-brand-100 text-brand-700 inline-flex items-center justify-center rounded-full border text-xs font-normal;
+        @apply inline-flex items-center justify-center rounded-full border border-primary-50 bg-primary-50 text-xs font-normal text-primary-900;
       }
     }
     span {
-      @apply h-5;
-      @apply px-2;
-      @apply ml-1;
-      @apply inline-flex items-center justify-center rounded-full border border-default-200 bg-default-50 text-xs font-medium text-default-600;
+      @apply ml-2 h-5 px-2;
+      @apply inline-flex items-center justify-center rounded-full border border-input bg-muted text-xs font-medium text-default-900;
     }
   }
   &.tab-secondary {
     button {
       border-bottom: 2px solid transparent;
-      @apply h-12 text-base font-semibold text-default-400;
+      @apply h-12 text-sm font-medium text-default-500;
       &.active {
-        border-bottom: 2px solid var(--default-800);
-        @apply text-default-800;
+        border-bottom: 2px solid var(--default-900);
+        @apply text-default-900;
       }
       &:hover {
-        @apply text-default-800;
+        @apply text-default-900;
       }
       span {
-        @apply inline-flex items-center justify-center border border-default-200 bg-default-50 text-xs font-medium text-default-600;
+        @apply inline-flex items-center justify-center border border-input bg-muted text-xs font-medium text-default-900;
       }
     }
   }
@@ -826,9 +715,9 @@ textarea {
 .overview-wrap {
   margin-left: -30px;
   width: calc(100% + 60px);
-  @apply grid grid-cols-6 gap-2.5 bg-default-100 p-7;
+  @apply grid grid-cols-6 gap-2.5 bg-muted p-7;
   .overview-item {
-    border: 1px solid hsl(var(--default-200));
+    border: 1px solid hsl(var(--border));
     aspect-ratio: 200/120;
     @apply flex w-full cursor-default flex-col rounded-md bg-white p-2.5;
     dl {
@@ -839,7 +728,7 @@ textarea {
       }
       dd {
         line-height: 30px;
-        font-size: 24px;
+        font-size: 16px; /* text-lg equivalent */
         @apply flex-1 whitespace-pre text-wrap break-words font-medium text-default-900;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -856,9 +745,9 @@ textarea {
 
 .badge {
   border-radius: 100px;
-  border: 1px solid hsl(var(--primary) / 0.3);
-  background: hsl(var(--primary) / 0.05);
-  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary-500) / 0.3);
+  background: hsl(var(--primary-500) / 0.05);
+  color: hsl(var(--primary-500));
   @apply w-[70px];
   @apply h-7;
   @apply inline-flex items-center justify-center text-xs font-semibold;
@@ -867,9 +756,9 @@ textarea {
     @apply px-4;
   }
   &.yellow {
-    border: 1px solid hsl(var(--primary) / 0.3);
-    background: hsl(var(--primary) / 0.05);
-    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary-500) / 0.3);
+    background: hsl(var(--primary-500) / 0.05);
+    color: hsl(var(--primary-500));
   }
 }
 
@@ -879,14 +768,14 @@ textarea {
     border-left: none;
     @apply font-medium text-default-500;
     &:first-of-type {
-      border-left: 1px solid var(--default-200);
+      border-left: 1px solid var(--border);
     }
     img {
       @apply hidden;
     }
     &.active {
-      background: var(--default-50);
-      @apply font-semibold text-default-700;
+      background: var(--muted);
+      @apply font-semibold text-default-900;
       img {
         @apply block;
       }
@@ -904,27 +793,27 @@ textarea {
 .progress-bar {
   @apply mt-1 flex h-5 w-full items-center gap-2.5;
   .progress-bar-inner {
-    @apply flex h-2 flex-none flex-grow items-center rounded-full bg-default-200;
+    @apply flex h-2 flex-none flex-grow items-center rounded-full bg-muted;
     p {
-      @apply bg-brand-700 h-2 rounded-full;
+      @apply h-2 rounded-full bg-primary-900;
     }
   }
   p {
-    @apply w-[40px] flex-none text-right text-sm font-medium text-default-800;
+    @apply w-[40px] flex-none text-right text-sm font-medium text-default-900;
   }
 }
 .profile-wrap {
   .profile-header {
-    @apply flex flex-col items-center gap-5 pl-7 pr-7 md:flex-row;
+    @apply flex flex-col items-center gap-5 md:flex-row;
     .profile-img {
       border: 4px solid white;
       background: hsl(var(--background));
       box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
       @apply flex items-center justify-center rounded-full font-semibold;
       p {
-        font-size: 60px;
-        border: 1px solid hsl(var(--default-300));
-        @apply flex h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full font-semibold text-default-700;
+        font-size: 16px; /* text-lg equivalent */
+        border: 1px solid hsl(var(--border));
+        @apply flex h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full font-semibold text-default-900;
         img {
           @apply h-full w-full object-cover;
         }
@@ -933,13 +822,13 @@ textarea {
     .profile-info {
       @apply mt-5 flex flex-col gap-1 text-center md:text-left;
       dt {
-        font-size: 30px;
+        font-size: 16px; /* text-lg equivalent */
         line-height: 38px;
         @apply font-semibold text-default-900;
       }
       dd {
         line-height: 24px;
-        @apply text-lg font-medium text-default-600;
+        @apply text-sm font-normal text-default-900;
       }
     }
   }
@@ -951,17 +840,17 @@ textarea {
     }
   }
   .profile-form {
-    @apply border-t border-default-300 text-sm;
+    @apply border-t border-input text-sm;
     .form-item {
-      @apply flex items-start justify-between gap-7 border-b border-default-100 pb-[20px] pt-[20px];
+      @apply flex items-start justify-between gap-7 border-b border-muted pb-[20px] pt-[20px];
       .form-item-title {
         @apply flex w-[280px] flex-none items-center;
         dl {
           @apply flex flex-col;
           dt {
-            @apply flex items-center gap-1 whitespace-nowrap font-semibold text-default-800;
+            @apply flex items-center gap-1 whitespace-nowrap font-semibold text-default-900;
             span {
-              @apply text-brand-600 w-[280px] flex-none;
+              @apply w-[280px] flex-none text-primary;
             }
           }
           dd {
@@ -978,40 +867,40 @@ textarea {
 }
 
 .current-device {
-  @apply inline-flex items-center gap-1 rounded-full border border-default-200 bg-white px-[8px] text-xs font-medium text-default-800;
+  @apply inline-flex items-center gap-1 rounded-full border border-input bg-white px-[8px] text-xs font-medium text-default-900;
 }
 
 .chart-info {
-  @apply flex items-center gap-4 text-sm font-medium text-default-800;
+  @apply flex items-center gap-4 text-sm font-medium text-default-900;
   li {
     @apply flex items-center gap-1;
     span {
-      @apply flex h-2 w-2 rounded-full bg-default-200;
+      @apply flex h-2 w-2 rounded-full bg-muted;
     }
   }
 }
 
 .MuiPopper-root.MuiTooltip-popper {
   line-height: 1.5;
-  @apply text-xs text-default-600;
+  @apply text-xs text-default-900;
   > div {
     @apply p-3;
     border-radius: 8px;
   }
   .MuiTooltip-tooltip {
     box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.08);
-    @apply border border-default-300 bg-white text-xs text-default-600;
+    @apply border border-input bg-white text-xs text-default-900;
     strong {
-      @apply text-sm font-semibold text-default-700;
+      @apply text-sm font-semibold text-default-900;
     }
     .MuiTooltip-arrow {
-      color: hsl(var(--default-25));
+      color: hsl(var(--muted));
     }
   }
   .MuiTooltip-arrow::before {
-    box-shadow: 0 0 0 1px hsl(var(--default-300));
+    box-shadow: 0 0 0 1px hsl(var(--border));
     background-color: white;
-    border-color: hsl(var(--default-300));
+    border-color: hsl(var(--border));
   }
 }
 
@@ -1019,7 +908,7 @@ textarea {
   @apply min-w-[100px] flex-grow;
   dt {
     @apply gap-1;
-    @apply mb-1 flex items-center pl-[15px] text-sm font-medium text-default-800;
+    @apply mb-1 flex items-center pl-[15px] text-sm font-medium text-default-900;
     button {
       @apply ml-0.5;
     }
@@ -1030,39 +919,12 @@ textarea {
       top: 44px;
     }
     &.active {
-      @apply border-brand-600;
+      @apply border-primary;
       .select-btn {
-        @apply text-brand-500;
+        @apply text-primary-500;
       }
     }
   }
-}
-
-.input-rounded {
-  @apply h-10 rounded-full border border-default-300 !important;
-}
-
-.input-default {
-  @apply bg-white text-default-900;
-  &:focus {
-    /* @apply outline-none !important; */
-  }
-  &:read-only {
-    @apply text-default-800 !important;
-  }
-  &.input-transparent {
-    @apply !border-transparent;
-    &:focus {
-      @apply !outline-none;
-    }
-  }
-}
-.select-default {
-  @apply rounded-md border-default-200;
-}
-.select-small {
-  @apply rounded-md border-default-200;
-  font-size: 16px;
 }
 
 .gate-list {
@@ -1071,10 +933,10 @@ textarea {
   li {
     @apply flex flex-grow;
     button {
-      @apply flex h-10 flex-grow items-center justify-center gap-2 rounded-full border border-default-200 bg-white text-default-400;
+      @apply flex h-10 flex-grow items-center justify-center gap-2 rounded-full border border-input bg-white text-default-500;
       span {
         @apply h-6;
-        @apply flex items-center justify-center rounded-full border border-default-200 bg-default-50 px-2.5 text-xs font-medium text-default-700;
+        @apply flex items-center justify-center rounded-full border border-input bg-muted px-2.5 text-xs font-medium text-default-900;
       }
     }
     &.active {
@@ -1084,7 +946,7 @@ textarea {
     }
     &.check {
       button {
-        background-color: hsl(var(--brand-25));
+        background-color: hsl(var(--primary-50));
         @apply text-black;
       }
     }
@@ -1093,17 +955,17 @@ textarea {
 
 /* indicator */
 .indicator {
-  @apply flex flex-col gap-5 rounded-xl bg-default-100 p-[20px];
+  @apply flex flex-col gap-5 rounded-xl bg-muted p-[20px];
   .indicator-list {
     @apply grid;
     dl {
       @apply p-6;
-      @apply flex h-[120px] flex-col gap-2.5 rounded-xl border border-default-200 bg-white;
+      @apply flex h-[120px] flex-col gap-2.5 rounded-xl border border-input bg-white;
       dt {
-        @apply text-sm font-medium text-default-600;
+        @apply text-sm font-medium text-default-900;
       }
       dd {
-        font-size: 36px;
+        font-size: 16px; /* text-lg equivalent */
         @apply font-semibold text-default-900;
       }
     }
@@ -1111,18 +973,18 @@ textarea {
 }
 
 .location {
-  @apply mt-5 flex h-12 items-center gap-4 rounded-md border border-default-200 bg-default-50 px-5 font-medium;
+  @apply mt-5 flex h-12 items-center gap-4 rounded-md border border-input bg-muted px-5 font-medium;
   span:first-child {
-    @apply inline-flex text-default-600;
+    @apply inline-flex text-default-900;
   }
   span {
-    @apply inline-flex items-center gap-4 text-default-800;
+    @apply inline-flex items-center gap-4 text-default-900;
     &::after {
       content: '';
       @apply w-4;
       @apply h-4;
       background: url('/image/ico-arrow-right.svg') no-repeat center center;
-      @apply text-default-400 opacity-60;
+      @apply text-default-500 opacity-60;
     }
     &:last-child {
       @apply mr-0;
@@ -1135,20 +997,20 @@ textarea {
 
 .MuiPaper-root.sub-menu {
   h6 {
-    @apply flex h-10 items-center pl-2.5 text-base font-semibold text-default-800;
+    @apply flex h-10 items-center pl-2.5 text-sm font-medium text-default-900;
   }
   * {
     font-family: 'Pretendard', sans-serif;
   }
   box-shadow: 0px 6px 20px 0px rgba(0, 0, 0, 0.14);
-  @apply mt-2.5 w-[135px] rounded-md border border-default-200 px-2.5 transition-none;
+  @apply mt-2.5 w-[135px] rounded-md border border-input px-2.5 transition-none;
   ul {
     @apply py-1;
     hr {
-      @apply m-0 border-default-200;
+      @apply m-0 border-input;
     }
     li {
-      @apply flex h-10 items-center gap-1 px-[5px] py-0 text-base leading-none;
+      @apply flex h-10 items-center gap-1 px-[5px] py-0 text-sm font-normal leading-none;
       &.text {
         @apply pointer-events-none;
       }
@@ -1159,7 +1021,7 @@ textarea {
         @apply hidden;
       }
       &:hover {
-        @apply bg-brand-50;
+        @apply bg-primary-50;
       }
     }
   }
@@ -1168,8 +1030,8 @@ textarea {
 .tab-setting {
   @apply flex flex-grow items-center;
   .tab {
-    border-bottom: 2px solid var(--default-200);
-    @apply relative flex h-10 flex-grow items-center justify-center gap-2.5 pr-7 font-semibold text-default-400;
+    border-bottom: 2px solid var(--border);
+    @apply relative flex h-10 flex-grow items-center justify-center gap-2.5 font-semibold text-default-500;
     .tab-btn {
       @apply flex h-full flex-grow items-center justify-center;
     }
@@ -1177,14 +1039,14 @@ textarea {
       @apply absolute right-0;
     }
     &.active {
-      @apply text-brand-600;
-      border-bottom: 2px solid var(--brand-600);
+      @apply text-primary;
+      border-bottom: 2px solid var(--primary-500);
     }
   }
 
   &.tab-black {
     .tab {
-      @apply text-default-400;
+      @apply text-default-500;
 
       &.active {
         @apply text-default-900;
@@ -1197,18 +1059,18 @@ textarea {
 .process-list {
   @apply mt-1 flex flex-col;
   .process-item {
-    @apply flex flex-col justify-between gap-5 border-b border-default-200 pb-[25px] pt-[25px];
+    @apply flex flex-col justify-between gap-5 border-b border-input pb-[25px] pt-[25px];
     dl {
       @apply flex flex-col gap-2.5;
       dt {
-        @apply text-xl font-semibold leading-none text-default-800;
+        @apply text-lg font-semibold leading-none text-default-900;
       }
       dd {
-        @apply text-sm font-medium leading-none text-default-600;
+        @apply text-sm font-medium leading-none text-default-900;
       }
     }
     .add-precess {
-      @apply flex h-10 w-full items-center justify-center gap-1 rounded-md border border-default-200 bg-default-100 text-sm font-semibold text-default-900;
+      @apply flex h-10 w-full items-center justify-center gap-1 rounded-md border border-input bg-muted text-sm font-semibold text-default-900;
     }
   }
 }
@@ -1218,13 +1080,13 @@ textarea {
   .process-item {
     @apply flex flex-col;
     .process-item-title {
-      @apply flex items-center justify-between rounded-md bg-default-100 px-4 py-2.5 text-lg font-semibold text-default-800;
+      @apply flex items-center justify-between rounded-md bg-muted px-4 py-2.5 text-sm font-medium text-default-900;
       button {
         @apply ml-auto flex h-5 w-5 items-center justify-center;
       }
     }
     .process-item-content {
-      @apply my-[15px] flex flex-col rounded-md border border-default-200 bg-default-100 p-[20px];
+      @apply my-[15px] flex flex-col rounded-md border border-input bg-muted p-[20px];
     }
   }
 }
@@ -1233,11 +1095,11 @@ dl.process-item-title {
   @apply flex flex-col gap-2.5;
 
   dt {
-    @apply text-xl font-semibold leading-none text-default-800;
+    @apply text-lg font-semibold leading-none text-default-900;
   }
 
   dd {
-    @apply text-sm font-medium leading-none text-default-600;
+    @apply text-sm font-medium leading-none text-default-900;
   }
 }
 
@@ -1287,17 +1149,17 @@ dl.process-item-title {
   @apply mt-5 flex flex-col gap-5;
 
   .detail-item {
-    @apply flex flex-col rounded-md border border-default-200 bg-default-100 px-5 py-4;
+    @apply flex flex-col rounded-md border border-input bg-muted px-5 py-4;
 
     .detail-head {
       @apply mb-[14px] flex max-h-6 items-center justify-between;
 
       h4 {
-        @apply text-xl font-semibold;
+        @apply text-lg font-semibold;
       }
 
       a {
-        @apply flex items-center gap-0.5 text-xs font-bold;
+        @apply flex items-center gap-0.5 text-xs font-normal;
       }
     }
 
@@ -1305,7 +1167,7 @@ dl.process-item-title {
       @apply flex flex-col gap-2.5;
 
       > .summary {
-        @apply gap-3 rounded-md border border-default-200 bg-white px-2.5 py-2.5;
+        @apply gap-3 rounded-md border border-input bg-white px-2.5 py-2.5;
 
         > div {
           @apply relative flex items-center gap-2.5 px-2.5;
@@ -1318,11 +1180,11 @@ dl.process-item-title {
             @apply flex h-[65px] flex-col justify-center;
 
             dt {
-              @apply text-sm font-semibold text-default-600;
+              @apply text-sm font-semibold text-default-900;
             }
 
             dd {
-              @apply text-xl font-medium;
+              @apply text-sm font-normal;
             }
           }
         }
@@ -1337,7 +1199,7 @@ dl.process-item-title {
         }
 
         &::-webkit-scrollbar-thumb {
-          @apply rounded-full bg-default-300;
+          @apply rounded-full bg-muted;
         }
 
         &::-webkit-scrollbar-track {
@@ -1345,7 +1207,7 @@ dl.process-item-title {
         }
 
         .scroll-item {
-          @apply flex flex-none flex-col rounded-md border border-default-200 bg-white p-4;
+          @apply flex flex-none flex-col rounded-md border border-input bg-white p-4;
           scroll-snap-align: start;
 
           .scroll-item-head {
@@ -1355,7 +1217,7 @@ dl.process-item-title {
               @apply flex items-center;
 
               em {
-                @apply text-xl font-semibold;
+                @apply text-lg font-semibold;
                 font-style: normal;
               }
 
@@ -1367,14 +1229,14 @@ dl.process-item-title {
               }
               .stats-open {
                 @apply ml-2.5 items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium;
-                border: 1px solid hsl(var(--primary) / 0.3);
-                background-color: hsl(var(--primary) / 0.05);
-                color: hsl(var(--primary));
+                border: 1px solid hsl(var(--primary-500) / 0.3);
+                background-color: hsl(var(--primary-500) / 0.05);
+                color: hsl(var(--primary-500));
               }
             }
 
             a {
-              @apply flex items-center justify-center rounded-full bg-default-100 px-2 py-0.5 text-xs;
+              @apply flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs;
             }
           }
 
@@ -1389,7 +1251,7 @@ dl.process-item-title {
                   @apply flex flex-col justify-center gap-0.5;
 
                   dt {
-                    @apply text-xs font-semibold text-default-600;
+                    @apply text-xs font-semibold text-default-900;
                   }
                   dd {
                     @apply text-sm font-semibold;
@@ -1431,7 +1293,7 @@ dl.process-item-title {
 
                 dl {
                   dd {
-                    @apply text-default-300;
+                    @apply text-muted-foreground;
                   }
                 }
               }
@@ -1453,7 +1315,7 @@ dl.process-item-title {
   padding: 0;
   @apply m-0;
   background: transparent;
-  font-size: 1em;
+  font-size: 14px; /* text-sm equivalent */
   outline: none;
 }
 
@@ -1464,7 +1326,7 @@ dl.process-item-title {
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.06);
   display: flex;
   border-style: solid;
-  border-color: hsl(var(--brand-600));
+  border-color: hsl(var(--primary-500));
   border-width: 2px;
   @apply px-1;
 }
@@ -1484,8 +1346,8 @@ dl.process-item-title {
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-text-cell.placeholder {
-  color: hsl(var(--default-400));
-  font-size: 0.8em;
+  color: hsl(var(--default-500));
+  font-size: 12px; /* text-xs equivalent */
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell {
@@ -1533,15 +1395,15 @@ dl.process-item-title {
   left: 0;
   @apply h-4;
   @apply w-4;
-  background-color: hsl(var(--default-100));
+  background-color: hsl(var(--muted));
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell label:hover input ~ span {
-  background-color: hsl(var(--default-200));
+  background-color: hsl(var(--border));
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell label input:checked ~ span {
-  background-color: hsl(var(--brand-600));
+  background-color: hsl(var(--primary-500));
 }
 
 .reactgrid-content .rg-pane .rg-cell.rg-checkbox-cell span:after {
@@ -1643,7 +1505,7 @@ dl.process-item-title {
 }
 
 .reactgrid-content .rg-pane .rg-cell {
-  font-size: 1em;
+  font-size: 14px; /* text-sm equivalent */
   box-sizing: border-box;
   white-space: normal;
   text-align: center;
@@ -1678,7 +1540,7 @@ dl.process-item-title {
 
 .reactgrid-content .rg-pane .rg-cell .rg-touch-column-resize-handle .rg-resize-handle:hover {
   cursor: col-resize;
-  background-color: hsl(var(--brand-600));
+  background-color: hsl(var(--primary-500));
 }
 
 .reactgrid-content .rg-pane .rg-cell .rg-touch-row-resize-handle {
@@ -1699,11 +1561,11 @@ dl.process-item-title {
 
 .reactgrid-content .rg-pane .rg-cell .rg-touch-row-resize-handle .rg-resize-handle:hover {
   cursor: row-resize;
-  background-color: hsl(var(--brand-600));
+  background-color: hsl(var(--primary-500));
 }
 
 .reactgrid-content .rg-pane .rg-cell .rg-groupId {
-  font-size: 0.8em;
+  font-size: 12px; /* text-xs equivalent */
   position: absolute;
   right: 4px;
   top: 4px;
@@ -1716,7 +1578,7 @@ dl.process-item-title {
   box-sizing: border-box;
   border-style: solid;
   border-width: 2px;
-  border-color: hsl(var(--brand-600));
+  border-color: hsl(var(--primary-500));
 }
 
 .reactgrid-content .rg-pane .rg-touch-fill-handle {
@@ -1736,7 +1598,7 @@ dl.process-item-title {
   transform: translate(calc(-50% - (1px / 2)), calc(-50% - (1px / 2)));
   width: 6.5px;
   height: 6.5px;
-  background-color: hsl(var(--brand-600));
+  background-color: hsl(var(--primary-500));
   border-width: 1px;
   border-style: solid;
   border-color: white;
@@ -1758,8 +1620,8 @@ dl.process-item-title {
 .reactgrid-content .rg-pane .rg-partial-area.rg-partial-area-selected-range {
   border-width: 1px;
   border-style: solid;
-  border-color: hsl(var(--brand-600));
-  background-color: hsla(var(--brand-600) / 0.35);
+  border-color: hsl(var(--primary-500));
+  background-color: hsla(var(--primary-500) / 0.35);
 }
 
 .reactgrid-content .rg-pane-shadow {
@@ -1810,7 +1672,7 @@ dl.process-item-title {
   position: fixed;
   z-index: 1000;
   background-color: hsl(var(--background));
-  font-size: 1em;
+  font-size: 14px; /* text-sm equivalent */
   box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.06);
 }
 
@@ -1831,14 +1693,14 @@ dl.process-item-title {
 }
 
 .reactgrid-content .rg-column-resize-hint {
-  background-color: hsl(var(--brand-400));
+  background-color: hsl(var(--primary-50));
   position: absolute;
   @apply p-1;
   border-radius: 0 5px 5px 0;
 }
 
 .reactgrid-content .rg-row-resize-hint {
-  background-color: hsl(var(--brand-400));
+  background-color: hsl(var(--primary-50));
   position: absolute;
   @apply p-1;
   border-radius: 0 5px 5px 0;
@@ -1846,7 +1708,7 @@ dl.process-item-title {
 
 .reactgrid-content .rg-line {
   position: absolute;
-  background-color: hsl(var(--brand-400));
+  background-color: hsl(var(--primary-50));
   z-index: 4;
 }
 
@@ -1874,7 +1736,7 @@ dl.process-item-title {
 
 /* AppSidebar.css - Navigation Styles */
 #navigation {
-  border-right: 1px solid hsl(var(--default-100));
+  border-right: 1px solid hsl(var(--muted));
   @apply pl-3;
   @apply pr-3;
   z-index: 50;
@@ -1888,14 +1750,14 @@ dl.process-item-title {
   }
 
   hr {
-    border-top: 1px solid hsl(var(--default-200));
+    border-top: 1px solid hsl(var(--border));
     @apply mb-[10px] mt-2.5 w-full;
   }
 
   .search-box {
     @apply h-11;
     @apply px-3;
-    @apply mt-[50px] flex w-full items-center justify-between gap-2.5 rounded-md border border-default-200 bg-white;
+    @apply mt-[50px] flex w-full items-center justify-between gap-2.5 rounded-md border border-input bg-white;
 
     input {
       @apply h-full w-full;
@@ -1909,9 +1771,9 @@ dl.process-item-title {
     }
 
     &.active {
-      border: 1px solid hsl(var(--brand-700));
+      border: 1px solid hsl(var(--primary-900));
       .search-icon svg path {
-        fill: hsl(var(--default-700));
+        fill: hsl(var(--default-900));
       }
     }
   }
@@ -1927,7 +1789,7 @@ dl.process-item-title {
         padding: 0 12px 0 26px;
         border-radius: 8px;
         line-height: 100%;
-        @apply flex cursor-pointer items-center justify-between gap-2.5 font-semibold text-secondary;
+        @apply flex cursor-pointer items-center justify-between gap-2.5 font-semibold text-secondary-foreground;
 
         > .text {
           @apply mt-0.5;
@@ -1939,11 +1801,11 @@ dl.process-item-title {
         }
 
         &:hover {
-          background: hsl(var(--brand-100));
-          @apply text-brand-700;
+          background: hsl(var(--primary-50));
+          @apply text-primary-900;
 
           svg path {
-            fill: hsl(var(--brand-700));
+            fill: hsl(var(--primary-900));
           }
 
           .nav-icon {
@@ -1959,20 +1821,20 @@ dl.process-item-title {
           min-width: 24px;
           @apply h-6;
           border-radius: 12px;
-          font-size: 10px;
+          font-size: 12px; /* text-xs equivalent */
           @apply px-1;
-          @apply bg-brand-600 inline-flex items-center justify-center font-normal text-white;
+          @apply inline-flex items-center justify-center bg-primary font-normal text-white;
         }
       }
     }
 
     .active {
       > a {
-        background: hsl(var(--brand-100));
-        @apply text-brand-700;
+        background: hsl(var(--primary-50));
+        @apply text-primary-900;
 
         svg path {
-          fill: hsl(var(--brand-700));
+          fill: hsl(var(--primary-900));
         }
 
         .nav-icon {
@@ -1992,16 +1854,16 @@ dl.process-item-title {
         @apply hidden flex-col;
 
         li {
-          border-bottom: 1px solid hsl(var(--default-50));
+          border-bottom: 1px solid hsl(var(--muted));
           @apply flex items-center justify-between;
 
           a {
-            color: hsl(var(--default-700));
+            color: hsl(var(--default-900));
             padding-left: 28px;
             @apply flex h-10 items-center pr-[20px] text-sm;
 
             &:hover {
-              @apply text-brand-700;
+              @apply text-primary-900;
             }
           }
         }
@@ -2015,11 +1877,11 @@ dl.process-item-title {
         box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.15);
 
         > a {
-          background: hsl(var(--brand-100));
-          @apply text-brand-700;
+          background: hsl(var(--primary-50));
+          @apply text-primary-900;
 
           svg path {
-            fill: hsl(var(--brand-700));
+            fill: hsl(var(--primary-900));
           }
 
           .nav-icon {
@@ -2035,7 +1897,7 @@ dl.process-item-title {
   }
 
   .my-menu {
-    border-top: 1px solid hsl(var(--default-200));
+    border-top: 1px solid hsl(var(--border));
     @apply mt-auto flex w-full flex-none flex-col pb-[20px] pt-[10px];
 
     > button {
@@ -2044,7 +1906,7 @@ dl.process-item-title {
 
       .profile-icon {
         background-color: hsl(var(--background));
-        border: 1px solid hsl(var(--default-300));
+        border: 1px solid hsl(var(--border));
         @apply flex h-12 w-[50px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
 
         img {
@@ -2073,7 +1935,7 @@ dl.process-item-title {
       @apply absolute left-0 hidden w-full flex-col gap-1 bg-white text-sm;
 
       .my-name {
-        border-bottom: 1px solid hsl(var(--default-200));
+        border-bottom: 1px solid hsl(var(--border));
         @apply px-3 py-4;
         @apply gap-3;
         @apply flex items-center;
@@ -2088,7 +1950,7 @@ dl.process-item-title {
 
           dd {
             line-height: 20px;
-            color: hsl(var(--default-400));
+            color: hsl(var(--default-500));
             @apply text-xs;
           }
         }
@@ -2098,7 +1960,7 @@ dl.process-item-title {
 
           .photo {
             background-color: hsl(var(--background));
-            border: 1px solid hsl(var(--default-300));
+            border: 1px solid hsl(var(--border));
             line-height: 100%;
             @apply relative flex h-10 w-[40px] items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground;
 
@@ -2121,10 +1983,10 @@ dl.process-item-title {
         a {
           border-radius: 4px;
           @apply gap-2;
-          @apply flex h-10 w-full items-center pl-2.5 pr-[10px] text-secondary;
+          @apply flex h-10 w-full items-center pl-2.5 pr-[10px] text-secondary-foreground;
 
           &:hover {
-            background: hsl(var(--brand-25));
+            background: hsl(var(--primary-50));
             @apply text-primary;
           }
         }
@@ -2135,14 +1997,14 @@ dl.process-item-title {
       }
 
       .logout {
-        border: 1px solid hsl(var(--default-200));
+        border: 1px solid hsl(var(--border));
         border-radius: 8px;
         @apply gap-2;
         @apply flex h-10 w-full items-center justify-center text-sm font-medium text-muted-foreground;
 
         &:hover {
           border: 1px solid hsl(var(--default-500));
-          background: hsl(var(--default-50));
+          background: hsl(var(--muted));
         }
       }
     }
