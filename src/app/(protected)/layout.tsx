@@ -3,13 +3,13 @@ import AppSidebar from '@/components/AppSidebar';
 
 async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div className="flex h-screen overflow-hidden">
       <AppSidebar />
-      <main className="relative ml-[100px] flex min-h-screen flex-col">
+      <main className="flex flex-1 flex-col overflow-auto">
         <section className="flex-1">{children}</section>
         <AppFooter />
       </main>
-    </>
+    </div>
   );
 }
 

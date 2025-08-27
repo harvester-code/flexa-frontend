@@ -49,8 +49,8 @@ export interface Condition {
 }
 
 export interface SimplifiedCondition {
-  criteria: string;
-  value: string[];
+  field: string;
+  values: string[];
 }
 
 export interface ConditionState {
@@ -75,11 +75,8 @@ export interface CreateScenarioParams {
 export interface FlightSchedulesParams {
   airport: string;
   date: string;
-  condition: SimplifiedCondition[];
-}
-
-export interface PassengerSchedulesParams {
-  destribution_conditions: ConditionState[];
+  type: string;
+  conditions: SimplifiedCondition[];
 }
 
 export interface MetadataSaveResponse {
@@ -97,7 +94,6 @@ export interface MetadataLoadResponse {
       passengerSchedule: any;
       processingProcedures: any;
       facilityConnection: any;
-      facilityInformation: any;
     };
   };
   s3_key: string;
@@ -168,6 +164,7 @@ export interface ScenarioOverview {
 export interface FlightSchedule {
   airport: string;
   date: string;
+  type: 'departure' | 'arrival';
   availableConditions: AvailableConditions;
   selectedConditions: SelectedConditions;
   total: number;
@@ -197,29 +194,68 @@ export interface AirlineInfo {
   name: string;
 }
 
-export interface PassengerSchedule {
-  destribution_conditions: DestributionCondition[];
-  isCompleted: boolean;
-  apiResponseData: PassengerScheduleResponse | null;
-}
+// New JSON structure for show_up_pax.json
+export interface PassengerScheduleShowUpPax {
+  settings: Record<string, any>;
+  pax_demographics: Record<string, any>;
+  pax_arrival_patterns: {
+    rules: Array<{
+      conditions: {
+        operating_carrier_iata: string[];
+      };
+      mean: number;
+      std: number;
+    }>;
+    default: {
+      mean: number;
+      std: number;
+    };
+  };
 
-export interface DestributionCondition {
-  index?: number;
-  conditions: Condition[];
-  mean: number;
-  standard_deviation: number;
+  apiResponseData: PassengerScheduleResponse | null;
+  isCompleted: boolean;
 }
 
 export interface AirportProcessing {
-  procedures: Procedure[];
-  entryType: string;
+  process_flow: ProcessStep[];
   isCompleted: boolean;
 }
 
-export interface Procedure {
-  order: number;
-  process: string;
-  facility_names: string[];
+export interface ProcessStep {
+  step: number;
+  name: string;
+  travel_time_minutes: number | null;
+  entry_conditions: EntryCondition[];
+  zones: Record<string, Zone>;
+}
+
+export interface Zone {
+  facilities: Facility[];
+}
+
+export interface Facility {
+  id: string;
+  operating_schedule: {
+    today: {
+      time_blocks: TimeBlock[];
+    };
+  };
+}
+
+export interface TimeBlock {
+  period: string;
+  process_time_seconds: number;
+  passenger_conditions: PassengerCondition[];
+}
+
+export interface EntryCondition {
+  field: string;
+  values: string[];
+}
+
+export interface PassengerCondition {
+  field: string;
+  values: string[];
 }
 
 export interface FacilityConnection {

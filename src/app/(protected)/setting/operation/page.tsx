@@ -17,26 +17,26 @@ function SettingOperationPage() {
   const [processIndex, setProcessIndex] = useState(0);
   const [numOfFacilitiesInProcess, setNumOfFacilitiesInProcess] = useState<number[][]>([[0]]);
   return (
-    <div className="mx-auto max-w-[1340px] px-[30px]">
+    <div className="max-w-page px-page-x pb-page-b mx-auto">
       <div className="location">
         <span>Settings</span>
         <span>Operation Settings</span>
       </div>
-      <div className="mt-[30px] flex flex-col border-b border-default-300 pb-[20px]">
+      <div className="mt-[30px] flex flex-col border-b border-input pb-[20px]">
         <h2 className="title-sm">Operation Settings</h2>
         <p className="text-sm text-default-500">
           Enter the current facility information for the airport to set the default values that apply to all members.
         </p>
       </div>
       <div className="mt-[25px] flex h-[40px] items-center gap-[10px]">
-        <span className="flex-shrink-0 text-xl font-semibold text-default-900">Airport Name:</span>
+        <span className="flex-shrink-0 text-lg font-semibold text-default-900">Airport Name:</span>
         <input
           id="title"
           type="text"
           placeholder="Enter Name"
           value={airportName}
           onChange={(e) => setAirportName(e.target.value)}
-          className="h-[40px] w-[150px] bg-transparent text-xl font-semibold text-default-900 !outline-none"
+          className="h-[40px] w-[150px] bg-transparent text-lg font-semibold text-default-900 !outline-none"
         />
         <Button variant="btn-link">
           <PencilLineIcon />
@@ -134,8 +134,8 @@ function SettingOperationPage() {
               </Button>
             </div>
             <div className="mt-[30px] flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Number of Facilities in the Process</h3>
-              <div className="flex h-[50px] w-[250px] items-center justify-between rounded-full border border-default-300 bg-white p-[10px] text-sm">
+              <h3 className="text-lg font-semibold">Number of Facilities in the Process</h3>
+              <div className="flex h-[50px] w-[250px] items-center justify-between rounded-full border border-input bg-white p-[10px] text-sm">
                 <button
                   onClick={() => {
                     if (numOfFacilitiesInProcess[terminalIndex][processIndex] - 1 < 0) return;
