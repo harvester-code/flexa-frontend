@@ -98,7 +98,7 @@ export default function Profile() {
                   placeholder="First Name"
                   value={firstName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
-                  className="mt-5 text-default-400"
+                  className="mt-5 text-default-500"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -109,7 +109,7 @@ export default function Profile() {
                   placeholder="Last Name"
                   value={lastName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
-                  className="mt-5 text-default-400"
+                  className="mt-5 text-default-500"
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function Profile() {
               placeholder="Email Address"
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              className="input-mail text-default-400"
+              className="input-mail text-default-500"
               readOnly
             />
           </div>
@@ -150,7 +150,7 @@ export default function Profile() {
               placeholder="Position"
               value={position}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPosition(e.target.value)}
-              className="text-default-400"
+              className="text-default-500"
             />
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function Profile() {
               placeholder="Write a brief summary..."
               value={introduction}
               onChange={(e) => setIntroduction(e.target.value)}
-              className="w-full rounded-md border border-default-300 p-3 text-sm"
+              className="w-full rounded-md border border-input p-3 text-sm"
               rows={4}
               maxLength={275}
             />

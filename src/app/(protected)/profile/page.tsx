@@ -17,10 +17,10 @@ export default function ProfilePage() {
   // background: linear-gradient(180deg, #f9f5ff 0%, #d6bbfb 100%);
   return (
     <>
-      <div className="profile-wrap -m-9 mx-auto max-w-[1340px] px-[30px] pb-24">
+      <div className="profile-wrap max-w-page px-page-x pb-page-b -m-9 mx-auto">
         <div className="profile-header">
           <div className="profile-img">
-            <p className="flex h-40 w-40 items-center justify-center rounded-full bg-default-100 text-2xl font-semibold text-default-600">
+            <p className="flex h-40 w-40 items-center justify-center rounded-full bg-muted text-lg font-semibold text-default-900">
               {userInfo?.firstName?.[0]?.toUpperCase() || 'U'}
               {userInfo?.lastName?.[0]?.toUpperCase() || ''}
             </p>

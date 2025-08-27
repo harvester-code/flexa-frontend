@@ -227,7 +227,7 @@ export default function Password() {
       <div className="mt-20 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <dl className="flex flex-col gap-2">
           <dt className="text-lg font-semibold text-default-900">Password</dt>
-          <dd className="text-sm">Enter your current password to update it.</dd>
+          <dd className="text-sm font-normal">Enter your current password to update it.</dd>
         </dl>
         <div className="flex flex-shrink-0 items-center gap-4">
           <Button variant="btn-default" size="btn-md" onClick={handleCancel}>
@@ -277,7 +277,9 @@ export default function Password() {
                 className={`${!isPasswordValid && newPassword.length > 0 ? 'border-red-500 focus:border-red-500' : ''}`}
               />
               <ul className="password-Feedback">
-                <li className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-brand' : 'text-gray-400'}`}>
+                <li
+                  className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-primary' : 'text-muted-foreground'}`}
+                >
                   {newPassword.length >= 6 ? (
                     <CheckCircle2 className="h-4 w-4 transition-all duration-200" />
                   ) : (
@@ -286,7 +288,7 @@ export default function Password() {
                   Minimum 6 characters
                 </li>
                 <li
-                  className={`flex items-center gap-2 ${/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword) ? 'text-brand' : 'text-gray-400'}`}
+                  className={`flex items-center gap-2 ${/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword) ? 'text-primary' : 'text-muted-foreground'}`}
                 >
                   {/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword) ? (
                     <CheckCircle2 className="h-4 w-4 transition-all duration-200" />
@@ -321,7 +323,7 @@ export default function Password() {
         <div className="mt-16 flex items-start justify-between">
           <dl className="flex flex-col gap-2">
             <dt className="text-lg font-semibold text-default-900">로그인 기록</dt>
-            <dd className="text-sm">최근 로그인한 기기 목록입니다.</dd>
+            <dd className="text-sm font-normal">최근 로그인한 기기 목록입니다.</dd>
           </dl>
         </div>
       </form>
