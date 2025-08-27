@@ -3,12 +3,11 @@
 import React, { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { BarChart3 } from 'lucide-react';
-import { useShallow } from 'zustand/react/shallow';
 import { PassengerShowUpResponse } from '@/types/simulationTypes';
 import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { useScenarioStore } from '../../_store/useScenarioStore';
+import { usePassengerScheduleStore } from '../_stores';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -17,12 +16,8 @@ interface TabPassengerScheduleResultProps {
 }
 
 export default function TabPassengerScheduleResult({ data: propData }: TabPassengerScheduleResultProps) {
-  // zustand store에서 API 응답 데이터 가져오기
-  const { apiResponseData } = useScenarioStore(
-    useShallow((s) => ({
-      apiResponseData: s.passengerSchedule.apiResponseData,
-    }))
-  );
+  // 🚀 새로운 모듈화된 PassengerSchedule 스토어에서 API 응답 데이터 가져오기
+  const { apiResponseData } = usePassengerScheduleStore();
 
   // props로 받은 데이터가 있으면 그것을 우선 사용, 없으면 zustand store에서 가져온 데이터 사용
   const data = propData || apiResponseData;
@@ -40,15 +35,8 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
 
     const categoryData = data.bar_chart_y_data[selectedCategory];
 
-    // X축 라벨 변환
-    const xLabels = data.bar_chart_x_data.map((timeStr) => {
-      const date = new Date(timeStr);
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
-    });
+    // X축 라벨 변환 - 이미 "HH:MM" 형태이므로 그대로 사용
+    const xLabels = data.bar_chart_x_data;
 
     // Plotly traces 생성
     const traces = categoryData.map((series, index) => ({
@@ -93,7 +81,7 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
     hoverlabel: {
       font: { family: 'Pretendard, Arial, sans-serif' },
       bgcolor: 'white',
-      bordercolor: 'hsl(var(--default-300))',
+      bordercolor: 'hsl(var(--border))',
     },
   };
 
@@ -111,15 +99,15 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
               <BarChart3 className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl font-semibold text-gray-800">
+              <CardTitle className="text-lg font-semibold text-default-900">
                 Passenger Show-up Chart - {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
               </CardTitle>
-              <p className="text-sm text-gray-600">Visual representation of passenger arrival data</p>
+              <p className="text-sm text-default-500">Visual representation of passenger arrival data</p>
             </div>
           </div>
           <div className="rounded-lg bg-gray-100 px-3 py-2">
-            <span className="text-sm font-medium text-gray-600">Total Passengers: </span>
-            <span className="text-lg font-bold text-primary">{data.total.toLocaleString()}</span>
+            <span className="text-sm font-medium text-default-500">Total Passengers: </span>
+            <span className="text-lg font-semibold text-primary">{data.total.toLocaleString()}</span>
           </div>
         </div>
       </CardHeader>
@@ -128,16 +116,16 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
         {/* Summary Statistics */}
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-lg border bg-gray-50 p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{data.summary.flights.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Flights</div>
+            <div className="text-lg font-semibold text-default-900">{data.summary.flights.toLocaleString()}</div>
+            <div className="text-sm text-default-500">Flights</div>
           </div>
           <div className="rounded-lg border bg-gray-50 p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{data.summary.avg_seats}</div>
-            <div className="text-sm text-gray-600">Avg Seats</div>
+            <div className="text-lg font-semibold text-default-900">{data.summary.avg_seats}</div>
+            <div className="text-sm text-default-500">Avg Seats</div>
           </div>
           <div className="rounded-lg border bg-gray-50 p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{data.summary.load_factor}%</div>
-            <div className="text-sm text-gray-600">Load Factor</div>
+            <div className="text-lg font-semibold text-default-900">{data.summary.load_factor}%</div>
+            <div className="text-sm text-default-500">Load Factor</div>
           </div>
         </div>
 
@@ -153,7 +141,7 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
                 className={
                   selectedCategory === category
                     ? 'bg-primary text-white'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-300 text-default-900 hover:bg-gray-50'
                 }
               >
                 {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -169,9 +157,9 @@ export default function TabPassengerScheduleResult({ data: propData }: TabPassen
               <div key={trace.name} className="flex items-center gap-2">
                 <div
                   className="h-4 w-4 rounded"
-                  style={{ backgroundColor: colorPalette[index % colorPalette.length] }}
+                  style={{ backgroundColor: CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length] }}
                 />
-                <span className="text-sm text-gray-700">{trace.name}</span>
+                <span className="text-sm text-default-900">{trace.name}</span>
               </div>
             ))}
           </div>

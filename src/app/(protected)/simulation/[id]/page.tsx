@@ -2,6 +2,7 @@
 
 import React, { use, useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import dayjs from 'dayjs';
 import { Save } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { APIRequestLog } from '@/types/simulationTypes';
@@ -11,26 +12,26 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
-import { useScenarioStore } from '../_store/useScenarioStore';
 import JSONDebugViewer from './_components/JSONDebugViewer';
 import TabDefault from './_components/TabDefault';
 import TabFacilityConnection from './_components/TabFacilityConnection';
-import TabFacilityInformation from './_components/TabFacilityInformation';
 import TabFlightSchedule from './_components/TabFlightSchedule';
 import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
-import TabScenarioOverview from './_components/TabScenarioOverview';
-import TabSimulation from './_components/TabSimulation';
 import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
+import {
+  useFacilityConnectionStore,
+  useFlightScheduleStore,
+  usePassengerScheduleStore,
+  useProcessingProceduresStore,
+  useScenarioProfileStore,
+} from './_stores';
 
 const tabs: { text: string; number: number }[] = [
-  { text: 'Scenario Overview', number: 0 },
-  { text: 'Flight Schedule', number: 1 },
-  { text: 'Passenger Schedule', number: 2 },
-  { text: 'Processing Procedures', number: 3 },
-  { text: 'Facility Connection', number: 4 },
-  { text: 'Facility Information', number: 5 },
-  { text: 'Simulation', number: 6 },
+  { text: 'Flight Schedule', number: 0 },
+  { text: 'Passenger Schedule', number: 1 },
+  { text: 'Processing Procedures', number: 2 },
+  { text: 'Facility Connection', number: 3 },
 ];
 
 export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -38,67 +39,130 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const searchParams = useSearchParams();
   const urlScenarioName = searchParams.get('name');
 
-  const {
-    currentScenarioTab,
-    scenarioName,
-    scenarioHistory,
-    scenarioProfile,
-    flightSchedule,
-    passengerSchedule,
-    airportProcessing,
-    facilityConnection,
-    facilityCapacity,
-    loadCompleteS3Metadata,
-    loadScenarioProfileMetadata,
-    setCurrentScenarioTab,
-  } = useScenarioStore(
-    useShallow((s) => ({
-      currentScenarioTab: s.scenarioProfile.currentScenarioTab,
-      scenarioName: s.scenarioProfile.scenarioName,
-      scenarioHistory: s.scenarioProfile.scenarioHistory,
-      scenarioProfile: s.scenarioProfile,
-      flightSchedule: s.flightSchedule,
-      passengerSchedule: s.passengerSchedule,
-      airportProcessing: s.airportProcessing,
-      facilityConnection: s.facilityConnection,
-      facilityCapacity: s.facilityCapacity,
-      loadCompleteS3Metadata: s.loadCompleteS3Metadata,
-      loadScenarioProfileMetadata: s.scenarioProfile.actions.loadMetadata,
-      setCurrentScenarioTab: s.scenarioProfile.actions.setCurrentScenarioTab,
-    }))
-  );
+  // 개별 store에서 필요한 데이터만 직접 가져오기
+  const currentScenarioTab = useScenarioProfileStore((s) => s.currentScenarioTab);
+  const scenarioName = useScenarioProfileStore((s) => s.scenarioName);
+  const scenarioHistory = useScenarioProfileStore((s) => s.scenarioHistory);
+  const setCurrentScenarioTab = useScenarioProfileStore((s) => s.setCurrentScenarioTab);
+  const loadScenarioProfileMetadata = useScenarioProfileStore((s) => s.loadMetadata);
+
+  const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
+  const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
+  const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
+  const facilityConnectionCompleted = useFacilityConnectionStore((s) => s.isCompleted);
+
+  // S3 메타데이터를 모든 modular stores에 로드하는 함수
+  const loadCompleteS3Metadata = useCallback((data: any) => {
+    console.log('S3 metadata 로드 시작:', data);
+
+    try {
+      const tabs = data.metadata?.tabs || {};
+
+      // 각 store에 해당 탭 데이터 로드
+      if (tabs.flightSchedule) {
+        console.log('Flight Schedule 데이터 로드:', tabs.flightSchedule);
+        useFlightScheduleStore.getState().loadMetadata(tabs.flightSchedule);
+      }
+
+      if (tabs.passengerSchedule) {
+        console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);
+        usePassengerScheduleStore.getState().loadMetadata(tabs.passengerSchedule);
+      }
+
+      if (tabs.processingProcedures) {
+        console.log('Processing Procedures 데이터 로드:', tabs.processingProcedures);
+        useProcessingProceduresStore.getState().loadMetadata(tabs.processingProcedures);
+      }
+
+      if (tabs.facilityConnection) {
+        console.log('Facility Connection 데이터 로드:', tabs.facilityConnection);
+        useFacilityConnectionStore.getState().loadMetadata(tabs.facilityConnection);
+      }
+
+      // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외
+
+      console.log('모든 store 메타데이터 로드 완료');
+    } catch (error) {
+      console.error('S3 메타데이터 로드 중 오류 발생:', error);
+    }
+  }, []);
 
   // 탭 접근성 계산
   const getAvailableTabs = () => {
     const completedStates = [
-      true, // Scenario Overview는 항상 활성화
-      flightSchedule.isCompleted,
-      passengerSchedule.isCompleted,
-      airportProcessing.isCompleted,
-      facilityConnection.isCompleted,
-      facilityCapacity.isCompleted,
+      flightScheduleCompleted,
+      passengerScheduleCompleted,
+      processingProceduresCompleted,
+      facilityConnectionCompleted,
     ];
 
-    // 완료된 탭까지 + 다음 탭 하나까지 활성화
+    // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
     const lastCompletedIndex = completedStates.lastIndexOf(true);
-    return Math.min(lastCompletedIndex + 1, tabs.length - 1);
+    return Math.max(0, Math.min(lastCompletedIndex + 1, tabs.length - 1));
   };
 
-  // 전체 메타데이터 수집용 함수 (useCallback으로 안정화)
-  const getCompleteMetadata = useCallback(
-    (scenarioId: string) => ({
-      scenario_id: scenarioId,
-      tabs: {
-        overview: scenarioProfile,
-        flightSchedule: flightSchedule,
-        passengerSchedule: passengerSchedule,
-        processingProcedures: airportProcessing,
-        facilityConnection: facilityConnection,
-        facilityInformation: facilityCapacity,
-      },
-    }),
-    [scenarioProfile, flightSchedule, passengerSchedule, airportProcessing, facilityConnection, facilityCapacity]
-  );
+  // 전체 메타데이터 수집용 함수 - 모든 stores에서 현재 상태 수집
+  const getCompleteMetadata = useCallback((scenarioId: string) => {
+    console.log('메타데이터 수집 시작');
+
+    try {
+      // 각 store에서 현재 상태 수집
+      const flightScheduleState = useFlightScheduleStore.getState();
+      const passengerScheduleState = usePassengerScheduleStore.getState();
+      const processingProceduresState = useProcessingProceduresStore.getState();
+      const facilityConnectionState = useFacilityConnectionStore.getState();
+      const scenarioProfileState = useScenarioProfileStore.getState();
+
+      const metadata = {
+        scenario_id: scenarioId,
+        tabs: {
+          flightSchedule: {
+            airport: flightScheduleState.airport,
+            date: flightScheduleState.date,
+            type: flightScheduleState.type,
+            availableConditions: flightScheduleState.availableConditions,
+            selectedConditions: flightScheduleState.selectedConditions,
+            chartData: flightScheduleState.chartData,
+            total: flightScheduleState.total,
+            isCompleted: flightScheduleState.isCompleted,
+          },
+          passengerSchedule: {
+            settings: passengerScheduleState.settings,
+            pax_demographics: passengerScheduleState.pax_demographics,
+            pax_arrival_patterns: passengerScheduleState.pax_arrival_patterns,
+            apiResponseData: passengerScheduleState.apiResponseData,
+            isCompleted: passengerScheduleState.isCompleted,
+          },
+          processingProcedures: {
+            process_flow: processingProceduresState.process_flow,
+            isCompleted: processingProceduresState.isCompleted,
+          },
+          facilityConnection: {
+            processes: facilityConnectionState.processes,
+            isCompleted: facilityConnectionState.isCompleted,
+          },
+          scenarioProfile: {
+            checkpoint: scenarioProfileState.checkpoint,
+            scenarioName: scenarioProfileState.scenarioName,
+            scenarioTerminal: scenarioProfileState.scenarioTerminal,
+            scenarioHistory: scenarioProfileState.scenarioHistory,
+            currentScenarioTab: scenarioProfileState.currentScenarioTab,
+            availableScenarioTab: scenarioProfileState.availableScenarioTab,
+            isCompleted: scenarioProfileState.isCompleted,
+          },
+        },
+      };
+
+      console.log('메타데이터 수집 완료:', metadata);
+      return metadata;
+    } catch (error) {
+      console.error('메타데이터 수집 중 오류 발생:', error);
+      return {
+        scenario_id: scenarioId,
+        tabs: {},
+      };
+    }
+  }, []);
 
   const simulationId = use(params).id;
   const [isInitialized, setIsInitialized] = useState(false);
@@ -142,7 +206,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   }, [scenarioHistory]);
 
   return (
-    <div className="mx-auto mb-10 max-w-[1340px] px-[30px]">
+    <div className="max-w-page px-page-x pb-page-b mx-auto">
       <TheContentHeader text="Simulation" />
 
       <div className="mt-[15px] flex justify-between">
@@ -151,7 +215,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>
           </dl>
           {latestHistory?.checkpoint && (
-            <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-gray-600">
+            <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-default-500">
               {timeToRelativeTime(latestHistory?.checkpoint)}
             </span>
           )}
@@ -174,23 +238,20 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       {isInitialized ? (
         <React.Fragment key={simulationId}>
-          <TabScenarioOverview visible={currentScenarioTab === 0} />
           <TabFlightSchedule
-            visible={currentScenarioTab === 1}
+            visible={currentScenarioTab === 0}
             simulationId={simulationId}
             apiRequestLog={apiRequestLog}
             setApiRequestLog={setApiRequestLog}
           />
           <TabPassengerSchedule
-            visible={currentScenarioTab === 2}
+            visible={currentScenarioTab === 1}
             simulationId={simulationId}
             apiRequestLog={apiRequestLog}
             setApiRequestLog={setApiRequestLog}
           />
-          <TabProcessingProcedures visible={currentScenarioTab === 3} simulationId={simulationId} />
-          <TabFacilityConnection visible={currentScenarioTab === 4} simulationId={simulationId} />
-          <TabFacilityInformation visible={currentScenarioTab === 5} simulationId={simulationId} />
-          <TabSimulation visible={currentScenarioTab === 6} simulationId={simulationId} />
+          <TabProcessingProcedures visible={currentScenarioTab === 2} simulationId={simulationId} />
+          <TabFacilityConnection visible={currentScenarioTab === 3} simulationId={simulationId} />
         </React.Fragment>
       ) : (
         <SimulationLoading minHeight="min-h-[200px]" />

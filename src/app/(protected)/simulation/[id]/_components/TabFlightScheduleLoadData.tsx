@@ -2,12 +2,23 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Calendar as CalendarIcon, Database, Loader2, Plane, Search } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  Check,
+  ChevronsUpDown,
+  Database,
+  Loader2,
+  Plane,
+  PlaneLanding,
+  PlaneTakeoff,
+  Search,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/Calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/Command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
+import { cn } from '@/lib/utils';
 import _jsonAirport from '../_json/airport_constants.json';
 
 const JSON_AIRPORTS = _jsonAirport.map((item) => ({
@@ -19,9 +30,11 @@ const JSON_AIRPORTS = _jsonAirport.map((item) => ({
 interface TabFlightScheduleLoadDataProps {
   airport: string;
   date: string;
+  type: 'departure' | 'arrival';
   loadingFlightSchedule: boolean;
   setAirport: (airport: string) => void;
   setDate: (date: string) => void;
+  setType: (type: 'departure' | 'arrival') => void;
   setIsSomethingChanged: (changed: boolean) => void;
   onLoadData: () => void;
 }
@@ -29,13 +42,17 @@ interface TabFlightScheduleLoadDataProps {
 function TabFlightScheduleLoadData({
   airport,
   date,
+  type,
   loadingFlightSchedule,
   setAirport,
   setDate,
+  setType,
   setIsSomethingChanged,
   onLoadData,
 }: TabFlightScheduleLoadDataProps) {
   const [openAirportPopover, setOpenAirportPopover] = useState(false);
+  const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
+  const [openTypePopover, setOpenTypePopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
 
   // 디바운싱된 검색어 (타이핑 중 과도한 필터링 방지) - 성능 최적화
@@ -85,120 +102,157 @@ function TabFlightScheduleLoadData({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-xl">
+        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
           <div className="rounded-lg bg-primary/10 p-2">
             <Database className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <div className="text-xl font-bold text-gray-900">Flight Schedule Data</div>
-            <p className="text-sm font-normal text-gray-600">Select airport and date to load flight data</p>
+            <div className="text-lg font-semibold text-default-900">Flight Schedule Data</div>
+            <p className="text-sm font-normal text-default-500">Select airport and date to load flight data</p>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 lg:gap-4">
           <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-2 lg:gap-4">
-            {/* Airport Selection - 성능 최적화된 버전 */}
+            {/* Airport Selection - 표준 Combobox */}
             <Popover open={openAirportPopover} onOpenChange={setOpenAirportPopover}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={openAirportPopover}
-                  className="min-w-0 max-w-none flex-1 justify-between border-2 hover:border-primary/50 focus:border-primary sm:max-w-md lg:max-w-lg xl:max-w-xl"
+                  className="min-w-0 max-w-none flex-1 justify-between font-normal sm:max-w-md lg:max-w-lg xl:max-w-xl"
                 >
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <Plane className="h-4 w-4 flex-shrink-0 text-primary" />
-                    <div className="min-w-0 flex-1 text-left">
-                      {airport ? (
-                        <div className="truncate font-medium">
-                          {airport} {currentAirportInfo?.name && `- ${currentAirportInfo.name}`}
-                        </div>
-                      ) : (
-                        <div className="font-medium">Select airport</div>
-                      )}
-                    </div>
-                  </div>
+                  {airport
+                    ? `${airport}${currentAirportInfo?.name ? ` - ${currentAirportInfo.name}` : ''}`
+                    : 'Select airport...'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-screen max-w-sm p-0 sm:max-w-md lg:max-w-lg" sideOffset={4}>
-                <Command shouldFilter={false}>
+              <PopoverContent className="w-screen max-w-sm p-0 sm:max-w-md lg:max-w-lg" align="start">
+                <Command>
                   <CommandInput
-                    placeholder="Search airport... (type 2+ chars)"
+                    placeholder="Search airport..."
                     value={searchAirport}
                     onValueChange={setSearchAirport}
-                    autoFocus={openAirportPopover}
-                    className="border-0 focus:ring-0 focus:ring-offset-0"
                   />
-                  <CommandList className="max-h-[300px] overflow-auto">
-                    {filteredAirports.length === 0 ? (
-                      <CommandEmpty>
-                        {searchAirport.length < 2 ? 'Type 2 or more characters to search' : 'No airport found.'}
-                      </CommandEmpty>
-                    ) : (
-                      <CommandGroup>
-                        {filteredAirports.slice(0, 50).map((airportItem) => (
-                          <CommandItem
-                            key={airportItem.iata}
-                            value={airportItem.iata}
-                            onSelect={(currentValue) => {
-                              setIsSomethingChanged(airport !== currentValue);
-                              setAirport(currentValue);
-                              setOpenAirportPopover(false);
-                              setSearchAirport('');
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <div className="flex w-full flex-col gap-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-base font-medium">{airportItem.iata}</span>
-                                {airport === airportItem.iata && <div className="h-2 w-2 rounded-full bg-primary" />}
-                              </div>
-                              <span className="line-clamp-1 text-sm text-muted-foreground">{airportItem.name}</span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                        {filteredAirports.length > 50 && (
-                          <div className="px-2 py-1 text-center text-xs text-muted-foreground">
-                            Showing first 50 results. Type more to narrow down.
+                  <CommandList>
+                    <CommandEmpty>No airport found.</CommandEmpty>
+                    <CommandGroup>
+                      {filteredAirports.slice(0, 50).map((airportItem) => (
+                        <CommandItem
+                          key={airportItem.iata}
+                          value={airportItem.iata}
+                          onSelect={(currentValue) => {
+                            setIsSomethingChanged(airport !== currentValue);
+                            setAirport(currentValue === airport ? '' : currentValue);
+                            setOpenAirportPopover(false);
+                            setSearchAirport('');
+                          }}
+                        >
+                          <Check
+                            className={cn('mr-2 h-4 w-4', airport === airportItem.iata ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-medium">{airportItem.iata}</span>
+                            <span className="text-sm text-muted-foreground">{airportItem.name}</span>
                           </div>
-                        )}
-                      </CommandGroup>
-                    )}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
                   </CommandList>
                 </Command>
               </PopoverContent>
             </Popover>
 
-            {/* Date Selection */}
-            <Popover>
+            {/* Date Selection - 표준 DatePicker */}
+            <Popover open={openCalendarPopover} onOpenChange={setOpenCalendarPopover}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="min-w-fit flex-shrink-0 justify-start border-2 hover:border-primary/50 focus:border-primary"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                  <span className="whitespace-nowrap">{dayjs(date).format('MMM DD, YYYY')}</span>
+                <Button variant="outline" className="min-w-fit flex-shrink-0 justify-start font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dayjs(date).format('MMM DD, YYYY')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={dayjs(date).toDate()}
-                  defaultMonth={dayjs(date).toDate()}
                   onSelect={(selectedDate) => {
                     if (selectedDate) {
                       setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
                       setDate(dayjs(selectedDate).format('YYYY-MM-DD'));
+                      setOpenCalendarPopover(false);
                     }
                   }}
+                  initialFocus
                 />
+              </PopoverContent>
+            </Popover>
+
+            {/* Flight Type Selection - 표준 Combobox */}
+            <Popover open={openTypePopover} onOpenChange={setOpenTypePopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openTypePopover}
+                  className="min-w-fit flex-shrink-0 justify-between font-normal"
+                >
+                  <div className="flex items-center">
+                    {type === 'departure' ? (
+                      <PlaneTakeoff className="mr-2 h-4 w-4" />
+                    ) : (
+                      <PlaneLanding className="mr-2 h-4 w-4" />
+                    )}
+                    {type === 'departure' ? 'Departure' : 'Arrival'}
+                  </div>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Command>
+                  <CommandList>
+                    <CommandEmpty>No flight type found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={() => {
+                          const newType = 'departure';
+                          setIsSomethingChanged(type !== newType);
+                          setType(newType);
+                          setOpenTypePopover(false);
+                        }}
+                      >
+                        <Check className={cn('mr-2 h-4 w-4', type === 'departure' ? 'opacity-100' : 'opacity-0')} />
+                        <PlaneTakeoff className="mr-2 h-4 w-4" />
+                        Departure
+                      </CommandItem>
+                      <CommandItem
+                        onSelect={() => {
+                          const newType = 'arrival';
+                          setIsSomethingChanged(type !== newType);
+                          setType(newType);
+                          setOpenTypePopover(false);
+                        }}
+                      >
+                        <Check className={cn('mr-2 h-4 w-4', type === 'arrival' ? 'opacity-100' : 'opacity-0')} />
+                        <PlaneLanding className="mr-2 h-4 w-4" />
+                        Arrival
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
               </PopoverContent>
             </Popover>
           </div>
 
           {/* Load Button */}
-          <Button onClick={onLoadData} disabled={loadingFlightSchedule} className="flex-shrink-0 px-4 sm:px-6 lg:px-8">
+          <Button
+            onClick={onLoadData}
+            disabled={loadingFlightSchedule || !airport}
+            className="flex-shrink-0 px-4 sm:px-6 lg:px-8"
+            title={!airport ? 'Please select an airport first' : 'Load flight schedule data'}
+          >
             {loadingFlightSchedule ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 flex-shrink-0 animate-spin" />
@@ -213,6 +267,16 @@ function TabFlightScheduleLoadData({
             )}
           </Button>
         </div>
+
+        {/* Validation Message */}
+        {!airport && (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+            <div className="flex items-center">
+              <Plane className="h-4 w-4 flex-shrink-0 text-amber-600" />
+              <p className="ml-2 text-sm text-amber-700">Please select an airport to load flight schedule data.</p>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/simulationTypes';
 import { getFlightSchedules } from '@/services/simulationService';
 import { useFlightScheduleData } from '../../_hooks/useTabData';
-import { useTabReset } from '../_hooks/useTabReset';
+// useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 import TabFlightScheduleChart from './TabFlightScheduleChart';
 import TabFlightScheduleFilterConditions from './TabFlightScheduleFilterConditions';
@@ -22,14 +22,22 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
   const {
     airport,
     date,
+    type,
     availableConditions,
     selectedConditions: zustandSelectedConditions,
     chartData,
-    actions: { setAirport, setDate, setAvailableConditions, setSelectedConditions, setChartData, setIsCompleted },
+    actions: {
+      setAirport,
+      setDate,
+      setType,
+      setAvailableConditions,
+      setSelectedConditions,
+      setChartData,
+      setIsCompleted,
+    },
   } = useFlightScheduleData();
 
-  // 새로운 Tab Reset 시스템 사용
-  const { resetByTab } = useTabReset();
+  // Tab Reset 시스템 제거 - 단순화
 
   // 로컬 상태로 selectedConditions 관리 (Apply Filter 버튼 누를 때까지 zustand에 저장하지 않음)
   const [selectedConditions, setLocalSelectedConditions] = useState<SelectedConditions>({
@@ -56,19 +64,19 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
   // 선택된 조건들을 API 형태로 변환 (Terminal 조건은 제외)
   const buildConditions = useCallback(() => {
-    const conditions: Array<{ criteria: string; value: string[] }> = [];
+    const conditions: Array<{ field: string; values: string[] }> = [];
 
     if (selectedConditions.types.length > 0) {
       conditions.push({
-        criteria: 'types',
-        value: selectedConditions.types,
+        field: 'types',
+        values: selectedConditions.types,
       });
     }
 
     if (selectedConditions.selectedAirlines.length > 0) {
       conditions.push({
-        criteria: 'airline',
-        value: selectedConditions.selectedAirlines.map((airline) => airline.iata),
+        field: 'airline',
+        values: selectedConditions.selectedAirlines.map((airline) => airline.iata),
       });
     }
 
@@ -89,7 +97,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       const params = {
         airport,
         date,
-        condition: isAirportOrDateChanged ? [] : buildConditions(), // 공항/날짜 변경시에는 빈 조건, 필터 적용시에만 조건 포함
+        type,
+        conditions: isAirportOrDateChanged ? [] : buildConditions(), // 공항/날짜 변경시에는 빈 조건, 필터 적용시에만 조건 포함
       };
       const timestamp = new Date().toISOString();
 
@@ -303,10 +312,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
     }
   }, [chartData, availableConditions]);
 
-  // 데이터 로드 핸들러
+  // 데이터 로드 핸들러 (단순화)
   const handleLoadData = useCallback(() => {
-    // 새로운 Tab Reset 시스템: FlightSchedule 탭의 변경에 따른 자동 reset
-    resetByTab('FlightSchedule');
     // 조건 초기화 (로컬 상태와 zustand 모두)
     const initialConditions = { types: [], terminal: [], selectedAirlines: [] };
     setLocalSelectedConditions(initialConditions);
@@ -314,16 +321,14 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
     setShowConditions(false);
     // 바로 데이터 로드 (confirm 팝업 제거) - 공항/날짜가 바뀌었으므로 빈 조건으로 요청
     return loadFlightSchedule(true);
-  }, [resetByTab, setShowConditions, loadFlightSchedule, setSelectedConditions]);
+  }, [setShowConditions, loadFlightSchedule, setSelectedConditions]);
 
-  // 필터 적용 핸들러 - 여기서 zustand에 selectedConditions 저장
+  // 필터 적용 핸들러 - 여기서 zustand에 selectedConditions 저장 (단순화)
   const handleApplyFilters = useCallback(() => {
-    // 새로운 Tab Reset 시스템: FlightSchedule 탭의 변경에 따른 자동 reset
-    resetByTab('FlightSchedule');
     // Apply Filter 버튼을 누를 때만 zustand에 selectedConditions 저장
     setSelectedConditions(selectedConditions as any); // 타입 캐스팅 (availableAirlines는 계산으로 처리)
     return loadFlightSchedule(false); // 필터만 적용하므로 기존 조건 사용
-  }, [resetByTab, loadFlightSchedule, selectedConditions, setSelectedConditions]);
+  }, [loadFlightSchedule, selectedConditions, setSelectedConditions]);
 
   return !visible ? null : (
     <div className="space-y-6 pt-8">
@@ -331,9 +336,11 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       <TabFlightScheduleLoadData
         airport={airport}
         date={date}
+        type={type}
         loadingFlightSchedule={loadingFlightSchedule}
         setAirport={setAirport}
         setDate={setDate}
+        setType={setType}
         setIsSomethingChanged={setIsSomethingChanged}
         onLoadData={handleLoadData}
       />
@@ -357,8 +364,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       />
 
       {/* Navigation */}
-      <div className="mt-8 flex justify-end">
-        <NextButton />
+      <div className="mt-8">
+        <NextButton showPrevious={true} />
       </div>
     </div>
   );

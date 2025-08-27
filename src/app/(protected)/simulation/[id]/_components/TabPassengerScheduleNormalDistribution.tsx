@@ -262,7 +262,7 @@ export default function TabPassengerScheduleNormalDistribution({
         font: {
           family: CHART_CONSTANTS.FONTS.FAMILY,
           size: CHART_CONSTANTS.FONTS.SIZE_MEDIUM,
-          color: CHART_CONSTANTS.COLORS.TEXT_PRIMARY,
+          color: CHART_DEFAULTS.TEXT_PRIMARY,
         },
       },
       xaxis: {
@@ -271,7 +271,7 @@ export default function TabPassengerScheduleNormalDistribution({
           font: {
             family: CHART_CONSTANTS.FONTS.FAMILY,
             size: CHART_CONSTANTS.FONTS.SIZE_LARGE,
-            color: CHART_CONSTANTS.COLORS.TEXT_PRIMARY,
+            color: CHART_DEFAULTS.TEXT_PRIMARY,
           },
         },
         range: [xMin, xMax],
@@ -281,7 +281,7 @@ export default function TabPassengerScheduleNormalDistribution({
         tickfont: {
           family: CHART_CONSTANTS.FONTS.FAMILY,
           size: CHART_CONSTANTS.FONTS.SIZE_SMALL,
-          color: CHART_CONSTANTS.COLORS.TEXT_SECONDARY,
+          color: CHART_DEFAULTS.TEXT_SECONDARY,
         },
       },
       yaxis: {
@@ -290,7 +290,7 @@ export default function TabPassengerScheduleNormalDistribution({
           font: {
             family: CHART_CONSTANTS.FONTS.FAMILY,
             size: CHART_CONSTANTS.FONTS.SIZE_LARGE,
-            color: CHART_CONSTANTS.COLORS.TEXT_PRIMARY,
+            color: CHART_DEFAULTS.TEXT_PRIMARY,
           },
         },
         showgrid: showGrid,
@@ -299,7 +299,7 @@ export default function TabPassengerScheduleNormalDistribution({
         tickfont: {
           family: CHART_CONSTANTS.FONTS.FAMILY,
           size: CHART_CONSTANTS.FONTS.SIZE_SMALL,
-          color: CHART_CONSTANTS.COLORS.TEXT_SECONDARY,
+          color: CHART_DEFAULTS.TEXT_SECONDARY,
         },
       },
       plot_bgcolor: 'rgba(0,0,0,0)',
@@ -313,7 +313,7 @@ export default function TabPassengerScheduleNormalDistribution({
       font: {
         family: CHART_CONSTANTS.FONTS.FAMILY,
         size: CHART_CONSTANTS.FONTS.SIZE_MEDIUM,
-        color: CHART_CONSTANTS.COLORS.TEXT_PRIMARY,
+        color: CHART_DEFAULTS.TEXT_PRIMARY,
       },
     };
   }, [

@@ -39,8 +39,8 @@ function TabFlightScheduleChart({ loadingFlightSchedule, chartData, loadError }:
                   <BarChart3 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-gray-900">Flight Schedule Chart</div>
-                  <p className="text-sm font-normal text-gray-600">Visual representation of flight data</p>
+                  <div className="text-lg font-semibold text-default-900">Flight Schedule Chart</div>
+                  <p className="text-sm font-normal text-default-500">Visual representation of flight data</p>
                 </div>
               </CardTitle>
               <Badge variant="secondary">Total Flights: {totalFlights}</Badge>

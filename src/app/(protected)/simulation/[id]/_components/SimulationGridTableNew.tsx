@@ -276,7 +276,7 @@ export default function SimulationGridTableNew({
                 style={{ minWidth: '100px' }}
                 onClick={() => handleColumnToggle(destInfo.node)}
               >
-                <div className="mb-1 text-xs text-gray-600">{formatProcessName(destInfo.destinationName)}</div>
+                <div className="mb-1 text-xs text-default-500">{formatProcessName(destInfo.destinationName)}</div>
                 <div>{destInfo.node}</div>
               </th>
             ))}
@@ -295,7 +295,7 @@ export default function SimulationGridTableNew({
                   className="cursor-pointer border border-gray-200 bg-primary/5 p-2 text-center font-medium text-primary transition-colors hover:bg-primary/10"
                   onClick={() => handleRowToggle(sourceInfo.node, sourceInfo.connectionId)}
                 >
-                  <div className="mb-1 text-xs text-gray-600">{formatProcessName(sourceInfo.sourceName)}</div>
+                  <div className="mb-1 text-xs text-default-500">{formatProcessName(sourceInfo.sourceName)}</div>
                   <div className="whitespace-pre-line leading-tight">
                     {sourceInfo.node.includes('(') ? sourceInfo.node.replace(' (', '\n(') : sourceInfo.node}
                   </div>
@@ -317,7 +317,7 @@ export default function SimulationGridTableNew({
                         className="border border-gray-200 bg-gray-50 p-2"
                         style={{ minWidth: '100px' }}
                       >
-                        <div className="text-center text-sm text-gray-400">-</div>
+                        <div className="text-center text-sm text-muted-foreground">-</div>
                       </td>
                     );
                   }
@@ -384,7 +384,7 @@ export default function SimulationGridTableNew({
                           onMouseDown={(e) => e.stopPropagation()} // 드래그 이벤트와 충돌 방지
                           onFocus={(e) => e.stopPropagation()} // 포커스 시 드래그 방지
                           disabled={!isEnabled}
-                          className={`h-8 text-center text-sm ${!isEnabled ? 'bg-gray-100 text-gray-400' : ''}`}
+                          className={`h-8 text-center text-sm ${!isEnabled ? 'bg-gray-100 text-muted-foreground' : ''}`}
                         />
 
                         {/* Progress bar */}

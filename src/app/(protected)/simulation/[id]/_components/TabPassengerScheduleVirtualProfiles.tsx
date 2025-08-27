@@ -185,7 +185,7 @@ export function DropdownSelect({
           <span className="truncate text-sm">{selectedOption?.label || placeholder}</span>
         </div>
         <ChevronDown
-          className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-default-500 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -294,7 +294,7 @@ export function FilterConditionComponent({
         <div className="flex w-16 items-center justify-center">
           <button
             type="button"
-            className="min-w-[48px] rounded bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-w-[48px] rounded bg-gray-100 px-3 py-1 text-sm font-medium text-default-500 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => onLogicalOperatorChange?.(logicalOperator === 'AND' ? 'OR' : 'AND')}
           >
             {logicalOperator}
@@ -308,7 +308,7 @@ export function FilterConditionComponent({
       {/* Filter Components Container */}
       <div className="flex flex-1 items-center gap-4">
         {/* Where Label */}
-        <div className="flex w-16 items-center text-sm font-medium text-gray-600">Where</div>
+        <div className="flex w-16 items-center text-sm font-medium text-default-500">Where</div>
 
         {/* Field Dropdown */}
         <div className="min-w-[140px] flex-1">
@@ -339,7 +339,7 @@ export function FilterConditionComponent({
                 return <FilterValueChip key={`${valueId}-${index}`} value={value} selected />;
               })
             ) : (
-              <span className="text-sm text-gray-400">Values will appear here</span>
+              <span className="text-sm text-muted-foreground">Values will appear here</span>
             )}
           </div>
         </div>
@@ -349,14 +349,14 @@ export function FilterConditionComponent({
       <div className="ml-2 flex items-center gap-1">
         <button
           type="button"
-          className="rounded p-2 text-gray-400 transition-colors duration-150 hover:text-gray-600 focus:text-gray-600 focus:outline-none"
+          className="rounded p-2 text-muted-foreground transition-colors duration-150 hover:text-default-500 focus:text-default-500 focus:outline-none"
           aria-label="More options"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
         <button
           type="button"
-          className="hover:text-red-500 focus:text-red-500 rounded p-2 text-gray-400 transition-colors duration-150 focus:outline-none"
+          className="rounded p-2 text-muted-foreground transition-colors duration-150 hover:text-red-500 focus:text-red-500 focus:outline-none"
           onClick={onRemove}
           aria-label="Remove condition"
         >
@@ -583,8 +583,8 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Create New Filter Group</h2>
-            <p className="mt-1 text-sm text-gray-600">Select the options you want to include in this filter group</p>
+            <h2 className="text-lg font-semibold text-default-900">Create New Filter Group</h2>
+            <p className="mt-1 text-sm text-default-500">Select the options you want to include in this filter group</p>
             {/* Rules Display */}
             <div className="mt-2 space-y-1">
               {hasNationalityGroup && (
@@ -610,7 +610,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
           <button
             type="button"
             onClick={handleCancel}
-            className="rounded-full p-2 text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-full p-2 text-muted-foreground transition-colors hover:text-default-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <X className="h-5 w-5" />
           </button>
@@ -656,11 +656,11 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
         <div className="max-h-96 overflow-y-auto px-6 py-4">
           {categories.length === 0 ? (
             <div className="py-8 text-center">
-              <div className="mb-2 text-gray-400">
+              <div className="mb-2 text-muted-foreground">
                 <Lock className="mx-auto h-8 w-8" />
               </div>
-              <p className="text-sm text-gray-600">No options available</p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="text-sm text-default-500">No options available</p>
+              <p className="mt-1 text-xs text-default-500">
                 {hasNationalityGroup
                   ? 'Nationality group already exists'
                   : hasNonNationalitySelected
@@ -676,14 +676,14 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
               return (
                 <div key={category} className="mb-6">
                   <div className="mb-3 flex items-center gap-2">
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-default-900">
                       {category}
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-default-500">
                         {categoryOptions.length}
                       </span>
                     </h3>
                     {disabledInfo.disabled && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <div className="flex items-center gap-1 text-xs text-default-500">
                         <Lock className="h-3 w-3" />
                         <span>{disabledInfo.reason}</span>
                       </div>
@@ -707,12 +707,12 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
                           onClick={() => !isDisabled && toggleOption(option)}
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 text-2xl">{option.icon}</div>
+                            <div className="flex-shrink-0 text-lg font-semibold">{option.icon}</div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <h4
                                   className={`truncate text-sm font-medium ${
-                                    isDisabled ? 'text-gray-500' : 'text-gray-900'
+                                    isDisabled ? 'text-default-500' : 'text-default-900'
                                   }`}
                                 >
                                   {option.label}
@@ -730,7 +730,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
                               </div>
                               <p
                                 className={`mt-1 line-clamp-2 text-xs ${
-                                  isDisabled ? 'text-gray-400' : 'text-gray-600'
+                                  isDisabled ? 'text-muted-foreground' : 'text-default-500'
                                 }`}
                               >
                                 {option.description}
@@ -749,7 +749,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-default-500">
             {selectedOptions.length} option{selectedOptions.length !== 1 ? 's' : ''} selected
             {hasNationalitySelected && <span className="ml-2 font-medium text-blue-600">• Nationality Group</span>}
             {hasNonNationalitySelected && <span className="ml-2 font-medium text-purple-600">• Mixed Categories</span>}
@@ -757,7 +757,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
 
           <div className="flex items-center gap-3">
             <button
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-default-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               type="button"
               onClick={handleCancel}
             >
@@ -882,7 +882,7 @@ export function FilterGroupComponent({ group, onChange, onRemove, level = 0 }: F
                     <div className="flex w-16 justify-center">
                       <button
                         type="button"
-                        className="min-w-[48px] rounded bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="min-w-[48px] rounded bg-gray-100 px-3 py-1 text-sm font-medium text-default-500 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={() => updateLogicalOperator(group.logicalOperator === 'AND' ? 'OR' : 'AND')}
                       >
                         {group.logicalOperator}
@@ -1044,8 +1044,8 @@ export default function TabPassengerScheduleVirtualProfiles() {
             <PersonStanding className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <div className="text-xl font-bold text-gray-900">Add Passenger Profiles</div>
-            <p className="text-sm font-normal text-gray-600">Select airlines to create a new group</p>
+            <div className="text-lg font-semibold text-default-900">Add Passenger Profiles</div>
+            <p className="text-sm font-normal text-default-500">Select airlines to create a new group</p>
           </div>
         </CardTitle>
       </CardHeader>
@@ -1056,14 +1056,14 @@ export default function TabPassengerScheduleVirtualProfiles() {
             {/* Group Header */}
             <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-3">
               <div className="flex items-center gap-3">
-                <h2 className="text-sm font-semibold text-gray-900">Group {index + 1}</h2>
-                <span className="rounded border bg-white px-2 py-1 text-xs text-gray-600">
+                <h2 className="text-sm font-semibold text-default-900">Group {index + 1}</h2>
+                <span className="rounded border bg-white px-2 py-1 text-xs text-default-500">
                   {group.conditions.length} condition{group.conditions.length !== 1 ? 's' : ''}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded bg-gray-100 px-3 py-1 text-xs font-medium text-default-500 transition-colors duration-150 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   type="button"
                   onClick={() => {
                     const newGroups = [...filterGroups];
@@ -1075,7 +1075,7 @@ export default function TabPassengerScheduleVirtualProfiles() {
                 </button>
 
                 <button
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded px-2 py-1 text-xs transition-colors duration-150"
+                  className="rounded px-2 py-1 text-xs text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700"
                   type="button"
                   onClick={() => removeGroup(index)}
                 >

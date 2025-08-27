@@ -2,7 +2,12 @@
 
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useScenarioStore } from '../../_store/useScenarioStore';
+import {
+  useFacilityConnectionStore,
+  useFlightScheduleStore,
+  usePassengerScheduleStore,
+  useProcessingProceduresStore,
+} from '../_stores';
 
 interface JSONDebugViewerProps {
   visible: boolean;
@@ -22,38 +27,57 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
     passengerSchedule: false,
     processingProcedures: false,
     facilityConnection: false,
-    facilityInformation: false,
     finalJSON: true, // 최종 JSON 구조 (기본 펼침)
     components: true, // components 키 (기본 접힘)
     processes: true, // processes 키 (기본 접힘)
   });
 
-  // zustand에서 모든 탭 데이터 수집 (개별 구독으로 변경)
-  const scenarioProfile = useScenarioStore((s) => s.scenarioProfile);
-  const flightSchedule = useScenarioStore((s) => s.flightSchedule);
-  const passengerSchedule = useScenarioStore((s) => s.passengerSchedule);
-  const airportProcessing = useScenarioStore((s) => s.airportProcessing);
-  const facilityConnection = useScenarioStore((s) => s.facilityConnection);
-  const facilityCapacity = useScenarioStore((s) => s.facilityCapacity);
+  // 🚀 개별 모듈화된 스토어에서 모든 탭 데이터 수집
 
-  // passengerSchedule의 destribution_conditions를 별도로 구독
-  const passengerDestributionConditions = useScenarioStore((s) => s.passengerSchedule.destribution_conditions);
+  const flightSchedule = {
+    airport: useFlightScheduleStore((s) => s.airport),
+    date: useFlightScheduleStore((s) => s.date),
+    type: useFlightScheduleStore((s) => s.type),
+    availableConditions: useFlightScheduleStore((s) => s.availableConditions),
+    selectedConditions: useFlightScheduleStore((s) => s.selectedConditions),
+    chartData: useFlightScheduleStore((s) => s.chartData),
+    total: useFlightScheduleStore((s) => s.total),
+    isCompleted: useFlightScheduleStore((s) => s.isCompleted),
+  };
+
+  const passengerSchedule = {
+    settings: usePassengerScheduleStore((s) => s.settings),
+    pax_demographics: usePassengerScheduleStore((s) => s.pax_demographics),
+    pax_arrival_patterns: usePassengerScheduleStore((s) => s.pax_arrival_patterns),
+    apiResponseData: usePassengerScheduleStore((s) => s.apiResponseData),
+    isCompleted: usePassengerScheduleStore((s) => s.isCompleted),
+  };
+
+  const airportProcessing = {
+    process_flow: useProcessingProceduresStore((s) => s.process_flow),
+    isCompleted: useProcessingProceduresStore((s) => s.isCompleted),
+  };
+
+  const facilityConnection = {
+    processes: useFacilityConnectionStore((s) => s.processes),
+    isCompleted: useFacilityConnectionStore((s) => s.isCompleted),
+  };
+
+
 
   // 실제 S3 저장 구조로 합치기
   const scenarioMetadata = useMemo(() => {
     return {
-      scenario_id: scenarioProfile.scenarioName || 'unknown',
+      scenario_id: 'debug-scenario', // TODO: URL에서 시나리오 ID 추출
       tabs: {
-        overview: scenarioProfile,
         flightSchedule: flightSchedule,
         passengerSchedule: passengerSchedule,
         processingProcedures: airportProcessing,
         facilityConnection: facilityConnection,
-        facilityInformation: facilityCapacity,
       },
       // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
     };
-  }, [scenarioProfile, flightSchedule, passengerSchedule, airportProcessing, facilityConnection, facilityCapacity]);
+  }, [flightSchedule, passengerSchedule, airportProcessing, facilityConnection]);
 
   // 보조 함수들 (useMemo 위에서 먼저 정의)
   const generateFacilitySchedules = (length: number) => {
@@ -76,10 +100,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
   };
 
   const generatePriorityMatrix = () => {
-    return passengerSchedule.destribution_conditions.map((param) => ({
-      conditions: param.conditions,
-      mean: param.mean,
-      standard_deviation: param.standard_deviation,
+    return passengerSchedule.pax_arrival_patterns.rules.map((rule) => ({
+      conditions: rule.conditions,
+      mean: rule.mean,
+      standard_deviation: rule.std,
     }));
   };
 
@@ -115,7 +139,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
     };
   }, [
     facilityConnection.processes,
-    passengerSchedule.destribution_conditions,
+    passengerSchedule.pax_arrival_patterns.rules,
     flightSchedule.airport,
     flightSchedule.date,
   ]);
@@ -202,7 +226,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
           <span className={`transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>▶</span>
           {title} ({Array.isArray(data) ? data.length : Object.keys(data || {}).length} items)
           {(title === 'components' || title === 'Complete JSON Structure') && (
-            <span className="text-xs text-gray-500">(facility_schedules compressed)</span>
+            <span className="text-xs text-default-500">(facility_schedules compressed)</span>
           )}
         </button>
 
@@ -219,7 +243,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
   return (
     <div className="mt-8 border-t pt-6">
-      <h3 className="mb-4 text-lg font-semibold text-gray-800">🐛 Real-time JSON Debug Viewer</h3>
+      <h3 className="mb-4 text-lg font-semibold text-default-900">🐛 Real-time JSON Debug Viewer</h3>
 
       <div className="rounded-lg border bg-white p-4">
         {/* 탭 순서대로 정렬 */}
@@ -228,22 +252,22 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
         {apiRequestLog && (
           <div className="mb-4">
             <button
-              className="bg-red-50 hover:bg-red-100 mb-2 flex w-full items-center gap-2 rounded p-2 text-left font-medium text-gray-700"
+              className="mb-2 flex w-full items-center gap-2 rounded bg-red-50 p-2 text-left font-medium text-default-900 hover:bg-red-100"
               onClick={() => setCollapsed((prev) => ({ ...prev, apiRequestLog: !prev.apiRequestLog }))}
             >
               <span className={`transform transition-transform ${collapsed.apiRequestLog ? 'rotate-0' : 'rotate-90'}`}>
                 ▶
               </span>
               🚀 Last API Request ({apiRequestLog.status === 'loading' ? 'Loading...' : apiRequestLog.status})
-              <span className="ml-auto text-xs text-gray-500">
+              <span className="ml-auto text-xs text-default-500">
                 {new Date(apiRequestLog.timestamp).toLocaleTimeString()}
               </span>
             </button>
 
             {!collapsed.apiRequestLog && (
-              <div className="bg-red-50 space-y-3 rounded border p-3">
+              <div className="space-y-3 rounded border bg-red-50 p-3">
                 <div>
-                  <div className="mb-1 text-xs font-medium text-gray-600">📤 Request:</div>
+                  <div className="mb-1 text-xs font-medium text-default-500">📤 Request:</div>
                   <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                     {JSON.stringify(apiRequestLog.request, null, 2)}
                   </pre>
@@ -251,7 +275,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
                 {apiRequestLog.status === 'success' && (
                   <div>
-                    <div className="mb-1 text-xs font-medium text-gray-600">📥 Response:</div>
+                    <div className="mb-1 text-xs font-medium text-default-500">📥 Response:</div>
                     <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                       {JSON.stringify(apiRequestLog.response, null, 2)}
                     </pre>
@@ -260,8 +284,8 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
                 {apiRequestLog.status === 'error' && (
                   <div>
-                    <div className="text-red-600 mb-1 text-xs font-medium">❌ Error:</div>
-                    <pre className="bg-red-100 text-red-700 max-h-20 overflow-auto rounded border p-2 text-xs">
+                    <div className="mb-1 text-xs font-medium text-red-600">❌ Error:</div>
+                    <pre className="max-h-20 overflow-auto rounded border bg-red-100 p-2 text-xs text-red-700">
                       {apiRequestLog.error}
                     </pre>
                   </div>
@@ -283,12 +307,11 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
         {/* 4. Facility Connection - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Facility Connection', facilityConnection, 'facilityConnection', 'bg-purple-50')}
 
-        {/* 5. Facility Information - 전체 스토어 데이터 */}
-        {renderCollapsibleSection('Facility Information', facilityCapacity, 'facilityInformation', 'bg-indigo-50')}
+
 
         {/* S3 저장 구조 메타데이터 표시 */}
         <div className="mt-8 border-t pt-6">
-          <h4 className="mb-3 text-sm font-semibold text-gray-800">🗂️ Scenario Metadata (S3 저장 구조)</h4>
+          <h4 className="mb-3 text-sm font-semibold text-default-900">🗂️ Scenario Metadata (S3 저장 구조)</h4>
           <pre className="max-h-96 overflow-auto rounded border bg-blue-50 p-2 text-xs">
             {JSON.stringify(scenarioMetadata, null, 2)}
           </pre>
@@ -296,7 +319,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
         {/* 최종 생성 결과 - 위치 이동 */}
         <div className="mt-6 border-t border-gray-300 pt-4">
-          <h4 className="mb-3 text-sm font-semibold text-gray-800">📄 Final JSON Structure (S3 Ready)</h4>
+          <h4 className="mb-3 text-sm font-semibold text-default-900">📄 Final JSON Structure (S3 Ready)</h4>
 
           {/* 최종 JSON 전체 구조 */}
           <pre className="max-h-96 overflow-auto rounded border bg-gray-50 p-2 text-xs">

@@ -87,8 +87,8 @@ export default function TabPassengerScheduleAirlineSelector({
               <Plane className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <div className="text-xl font-bold text-gray-900">Available Airlines</div>
-              <p className="text-sm font-normal text-gray-600">Select airlines to create a new group</p>
+              <div className="text-lg font-semibold text-default-900">Available Airlines</div>
+              <p className="text-sm font-normal text-default-500">Select airlines to create a new group</p>
             </div>
           </CardTitle>
           <Button
@@ -105,7 +105,7 @@ export default function TabPassengerScheduleAirlineSelector({
           {/* Left: Available Airlines */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">Available ({selectableAirlines.length})</h4>
+              <h4 className="text-sm font-medium text-default-900">Available ({selectableAirlines.length})</h4>
               <Button
                 variant="outline"
                 size="sm"
@@ -124,15 +124,15 @@ export default function TabPassengerScheduleAirlineSelector({
                   className="flex cursor-pointer items-center justify-between rounded border border-gray-200 bg-gray-50 p-2 transition-colors hover:bg-gray-100"
                 >
                   <div className="flex flex-1 items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{airline.iata}</span>
-                    <span className="truncate text-xs text-gray-600">{airline.name}</span>
+                    <span className="text-sm font-medium text-default-900">{airline.iata}</span>
+                    <span className="truncate text-xs text-default-500">{airline.name}</span>
                   </div>
-                  <ChevronRight className="h-3 w-3 text-gray-400" />
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 </div>
               ))}
               {selectableAirlines.length === 0 && (
                 <div className="rounded border-2 border-dashed border-gray-300 p-6 text-center">
-                  <p className="text-sm text-gray-500">No more airlines available</p>
+                  <p className="text-sm text-default-500">No more airlines available</p>
                 </div>
               )}
             </div>
@@ -141,7 +141,7 @@ export default function TabPassengerScheduleAirlineSelector({
           {/* Right: Selected Airlines */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">Selected ({selectedAirlines.length})</h4>
+              <h4 className="text-sm font-medium text-default-900">Selected ({selectedAirlines.length})</h4>
               <Button
                 variant="outline"
                 size="sm"
@@ -155,20 +155,20 @@ export default function TabPassengerScheduleAirlineSelector({
             <div className="max-h-48 space-y-1 overflow-y-auto">
               {selectedAirlines.length === 0 ? (
                 <div className="rounded border-2 border-dashed border-gray-300 p-6 text-center">
-                  <p className="text-sm text-gray-500">Select airlines from the left</p>
+                  <p className="text-sm text-default-500">Select airlines from the left</p>
                 </div>
               ) : (
                 selectedAirlines.map((airline, index) => (
                   <div
                     key={`selected-${airline.iata}-${index}`}
                     onClick={() => deselectAirline(airline.iata)}
-                    className="flex cursor-pointer items-center justify-between rounded border border-primary/20 bg-primary/10 p-2 transition-colors hover:bg-primary/20"
+                    className="flex cursor-pointer items-center justify-between rounded bg-primary p-2 shadow transition-colors hover:bg-primary/90"
                   >
                     <div className="flex flex-1 items-center gap-2">
-                      <span className="text-sm font-medium text-primary">{airline.iata}</span>
-                      <span className="truncate text-xs text-gray-700">{airline.name}</span>
+                      <span className="text-sm font-medium text-white">{airline.iata}</span>
+                      <span className="truncate text-xs text-white/80">{airline.name}</span>
                     </div>
-                    <ChevronLeft className="h-3 w-3 text-gray-500" />
+                    <ChevronLeft className="h-3 w-3 text-white/70" />
                   </div>
                 ))
               )}

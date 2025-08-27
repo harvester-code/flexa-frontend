@@ -2,12 +2,11 @@
 
 import React, { useState } from 'react';
 import { BarChart3, CheckCircle, Edit2, Settings, Trash2, Users } from 'lucide-react';
-import { useShallow } from 'zustand/react/shallow';
 import { APIRequestLog, DestributionCondition } from '@/types/simulationTypes';
 import { createPassengerShowUp } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { useScenarioStore } from '../../_store/useScenarioStore';
+import { useFlightScheduleStore, usePassengerScheduleStore } from '../_stores';
 import { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleNormalDistribution from './TabPassengerScheduleNormalDistribution';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
@@ -45,18 +44,8 @@ export default function TabPassengerScheduleGroupConfiguration({
   const [editingConfiguredGroup, setEditingConfiguredGroup] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // zustand store에서 액션 가져오기
-  const { setApiResponseData } = useScenarioStore(
-    useShallow((s) => ({
-      setApiResponseData: s.passengerSchedule.actions.setApiResponseData,
-    }))
-  );
-
-  // Zustand store actions
-  const setDestributionConditions = useScenarioStore(
-    (state) => state.passengerSchedule.actions.setDestributionConditions
-  );
-  const setIsCompleted = useScenarioStore((state) => state.passengerSchedule.actions.setIsCompleted);
+  // 🚀 새로운 모듈화된 PassengerSchedule 스토어에서 액션 가져오기
+  const { setApiResponseData, setCompleted: setIsCompleted } = usePassengerScheduleStore();
 
   // Convert minutes to hours:minutes format
   const minutesToHoursMinutes = (minutes: number) => {
@@ -65,47 +54,55 @@ export default function TabPassengerScheduleGroupConfiguration({
     return `${hours}h ${mins}m`;
   };
 
-  // zustand의 destributionConditions를 API가 기대하는 형식으로 변환
-  const convertToDestributionConditions = (conditions: any[]): any[] => {
-    return conditions.map((condition, index) => ({
-      index,
-      name: condition.name,
-      conditions: [
-        {
-          criteria: 'airline',
-          operator: 'in',
-          value: (condition.airline_group || []).map((airline: any) => airline.iata),
+  // 🚀 새로운 스토어들에서 데이터 가져오기
+  const { date: flightScheduleDate, airport: flightScheduleAirport } = useFlightScheduleStore();
+  const { pax_arrival_patterns: paxArrivalPatterns } = usePassengerScheduleStore();
+
+  // zustand의 pax_arrival_patterns를 API가 기대하는 형식으로 변환
+  // Convert pax_arrival_patterns to API payload format
+  const convertToShowUpPaxFormat = () => {
+    return {
+      settings: {
+        load_factor: 0.85,
+        min_arrival_minutes: 15,
+        date: flightScheduleDate || new Date().toISOString().split('T')[0], // Fallback to current date
+        airport: flightScheduleAirport || 'ICN', // Fallback to ICN
+      },
+      pax_demographics: {
+        nationality: {
+          rules: [],
+          default: {},
         },
-      ],
-      mean: condition.mean_minutes,
-      standard_deviation: condition.std_dev_minutes,
-    }));
+        profile: {
+          rules: [],
+          default: { general: 1 },
+        },
+      },
+      pax_arrival_patterns: paxArrivalPatterns,
+    };
   };
 
   // Handle Complete Setup button click
   const handleCompleteSetup = async () => {
     setLoading(true);
     try {
-      const apiPayload = convertToDestributionConditions(destributionConditions || []);
+      const apiPayload = convertToShowUpPaxFormat();
 
       // API 요청 로그 기록 (loading 상태)
-      const requestPayload = {
-        destribution_conditions: apiPayload,
-      };
       setApiRequestLog({
         timestamp: new Date().toISOString(),
-        request: requestPayload,
+        request: apiPayload,
         response: null,
         status: 'loading',
       });
 
-      // 백엔드가 기대하는 형식으로 API 호출
-      const response = await createPassengerShowUp(simulationId, requestPayload);
+      // 백엔드가 기대하는 형식으로 API 호출 (show_up_pax.json 형태)
+      const response = await createPassengerShowUp(simulationId, apiPayload);
 
       // API 응답 로그 기록 (success 상태)
       setApiRequestLog({
         timestamp: new Date().toISOString(),
-        request: requestPayload,
+        request: apiPayload,
         response: response.data,
         status: 'success',
       });
@@ -125,9 +122,7 @@ export default function TabPassengerScheduleGroupConfiguration({
       // API 에러 로그 기록
       setApiRequestLog({
         timestamp: new Date().toISOString(),
-        request: {
-          destribution_conditions: convertToDestributionConditions(destributionConditions || []),
-        },
+        request: convertToShowUpPaxFormat(),
         response: null,
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -141,8 +136,8 @@ export default function TabPassengerScheduleGroupConfiguration({
   if ((destributionConditions || []).length === 0) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-gray-500">
-          <Users className="mx-auto mb-2 h-12 w-12 text-gray-300" />
+        <CardContent className="py-8 text-center text-default-500">
+          <Users className="mx-auto mb-2 h-12 w-12 text-muted-foreground" />
           <p className="text-lg">No groups configured yet.</p>
           <p className="text-sm">Select airlines above to create your first group.</p>
         </CardContent>
@@ -160,10 +155,10 @@ export default function TabPassengerScheduleGroupConfiguration({
               <BarChart3 className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl font-semibold text-gray-800">
+              <CardTitle className="text-lg font-semibold text-default-900">
                 Passenger Arrival Time Distribution Chart
               </CardTitle>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-default-500">
                 Shows the distribution of passenger arrival times at the airport by group. (Based on departure time)
               </p>
             </div>
@@ -193,7 +188,7 @@ export default function TabPassengerScheduleGroupConfiguration({
                         autoFocus
                       />
                     ) : (
-                      <h4 className="text-xs font-medium text-gray-900">
+                      <h4 className="text-xs font-medium text-default-900">
                         {condition.name} ({condition.airline_group?.length || 0} airlines)
                       </h4>
                     )}
@@ -203,7 +198,7 @@ export default function TabPassengerScheduleGroupConfiguration({
                       onClick={() =>
                         setEditingConfiguredGroup(editingConfiguredGroup === condition.id ? null : condition.id)
                       }
-                      className="h-4 w-4 p-0 text-gray-500 hover:bg-gray-100"
+                      className="h-4 w-4 p-0 text-default-500 hover:bg-gray-100"
                     >
                       <Edit2 className="h-2.5 w-2.5" />
                     </Button>
@@ -213,7 +208,7 @@ export default function TabPassengerScheduleGroupConfiguration({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteConfiguredGroup(condition.id)}
-                    className="text-red-500 hover:bg-red-50 h-4 w-4 p-0"
+                    className="h-4 w-4 p-0 text-red-500 hover:bg-red-50"
                   >
                     <Trash2 className="h-2.5 w-2.5" />
                   </Button>
@@ -224,7 +219,7 @@ export default function TabPassengerScheduleGroupConfiguration({
                   {(condition.airline_group || []).map((airline, airlineIndex) => (
                     <span
                       key={`condition-${conditionIndex}-airline-${airline.iata}`}
-                      className="inline-block rounded border bg-white px-1.5 py-0.5 text-xs text-gray-700"
+                      className="inline-block rounded border bg-white px-1.5 py-0.5 text-xs text-default-900"
                     >
                       {airline.iata}
                     </span>
@@ -234,7 +229,7 @@ export default function TabPassengerScheduleGroupConfiguration({
                 {/* Editable Settings */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Arrival:</span>
+                    <span className="text-sm font-medium text-default-500">Arrival:</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -260,12 +255,12 @@ export default function TabPassengerScheduleGroupConfiguration({
                           e.target.style.borderColor = '#d1d5db';
                         }}
                       />
-                      <span className="text-sm text-gray-600">min before</span>
+                      <span className="text-sm text-default-500">min before</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Spread:</span>
+                    <span className="text-sm font-medium text-default-500">Spread:</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm">±</span>
                       <input
@@ -292,16 +287,16 @@ export default function TabPassengerScheduleGroupConfiguration({
                           e.target.style.borderColor = '#d1d5db';
                         }}
                       />
-                      <span className="text-sm text-gray-600">minutes</span>
+                      <span className="text-sm text-default-500">minutes</span>
                     </div>
                   </div>
 
                   {/* Summary Info */}
                   <div className="space-y-1 border-t border-gray-200 pt-2">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-default-500">
                       Arrival: {minutesToHoursMinutes(condition.mean_minutes)} before departure
                     </p>
-                    <p className="text-xs text-gray-400">Spread: ±{condition.std_dev_minutes} minutes</p>
+                    <p className="text-xs text-muted-foreground">Spread: ±{condition.std_dev_minutes} minutes</p>
                   </div>
                 </div>
               </div>

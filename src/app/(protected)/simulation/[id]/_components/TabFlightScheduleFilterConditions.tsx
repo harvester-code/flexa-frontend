@@ -100,8 +100,13 @@ function TabFlightScheduleFilterConditions({
 
   // Types 필터링된 항공사 목록 계산
   const getFilteredAirlines = useMemo(() => {
+    // 안전한 기본값 제공
+    const airlines = availableConditions?.airlines || [];
+    const internationalAirlines = availableConditions?.types?.International || [];
+    const domesticAirlines = availableConditions?.types?.Domestic || [];
+
     if (selectedConditions.types.length === 0) {
-      return availableConditions.airlines;
+      return airlines;
     }
 
     const filteredAirlines = new Set<{ iata: string; name: string }>();
@@ -109,26 +114,25 @@ function TabFlightScheduleFilterConditions({
     // Types에 따른 필터링
     selectedConditions.types.forEach((type) => {
       if (type === 'International') {
-        availableConditions.types.International.forEach((airline) => filteredAirlines.add(airline));
+        internationalAirlines.forEach((airline) => filteredAirlines.add(airline));
       }
       if (type === 'Domestic') {
-        availableConditions.types.Domestic.forEach((airline) => filteredAirlines.add(airline));
+        domesticAirlines.forEach((airline) => filteredAirlines.add(airline));
       }
     });
 
     return Array.from(filteredAirlines);
-  }, [selectedConditions.types, availableConditions.types, availableConditions.airlines]);
+  }, [selectedConditions.types, availableConditions?.types, availableConditions?.airlines]);
 
   // 계산된 availableAirlines (실시간 계산)
   const availableAirlines = useMemo(() => {
     // Types 필터링된 항공사 목록에서 이미 선택된 항공사 제외
-    const filteredByTypes = getFilteredAirlines;
+    const filteredByTypes = getFilteredAirlines || [];
+    const selectedAirlines = selectedConditions?.selectedAirlines || [];
 
     return filteredByTypes.filter(
       (airline) =>
-        !selectedConditions.selectedAirlines.some(
-          (selected) => selected.iata === airline.iata && selected.name === airline.name
-        )
+        !selectedAirlines.some((selected) => selected?.iata === airline?.iata && selected?.name === airline?.name)
     );
   }, [getFilteredAirlines, selectedConditions.selectedAirlines]);
 
@@ -136,7 +140,9 @@ function TabFlightScheduleFilterConditions({
   const sortedAvailableAirlines = useMemo(() => {
     // Map을 사용하여 중복 제거 (IATA + name 조합으로)
     const uniqueMap = new Map<string, { iata: string; name: string }>();
-    availableAirlines.forEach((airline) => {
+    const airlines = availableAirlines || [];
+
+    airlines.forEach((airline) => {
       // null 값 체크 후 Map에 추가
       if (airline && airline.iata && airline.name) {
         const key = `${airline.iata}-${airline.name}`;
@@ -153,7 +159,9 @@ function TabFlightScheduleFilterConditions({
   const sortedSelectedAirlines = useMemo(() => {
     // Map을 사용하여 중복 제거 (IATA + name 조합으로)
     const uniqueMap = new Map<string, { iata: string; name: string }>();
-    selectedConditions.selectedAirlines.forEach((airline) => {
+    const selectedAirlines = selectedConditions?.selectedAirlines || [];
+
+    selectedAirlines.forEach((airline) => {
       // null 값 체크 후 Map에 추가
       if (airline && airline.iata && airline.name) {
         const key = `${airline.iata}-${airline.name}`;
@@ -172,13 +180,14 @@ function TabFlightScheduleFilterConditions({
     (terminal: string, checked: boolean) => {
       // terminal은 displayName ("Terminal 1")이므로 raw 값으로 변환
       const rawTerminal = getTerminalRawValue(terminal);
-      const terminalAirlines = availableConditions.terminals[rawTerminal] || [];
+      const terminals = availableConditions?.terminals || {};
+      const terminalAirlines = terminals[rawTerminal] || [];
       const filteredTerminalAirlines = terminalAirlines.filter((airline) =>
         getFilteredAirlines.some((filtered) => filtered.iata === airline.iata && filtered.name === airline.name)
       );
 
       // 표시되는 모든 터미널 목록 (unknown 제외)
-      const visibleTerminals = Object.keys(availableConditions.terminals)
+      const visibleTerminals = Object.keys(terminals)
         .filter((t) => t !== 'unknown')
         .map(getTerminalDisplayName);
 
@@ -191,8 +200,8 @@ function TabFlightScheduleFilterConditions({
 
         // unknown 터미널의 항공사들도 포함할지 결정
         let unknownAirlines: Array<{ iata: string; name: string }> = [];
-        if (allTerminalsSelected && availableConditions.terminals['unknown']) {
-          unknownAirlines = availableConditions.terminals['unknown'].filter((airline) =>
+        if (allTerminalsSelected && terminals['unknown']) {
+          unknownAirlines = terminals['unknown'].filter((airline) =>
             getFilteredAirlines.some((filtered) => filtered.iata === airline.iata && filtered.name === airline.name)
           );
         }
@@ -234,8 +243,8 @@ function TabFlightScheduleFilterConditions({
 
         // unknown 터미널의 항공사들 처리
         let unknownAirlines: Array<{ iata: string; name: string }> = [];
-        if (wasAllTerminalsSelected && availableConditions.terminals['unknown']) {
-          unknownAirlines = availableConditions.terminals['unknown'].filter((airline) =>
+        if (wasAllTerminalsSelected && terminals['unknown']) {
+          unknownAirlines = terminals['unknown'].filter((airline) =>
             getFilteredAirlines.some((filtered) => filtered.iata === airline.iata && filtered.name === airline.name)
           );
         }
@@ -264,7 +273,7 @@ function TabFlightScheduleFilterConditions({
         });
       }
     },
-    [availableConditions.terminals, getFilteredAirlines, selectedConditions, setSelectedConditions, getTerminalRawValue]
+    [availableConditions, getFilteredAirlines, selectedConditions, setSelectedConditions, getTerminalRawValue]
   );
 
   // 항공사 추가/제거 함수 (성능 최적화 + 중복 제거 강화)
@@ -361,8 +370,8 @@ function TabFlightScheduleFilterConditions({
                   <Filter className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-gray-900">Filter Conditions</div>
-                  <p className="text-sm font-normal text-gray-600">Select flight types, terminals, and airlines</p>
+                  <div className="text-lg font-semibold text-default-900">Filter Conditions</div>
+                  <p className="text-sm font-normal text-default-500">Select flight types, terminals, and airlines</p>
                 </div>
               </CardTitle>
               <ChevronDown className="h-5 w-5 transition-transform duration-200" />
@@ -373,8 +382,8 @@ function TabFlightScheduleFilterConditions({
           <CardContent>
             <div className="w-full">
               {/* Types Selection */}
-              {(availableConditions.types.International.length > 0 ||
-                availableConditions.types.Domestic.length > 0) && (
+              {((availableConditions?.types?.International?.length || 0) > 0 ||
+                (availableConditions?.types?.Domestic?.length || 0) > 0) && (
                 <div className="border-b">
                   <div
                     className="flex cursor-pointer items-center justify-between py-4 text-left text-sm font-medium transition-all hover:underline"
@@ -389,7 +398,7 @@ function TabFlightScheduleFilterConditions({
                     <div className="space-y-3 pb-4 pt-2">
                       <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-2 lg:gap-3">
                         {/* International 타입 체크박스 */}
-                        {availableConditions.types.International.length > 0 && (
+                        {(availableConditions?.types?.International?.length || 0) > 0 && (
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="type-international"
@@ -415,7 +424,7 @@ function TabFlightScheduleFilterConditions({
                         )}
 
                         {/* Domestic 타입 체크박스 */}
-                        {availableConditions.types.Domestic.length > 0 && (
+                        {(availableConditions?.types?.Domestic?.length || 0) > 0 && (
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="type-domestic"
@@ -455,7 +464,7 @@ function TabFlightScheduleFilterConditions({
                             }}
                           >
                             {type}
-                            <X className="hover:bg-white/20 h-3 w-3 rounded-full p-0.5" />
+                            <X className="h-3 w-3 rounded-full p-0.5 hover:bg-white/20" />
                           </Badge>
                         ))}
                       </div>
@@ -465,7 +474,7 @@ function TabFlightScheduleFilterConditions({
               )}
 
               {/* Terminal Selection */}
-              {Object.keys(availableConditions.terminals).filter((t) => t !== 'unknown').length > 0 && (
+              {Object.keys(availableConditions?.terminals || {}).filter((t) => t !== 'unknown').length > 0 && (
                 <div className="border-b">
                   <div
                     className="flex cursor-pointer items-center justify-between py-4 text-left text-sm font-medium transition-all hover:underline"
@@ -479,7 +488,7 @@ function TabFlightScheduleFilterConditions({
                   {accordionState.terminal && (
                     <div className="space-y-3 pb-4 pt-2">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-2 xl:gap-3">
-                        {Object.keys(availableConditions.terminals)
+                        {Object.keys(availableConditions?.terminals || {})
                           .filter((t) => t !== 'unknown')
                           .sort((a, b) => {
                             const aNum = parseInt(a);
@@ -524,7 +533,7 @@ function TabFlightScheduleFilterConditions({
                               }}
                             >
                               {terminal}
-                              <X className="hover:bg-white/20 h-3 w-3 rounded-full p-0.5" />
+                              <X className="h-3 w-3 rounded-full p-0.5 hover:bg-white/20" />
                             </Badge>
                           ))}
                       </div>
@@ -534,7 +543,7 @@ function TabFlightScheduleFilterConditions({
               )}
 
               {/* Airline - 좌우 장바구니 방식 */}
-              {getFilteredAirlines.length > 0 && (
+              {(getFilteredAirlines?.length || 0) > 0 && (
                 <div className="border-b">
                   <div
                     className="flex cursor-pointer items-center justify-between py-4 text-left text-sm font-medium transition-all hover:underline"
@@ -552,8 +561,8 @@ function TabFlightScheduleFilterConditions({
                         {/* 왼쪽: 사용 가능한 항공사 */}
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">Available ({availableAirlines.length})</Label>
-                            {availableAirlines.length > 0 && (
+                            <Label className="text-sm font-medium">Available ({availableAirlines?.length || 0})</Label>
+                            {(availableAirlines?.length || 0) > 0 && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -565,7 +574,7 @@ function TabFlightScheduleFilterConditions({
                             )}
                           </div>
                           <div className="h-40 overflow-y-auto rounded-md border bg-muted/20 p-2 sm:h-44 lg:h-48">
-                            {availableAirlines.length === 0 ? (
+                            {(availableAirlines?.length || 0) === 0 ? (
                               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                                 No available
                               </div>
@@ -595,9 +604,9 @@ function TabFlightScheduleFilterConditions({
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <Label className="text-sm font-medium">
-                              Selected ({selectedConditions.selectedAirlines.length})
+                              Selected ({selectedConditions?.selectedAirlines?.length || 0})
                             </Label>
-                            {selectedConditions.selectedAirlines.length > 0 && (
+                            {(selectedConditions?.selectedAirlines?.length || 0) > 0 && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -609,26 +618,24 @@ function TabFlightScheduleFilterConditions({
                             )}
                           </div>
                           <div className="h-40 overflow-y-auto rounded-md border bg-primary/5 p-2 sm:h-44 lg:h-48">
-                            {selectedConditions.selectedAirlines.length === 0 ? (
+                            {(selectedConditions?.selectedAirlines?.length || 0) === 0 ? (
                               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                                 No selected
                               </div>
                             ) : (
                               <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                                 {sortedSelectedAirlines.map((airline, index) => (
-                                  <Button
+                                  <div
                                     key={`selected-${airline.iata}-${airline.name}-${index}`}
-                                    variant="default"
-                                    size="sm"
                                     onClick={() => removeAirline(airline)}
-                                    className="h-8 w-full justify-between p-2 text-left transition-colors hover:bg-primary/80"
+                                    className="flex cursor-pointer items-center justify-between rounded bg-primary p-2 shadow transition-colors hover:bg-primary/90"
                                   >
-                                    <div className="flex min-w-0 flex-1 items-center">
-                                      <span className="mr-1 text-sm font-medium sm:mr-2">{airline.iata}</span>
-                                      <span className="truncate text-xs opacity-80">- {airline.name}</span>
+                                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                                      <span className="text-sm font-medium text-white">{airline.iata}</span>
+                                      <span className="truncate text-xs text-white/80">- {airline.name}</span>
                                     </div>
-                                    <Minus className="ml-1 h-3 w-3 flex-shrink-0 sm:ml-2" />
-                                  </Button>
+                                    <Minus className="h-3 w-3 text-white/70" />
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -644,9 +651,9 @@ function TabFlightScheduleFilterConditions({
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-muted-foreground">
-                {selectedConditions.types.length +
-                  selectedConditions.terminal.length +
-                  selectedConditions.selectedAirlines.length}{' '}
+                {(selectedConditions?.types?.length || 0) +
+                  (selectedConditions?.terminal?.length || 0) +
+                  (selectedConditions?.selectedAirlines?.length || 0)}{' '}
                 condition(s) selected
               </div>
               <div className="flex gap-2">
@@ -661,9 +668,9 @@ function TabFlightScheduleFilterConditions({
                     });
                   }}
                   disabled={
-                    selectedConditions.types.length === 0 &&
-                    selectedConditions.terminal.length === 0 &&
-                    selectedConditions.selectedAirlines.length === 0
+                    (selectedConditions?.types?.length || 0) === 0 &&
+                    (selectedConditions?.terminal?.length || 0) === 0 &&
+                    (selectedConditions?.selectedAirlines?.length || 0) === 0
                   }
                   className="flex-1 sm:flex-none"
                 >

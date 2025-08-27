@@ -5,7 +5,7 @@ import { CheckSquare, Network } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { useScenarioStore } from '../../_store/useScenarioStore';
+import { useFacilityConnectionStore, useFlightScheduleStore } from '../_stores';
 import NextButton from './NextButton';
 import TabFacilityConnectionTable from './TabFacilityConnectionTable';
 
@@ -33,14 +33,14 @@ interface ConnectionMatrix {
 }
 
 export default function TabFacilityConnection({ simulationId, visible }: TabFacilityConnectionProps) {
-  // Zustand store
-  const processes = useScenarioStore((s) => s.facilityConnection.processes);
-  const isCompleted = useScenarioStore((s) => s.facilityConnection.isCompleted);
-  const setIsCompleted = useScenarioStore((s) => s.facilityConnection.actions.setIsCompleted);
-  const setProcesses = useScenarioStore((s) => s.facilityConnection.actions.setProcesses);
+  // Individual stores
+  const processes = useFacilityConnectionStore((s) => s.processes);
+  const isCompleted = useFacilityConnectionStore((s) => s.isCompleted);
+  const setIsCompleted = useFacilityConnectionStore((s) => s.setCompleted);
+  const setProcesses = useFacilityConnectionStore((s) => s.setProcesses);
 
   // Additional data for Airline process
-  const selectedAirlines = useScenarioStore((s) => s.flightSchedule.selectedConditions.selectedAirlines);
+  const selectedAirlines = useFlightScheduleStore((s) => s.selectedConditions.selectedAirlines);
 
   // Local state for matrix editing
   const [connectionMatrices, setConnectionMatrices] = useState<Record<string, ConnectionMatrix>>({});
@@ -387,7 +387,7 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
               <Network className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl text-primary">Facility Connection</CardTitle>
+              <CardTitle className="text-lg font-semibold text-primary">Facility Connection</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Configure passenger flow percentages between processing facilities
               </p>
@@ -432,9 +432,9 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
                   {incoming.length === 0 && (
                     <Card>
                       <CardContent className="py-8 text-center">
-                        <Network className="mx-auto h-8 w-8 text-gray-400" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">No Incoming Connections</h3>
-                        <p className="mt-1 text-sm text-gray-600">This process is the entry point.</p>
+                        <Network className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <h3 className="mt-2 text-sm font-medium text-default-900">No Incoming Connections</h3>
+                        <p className="mt-1 text-sm text-default-500">This process is the entry point.</p>
                       </CardContent>
                     </Card>
                   )}
@@ -446,9 +446,9 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
       ) : (
         <Card>
           <CardContent className="py-12 text-center">
-            <Network className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No Process Connections</h3>
-            <p className="mt-2 text-sm text-gray-600">
+            <Network className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-medium text-default-900">No Process Connections</h3>
+            <p className="mt-2 text-sm text-default-500">
               Complete the Processing Procedures tab first to configure facility connections.
             </p>
           </CardContent>
@@ -458,7 +458,7 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
       {/* Complete Setup Button */}
       {orderedProcesses.length > 0 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-default-500">
             {orderedProcesses.length} process{orderedProcesses.length > 1 ? 'es' : ''} configured
           </div>
           <Button onClick={saveToStore} disabled={!isAllComplete} className="bg-primary hover:bg-primary/90">
@@ -475,8 +475,8 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
       )}
 
       {/* Navigation */}
-      <div className="flex justify-end pt-4">
-        <NextButton disabled={!isCompleted} />
+      <div className="pt-4">
+        <NextButton showPrevious={true} disabled={!isCompleted} />
       </div>
     </div>
   );

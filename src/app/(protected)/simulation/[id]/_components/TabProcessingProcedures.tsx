@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { useScenarioStore } from '../../_store/useScenarioStore';
-import { useTabReset } from '../_hooks/useTabReset';
+import { useFacilityConnectionStore, useProcessingProceduresStore } from '../_stores';
+// useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 
 interface TabProcessingProceduresProps {
@@ -16,14 +16,43 @@ interface TabProcessingProceduresProps {
 }
 
 export default function TabProcessingProcedures({ simulationId, visible }: TabProcessingProceduresProps) {
-  // 모든 hooks를 조건부 리턴 이전에 위치
-  const procedures = useScenarioStore((s) => s.airportProcessing.procedures);
-  const entryType = useScenarioStore((s) => s.airportProcessing.entryType);
-  const isCompleted = useScenarioStore((s) => s.airportProcessing.isCompleted);
-  const setProcedures = useScenarioStore((s) => s.airportProcessing.actions.setProcedures);
-  const setEntryType = useScenarioStore((s) => s.airportProcessing.actions.setEntryType);
-  const setIsCompleted = useScenarioStore((s) => s.airportProcessing.actions.setIsCompleted);
-  const generateProcesses = useScenarioStore((s) => s.facilityConnection.actions.generateProcessesFromProcedures);
+  // 개별 store에서 필요한 데이터만 직접 가져오기
+  const processFlow = useProcessingProceduresStore((s) => s.process_flow);
+  const isCompleted = useProcessingProceduresStore((s) => s.isCompleted);
+  const convertFromProcedures = useProcessingProceduresStore((s) => s.convertFromProcedures);
+  const setIsCompleted = useProcessingProceduresStore((s) => s.setCompleted);
+  const generateProcesses = useFacilityConnectionStore((s) => s.generateProcessesFromProcedures);
+
+  // process_flow를 procedures 형태로 변환하는 함수
+  const convertToUIProcedures = (flow: any[]) => {
+    return flow.map((step, index) => {
+      const facilityNames: string[] = [];
+
+      // zones에서 facility names 추출
+      Object.values(step.zones).forEach((zone: any) => {
+        if (zone.facilities) {
+          zone.facilities.forEach((facility: any) => {
+            facilityNames.push(facility.id);
+          });
+        }
+      });
+
+      return {
+        order: step.step + 1, // 0-based를 1-based로 변환
+        process: step.name, // 원본 이름 그대로 사용 (하드코딩 제거)
+        facility_names: facilityNames,
+      };
+    });
+  };
+
+  // UI procedures 형태를 process_flow로 변환하는 함수
+  const convertFromUIProcedures = (procedures: any[]) => {
+    convertFromProcedures(procedures, 'Airline');
+  };
+
+  // 현재 UI에서 사용할 procedures 데이터
+  const procedures = convertToUIProcedures(processFlow || []);
+  const entryType = 'Airline'; // 고정값
 
   const [isCreatingProcess, setIsCreatingProcess] = useState(false);
   const [newProcessName, setNewProcessName] = useState('');
@@ -36,8 +65,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
   const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
 
-  // Tab Reset Hook
-  const { resetByTab } = useTabReset();
+  // Tab Reset 시스템 제거 - 단순화
 
   // 조건부 리턴을 모든 hooks 이후에 위치
   if (!visible) return null;
@@ -104,7 +132,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       facility_names: activeFacilities,
     };
 
-    setProcedures([...procedures, newProcedure]);
+    // 기존 procedures에 새로운 procedure 추가 후 변환
+    convertFromUIProcedures([...procedures, newProcedure]);
 
     // Reset form
     setNewProcessName('');
@@ -141,7 +170,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       facility_names: activeFacilities,
     };
 
-    setProcedures(newProcedures);
+    // 업데이트된 procedures 변환
+    convertFromUIProcedures(newProcedures);
 
     // Reset form
     setSelectedProcessIndex(null);
@@ -218,13 +248,21 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   const removeProcedure = (index: number) => {
     const newProcedures = procedures.filter((_, i) => i !== index);
-    setProcedures(newProcedures);
+
+    // order 재정렬 (1부터 시작)
+    const reorderedProcedures = newProcedures.map((proc, i) => ({
+      ...proc,
+      order: i + 1,
+    }));
+
+    convertFromUIProcedures(reorderedProcedures);
 
     // 삭제된 프로세스가 선택되어 있었다면 선택 해제
     if (selectedProcessIndex === index) {
       setSelectedProcessIndex(null);
       setEditProcessName('');
       setEditProcessFacilities('');
+      setEditingFacilities([]);
     } else if (selectedProcessIndex !== null && selectedProcessIndex > index) {
       // 삭제된 프로세스보다 뒤에 있는 프로세스가 선택되어 있다면 인덱스 조정
       setSelectedProcessIndex(selectedProcessIndex - 1);
@@ -261,7 +299,13 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     const [draggedItem] = newProcedures.splice(draggedIndex, 1);
     newProcedures.splice(dropIndex, 0, draggedItem);
 
-    setProcedures(newProcedures);
+    // order 재정렬 (1부터 시작)
+    const reorderedProcedures = newProcedures.map((proc, i) => ({
+      ...proc,
+      order: i + 1,
+    }));
+
+    convertFromUIProcedures(reorderedProcedures);
 
     // 선택된 프로세스 인덱스 업데이트 (간단한 방식)
     if (selectedProcessIndex !== null) {
@@ -296,8 +340,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               <Route className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl">Processing Procedures</CardTitle>
-              <p className="text-sm text-gray-600">
+              <CardTitle className="text-lg font-semibold">Processing Procedures</CardTitle>
+              <p className="text-sm text-default-500">
                 Configure passenger flow simulation path through airport facilities
               </p>
             </div>
@@ -320,7 +364,12 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                 Entry
               </div>
               <div className="flex flex-1 justify-end">
-                <Select value={entryType} onValueChange={setEntryType}>
+                <Select
+                  value={entryType}
+                  onValueChange={() => {
+                    /* entryType은 현재 고정값으로 처리 */
+                  }}
+                >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Select entry type" />
                   </SelectTrigger>
@@ -358,14 +407,14 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                       <ArrowUpDown className="h-4 w-4" />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-900">{proc.process}</div>
-                      <div className="text-xs text-gray-600">({proc.facility_names.length} facilities)</div>
+                      <div className="text-sm font-medium text-default-900">{proc.process}</div>
+                      <div className="text-xs text-default-500">({proc.facility_names.length} facilities)</div>
                     </div>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-red-500 text-red-500 hover:bg-red-50 hover:border-red-600 hover:text-red-600 h-6 w-6 rounded-full p-0"
+                    className="h-6 w-6 rounded-full border-red-500 p-0 text-red-500 hover:border-red-600 hover:bg-red-50 hover:text-red-600"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeProcedure(index);
@@ -416,11 +465,11 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           <CardContent className="h-[500px] overflow-y-auto pb-16">
             {isCreatingProcess ? (
               <div className="space-y-6">
-                <div className="text-sm text-gray-600">Create a new process step</div>
+                <div className="text-sm text-default-500">Create a new process step</div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Process Name</label>
+                    <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
                     <Input
                       type="text"
                       placeholder="e.g., Check-In, Security, Immigration"
@@ -432,10 +481,10 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Facility Names</label>
+                    <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
                     <Input
                       type="text"
-                      placeholder="e.g., A~E, DG1~5, SC1,SC2,SC3"
+                      placeholder="e.g., A~E, F1~5, X1,X2,X3"
                       value={newProcessFacilities}
                       onChange={(e) => handleFacilityInputChange(e.target.value, true)}
                       onKeyDown={(e) => handleKeyDown(e, true)}
@@ -445,7 +494,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     {/* 시설 뱃지 표시 */}
                     {currentFacilities.length > 0 && (
                       <div className="mt-3">
-                        <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
+                        <p className="mb-2 text-sm font-medium text-default-900">Facilities (click to toggle):</p>
                         <div className="flex flex-wrap gap-2">
                           {currentFacilities.map((facility) => (
                             <Button
@@ -456,7 +505,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
                                 facility.isActive
                                   ? 'bg-primary text-white hover:bg-primary/80'
-                                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                  : 'bg-gray-200 text-default-500 hover:bg-gray-300'
                               }`}
                             >
                               {facility.name}
@@ -483,11 +532,11 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               </div>
             ) : selectedProcessIndex !== null ? (
               <div className="space-y-6">
-                <div className="text-sm text-gray-600">Edit process step</div>
+                <div className="text-sm text-default-500">Edit process step</div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Process Name</label>
+                    <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
                     <Input
                       type="text"
                       placeholder="e.g., Check-In, Security, Immigration"
@@ -499,10 +548,10 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Facility Names</label>
+                    <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
                     <Input
                       type="text"
-                      placeholder="e.g., A~E, DG1~5, SC1,SC2,SC3"
+                      placeholder="e.g., A~E, F1~5, X1,X2,X3"
                       value={editProcessFacilities}
                       onChange={(e) => handleFacilityInputChange(e.target.value, false)}
                       onKeyDown={(e) => handleKeyDown(e, false)}
@@ -512,7 +561,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     {/* 시설 뱃지 표시 */}
                     {editingFacilities.length > 0 && (
                       <div className="mt-3">
-                        <p className="mb-2 text-sm font-medium text-gray-700">Facilities (click to toggle):</p>
+                        <p className="mb-2 text-sm font-medium text-default-900">Facilities (click to toggle):</p>
                         <div className="flex flex-wrap gap-2">
                           {editingFacilities.map((facility) => (
                             <Button
@@ -523,7 +572,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
                                 facility.isActive
                                   ? 'bg-primary text-white hover:bg-primary/80'
-                                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                  : 'bg-gray-200 text-default-500 hover:bg-gray-300'
                               }`}
                             >
                               {facility.name}
@@ -549,15 +598,15 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                 </div>
               </div>
             ) : procedures.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-gray-500">
+              <div className="flex h-full items-center justify-center text-default-500">
                 <div className="text-center">
-                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                   <p>Add a process to configure facilities</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-default-500">
                   {procedures.length} process{procedures.length > 1 ? 'es' : ''} configured
                 </div>
 
@@ -575,8 +624,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                         onClick={() => selectProcess(index)}
                       >
                         <div className="mb-2 flex items-center justify-between">
-                          <h4 className="font-medium text-gray-900">{proc.process}</h4>
-                          <span className="text-xs text-gray-500">
+                          <h4 className="font-medium text-default-900">{proc.process}</h4>
+                          <span className="text-xs text-default-500">
                             {extendedProc.facilitiesStatus
                               ? extendedProc.facilitiesStatus.filter((f) => f.isActive).length
                               : proc.facility_names.length}{' '}
@@ -594,7 +643,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                                   className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${
                                     facility.isActive
                                       ? 'bg-primary/10 text-primary'
-                                      : 'bg-gray-100 text-gray-400 line-through'
+                                      : 'bg-gray-100 text-muted-foreground line-through'
                                   }`}
                                 >
                                   {facility.name}
@@ -626,10 +675,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           <div className="absolute bottom-4 right-4">
             <Button
               onClick={() => {
-                // Processing Procedures 변경시 후속 탭들 초기화 (먼저 실행)
-                resetByTab('ProcessingProcedures');
-
-                // 리셋이 완전히 완료된 후 processes 생성
+                // Processing Procedures 완료 시 자동으로 Facility Connection 설정
                 setTimeout(() => {
                   generateProcesses(procedures, entryType);
                 }, 0);
@@ -653,8 +699,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       </div>
 
       {/* Navigation */}
-      <div className="mt-8 flex justify-end">
-        <NextButton disabled={!isCompleted} />
+      <div className="mt-8">
+        <NextButton showPrevious={true} disabled={!isCompleted} />
       </div>
     </div>
   );
