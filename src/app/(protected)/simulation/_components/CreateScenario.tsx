@@ -113,7 +113,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
           <span className="!mb-0 !min-h-0">Create New Scenario</span>
         </DialogTitle>
 
-        <p className="mb-2 min-h-5 text-sm text-gray-600">Please fill in the scenario details.</p>
+        <p className="mb-2 min-h-5 text-sm text-default-500">Please fill in the scenario details.</p>
 
         <div className="popup-input-wrap">
           <form className="flex flex-col gap-3">
@@ -127,7 +127,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
                     placeholder={field.placeholder}
                     value={formData[field.key]}
                     onChange={(e) => updateField(field.key, e.target.value)}
-                    className="input-rounded"
+                    className="h-10 rounded-full border border-input"
                   />
                 </dd>
               </dl>

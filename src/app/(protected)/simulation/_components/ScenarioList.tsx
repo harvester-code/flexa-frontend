@@ -295,7 +295,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
 
       {/* 필터 섹션 */}
       <div className="mt-4 flex h-20 items-center justify-between">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-default-500">
           Showing {currentScenarios.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
           {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length} scenarios
         </div>
@@ -387,7 +387,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                   <tr
                     key={scenario.scenario_id}
                     className={cn(
-                      'border-b text-sm hover:bg-default-100',
+                      'border-b text-sm hover:bg-muted',
                       isScenarioSelected[(currentPage - 1) * ITEMS_PER_PAGE + idx] ? 'active' : ''
                     )}
                   >
@@ -482,7 +482,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                           title={isEditing ? 'Cancel' : 'Edit'}
                           onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}
                         >
-                          <Edit3 className={cn('size-5', isEditing ? 'text-gray-600' : 'text-primary')} />
+                          <Edit3 className={cn('size-5', isEditing ? 'text-default-500' : 'text-primary')} />
                         </Button>
                       </div>
                     </td>

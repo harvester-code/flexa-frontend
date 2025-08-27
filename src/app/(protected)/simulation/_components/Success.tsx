@@ -40,7 +40,7 @@ const SuccessComponent: React.FC<SuccessProps> = ({ title, message, buttonText =
           <DialogTitle className="!mb-0 !min-h-0">{title}</DialogTitle>
         </div>
 
-        <p className="mb-6 text-sm text-gray-600">{message}</p>
+        <p className="mb-6 text-sm text-default-500">{message}</p>
 
         <div className="flex justify-end">
           <Button className="px-8" onClick={handleConfirm}>
