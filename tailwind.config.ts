@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import tailwindAnimate from 'tailwindcss-animate';
 
 export default {
   content: [
@@ -8,6 +9,14 @@ export default {
   ],
   theme: {
     extend: {
+      // 🎯 페이지 레이아웃 시스템
+      maxWidth: {
+        page: '83.75rem', // 1089px (13px 기준)
+      },
+      spacing: {
+        'page-x': '1.875rem', // 24.375px (13px 기준) - 좌우 패딩
+        'page-b': '6rem', // 78px (13px 기준) - 하단 패딩
+      },
       borderRadius: {
         md: 'calc(var(--radius) - 2px)',
         xl: 'var(--rounded-xl)',
@@ -16,7 +25,10 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
+          50: 'hsl(var(--primary-50))',
+          500: 'hsl(var(--primary-500))',
+          900: 'hsl(var(--primary-900))',
+          DEFAULT: 'hsl(var(--primary-500))',
           foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
@@ -25,53 +37,14 @@ export default {
         },
 
         white: 'hsl(var(--white))',
-        brand: {
-          25: 'hsl(var(--brand-25))',
-          50: 'hsl(var(--brand-50))',
-          100: 'hsl(var(--brand-100))',
-          200: 'hsl(var(--brand-200))',
-          300: 'hsl(var(--brand-300))',
-          400: 'hsl(var(--brand-400))',
-          500: 'hsl(var(--brand-500))',
-          600: 'hsl(var(--brand-600))',
-          700: 'hsl(var(--brand-700))',
-          800: 'hsl(var(--brand-800))',
-          900: 'hsl(var(--brand-900))',
-          DEFAULT: 'hsl(var(--brand-600))',
-        },
-
         warning: 'hsl(var(--warning))',
         default: {
-          25: 'hsl(var(--default-25))',
-          50: 'hsl(var(--default-50))',
-          100: 'hsl(var(--default-100))',
-          200: 'hsl(var(--default-200))',
-          300: 'hsl(var(--default-300))',
-          400: 'hsl(var(--default-400))',
           500: 'hsl(var(--default-500))',
-          600: 'hsl(var(--default-600))',
-          700: 'hsl(var(--default-700))',
-          800: 'hsl(var(--default-800))',
           900: 'hsl(var(--default-900))',
         },
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
-        },
-
-        btn: {
-          primary: {
-            DEFAULT: 'hsl(var(--brand-600))',
-            hover: 'hsl(var(--brand-700))',
-            active: 'hsl(var(--brand-800))',
-            disabled: 'hsl(var(--default-400))',
-          },
-          secondary: {
-            DEFAULT: 'hsl(var(--secondary))',
-            hover: 'hsl(var(--default-100))',
-            active: 'hsl(var(--default-200))',
-            disabled: 'hsl(var(--default-400))',
-          },
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -105,9 +78,7 @@ export default {
           '5': 'hsl(var(--chart-5))',
         },
       },
-
-      spacing: {},
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindAnimate],
 } satisfies Config;
