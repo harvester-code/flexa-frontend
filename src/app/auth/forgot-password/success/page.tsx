@@ -21,15 +21,15 @@ function ForgotPasswordSuccessContent() {
       </h1>
       <h2 className="title mt-60">Email Sent</h2>
       <p className="mt-10 font-medium">A password reset link has been sent to</p>
-      <p className="mt-15 font-medium text-brand">{email}</p>
+      <p className="mt-15 font-medium text-primary">{email}</p>
       <p className="mt-10 font-medium">Didn&apos;t receive the email?</p>
       <form>
         <input type="hidden" name="email" value={email || ''} />
-        <SubmitButton variant="btn-brand" formAction={forgotPasswordAction}>
+        <SubmitButton variant="primary" formAction={forgotPasswordAction}>
           Resend Code
         </SubmitButton>
       </form>
-      <Button asChild variant="btn-link" className="mt-10">
+      <Button asChild variant="link" className="mt-10">
         <Link href="/login">
           <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
           Back to Login

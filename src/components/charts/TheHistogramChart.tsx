@@ -90,7 +90,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                   <div style={{ width: `${width}%` }} className="min-w-0 cursor-pointer">
                     <div
                       className={cn(
-                        'truncate p-3.5 text-3xl font-bold text-white transition-opacity hover:opacity-80',
+                        'truncate p-3.5 text-lg font-semibold text-white transition-opacity hover:opacity-80',
                         idx === 0 ? 'rounded-l-lg' : '',
                         idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
                       )}
@@ -99,7 +99,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                       {value}
                     </div>
 
-                    <p className="mt-1 truncate text-xs font-medium text-default-700">{capitalizeFirst(title)}</p>
+                    <p className="mt-1 truncate text-xs font-medium text-default-900">{capitalizeFirst(title)}</p>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center">

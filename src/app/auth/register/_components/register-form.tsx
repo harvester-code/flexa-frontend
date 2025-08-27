@@ -15,29 +15,29 @@ export function RegisterForm() {
       <div className="flex justify-between gap-5">
         <div className="w-140 flex-none">
           <Label htmlFor="lastName" className="text-sm">
-            Last name<span className="ml-5 text-brand">*</span>
+            Last name<span className="ml-5 text-primary">*</span>
           </Label>
           <Input type="text" name="lastName" placeholder="Last Name" required />
         </div>
         <div>
           <Label htmlFor="firstName" className="text-sm">
-            First name<span className="ml-5 text-brand">*</span>
+            First name<span className="ml-5 text-primary">*</span>
           </Label>
           <Input type="text" name="firstName" placeholder="First Name" required />
         </div>
       </div>
       <div>
         <Label htmlFor="email" className="flex text-sm">
-          Email<span className="ml-5 text-brand">*</span>
+          Email<span className="ml-5 text-primary">*</span>
         </Label>
         <Input type="email" name="email" placeholder="Enter your email" required />
         <Label htmlFor="password" className="flex text-sm">
-          Password<span className="ml-5 text-brand">*</span>
+          Password<span className="ml-5 text-primary">*</span>
         </Label>
         <Input type="password" name="password" placeholder="Enter your Password" required minLength={6} />
       </div>
       <AgreementForm onAgreeAll={setIsAgreed} />
-      <SubmitButton variant="btn-brand" formAction={signUpAction} disabled={!isAgreed} pendingText="Signing up...">
+      <SubmitButton variant="primary" formAction={signUpAction} disabled={!isAgreed} pendingText="Signing up...">
         Sign Up
       </SubmitButton>
     </form>

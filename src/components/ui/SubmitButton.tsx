@@ -13,7 +13,7 @@ export interface SubmitButtonProps
 }
 
 const SubmitButton = React.forwardRef<HTMLButtonElement, SubmitButtonProps>(
-  ({ className, variant, size = 'btn-lg', pendingText = 'Submitting...', children, ...props }, ref) => {
+  ({ className, variant, size = 'default', pendingText = 'Submitting...', children, ...props }, ref) => {
     const { pending } = useFormStatus();
 
     return (

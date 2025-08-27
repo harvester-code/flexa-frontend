@@ -21,15 +21,15 @@ function RegisterSuccessContent() {
       </h1>
       <h2 className="title mt-60">Email Send</h2>
       <p className="mt-10 font-medium">A verification link has been sent to</p>
-      <p className="mt-15 font-medium text-brand">{email}</p>
+      <p className="mt-15 font-medium text-primary">{email}</p>
       <p className="mt-10 font-medium">Didn&apos;t receive the email?</p>
       <form>
         <input type="hidden" name="email" value={email || ''} />
-        <SubmitButton variant="btn-brand" formAction={signUpAction}>
+        <SubmitButton variant="primary" formAction={signUpAction}>
           Resend Code
         </SubmitButton>
       </form>
-      <Button asChild variant="btn-link" className="mt-10">
+      <Button asChild variant="link" className="mt-10">
         <Link href="/">
           <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
           Back to Login

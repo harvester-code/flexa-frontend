@@ -18,7 +18,7 @@ export default function ResetPassword() {
       <p className="mt-10 font-medium">Your new Password must be different from your previous password.</p>
       <form className="signUpForm">
         <Label htmlFor="password" className="mt-[25px] flex text-sm">
-          New Password<span className="ml-5 text-brand">*</span>
+          New Password<span className="ml-5 text-primary">*</span>
         </Label>
         <Input
           className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md"
@@ -29,7 +29,7 @@ export default function ResetPassword() {
           required
         />
         <Label htmlFor="confirmPassword" className="mt-[25px] flex text-sm">
-          Confirm Password<span className="ml-5 text-brand">*</span>
+          Confirm Password<span className="ml-5 text-primary">*</span>
         </Label>
         <Input
           className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md"
@@ -53,11 +53,11 @@ export default function ResetPassword() {
             Including letters and numbers
           </li>
         </ul>
-        <SubmitButton variant="btn-brand" formAction={resetPasswordAction}>
+        <SubmitButton variant="primary" formAction={resetPasswordAction}>
           Reset password
         </SubmitButton>
       </form>
-      <Button asChild variant="btn-link" className="mt-30">
+      <Button asChild variant="link" className="mt-30">
         <Link href="/">
           <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
           Back to Login

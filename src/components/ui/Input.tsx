@@ -3,22 +3,17 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const inputVariants = cva(
-  'flex w-full rounded-md transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-normal transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus:border-primary disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:border-muted',
   {
     variants: {
-      variant: {
-        default: 'h-9 border border-input bg-transparent px-3 py-1 text-base shadow-sm md:text-sm',
-        custom: 'border border-default-300 px-3.5 py-2.5 font-normal',
-      },
-      inputSize: {
-        default: 'h-9',
-        sm: 'h-8',
-        lg: 'h-10',
+      size: {
+        sm: 'h-8 px-2 text-xs font-normal',
+        default: 'h-9 px-3 text-sm font-normal',
+        lg: 'h-10 px-4 text-lg font-semibold',
       },
     },
     defaultVariants: {
-      variant: 'default',
-      inputSize: 'default',
+      size: 'default',
     },
   }
 );
@@ -29,11 +24,11 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>,
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, variant, inputSize, readOnly, disabled, onChange, ...props }, ref) => {
+  ({ className, type, size, readOnly, disabled, onChange, ...props }, ref) => {
     return (
       <input
         type={type}
-        className={cn(inputVariants({ variant, inputSize, className }))}
+        className={cn(inputVariants({ size, className }))}
         ref={ref}
         readOnly={readOnly}
         disabled={disabled}

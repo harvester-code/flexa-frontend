@@ -4,42 +4,36 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:shadow-none disabled:bg-muted disabled:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
+        // 주요 액션
+        primary: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
+        // 보조 액션
         secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
+        // 삭제/위험
+        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+
+        // 브랜드 색상 (연한 primary)
+        brand:
+          'border border-primary bg-background text-primary shadow-sm hover:bg-primary/10 hover:text-primary disabled:border-muted',
+        // 테두리만
+        outline:
+          'border border-input bg-background text-accent-foreground shadow-sm hover:bg-accent hover:text-accent-foreground disabled:border-muted',
+        // 배경 없음
         ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-        // 기존 CSS 클래스들과 매칭되는 variants 추가
-        'btn-default': 'border border-default-200 bg-white text-default-700 hover:bg-default-50',
-        'btn-primary': 'bg-brand text-white shadow-sm hover:bg-brand-700',
-        'btn-gradient': 'bg-gradient-to-b from-brand-500 to-brand-700 text-white hover:bg-brand transition-colors',
-        'btn-secondary': 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        'btn-tertiary': 'border border-brand-600 bg-white text-brand-600 min-w-25 px-5 shadow-sm hover:bg-brand-50',
-        'btn-red-line': 'border border-destructive bg-white text-destructive min-w-25 px-5 shadow-sm',
-        'btn-green-line': 'border border-success bg-white text-success min-w-25 px-5 shadow-sm',
-        'btn-delete':
-          'bg-destructive/10 border border-destructive text-destructive px-4 rounded-full h-8 hover:bg-destructive/20',
-        'btn-link': 'inline-flex items-center gap-2.5 text-sm font-semibold underline hover:text-brand',
-        'btn-brand': 'bg-brand text-white hover:bg-brand-700 transition-colors',
+        // 링크 스타일
+        link: 'text-primary underline-offset-4 hover:underline disabled:no-underline',
       },
       size: {
+        sm: 'h-8 px-3 text-xs font-normal',
         default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-8',
         icon: 'h-9 w-9',
-        // 기존 CSS 클래스들과 매칭되는 sizes 추가
-        'btn-sm': 'h-9 px-3.5 gap-1.5 rounded-lg bg-white font-semibold',
-        'btn-md': 'h-10 px-3.5 min-w-24 gap-1.5 rounded-lg bg-white text-sm font-semibold shadow-sm',
-        'btn-lg': 'h-11 w-full px-3.5 gap-1.5 font-semibold',
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'primary',
       size: 'default',
     },
   }

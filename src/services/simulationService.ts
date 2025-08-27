@@ -45,7 +45,7 @@ export const getPassengerSchedules = (scenarioId: string, params: PassengerSched
   return api.withScenario(scenarioId).post<PassengerScheduleResponse>('/show-up-passenger', params);
 };
 
-export const createPassengerShowUp = (scenarioId: string, params: { destribution_conditions: any[] }) => {
+export const createPassengerShowUp = (scenarioId: string, params: any) => {
   return api.withScenario(scenarioId).post<PassengerShowUpResponse>('/show-up-passenger', params);
 };
 

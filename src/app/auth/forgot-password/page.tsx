@@ -26,11 +26,11 @@ export default function ForgotPasswordPage() {
           placeholder="Enter your Email"
           required
         />
-        <SubmitButton variant="btn-brand" formAction={forgotPasswordAction}>
+        <SubmitButton variant="primary" formAction={forgotPasswordAction}>
           Send Request
         </SubmitButton>
       </form>
-      <Button asChild variant="btn-link" className="mt-30">
+      <Button asChild variant="link" className="mt-30">
         <Link href="/">
           <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
           Back to Login

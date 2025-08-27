@@ -39,7 +39,7 @@ export default async function LoginPage() {
         }}
       >
         <div>
-          <h2 className="mb-2 text-[2.5rem] font-bold text-brand" style={{ lineHeight: '100%' }}>
+          <h2 className="mb-2 text-lg font-semibold text-primary" style={{ lineHeight: '100%' }}>
             Log in
           </h2>
 
@@ -50,7 +50,7 @@ export default async function LoginPage() {
               Email
             </Label>
             <Input
-              className="mb-4 h-10 whitespace-nowrap rounded-md bg-default-50"
+              className="mb-4 h-10 whitespace-nowrap rounded-md bg-muted"
               name="email"
               defaultValue={savedEmail}
               placeholder="Enter your Email"
@@ -61,7 +61,7 @@ export default async function LoginPage() {
               Password
             </Label>
             <Input
-              className="mb-4 h-10 whitespace-nowrap rounded-md bg-default-50"
+              className="mb-4 h-10 whitespace-nowrap rounded-md bg-muted"
               type="password"
               name="password"
               placeholder="Enter your password"
@@ -72,17 +72,17 @@ export default async function LoginPage() {
             <div className="flex justify-between text-sm">
               <div className="flex items-center gap-1">
                 <Checkbox className="size-4" id="rememberMe" name="rememberMe" defaultChecked={!!savedEmail} />
-                <Label htmlFor="rememberMe" className="cursor-pointer text-brand">
+                <Label htmlFor="rememberMe" className="cursor-pointer text-primary">
                   Save Account
                 </Label>
               </div>
 
-              <Link href="/auth/forgot-password" className="font-semibold text-brand underline underline-offset-2">
+              <Link href="/auth/forgot-password" className="font-semibold text-primary underline underline-offset-2">
                 Forgot Password?
               </Link>
             </div>
 
-            <SubmitButton className="mt-10" variant="btn-brand" formAction={signInAction}>
+            <SubmitButton className="mt-10" variant="primary" formAction={signInAction}>
               Sign In
             </SubmitButton>
           </form>
