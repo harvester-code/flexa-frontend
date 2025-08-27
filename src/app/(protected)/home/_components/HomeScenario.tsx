@@ -180,7 +180,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
   return (
     <div
       className={cn(
-        'flex min-h-20 flex-col rounded-md border border-input px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
+        'flex min-h-20 flex-col rounded-md border border-input px-4 py-2.5 text-sm font-normal md:flex-row md:items-center md:justify-between',
         className
       )}
     >
@@ -188,19 +188,19 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
         <div className="flex gap-2">
           <div className="flex items-center gap-1">
             <span>Scenario Name:</span>
-            <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
               {scenario?.name || 'None Selected'}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Airport Code:</span>
-            <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
               {scenario?.airport || 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Terminal:</span>
-            <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
               {scenario?.terminal || 'N/A'}
             </span>
           </div>
@@ -209,13 +209,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
         <div className="mt-2 flex gap-2">
           <div className="flex items-center gap-1">
             <span>Target Date:</span>
-            <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
               {dayjs(scenario?.target_flight_schedule_date).format('YYYY-MM-DD')}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Last Run:</span>
-            <span className="flex items-center rounded-md bg-accent-50 px-2 font-medium text-accent-700">
+            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
               {dayjs(scenario?.simulation_end_at).format('YYYY-MM-DD HH:mm')}
             </span>
           </div>
@@ -251,7 +251,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             {/* 고정된 필터 섹션 */}
             <div className="flex-shrink-0" style={{ height: '80px' }}>
               <div className="flex h-full items-center justify-between">
-                <div className="text-sm text-default-500">
+                <div className="text-sm font-normal text-default-500">
                   Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
                   {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length}{' '}
                   scenarios
@@ -312,7 +312,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             <div className="flex-1 overflow-hidden" style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}>
               <table className="w-full table-fixed">
                 <thead
-                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-muted text-left text-sm"
+                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-muted text-left text-sm font-medium"
                   style={{ height: '50px' }}
                 >
                   <tr>
@@ -332,7 +332,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                         // 빈 행으로 채워서 높이 일정하게 유지
                         return (
                           <tr key={`empty-${index}`} className="border-b border-gray-100" style={{ height: '60px' }}>
-                            <td colSpan={6} className="px-3 py-3 text-sm">
+                            <td colSpan={6} className="px-3 py-3 text-sm font-normal">
                               &nbsp;
                             </td>
                           </tr>
@@ -342,15 +342,15 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                       return (
                         <tr
                           key={item.scenario_id}
-                          className="border-b border-gray-100 hover:bg-accent-50"
+                          className="hover:bg-accent-50 border-b border-gray-100"
                           style={{ height: '60px' }}
                         >
-                          <td className="px-3 py-3 text-sm">
+                          <td className="px-3 py-3 text-sm font-normal">
                             <div
                               className={cn(
                                 'flex cursor-pointer items-center gap-2.5',
                                 item.status === 'done'
-                                  ? 'cursor-pointer hover:font-bold'
+                                  ? 'cursor-pointer hover:font-semibold'
                                   : 'cursor-not-allowed line-through'
                               )}
                               onClick={() => {
@@ -364,7 +364,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                               ) : item.status === 'running' ? (
                                 <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-yellow-500" />
                               ) : (
-                                <XCircle className="text-red-500 h-5 w-5 flex-shrink-0" />
+                                <XCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
                               )}
 
                               <span className="truncate">{item.name}</span>
@@ -377,21 +377,21 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                             </div>
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm">{item.airport}</td>
+                          <td className="truncate px-3 py-3 text-sm font-normal">{item.airport}</td>
 
-                          <td className="truncate px-3 py-3 text-sm">
+                          <td className="truncate px-3 py-3 text-sm font-normal">
                             <i>{item.terminal}</i>
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm">
+                          <td className="truncate px-3 py-3 text-sm font-normal">
                             {dayjs(item.created_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm">
+                          <td className="truncate px-3 py-3 text-sm font-normal">
                             {dayjs(item.updated_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
 
-                          <td className="px-3 py-3 text-sm">
+                          <td className="px-3 py-3 text-sm font-normal">
                             <span className="block truncate" title={item.memo || ''}>
                               {item.memo || '-'}
                             </span>
@@ -408,7 +408,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                         >
                           <Ban className="mx-auto mb-4 h-12 w-12" />
                           <p className="text-lg font-medium">No data</p>
-                          <p className="text-sm">There are no scenarios available at the moment.</p>
+                          <p className="text-sm font-normal">There are no scenarios available at the moment.</p>
                         </div>
                       </td>
                     </tr>

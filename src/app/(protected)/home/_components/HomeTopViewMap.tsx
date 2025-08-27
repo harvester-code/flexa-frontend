@@ -376,7 +376,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
         >
           <div className="h-1 w-8 rounded-full bg-gray-500"></div>
           {isResizing && (
-            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded bg-black bg-opacity-70 px-2 py-1 text-xs text-white">
+            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded bg-black bg-opacity-70 px-2 py-1 text-xs font-normal text-white">
               Height: {Math.round(frameHeight || 0)}px
             </div>
           )}
@@ -411,7 +411,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
                   onValueChange={([v]) => setDotSize(v)}
                   className="w-64"
                 />
-                <span className="text-sm text-default-500">{dotSize}</span>
+                <span className="text-sm font-normal text-default-500">{dotSize}</span>
               </div>
             </PopoverContent>
           </Popover>

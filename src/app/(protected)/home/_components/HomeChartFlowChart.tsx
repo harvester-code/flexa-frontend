@@ -49,7 +49,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-xl font-semibold">Flow Chart</h5>
+        <h5 className="flex h-[50px] items-center text-lg font-semibold">Flow Chart</h5>
       </div>
       <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="relative mb-2 h-8 w-full">
@@ -58,7 +58,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
             return (
               <span
                 key={i}
-                className="absolute text-base font-bold text-default-500"
+                className="absolute text-sm font-medium text-default-500"
                 style={{
                   left: !isLast
                     ? layerTitles.length === 1

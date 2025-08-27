@@ -56,8 +56,8 @@ const buttonStyle = {
   border: 'none',
   borderRadius: '0.5rem',
   padding: '0.625rem 1.375rem',
-  fontWeight: 700,
-  fontSize: '1rem',
+  fontWeight: 500 /* font-medium - button text */,
+  fontSize: '14px' /* text-sm equivalent */,
   cursor: 'pointer',
   display: 'inline-flex',
   alignItems: 'center',
@@ -89,7 +89,7 @@ function AemosTemplate({ scenario }: AemosTemplateProps) {
       style={{
         background: '#FFFFFF',
         minHeight: '100vh',
-        fontFamily: 'Inter, Pretendard, Noto Sans KR, sans-serif',
+        fontFamily: 'Pretendard, sans-serif',
         color: '#22223B',
       }}
     >
@@ -106,9 +106,9 @@ function AemosTemplate({ scenario }: AemosTemplateProps) {
                   <div
                     style={{
                       color: '#6B7280',
-                      fontSize: '0.938rem',
+                      fontSize: '14px' /* text-sm equivalent */,
                       marginBottom: '0.438rem',
-                      fontWeight: 600,
+                      fontWeight: 500 /* font-medium - label text */,
                     }}
                   >
                     {label.replace(/_/g, ' ')}
@@ -116,8 +116,8 @@ function AemosTemplate({ scenario }: AemosTemplateProps) {
 
                   <div
                     style={{
-                      fontSize: '2.375rem',
-                      fontWeight: 700,
+                      fontSize: '16px' /* text-lg equivalent */,
+                      fontWeight: 600 /* font-semibold */,
                       color: '#22223B',
                     }}
                   >
@@ -158,9 +158,9 @@ const SectionWithDownload = ({ title, data, filename }: { title: string; data: a
     >
       <h2
         style={{
-          fontSize: '1.375rem',
+          fontSize: '16px' /* text-lg equivalent */,
           color: '#22223B',
-          fontWeight: 700,
+          fontWeight: 600 /* font-semibold */,
         }}
       >
         {title}
@@ -180,7 +180,7 @@ const SectionWithDownload = ({ title, data, filename }: { title: string; data: a
     <div
       style={{
         color: '#6B7280',
-        fontSize: '0.938rem',
+        fontSize: '14px' /* text-sm equivalent */,
         marginTop: '0.625rem',
         fontWeight: 400,
       }}
@@ -214,8 +214,8 @@ const Table = ({ data }: { data: any[] }) => (
               key={col}
               style={{
                 padding: '0.875rem 0.625rem',
-                fontWeight: 700,
-                fontSize: '1rem',
+                fontWeight: 600 /* font-semibold */,
+                fontSize: '14px' /* text-sm equivalent */,
                 color: '#374151',
                 borderBottom: '0.125rem solid #E5E7EB',
                 textAlign: 'left',
@@ -246,7 +246,7 @@ const Table = ({ data }: { data: any[] }) => (
                   padding: '0.75rem 0.5rem',
                   borderBottom: '0.063rem solid #E5E7EB',
                   textAlign: 'left',
-                  fontSize: '0.938rem',
+                  fontSize: '14px' /* text-sm equivalent */,
                   color: '#22223B',
                 }}
               >

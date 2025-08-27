@@ -23,7 +23,7 @@ function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentil
       </p>
       <div className="flex items-center justify-between">
         {formatImageSize(<IconComponent />, 32)}
-        <div className="text-4xl font-semibold">{value}</div>
+        <div className="text-lg font-semibold">{value}</div>
       </div>
     </div>
   );

@@ -106,7 +106,7 @@ function HomeSummary({
       {/* Pax Experience를 KPI 카드보다 위로 이동 */}
       <div className="my-[14px] rounded border border-input px-5 py-3">
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-xl font-semibold">Pax Experience</div>
+          <div className="text-lg font-semibold">Pax Experience</div>
           <ToggleButtonGroup
             options={CHART_OPTIONS}
             selectedValue={selectedChartType}

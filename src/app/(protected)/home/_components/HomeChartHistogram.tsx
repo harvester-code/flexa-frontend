@@ -111,7 +111,7 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
+        <h5 className="flex h-[50px] items-center text-lg font-semibold">Histogram</h5>
       </div>
       <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="chart-header-container">

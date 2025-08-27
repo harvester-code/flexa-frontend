@@ -46,7 +46,11 @@ export function capitalizeFirst(str: string): string {
 }
 
 export function formatUnit(unit: string): React.ReactNode {
-  return <span style={{ fontSize: '0.6em', marginLeft: '1px' }}>{unit}</span>;
+  return (
+    <span className="text-xs font-normal" style={{ marginLeft: '1px' }}>
+      {unit}
+    </span>
+  );
 }
 
 export function formatImageSize(icon: React.ReactNode, size: number): React.ReactNode {

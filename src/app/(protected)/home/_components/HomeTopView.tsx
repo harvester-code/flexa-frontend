@@ -488,7 +488,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       <div className="space-y-6">
         <div className="mt-[14px] flex min-h-[300px] flex-col items-center justify-center rounded-lg border bg-white p-6">
           <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4">
-            <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-base font-medium text-default-900">
+            <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-sm font-medium text-default-900">
               <span>To see the Top View, complete the Layout setting.</span>
               <Button
                 variant="outline"
@@ -635,7 +635,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         {availableTimes.length > 0 && (
           <div className="mb-4 space-y-3">
             <div
-              className="mt-2 block w-full text-sm"
+              className="mt-2 block w-full text-sm font-normal"
               style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}
             >
               <span className="font-medium text-default-900">Current Queue:</span>
@@ -655,7 +655,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               )}
             </div>
             <div className="relative flex w-full items-center gap-2">
-              <span className="min-w-[90px] text-left text-xs text-default-500">{availableTimes[0]}</span>
+              <span className="min-w-[90px] text-left text-xs font-normal text-default-500">{availableTimes[0]}</span>
 
               <div className="relative flex-1">
                 <Slider
@@ -671,7 +671,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 />
               </div>
 
-              <span className="min-w-[90px] text-right text-xs text-default-500">
+              <span className="min-w-[90px] text-right text-xs font-normal text-default-500">
                 {availableTimes[availableTimes.length - 1]}
               </span>
             </div>

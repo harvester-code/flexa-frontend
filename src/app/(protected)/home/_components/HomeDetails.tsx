@@ -69,7 +69,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
               <ChevronRight
                 className={cn('mr-1 transition-transform duration-100', openIndexes.includes(i) ? 'rotate-90' : '')}
               />
-              <h4 className="text-xl font-semibold">{pascalCase(category)}</h4>
+              <h4 className="text-lg font-semibold">{pascalCase(category)}</h4>
             </div>
 
             <div className="detail-body">
@@ -85,7 +85,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">
+                      <dd className="text-lg font-semibold">
                         {overview.opened[0]} / {overview.opened[1]}
                         {formatUnit('EA')}
                       </dd>
@@ -103,7 +103,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">
+                      <dd className="text-lg font-semibold">
                         {formatNumberWithComma(overview.throughput)}
                         {formatUnit('pax')}
                       </dd>
@@ -128,7 +128,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
+                      <dd className="text-lg font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
                     </dl>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">
+                      <dd className="text-lg font-semibold">
                         {formatNumberWithComma(overview.queuePax)}
                         {formatUnit('pax')}
                       </dd>
@@ -168,7 +168,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">
+                      <dd className="text-lg font-semibold">
                         {Math.round(Number(overview.ai_ratio))}
                         {formatUnit('%')}
                       </dd>
@@ -186,7 +186,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-xl !font-semibold">
+                      <dd className="text-lg font-semibold">
                         {Math.round(Number(overview.pa_ratio))}
                         {formatUnit('%')}
                       </dd>
@@ -248,7 +248,8 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                                 {calculate_type && (
                                   <span
                                     className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    style={{ height: '11px', fontSize: '7px', minWidth: '14px', padding: '0 1px' }}
+                                    className="text-xs font-normal"
+                                    style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
                                   >
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}
                                   </span>
@@ -269,7 +270,8 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                                 {calculate_type && (
                                   <span
                                     className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    style={{ height: '11px', fontSize: '7px', minWidth: '14px', padding: '0 1px' }}
+                                    className="text-xs font-normal"
+                                    style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
                                   >
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}
                                   </span>

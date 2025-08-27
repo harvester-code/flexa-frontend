@@ -100,26 +100,23 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
             const displayZone = capitalizeFirst(zone.replace('_', '-'));
 
             return (
-              <div
-                className="relative flex flex-col overflow-hidden rounded-md border border-input bg-white"
-                key={i}
-              >
+              <div className="relative flex flex-col overflow-hidden rounded-md border border-input bg-white" key={i}>
                 <div className="bg-muted px-4 py-2">
                   <dl className="flex items-center justify-between">
                     <dt className="flex items-center gap-2">
-                      <span className="rounded px-3 py-1 text-base font-semibold text-primary-500">
+                      <span className="rounded px-3 py-1 text-sm font-medium text-primary-500">
                         {displayZone} {facility}
                       </span>
                     </dt>
                     <dd>
-                      <span className="rounded px-3 py-1 text-base font-semibold text-primary-500">
+                      <span className="rounded px-3 py-1 text-sm font-medium text-primary-500">
                         {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
                       </span>
                     </dd>
                   </dl>
                 </div>
 
-                <div className="flex justify-end px-4 py-3 text-4xl font-semibold text-default-900">
+                <div className="flex justify-end px-4 py-3 text-lg font-semibold text-default-900">
                   {target?.value && item[target.value] !== undefined ? (
                     target.value === 'waiting_time' ? (
                       <p>{formatTimeTaken(item[target.value])}</p>

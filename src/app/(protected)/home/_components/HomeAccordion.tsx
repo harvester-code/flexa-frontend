@@ -18,7 +18,7 @@ function HomeAccordion({ title, open = true, className, children }: HomeAccordio
     <div className={cn('mt-12 flex flex-col', className)}>
       <div className="flex">
         <h3
-          className="flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-muted px-5 text-2xl font-semibold text-default-900"
+          className="flex h-[50px] flex-grow cursor-pointer items-center justify-between rounded-md bg-muted px-5 text-lg font-semibold text-default-900"
           onClick={() => setIsOpened(!isOpened)}
         >
           <span>{title}</span>

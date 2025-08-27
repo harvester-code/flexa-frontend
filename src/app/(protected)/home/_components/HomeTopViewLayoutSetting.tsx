@@ -546,7 +546,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         <div className="flex flex-col gap-4">
           {/* Start Point */}
           <div className="flex items-center gap-2">
-            <span className="text-lg">🚩</span>
+            <span className="text-lg font-semibold">🚩</span>
             <span className="font-medium">Start Point</span>
             <Input
               type="number"
@@ -581,7 +581,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
           </div>
           {/* End Point */}
           <div className="flex items-center gap-2">
-            <span className="text-lg">🏁</span>
+            <span className="text-lg font-semibold">🏁</span>
             <span className="font-medium">End Point</span>
             <Input
               type="number"
@@ -662,7 +662,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                   className="ml-1 rounded-full p-1 hover:bg-gray-100 focus:outline-none"
                   title="Show layout example"
                 >
-                  <span className="align-middle text-lg">ⓘ</span>
+                  <span className="align-middle text-lg font-semibold">ⓘ</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -674,7 +674,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                 <div className="flex flex-row items-center">
                   {/* 왼쪽 rows 텍스트 (vertical, 중앙정렬) */}
                   <span
-                    className="mr-2 flex items-center justify-center text-sm text-black"
+                    className="mr-2 flex items-center justify-center text-sm font-normal text-black"
                     style={{
                       writingMode: 'vertical-lr',
                       transform: 'rotate(180deg)',
@@ -689,7 +689,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     {Array.from({ length: numRows }).map((_, rowIdx) => (
                       <div key={rowIdx} className="flex flex-row justify-center">
                         {Array.from({ length: numFronts }).map((_, colIdx) => (
-                          <span key={colIdx} style={{ fontSize: '0.8em', lineHeight: 1 }}>
+                          <span key={colIdx} className="text-xs font-normal" style={{ lineHeight: 1 }}>
                             {getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}
                           </span>
                         ))}
@@ -698,7 +698,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                   </div>
                 </div>
                 {/* 하단 rows 텍스트 */}
-                <span className="mt-2 text-sm text-black">{numFronts} cols</span>
+                <span className="mt-2 text-sm font-normal text-black">{numFronts} cols</span>
               </PopoverContent>
             </Popover>
           </div>
@@ -948,8 +948,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             {/* Top View Image 텍스트와 버튼 라인 삭제 */}
             {/* Error Display */}
             {imageError && (
-              <div className="bg-red-50 border-red-200 mt-4 rounded-lg border p-3">
-                <p className="text-red-600 text-sm">{imageError}</p>
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm font-normal text-red-600">{imageError}</p>
               </div>
             )}
             {/* Controls, Map, etc. (기존 코드 유지) */}
@@ -1007,12 +1007,12 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     onChange={handleModalImageChange}
                     className="hidden"
                   />
-                  <span className="w-full text-center text-sm text-muted-foreground">
+                  <span className="w-full text-center text-sm font-normal text-muted-foreground">
                     {tempImageFileName || 'No file selected'}
                   </span>
                   {tempImageError && (
-                    <div className="bg-red-50 border-red-200 rounded-lg border p-2">
-                      <p className="text-red-600 text-sm">{tempImageError}</p>
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-2">
+                      <p className="text-sm font-normal text-red-600">{tempImageError}</p>
                     </div>
                   )}
                   {tempImage && (

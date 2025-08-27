@@ -302,8 +302,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-xl font-semibold">Hourly Trends</h5>
-        <div className="mb-4 mr-5 mt-8 flex items-center gap-1 text-sm">
+        <h5 className="flex h-[50px] items-center text-lg font-semibold">Hourly Trends</h5>
+        <div className="mb-4 mr-5 mt-8 flex items-center gap-1 text-sm font-normal">
           <span>Bar Chart</span>
           <Checkbox
             id="chart-type"
