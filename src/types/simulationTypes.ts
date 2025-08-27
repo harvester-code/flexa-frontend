@@ -235,11 +235,9 @@ export interface Zone {
 
 export interface Facility {
   id: string;
-  operating_schedule: {
-    today: {
-      time_blocks: TimeBlock[];
-    };
-  };
+  operating_schedule: Record<string, {
+    time_blocks: TimeBlock[];
+  }>;
 }
 
 export interface TimeBlock {

@@ -107,7 +107,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
 
   return (
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
-      <DialogContent className="w-full max-w-lg pt-8" aria-describedby={undefined}>
+      <DialogContent className="w-full max-w-lg pt-8">
         <DialogTitle className="mb-4 flex items-center gap-3">
           <Image width={20} height={20} src="/image/popup/description.svg" alt="icon" className="size-5" />
           <span className="!mb-0 !min-h-0">Create New Scenario</span>

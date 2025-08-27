@@ -59,10 +59,7 @@ function HomePage() {
 
       <HomeScenario
         className="mt-8"
-        data={{
-          master_scenario: scenarios?.master_scenario ?? [],
-          user_scenario: scenarios?.user_scenario ?? [],
-        }}
+        data={scenarios || []}
         scenario={scenario}
         onSelectScenario={setScenario}
       />

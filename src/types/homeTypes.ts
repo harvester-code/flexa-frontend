@@ -24,11 +24,9 @@ export interface ScenarioData {
   simulation_end_at: string | null;
 }
 
-// Home 도메인에서 사용하는 시나리오 응답 타입
-export interface ScenariosDataResponse {
-  master_scenario: ScenarioData[];
-  page: number;
-  total_count: number;
-  user_scenario: ScenarioData[];
-  scenarios?: ScenarioData[];
-}
+// Home 도메인에서 사용하는 시나리오 응답 타입 (단순화됨)
+export interface ScenariosDataResponse extends Array<ScenarioData & { 
+  first_name?: string;
+  last_name?: string;  
+  email?: string;
+}> {}

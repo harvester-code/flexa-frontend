@@ -1,4 +1,4 @@
-'use client';
+// Old version replaced with modal workflow layout
 
 import React, { useState } from 'react';
 import { ArrowUpDown, CheckSquare, ChevronDown, Plane, Plus, Route, Settings2, Trash2, Users } from 'lucide-react';
@@ -10,6 +10,9 @@ import { formatProcessName } from '@/lib/utils';
 import { useFacilityConnectionStore, useProcessingProceduresStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
+import TimeScheduleEditor from './TimeScheduleEditor';
+import FacilityDetailPopup from './FacilityDetailPopup';
+import ProcessConfigurationModal from './ProcessConfigurationModal';
 
 interface TabProcessingProceduresProps {
   simulationId: string;
@@ -42,6 +45,9 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const [editProcessFacilities, setEditProcessFacilities] = useState('');
   const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
   const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
+  const [showTimeScheduleEditor, setShowTimeScheduleEditor] = useState(false);
+  const [showFacilityDetailPopup, setShowFacilityDetailPopup] = useState(false);
+  const [selectedProcessForConfig, setSelectedProcessForConfig] = useState<number | null>(null);
 
   // Zone별 facility 개수 상태
   const [facilityCountPerZone, setFacilityCountPerZone] = useState<{ [zoneName: string]: number }>({});
@@ -668,87 +674,60 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           </CardContent>
         </Card>
 
-        {/* Third Panel - Facility Detail */}
+        {/* Facility Detail - 팝업 버튼으로 교체 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Facility Detail</CardTitle>
+            <CardTitle className="text-lg">Facility Configuration</CardTitle>
           </CardHeader>
-          <CardContent className="h-[500px] overflow-y-auto pb-16">
-            {processFlow.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-default-500">
-                <div className="text-center">
-                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <p>Add processes to configure facilities</p>
-                </div>
+          <CardContent className="h-[500px] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <Settings2 className="mx-auto h-16 w-16 text-primary-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-default-900 mb-2">Configure Facilities</h3>
+                <p className="text-sm text-default-500 mb-4">
+                  Set up facility counts for each zone in your process flow
+                </p>
+                <Button
+                  onClick={() => setShowFacilityDetailPopup(true)}
+                  disabled={processFlow.length === 0}
+                  className="btn-primary px-6 py-3"
+                >
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Open Facility Configuration
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="text-sm text-default-500">Set facility count for each zone</div>
-
-                {processFlow.map((step, procIndex) => (
-                  <div key={procIndex} className="space-y-4">
-                    <div className="border-b pb-2">
-                      <h4 className="font-medium text-default-900">{formatProcessName(step.name)}</h4>
-                      <div className="text-xs text-default-500">
-                        {Object.keys(processFlow[procIndex]?.zones || {}).length} zones
-                      </div>
-                    </div>
-
-                    {Object.keys(processFlow[procIndex]?.zones || {}).map((zoneName, zoneIndex) => (
-                      <div key={zoneIndex} className="space-y-3 rounded-lg border border-gray-200 p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-default-900">Zone: {zoneName}</div>
-                            <div className="text-xs text-default-500">
-                              {facilityCountPerZone[`${procIndex}-${zoneName}`] || 0} facilities
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium">Count:</label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="20"
-                              className="w-20"
-                              value={facilityCountPerZone[`${procIndex}-${zoneName}`] || ''}
-                              onChange={(e) => {
-                                const count = parseInt(e.target.value) || 0;
-                                setFacilityCountPerZone((prev) => ({
-                                  ...prev,
-                                  [`${procIndex}-${zoneName}`]: count,
-                                }));
-                                // zustand store에 facilities 생성
-                                setFacilitiesForZone(procIndex, zoneName, count);
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Facility 목록 표시 */}
-                        {facilityCountPerZone[`${procIndex}-${zoneName}`] > 0 && (
-                          <div className="mt-3">
-                            <div className="mb-2 text-xs font-medium text-default-900">Generated Facilities:</div>
-                            <div className="flex flex-wrap gap-1">
-                              {Array.from({ length: facilityCountPerZone[`${procIndex}-${zoneName}`] || 0 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                                >
-                                  {zoneName}_{i + 1}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
+              {processFlow.length === 0 && (
+                <p className="text-xs text-default-500 mt-2">
+                  Add processes first to configure facilities
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* 시간표 에디터 */}
+      {processFlow.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-default-900">Operating Schedule</h3>
+            <Button
+              variant="outline"
+              onClick={() => setShowTimeScheduleEditor(!showTimeScheduleEditor)}
+              className="btn-default"
+            >
+              {showTimeScheduleEditor ? 'Hide Schedule Editor' : 'Show Schedule Editor'}
+            </Button>
+          </div>
+          
+          {showTimeScheduleEditor && (
+            <TimeScheduleEditor
+              processIndex={selectedProcessIndex !== null ? selectedProcessIndex : 0}
+              visible={true}
+            />
+          )}
+        </div>
+      )}
 
       {/* Complete Setup Button - 카드 바깥으로 이동 */}
       <div className="mt-6 flex justify-end">
@@ -772,6 +751,21 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       <div className="mt-8">
         <NextButton showPrevious={true} disabled={!isCompleted} />
       </div>
+
+      {/* Facility Detail Popup */}
+      <FacilityDetailPopup
+        isOpen={showFacilityDetailPopup}
+        onClose={() => setShowFacilityDetailPopup(false)}
+        processFlow={processFlow}
+        facilityCountPerZone={facilityCountPerZone}
+        onFacilityCountChange={(key, count) => {
+          setFacilityCountPerZone((prev) => ({
+            ...prev,
+            [key]: count,
+          }));
+        }}
+        onSetFacilitiesForZone={setFacilitiesForZone}
+      />
     </div>
   );
 }

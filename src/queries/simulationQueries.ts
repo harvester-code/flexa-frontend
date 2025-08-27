@@ -7,31 +7,21 @@ const useScenarios = () => {
     queryKey: ['scenarios'],
     queryFn: async (): Promise<ScenariosDataResponse> => {
       const { data } = await fetchScenarios();
-
-      const masterScenarios = {};
-      for (const rowCur of data?.master_scenario || []) {
-        if (rowCur?.scenario_id) {
-          masterScenarios[rowCur.scenario_id] = rowCur;
-        }
-      }
-
-      // NOTE: master_scenario와 user_scenario를 합쳐서 scenarios로 반환
-      const scenarios = [
-        ...(data?.master_scenario.filter((val) => val != null) || []),
-        ...(data?.user_scenario?.filter((val) => val.scenario_id in masterScenarios == false) || []),
-      ].sort((a, b) => {
+      
+      // 백엔드에서 이미 단순한 배열로 반환하므로 정렬만 적용
+      const scenarios = (data || []).sort((a, b) => {
         const aTime = a.simulation_end_at ? new Date(a.simulation_end_at).getTime() : 0;
         const bTime = b.simulation_end_at ? new Date(b.simulation_end_at).getTime() : 0;
         return bTime - aTime;
       });
 
-      return { ...data, scenarios };
+      return scenarios;
     },
   });
 
   return {
     ...response,
-    scenarios: response?.data?.scenarios || [],
+    scenarios: response?.data || [],
   };
 };
 

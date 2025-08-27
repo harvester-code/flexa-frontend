@@ -16,6 +16,7 @@ import {
   UserPen,
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
+import { useTransition } from 'react';
 import { useUser } from '@/queries/userQueries';
 import { Button } from '@/components/ui/Button';
 import {
@@ -59,9 +60,16 @@ const menuSections = [
 function AppSidebar() {
   const pathname = usePathname();
   const { data: userInfo } = useUser();
+  const [isPending, startTransition] = useTransition();
 
   // 🎯 shadcn 기반 상태 관리
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleSignOut = () => {
+    startTransition(() => {
+      signOutAction();
+    });
+  };
 
   return (
     <aside
@@ -189,11 +197,12 @@ function AppSidebar() {
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={signOutAction}
+              onClick={handleSignOut}
+              disabled={isPending}
               className="text-sm font-normal text-default-900 hover:text-destructive focus:text-destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Log out
+              {isPending ? 'Signing out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

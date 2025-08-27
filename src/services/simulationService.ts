@@ -33,9 +33,7 @@ export const deleteScenario = (scenario_ids: string[]) => {
   return api.delete('/', { data: { scenario_ids } });
 };
 
-export const setMasterScenario = (scenario_id: string) => {
-  return api.patch(`/${scenario_id}/master`);
-};
+
 
 export const getFlightSchedules = (scenario_id: string, params: FlightSchedulesParams) => {
   return api.withScenario(scenario_id).post<FlightScheduleResponse>('/flight-schedules', params);

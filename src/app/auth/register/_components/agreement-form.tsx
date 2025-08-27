@@ -31,43 +31,46 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
   };
 
   return (
-    <div className="checkboxContainer">
-      <dl>
-        <dt>
-          <div className="flex items-center space-x-10">
-            <Checkbox id="agreeToAll" checked={agreeToAll} onCheckedChange={handleAgreeToAll} className="checkbox" />
-            <Label htmlFor="agreeToAll" className="text-sm font-medium">
-              Agree to All
-            </Label>
-          </div>
-        </dt>
-        <dd>
-          <div className="flex flex-col space-y-2">
-            <div className="flex items-center space-x-10">
-              <Checkbox
-                id="termsOfUse"
-                checked={termsOfUse}
-                onCheckedChange={(checked) => setTermsOfUse(checked as boolean)}
-                className="checkbox"
-              />
-              <Label htmlFor="termsOfUse" className="text-sm">
-                Terms of Use <span className="text-red">(Required)</span>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-10">
-              <Checkbox
-                id="privacyPolicy"
-                checked={privacyPolicy}
-                onCheckedChange={(checked) => setPrivacyPolicy(checked as boolean)}
-                className="checkbox"
-              />
-              <Label htmlFor="privacyPolicy" className="text-sm">
-                Privacy Policy <span className="text-red">(Required)</span>
-              </Label>
-            </div>
-          </div>
-        </dd>
-      </dl>
+    <div className="rounded-lg border border-input bg-muted/50 p-4">
+      <div className="border-b border-input pb-3 mb-3">
+        <div className="flex items-center space-x-3">
+          <Checkbox 
+            id="agreeToAll" 
+            checked={agreeToAll} 
+            onCheckedChange={handleAgreeToAll}
+            className="size-4"
+          />
+          <Label htmlFor="agreeToAll" className="text-sm font-semibold text-primary-900 cursor-pointer">
+            Agree to All
+          </Label>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex items-center space-x-3">
+          <Checkbox
+            id="termsOfUse"
+            checked={termsOfUse}
+            onCheckedChange={(checked) => setTermsOfUse(checked as boolean)}
+            className="size-4"
+          />
+          <Label htmlFor="termsOfUse" className="text-sm text-primary-900 cursor-pointer">
+            Terms of Use <span className="text-primary font-medium">(Required)</span>
+          </Label>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Checkbox
+            id="privacyPolicy"
+            checked={privacyPolicy}
+            onCheckedChange={(checked) => setPrivacyPolicy(checked as boolean)}
+            className="size-4"
+          />
+          <Label htmlFor="privacyPolicy" className="text-sm text-primary-900 cursor-pointer">
+            Privacy Policy <span className="text-primary font-medium">(Required)</span>
+          </Label>
+        </div>
+      </div>
     </div>
   );
 }

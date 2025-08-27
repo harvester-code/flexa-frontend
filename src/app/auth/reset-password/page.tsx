@@ -1,68 +1,143 @@
-import Image from 'next/image';
+'use client';
+
+import { useActionState } from 'react';
 import Link from 'next/link';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { AlertCircle, Key, Check } from 'lucide-react';
 import { resetPasswordAction } from '@/actions/auth';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
-export default function ResetPassword() {
+export default function ResetPasswordPage() {
+  const [state, formAction] = useActionState(resetPasswordAction, { error: null });
+
   return (
-    <div className="signUpContainer">
-      <h1>
-        <Image src="/image/img-logo.svg" alt="logo" width={100} height={100} />
-      </h1>
-      <h2 className="title mt-60">Set a new password</h2>
-      <p className="mt-10 font-medium">Your new Password must be different from your previous password.</p>
-      <form className="signUpForm">
-        <Label htmlFor="password" className="mt-[25px] flex text-sm">
-          New Password<span className="ml-5 text-primary">*</span>
-        </Label>
-        <Input
-          className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md"
-          type="password"
-          name="password"
-          placeholder="New Password"
-          minLength={6}
-          required
-        />
-        <Label htmlFor="confirmPassword" className="mt-[25px] flex text-sm">
-          Confirm Password<span className="ml-5 text-primary">*</span>
-        </Label>
-        <Input
-          className="mt-[5px] flex h-[40px] items-center justify-center whitespace-nowrap rounded-md"
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm password"
-          minLength={6}
-          required
-        />
-        <ul className="password-Feedback">
-          <li>
-            <span>
-              <Image src="/image/ico-feedback-03.svg" alt="" width={10} height={10} />
-            </span>
-            Minimum 8 characters
-          </li>
-          <li>
-            <span>
-              <Image src="/image/ico-feedback-02.svg" alt="" width={10} height={10} />
-            </span>
-            Including letters and numbers
-          </li>
-        </ul>
-        <SubmitButton variant="primary" formAction={resetPasswordAction}>
-          Reset password
-        </SubmitButton>
-      </form>
-      <Button asChild variant="link" className="mt-30">
-        <Link href="/">
-          <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
-          Back to Login
-        </Link>
-      </Button>
+    <div
+      className="relative flex min-h-svh items-center justify-center xl:justify-between"
+      style={{
+        background: 'linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff',
+      }}
+    >
+      <div className="hidden xl:block">
+        <video autoPlay muted playsInline loop className="min-h-svh w-full object-cover">
+          <source
+            src="https://flexa-dev-ap-northeast-2-data-storage.s3.ap-northeast-2.amazonaws.com/videos/flexa-hero-video.mp4"
+            type="video/mp4"
+          />
+        </video>
+      </div>
+
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center xl:mx-0 xl:mr-[120px]">
+        <div
+          className="relative w-full rounded-xl p-6 xl:p-8"
+          style={{
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <div className="mb-8 flex items-center justify-center">
+            <img src="/image/img-logo.svg" alt="Flexa Logo" className="h-12" />
+          </div>
+
+          <div>
+            <div className="mb-6 flex flex-col items-center text-center">
+              <Key className="mb-3 h-12 w-12 text-primary" />
+              <h2 className="mb-2 text-lg font-semibold text-primary-900" style={{ lineHeight: '100%' }}>
+                Set New Password
+              </h2>
+              <p className="text-sm text-primary-900/70">
+                Your new password must be different from your previous password.
+              </p>
+            </div>
+
+            <form action={formAction} className="space-y-4">
+              {/* Error Message Display */}
+              {state?.error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">
+                        Error
+                      </p>
+                      <p className="text-sm text-destructive/80">
+                        {state.error.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="password" className="mb-1 block text-sm">
+                  New Password <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  className="h-10 rounded-md"
+                  name="password"
+                  type="password"
+                  placeholder="Enter new password"
+                  minLength={8}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword" className="mb-1 block text-sm">
+                  Confirm Password <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  className="h-10 rounded-md"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm new password"
+                  minLength={8}
+                  required
+                />
+              </div>
+
+              {/* Password Requirements */}
+              <div className="mt-4 rounded-lg bg-primary/5 p-3">
+                <p className="text-xs font-medium text-primary-900 mb-2">Password requirements:</p>
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Check className="h-3 w-3 text-green-500" />
+                    <span className="text-xs text-primary-900/70">Minimum 8 characters</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="h-3 w-3 text-green-500" />
+                    <span className="text-xs text-primary-900/70">Including letters and numbers</span>
+                  </div>
+                </div>
+              </div>
+
+              <SubmitButton 
+                className="mt-6 w-full" 
+                variant="primary"
+                pendingText="Resetting password..."
+              >
+                Reset Password
+              </SubmitButton>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-primary-900">
+                Remember your password?{' '}
+                <Link
+                  href="/auth/login"
+                  className="font-semibold text-primary underline underline-offset-2"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-secondary">
+          © Flexa all rights reserved
+        </p>
+      </div>
     </div>
   );
 }

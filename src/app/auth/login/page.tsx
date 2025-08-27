@@ -1,14 +1,31 @@
-import Image from 'next/image';
+'use client';
+
+import { useActionState, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSavedEmail, signInAction } from '@/actions/auth';
+import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { signInAction } from '@/actions/auth';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
-// TODO: 로그인 에러에 대해서 사용자에게 안내하는 UI 필요
-export default async function LoginPage() {
-  const savedEmail = await getSavedEmail();
+export default function LoginPage() {
+  const [state, formAction] = useActionState(signInAction, { error: null });
+  const [savedEmail, setSavedEmail] = useState('');
+  const searchParams = useSearchParams();
+  const message = searchParams?.get('message');
+
+  // 저장된 이메일 로드 (클라이언트 사이드)
+  useEffect(() => {
+    // 쿠키에서 savedEmail을 가져오는 클라이언트 사이드 로직
+    const cookies = document.cookie.split(';');
+    const savedEmailCookie = cookies.find(cookie => cookie.trim().startsWith('savedEmail='));
+    if (savedEmailCookie) {
+      const email = savedEmailCookie.split('=')[1];
+      setSavedEmail(decodeURIComponent(email));
+    }
+  }, []);
 
   return (
     <div
@@ -45,13 +62,69 @@ export default async function LoginPage() {
 
           <p className="mb-10 whitespace-nowrap">Enter your login information to access the solution.</p>
 
-          <form>
+          <form action={formAction}>
+            {/* Success Message Display */}
+            {message === 'email-verified' && (
+              <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Email Verified Successfully
+                    </p>
+                    <p className="text-sm text-green-700">
+                      Your email has been verified. You can now sign in to your account.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {message === 'already-verified' && (
+              <div className="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">
+                      Email Already Verified
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Your email verification link has already been used. Please sign in with your credentials.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message Display */}
+            {state?.error && (
+              <div className="mb-6 rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-destructive">
+                      Authentication Error
+                    </p>
+                    <p className="text-sm text-destructive/80">
+                      {state.error.message}
+                    </p>
+                    {state.error.details && process.env.NODE_ENV === 'development' && (
+                      <p className="text-xs text-destructive/60 mt-1">
+                        Debug: {state.error.details}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Label htmlFor="email" className="mb-1 block text-sm">
               Email
             </Label>
             <Input
               className="mb-4 h-10 whitespace-nowrap rounded-md"
               name="email"
+              type="email"
               defaultValue={savedEmail}
               placeholder="Enter your Email"
               required
@@ -85,10 +158,22 @@ export default async function LoginPage() {
               </Link>
             </div>
 
-            <SubmitButton className="mt-10 w-full" variant="primary" formAction={signInAction}>
+            <SubmitButton className="mt-10 w-full" variant="primary" pendingText="Signing in...">
               Sign In
             </SubmitButton>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-primary-900">
+              Don't have an account?{' '}
+              <Link
+                href="/auth/register"
+                className="font-semibold text-primary underline underline-offset-2"
+              >
+                Create account
+              </Link>
+            </p>
+          </div>
         </div>
 
         <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-secondary">

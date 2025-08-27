@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 
 interface HomeScenarioProps {
   className?: string;
-  data: { master_scenario: ScenarioData[]; user_scenario: ScenarioData[] };
+  data: ScenarioData[];
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
 }
@@ -102,35 +102,21 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  // 마스터 시나리오 ID 목록 생성
-  const masterScenarioIds = useMemo(
-    () => new Set(data.master_scenario.map((s) => s.scenario_id)),
-    [data.master_scenario]
-  );
-
-  // 모든 시나리오 합치기 + 중복 제거 + 검색 필터링 + 날짜 필터링
+  // 시나리오 필터링 (검색 키워드 및 날짜) - 단순화된 로직
   const filteredScenarios = useMemo(() => {
-    // 마스터 시나리오
-    const masterScenarios = data.master_scenario.map((s) => ({ ...s, isMaster: true }));
-
-    // 사용자 시나리오 (마스터와 중복되지 않는 것만)
-    const userScenarios = data.user_scenario
-      .filter((s) => !masterScenarioIds.has(s.scenario_id))
-      .map((s) => ({ ...s, isMaster: false }));
-
-    let allScenarios = [...masterScenarios, ...userScenarios];
+    let scenarios = data || [];
 
     // 날짜 필터링
     if (selectedDate) {
       const selectedDateStr = dayjs(selectedDate).format('YYYY-MM-DD');
-      allScenarios = allScenarios.filter(
+      scenarios = scenarios.filter(
         (s) => s.simulation_start_at && dayjs(s.simulation_start_at).format('YYYY-MM-DD') === selectedDateStr
       );
     }
 
     // 검색 필터링
     if (searchKeyword) {
-      allScenarios = allScenarios.filter(
+      scenarios = scenarios.filter(
         (s) =>
           s.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
           s.airport.toLowerCase().includes(searchKeyword.toLowerCase()) ||
@@ -139,8 +125,8 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
       );
     }
 
-    return allScenarios;
-  }, [data, searchKeyword, masterScenarioIds, selectedDate]);
+    return scenarios;
+  }, [data, searchKeyword, selectedDate]);
 
   // 페이지네이션
   const totalPages = Math.ceil(filteredScenarios.length / ITEMS_PER_PAGE);
