@@ -12,12 +12,6 @@ interface HomeKpiSelectorProps {
   onChange: (val: KpiSelectorValue) => void;
 }
 
-export const segBtn = (active: boolean) =>
-  `h-9 px-4 py-1 rounded-md border font-semibold transition-colors duration-150 text-sm ` +
-  (active
-    ? 'bg-[#7f56d9] text-white border-[#7f56d9] shadow'
-    : 'bg-white text-[#7f56d9] border-[#7f56d9] hover:bg-[#f3e8ff]');
-
 export const badgeBtn = (active: boolean) =>
   `h-6 px-2 py-0.5 rounded-md border font-semibold transition-colors duration-150 text-xs cursor-default select-none ` +
   (active ? 'bg-[#7f56d9] text-white border-[#7f56d9] shadow' : 'bg-white text-[#7f56d9] border-[#7f56d9]');
@@ -70,11 +64,19 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
 
   return (
     <div className="flex items-center gap-2">
-      <span className="ml-2 text-base font-medium text-gray-700">Select a KPI Value:</span>
-      <Button type="button" className={segBtn(value.type === 'mean')} onClick={() => handleTypeChange('mean')}>
+      <span className="ml-2 text-base font-medium text-default-900">Select a KPI Value:</span>
+      <Button
+        type="button"
+        variant={value.type === 'mean' ? 'primary' : 'brand'}
+        onClick={() => handleTypeChange('mean')}
+      >
         Mean
       </Button>
-      <Button type="button" className={segBtn(value.type === 'top')} onClick={() => handleTypeChange('top')}>
+      <Button
+        type="button"
+        variant={value.type === 'top' ? 'primary' : 'brand'}
+        onClick={() => handleTypeChange('top')}
+      >
         Top N%
       </Button>
       {value.type === 'top' && (

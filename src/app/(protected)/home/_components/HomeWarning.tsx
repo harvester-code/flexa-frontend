@@ -7,7 +7,8 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ChevronDown } from 'lucide-react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
-import { Button, ButtonGroup } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
+import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { capitalizeFirst, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
@@ -79,26 +80,16 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
           />
         </div>
         <div className="flex w-full items-center justify-center md:w-auto md:justify-end">
-          <ButtonGroup>
-            {SELECT_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                className={
-                  target.value === opt.value
-                    ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                    : ''
-                }
-                variant="outline"
-                onClick={() => setTarget(opt)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </ButtonGroup>
+          <ToggleButtonGroup
+            options={SELECT_OPTIONS}
+            selectedValue={target.value}
+            onSelect={(opt) => setTarget(opt)}
+            labelExtractor={(opt) => opt.label}
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 grid-rows-8 gap-4 rounded-md bg-default-50 p-5 md:grid-cols-2 md:grid-rows-4 xl:grid-cols-4 xl:grid-rows-2">
+      <div className="grid grid-cols-1 grid-rows-8 gap-4 rounded-md bg-muted p-5 md:grid-cols-2 md:grid-rows-4 xl:grid-cols-4 xl:grid-rows-2">
         {selectedFacilityKey &&
           alertIssueData[selectedFacilityKey]?.map((item, i) => {
             const { node, time } = item;
@@ -110,18 +101,18 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
 
             return (
               <div
-                className="relative flex flex-col overflow-hidden rounded-md border border-default-300 bg-white"
+                className="relative flex flex-col overflow-hidden rounded-md border border-input bg-white"
                 key={i}
               >
-                <div className="bg-default-100 px-4 py-2">
+                <div className="bg-muted px-4 py-2">
                   <dl className="flex items-center justify-between">
                     <dt className="flex items-center gap-2">
-                      <span className="text-primary-500 rounded px-3 py-1 text-base font-semibold">
+                      <span className="rounded px-3 py-1 text-base font-semibold text-primary-500">
                         {displayZone} {facility}
                       </span>
                     </dt>
                     <dd>
-                      <span className="text-primary-500 rounded px-3 py-1 text-base font-semibold">
+                      <span className="rounded px-3 py-1 text-base font-semibold text-primary-500">
                         {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
                       </span>
                     </dd>

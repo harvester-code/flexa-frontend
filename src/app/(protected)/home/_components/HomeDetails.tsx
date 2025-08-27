@@ -63,8 +63,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
         details?.map(({ category, components, overview }, i) => (
           <div className="detail-item" key={i}>
             <div
-              className="mb-2 flex w-max cursor-pointer select-none items-center"
-              style={{ color: '#4A5578' }}
+              className="mb-2 flex w-max cursor-pointer select-none items-center text-default-500"
               onClick={() => toggleOpen(i)}
             >
               <ChevronRight
@@ -76,9 +75,9 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
             <div className="detail-body">
               <div className="summary grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {/* Opened */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
-                    {formatImageSize(<LockOpen stroke="#6941c6" />, 30)}
+                    {formatImageSize(<LockOpen />, 30)}
                     <dl className="flex flex-col justify-center">
                       <dt className="flex items-center">
                         <span>Opened</span>
@@ -94,7 +93,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   </div>
                 </div>
                 {/* Throughput */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     {formatImageSize(<PassengerThroughput />, 30)}
                     <dl className="flex flex-col justify-center">
@@ -112,7 +111,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   </div>
                 </div>
                 {/* Wait Time */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     <div className="relative flex items-center">
                       {formatImageSize(<WaitTime />, 30)}
@@ -134,7 +133,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   </div>
                 </div>
                 {/* Queue Pax */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     <div className="relative flex items-center">
                       {formatImageSize(<PassengerQueue />, 30)}
@@ -159,7 +158,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   </div>
                 </div>
                 {/* A/I Ratio */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     {formatImageSize(<RatioIcon01 />, 30)}
                     <dl className="flex flex-col justify-center">
@@ -177,7 +176,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   </div>
                 </div>
                 {/* P/A Ratio */}
-                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-default-300 bg-white p-1 xl:min-h-[60px] xl:p-2">
+                <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     {formatImageSize(<RatioIcon02 />, 30)}
                     <dl className="flex flex-col justify-center">
@@ -222,7 +221,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         <div className="scroll-item-body">
                           <div className="summary-sm disabled">
                             <div>
-                              {formatImageSize(<LockOpen stroke="#6941c6" />, 24)}
+                              {formatImageSize(<LockOpen />, 24)}
                               <dl>
                                 <dt>Opened</dt>
                                 <dd className="!font-semibold">

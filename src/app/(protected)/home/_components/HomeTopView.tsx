@@ -8,6 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from '@/components/ui/AlertDialog';
+import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
@@ -487,14 +488,15 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
       <div className="space-y-6">
         <div className="mt-[14px] flex min-h-[300px] flex-col items-center justify-center rounded-lg border bg-white p-6">
           <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4">
-            <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-base font-medium text-gray-800">
+            <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-base font-medium text-default-900">
               <span>To see the Top View, complete the Layout setting.</span>
-              <button
-                className="rounded-lg border border-violet-600 bg-white px-6 py-2 font-semibold text-violet-600 transition hover:bg-violet-50"
+              <Button
+                variant="outline"
+                className="border-violet-600 text-violet-600 hover:bg-violet-50"
                 onClick={() => setViewMode('setting')}
               >
                 Go to Setting
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -636,7 +638,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               className="mt-2 block w-full text-sm"
               style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}
             >
-              <span className="font-medium text-gray-700">Current Queue:</span>
+              <span className="font-medium text-default-900">Current Queue:</span>
               {Object.entries(currentQueueData).length > 0 ? (
                 Object.entries(currentQueueData).map(([servicePoint, count]) => {
                   const servicePointKeys = Object.keys(layoutData._service_point_info);
@@ -649,11 +651,11 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                   );
                 })
               ) : (
-                <span className="text-gray-400">-</span>
+                <span className="text-muted-foreground">-</span>
               )}
             </div>
             <div className="relative flex w-full items-center gap-2">
-              <span className="min-w-[90px] text-left text-xs text-gray-500">{availableTimes[0]}</span>
+              <span className="min-w-[90px] text-left text-xs text-default-500">{availableTimes[0]}</span>
 
               <div className="relative flex-1">
                 <Slider
@@ -669,7 +671,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 />
               </div>
 
-              <span className="min-w-[90px] text-right text-xs text-gray-500">
+              <span className="min-w-[90px] text-right text-xs text-default-500">
                 {availableTimes[availableTimes.length - 1]}
               </span>
             </div>

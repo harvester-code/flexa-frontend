@@ -3,7 +3,8 @@ import { ChevronDown } from 'lucide-react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
-import { Button, ButtonGroup } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
+import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
@@ -112,7 +113,7 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-xl font-semibold">Histogram</h5>
       </div>
-      <div className="flex flex-col rounded-md border border-default-300 bg-white p-5">
+      <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <TheDropdownMenu
@@ -131,22 +132,12 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
             />
           </div>
           <div className="chart-header-buttons">
-            <ButtonGroup>
-              {CHART_OPTIONS.map((opt) => (
-                <Button
-                  className={cn(
-                    selectedChartType === opt.value
-                      ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                      : ''
-                  )}
-                  variant="outline"
-                  key={opt.value}
-                  onClick={() => setSelectedChartType(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </ButtonGroup>
+            <ToggleButtonGroup
+              options={CHART_OPTIONS}
+              selectedValue={selectedChartType}
+              onSelect={(opt) => setSelectedChartType(opt.value)}
+              labelExtractor={(opt) => opt.label}
+            />
           </div>
         </div>
         <TheHistogramChart className="mt-10 rounded-md bg-white" chartData={histogramChartData} />

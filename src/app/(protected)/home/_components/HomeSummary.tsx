@@ -15,7 +15,8 @@ import {
   WaitTime,
 } from '@/components/icons';
 import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/Accordion';
-import { Button, ButtonGroup } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
+import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
@@ -103,25 +104,15 @@ function HomeSummary({
   return (
     <>
       {/* Pax Experience를 KPI 카드보다 위로 이동 */}
-      <div className="my-[14px] rounded border border-default-300 px-5 py-3">
+      <div className="my-[14px] rounded border border-input px-5 py-3">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-xl font-semibold">Pax Experience</div>
-          <ButtonGroup>
-            {CHART_OPTIONS.map((opt) => (
-              <Button
-                className={cn(
-                  selectedChartType === opt.value
-                    ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                    : ''
-                )}
-                variant="outline"
-                key={opt.value}
-                onClick={() => setSelectedChartType(opt.value)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </ButtonGroup>
+          <ToggleButtonGroup
+            options={CHART_OPTIONS}
+            selectedValue={selectedChartType}
+            onSelect={(opt) => setSelectedChartType(opt.value)}
+            labelExtractor={(opt) => opt.label}
+          />
         </div>
         <TheHistogramChart chartData={chartData} />
       </div>

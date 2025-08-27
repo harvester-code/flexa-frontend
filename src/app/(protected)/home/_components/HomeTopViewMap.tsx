@@ -411,7 +411,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
                   onValueChange={([v]) => setDotSize(v)}
                   className="w-64"
                 />
-                <span className="text-sm text-gray-600">{dotSize}</span>
+                <span className="text-sm text-default-500">{dotSize}</span>
               </div>
             </PopoverContent>
           </Popover>

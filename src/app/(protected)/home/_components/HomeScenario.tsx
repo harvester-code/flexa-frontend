@@ -180,7 +180,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
   return (
     <div
       className={cn(
-        'flex min-h-20 flex-col rounded-md border border-default-300 px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
+        'flex min-h-20 flex-col rounded-md border border-input px-4 py-2.5 text-sm md:flex-row md:items-center md:justify-between',
         className
       )}
     >
@@ -251,7 +251,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             {/* 고정된 필터 섹션 */}
             <div className="flex-shrink-0" style={{ height: '80px' }}>
               <div className="flex h-full items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-default-500">
                   Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
                   {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length}{' '}
                   scenarios
@@ -312,7 +312,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             <div className="flex-1 overflow-hidden" style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}>
               <table className="w-full table-fixed">
                 <thead
-                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-default-100 text-left text-sm"
+                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-muted text-left text-sm"
                   style={{ height: '50px' }}
                 >
                   <tr>
@@ -401,7 +401,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     })
                   ) : (
                     <tr style={{ height: `${ITEMS_PER_PAGE * 60}px` }}>
-                      <td colSpan={6} className="px-3 py-3 text-center text-gray-500">
+                      <td colSpan={6} className="px-3 py-3 text-center text-default-500">
                         <div
                           className="flex flex-col items-center justify-center"
                           style={{ height: `${ITEMS_PER_PAGE * 60}px` }}

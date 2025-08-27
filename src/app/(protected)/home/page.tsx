@@ -54,7 +54,7 @@ function HomePage() {
   }, [scenarios]);
 
   return (
-    <div className="mx-auto max-w-[83.75rem] px-[1.875rem] pb-24">
+    <div className="max-w-page px-page-x pb-page-b mx-auto">
       <TheContentHeader text="Home" />
 
       <HomeScenario

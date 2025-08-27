@@ -12,7 +12,7 @@ interface HomeSummaryCardProps {
 
 function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentile }: HomeSummaryCardProps) {
   return (
-    <div className="rounded border border-default-300 px-4 py-3">
+    <div className="rounded border border-input px-4 py-3">
       <p className="mb-4 flex items-center gap-2">
         {title}
         {kpiType && (

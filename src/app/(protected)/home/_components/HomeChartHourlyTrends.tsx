@@ -3,8 +3,9 @@ import dynamic from 'next/dynamic';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
-import { Button, ButtonGroup } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst } from './HomeFormat';
 import HomeLoading from './HomeLoading';
@@ -313,7 +314,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           <span>Line Chart</span>
         </div>
       </div>
-      <div className="flex flex-col rounded-md border border-default-300 bg-white p-5">
+      <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <TheDropdownMenu
@@ -332,26 +333,18 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             />
           </div>
           <div className="chart-header-buttons">
-            <ButtonGroup>
-              {CHART_OPTIONS.map((opt, i) => (
-                <Button
-                  className={cn(
-                    'whitespace-nowrap',
-                    chartOption1.includes(i)
-                      ? 'bg-default-300 font-bold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]'
-                      : ''
-                  )}
-                  variant="outline"
-                  key={i}
-                  onClick={() => handleChartOption1(i)}
-                >
-                  {chartOption1.includes(i) && (
-                    <Circle className="mr-1 !size-2.5" fill={opt.color} color={opt.color} stroke="transparent" />
-                  )}
-                  {opt.label}
-                </Button>
-              ))}
-            </ButtonGroup>
+            <ToggleButtonGroup
+              options={CHART_OPTIONS}
+              selectedValues={chartOption1}
+              onSelect={(opt, i) => handleChartOption1(i)}
+              labelExtractor={(opt) => opt.label}
+              buttonClassName="whitespace-nowrap"
+              renderIcon={(opt, i, isSelected) =>
+                isSelected && (
+                  <Circle className="mr-1 !size-2.5" fill={opt.color} color={opt.color} stroke="transparent" />
+                )
+              }
+            />
           </div>
         </div>
         <div className="mt-2 min-h-96 bg-white">
