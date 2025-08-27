@@ -17,6 +17,7 @@ export interface ProcessingProceduresState {
   setCompleted: (completed: boolean) => void;
   resetState: () => void;
   loadMetadata: (metadata: Record<string, unknown>) => void;
+  setFacilitiesForZone: (processIndex: number, zoneName: string, count: number) => void;
 }
 
 // ==================== Initial State ====================
@@ -37,7 +38,7 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
         state.process_flow = flow;
       }),
 
-    convertFromProcedures: (procedures, entryType = 'Airline') =>
+    convertFromProcedures: (procedures, entryType = 'Entry') =>
       set((state) => {
         const convertedFlow = procedures
           .sort((a, b) => a.order - b.order) // order 기준 정렬
@@ -50,36 +51,12 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
               zones: {} as Record<string, any>,
             };
 
-            // facility_names를 zones로 변환
+            // facility_names를 zones로 변환 (범용적 처리)
             procedure.facility_names.forEach((facilityName: string) => {
-              if (facilityName.startsWith('VC')) {
-                // VC1, VC2, VC3 -> VC zone
-                if (!processStep.zones.VC) processStep.zones.VC = { facilities: [] };
-                processStep.zones.VC.facilities.push({
-                  id: facilityName,
-                  operating_schedule: { today: { time_blocks: [] } },
-                });
-              } else if (facilityName.match(/^[A-C]$/)) {
-                // A, B, C -> 각각 개별 zone
-                processStep.zones[facilityName] = {
-                  facilities: [
-                    {
-                      id: `${facilityName}1`,
-                      operating_schedule: { today: { time_blocks: [] } },
-                    },
-                  ],
-                };
-              } else if (facilityName.startsWith('DG')) {
-                // DG1, DG2, DG3 -> 각각 개별 zone
-                processStep.zones[facilityName] = {
-                  facilities: [
-                    {
-                      id: `${facilityName}_1`,
-                      operating_schedule: { today: { time_blocks: [] } },
-                    },
-                  ],
-                };
-              }
+              // Process Configuration에서는 zone만 생성, facilities는 빈 배열
+              processStep.zones[facilityName] = {
+                facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
+              };
             });
 
             return processStep;
@@ -113,6 +90,23 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
           });
         }
       }),
+
+    setFacilitiesForZone: (processIndex, zoneName, count) =>
+      set((state) => {
+        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+          // 지정된 개수만큼 facilities 생성
+          const facilities = Array.from({ length: count }, (_, i) => ({
+            id: `${zoneName}_${i + 1}`,
+            operating_schedule: {
+              today: {
+                time_blocks: [],
+              },
+            },
+          }));
+
+          state.process_flow[processIndex].zones[zoneName].facilities = facilities;
+        }
+      }),
   }))
 );
 
@@ -134,14 +128,9 @@ const migrateProceduresToProcessFlow = (procedures: any[]): ProcessStep[] => {
 
       // facility_names를 zones로 변환 (범용적 처리)
       procedure.facility_names.forEach((facilityName: string) => {
-        // 모든 facility를 개별 zone으로 처리 (하드코딩 제거)
+        // Process Configuration에서는 zone만 생성, facilities는 빈 배열
         processStep.zones[facilityName] = {
-          facilities: [
-            {
-              id: facilityName,
-              operating_schedule: { today: { time_blocks: [] } },
-            },
-          ],
+          facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
         };
       });
 

@@ -6,10 +6,12 @@ import { Calendar as CalendarIcon, Check, ChevronsUpDown, Save } from 'lucide-re
 import TheContentHeader from '@/components/TheContentHeader';
 import { Button } from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/Calendar';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/Command';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
 
 const breadcrumb = [{ text: 'Components', number: 1 }];
@@ -19,50 +21,45 @@ export default function ComponentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [openDatePicker, setOpenDatePicker] = useState(false);
 
-  // Combobox for showcase
+  // Combobox for showcase - each instance has its own state
   const [selectedFramework, setSelectedFramework] = useState('');
-  const [openCombobox, setOpenCombobox] = useState(false);
+  const [openFramework, setOpenFramework] = useState(false);
 
-  const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [openLanguageBox, setOpenLanguageBox] = useState(false);
+  const [selectedLanguageMain, setSelectedLanguageMain] = useState('');
+  const [openLanguageMain, setOpenLanguageMain] = useState(false);
 
-  const [selectedCountry, setSelectedCountry] = useState('');
-  const [openCountryBox, setOpenCountryBox] = useState(false);
+  const [selectedCountryBrand, setSelectedCountryBrand] = useState('');
+  const [openCountryBrand, setOpenCountryBrand] = useState(false);
 
-  const [selectedCity, setSelectedCity] = useState('');
-  const [openCityBox, setOpenCityBox] = useState(false);
+  const [selectedCitySize, setSelectedCitySize] = useState('');
+  const [openCitySize, setOpenCitySize] = useState(false);
+
+  // Checkbox states for showcase
+  const [isChecked, setIsChecked] = useState(false);
+  const [isCheckedDisabled, setIsCheckedDisabled] = useState(true);
 
   const frameworks = [
     { value: 'next.js', label: 'Next.js' },
-    { value: 'sveltekit', label: 'SvelteKit' },
-    { value: 'nuxt.js', label: 'Nuxt.js' },
-    { value: 'remix', label: 'Remix' },
-    { value: 'astro', label: 'Astro' },
-    { value: 'gatsby', label: 'Gatsby' },
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue.js' },
   ];
 
   const languages = [
     { value: 'en', label: 'English' },
     { value: 'ko', label: '한국어' },
     { value: 'ja', label: '日本語' },
-    { value: 'zh', label: '中文' },
-    { value: 'es', label: 'Español' },
   ];
 
   const countries = [
     { value: 'kr', label: '🇰🇷 South Korea' },
     { value: 'us', label: '🇺🇸 United States' },
     { value: 'jp', label: '🇯🇵 Japan' },
-    { value: 'cn', label: '🇨🇳 China' },
-    { value: 'gb', label: '🇬🇧 United Kingdom' },
   ];
 
   const cities = [
     { value: 'seoul', label: 'Seoul' },
     { value: 'tokyo', label: 'Tokyo' },
     { value: 'newyork', label: 'New York' },
-    { value: 'london', label: 'London' },
-    { value: 'shanghai', label: 'Shanghai' },
   ];
 
   // DatePicker component for showcase
@@ -92,12 +89,12 @@ export default function ComponentsPage() {
 
   // Combobox components for showcase
   const FrameworkCombobox = () => (
-    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+    <Popover open={openFramework} onOpenChange={setOpenFramework}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={openCombobox}
+          aria-expanded={openFramework}
           className="w-full justify-between font-normal"
         >
           {selectedFramework
@@ -106,7 +103,7 @@ export default function ComponentsPage() {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search framework..." />
           <CommandList>
@@ -118,7 +115,7 @@ export default function ComponentsPage() {
                   value={framework.value}
                   onSelect={(currentValue) => {
                     setSelectedFramework(currentValue === selectedFramework ? '' : currentValue);
-                    setOpenCombobox(false);
+                    setOpenFramework(false);
                   }}
                 >
                   <Check
@@ -134,27 +131,22 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const LanguageCombobox = ({
-    variant = 'outline',
-    size = 'default',
-  }: {
-    variant?: 'outline' | 'brand' | 'ghost';
-    size?: 'sm' | 'default';
-  }) => (
-    <Popover open={openLanguageBox} onOpenChange={setOpenLanguageBox}>
+  const LanguageCombobox = () => (
+    <Popover open={openLanguageMain} onOpenChange={setOpenLanguageMain}>
       <PopoverTrigger asChild>
         <Button
-          variant={variant}
-          size={size}
+          variant="outline"
           role="combobox"
-          aria-expanded={openLanguageBox}
+          aria-expanded={openLanguageMain}
           className="w-full justify-between font-normal"
         >
-          {selectedLanguage ? languages.find((lang) => lang.value === selectedLanguage)?.label : 'Select language...'}
-          <ChevronsUpDown className={cn('ml-2 shrink-0 opacity-50', size === 'sm' ? 'h-3 w-3' : 'h-4 w-4')} />
+          {selectedLanguageMain
+            ? languages.find((lang) => lang.value === selectedLanguageMain)?.label
+            : 'Select language...'}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search language..." />
           <CommandList>
@@ -165,12 +157,12 @@ export default function ComponentsPage() {
                   key={lang.value}
                   value={lang.value}
                   onSelect={(currentValue) => {
-                    setSelectedLanguage(currentValue === selectedLanguage ? '' : currentValue);
-                    setOpenLanguageBox(false);
+                    setSelectedLanguageMain(currentValue === selectedLanguageMain ? '' : currentValue);
+                    setOpenLanguageMain(false);
                   }}
                 >
                   <Check
-                    className={cn('mr-2 h-4 w-4', selectedLanguage === lang.value ? 'opacity-100' : 'opacity-0')}
+                    className={cn('mr-2 h-4 w-4', selectedLanguageMain === lang.value ? 'opacity-100' : 'opacity-0')}
                   />
                   {lang.label}
                 </CommandItem>
@@ -182,29 +174,22 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const CountryCombobox = ({
-    variant = 'outline',
-    size = 'default',
-  }: {
-    variant?: 'outline' | 'brand' | 'ghost';
-    size?: 'sm' | 'default';
-  }) => (
-    <Popover open={openCountryBox} onOpenChange={setOpenCountryBox}>
+  const BrandCombobox = () => (
+    <Popover open={openCountryBrand} onOpenChange={setOpenCountryBrand}>
       <PopoverTrigger asChild>
         <Button
-          variant={variant}
-          size={size}
+          variant="brand"
           role="combobox"
-          aria-expanded={openCountryBox}
+          aria-expanded={openCountryBrand}
           className="w-full justify-between font-normal"
         >
-          {selectedCountry
-            ? countries.find((country) => country.value === selectedCountry)?.label
+          {selectedCountryBrand
+            ? countries.find((country) => country.value === selectedCountryBrand)?.label
             : 'Select country...'}
-          <ChevronsUpDown className={cn('ml-2 shrink-0 opacity-50', size === 'sm' ? 'h-3 w-3' : 'h-4 w-4')} />
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[240px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search country..." />
           <CommandList>
@@ -215,12 +200,12 @@ export default function ComponentsPage() {
                   key={country.value}
                   value={country.value}
                   onSelect={(currentValue) => {
-                    setSelectedCountry(currentValue === selectedCountry ? '' : currentValue);
-                    setOpenCountryBox(false);
+                    setSelectedCountryBrand(currentValue === selectedCountryBrand ? '' : currentValue);
+                    setOpenCountryBrand(false);
                   }}
                 >
                   <Check
-                    className={cn('mr-2 h-4 w-4', selectedCountry === country.value ? 'opacity-100' : 'opacity-0')}
+                    className={cn('mr-2 h-4 w-4', selectedCountryBrand === country.value ? 'opacity-100' : 'opacity-0')}
                   />
                   {country.label}
                 </CommandItem>
@@ -232,25 +217,21 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const CityCombobox = ({ size = 'default' }: { size?: 'sm' | 'default' }) => (
-    <Popover open={openCityBox} onOpenChange={setOpenCityBox}>
+  const SmallCombobox = () => (
+    <Popover open={openCitySize} onOpenChange={setOpenCitySize}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size={size}
+          size="sm"
           role="combobox"
-          aria-expanded={openCityBox}
+          aria-expanded={openCitySize}
           className="max-w-xs justify-between font-normal"
         >
-          {selectedCity
-            ? cities.find((city) => city.value === selectedCity)?.label
-            : size === 'sm'
-              ? 'Small'
-              : 'Default'}
-          <ChevronsUpDown className={cn('ml-2 shrink-0 opacity-50', size === 'sm' ? 'h-3 w-3' : 'h-4 w-4')} />
+          {selectedCitySize ? cities.find((city) => city.value === selectedCitySize)?.label : 'Select city...'}
+          <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search city..." />
           <CommandList>
@@ -261,11 +242,13 @@ export default function ComponentsPage() {
                   key={city.value}
                   value={city.value}
                   onSelect={(currentValue) => {
-                    setSelectedCity(currentValue === selectedCity ? '' : currentValue);
-                    setOpenCityBox(false);
+                    setSelectedCitySize(currentValue === selectedCitySize ? '' : currentValue);
+                    setOpenCitySize(false);
                   }}
                 >
-                  <Check className={cn('mr-2 h-4 w-4', selectedCity === city.value ? 'opacity-100' : 'opacity-0')} />
+                  <Check
+                    className={cn('mr-2 h-4 w-4', selectedCitySize === city.value ? 'opacity-100' : 'opacity-0')}
+                  />
                   {city.label}
                 </CommandItem>
               ))}
@@ -280,233 +263,288 @@ export default function ComponentsPage() {
     <div>
       <TheContentHeader breadcrumb={breadcrumb} />
 
-      <div className="max-w-page px-page-x pb-page-b container mx-auto space-y-20 pt-12">
-        <div className="text-center">
+      <div className="container mx-auto max-w-page px-page-x pb-page-b pt-12">
+        <div className="mb-8 text-center">
           <h1 className="mb-4 text-lg font-semibold">UI Components Library</h1>
           <p className="text-muted-foreground">개발할 때 참고할 수 있는 모든 UI 컴포넌트들을 한 곳에서 확인하세요</p>
         </div>
 
-        {/* Button Components Showcase */}
-        <div>
-          <h2 className="mb-8 text-lg font-semibold">Button Components Showcase</h2>
+        <Tabs defaultValue="buttons" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="buttons">Buttons</TabsTrigger>
+            <TabsTrigger value="inputs">Inputs</TabsTrigger>
+            <TabsTrigger value="forms">Forms</TabsTrigger>
+            <TabsTrigger value="selectors">Selectors</TabsTrigger>
+          </TabsList>
 
-          {/* Button Variants */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Button Variants</h3>
-            <div className="space-y-6">
-              {/* Normal State */}
-              <div>
-                <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
-                <div className="flex flex-wrap gap-3">
-                  <Button variant="primary">Primary</Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="destructive">Destructive</Button>
-                  <Button variant="brand">Brand</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="ghost">Ghost</Button>
-                  <Button variant="link">Link</Button>
-                </div>
-              </div>
-
-              {/* Disabled State */}
-              <div>
-                <h4 className="mb-3 text-sm font-medium text-default-500">Disabled State</h4>
-                <div className="flex flex-wrap gap-3">
-                  <Button variant="primary" disabled>
-                    Primary
-                  </Button>
-                  <Button variant="secondary" disabled>
-                    Secondary
-                  </Button>
-                  <Button variant="destructive" disabled>
-                    Destructive
-                  </Button>
-                  <Button variant="brand" disabled>
-                    Brand
-                  </Button>
-                  <Button variant="outline" disabled>
-                    Outline
-                  </Button>
-                  <Button variant="ghost" disabled>
-                    Ghost
-                  </Button>
-                  <Button variant="link" disabled>
-                    Link
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Button Sizes */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Button Sizes</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="w-12 text-xs font-normal text-default-500">sm:</span>
-                <Button variant="primary" size="sm">
-                  Small Button
-                </Button>
-                <Button variant="primary" size="sm" disabled>
-                  Disabled
-                </Button>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-12 text-xs font-normal text-default-500">default:</span>
-                <Button variant="primary" size="default">
-                  Default Button
-                </Button>
-                <Button variant="primary" size="default" disabled>
-                  Disabled
-                </Button>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-12 text-xs font-normal text-default-500">icon:</span>
-                <Button variant="primary" size="icon">
-                  <Save size={16} />
-                </Button>
-                <Button variant="primary" size="icon" disabled>
-                  <Save size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Input Components Showcase */}
-        <div className="border-t pt-10">
-          <h2 className="mb-8 text-lg font-semibold">Input Components Showcase</h2>
-
-          {/* Input States */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Input States</h3>
+          {/* Button Components Tab */}
+          <TabsContent value="buttons" className="mt-8 space-y-12">
             <div>
-              <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
-              <div className="flex flex-wrap gap-3">
-                <Input placeholder="Normal" className="max-w-xs" />
-                <Input placeholder="Disabled" disabled className="max-w-xs" />
-                <Input value="Read-only" readOnly className="max-w-xs" />
+              <h2 className="mb-8 text-lg font-semibold">Button Components</h2>
+
+              {/* Button Variants */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Button Variants</h3>
+                <div className="space-y-6">
+                  {/* Normal State */}
+                  <div>
+                    <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="primary">Primary</Button>
+                      <Button variant="secondary">Secondary</Button>
+                      <Button variant="destructive">Destructive</Button>
+                      <Button variant="brand">Brand</Button>
+                      <Button variant="outline">Outline</Button>
+                      <Button variant="ghost">Ghost</Button>
+                      <Button variant="link">Link</Button>
+                    </div>
+                  </div>
+
+                  {/* Disabled State */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-medium text-default-500">Disabled State</h4>
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="primary" disabled>
+                        Primary
+                      </Button>
+                      <Button variant="secondary" disabled>
+                        Secondary
+                      </Button>
+                      <Button variant="destructive" disabled>
+                        Destructive
+                      </Button>
+                      <Button variant="brand" disabled>
+                        Brand
+                      </Button>
+                      <Button variant="outline" disabled>
+                        Outline
+                      </Button>
+                      <Button variant="ghost" disabled>
+                        Ghost
+                      </Button>
+                      <Button variant="link" disabled>
+                        Link
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Button Sizes */}
+              <div>
+                <h3 className="mb-4 text-lg font-medium">Button Sizes</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-12 text-xs font-normal text-default-500">sm:</span>
+                    <Button variant="primary" size="sm">
+                      Small Button
+                    </Button>
+                    <Button variant="primary" size="sm" disabled>
+                      Disabled
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-12 text-xs font-normal text-default-500">default:</span>
+                    <Button variant="primary" size="default">
+                      Default Button
+                    </Button>
+                    <Button variant="primary" size="default" disabled>
+                      Disabled
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-12 text-xs font-normal text-default-500">icon:</span>
+                    <Button variant="primary" size="icon">
+                      <Save size={16} />
+                    </Button>
+                    <Button variant="primary" size="icon" disabled>
+                      <Save size={16} />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </TabsContent>
 
-          {/* Input Sizes */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Input Sizes</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="w-16 text-xs font-normal text-default-500">sm:</span>
-                <Input size="sm" placeholder="Small" className="max-w-xs" />
-                <Input size="sm" placeholder="Disabled" disabled className="max-w-xs" />
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-16 text-xs font-normal text-default-500">default:</span>
-                <Input size="default" placeholder="Default" className="max-w-xs" />
-                <Input size="default" placeholder="Disabled" disabled className="max-w-xs" />
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-16 text-xs font-normal text-default-500">lg:</span>
-                <Input size="lg" placeholder="Large" className="max-w-xs" />
-                <Input size="lg" placeholder="Disabled" disabled className="max-w-xs" />
-              </div>
-            </div>
-          </div>
-
-          {/* Input Types */}
-          <div>
-            <h3 className="mb-4 text-lg font-medium">Input Types</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Text</Label>
-                <Input type="text" placeholder="Enter text..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input type="password" placeholder="Enter password..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" placeholder="Enter email..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Number</Label>
-                <Input type="number" placeholder="Enter number..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Date (Calendar)</Label>
-                <DatePicker />
-              </div>
-              <div className="space-y-2">
-                <Label>Time</Label>
-                <Input type="time" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Combobox Showcase Section */}
-        <div className="border-t pt-10">
-          <h2 className="mb-8 text-lg font-semibold">Combobox Components Showcase</h2>
-
-          {/* Combobox States */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Combobox States</h3>
+          {/* Input Components Tab */}
+          <TabsContent value="inputs" className="mt-8 space-y-12">
             <div>
-              <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>Framework</Label>
-                  <FrameworkCombobox />
-                </div>
-                <div className="space-y-2">
-                  <Label>Language</Label>
-                  <LanguageCombobox />
-                </div>
-                <div className="space-y-2">
-                  <Label>Disabled</Label>
-                  <Button variant="outline" disabled className="w-full justify-between font-normal">
-                    Select option...
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+              <h2 className="mb-8 text-lg font-semibold">Input Components</h2>
 
-          {/* Combobox Variants */}
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-medium">Combobox Variants</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Outline (Default)</Label>
-                <LanguageCombobox variant="outline" />
+              {/* Input States */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Input States</h3>
+                <div>
+                  <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
+                  <div className="flex flex-wrap gap-3">
+                    <Input placeholder="Normal" className="max-w-xs" />
+                    <Input placeholder="Disabled" disabled className="max-w-xs" />
+                    <Input value="Read-only" readOnly className="max-w-xs" />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Brand Style</Label>
-                <CountryCombobox variant="brand" />
-              </div>
-              <div className="space-y-2">
-                <Label>Ghost Style</Label>
-                <CountryCombobox variant="ghost" />
-              </div>
-            </div>
-          </div>
 
-          {/* Combobox Sizes */}
-          <div>
-            <h3 className="mb-4 text-lg font-medium">Combobox Sizes</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="w-16 text-xs font-normal text-default-500">sm:</span>
-                <CityCombobox size="sm" />
+              {/* Input Sizes */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Input Sizes</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-16 text-xs font-normal text-default-500">sm:</span>
+                    <Input size="sm" placeholder="Small" className="max-w-xs" />
+                    <Input size="sm" placeholder="Disabled" disabled className="max-w-xs" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-16 text-xs font-normal text-default-500">default:</span>
+                    <Input size="default" placeholder="Default" className="max-w-xs" />
+                    <Input size="default" placeholder="Disabled" disabled className="max-w-xs" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-16 text-xs font-normal text-default-500">lg:</span>
+                    <Input size="lg" placeholder="Large" className="max-w-xs" />
+                    <Input size="lg" placeholder="Disabled" disabled className="max-w-xs" />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-16 text-xs font-normal text-default-500">default:</span>
-                <CityCombobox size="default" />
+
+              {/* Input Types */}
+              <div>
+                <h3 className="mb-4 text-lg font-medium">Input Types</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Text</Label>
+                    <Input type="text" placeholder="Enter text..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Password</Label>
+                    <Input type="password" placeholder="Enter password..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input type="email" placeholder="Enter email..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Number</Label>
+                    <Input type="number" placeholder="Enter number..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date (Calendar)</Label>
+                    <DatePicker />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Time</Label>
+                    <Input type="time" />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* Form Components Tab */}
+          <TabsContent value="forms" className="mt-8 space-y-12">
+            <div>
+              <h2 className="mb-8 text-lg font-semibold">Form Components</h2>
+
+              {/* Checkbox */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Checkbox</h3>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="checkbox1" checked={isChecked} onCheckedChange={setIsChecked} />
+                        <Label htmlFor="checkbox1">Accept terms and conditions</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="checkbox2" />
+                        <Label htmlFor="checkbox2">Subscribe to newsletter</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="checkbox3" defaultChecked />
+                        <Label htmlFor="checkbox3">Remember my preferences</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="mb-3 text-xs font-normal text-default-500">Disabled State</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="checkbox4" disabled />
+                        <Label htmlFor="checkbox4" className="text-muted-foreground">
+                          Disabled unchecked
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="checkbox5"
+                          checked={isCheckedDisabled}
+                          onCheckedChange={setIsCheckedDisabled}
+                          disabled
+                        />
+                        <Label htmlFor="checkbox5" className="text-muted-foreground">
+                          Disabled checked
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Selector Components Tab */}
+          <TabsContent value="selectors" className="mt-8 space-y-12">
+            <div>
+              <h2 className="mb-8 text-lg font-semibold">Selector Components</h2>
+
+              {/* Combobox States */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Combobox States</h3>
+                <div>
+                  <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>Framework</Label>
+                      <FrameworkCombobox />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Language</Label>
+                      <LanguageCombobox />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Disabled</Label>
+                      <Button variant="outline" disabled className="w-full justify-between font-normal">
+                        Select option...
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Combobox Variant */}
+              <div className="mb-12">
+                <h3 className="mb-4 text-lg font-medium">Combobox Variant</h3>
+                <div className="max-w-xs">
+                  <div className="space-y-2">
+                    <Label>Brand Style</Label>
+                    <BrandCombobox />
+                  </div>
+                </div>
+              </div>
+
+              {/* Combobox Size */}
+              <div>
+                <h3 className="mb-4 text-lg font-medium">Combobox Size</h3>
+                <div className="flex items-center gap-3">
+                  <span className="w-16 text-xs font-normal text-default-500">sm:</span>
+                  <SmallCombobox />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

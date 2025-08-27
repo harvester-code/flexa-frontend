@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { formatProcessName } from '@/lib/utils';
 
 interface ProcessConnection {
   sourceId: string;
@@ -46,38 +47,7 @@ export default function TabFacilityConnectionTable({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ row: number; col: number } | null>(null);
 
-  // Helper function to format process names
-  const formatProcessName = useCallback((str: string) => {
-    // Handle unknown or empty values
-    if (!str || str.toLowerCase() === 'unknown') {
-      return 'Process';
-    }
-
-    // Handle specific process name mappings
-    const processNameMap: Record<string, string> = {
-      airline: 'Airline',
-      'check-in': 'Check-In',
-      checkin: 'Check-In',
-      departure_gate: 'Departure Gate',
-      'departure-gate': 'Departure Gate',
-      security: 'Security',
-      gate: 'Gate',
-    };
-
-    const lowerStr = str.toLowerCase();
-    if (processNameMap[lowerStr]) {
-      return processNameMap[lowerStr];
-    }
-
-    // Default capitalization
-    return str
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('-')
-      .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  }, []);
+  // Format process names using utility function - removed hardcoded mapping
 
   // Get all unique source nodes and destination nodes from all connections
   const { allSourceNodes, allDestinationNodes } = useMemo(() => {

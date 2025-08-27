@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { formatProcessName } from '@/lib/utils';
 import { useFacilityConnectionStore, useProcessingProceduresStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
@@ -19,40 +20,17 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   // 개별 store에서 필요한 데이터만 직접 가져오기
   const processFlow = useProcessingProceduresStore((s) => s.process_flow);
   const isCompleted = useProcessingProceduresStore((s) => s.isCompleted);
-  const convertFromProcedures = useProcessingProceduresStore((s) => s.convertFromProcedures);
+  const setProcessFlow = useProcessingProceduresStore((s) => s.setProcessFlow);
   const setIsCompleted = useProcessingProceduresStore((s) => s.setCompleted);
+  const setFacilitiesForZone = useProcessingProceduresStore((s) => s.setFacilitiesForZone);
   const generateProcesses = useFacilityConnectionStore((s) => s.generateProcessesFromProcedures);
 
-  // process_flow를 procedures 형태로 변환하는 함수
-  const convertToUIProcedures = (flow: any[]) => {
-    return flow.map((step, index) => {
-      const facilityNames: string[] = [];
+  // 더 이상 변환 함수가 필요없음 - zustand의 process_flow를 직접 사용
 
-      // zones에서 facility names 추출
-      Object.values(step.zones).forEach((zone: any) => {
-        if (zone.facilities) {
-          zone.facilities.forEach((facility: any) => {
-            facilityNames.push(facility.id);
-          });
-        }
-      });
+  // 더 이상 필요없음 - zustand의 process_flow를 직접 조작
 
-      return {
-        order: step.step + 1, // 0-based를 1-based로 변환
-        process: step.name, // 원본 이름 그대로 사용 (하드코딩 제거)
-        facility_names: facilityNames,
-      };
-    });
-  };
-
-  // UI procedures 형태를 process_flow로 변환하는 함수
-  const convertFromUIProcedures = (procedures: any[]) => {
-    convertFromProcedures(procedures, 'Airline');
-  };
-
-  // 현재 UI에서 사용할 procedures 데이터
-  const procedures = convertToUIProcedures(processFlow || []);
-  const entryType = 'Airline'; // 고정값
+  // zustand의 process_flow를 직접 사용
+  const [entryType, setEntryType] = useState('Airline'); // 사용자가 선택 가능하도록 변경
 
   const [isCreatingProcess, setIsCreatingProcess] = useState(false);
   const [newProcessName, setNewProcessName] = useState('');
@@ -65,6 +43,9 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
   const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
 
+  // Zone별 facility 개수 상태
+  const [facilityCountPerZone, setFacilityCountPerZone] = useState<{ [zoneName: string]: number }>({});
+
   // Tab Reset 시스템 제거 - 단순화
 
   // 조건부 리턴을 모든 hooks 이후에 위치
@@ -76,25 +57,27 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     isActive: boolean;
   };
 
-  // 시설명 확장 함수 (DG1~5 → DG1,DG2,DG3,DG4,DG5)
+  // 시설명 확장 함수 (범용적 처리: DG12_3-4-6-2~5 → DG12_3-4-6-2,DG12_3-4-6-3,DG12_3-4-6-4,DG12_3-4-6-5)
   const expandFacilityNames = (input: string): FacilityItem[] => {
     let expanded = input.toUpperCase(); // 모든 입력을 대문자로 변환
 
-    // 숫자 패턴 처리 (예: DG1~5, SC1~8)
-    expanded = expanded.replace(/([A-Za-z]*)(\d+)~(\d+)/g, (match, prefix, start, end) => {
-      const startNum = parseInt(start);
-      const endNum = parseInt(end);
+    // 범용적 숫자 범위 패턴 처리 - ~ 앞의 모든 부분을 prefix로 인식
+    // 예: DG12_3-4-6-2~5 → DG12_3-4-6-2, DG12_3-4-6-3, DG12_3-4-6-4, DG12_3-4-6-5
+    expanded = expanded.replace(/(.*?)(\d+)~(\d+)/g, (match, beforeLastNum, startNum, endNum) => {
+      const start = parseInt(startNum);
+      const end = parseInt(endNum);
 
-      if (startNum > endNum) return match; // 잘못된 범위는 그대로 반환
+      // 유효하지 않은 범위 (시작이 끝보다 큼)는 제거
+      if (start > end) return '';
 
       const items: string[] = [];
-      for (let i = startNum; i <= endNum; i++) {
-        items.push(prefix + i);
+      for (let i = start; i <= end; i++) {
+        items.push(beforeLastNum + i);
       }
       return items.join(',');
     });
 
-    // 알파벳 패턴 처리 (예: A~E, SC_A~SC_E)
+    // 알파벳 패턴 처리 (예: A~E, Counter_A~Counter_E)
     expanded = expanded.replace(/([A-Za-z]*)([A-Z])~([A-Z])/g, (match, prefix, start, end) => {
       const startCode = start.charCodeAt(0);
       const endCode = end.charCodeAt(0);
@@ -126,14 +109,23 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
     const activeFacilities = currentFacilities.filter((f) => f.isActive).map((f) => f.name);
 
-    const newProcedure = {
-      order: procedures.length + 1,
-      process: newProcessName,
-      facility_names: activeFacilities,
+    const newStep = {
+      step: processFlow.length,
+      name: newProcessName,
+      travel_time_minutes: null,
+      entry_conditions: [],
+      zones: {} as Record<string, any>,
     };
 
-    // 기존 procedures에 새로운 procedure 추가 후 변환
-    convertFromUIProcedures([...procedures, newProcedure]);
+    // activeFacilities를 zones로 변환
+    activeFacilities.forEach((facilityName: string) => {
+      newStep.zones[facilityName] = {
+        facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
+      };
+    });
+
+    // 기존 processFlow에 새로운 step 추가
+    setProcessFlow([...processFlow, newStep]);
 
     // Reset form
     setNewProcessName('');
@@ -143,17 +135,17 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   };
 
   const selectProcess = (index: number) => {
-    const process = procedures[index];
+    const step = processFlow[index];
     setSelectedProcessIndex(index);
-    setEditProcessName(process.process);
-    setEditProcessFacilities(process.facility_names.join(','));
+    setEditProcessName(step.name);
+    setEditProcessFacilities(Object.keys(step.zones || {}).join(','));
 
-    // facility_names에서 facility 정보 생성
-    const facilitiesFromNames = process.facility_names.map((name) => ({
-      name: name,
+    // zones에서 facility 정보 생성
+    const facilitiesFromZones = Object.keys(step.zones || {}).map((zoneName) => ({
+      name: zoneName,
       isActive: true,
     }));
-    setEditingFacilities(facilitiesFromNames);
+    setEditingFacilities(facilitiesFromZones);
 
     setIsCreatingProcess(false);
   };
@@ -163,15 +155,22 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
     const activeFacilities = editingFacilities.filter((f) => f.isActive).map((f) => f.name);
 
-    const newProcedures = [...procedures];
-    newProcedures[selectedProcessIndex] = {
-      ...newProcedures[selectedProcessIndex],
-      process: editProcessName,
-      facility_names: activeFacilities,
+    const newProcessFlow = [...processFlow];
+    newProcessFlow[selectedProcessIndex] = {
+      ...newProcessFlow[selectedProcessIndex],
+      name: editProcessName,
+      zones: {} as Record<string, any>,
     };
 
-    // 업데이트된 procedures 변환
-    convertFromUIProcedures(newProcedures);
+    // activeFacilities를 zones로 변환
+    activeFacilities.forEach((facilityName: string) => {
+      newProcessFlow[selectedProcessIndex].zones[facilityName] = {
+        facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
+      };
+    });
+
+    // 업데이트된 processFlow 설정
+    setProcessFlow(newProcessFlow);
 
     // Reset form
     setSelectedProcessIndex(null);
@@ -247,15 +246,15 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   };
 
   const removeProcedure = (index: number) => {
-    const newProcedures = procedures.filter((_, i) => i !== index);
+    const newProcessFlow = processFlow.filter((_, i) => i !== index);
 
-    // order 재정렬 (1부터 시작)
-    const reorderedProcedures = newProcedures.map((proc, i) => ({
-      ...proc,
-      order: i + 1,
+    // step 재정렬 (0부터 시작)
+    const reorderedProcessFlow = newProcessFlow.map((step, i) => ({
+      ...step,
+      step: i,
     }));
 
-    convertFromUIProcedures(reorderedProcedures);
+    setProcessFlow(reorderedProcessFlow);
 
     // 삭제된 프로세스가 선택되어 있었다면 선택 해제
     if (selectedProcessIndex === index) {
@@ -295,17 +294,17 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     }
 
     // 배열 재배열
-    const newProcedures = [...procedures];
-    const [draggedItem] = newProcedures.splice(draggedIndex, 1);
-    newProcedures.splice(dropIndex, 0, draggedItem);
+    const newProcessFlow = [...processFlow];
+    const [draggedItem] = newProcessFlow.splice(draggedIndex, 1);
+    newProcessFlow.splice(dropIndex, 0, draggedItem);
 
-    // order 재정렬 (1부터 시작)
-    const reorderedProcedures = newProcedures.map((proc, i) => ({
-      ...proc,
-      order: i + 1,
+    // step 재정렬 (0부터 시작)
+    const reorderedProcessFlow = newProcessFlow.map((step, i) => ({
+      ...step,
+      step: i,
     }));
 
-    convertFromUIProcedures(reorderedProcedures);
+    setProcessFlow(reorderedProcessFlow);
 
     // 선택된 프로세스 인덱스 업데이트 (간단한 방식)
     if (selectedProcessIndex !== null) {
@@ -328,7 +327,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setDragOverIndex(null);
   };
 
-  const canComplete = procedures.length > 0;
+  const canComplete = processFlow.length > 0;
 
   return (
     <div className="space-y-6 pt-8">
@@ -350,7 +349,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       </Card>
 
       {/* Process Flow Layout */}
-      <div className="grid h-[600px] grid-cols-2 gap-6">
+      <div className="grid h-[600px] grid-cols-3 gap-6">
         {/* Left Panel - Process Flow */}
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
@@ -364,18 +363,15 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                 Entry
               </div>
               <div className="flex flex-1 justify-end">
-                <Select
-                  value={entryType}
-                  onValueChange={() => {
-                    /* entryType은 현재 고정값으로 처리 */
-                  }}
-                >
+                <Select value={entryType} onValueChange={setEntryType}>
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Select entry type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Airline">Airline</SelectItem>
                     <SelectItem value="International/Domestic">International/Domestic</SelectItem>
+                    <SelectItem value="Passenger Type">Passenger Type</SelectItem>
+                    <SelectItem value="Entry Point">Entry Point</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -387,7 +383,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
             </div>
 
             {/* Procedures */}
-            {procedures.map((proc, index) => (
+            {processFlow.map((step, index) => (
               <div key={index}>
                 <div
                   onDragOver={(e) => handleDragOver(e, index)}
@@ -407,8 +403,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                       <ArrowUpDown className="h-4 w-4" />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-default-900">{proc.process}</div>
-                      <div className="text-xs text-default-500">({proc.facility_names.length} facilities)</div>
+                      <div className="text-sm font-medium text-default-900">{formatProcessName(step.name)}</div>
+                      <div className="text-xs text-default-500">({Object.keys(step.zones || {}).length} zones)</div>
                     </div>
                   </div>
                   <Button
@@ -472,7 +468,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
                     <Input
                       type="text"
-                      placeholder="e.g., Check-In, Security, Immigration"
+                      placeholder="e.g., Process Step Name"
                       value={newProcessName}
                       onChange={(e) => setNewProcessName(e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, true)}
@@ -484,7 +480,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
                     <Input
                       type="text"
-                      placeholder="e.g., A~E, F1~5, X1,X2,X3"
+                      placeholder="e.g., A~E, Gate1~5, DG12_3-4-6-2~5, Counter1,Counter2"
                       value={newProcessFacilities}
                       onChange={(e) => handleFacilityInputChange(e.target.value, true)}
                       onKeyDown={(e) => handleKeyDown(e, true)}
@@ -499,7 +495,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                           {currentFacilities.map((facility) => (
                             <Button
                               key={facility.name}
-                              variant="btn-link"
+                              variant="ghost"
                               type="button"
                               onClick={() => toggleFacility(facility.name, true)}
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
@@ -539,7 +535,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
                     <Input
                       type="text"
-                      placeholder="e.g., Check-In, Security, Immigration"
+                      placeholder="e.g., Process Step Name"
                       value={editProcessName}
                       onChange={(e) => setEditProcessName(e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, false)}
@@ -551,7 +547,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                     <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
                     <Input
                       type="text"
-                      placeholder="e.g., A~E, F1~5, X1,X2,X3"
+                      placeholder="e.g., A~E, Gate1~5, DG12_3-4-6-2~5, Counter1,Counter2"
                       value={editProcessFacilities}
                       onChange={(e) => handleFacilityInputChange(e.target.value, false)}
                       onKeyDown={(e) => handleKeyDown(e, false)}
@@ -566,7 +562,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                           {editingFacilities.map((facility) => (
                             <Button
                               key={facility.name}
-                              variant="btn-link"
+                              variant="ghost"
                               type="button"
                               onClick={() => toggleFacility(facility.name, false)}
                               className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
@@ -597,7 +593,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                   </Button>
                 </div>
               </div>
-            ) : procedures.length === 0 ? (
+            ) : processFlow.length === 0 ? (
               <div className="flex h-full items-center justify-center text-default-500">
                 <div className="text-center">
                   <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -607,12 +603,12 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
             ) : (
               <div className="space-y-4">
                 <div className="text-sm text-default-500">
-                  {procedures.length} process{procedures.length > 1 ? 'es' : ''} configured
+                  {processFlow.length} process{processFlow.length > 1 ? 'es' : ''} configured
                 </div>
 
                 <div className="space-y-3">
-                  {procedures.map((proc, index) => {
-                    const extendedProc = proc as any;
+                  {processFlow.map((step, index) => {
+                    const extendedStep = step as any;
                     return (
                       <div
                         key={index}
@@ -624,20 +620,20 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                         onClick={() => selectProcess(index)}
                       >
                         <div className="mb-2 flex items-center justify-between">
-                          <h4 className="font-medium text-default-900">{proc.process}</h4>
+                          <h4 className="font-medium text-default-900">{formatProcessName(step.name)}</h4>
                           <span className="text-xs text-default-500">
-                            {extendedProc.facilitiesStatus
-                              ? extendedProc.facilitiesStatus.filter((f) => f.isActive).length
-                              : proc.facility_names.length}{' '}
-                            facilities
+                            {extendedStep.facilitiesStatus
+                              ? extendedStep.facilitiesStatus.filter((f) => f.isActive).length
+                              : Object.keys(step.zones || {}).length}{' '}
+                            zones
                           </span>
                         </div>
 
                         {/* 시설 뱃지 표시 */}
                         <div className="mb-2">
-                          {extendedProc.facilitiesStatus ? (
+                          {extendedStep.facilitiesStatus ? (
                             <div className="flex flex-wrap gap-1">
-                              {extendedProc.facilitiesStatus.map((facility) => (
+                              {extendedStep.facilitiesStatus.map((facility) => (
                                 <span
                                   key={facility.name}
                                   className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${
@@ -652,12 +648,12 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                             </div>
                           ) : (
                             <div className="flex flex-wrap gap-1">
-                              {proc.facility_names.map((name) => (
+                              {Object.keys(step.zones || {}).map((zoneName) => (
                                 <span
-                                  key={name}
+                                  key={zoneName}
                                   className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
                                 >
-                                  {name}
+                                  {zoneName}
                                 </span>
                               ))}
                             </div>
@@ -677,7 +673,13 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               onClick={() => {
                 // Processing Procedures 완료 시 자동으로 Facility Connection 설정
                 setTimeout(() => {
-                  generateProcesses(procedures, entryType);
+                  // processFlow를 procedures 형태로 변환해서 전달
+                  const proceduresForConnection = processFlow.map((step) => ({
+                    order: step.step + 1,
+                    process: step.name,
+                    facility_names: Object.keys(step.zones || {}),
+                  }));
+                  generateProcesses(proceduresForConnection, entryType);
                 }, 0);
 
                 setIsCompleted(true);
@@ -695,6 +697,87 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               )}
             </Button>
           </div>
+        </Card>
+
+        {/* Third Panel - Facility Detail */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Facility Detail</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[500px] overflow-y-auto pb-16">
+            {processFlow.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-default-500">
+                <div className="text-center">
+                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p>Add processes to configure facilities</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-sm text-default-500">Set facility count for each zone</div>
+
+                {processFlow.map((step, procIndex) => (
+                  <div key={procIndex} className="space-y-4">
+                    <div className="border-b pb-2">
+                      <h4 className="font-medium text-default-900">{formatProcessName(step.name)}</h4>
+                      <div className="text-xs text-default-500">
+                        {Object.keys(processFlow[procIndex]?.zones || {}).length} zones
+                      </div>
+                    </div>
+
+                    {Object.keys(processFlow[procIndex]?.zones || {}).map((zoneName, zoneIndex) => (
+                      <div key={zoneIndex} className="space-y-3 rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-default-900">Zone: {zoneName}</div>
+                            <div className="text-xs text-default-500">
+                              {facilityCountPerZone[`${procIndex}-${zoneName}`] || 0} facilities
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium">Count:</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="20"
+                              className="w-20"
+                              value={facilityCountPerZone[`${procIndex}-${zoneName}`] || ''}
+                              onChange={(e) => {
+                                const count = parseInt(e.target.value) || 0;
+                                setFacilityCountPerZone((prev) => ({
+                                  ...prev,
+                                  [`${procIndex}-${zoneName}`]: count,
+                                }));
+                                // zustand store에 facilities 생성
+                                setFacilitiesForZone(procIndex, zoneName, count);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Facility 목록 표시 */}
+                        {facilityCountPerZone[`${procIndex}-${zoneName}`] > 0 && (
+                          <div className="mt-3">
+                            <div className="mb-2 text-xs font-medium text-default-900">Generated Facilities:</div>
+                            <div className="flex flex-wrap gap-1">
+                              {Array.from({ length: facilityCountPerZone[`${procIndex}-${zoneName}`] || 0 }, (_, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                                >
+                                  {zoneName}_{i + 1}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
 

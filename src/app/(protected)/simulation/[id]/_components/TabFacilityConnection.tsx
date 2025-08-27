@@ -5,6 +5,7 @@ import { CheckSquare, Network } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { formatProcessName } from '@/lib/utils';
 import { useFacilityConnectionStore, useFlightScheduleStore } from '../_stores';
 import NextButton from './NextButton';
 import TabFacilityConnectionTable from './TabFacilityConnectionTable';
@@ -406,7 +407,7 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
                 value={process.id}
                 className="text-sm font-medium capitalize hover:bg-primary/10 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                {process.name}
+                {formatProcessName(process.name)}
               </TabsTrigger>
             ))}
           </TabsList>
