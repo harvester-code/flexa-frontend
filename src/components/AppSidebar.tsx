@@ -6,14 +6,14 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   Bell,
-  ChevronsLeft,
-  ChevronsRight,
   CreditCard,
   Home,
   Layers,
   LogOut,
+  PanelLeftDashed,
   Settings,
   User,
+  UserPen,
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
@@ -25,10 +25,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { Separator } from '@/components/ui/Separator';
 import { cn } from '@/lib/utils';
 
-// 📋 메뉴 데이터 구조화 - 섹션별 그룹화
+// 📋 Menu data structure - Section-based grouping
 const menuSections = [
   {
     title: 'Main',
@@ -99,20 +98,22 @@ function AppSidebar() {
         </Link>
       </div>
 
-      <Separator />
-
-      {/* 🎯 Navigation Menu - 섹션별 그룹화 */}
+      {/* 🎯 Navigation Menu - Section-based grouping */}
       <nav className="flex-1 space-y-6 p-4">
-        {menuSections.map((section) => (
-          <div key={section.title} className="space-y-2">
-            {/* 섹션 제목 */}
+        {menuSections.map((section, index) => (
+          <div key={section.title} className={cn('space-y-2', index > 0 && 'pt-12')}>
+            {/* Section title */}
             {!isCollapsed && (
-              <h3 className="mb-3 px-2 text-xs font-normal uppercase tracking-wide text-default-500">
-                {section.title}
-              </h3>
+              <div className="mb-3">
+                <h3 className="px-2 text-xs font-normal uppercase tracking-wide text-default-500">{section.title}</h3>
+                <div className="mt-2 h-px bg-border opacity-50" />
+              </div>
             )}
 
-            {/* 섹션 메뉴 아이템들 */}
+            {/* Section divider for collapsed state */}
+            {isCollapsed && <div className="mb-3 h-px bg-border opacity-30" />}
+
+            {/* Section menu items */}
             <div className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -124,14 +125,14 @@ function AppSidebar() {
                     variant="ghost"
                     asChild
                     className={cn(
-                      'h-10 w-full justify-start text-sm font-normal text-default-900 hover:bg-primary-50 hover:text-primary-900',
+                      'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
                       isActive && 'bg-primary-50 text-primary-900',
-                      isCollapsed && 'px-2'
+                      isCollapsed && 'justify-center px-2'
                     )}
                   >
                     <Link href={item.href}>
                       <Icon className="h-5 w-5" />
-                      {!isCollapsed && <span className="ml-3 font-normal">{item.label}</span>}
+                      {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
                     </Link>
                   </Button>
                 );
@@ -141,8 +142,6 @@ function AppSidebar() {
         ))}
       </nav>
 
-      <Separator />
-
       {/* 🎯 Profile Dropdown with shadcn DropdownMenu */}
       <div className="p-4">
         <DropdownMenu>
@@ -150,18 +149,17 @@ function AppSidebar() {
             <Button
               variant="ghost"
               className={cn(
-                'h-12 w-full justify-start text-sm font-normal text-default-900 hover:bg-primary-50 hover:text-primary-900',
-                isCollapsed && 'px-2'
+                'h-10 w-full justify-start text-sm font-medium text-default-900 transition-all duration-200 hover:bg-primary-50 hover:text-primary-900',
+                isCollapsed ? 'justify-center px-1' : 'px-3'
               )}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-normal text-default-900">
-                {userInfo?.firstName?.[0]?.toUpperCase() || 'U'}
-                {userInfo?.lastName?.[0]?.toUpperCase() || ''}
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-900 text-white shadow-sm transition-all duration-200">
+                <UserPen className="h-3 w-3" />
               </div>
               {!isCollapsed && (
                 <div className="ml-3 text-left">
-                  <div className="text-sm font-medium text-default-900">{userInfo?.fullName || 'User'}</div>
-                  <div className="text-xs font-normal text-default-500">{userInfo?.email || 'user@example.com'}</div>
+                  <div className="text-sm font-semibold text-default-900">{userInfo?.fullName || 'User'}</div>
+                  <div className="text-xs font-medium text-default-500">{userInfo?.email || 'user@example.com'}</div>
                 </div>
               )}
             </Button>
@@ -201,17 +199,18 @@ function AppSidebar() {
         </DropdownMenu>
       </div>
 
-      <Separator />
-
       {/* 🎯 Sidebar Toggle Button */}
       <div className="p-4">
         <Button
           variant="ghost"
-          size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-10 w-full text-sm font-normal text-default-900 hover:bg-primary-50 hover:text-primary-900"
+          className={cn(
+            'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
+            isCollapsed && 'justify-center'
+          )}
         >
-          {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
+          <PanelLeftDashed className={cn('h-5 w-5 transition-transform duration-200', isCollapsed && 'rotate-180')} />
+          {!isCollapsed && <span className="ml-3 font-medium">{isCollapsed ? 'Expand' : 'Collapse'}</span>}
         </Button>
       </div>
     </aside>

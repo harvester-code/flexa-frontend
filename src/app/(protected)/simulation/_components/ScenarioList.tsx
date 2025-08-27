@@ -82,11 +82,11 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
     return (
       <Button
         key={page}
-        variant={page === currentPage ? 'default' : 'outline'}
+        variant={page === currentPage ? 'primary' : 'outline'}
         size="sm"
         onClick={() => onPageClick(page)}
         type="button"
-        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-gray-100'}
+        className="transition-colors"
       >
         {page}
       </Button>
@@ -303,7 +303,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         <div className="flex items-center gap-2.5">
           <Popover modal>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="min-w-[180px] justify-start shadow-none">
+              <Button variant="outline" className="min-w-[180px] justify-start shadow-none focus-visible:!border-primary hover:border-primary data-[state=open]:!border-primary">
                 <Calendar className="mr-2 h-4 w-4" />
                 Target Date {selectedDate && `(${dayjs(selectedDate).format('MMM-DD-YYYY')})`}
               </Button>

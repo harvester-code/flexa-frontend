@@ -43,3 +43,4 @@ export type TypographyVariant = keyof typeof typography;
 export function getTypographyClass(variant: TypographyVariant, className?: string) {
   return cn(typography[variant], className);
 }
+

@@ -9,7 +9,7 @@
 
 /* 🎯 근본적 해결책: 전체 UI 크기 조정 */
 :root {
-  font-size: 13px; /* 16px → 13px = 18.75% 축소 (12px → 13px로 8% 증가) */
+  font-size: 1rem; /* 16px → 13px = 18.75% 축소 (12px → 13px로 8% 증가) */
 }
 
 /* 2️⃣ CSS VARIABLES & THEME SYSTEM */
