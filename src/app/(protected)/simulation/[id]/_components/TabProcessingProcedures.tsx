@@ -1,15 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpDown, CheckSquare, ChevronDown, Plane, Plus, Route, Settings2, Trash2, Users } from 'lucide-react';
+import { runSimulation } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { useToast } from '@/hooks/useToast';
 import { formatProcessName } from '@/lib/utils';
 import { useFacilityConnectionStore, useProcessingProceduresStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
+import OperatingScheduleEditor from './OperatingScheduleEditor';
+
+// 시설 타입 정의
+type FacilityItem = {
+  name: string;
+  isActive: boolean;
+};
 
 interface TabProcessingProceduresProps {
   simulationId: string;
@@ -23,7 +32,9 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const setProcessFlow = useProcessingProceduresStore((s) => s.setProcessFlow);
   const setIsCompleted = useProcessingProceduresStore((s) => s.setCompleted);
   const setFacilitiesForZone = useProcessingProceduresStore((s) => s.setFacilitiesForZone);
+  const updateTravelTime = useProcessingProceduresStore((s) => s.updateTravelTime);
   const generateProcesses = useFacilityConnectionStore((s) => s.generateProcessesFromProcedures);
+  const { toast } = useToast();
 
   // 더 이상 변환 함수가 필요없음 - zustand의 process_flow를 직접 사용
 
@@ -46,16 +57,56 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   // Zone별 facility 개수 상태
   const [facilityCountPerZone, setFacilityCountPerZone] = useState<{ [zoneName: string]: number }>({});
 
-  // Tab Reset 시스템 제거 - 단순화
+  // 시뮬레이션 실행 상태
+  const [isRunningSimulation, setIsRunningSimulation] = useState(false);
 
-  // 조건부 리턴을 모든 hooks 이후에 위치
-  if (!visible) return null;
+  // Complete 조건 체크: 모든 시설에 operating_schedule이 설정되고 travel_time_minutes가 설정되어야 함
+  const canComplete = useMemo(() => {
+    if (processFlow.length === 0) return false;
 
-  // 시설 타입 정의
-  type FacilityItem = {
-    name: string;
-    isActive: boolean;
-  };
+    // 모든 프로세스의 travel_time_minutes가 설정되고, 모든 시설이 operating_schedule을 가져야 함
+    return processFlow.every((process) => {
+      // travel_time_minutes 체크 (0 이상이어야 함)
+      const hasTravelTime = process.travel_time_minutes >= 0;
+
+      // operating_schedule 체크
+      const hasOperatingSchedule = Object.values(process.zones).every(
+        (zone: any) =>
+          zone.facilities &&
+          zone.facilities.length > 0 &&
+          zone.facilities.every(
+            (facility: any) =>
+              facility.operating_schedule &&
+              facility.operating_schedule.today &&
+              facility.operating_schedule.today.time_blocks &&
+              facility.operating_schedule.today.time_blocks.length > 0
+          )
+      );
+
+      return hasTravelTime && hasOperatingSchedule;
+    });
+  }, [processFlow]);
+
+  // Facility가 설정된 프로세스가 있는지 체크
+  const hasFacilitiesConfigured = useMemo(() => {
+    return processFlow.some((process) =>
+      Object.values(process.zones).some((zone: any) => zone.facilities && zone.facilities.length > 0)
+    );
+  }, [processFlow]);
+
+  // processFlow가 변경될 때마다 facilityCountPerZone 자동 계산
+  useEffect(() => {
+    const calculatedCounts: { [key: string]: number } = {};
+
+    processFlow.forEach((process, processIndex) => {
+      Object.entries(process.zones).forEach(([zoneName, zone]: [string, any]) => {
+        const count = zone.facilities?.length || 0;
+        calculatedCounts[`${processIndex}-${zoneName}`] = count;
+      });
+    });
+
+    setFacilityCountPerZone(calculatedCounts);
+  }, [processFlow]);
 
   // 시설명 확장 함수 (범용적 처리: DG12_3-4-6-2~5 → DG12_3-4-6-2,DG12_3-4-6-3,DG12_3-4-6-4,DG12_3-4-6-5)
   const expandFacilityNames = (input: string): FacilityItem[] => {
@@ -112,7 +163,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     const newStep = {
       step: processFlow.length,
       name: newProcessName,
-      travel_time_minutes: null,
+      travel_time_minutes: 0, // 사용자가 UI에서 설정
       entry_conditions: [],
       zones: {} as Record<string, any>,
     };
@@ -327,7 +378,67 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setDragOverIndex(null);
   };
 
-  const canComplete = processFlow.length > 0;
+  // 시뮬레이션 실행 함수
+  const handleRunSimulation = async () => {
+    if (!canComplete) {
+      // 구체적인 미완료 사항 확인
+      const missingTravelTimes = processFlow.some((p) => p.travel_time_minutes < 0);
+      const missingSchedules = !processFlow.every((process) =>
+        Object.values(process.zones).every(
+          (zone: any) =>
+            zone.facilities &&
+            zone.facilities.length > 0 &&
+            zone.facilities.every(
+              (facility: any) =>
+                facility.operating_schedule &&
+                facility.operating_schedule.today &&
+                facility.operating_schedule.today.time_blocks &&
+                facility.operating_schedule.today.time_blocks.length > 0
+            )
+        )
+      );
+
+      let description = 'Please complete the following before running simulation:\n';
+      if (missingTravelTimes) description += '• Set travel times for all processes\n';
+      if (missingSchedules) description += '• Configure operating schedules for all facilities';
+
+      toast({
+        title: 'Setup Incomplete',
+        description: description.trim(),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsRunningSimulation(true);
+
+      // travel_time_minutes 값을 안전하게 처리 (최소 1분)
+      const sanitizedProcessFlow = processFlow.map((step) => ({
+        ...step,
+        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
+      }));
+
+      await runSimulation(simulationId, sanitizedProcessFlow);
+
+      toast({
+        title: '🚀 Simulation Started',
+        description: 'Your simulation is now running. You can check the results in the Home tab.',
+      });
+    } catch (error: any) {
+      console.error('Simulation failed:', error);
+      toast({
+        title: 'Simulation Failed',
+        description: error.response?.data?.message || 'Failed to start simulation. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRunningSimulation(false);
+    }
+  };
+
+  // visible이 false이면 null 반환 (모든 hooks 실행 후)
+  if (!visible) return null;
 
   return (
     <div className="space-y-6 pt-8">
@@ -629,6 +740,23 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                           </span>
                         </div>
 
+                        {/* Travel Time 설정 */}
+                        <div className="mb-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <label className="text-default-700 text-xs font-medium">Travel Time:</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="60"
+                            className="h-6 w-16 text-xs"
+                            value={step.travel_time_minutes || 0}
+                            onChange={(e) => {
+                              const minutes = parseInt(e.target.value) || 0;
+                              updateTravelTime(index, minutes);
+                            }}
+                          />
+                          <span className="text-xs text-default-500">minutes</span>
+                        </div>
+
                         {/* 시설 뱃지 표시 */}
                         <div className="mb-2">
                           {extendedStep.facilitiesStatus ? (
@@ -750,27 +878,107 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         </Card>
       </div>
 
-      {/* Complete Setup Button - 카드 바깥으로 이동 */}
-      <div className="mt-6 flex justify-end">
-        <Button
-          onClick={() => setIsCompleted(true)}
-          disabled={!canComplete}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isCompleted ? (
-            <>
-              <CheckSquare className="mr-2 h-4 w-4" />
-              Completed
-            </>
-          ) : (
-            'Complete Setup'
-          )}
-        </Button>
-      </div>
+      {/* Operating Schedule Editor - Facility가 설정되면 자동 표시 */}
+      {hasFacilitiesConfigured && <OperatingScheduleEditor processFlow={processFlow} />}
 
       {/* Navigation */}
       <div className="mt-8">
         <NextButton showPrevious={true} disabled={!isCompleted} />
+      </div>
+
+      {/* Run Simulation Button */}
+      {canComplete && (
+        <div className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <Plane className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Ready to Run Simulation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    All operating schedules are configured. Start your simulation now!
+                  </p>
+                </div>
+                <Button onClick={handleRunSimulation} disabled={isRunningSimulation}>
+                  {isRunningSimulation ? (
+                    <>
+                      <Settings2 className="mr-2 h-4 w-4 animate-spin" />
+                      Running Simulation...
+                    </>
+                  ) : (
+                    <>
+                      <Plane className="mr-2 h-4 w-4" />
+                      Run Simulation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Complete Setup Button - 가장 아래로 이동 */}
+      <div className="mt-6 space-y-3">
+        {/* 진행상황 표시 */}
+        <div className="rounded-lg border bg-muted/50 p-3">
+          <div className="mb-2 text-sm font-medium">Setup Progress</div>
+          <div className="space-y-2 text-xs">
+            <div
+              className={`flex items-center gap-2 ${processFlow.length > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              {processFlow.length > 0 ? (
+                <CheckSquare className="h-3 w-3" />
+              ) : (
+                <div className="h-3 w-3 rounded border" />
+              )}
+              Process Flow Configured ({processFlow.length} processes)
+            </div>
+            <div
+              className={`flex items-center gap-2 ${hasFacilitiesConfigured ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              {hasFacilitiesConfigured ? (
+                <CheckSquare className="h-3 w-3" />
+              ) : (
+                <div className="h-3 w-3 rounded border" />
+              )}
+              Facilities Configured
+            </div>
+            <div
+              className={`flex items-center gap-2 ${
+                processFlow.every((p) => p.travel_time_minutes >= 0) && processFlow.length > 0
+                  ? 'text-foreground'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {processFlow.every((p) => p.travel_time_minutes >= 0) && processFlow.length > 0 ? (
+                <CheckSquare className="h-3 w-3" />
+              ) : (
+                <div className="h-3 w-3 rounded border" />
+              )}
+              Travel Times Set
+            </div>
+            <div className={`flex items-center gap-2 ${canComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {canComplete ? <CheckSquare className="h-3 w-3" /> : <div className="h-3 w-3 rounded border" />}
+              Operating Schedules Set
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={() => setIsCompleted(true)} disabled={!canComplete}>
+            {isCompleted ? (
+              <>
+                <CheckSquare className="mr-2 h-4 w-4" />
+                Completed
+              </>
+            ) : (
+              <>{canComplete ? 'Complete Setup' : 'Complete Operating Schedules to Continue'}</>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

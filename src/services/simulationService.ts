@@ -1,3 +1,4 @@
+import { ScenariosDataResponse } from '@/types/homeTypes';
 import {
   CreateScenarioParams,
   FlightScheduleResponse,
@@ -7,9 +8,7 @@ import {
   PassengerScheduleResponse,
   PassengerSchedulesParams,
   PassengerShowUpResponse,
-
 } from '@/types/simulationTypes';
-import { ScenariosDataResponse } from '@/types/homeTypes';
 import { createAPIService } from '@/lib/axios';
 
 const api = createAPIService('simulations');
@@ -33,8 +32,6 @@ export const deleteScenario = (scenario_ids: string[]) => {
   return api.delete('/', { data: { scenario_ids } });
 };
 
-
-
 export const getFlightSchedules = (scenario_id: string, params: FlightSchedulesParams) => {
   return api.withScenario(scenario_id).post<FlightScheduleResponse>('/flight-schedules', params);
 };
@@ -55,4 +52,10 @@ export const saveScenarioMetadata = (scenario_id: string, metadata: any) => {
 
 export const loadScenarioMetadata = (scenario_id: string) => {
   return api.withScenario(scenario_id).get<MetadataLoadResponse>('/metadata');
+};
+
+export const runSimulation = (scenario_id: string, processFlow: any[]) => {
+  return api.withScenario(scenario_id).post('/run-simulation', {
+    process_flow: processFlow,
+  });
 };

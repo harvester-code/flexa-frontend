@@ -18,6 +18,8 @@ export interface ProcessingProceduresState {
   resetState: () => void;
   loadMetadata: (metadata: Record<string, unknown>) => void;
   setFacilitiesForZone: (processIndex: number, zoneName: string, count: number) => void;
+  updateOperatingSchedule: (processIndex: number, zoneName: string, timeBlocks: any[]) => void;
+  updateTravelTime: (processIndex: number, minutes: number) => void;
 }
 
 // ==================== Initial State ====================
@@ -46,7 +48,7 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
             const processStep = {
               step: index,
               name: procedure.process.toLowerCase().replace(/-/g, '_'), // "Visa-Check" -> "visa_check"
-              travel_time_minutes: null,
+              travel_time_minutes: 0, // 사용자가 UI에서 설정
               entry_conditions: [],
               zones: {} as Record<string, any>,
             };
@@ -83,7 +85,7 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
           state.process_flow = convertedFlow;
           state.isCompleted = metadata.isCompleted || false;
         } else {
-          // 이미 새로운 형태인 경우
+          // 이미 새로운 형태인 경우 - 원본 데이터 그대로 사용
           Object.assign(state, {
             ...initialState,
             ...metadata,
@@ -103,6 +105,35 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
           state.process_flow[processIndex].zones[zoneName].facilities = facilities;
         }
       }),
+
+    updateOperatingSchedule: (processIndex, zoneName, timeBlocks) =>
+      set((state) => {
+        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+          const zone = state.process_flow[processIndex].zones[zoneName];
+
+          if (zone.facilities) {
+            // 모든 시설에 동일한 스케줄 적용
+            zone.facilities.forEach((facility: any) => {
+              facility.operating_schedule = {
+                today: {
+                  time_blocks: timeBlocks.map((block) => ({
+                    period: block.period,
+                    process_time_seconds: block.processTime,
+                    passenger_conditions: block.conditions,
+                  })),
+                },
+              };
+            });
+          }
+        }
+      }),
+
+    updateTravelTime: (processIndex, minutes) =>
+      set((state) => {
+        if (state.process_flow[processIndex]) {
+          state.process_flow[processIndex].travel_time_minutes = minutes;
+        }
+      }),
   }))
 );
 
@@ -117,7 +148,7 @@ const migrateProceduresToProcessFlow = (procedures: any[]): ProcessStep[] => {
       const processStep = {
         step: index,
         name: procedure.process, // 원본 이름 그대로 사용 (하드코딩 제거)
-        travel_time_minutes: null,
+        travel_time_minutes: 0, // 사용자가 UI에서 설정
         entry_conditions: [],
         zones: {} as Record<string, any>,
       };
