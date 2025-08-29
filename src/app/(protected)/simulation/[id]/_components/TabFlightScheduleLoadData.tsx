@@ -250,7 +250,6 @@ function TabFlightScheduleLoadData({
           <Button
             onClick={onLoadData}
             disabled={loadingFlightSchedule || !airport}
-            className="flex-shrink-0 px-4 sm:px-6 lg:px-8"
             title={!airport ? 'Please select an airport first' : 'Load flight schedule data'}
           >
             {loadingFlightSchedule ? (

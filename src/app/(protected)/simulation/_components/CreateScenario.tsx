@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { PlusCircle } from 'lucide-react';
-import { popModal, pushModal } from '@/app/provider';
 import { createScenario } from '@/services/simulationService';
 import { useUser } from '@/queries/userQueries';
-import { PopupAlert } from '@/components/PopupAlert';
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { PushSuccessPopup } from './Success';
 
-interface PopupProps {
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { useToast } from '@/hooks/useToast';
+
+interface CreateScenarioProps {
+  open: boolean;
+  onClose: () => void;
   onCreate: (simulationId: string) => void;
-  onClose?: () => void;
 }
 
 interface FormData {
@@ -35,21 +36,7 @@ const INPUT_FIELDS: InputField[] = [
   { key: 'memo', label: 'Memo', placeholder: 'Description', required: true },
 ];
 
-export const PushCreateScenarioPopup = (props: PopupProps) => {
-  const modalId = pushModal({
-    component: (
-      <PopupComponent
-        {...props}
-        onClose={() => {
-          popModal(modalId);
-          if (props?.onClose) props.onClose();
-        }}
-      />
-    ),
-  });
-};
-
-const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
+const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate }) => {
   const [formData, setFormData] = useState<FormData>({
     scenarioName: '',
     airport: '',
@@ -57,6 +44,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
     memo: '',
   });
   const { data: userInfo } = useUser();
+  const { toast } = useToast();
 
   const updateField = (key: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -74,7 +62,11 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
   const handleSubmit = async () => {
     const validationError = validateForm();
     if (validationError) {
-      PopupAlert.confirm(validationError, 'confirm', () => {}, 'Input Required');
+      toast({
+        title: 'Input Required',
+        description: validationError,
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -88,64 +80,67 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
       });
 
       if (data?.scenario_id) {
-        PushSuccessPopup({
+        toast({
           title: 'Creation Complete',
-          message: 'The scenario has been created successfully.',
-          onConfirm: () => {
-            onCreate(data.scenario_id);
-            onClose?.();
-          },
+          description: 'The scenario has been created successfully.',
         });
+        onCreate(data.scenario_id);
+        onClose?.();
       } else {
-        PopupAlert.confirm('Failed to create the scenario.');
+        toast({
+          title: 'Creation Failed',
+          description: 'Failed to create the scenario.',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       console.error(error);
-      PopupAlert.confirm('Failed to create the scenario.');
+      toast({
+        title: 'Creation Failed', 
+        description: 'Failed to create the scenario.',
+        variant: 'destructive'
+      });
     }
   };
 
   return (
-    <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
-      <DialogContent className="w-full max-w-lg pt-8">
-        <DialogTitle className="mb-4 flex items-center gap-3">
-          <PlusCircle className="h-5 w-5 text-primary" />
-          <span className="!mb-0 !min-h-0">Create New Scenario</span>
-        </DialogTitle>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Create New Scenario</DialogTitle>
+          <DialogDescription>
+            Please fill in the scenario details.
+          </DialogDescription>
+        </DialogHeader>
 
-        <p className="mb-2 min-h-5 text-sm text-default-500">Please fill in the scenario details.</p>
-
-        <div className="popup-input-wrap">
-          <form className="flex flex-col gap-3">
-            {INPUT_FIELDS.map((field) => (
-              <dl key={field.key}>
-                <dt className="mb-1 pl-2.5 text-sm font-normal">{field.label}</dt>
-                <dd>
-                  <Input
-                    variant="custom"
-                    type="text"
-                    placeholder={field.placeholder}
-                    value={formData[field.key]}
-                    onChange={(e) => updateField(field.key, e.target.value)}
-                    className="h-10 rounded-full border border-input"
-                  />
-                </dd>
-              </dl>
-            ))}
-          </form>
+        <div className="grid gap-4">
+          {INPUT_FIELDS.map((field) => (
+            <div key={field.key} className="grid gap-3">
+              <Label htmlFor={field.key}>{field.label}</Label>
+              <Input
+                id={field.key}
+                type="text"
+                placeholder={field.placeholder}
+                value={formData[field.key]}
+                onChange={(e) => updateField(field.key, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
 
-        <div className="popup-btn-wrap mt-2 flex gap-3">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          </DialogClose>
           <Button onClick={handleSubmit}>
             Create
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default PopupComponent;
+export default CreateScenario;

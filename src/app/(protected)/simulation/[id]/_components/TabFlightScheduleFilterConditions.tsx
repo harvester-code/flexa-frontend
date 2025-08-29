@@ -672,7 +672,7 @@ function TabFlightScheduleFilterConditions({
                     (selectedConditions?.terminal?.length || 0) === 0 &&
                     (selectedConditions?.selectedAirlines?.length || 0) === 0
                   }
-                  className="flex-1 sm:flex-none"
+
                 >
                   Clear All
                 </Button>
@@ -680,7 +680,7 @@ function TabFlightScheduleFilterConditions({
                   size="sm"
                   onClick={onApplyFilters}
                   disabled={loadingFlightSchedule}
-                  className="flex-1 sm:flex-none"
+
                 >
                   {loadingFlightSchedule ? (
                     <>

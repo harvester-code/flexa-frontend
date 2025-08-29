@@ -1,7 +1,9 @@
 import { Hand, LandPlot, MousePointer2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 function CanvasController({ prevModeRef, mode, setMode, nodes, rectangles }) {
+  const { toast } = useToast();
   return (
     <>
       {/* NOTE: 실제로는 어떤 UI에서 어떻게 사용될지 모르니 여기서 힘쓰지 말자. */}
@@ -28,7 +30,11 @@ function CanvasController({ prevModeRef, mode, setMode, nodes, rectangles }) {
             className={cn('rounded p-1 hover:bg-muted', mode === 'draw' && 'bg-muted hover:bg-muted')}
             onClick={() => {
               if (nodes.length === rectangles.length) {
-                alert('더 이상 영역을 지정할 수 없습니다.');
+                toast({
+                  title: "Warning",
+                  description: "더 이상 영역을 지정할 수 없습니다.",
+                  variant: "destructive"
+                });
               } else {
                 setMode('draw');
               }

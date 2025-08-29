@@ -217,22 +217,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             </Button>
           </DialogTrigger>
 
-          <DialogContent
-            className="max-w-[95%] overflow-hidden xl:max-w-[80rem]"
-            style={{ height: `${getDialogHeight()}px`, minWidth: '900px', maxHeight: `${getDialogHeight()}px` }}
-          >
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle className="flex items-baseline justify-between pt-1.5">
-                <span>Select Scenario</span>
-                <Button type="button" onClick={handleNewScenario}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Scenario
-                </Button>
-              </DialogTitle>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Select Scenario</DialogTitle>
               <DialogDescription>Select the scenario you&apos;d like to review.</DialogDescription>
             </DialogHeader>
 
-            <Separator className="flex-shrink-0" />
+            <Separator />
 
             {/* 고정된 필터 섹션 */}
             <div className="flex-shrink-0" style={{ height: '80px' }}>

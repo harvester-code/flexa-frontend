@@ -1,4 +1,4 @@
-// 모듈화된 Zustand 기반 탭 데이터 훅들
+// 🚀 모듈화된 Zustand 기반 탭 데이터 훅들
 // 기존 useScenarioStore 대신 개별 모듈을 사용하여 성능과 유지보수성 향상
 import {
   useFacilityConnectionStore,
@@ -7,7 +7,7 @@ import {
   useProcessingProceduresStore,
 } from '../[id]/_stores';
 
-// ==================== Flight Schedule 탭 데이터 훅 ====================
+// ==================== 🛩️ Flight Schedule 탭 데이터 훅 ====================
 export const useFlightScheduleData = () => {
   const {
     // Data
@@ -60,7 +60,7 @@ export const useFlightScheduleData = () => {
   };
 };
 
-// ==================== Passenger Schedule 탭 데이터 훅 ====================
+// ==================== 👥 Passenger Schedule 탭 데이터 훅 ====================
 export const usePassengerScheduleData = () => {
   const {
     // Data
@@ -107,7 +107,7 @@ export const usePassengerScheduleData = () => {
   };
 };
 
-// ==================== Airport Processing 탭 데이터 훅 ====================
+// ==================== 🏭 Airport Processing 탭 데이터 훅 ====================
 export const useAirportProcessingData = () => {
   const {
     // Data
@@ -169,11 +169,11 @@ export const useFacilityConnectionData = () => {
   };
 };
 
-// ==================== Legacy 호환성 지원 ====================
+// ==================== 📝 Legacy 호환성 지원 ====================
 /**
  * @deprecated 기존 이름과 호환성을 위해 유지
  * useScenarioOverviewData()를 사용하세요
- * [DEPRECATED] 이 함수는 deprecated입니다. useScenarioOverviewData()를 사용하세요.
+ * ⚠️  이 함수는 deprecated입니다. useScenarioOverviewData()를 사용하세요.
  */
 export const useScenarioProfileData = () => {
   // 빈 객체 반환 (기존 코드가 깨지지 않도록)
@@ -197,7 +197,7 @@ export const useScenarioProfileData = () => {
   };
 };
 
-// ==================== 개별 스토어 직접 접근 ====================
+// ==================== 🎯 개별 스토어 직접 접근 ====================
 /**
  * 더 간단한 사용을 위한 직접 export
  * 예: const { airport, setAirport } = useFlightScheduleStore();

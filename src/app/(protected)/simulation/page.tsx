@@ -1,28 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteScenario } from '@/services/simulationService';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
-import { PushCreateScenarioPopup } from './_components/CreateScenario';
+import CreateScenario from './_components/CreateScenario';
 import ScenarioList from './_components/ScenarioList';
-import { PushSuccessPopup } from './_components/Success';
+import { useToast } from '@/hooks/useToast';
 
 const SimulationPage = () => {
   const queryClient = useQueryClient();
   const { scenarios, isLoading: isScenariosLoading } = useScenarios();
+  const { toast } = useToast();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleDeleteScenario = async (selectedIds: string[]) => {
     try {
       await deleteScenario(selectedIds);
-      PushSuccessPopup({
+      toast({
         title: 'Deletion Complete',
-        message: 'Successfully Deleted.',
-        onConfirm: () => {
-          queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-        },
+        description: 'Successfully Deleted.',
       });
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     } catch (error: any) {
       console.error('Failed to delete scenarios:', error);
       console.error('Error details:', error.response?.data);
@@ -30,11 +30,12 @@ const SimulationPage = () => {
   };
 
   const handleCreateScenario = () => {
-    PushCreateScenarioPopup({
-      onCreate: () => {
-        queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-      },
-    });
+    setShowCreateDialog(true);
+  };
+
+  const handleScenarioCreated = (simulationId: string) => {
+    queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+    setShowCreateDialog(false);
   };
 
   return (
@@ -49,6 +50,12 @@ const SimulationPage = () => {
           onDeleteScenario={handleDeleteScenario}
         />
       </div>
+
+      <CreateScenario
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={handleScenarioCreated}
+      />
     </div>
   );
 };

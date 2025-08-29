@@ -7,16 +7,25 @@ import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { modifyScenario } from '@/services/simulationService';
-import { PopupAlert } from '@/components/PopupAlert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/AlertDialog';
 import { Button } from '@/components/ui/Button';
 import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
-import DeleteScenario from './DeleteScenario';
+
 import SimulationLoading from './SimulationLoading';
-import { PushSuccessPopup } from './Success';
+import { useToast } from '@/hooks/useToast';
 
 interface EditingScenario {
   id: string;
@@ -98,10 +107,12 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isScenarioSelected, setIsScenarioSelected] = useState<boolean[]>([]);
   const [editingScenario, setEditingScenario] = useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -217,37 +228,40 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
       return;
     }
 
-    // 확인 팝업 표시
-    PopupAlert.confirm(
-      'Are you sure you want to update this scenario?',
-      'Confirm',
-      async () => {
-        try {
-          await modifyScenario(
-            {
-              name: editingScenario.name,
-              airport: editingScenario.airport,
-              terminal: editingScenario.terminal,
-              memo: editingScenario.memo,
-            },
-            editingScenario.scenario_id
-          );
+    // 확인 다이얼로그 표시
+    setShowUpdateDialog(true);
+  };
 
-          PushSuccessPopup({
-            title: 'Update Complete',
-            message: 'Scenario updated successfully.',
-            onConfirm: () => {
-              queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-              setEditingScenario(null);
-            },
-          });
-        } catch (error) {
-          console.error('Failed to update scenario:', error);
-          PopupAlert.confirm('Failed to update scenario. Please try again.', 'OK', undefined, 'Error');
-        }
-      },
-      'Update Scenario'
-    );
+  const executeUpdateScenario = async () => {
+    if (!editingScenario) return;
+
+    try {
+      await modifyScenario(
+        {
+          name: editingScenario.name,
+          airport: editingScenario.airport,
+          terminal: editingScenario.terminal,
+          memo: editingScenario.memo,
+        },
+        editingScenario.scenario_id
+      );
+
+      toast({
+        title: 'Update Complete',
+        description: 'Scenario updated successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+      setEditingScenario(null);
+    } catch (error) {
+      console.error('Failed to update scenario:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update scenario. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setShowUpdateDialog(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -513,7 +527,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 if (currentPage > 1) setCurrentPage(1);
               }}
               type="button"
-              className="transition-colors hover:bg-gray-100"
+
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -526,7 +540,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 }
               }}
               type="button"
-              className="transition-colors hover:bg-gray-100"
+
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -545,7 +559,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 }
               }}
               type="button"
-              className="transition-colors hover:bg-gray-100"
+
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -556,7 +570,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 if (currentPage < totalPages && totalPages > 1) setCurrentPage(totalPages);
               }}
               type="button"
-              className="transition-colors hover:bg-gray-100"
+
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
@@ -566,12 +580,47 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         )}
       </div>
 
-      <DeleteScenario
-        open={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        onConfirm={handleDeleteConfirm}
-        count={selRowCount}
-      />
+      {/* Delete Scenario Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scenario{selRowCount > 1 ? 's' : ''}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selRowCount} scenario{selRowCount > 1 ? 's' : ''}?
+              <br />
+              The deleted list can be checked in Trash Bin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Update Scenario Confirmation Dialog */}
+      <AlertDialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update Scenario</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to update this scenario?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={executeUpdateScenario}>
+              Update
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
