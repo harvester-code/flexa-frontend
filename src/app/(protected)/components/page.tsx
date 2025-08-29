@@ -66,7 +66,7 @@ export default function ComponentsPage() {
   const DatePicker = () => (
     <Popover open={openDatePicker} onOpenChange={setOpenDatePicker}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-start font-normal">
+        <Button variant="outline">
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selectedDate ? dayjs(selectedDate).format('MMM DD, YYYY') : 'Pick a date'}
         </Button>
@@ -514,7 +514,7 @@ export default function ComponentsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Disabled</Label>
-                      <Button variant="outline" disabled className="w-full justify-between font-normal">
+                      <Button variant="outline" disabled>
                         Select option...
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>

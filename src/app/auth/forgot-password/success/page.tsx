@@ -27,7 +27,7 @@ function ForgotPasswordSuccessContent() {
           Resend Code
         </SubmitButton>
       </form>
-      <Button asChild variant="link" className="mt-10">
+      <Button asChild variant="link">
         <Link href="/login">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Login

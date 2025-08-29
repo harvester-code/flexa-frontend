@@ -221,7 +221,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           )}
         </div>
 
-        <Button onClick={handleTempSave} disabled={isSaving} className="flex items-center gap-2 px-4">
+        <Button onClick={handleTempSave} disabled={isSaving}>
           <Save size={16} />
           {isSaving ? 'Saving...' : 'Save'}
         </Button>

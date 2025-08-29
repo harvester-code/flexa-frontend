@@ -413,7 +413,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                 ))}
               </div>
 
-              <Button onClick={saveSchedule} className="w-full">
+              <Button onClick={saveSchedule}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Schedule
               </Button>

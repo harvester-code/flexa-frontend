@@ -43,7 +43,7 @@ const SuccessComponent: React.FC<SuccessProps> = ({ title, message, buttonText =
         <p className="mb-6 text-sm text-default-500">{message}</p>
 
         <div className="flex justify-end">
-          <Button className="px-8" onClick={handleConfirm}>
+          <Button onClick={handleConfirm}>
             {buttonText}
           </Button>
         </div>

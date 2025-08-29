@@ -88,14 +88,14 @@ function AuthErrorContent() {
 
           <div className="space-y-4">
             {errorInfo.showResendOption && (
-              <Button asChild variant="primary" className="w-full">
+              <Button asChild variant="primary">
                 <Link href="/auth/register">
                   Request New Verification Email
                 </Link>
               </Button>
             )}
             
-            <Button asChild variant="outline" className="w-full">
+            <Button asChild variant="outline">
               <Link href="/auth/login">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login

@@ -303,7 +303,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         <div className="flex items-center gap-2.5">
           <Popover modal>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="min-w-[180px] justify-start shadow-none focus-visible:!border-primary hover:border-primary data-[state=open]:!border-primary">
+              <Button variant="outline">
                 <Calendar className="mr-2 h-4 w-4" />
                 Target Date {selectedDate && `(${dayjs(selectedDate).format('MMM-DD-YYYY')})`}
               </Button>
@@ -320,7 +320,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
               <CalendarComponent mode="single" selected={selectedDate} onSelect={handleDateSelect} initialFocus />
               {selectedDate && (
                 <div className="border-t p-3">
-                  <Button variant="outline" size="sm" onClick={() => handleDateSelect(undefined)} className="w-full">
+                  <Button variant="outline" size="sm" onClick={() => handleDateSelect(undefined)}>
                     Clear Filter
                   </Button>
                 </div>

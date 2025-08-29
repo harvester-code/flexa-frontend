@@ -169,7 +169,7 @@ function TabFlightScheduleLoadData({
             {/* Date Selection - 표준 DatePicker */}
             <Popover open={openCalendarPopover} onOpenChange={setOpenCalendarPopover}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="min-w-fit flex-shrink-0 justify-start font-normal">
+                <Button variant="outline">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dayjs(date).format('MMM DD, YYYY')}
                 </Button>

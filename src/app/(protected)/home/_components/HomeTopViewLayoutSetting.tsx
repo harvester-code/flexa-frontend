@@ -1091,7 +1091,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         {/* Apply Button */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
           <div className="mt-6 flex justify-end">
-            <Button className="px-6 py-2 font-semibold" onClick={handleApply}>
+            <Button onClick={handleApply}>
               Apply
             </Button>
           </div>

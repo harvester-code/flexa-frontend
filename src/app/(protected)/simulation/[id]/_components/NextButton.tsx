@@ -77,12 +77,12 @@ export default function NextButton({
   if (showPrevious) {
     return (
       <div className={`flex justify-between ${className}`}>
-        <Button variant="outline" onClick={handlePrev} disabled={!canGoPrev} className="flex items-center gap-2">
+        <Button variant="outline" onClick={handlePrev} disabled={!canGoPrev}>
           <ChevronLeft className="h-4 w-4" />
           Prev
         </Button>
 
-        <Button onClick={handleNext} disabled={!canGoNext} className="flex items-center gap-2">
+        <Button onClick={handleNext} disabled={!canGoNext}>
           Next
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -92,7 +92,7 @@ export default function NextButton({
 
   return (
     <div className={`flex justify-end ${className}`}>
-      <Button onClick={handleNext} disabled={!canGoNext} className="flex items-center gap-2">
+      <Button onClick={handleNext} disabled={!canGoNext}>
         Next
         <ChevronRight className="h-4 w-4" />
       </Button>

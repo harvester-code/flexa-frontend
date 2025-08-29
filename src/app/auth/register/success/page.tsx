@@ -72,7 +72,7 @@ function RegisterSuccessContent() {
             </form>
           </div>
 
-          <Button asChild variant="ghost" className="mt-6 text-primary-900 hover:text-primary">
+          <Button asChild variant="ghost">
             <Link href="/auth/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Login

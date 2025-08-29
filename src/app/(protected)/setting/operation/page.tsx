@@ -45,7 +45,7 @@ function SettingOperationPage() {
         <div className="tab-setting">
           {terminals.map((terminal, index) => (
             <div key={`tab${index}`} className={`tab ${terminalIndex === index ? 'active' : ''}`}>
-              <Button variant="btn-link" className="tab-btn" onClick={() => setTerminalIndex(index)}>
+              <Button variant="btn-link" onClick={() => setTerminalIndex(index)}>
                 {terminal}
               </Button>
               <DropdownMenu>
@@ -104,7 +104,7 @@ function SettingOperationPage() {
               <div className="tab-setting tab-black">
                 {processes?.[terminalIndex]?.map((process, index) => (
                   <div key={`tab${index}`} className={`tab ${processIndex === index ? 'active' : ''}`}>
-                    <Button variant="btn-link" className="tab-btn" onClick={() => setProcessIndex(index)}>
+                    <Button variant="btn-link" onClick={() => setProcessIndex(index)}>
                       {process}
                     </Button>
                     <DropdownMenu>
@@ -197,7 +197,7 @@ function SettingOperationPage() {
       </div>
       <Canvas />;
       <div className="mt-[50px] flex justify-end">
-        <Button variant="btn-primary" size="btn-md" className="w-[120px]" onClick={() => {}}>
+        <Button variant="btn-primary" size="btn-md" onClick={() => {}}>
           <RefreshCw className="mr-2 h-5 w-5" />
           Update
         </Button>

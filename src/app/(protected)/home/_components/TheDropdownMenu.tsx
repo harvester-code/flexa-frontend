@@ -29,7 +29,7 @@ export default function TheDropdownMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className={cn('h-10 justify-between rounded-full', className)}>
+        <Button variant="outline">
           {iconDirection === 'left' && icon}
           <span>{label}</span>
           {iconDirection === 'right' && icon}

@@ -632,7 +632,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                   >
                     Create Process
                   </Button>
-                  <Button variant="outline" onClick={cancelEdit} className="flex-1">
+                  <Button variant="outline" onClick={cancelEdit}>
                     Cancel
                   </Button>
                 </div>
@@ -699,7 +699,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                   >
                     Update Process
                   </Button>
-                  <Button variant="outline" onClick={cancelEdit} className="flex-1">
+                  <Button variant="outline" onClick={cancelEdit}>
                     Cancel
                   </Button>
                 </div>

@@ -246,7 +246,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                 <div className="flex items-center gap-2.5">
                   <Popover modal>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="min-w-[180px] justify-start shadow-none">
+                      <Button variant="outline">
                         <Calendar className="mr-2 h-4 w-4" />
                         Target Date {selectedDate && `(${dayjs(selectedDate).format('MMM-DD-YYYY')})`}
                       </Button>

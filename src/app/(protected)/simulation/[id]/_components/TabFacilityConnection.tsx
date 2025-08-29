@@ -462,7 +462,7 @@ export default function TabFacilityConnection({ simulationId, visible }: TabFaci
           <div className="text-sm text-default-500">
             {orderedProcesses.length} process{orderedProcesses.length > 1 ? 'es' : ''} configured
           </div>
-          <Button onClick={saveToStore} disabled={!isAllComplete} className="bg-primary hover:bg-primary/90">
+          <Button onClick={saveToStore} disabled={!isAllComplete}>
             {isCompleted ? (
               <>
                 <CheckSquare className="mr-2 h-4 w-4" />

@@ -136,10 +136,10 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
         </div>
 
         <div className="popup-btn-wrap mt-2 flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button className="flex-1" onClick={handleSubmit}>
+          <Button onClick={handleSubmit}>
             Create
           </Button>
         </div>
