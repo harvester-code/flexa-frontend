@@ -1,11 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Check, ChevronDown, Lock, MoreHorizontal, PersonStanding, Plus, X } from 'lucide-react';
+import { 
+  BarChart3, BookOpen, Briefcase, Bug, Calendar, Check, ChevronDown, Clipboard, Crown, 
+  FileText, Flame, Folder, Globe, Home, Lock, MoreHorizontal, PersonStanding, 
+  Pin, Plus, Sparkles, Star, Tag, Target, User, Users, UserCheck, X, Zap 
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
 import SimulationGridTableNew from './SimulationGridTableNew';
 import sampletable from './sampletable.png';
+
+// 아이콘 컴포넌트 매핑 함수
+const iconComponents = {
+  Users, Tag, Zap, BarChart3, Folder, Calendar, User, FileText, Bug, Sparkles,
+  Target, BookOpen, Flame, Pin, Clipboard, Home, Globe, UserCheck, Star,
+  Briefcase, Crown
+} as const;
+
+function renderIcon(iconName: string, className?: string) {
+  const IconComponent = iconComponents[iconName as keyof typeof iconComponents];
+  if (!IconComponent) return null;
+  return <IconComponent className={className || 'h-4 w-4'} />;
+}
 
 export interface FilterCondition {
   id: string;
@@ -51,37 +68,37 @@ export const filterFields: FilterField[] = [
   {
     id: 'assignee',
     label: 'Engineers',
-    icon: '👥',
+    icon: 'Users',
     defaultValues: ['mary_cassatt'],
   },
   {
     id: 'type',
     label: 'Type',
-    icon: '🏷️',
+    icon: 'Tag',
     defaultValues: ['task', 'bug'],
   },
   {
     id: 'priority',
     label: 'Priority',
-    icon: '⚡',
+    icon: 'Zap',
     defaultValues: ['p1', 'p2'],
   },
   {
     id: 'status',
     label: 'Status',
-    icon: '📊',
+    icon: 'BarChart3',
     defaultValues: ['not_started', 'in_progress'],
   },
   {
     id: 'project',
     label: 'Project',
-    icon: '📁',
+    icon: 'Folder',
     defaultValues: [],
   },
   {
     id: 'due_date',
     label: 'Due Date',
-    icon: '📅',
+    icon: 'Calendar',
     defaultValues: [],
   },
 ];
@@ -99,24 +116,24 @@ export const filterOperators: FilterOperator[] = [
 
 export const filterValues: Record<string, FilterValue[]> = {
   assignee: [
-    { id: 'mary_cassatt', label: 'Mary Cassatt', icon: '👤' },
-    { id: 'john_doe', label: 'John Doe', icon: '👤' },
-    { id: 'jane_smith', label: 'Jane Smith', icon: '👤' },
-    { id: 'bob_wilson', label: 'Bob Wilson', icon: '👤' },
-    { id: 'alice_brown', label: 'Alice Brown', icon: '👤' },
+    { id: 'mary_cassatt', label: 'Mary Cassatt', icon: 'User' },
+    { id: 'john_doe', label: 'John Doe', icon: 'User' },
+    { id: 'jane_smith', label: 'Jane Smith', icon: 'User' },
+    { id: 'bob_wilson', label: 'Bob Wilson', icon: 'User' },
+    { id: 'alice_brown', label: 'Alice Brown', icon: 'User' },
   ],
   type: [
-    { id: 'task', label: 'Task', color: '#FFC107', icon: '📝' },
-    { id: 'bug', label: 'Bug', color: '#F44336', icon: '🐛' },
-    { id: 'feature', label: 'Feature', color: '#4CAF50', icon: '✨' },
-    { id: 'epic', label: 'Epic', color: '#9C27B0', icon: '🎯' },
-    { id: 'story', label: 'Story', color: '#2196F3', icon: '📖' },
+    { id: 'task', label: 'Task', color: '#FFC107', icon: 'FileText' },
+    { id: 'bug', label: 'Bug', color: '#F44336', icon: 'Bug' },
+    { id: 'feature', label: 'Feature', color: '#4CAF50', icon: 'Sparkles' },
+    { id: 'epic', label: 'Epic', color: '#9C27B0', icon: 'Target' },
+    { id: 'story', label: 'Story', color: '#2196F3', icon: 'BookOpen' },
   ],
   priority: [
-    { id: 'p1', label: 'P1', color: '#F44336', icon: '🔥' },
-    { id: 'p2', label: 'P2', color: '#FF9800', icon: '⚡' },
-    { id: 'p3', label: 'P3', color: '#FFC107', icon: '📌' },
-    { id: 'p4', label: 'P4', color: '#4CAF50', icon: '📋' },
+    { id: 'p1', label: 'P1', color: '#F44336', icon: 'Flame' },
+    { id: 'p2', label: 'P2', color: '#FF9800', icon: 'Zap' },
+    { id: 'p3', label: 'P3', color: '#FFC107', icon: 'Pin' },
+    { id: 'p4', label: 'P4', color: '#4CAF50', icon: 'Clipboard' },
   ],
   status: [
     { id: 'not_started', label: 'Not Started', color: '#9E9E9E' },
@@ -181,7 +198,7 @@ export function DropdownSelect({
         aria-expanded={isOpen}
       >
         <div className="flex min-w-0 items-center gap-2">
-          {selectedOption?.icon && <span className="flex-shrink-0 text-sm">{selectedOption.icon}</span>}
+          {selectedOption?.icon && renderIcon(selectedOption.icon, 'h-4 w-4 flex-shrink-0')}
           <span className="truncate text-sm">{selectedOption?.label || placeholder}</span>
         </div>
         <ChevronDown
@@ -201,7 +218,7 @@ export function DropdownSelect({
                 setIsOpen(false);
               }}
             >
-              {option.icon && <span className="flex-shrink-0 text-sm">{option.icon}</span>}
+              {option.icon && renderIcon(option.icon, 'h-4 w-4 flex-shrink-0')}
               <span>{option.label}</span>
             </button>
           ))}
@@ -229,7 +246,7 @@ export function FilterValueChip({ value, selected, onClick, onRemove }: FilterVa
       }}
       onClick={onClick}
     >
-      {value.icon && <span className="text-xs">{value.icon}</span>}
+      {value.icon && renderIcon(value.icon, 'h-3 w-3')}
       <span>{value.label}</span>
       {onRemove && (
         <button
@@ -390,14 +407,14 @@ const groupOptions: GroupOption[] = [
     id: 'nationality_domestic',
     label: 'Domestic',
     description: 'Local/domestic passengers and crew',
-    icon: '🏠',
+    icon: 'Home',
     category: 'Nationality',
   },
   {
     id: 'nationality_international',
     label: 'International',
     description: 'International passengers and crew',
-    icon: '🌍',
+    icon: 'Globe',
     category: 'Nationality',
   },
 
@@ -406,28 +423,28 @@ const groupOptions: GroupOption[] = [
     id: 'profile_cabin_crew',
     label: 'Cabin Crew',
     description: 'Flight attendants and cabin staff',
-    icon: '👩‍✈️',
+    icon: 'UserCheck',
     category: 'Profiles',
   },
   {
     id: 'profile_pilots',
     label: 'Pilots',
     description: 'Captains and first officers',
-    icon: '👨‍✈️',
+    icon: 'UserCheck',
     category: 'Profiles',
   },
   {
     id: 'profile_ground_crew',
     label: 'Ground Crew',
     description: 'Ground handling and maintenance staff',
-    icon: '👷',
+    icon: 'UserCheck',
     category: 'Profiles',
   },
   {
     id: 'profile_passengers',
     label: 'Passengers',
     description: 'Regular passengers',
-    icon: '👤',
+    icon: 'User',
     category: 'Profiles',
   },
 
@@ -443,7 +460,7 @@ const groupOptions: GroupOption[] = [
     id: 'special_vip',
     label: 'VIP',
     description: 'VIP passengers and special guests',
-    icon: '⭐',
+    icon: 'Star',
     category: 'Special Requirements',
   },
   {
@@ -473,14 +490,14 @@ const groupOptions: GroupOption[] = [
     id: 'class_business',
     label: 'Business',
     description: 'Business class passengers',
-    icon: '💼',
+    icon: 'Briefcase',
     category: 'Service Classes',
   },
   {
     id: 'class_first',
     label: 'First Class',
     description: 'First class passengers',
-    icon: '👑',
+    icon: 'Crown',
     category: 'Service Classes',
   },
 ];
@@ -595,7 +612,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
               )}
               {hasNationalitySelected && (
                 <div className="flex items-center gap-2 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
-                  <span>🌍</span>
+                  <Globe className="h-4 w-4" />
                   <span>Nationality selected - only nationality options available</span>
                 </div>
               )}
@@ -637,7 +654,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
                   key={option.id}
                   className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
                 >
-                  <span>{option.icon}</span>
+                  {option.icon && renderIcon(option.icon, 'h-3 w-3')}
                   <span>{option.label}</span>
                   <button
                     type="button"
@@ -707,7 +724,7 @@ export function AddGroupModal({ isOpen, onClose, onCreateGroup, existingGroups }
                           onClick={() => !isDisabled && toggleOption(option)}
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 text-lg font-semibold">{option.icon}</div>
+                            <div className="flex-shrink-0">{option.icon && renderIcon(option.icon, 'h-5 w-5')}</div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <h4

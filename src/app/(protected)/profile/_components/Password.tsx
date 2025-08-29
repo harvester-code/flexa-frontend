@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ToastAction } from '@/components/ui/Toast';
@@ -331,13 +330,13 @@ export default function Password() {
         {loginHistory.map((history) => (
           <div key={history.id} className="form-item pl-20">
             <div className="flex items-center gap-20">
-              <Image width={30} height={30} src="/image/ico-desktop.svg" alt="desktop" />
+              <Monitor className="h-7 w-7 text-gray-500" />
               <dl className="flex flex-col gap-2">
                 <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
                   {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
                   {history.session_id === currentSession && (
                     <span className="current-device">
-                      <Image width={16} height={16} src="/image/ico-dot-green.svg" alt="" />
+                      <Circle className="h-4 w-4 fill-green-500 text-green-500" />
                       <span>현재 기기</span>
                     </span>
                   )}

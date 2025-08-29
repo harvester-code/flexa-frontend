@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { ChevronDown, EllipsisVertical, PencilLineIcon, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, EllipsisVertical, Minus, PencilLineIcon, Plus, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 
@@ -57,7 +56,7 @@ function SettingOperationPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="pr-[20px]">
                   <DropdownMenuItem onClick={() => {}}>
-                    <Image width={20} height={20} src="/image/ico-restore.svg" alt="" />
+                    <RotateCcw className="mr-2 h-5 w-5" />
                     Restore
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {}}>
@@ -89,7 +88,7 @@ function SettingOperationPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="pr-[20px]">
                 <DropdownMenuItem onClick={() => {}}>
-                  <Image width={20} height={20} src="/image/ico-restore.svg" alt="" />
+                  <RotateCcw className="mr-2 h-5 w-5" />
                   Restore
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {}}>
@@ -116,7 +115,7 @@ function SettingOperationPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="pr-[20px]">
                         <DropdownMenuItem onClick={() => {}}>
-                          <Image width={20} height={20} src="/image/ico-restore.svg" alt="" />
+                          <RotateCcw className="mr-2 h-5 w-5" />
                           Restore
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {}}>
@@ -154,7 +153,7 @@ function SettingOperationPage() {
                     );
                   }}
                 >
-                  <Image width={30} height={30} src="/image/ico-num-minus.svg" alt="-" />
+                  <Minus className="h-7 w-7" />
                 </button>
                 <span>{numOfFacilitiesInProcess[terminalIndex][processIndex]}</span>
                 <button
@@ -174,7 +173,7 @@ function SettingOperationPage() {
                     );
                   }}
                 >
-                  <Image width={30} height={30} src="/image/ico-num-plus.svg" alt="+" />
+                  <Plus className="h-7 w-7" />
                 </button>
               </div>
             </div>
@@ -199,7 +198,7 @@ function SettingOperationPage() {
       <Canvas />;
       <div className="mt-[50px] flex justify-end">
         <Button variant="btn-primary" size="btn-md" className="w-[120px]" onClick={() => {}}>
-          <Image width={20} height={20} src="/image/ico-re.svg" alt="" />
+          <RefreshCw className="mr-2 h-5 w-5" />
           Update
         </Button>
       </div>

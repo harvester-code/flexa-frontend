@@ -422,7 +422,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       await runSimulation(simulationId, sanitizedProcessFlow);
 
       toast({
-        title: '🚀 Simulation Started',
+        title: 'Simulation Started',
         description: 'Your simulation is now running. You can check the results in the Home tab.',
       });
     } catch (error: any) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { PlusCircle } from 'lucide-react';
 import { popModal, pushModal } from '@/app/provider';
 import { createScenario } from '@/services/simulationService';
 import { useUser } from '@/queries/userQueries';
@@ -109,7 +109,7 @@ const PopupComponent: React.FC<PopupProps> = ({ onCreate, onClose }) => {
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
       <DialogContent className="w-full max-w-lg pt-8">
         <DialogTitle className="mb-4 flex items-center gap-3">
-          <Image width={20} height={20} src="/image/popup/description.svg" alt="icon" className="size-5" />
+          <PlusCircle className="h-5 w-5 text-primary" />
           <span className="!mb-0 !min-h-0">Create New Scenario</span>
         </DialogTitle>
 

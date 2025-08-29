@@ -44,7 +44,7 @@ export default function TabPassengerScheduleGroupConfiguration({
   const [editingConfiguredGroup, setEditingConfiguredGroup] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 🚀 새로운 모듈화된 PassengerSchedule 스토어에서 액션 가져오기
+  // 새로운 모듈화된 PassengerSchedule 스토어에서 액션 가져오기
   const { setApiResponseData, setCompleted: setIsCompleted } = usePassengerScheduleStore();
 
   // Convert minutes to hours:minutes format
@@ -54,7 +54,7 @@ export default function TabPassengerScheduleGroupConfiguration({
     return `${hours}h ${mins}m`;
   };
 
-  // 🚀 새로운 스토어들에서 데이터 가져오기
+  // 새로운 스토어들에서 데이터 가져오기
   const { date: flightScheduleDate, airport: flightScheduleAirport } = useFlightScheduleStore();
   const { pax_arrival_patterns: paxArrivalPatterns } = usePassengerScheduleStore();
 

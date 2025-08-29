@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Mail } from 'lucide-react';
+import { AlertCircle, Mail, Shield } from 'lucide-react';
 import { forgotPasswordAction } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
           }}
         >
           <div className="mb-8 flex items-center justify-center">
-            <img src="/image/img-logo.svg" alt="Flexa Logo" className="h-12" />
+            <Shield className="h-12 w-12 text-primary" />
           </div>
 
           <div>

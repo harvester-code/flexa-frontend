@@ -1,11 +1,9 @@
 'use client';
 
 import { Suspense } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ArrowLeft, Shield } from 'lucide-react';
 import { forgotPasswordAction } from '@/actions/auth';
 import { Button } from '@/components/ui/Button';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -17,7 +15,7 @@ function ForgotPasswordSuccessContent() {
   return (
     <div className="signUpContainer">
       <h1>
-        <Image src="/image/img-logo.svg" alt="logo" width={100} height={100} />
+        <Shield className="mx-auto h-24 w-24 text-primary" />
       </h1>
       <h2 className="title mt-60">Email Sent</h2>
       <p className="mt-10 font-medium">A password reset link has been sent to</p>
@@ -31,7 +29,7 @@ function ForgotPasswordSuccessContent() {
       </form>
       <Button asChild variant="link" className="mt-10">
         <Link href="/login">
-          <FontAwesomeIcon className="nav-icon" icon={faArrowLeft} />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Login
         </Link>
       </Button>

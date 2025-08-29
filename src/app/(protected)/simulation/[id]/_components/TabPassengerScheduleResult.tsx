@@ -16,7 +16,7 @@ interface TabPassengerScheduleResultProps {
 }
 
 export default function TabPassengerScheduleResult({ data: propData }: TabPassengerScheduleResultProps) {
-  // 🚀 새로운 모듈화된 PassengerSchedule 스토어에서 API 응답 데이터 가져오기
+  // 새로운 모듈화된 PassengerSchedule 스토어에서 API 응답 데이터 가져오기
   const { apiResponseData } = usePassengerScheduleStore();
 
   // props로 받은 데이터가 있으면 그것을 우선 사용, 없으면 zustand store에서 가져온 데이터 사용

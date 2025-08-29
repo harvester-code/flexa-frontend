@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { AlertCircle, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 const ErrorPage: React.FC = () => {
@@ -12,7 +11,7 @@ const ErrorPage: React.FC = () => {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center bg-muted text-center">
       <div>
-        <Image src="/image/ico-oops.svg" width={100} height={86} alt="oops-image" />
+        <AlertCircle className="mx-auto h-20 w-20 text-red-500" />
         <p className="mt-2 text-lg font-semibold text-muted-foreground">OOPS...</p>
       </div>
 

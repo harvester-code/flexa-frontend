@@ -92,27 +92,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
     }
   }, []);
 
-  // 1. SVG viewBox/width/height 파싱 함수 추가
-  async function fetchSvgNaturalSize(url: string): Promise<{ width: number; height: number } | null> {
-    try {
-      const res = await fetch(url);
-      const svgText = await res.text();
-      const viewBoxMatch = svgText.match(/viewBox=["']([^"']+)["']/);
-      if (viewBoxMatch) {
-        const [, viewBox] = viewBoxMatch;
-        const [, , w, h] = viewBox.split(' ');
-        return { width: parseFloat(w), height: parseFloat(h) };
-      }
-      const widthMatch = svgText.match(/width=["']([^"']+)["']/);
-      const heightMatch = svgText.match(/height=["']([^"']+)["']/);
-      if (widthMatch && heightMatch) {
-        return { width: parseFloat(widthMatch[1]), height: parseFloat(heightMatch[1]) };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
+
 
   // 이미지 크기 측정 로직 (파일 업로드 또는 URL)
   useEffect(() => {
@@ -126,15 +106,8 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       img.src = imageUrl;
       return;
     }
-    // 2. imageFile이 없고 imageUrl이 SVG일 때 viewBox/width/height 파싱 (View에서 사용)
-    if (imageUrl && !imageFile && imageUrl.toLowerCase().endsWith('.svg') && !imageNaturalSize) {
-      fetchSvgNaturalSize(imageUrl).then((size) => {
-        if (size) setImageNaturalSize(size);
-      });
-      return; // 반드시 return해서 아래 코드 실행 방지
-    }
-    // 3. 그 외에는 기존 방식 (이미지 naturalWidth/naturalHeight)
-    if (imageUrl && !imageFile && !imageUrl.toLowerCase().endsWith('.svg') && !imageNaturalSize) {
+    // 2. 그 외에는 기존 방식 (이미지 naturalWidth/naturalHeight)
+    if (imageUrl && !imageFile && !imageNaturalSize) {
       const img = new Image();
       img.onload = () => {
         setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { Bug, ChevronRight, Download, FileText, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
   useFacilityConnectionStore,
@@ -32,7 +33,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
     processes: true, // processes 키 (기본 접힘)
   });
 
-  // 🚀 개별 모듈화된 스토어에서 모든 탭 데이터 수집
+  // 개별 모듈화된 스토어에서 모든 탭 데이터 수집
 
   const flightSchedule = {
     airport: useFlightScheduleStore((s) => s.airport),
@@ -172,7 +173,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
           onClick={() => toggleCollapse(collapsedKey)}
           className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
-          <span className={`transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>▶</span>
+          <ChevronRight className={`h-4 w-4 transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} />
           {title}
         </Button>
 
@@ -223,7 +224,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
           onClick={() => toggleCollapse(collapsedKey)}
           className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
-          <span className={`transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>▶</span>
+          <ChevronRight className={`h-4 w-4 transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} />
           {title} ({Array.isArray(data) ? data.length : Object.keys(data || {}).length} items)
           {(title === 'components' || title === 'Complete JSON Structure') && (
             <span className="text-xs text-default-500">(facility_schedules compressed)</span>
@@ -243,7 +244,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
   return (
     <div className="mt-8 border-t pt-6">
-      <h3 className="mb-4 text-lg font-semibold text-default-900">🐛 Real-time JSON Debug Viewer</h3>
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-default-900">
+        <Bug className="h-5 w-5" />
+        Real-time JSON Debug Viewer
+      </h3>
 
       <div className="rounded-lg border bg-white p-4">
         {/* 탭 순서대로 정렬 */}
@@ -255,10 +259,9 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
               className="mb-2 flex w-full items-center gap-2 rounded bg-red-50 p-2 text-left font-medium text-default-900 hover:bg-red-100"
               onClick={() => setCollapsed((prev) => ({ ...prev, apiRequestLog: !prev.apiRequestLog }))}
             >
-              <span className={`transform transition-transform ${collapsed.apiRequestLog ? 'rotate-0' : 'rotate-90'}`}>
-                ▶
-              </span>
-              🚀 Last API Request ({apiRequestLog.status === 'loading' ? 'Loading...' : apiRequestLog.status})
+              <ChevronRight className={`h-4 w-4 transform transition-transform ${collapsed.apiRequestLog ? 'rotate-0' : 'rotate-90'}`} />
+              <Rocket className="h-4 w-4" />
+              Last API Request ({apiRequestLog.status === 'loading' ? 'Loading...' : apiRequestLog.status})
               <span className="ml-auto text-xs text-default-500">
                 {new Date(apiRequestLog.timestamp).toLocaleTimeString()}
               </span>
@@ -267,7 +270,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
             {!collapsed.apiRequestLog && (
               <div className="space-y-3 rounded border bg-red-50 p-3">
                 <div>
-                  <div className="mb-1 text-xs font-medium text-default-500">📤 Request:</div>
+                  <div className="mb-1 flex items-center gap-2 text-xs font-medium text-default-500">
+                    <Send className="h-3 w-3" />
+                    Request:
+                  </div>
                   <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                     {JSON.stringify(apiRequestLog.request, null, 2)}
                   </pre>
@@ -275,7 +281,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
                 {apiRequestLog.status === 'success' && (
                   <div>
-                    <div className="mb-1 text-xs font-medium text-default-500">📥 Response:</div>
+                    <div className="mb-1 flex items-center gap-2 text-xs font-medium text-default-500">
+                      <Download className="h-3 w-3" />
+                      Response:
+                    </div>
                     <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                       {JSON.stringify(apiRequestLog.response, null, 2)}
                     </pre>
@@ -284,7 +293,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
                 {apiRequestLog.status === 'error' && (
                   <div>
-                    <div className="mb-1 text-xs font-medium text-red-600">❌ Error:</div>
+                    <div className="mb-1 flex items-center gap-2 text-xs font-medium text-red-600">
+                      <X className="h-3 w-3" />
+                      Error:
+                    </div>
                     <pre className="max-h-20 overflow-auto rounded border bg-red-100 p-2 text-xs text-red-700">
                       {apiRequestLog.error}
                     </pre>
@@ -311,7 +323,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
         {/* S3 저장 구조 메타데이터 표시 */}
         <div className="mt-8 border-t pt-6">
-          <h4 className="mb-3 text-sm font-semibold text-default-900">🗂️ Scenario Metadata (S3 저장 구조)</h4>
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-default-900">
+            <Folder className="h-4 w-4" />
+            Scenario Metadata (S3 저장 구조)
+          </h4>
           <pre className="max-h-96 overflow-auto rounded border bg-blue-50 p-2 text-xs">
             {JSON.stringify(scenarioMetadata, null, 2)}
           </pre>
@@ -319,7 +334,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
         {/* 최종 생성 결과 - 위치 이동 */}
         <div className="mt-6 border-t border-gray-300 pt-4">
-          <h4 className="mb-3 text-sm font-semibold text-default-900">📄 Final JSON Structure (S3 Ready)</h4>
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-default-900">
+            <FileText className="h-4 w-4" />
+            Final JSON Structure (S3 Ready)
+          </h4>
 
           {/* 최종 JSON 전체 구조 */}
           <pre className="max-h-96 overflow-auto rounded border bg-gray-50 p-2 text-xs">

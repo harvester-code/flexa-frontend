@@ -408,8 +408,7 @@ input[type='checkbox'] {
 
 .input-mail {
   @apply pl-10 !important;
-  background: white url('/image/ico-mail.svg') no-repeat 14px center;
-  background-size: 20px 20px;
+  background: white;
 }
 /* ================================================================
    7️⃣ FORM COMPONENTS (복잡한 중첩 구조)
@@ -424,12 +423,12 @@ input[type='checkbox'] {
   display: flex;
   @apply w-5;
   @apply h-5;
-  background: url('/image/ico-checkbox.svg') no-repeat center center;
-  background-size: 20px 20px;
+  @apply border border-input bg-white rounded-sm;
 }
 .checkbox input[type='checkbox']:checked + label:before {
-  background: url('/image/ico-checkbox-on.svg') no-repeat center center;
-  background-size: 20px 20px;
+  @apply bg-primary border-primary;
+  content: '✓';
+  @apply text-white flex items-center justify-center text-xs;
 }
 
 .checkbox-toggle input[type='checkbox'] + label {
@@ -439,14 +438,17 @@ input[type='checkbox'] {
 .checkbox-toggle input[type='checkbox'] + label:before {
   content: '';
   display: flex;
-  @apply w-9;
-  @apply h-5;
-  background: url('/image/ico-checkbox-toggle.svg') no-repeat center center;
-  background-size: 36px 20px;
+  @apply w-9 h-5 bg-gray-300 rounded-full relative transition-all;
+}
+.checkbox-toggle input[type='checkbox'] + label:after {
+  content: '';
+  @apply absolute w-4 h-4 bg-white rounded-full top-0.5 left-0.5 transition-all;
 }
 .checkbox-toggle input[type='checkbox']:checked + label:before {
-  background: url('/image/ico-checkbox-toggle-on.svg') no-repeat center center;
-  background-size: 36px 20px;
+  @apply bg-primary;
+}
+.checkbox-toggle input[type='checkbox']:checked + label:after {
+  @apply left-4;
 }
 
 textarea {
@@ -482,7 +484,7 @@ textarea {
         top: 20px;
         width: 194px;
         @apply h-2;
-        background: url('/image/bg-bar.svg') no-repeat center center;
+        @apply bg-gray-300 rounded-full;
       }
     }
     li:last-child {
@@ -497,7 +499,7 @@ textarea {
       }
     }
     .bar-on:after {
-      background: url('/image/bg-bar-on.svg') no-repeat center center;
+      @apply bg-primary;
     }
   }
 }
@@ -980,11 +982,8 @@ textarea {
   span {
     @apply inline-flex items-center gap-4 text-default-900;
     &::after {
-      content: '';
-      @apply w-4;
-      @apply h-4;
-      background: url('/image/ico-arrow-right.svg') no-repeat center center;
-      @apply text-default-500 opacity-60;
+      content: '→';
+      @apply w-4 h-4 flex items-center justify-center text-default-500 opacity-60 text-sm;
     }
     &:last-child {
       @apply mr-0;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { CheckSquare, Clock, Plus, Save, Trash2, Users } from 'lucide-react';
+import { AlertTriangle, CheckSquare, Circle, Clock, Plus, Save, Trash2, Users } from 'lucide-react';
 import { PassengerCondition, ProcessStep, TimeBlock } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -235,7 +235,10 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         </CardTitle>
         {!allSchedulesConfigured && facilitiesWithoutSchedule.length > 0 && (
           <div className="mt-3 rounded-lg border bg-muted/30 p-3">
-            <div className="mb-2 text-sm font-medium">⚠️ Facilities requiring schedule setup:</div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Facilities requiring schedule setup:
+            </div>
             <div className="space-y-1 text-xs text-muted-foreground">
               {facilitiesWithoutSchedule.slice(0, 5).map((facility, index) => (
                 <div key={index}>{facility}</div>
@@ -460,7 +463,13 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                                       : 'Inactive'
                                   }
                                 >
-                                  {slot.active ? '●' : '○'}
+                                  <Circle 
+                                    className={`h-3 w-3 ${
+                                      slot.active 
+                                        ? 'fill-current text-green-500' 
+                                        : 'text-gray-300'
+                                    }`} 
+                                  />
                                 </div>
                               </td>
                             ))}

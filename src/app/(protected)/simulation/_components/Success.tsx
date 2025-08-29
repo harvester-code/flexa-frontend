@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import { CheckCircle2 } from 'lucide-react';
 import { popModal, pushModal } from '@/app/provider';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
@@ -36,7 +36,7 @@ const SuccessComponent: React.FC<SuccessProps> = ({ title, message, buttonText =
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
       <DialogContent className="w-full max-w-md pt-8" aria-describedby={undefined}>
         <div className="mb-4 flex items-center gap-3">
-          <Image width={24} height={24} src="/image/ico-complete.svg" alt="success" className="size-6 text-green-500" />
+          <CheckCircle2 className="h-6 w-6 text-green-500" />
           <DialogTitle className="!mb-0 !min-h-0">{title}</DialogTitle>
         </div>
 

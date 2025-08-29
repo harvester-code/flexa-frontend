@@ -56,7 +56,7 @@ export default function LoginPage() {
         }}
       >
         <div>
-          <h2 className="mb-2 text-lg font-semibold text-primary-900" style={{ lineHeight: '100%' }}>
+          <h2 className="mb-2 text-2xl font-bold text-primary" style={{ lineHeight: '100%' }}>
             Log in
           </h2>
 
@@ -145,26 +145,26 @@ export default function LoginPage() {
             <div className="flex justify-between text-sm">
               <div className="flex items-center gap-1">
                 <Checkbox className="size-4" id="rememberMe" name="rememberMe" defaultChecked={!!savedEmail} />
-                <Label htmlFor="rememberMe" className="cursor-pointer text-primary-900">
+                <Label htmlFor="rememberMe" className="cursor-pointer font-bold text-primary">
                   Save Account
                 </Label>
               </div>
 
               <Link
                 href="/auth/forgot-password"
-                className="font-semibold text-primary-900 underline underline-offset-2"
+                className="font-semibold text-primary underline underline-offset-2"
               >
                 Forgot Password?
               </Link>
             </div>
 
-            <SubmitButton className="mt-10 w-full" variant="primary" pendingText="Signing in...">
+            <SubmitButton className="mt-10 w-full font-bold" variant="primary" pendingText="Signing in...">
               Sign In
             </SubmitButton>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-primary-900">
+            <p className="text-sm font-medium text-primary">
               Don't have an account?{' '}
               <Link
                 href="/auth/register"

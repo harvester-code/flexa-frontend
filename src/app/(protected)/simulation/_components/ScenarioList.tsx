@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Search } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { modifyScenario } from '@/services/simulationService';
 import { PopupAlert } from '@/components/PopupAlert';
 import { Button } from '@/components/ui/Button';
@@ -281,13 +281,13 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         <div className="flex items-center gap-2.5">
           {selRowCount > 0 && (
             <Button variant="destructive" onClick={onDeleteMulti}>
-              <Image width={16} height={16} src="/image/ico-delect-red.svg" alt="" className="brightness-0 invert" />
+              <Trash2 className="mr-2 h-4 w-4" />
               Delete ({selRowCount})
             </Button>
           )}
 
           <Button onClick={onCreateScenario}>
-            <Image width={20} height={20} src="/image/ico-plus.svg" alt="" />
+            <Plus className="mr-1.5 h-4 w-4" />
             New Scenario
           </Button>
         </div>
