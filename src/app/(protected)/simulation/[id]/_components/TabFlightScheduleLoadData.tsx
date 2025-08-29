@@ -130,7 +130,7 @@ function TabFlightScheduleLoadData({
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-screen max-w-sm p-0 sm:max-w-md lg:max-w-lg" align="start">
+              <PopoverContent>
                 <Command>
                   <CommandInput
                     placeholder="Search airport..."
@@ -174,7 +174,7 @@ function TabFlightScheduleLoadData({
                   {dayjs(date).format('MMM DD, YYYY')}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent>
                 <Calendar
                   mode="single"
                   selected={dayjs(date).toDate()}
@@ -210,7 +210,7 @@ function TabFlightScheduleLoadData({
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent>
                 <Command>
                   <CommandList>
                     <CommandEmpty>No flight type found.</CommandEmpty>

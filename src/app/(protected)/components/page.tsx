@@ -71,7 +71,7 @@ export default function ComponentsPage() {
           {selectedDate ? dayjs(selectedDate).format('MMM DD, YYYY') : 'Pick a date'}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent>
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -103,7 +103,7 @@ export default function ComponentsPage() {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent>
         <Command>
           <CommandInput placeholder="Search framework..." />
           <CommandList>
@@ -146,7 +146,7 @@ export default function ComponentsPage() {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent>
         <Command>
           <CommandInput placeholder="Search language..." />
           <CommandList>
@@ -189,7 +189,7 @@ export default function ComponentsPage() {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[240px] p-0" align="start">
+      <PopoverContent>
         <Command>
           <CommandInput placeholder="Search country..." />
           <CommandList>
@@ -231,7 +231,7 @@ export default function ComponentsPage() {
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent>
         <Command>
           <CommandInput placeholder="Search city..." />
           <CommandList>

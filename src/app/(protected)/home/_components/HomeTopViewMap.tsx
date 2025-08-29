@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { Slider } from '@/components/ui/Slider';
@@ -359,16 +359,13 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
           <Popover open={showDotSizePopover} onOpenChange={setShowDotSizePopover}>
             <PopoverTrigger asChild>
               <Button type="button" variant="outline" size="icon" title="Dot Size Setting">
-                <span role="img" aria-label="settings">
-                  ⚙️
-                </span>
+                <Settings className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" side="top" className="relative w-72">
+            <PopoverContent align="end" side="top">
               <Button
                 variant="btn-link"
                 type="button"
-                className="absolute right-2 top-2 rounded p-1 hover:bg-gray-100 focus:outline-none"
                 onClick={() => setShowDotSizePopover(false)}
                 aria-label="Close"
               >
