@@ -71,7 +71,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     // 모든 프로세스의 travel_time_minutes가 설정되고, 모든 시설이 operating_schedule을 가져야 함
     return processFlow.every((process) => {
       // travel_time_minutes 체크 (0 이상이어야 함)
-      const hasTravelTime = process.travel_time_minutes >= 0;
+      const hasTravelTime = (process.travel_time_minutes ?? 0) >= 0;
 
       // operating_schedule 체크
       const hasOperatingSchedule = Object.values(process.zones).every(
@@ -91,10 +91,10 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     });
   }, [processFlow]);
 
-  // Facility가 설정된 프로세스가 있는지 체크
-  const hasFacilitiesConfigured = useMemo(() => {
+  // Zones가 설정된 프로세스가 있는지 체크 (zustand 기준)
+  const hasZonesConfigured = useMemo(() => {
     return processFlow.some((process) =>
-      Object.values(process.zones).some((zone: any) => zone.facilities && zone.facilities.length > 0)
+      process.zones && Object.keys(process.zones).length > 0
     );
   }, [processFlow]);
 
@@ -343,7 +343,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const handleRunSimulation = async () => {
     if (!canComplete) {
       // 구체적인 미완료 사항 확인
-      const missingTravelTimes = processFlow.some((p) => p.travel_time_minutes < 0);
+      const missingTravelTimes = processFlow.some((p) => (p.travel_time_minutes ?? 0) < 0);
       const missingSchedules = !processFlow.every((process) =>
         Object.values(process.zones).every(
           (zone: any) =>
@@ -435,13 +435,13 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
             {/* Horizontal Flow Container */}
             <div className="flex items-center gap-3 overflow-x-auto pb-4">
               {/* Entry (Fixed) */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm">
-                  <Users className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-gray-900">Entry</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm flex-shrink-0">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-gray-900">Entry</span>
               </div>
+
+              {/* Entry 뒤 화살표 */}
+              <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
 
               {/* Process Cards */}
               {processFlow.map((step, index) => {
@@ -451,103 +451,109 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                 );
 
                 return (
-                  <div key={index} className="flex items-center gap-2">
-                    <div
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, index)}
-                      className={`group relative rounded-lg border cursor-pointer shadow-sm transition-all duration-300 ease-in-out min-w-fit ${
-                        isSelected 
-                          ? 'bg-primary/15 border-primary/40 shadow-lg ring-2 ring-primary/20' 
-                          : 'bg-primary/5 border-primary/10'
-                      } ${
-                        draggedIndex === index ? 'opacity-50' : ''
-                      } ${
-                        dragOverIndex === index && draggedIndex !== index ? 'border-primary/40 bg-primary/15' : ''
-                      } ${
-                        draggedIndex === null && !isSelected ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''
-                      }`}
-                      onClick={() => handleProcessSelect(index)}
-                    >
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        {/* Drag Handle - 컴팩트하게 */}
-                        <div
-                          className="cursor-move text-primary hover:text-primary/80"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, index)}
-                          onDragEnd={handleDragEnd}
-                          onClick={(e) => e.stopPropagation()}
-                          title="Drag to reorder"
-                        >
-                          <ArrowLeftRight className="h-3 w-3" />
-                        </div>
-
-                        {/* Process Info - 콤팩트하게 */}
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                            {formatProcessName(step.name)}
-                          </h3>
-                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                            isConfigured ? 'bg-green-500' : 'bg-yellow-500'
-                          }`} />
-                        </div>
-
-                        {/* Action Buttons - 더 작게 */}
-                        <div className="flex items-center gap-1 ml-auto">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-5 w-5 p-0 text-primary hover:bg-primary/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenEditModal(index);
-                            }}
-                            title="Edit this process"
-                          >
-                            <Settings2 className="h-2.5 w-2.5" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeProcedure(index);
-                            }}
-                            title="Remove this process"
-                          >
-                            <Trash2 className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Travel Time Badge + Arrow */}
-                    <div className="flex flex-col items-center">
-                      {step.travel_time_minutes > 0 && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full mb-1 whitespace-nowrap">
+                  <React.Fragment key={index}>
+                    {/* Process Card with Travel Time Above */}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      {/* Travel Time Badge Above */}
+                      {(step.travel_time_minutes ?? 0) > 0 && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
                           {step.travel_time_minutes}min
                         </span>
                       )}
-                      <ChevronRight className="h-5 w-5 text-primary" />
+
+                      {/* Process Card */}
+                      <div
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, index)}
+                        className={`group relative rounded-lg border cursor-pointer shadow-sm transition-all duration-300 ease-in-out min-w-fit ${
+                          isSelected 
+                            ? 'bg-primary/15 border-primary/40 shadow-lg ring-2 ring-primary/20' 
+                            : 'bg-primary/5 border-primary/10'
+                        } ${
+                          draggedIndex === index ? 'opacity-50' : ''
+                        } ${
+                          dragOverIndex === index && draggedIndex !== index ? 'border-primary/40 bg-primary/15' : ''
+                        } ${
+                          draggedIndex === null && !isSelected ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''
+                        }`}
+                        onClick={() => handleProcessSelect(index)}
+                      >
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          {/* Drag Handle */}
+                          <div
+                            className="cursor-move text-primary hover:text-primary/80"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Drag to reorder"
+                          >
+                            <ArrowLeftRight className="h-3 w-3" />
+                          </div>
+
+                          {/* Process Info */}
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                              {formatProcessName(step.name)}
+                            </h3>
+                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                              isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                            }`} />
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1 ml-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-5 w-5 p-0 text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditModal(index);
+                              }}
+                              title="Edit this process"
+                            >
+                              <Settings2 className="h-2.5 w-2.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeProcedure(index);
+                              }}
+                              title="Remove this process"
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Process 뒤 화살표 */}
+                    <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
+                  </React.Fragment>
                 );
               })}
 
               {/* Add Process Button */}
               <Button
                 variant="outline"
-                className="flex items-center gap-1 border-2 border-dashed border-primary/30 px-3 py-2 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5 text-sm"
+                className="flex items-center gap-1 border-2 border-dashed border-primary/30 px-3 py-2 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5 text-sm flex-shrink-0"
                 onClick={handleOpenCreateModal}
               >
                 <Plus className="h-3 w-3" />
                 Add Process
               </Button>
 
-              <ChevronRight className="h-5 w-5 text-primary" />
+              {/* Add Process Button 뒤 화살표 */}
+              <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
 
               {/* Gate (Fixed) */}
-              <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm flex-shrink-0">
                 <Plane className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-gray-900">Gate</span>
               </div>
@@ -668,8 +674,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         mode={modalMode}
       />
 
-      {/* Operating Schedule Editor - Facility가 설정되면 자동 표시 */}
-      {hasFacilitiesConfigured && <OperatingScheduleEditor processFlow={processFlow} />}
+      {/* Operating Schedule Editor - Zones가 설정되면 자동 표시 (zustand 기준) */}
+      {hasZonesConfigured && <OperatingScheduleEditor processFlow={processFlow} />}
 
       {/* Navigation */}
       <div className="mt-8">
@@ -727,23 +733,23 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               Process Flow Configured ({processFlow.length} processes)
             </div>
             <div
-              className={`flex items-center gap-2 ${hasFacilitiesConfigured ? 'text-foreground' : 'text-muted-foreground'}`}
+              className={`flex items-center gap-2 ${hasZonesConfigured ? 'text-foreground' : 'text-muted-foreground'}`}
             >
-              {hasFacilitiesConfigured ? (
+              {hasZonesConfigured ? (
                 <CheckSquare className="h-3 w-3" />
               ) : (
                 <div className="h-3 w-3 rounded border" />
               )}
-              Facilities Configured
+              Zones Configured
             </div>
             <div
               className={`flex items-center gap-2 ${
-                processFlow.every((p) => p.travel_time_minutes >= 0) && processFlow.length > 0
+                processFlow.every((p) => (p.travel_time_minutes ?? 0) >= 0) && processFlow.length > 0
                   ? 'text-foreground'
                   : 'text-muted-foreground'
               }`}
             >
-              {processFlow.every((p) => p.travel_time_minutes >= 0) && processFlow.length > 0 ? (
+              {processFlow.every((p) => (p.travel_time_minutes ?? 0) >= 0) && processFlow.length > 0 ? (
                 <CheckSquare className="h-3 w-3" />
               ) : (
                 <div className="h-3 w-3 rounded border" />
