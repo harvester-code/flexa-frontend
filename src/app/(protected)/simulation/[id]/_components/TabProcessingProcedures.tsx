@@ -13,6 +13,7 @@ import { useProcessingProceduresStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 import OperatingScheduleEditor from './OperatingScheduleEditor';
+import ProcessConfigurationModal from './ProcessConfigurationModal';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -43,16 +44,21 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   // zustand의 process_flow를 직접 사용
   const [entryType, setEntryType] = useState('Airline'); // 사용자가 선택 가능하도록 변경
 
-  const [isCreatingProcess, setIsCreatingProcess] = useState(false);
-  const [newProcessName, setNewProcessName] = useState('');
-  const [newProcessFacilities, setNewProcessFacilities] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
-  const [editProcessName, setEditProcessName] = useState('');
-  const [editProcessFacilities, setEditProcessFacilities] = useState('');
-  const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
-  const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
+  
+  // Accordion state for each process
+  const [expandedProcesses, setExpandedProcesses] = useState<Set<number>>(new Set());
+  
+  // Modal state
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingProcessData, setEditingProcessData] = useState<{
+    index: number;
+    name: string;
+    facilities: string[];
+    travelTime: number;
+  } | null>(null);
 
 
 
@@ -142,146 +148,95 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     return facilities;
   };
 
-  const createNewProcess = () => {
-    if (!newProcessName.trim() || currentFacilities.length === 0) return;
-
-    const activeFacilities = currentFacilities.filter((f) => f.isActive).map((f) => f.name);
-
-    const newStep = {
-      step: processFlow.length,
-      name: newProcessName,
-      travel_time_minutes: 0, // 사용자가 UI에서 설정
-      entry_conditions: [],
-      zones: {} as Record<string, any>,
-    };
-
-    // activeFacilities를 zones로 변환
-    activeFacilities.forEach((facilityName: string) => {
-      newStep.zones[facilityName] = {
-        facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
-      };
-    });
-
-    // 기존 processFlow에 새로운 step 추가
-    setProcessFlow([...processFlow, newStep]);
-
-    // Reset form
-    setNewProcessName('');
-    setNewProcessFacilities('');
-    setCurrentFacilities([]);
-    setIsCreatingProcess(false);
+  // Modal 열기/닫기 함수들
+  const handleOpenCreateModal = () => {
+    setModalMode('create');
+    setEditingProcessData(null);
+    setShowProcessModal(true);
   };
 
-  const selectProcess = (index: number) => {
+  const handleOpenEditModal = (index: number) => {
     const step = processFlow[index];
-    setSelectedProcessIndex(index);
-    setEditProcessName(step.name);
-    setEditProcessFacilities(Object.keys(step.zones || {}).join(','));
-
-    // zones에서 facility 정보 생성
-    const facilitiesFromZones = Object.keys(step.zones || {}).map((zoneName) => ({
-      name: zoneName,
-      isActive: true,
-    }));
-    setEditingFacilities(facilitiesFromZones);
-
-    setIsCreatingProcess(false);
-  };
-
-  const updateProcess = () => {
-    if (selectedProcessIndex === null || !editProcessName.trim() || editingFacilities.length === 0) return;
-
-    const activeFacilities = editingFacilities.filter((f) => f.isActive).map((f) => f.name);
-
-    const newProcessFlow = [...processFlow];
-    newProcessFlow[selectedProcessIndex] = {
-      ...newProcessFlow[selectedProcessIndex],
-      name: editProcessName,
-      zones: {} as Record<string, any>,
-    };
-
-    // activeFacilities를 zones로 변환
-    activeFacilities.forEach((facilityName: string) => {
-      newProcessFlow[selectedProcessIndex].zones[facilityName] = {
-        facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
-      };
+    setModalMode('edit');
+    setEditingProcessData({
+      index,
+      name: step.name,
+      facilities: Object.keys(step.zones || {}),
+      travelTime: step.travel_time_minutes || 0,
     });
-
-    // 업데이트된 processFlow 설정
-    setProcessFlow(newProcessFlow);
-
-    // Reset form
-    setSelectedProcessIndex(null);
-    setEditProcessName('');
-    setEditProcessFacilities('');
-    setEditingFacilities([]);
+    setShowProcessModal(true);
   };
 
-  const cancelEdit = () => {
-    setSelectedProcessIndex(null);
-    setEditProcessName('');
-    setEditProcessFacilities('');
-    setEditingFacilities([]);
-    setIsCreatingProcess(false);
-    setNewProcessName('');
-    setNewProcessFacilities('');
-    setCurrentFacilities([]);
+  const handleCloseModal = () => {
+    setShowProcessModal(false);
+    setEditingProcessData(null);
   };
 
-  // 시설명 입력 변경 시 시설 리스트 업데이트
-  const handleFacilityInputChange = (value: string, isCreating: boolean = true) => {
-    if (isCreating) {
-      setNewProcessFacilities(value);
+  // Toggle accordion for individual process
+  const toggleProcessExpanded = (index: number) => {
+    setExpandedProcesses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  // Modal에서 프로세스 저장
+  const handleSaveProcess = (data: {
+    name: string;
+    facilities: FacilityItem[];
+    travelTime: number;
+  }) => {
+    const activeFacilities = data.facilities.filter((f) => f.isActive).map((f) => f.name);
+
+    if (modalMode === 'create') {
+      // 새로운 프로세스 생성
+      const newStep = {
+        step: processFlow.length,
+        name: data.name,
+        travel_time_minutes: data.travelTime,
+        entry_conditions: [],
+        zones: {} as Record<string, any>,
+      };
+
+      // activeFacilities를 zones로 변환
+      activeFacilities.forEach((facilityName: string) => {
+        newStep.zones[facilityName] = {
+          facilities: [],
+        };
+      });
+
+      setProcessFlow([...processFlow, newStep]);
     } else {
-      setEditProcessFacilities(value);
-    }
+      // 기존 프로세스 수정
+      if (editingProcessData) {
+        const newProcessFlow = [...processFlow];
+        newProcessFlow[editingProcessData.index] = {
+          ...newProcessFlow[editingProcessData.index],
+          name: data.name,
+          travel_time_minutes: data.travelTime,
+          zones: {} as Record<string, any>,
+        };
 
-    if (value.trim()) {
-      const facilities = expandFacilityNames(value);
-      if (isCreating) {
-        setCurrentFacilities(facilities);
-      } else {
-        setEditingFacilities(facilities);
-      }
-    } else {
-      if (isCreating) {
-        setCurrentFacilities([]);
-      } else {
-        setEditingFacilities([]);
-      }
-    }
-  };
+        // activeFacilities를 zones로 변환
+        activeFacilities.forEach((facilityName: string) => {
+          newProcessFlow[editingProcessData.index].zones[facilityName] = {
+            facilities: [],
+          };
+        });
 
-  // 시설 토글 함수
-  const toggleFacility = (facilityName: string, isCreating: boolean = true) => {
-    const targetFacilities = isCreating ? currentFacilities : editingFacilities;
-    const setTargetFacilities = isCreating ? setCurrentFacilities : setEditingFacilities;
-
-    const updatedFacilities = targetFacilities.map((facility) =>
-      facility.name === facilityName ? { ...facility, isActive: !facility.isActive } : facility
-    );
-
-    setTargetFacilities(updatedFacilities);
-  };
-
-  // 엔터키 핸들러
-  const handleKeyDown = (e: React.KeyboardEvent, isCreating: boolean = true) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-
-      if (isCreating) {
-        // 새 프로세스 생성 모드
-        if (newProcessName.trim() && newProcessFacilities.trim()) {
-          createNewProcess();
-        }
-      } else {
-        // 기존 프로세스 수정 모드
-        if (editProcessName.trim() && editProcessFacilities.trim()) {
-          updateProcess();
-        }
+        setProcessFlow(newProcessFlow);
       }
     }
   };
+
+
+
+
 
   const removeProcedure = (index: number) => {
     const newProcessFlow = processFlow.filter((_, i) => i !== index);
@@ -294,16 +249,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
     setProcessFlow(reorderedProcessFlow);
 
-    // 삭제된 프로세스가 선택되어 있었다면 선택 해제
-    if (selectedProcessIndex === index) {
-      setSelectedProcessIndex(null);
-      setEditProcessName('');
-      setEditProcessFacilities('');
-      setEditingFacilities([]);
-    } else if (selectedProcessIndex !== null && selectedProcessIndex > index) {
-      // 삭제된 프로세스보다 뒤에 있는 프로세스가 선택되어 있다면 인덱스 조정
-      setSelectedProcessIndex(selectedProcessIndex - 1);
-    }
+
   };
 
   // 드래그앤드롭 함수들
@@ -344,17 +290,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
     setProcessFlow(reorderedProcessFlow);
 
-    // 선택된 프로세스 인덱스 업데이트 (간단한 방식)
-    if (selectedProcessIndex !== null) {
-      if (selectedProcessIndex === draggedIndex) {
-        // 드래그된 프로세스가 선택되어 있었다면 새 위치로 업데이트
-        setSelectedProcessIndex(dropIndex);
-      } else {
-        // 다른 프로세스의 경우 인덱스 조정이 필요할 수 있지만
-        // 현재는 단순하게 선택 해제
-        setSelectedProcessIndex(null);
-      }
-    }
+
 
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -429,35 +365,30 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   return (
     <div className="space-y-6 pt-8">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Route className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-semibold">Processing Procedures</CardTitle>
-              <p className="text-sm text-default-500">
-                Configure passenger flow simulation path through airport facilities
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+
 
       {/* Process Flow Layout */}
-      <div className="grid h-[600px] grid-cols-2 gap-6">
-        {/* Left Panel - Process Flow */}
-        <Card className="border-primary/20 bg-primary/5">
+      <div className="grid h-[600px] grid-cols-1 gap-6">
+        {/* Process Flow - Full Width */}
+        <Card className="border-gray-200">
           <CardHeader>
-            <CardTitle className="text-lg">Process Flow</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Route className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold">Process Flow</CardTitle>
+                <p className="text-sm text-default-500">
+                  Configure passenger flow simulation path through airport facilities
+                </p>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="h-[500px] space-y-4 overflow-y-auto">
             {/* Entry (Fixed) */}
-            <div className="flex items-center gap-4 rounded-lg bg-white p-3 shadow-sm">
-              <div className="flex items-center text-sm font-medium text-primary">
-                <Users className="mr-2 h-5 w-5" />
+            <div className="flex items-center gap-4 rounded-lg bg-primary/5 border border-primary/10 p-3 shadow-sm">
+              <div className="flex items-center text-sm font-medium text-gray-900">
+                <Users className="mr-2 h-5 w-5 text-primary" />
                 Entry
               </div>
               <div className="flex flex-1 justify-end">
@@ -480,57 +411,163 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
               <ChevronDown className="h-6 w-6 text-primary" />
             </div>
 
-            {/* Procedures */}
-            {processFlow.map((step, index) => (
-              <div key={index}>
-                <div
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onClick={() => selectProcess(index)}
-                  className={`group flex cursor-pointer items-center justify-between rounded-lg border-2 bg-white p-3 shadow-sm transition-all ${draggedIndex === index ? 'border-primary/40 opacity-50' : 'border-transparent'} ${dragOverIndex === index && draggedIndex !== index ? 'border-primary/60 bg-primary/5' : ''} ${draggedIndex === null ? 'hover:border-primary/20' : ''} `}
-                >
-                  <div className="flex items-center">
-                    <div
-                      className="mr-2 cursor-move text-primary hover:text-primary/80"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnd={handleDragEnd}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ArrowUpDown className="h-4 w-4" />
+            {/* Procedures with Accordion */}
+            {processFlow.map((step, index) => {
+              const isExpanded = expandedProcesses.has(index);
+              const isConfigured = Object.values(step.zones || {}).every((zone: any) => 
+                zone.facilities && zone.facilities.length > 0
+              );
+
+              return (
+                <div key={index}>
+                  <div
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={`group rounded-lg border bg-primary/5 border-primary/10 shadow-sm transition-all duration-300 ease-in-out ${draggedIndex === index ? 'border-primary/30 opacity-50' : ''} ${dragOverIndex === index && draggedIndex !== index ? 'border-primary/40 bg-primary/10' : ''} ${draggedIndex === null ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''} `}
+                  >
+                    {/* Compact Header - Always Visible */}
+                    <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => toggleProcessExpanded(index)}>
+                      {/* Left Side - Basic Info */}
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className="cursor-move text-primary hover:text-primary/80"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragEnd={handleDragEnd}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ArrowUpDown className="h-4 w-4" />
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            {formatProcessName(step.name)}
+                          </h3>
+                          <div className="flex items-center space-x-2 text-xs text-gray-900">
+                            <span>{Object.keys(step.zones || {}).length} zones</span>
+                            <span>•</span>
+                            <span>{step.travel_time_minutes || 0} min</span>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <div className={`h-2 w-2 rounded-full ${
+                                isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                              }`} />
+                              <span>{isConfigured ? 'Configured' : 'Setup needed'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Side - Toggle & Actions */}
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-primary hover:text-primary/80"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleProcessExpanded(index);
+                          }}
+                          title={isExpanded ? "Collapse details" : "Expand details"}
+                        >
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-primary hover:bg-primary/10 hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditModal(index);
+                          }}
+                          title="Edit this process"
+                        >
+                          <Settings2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeProcedure(index);
+                          }}
+                          title="Remove this process"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-default-900">{formatProcessName(step.name)}</div>
-                      <div className="text-xs text-default-500">({Object.keys(step.zones || {}).length} zones)</div>
+
+                    {/* Expanded Details - Smooth Slide Animation */}
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      <div 
+                        className="border-t border-gray-100 bg-gray-50 p-3 cursor-pointer hover:bg-gray-100 transition-all duration-300 ease-in-out"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(index);
+                        }}
+                        title="Click to edit this process"
+                      >
+                        <div className="space-y-3">
+                          {/* Travel Time Detail */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">Travel Time:</span>
+                            <span className="text-sm text-gray-900 font-medium">
+                              {step.travel_time_minutes || 0} minutes
+                            </span>
+                          </div>
+
+                          {/* Zone Details */}
+                          {Object.keys(step.zones || {}).length > 0 && (
+                            <div className="space-y-2">
+                              <span className="text-sm font-medium text-gray-700">Zone Details:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {Object.keys(step.zones || {}).map((zoneName) => (
+                                  <span
+                                    key={zoneName}
+                                    className="inline-flex items-center rounded-md bg-primary/20 px-3 py-1 text-sm font-medium text-primary"
+                                  >
+                                    {zoneName}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Configuration Status Detail */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">Status:</span>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${
+                                isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                              }`} />
+                              <span className="text-sm text-gray-700">
+                                {isConfigured ? 'All facilities configured' : 'Requires facility setup in Operating Schedule'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 w-6 rounded-full border-red-500 p-0 text-red-500 hover:border-red-600 hover:bg-red-50 hover:text-red-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeProcedure(index);
-                    }}
-                    title="Remove this process"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
 
-                {/* Vertical arrow after each procedure */}
-                <div className="flex justify-center py-2">
-                  <ChevronDown className="h-6 w-6 text-primary" />
+                  {/* Vertical arrow after each procedure */}
+                  <div className="flex justify-center py-2">
+                    <ChevronDown className="h-6 w-6 text-primary" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Add Process Button */}
             <Button
               variant="outline"
-              className="flex w-full items-center justify-center gap-2 border-2 border-dashed border-primary/30 p-3 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
-              onClick={() => setIsCreatingProcess(true)}
+              className="flex w-full items-center justify-center gap-2 border-2 border-dashed border-primary/30 p-4 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
+              onClick={handleOpenCreateModal}
             >
               <Plus className="h-5 w-5" />
               Add Process
@@ -542,249 +579,24 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
             </div>
 
             {/* Gate (Fixed) */}
-            <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm">
-              <div className="flex items-center text-sm font-medium text-primary">
-                <Plane className="mr-2 h-5 w-5" />
+            <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/10 p-3 shadow-sm">
+              <div className="flex items-center text-sm font-medium text-gray-900">
+                <Plane className="mr-2 h-5 w-5 text-primary" />
                 Gate
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Right Panel - Process Details */}
-        <Card className="relative">
-          <CardHeader>
-            <CardTitle className="text-lg">Process Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[500px] overflow-y-auto pb-16">
-            {isCreatingProcess ? (
-              <div className="space-y-6">
-                <div className="text-sm text-default-500">Create a new process step</div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., Process Step Name"
-                      value={newProcessName}
-                      onChange={(e) => setNewProcessName(e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(e, true)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., A~E, Gate1~5, DG12_3-4-6-2~5, Counter1,Counter2"
-                      value={newProcessFacilities}
-                      onChange={(e) => handleFacilityInputChange(e.target.value, true)}
-                      onKeyDown={(e) => handleKeyDown(e, true)}
-                      required
-                    />
-
-                    {/* 시설 뱃지 표시 */}
-                    {currentFacilities.length > 0 && (
-                      <div className="mt-3">
-                        <p className="mb-2 text-sm font-medium text-default-900">Facilities (click to toggle):</p>
-                        <div className="flex flex-wrap gap-2">
-                          {currentFacilities.map((facility) => (
-                            <Button
-                              key={facility.name}
-                              variant="ghost"
-                              type="button"
-                              onClick={() => toggleFacility(facility.name, true)}
-                              className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                                facility.isActive
-                                  ? 'bg-primary text-white hover:bg-primary/80'
-                                  : 'bg-gray-200 text-default-500 hover:bg-gray-300'
-                              }`}
-                            >
-                              {facility.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={createNewProcess}
-                    disabled={!newProcessName.trim() || !newProcessFacilities.trim()}
-                    className="flex-1"
-                  >
-                    Create Process
-                  </Button>
-                  <Button variant="outline" onClick={cancelEdit}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : selectedProcessIndex !== null ? (
-              <div className="space-y-6">
-                <div className="text-sm text-default-500">Edit process step</div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., Process Step Name"
-                      value={editProcessName}
-                      onChange={(e) => setEditProcessName(e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(e, false)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., A~E, Gate1~5, DG12_3-4-6-2~5, Counter1,Counter2"
-                      value={editProcessFacilities}
-                      onChange={(e) => handleFacilityInputChange(e.target.value, false)}
-                      onKeyDown={(e) => handleKeyDown(e, false)}
-                      required
-                    />
-
-                    {/* 시설 뱃지 표시 */}
-                    {editingFacilities.length > 0 && (
-                      <div className="mt-3">
-                        <p className="mb-2 text-sm font-medium text-default-900">Facilities (click to toggle):</p>
-                        <div className="flex flex-wrap gap-2">
-                          {editingFacilities.map((facility) => (
-                            <Button
-                              key={facility.name}
-                              variant="ghost"
-                              type="button"
-                              onClick={() => toggleFacility(facility.name, false)}
-                              className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                                facility.isActive
-                                  ? 'bg-primary text-white hover:bg-primary/80'
-                                  : 'bg-gray-200 text-default-500 hover:bg-gray-300'
-                              }`}
-                            >
-                              {facility.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={updateProcess}
-                    disabled={!editProcessName.trim() || !editProcessFacilities.trim()}
-                    className="flex-1"
-                  >
-                    Update Process
-                  </Button>
-                  <Button variant="outline" onClick={cancelEdit}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : processFlow.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-default-500">
-                <div className="text-center">
-                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <p>Add a process to configure facilities</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-sm text-default-500">
-                  {processFlow.length} process{processFlow.length > 1 ? 'es' : ''} configured
-                </div>
-
-                <div className="space-y-3">
-                  {processFlow.map((step, index) => {
-                    const extendedStep = step as any;
-                    return (
-                      <div
-                        key={index}
-                        className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                          selectedProcessIndex === index
-                            ? 'border-primary/30 bg-primary/10'
-                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                        }`}
-                        onClick={() => selectProcess(index)}
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <h4 className="font-medium text-default-900">{formatProcessName(step.name)}</h4>
-                          <span className="text-xs text-default-500">
-                            {extendedStep.facilitiesStatus
-                              ? extendedStep.facilitiesStatus.filter((f) => f.isActive).length
-                              : Object.keys(step.zones || {}).length}{' '}
-                            zones
-                          </span>
-                        </div>
-
-                        {/* Travel Time 설정 */}
-                        <div className="mb-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <label className="text-default-700 text-xs font-medium">Travel Time:</label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="60"
-                            className="h-6 w-16 text-xs"
-                            value={step.travel_time_minutes || 0}
-                            onChange={(e) => {
-                              const minutes = parseInt(e.target.value) || 0;
-                              updateTravelTime(index, minutes);
-                            }}
-                          />
-                          <span className="text-xs text-default-500">minutes</span>
-                        </div>
-
-                        {/* 시설 뱃지 표시 */}
-                        <div className="mb-2">
-                          {extendedStep.facilitiesStatus ? (
-                            <div className="flex flex-wrap gap-1">
-                              {extendedStep.facilitiesStatus.map((facility) => (
-                                <span
-                                  key={facility.name}
-                                  className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${
-                                    facility.isActive
-                                      ? 'bg-primary/10 text-primary'
-                                      : 'bg-gray-100 text-muted-foreground line-through'
-                                  }`}
-                                >
-                                  {facility.name}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-1">
-                              {Object.keys(step.zones || {}).map((zoneName) => (
-                                <span
-                                  key={zoneName}
-                                  className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                                >
-                                  {zoneName}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-
       </div>
+
+      {/* Process Configuration Modal */}
+      <ProcessConfigurationModal
+        isOpen={showProcessModal}
+        onClose={handleCloseModal}
+        processData={editingProcessData}
+        onSave={handleSaveProcess}
+        mode={modalMode}
+      />
 
       {/* Operating Schedule Editor - Facility가 설정되면 자동 표시 */}
       {hasFacilitiesConfigured && <OperatingScheduleEditor processFlow={processFlow} />}
