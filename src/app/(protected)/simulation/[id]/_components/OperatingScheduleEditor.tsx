@@ -29,6 +29,13 @@ interface BadgeCondition {
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
 }
 
+// 카테고리별 뱃지 타입 정의
+interface CategoryBadge {
+  category: string;
+  options: string[];
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+}
+
 // 더미 데이터: 조건 카테고리와 옵션들
 const CONDITION_CATEGORIES = {
   "항공사": {
@@ -169,8 +176,8 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   // 체크박스 상태 관리 (cellId를 키로 사용)
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   
-  // 뱃지 상태 관리 (cellId -> BadgeCondition[])
-  const [cellBadges, setCellBadges] = useState<Record<string, BadgeCondition[]>>({});
+  // 뱃지 상태 관리 (cellId -> CategoryBadge[]) - 카테고리별로 관리
+  const [cellBadges, setCellBadges] = useState<Record<string, CategoryBadge[]>>({});
   
   // 통합 드래그 상태
   const [dragState, setDragState] = useState<DragState>(resetDragState);
@@ -227,7 +234,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     });
   };
 
-  // 개별 뱃지 토글 핸들러 (체크박스용)
+  // 카테고리별 뱃지 토글 핸들러 (체크박스용)
   const handleToggleBadgeOption = useCallback((category: string, option: string) => {
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return;
@@ -238,46 +245,74 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     // 현재 해당 옵션이 모든 타겟 셀에 있는지 확인
     const hasOptionInAllCells = targetCells.every(cellId => {
       const badges = cellBadges[cellId] || [];
-      return badges.some(badge => badge.label === option);
+      const categoryBadge = badges.find(badge => badge.category === category);
+      return categoryBadge?.options.includes(option) || false;
     });
     
     setCellBadges(prev => {
       const updated = { ...prev };
       
-      if (hasOptionInAllCells) {
-        // 모든 셀에서 해당 옵션 뱃지 제거
-        targetCells.forEach(cellId => {
-          updated[cellId] = (updated[cellId] || []).filter(badge => badge.label !== option);
-        });
-      } else {
-        // 해당 옵션이 없는 셀에만 추가
-        targetCells.forEach(cellId => {
-          const existingBadges = updated[cellId] || [];
-          const hasThisBadge = existingBadges.some(badge => badge.label === option);
+      targetCells.forEach(cellId => {
+        const existingBadges = updated[cellId] || [];
+        const existingCategoryIndex = existingBadges.findIndex(badge => badge.category === category);
+        
+        if (existingCategoryIndex >= 0) {
+          // 카테고리가 이미 있는 경우
+          const existingCategory = existingBadges[existingCategoryIndex];
+          const optionIndex = existingCategory.options.indexOf(option);
           
-          if (!hasThisBadge) {
-            const newBadge: BadgeCondition = {
-              id: `${category}-${option}-${cellId}-${Date.now()}`,
-              label: option,
-              variant: categoryConfig.variant
-            };
-            updated[cellId] = [...existingBadges, newBadge];
+          if (hasOptionInAllCells) {
+            // 옵션 제거
+            if (optionIndex >= 0) {
+              const newOptions = [...existingCategory.options];
+              newOptions.splice(optionIndex, 1);
+              
+              if (newOptions.length === 0) {
+                // 옵션이 없으면 카테고리 전체 제거
+                existingBadges.splice(existingCategoryIndex, 1);
+              } else {
+                // 옵션만 업데이트
+                existingBadges[existingCategoryIndex] = {
+                  ...existingCategory,
+                  options: newOptions
+                };
+              }
+            }
+          } else {
+            // 옵션 추가
+            if (optionIndex < 0) {
+              existingBadges[existingCategoryIndex] = {
+                ...existingCategory,
+                options: [...existingCategory.options, option]
+              };
+            }
           }
-        });
-      }
+        } else if (!hasOptionInAllCells) {
+          // 새 카테고리 추가
+          const newCategoryBadge: CategoryBadge = {
+            category,
+            options: [option],
+            variant: categoryConfig.variant
+          };
+          existingBadges.push(newCategoryBadge);
+        }
+        
+        updated[cellId] = [...existingBadges];
+      });
       
       return updated;
     });
   }, [contextMenu.targetCells, cellBadges]);
 
-  // 체크박스 상태 확인 헬퍼
+  // 체크박스 상태 확인 헬퍼 - 카테고리별 옵션 확인
   const getOptionCheckState = useCallback((option: string) => {
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return false;
     
+    // 카테고리별로 옵션 확인
     const cellsWithOption = targetCells.filter(cellId => {
       const badges = cellBadges[cellId] || [];
-      return badges.some(badge => badge.label === option);
+      return badges.some(badge => badge.options.includes(option));
     });
     
     if (cellsWithOption.length === 0) return false; // 없음
@@ -285,11 +320,11 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     return 'indeterminate'; // 일부만 있음
   }, [contextMenu.targetCells, cellBadges]);
 
-  // 뱃지 제거 핸들러
-  const handleRemoveBadge = useCallback((cellId: string, badgeId: string) => {
+  // 카테고리별 뱃지 제거 핸들러 (전체 카테고리 제거)
+  const handleRemoveCategoryBadge = useCallback((cellId: string, category: string) => {
     setCellBadges(prev => ({
       ...prev,
-      [cellId]: (prev[cellId] || []).filter(badge => badge.id !== badgeId)
+      [cellId]: (prev[cellId] || []).filter(badge => badge.category !== category)
     }));
   }, []);
 
@@ -303,6 +338,52 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       targetCells.forEach(cellId => {
         updated[cellId] = [];
       });
+      return updated;
+    });
+  }, [contextMenu.targetCells]);
+
+  // 모든 카테고리 선택 핸들러
+  const handleSelectAllCategories = useCallback(() => {
+    const targetCells = contextMenu.targetCells || [];
+    if (targetCells.length === 0) return;
+    
+    setCellBadges(prev => {
+      const updated = { ...prev };
+      
+      targetCells.forEach(cellId => {
+        const existingBadges = updated[cellId] || [];
+        const newBadges: CategoryBadge[] = [];
+        
+        // 각 카테고리별로 모든 옵션 추가
+        Object.entries(CONDITION_CATEGORIES).forEach(([category, config]) => {
+          const existingCategoryIndex = existingBadges.findIndex(badge => badge.category === category);
+          
+          if (existingCategoryIndex >= 0) {
+            // 이미 존재하는 카테고리는 모든 옵션으로 업데이트
+            newBadges.push({
+              ...existingBadges[existingCategoryIndex],
+              options: [...config.options]
+            });
+          } else {
+            // 새 카테고리 추가
+            newBadges.push({
+              category,
+              options: [...config.options],
+              variant: config.variant
+            });
+          }
+        });
+        
+        // 기존에 있던 다른 카테고리들도 유지 (혹시 동적으로 추가된 것들)
+        existingBadges.forEach(badge => {
+          if (!CONDITION_CATEGORIES[badge.category as keyof typeof CONDITION_CATEGORIES]) {
+            newBadges.push(badge);
+          }
+        });
+        
+        updated[cellId] = newBadges;
+      });
+      
       return updated;
     });
   }, [contextMenu.targetCells]);
@@ -329,6 +410,74 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       targetCells
     });
   }, [selectedCells]);
+
+  // 행 헤더 우클릭 핸들러 (해당 행의 모든 셀에 적용)
+  const handleRowRightClick = useCallback((e: React.MouseEvent, rowIndex: number) => {
+    e.preventDefault();
+    
+    // 해당 행의 모든 셀 ID 생성
+    const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
+    const targetCells = Array.from(rowCellIds);
+    
+    setContextMenu({
+      show: true,
+      cellId: `${rowIndex}-0`, // 첫 번째 셀을 대표로 설정
+      targetCells
+    });
+  }, [currentFacilities.length]);
+
+  // 열 헤더 우클릭 핸들러 (해당 열의 모든 셀에 적용)
+  const handleColumnRightClick = useCallback((e: React.MouseEvent, colIndex: number) => {
+    e.preventDefault();
+    
+    // 해당 열의 모든 셀 ID 생성
+    const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
+    const targetCells = Array.from(columnCellIds);
+    
+    setContextMenu({
+      show: true,
+      cellId: `0-${colIndex}`, // 첫 번째 셀을 대표로 설정
+      targetCells
+    });
+  }, [timeSlots.length]);
+
+  // 전체 셀 생성 헬퍼 함수
+  const generateAllCells = useCallback(() => {
+    const allCellIds = new Set<string>();
+    for (let row = 0; row < timeSlots.length; row++) {
+      for (let col = 0; col < currentFacilities.length; col++) {
+        allCellIds.add(`${row}-${col}`);
+      }
+    }
+    return allCellIds;
+  }, [timeSlots.length, currentFacilities.length]);
+
+  // Time 헤더 클릭 핸들러 (전체 선택)
+  const handleTimeHeaderClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // 전체 셀 선택
+    const allCellIds = generateAllCells();
+    setSelectedCells(prev => toggleCellIds(allCellIds, prev, e.ctrlKey || e.metaKey));
+    
+    // Shift 선택 시작점을 첫 번째 셀로 설정
+    setShiftSelectStart({ row: 0, col: 0 });
+  }, [generateAllCells]);
+
+  // Time 헤더 우클릭 핸들러 (전체 셀에 뱃지 적용)
+  const handleTimeHeaderRightClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // 전체 셀 ID 생성
+    const allCellIds = generateAllCells();
+    const targetCells = Array.from(allCellIds);
+    
+    setContextMenu({
+      show: true,
+      cellId: '0-0', // 첫 번째 셀을 대표로 설정
+      targetCells
+    });
+  }, [generateAllCells]);
 
   // 범위 셀 ID 생성 헬퍼 함수 (시설 검증 포함)  
   const generateRangeCellIds = useCallback((startRow: number, startCol: number, endRow: number, endCol: number) => {
@@ -448,39 +597,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
-  // 스페이스바 이벤트 - 선택된 셀들의 체크박스 모두 토글
-  const handleSpaceKey = useCallback(() => {
-    const currentTime = Date.now();
-    const isDoubleSpace = currentTime - lastSpaceTime < DOUBLE_CLICK_THRESHOLD;
-    
-    if (selectedCells.size > 0) {
-      if (isDoubleSpace) {
-        // 더블 스페이스: 선택 영역 해제
-        setSelectedCells(new Set());
-        setShiftSelectStart(null);
-      } else {
-        // 단일 스페이스: 체크박스 토글 (선택 영역 유지)
-        setCheckedCells(prev => {
-          const newSet = new Set(prev);
-          
-          // 선택된 셀들 중 하나라도 체크되어 있는지 확인
-          const hasAnyChecked = Array.from(selectedCells).some(cellId => newSet.has(cellId));
-          
-          if (hasAnyChecked) {
-            // 하나라도 체크되어 있으면 모두 해제
-            selectedCells.forEach(cellId => newSet.delete(cellId));
-          } else {
-            // 모두 체크되어 있지 않으면 모두 체크
-            selectedCells.forEach(cellId => newSet.add(cellId));
-          }
-          
-          return newSet;
-        });
-      }
-    }
-    
-    setLastSpaceTime(currentTime);
-  }, [selectedCells, lastSpaceTime]);
+
 
   // 열 전체 선택/해제 핸들러 (클릭용)
   const handleColumnClick = useCallback((colIndex: number, e: React.MouseEvent) => {
@@ -629,18 +746,71 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        handleSpaceKey();
+        // 스페이스바 로직을 직접 구현
+        const currentTime = Date.now();
+        const isDoubleSpace = currentTime - lastSpaceTime < DOUBLE_CLICK_THRESHOLD;
+        
+        if (selectedCells.size > 0) {
+          if (isDoubleSpace) {
+            // 더블 스페이스: 선택 영역 해제
+            setSelectedCells(new Set());
+            setShiftSelectStart(null);
+          } else {
+            // 단일 스페이스: 체크박스 토글 (선택 영역 유지)
+            setCheckedCells(prev => {
+              const newSet = new Set(prev);
+              
+              // 선택된 셀들 중 하나라도 체크되어 있는지 확인
+              const hasAnyChecked = Array.from(selectedCells).some(cellId => newSet.has(cellId));
+              
+              if (hasAnyChecked) {
+                // 하나라도 체크되어 있으면 모두 해제
+                selectedCells.forEach(cellId => newSet.delete(cellId));
+              } else {
+                // 모두 체크되어 있지 않으면 모두 체크
+                selectedCells.forEach(cellId => newSet.add(cellId));
+              }
+              
+              return newSet;
+            });
+          }
+        }
+        
+        setLastSpaceTime(currentTime);
       } else if (e.code === 'Escape') {
         // ESC: 모든 선택 해제
         e.preventDefault();
         setSelectedCells(new Set());
         setShiftSelectStart(null);
+      } else if (e.code === 'Delete' || e.code === 'Backspace') {
+        // Delete/Backspace: 선택된 셀들의 체크박스와 뱃지 모두 제거
+        e.preventDefault();
+        
+        if (selectedCells.size > 0) {
+          const targetCells = Array.from(selectedCells);
+          
+          // 체크박스 제거
+          setCheckedCells(prev => {
+            const newSet = new Set(prev);
+            targetCells.forEach(cellId => newSet.delete(cellId));
+            return newSet;
+          });
+          
+          // 뱃지 제거
+          setCellBadges(prev => {
+            const updated = { ...prev };
+            targetCells.forEach(cellId => {
+              updated[cellId] = [];
+            });
+            return updated;
+          });
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleSpaceKey]);
+  }, [selectedCells, lastSpaceTime, setSelectedCells, setShiftSelectStart, setCheckedCells, setCellBadges]);
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
@@ -743,6 +913,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               </>
             )}
             
+            {/* 모두 선택 옵션 */}
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleSelectAllCategories();
+              }}
+              className="cursor-pointer"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <span className="text-primary">⭐</span>
+                <span className="font-medium">모두 선택</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            
             {Object.entries(CONDITION_CATEGORIES).map(([category, config]) => (
               <DropdownMenuSub key={category}>
                 <DropdownMenuSubTrigger>
@@ -815,7 +1000,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             <table className="w-full table-fixed text-xs">
               <thead className="sticky top-0 bg-muted">
                 <tr>
-                  <th className="w-16 border-r p-2 text-left select-none">Time</th>
+                  <th 
+                    className="w-16 border-r p-2 text-left cursor-pointer hover:bg-primary/10 transition-colors select-none"
+                    onClick={handleTimeHeaderClick}
+                    onContextMenu={(e) => {
+                      // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                      } else {
+                        handleTimeHeaderRightClick(e);
+                      }
+                    }}
+                    title="Click to select all cells. Right-click to apply badges to all cells."
+                  >
+                    Time
+                  </th>
                   {currentFacilities.map((facility, colIndex) => (
                     <th 
                       key={facility.id} 
@@ -823,7 +1022,15 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                       onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
                       onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
                       onMouseUp={handleColumnMouseUp}
-                      title={`Click or drag to select columns: ${facility.id}`}
+                      onContextMenu={(e) => {
+                        // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                        if (e.ctrlKey || e.metaKey) {
+                          e.preventDefault();
+                        } else {
+                          handleColumnRightClick(e, colIndex);
+                        }
+                      }}
+                      title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
                     >
                       {facility.id}
                     </th>
@@ -838,7 +1045,15 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                       onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
                       onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
                       onMouseUp={handleRowMouseUp}
-                      title={`Click or drag to select rows: ${timeSlot}`}
+                      onContextMenu={(e) => {
+                        // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                        if (e.ctrlKey || e.metaKey) {
+                          e.preventDefault();
+                        } else {
+                          handleRowRightClick(e, rowIndex);
+                        }
+                      }}
+                      title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
                     >
                       {timeSlot}
                     </td>
@@ -900,21 +1115,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                               </button>
                             </div>
                             
-                            {/* 뱃지 행 */}
+                            {/* 뱃지 행 - 카테고리별 통합 표시 */}
                             {badges.length > 0 && (
                               <div className="flex flex-wrap gap-0.5 justify-center">
-                                {badges.map((badge) => (
+                                {badges.map((categoryBadge) => (
                                   <Badge 
-                                    key={badge.id} 
-                                    variant={badge.variant}
+                                    key={`${cellId}-${categoryBadge.category}`}
+                                    variant={categoryBadge.variant}
                                     className="text-[9px] px-1 py-0 h-4 cursor-pointer hover:opacity-70"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleRemoveBadge(cellId, badge.id);
+                                      handleRemoveCategoryBadge(cellId, categoryBadge.category);
                                     }}
-                                    title={`${badge.label} (클릭하여 제거)`}
+                                    title={`${categoryBadge.category}: ${categoryBadge.options.join('|')} (클릭하여 전체 제거)`}
                                   >
-                                    {badge.label}
+                                    {categoryBadge.options.join('|')}
                                   </Badge>
                                 ))}
                               </div>
