@@ -11,6 +11,50 @@ interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
 }
 
+// 상수들
+const DOUBLE_CLICK_THRESHOLD = 300;
+const DEFAULT_DRAG_STATE = {
+  type: null,
+  isActive: false,
+  start: null,
+  isAdditive: false,
+  originalSelection: null
+} as const;
+
+// 드래그 상태 헬퍼 함수들
+const resetDragState = () => ({ ...DEFAULT_DRAG_STATE });
+
+const createDragState = (
+  type: 'cell' | 'row' | 'column', 
+  start: { row: number; col: number }, 
+  isAdditive: boolean = false,
+  originalSelection: Set<string> | null = null
+) => ({
+  type,
+  isActive: true,
+  start,
+  isAdditive,
+  originalSelection
+});
+
+// 선택 토글 헬퍼 함수
+const toggleCellIds = (
+  cellIds: Set<string>, 
+  currentSelection: Set<string>, 
+  preserveExisting: boolean = false
+): Set<string> => {
+  const newSet = preserveExisting ? new Set(currentSelection) : new Set<string>();
+  const isFullySelected = Array.from(cellIds).every(cellId => newSet.has(cellId));
+  
+  if (isFullySelected) {
+    cellIds.forEach(cellId => newSet.delete(cellId));
+  } else {
+    cellIds.forEach(cellId => newSet.add(cellId));
+  }
+  
+  return newSet;
+};
+
 // 유틸리티 함수들
 const generateCellRange = (startRow: number, endRow: number, startCol: number, endCol: number): Set<string> => {
   const cellIds = new Set<string>();
@@ -79,19 +123,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   
   // 통합 드래그 상태
-  const [dragState, setDragState] = useState<{
-    type: 'cell' | 'row' | 'column' | null;
-    isActive: boolean;
-    start: { row: number; col: number } | null;
-    isAdditive: boolean; // Cmd 키로 추가 선택인지 여부
-    originalSelection: Set<string> | null; // 드래그 시작 전 원본 선택
-  }>({
-    type: null,
-    isActive: false,
-    start: null,
-    isAdditive: false,
-    originalSelection: null
-  });
+  const [dragState, setDragState] = useState(resetDragState);
   
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   
@@ -209,23 +241,19 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     
     const isAdditive = e.ctrlKey || e.metaKey;
     
-    setDragState({
-      type: 'cell',
-      isActive: true,
-      start: { row: rowIndex, col: colIndex },
-      isAdditive,
-      originalSelection: isAdditive ? new Set(selectedCells) : null
+    setSelectedCells(prev => {
+      setDragState(createDragState('cell', { row: rowIndex, col: colIndex }, isAdditive, isAdditive ? new Set(prev) : null));
+      
+      if (isAdditive) {
+        // Cmd + 드래그: 기존 선택 유지하면서 현재 셀 추가
+        return new Set([...prev, cellId]);
+      } else {
+        // 일반 드래그: 새로 선택 (기존 선택 해제)
+        return new Set([cellId]);
+      }
     });
-    
-    if (isAdditive) {
-      // Cmd + 드래그: 기존 선택 유지하면서 현재 셀 추가
-      setSelectedCells(prev => new Set([...prev, cellId]));
-    } else {
-      // 일반 드래그: 새로 선택 (기존 선택 해제)
-      setSelectedCells(new Set([cellId]));
-    }
     setShiftSelectStart({ row: rowIndex, col: colIndex });
-  }, [handleCellClick, selectedCells]);
+  }, [handleCellClick]);
 
   const handleCellMouseEnter = useCallback(
     (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => {
@@ -247,25 +275,13 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   );
 
   const handleCellMouseUp = useCallback(() => {
-    setDragState({
-      type: null,
-      isActive: false,
-      start: null,
-      isAdditive: false,
-      originalSelection: null
-    });
+    setDragState(resetDragState);
   }, []);
 
   // 전역 마우스업 이벤트
   useEffect(() => {
     const handleGlobalMouseUp = () => {
-      setDragState({
-        type: null,
-        isActive: false,
-        start: null,
-        isAdditive: false,
-        originalSelection: null
-      });
+      setDragState(resetDragState);
     };
 
     document.addEventListener('mouseup', handleGlobalMouseUp);
@@ -275,7 +291,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   // 스페이스바 이벤트 - 선택된 셀들의 체크박스 모두 토글
   const handleSpaceKey = useCallback(() => {
     const currentTime = Date.now();
-    const isDoubleSpace = currentTime - lastSpaceTime < 300; // 300ms 내 더블 스페이스
+    const isDoubleSpace = currentTime - lastSpaceTime < DOUBLE_CLICK_THRESHOLD;
     
     if (selectedCells.size > 0) {
       if (isDoubleSpace) {
@@ -319,23 +335,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       // 해당 열의 모든 셀 ID 생성
       const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
 
-      setSelectedCells(prev => {
-        // Ctrl/Cmd 키가 눌려있지 않으면 기존 선택 해제
-        const newSet = e.ctrlKey || e.metaKey ? new Set(prev) : new Set<string>();
-        
-        // 현재 선택된 셀들 중 해당 열이 전체 선택되어 있는지 확인
-        const isFullySelected = Array.from(columnCellIds).every(cellId => newSet.has(cellId));
-        
-        if (isFullySelected) {
-          // 전체 선택되어 있으면 해제
-          columnCellIds.forEach(cellId => newSet.delete(cellId));
-        } else {
-          // 일부 또는 전혀 선택되지 않은 경우 전체 선택
-          columnCellIds.forEach(cellId => newSet.add(cellId));
-        }
-        
-        return newSet;
-      });
+      setSelectedCells(prev => toggleCellIds(columnCellIds, prev, e.ctrlKey || e.metaKey));
     }
 
     // 마지막 선택 열 기록
@@ -355,27 +355,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     e.preventDefault();
     
     const isAdditive = e.ctrlKey || e.metaKey;
-    
-    setDragState({
-      type: 'column',
-      isActive: true,
-      start: { row: 0, col: colIndex },
-      isAdditive,
-      originalSelection: isAdditive ? new Set(selectedCells) : null
-    });
-    
-    // 드래그 시작할 때 해당 열 선택
     const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
     
-    if (isAdditive) {
-      // Cmd + 드래그: 기존 선택 유지하면서 현재 열 추가
-      setSelectedCells(prev => new Set([...prev, ...columnCellIds]));
-    } else {
-      // 일반 드래그: 새로 선택
-      setSelectedCells(columnCellIds);
-    }
+    setSelectedCells(prev => {
+      setDragState(createDragState('column', { row: 0, col: colIndex }, isAdditive, isAdditive ? new Set(prev) : null));
+      
+      if (isAdditive) {
+        // Cmd + 드래그: 기존 선택 유지하면서 현재 열 추가
+        return new Set([...prev, ...columnCellIds]);
+      } else {
+        // 일반 드래그: 새로 선택
+        return columnCellIds;
+      }
+    });
     setLastSelectedCol(colIndex);
-  }, [timeSlots.length, handleColumnClick, selectedCells]);
+  }, [timeSlots.length, handleColumnClick]);
 
   const handleColumnMouseEnter = useCallback((colIndex: number, e: React.MouseEvent) => {
     if (dragState.isActive && dragState.type === 'column' && dragState.start) {
@@ -396,13 +390,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   }, [dragState, timeSlots.length]);
 
   const handleColumnMouseUp = useCallback(() => {
-    setDragState({
-      type: null,
-      isActive: false,
-      start: null,
-      isAdditive: false,
-      originalSelection: null
-    });
+    setDragState(resetDragState);
   }, []);
 
   // 행 전체 선택/해제 핸들러 (클릭용)
@@ -418,23 +406,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       // 해당 행의 모든 셀 ID 생성
       const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
 
-      setSelectedCells(prev => {
-        // Ctrl/Cmd 키가 눌려있지 않으면 기존 선택 해제
-        const newSet = e.ctrlKey || e.metaKey ? new Set(prev) : new Set<string>();
-        
-        // 현재 선택된 셀들 중 해당 행이 전체 선택되어 있는지 확인
-        const isFullySelected = Array.from(rowCellIds).every(cellId => newSet.has(cellId));
-        
-        if (isFullySelected) {
-          // 전체 선택되어 있으면 해제
-          rowCellIds.forEach(cellId => newSet.delete(cellId));
-        } else {
-          // 일부 또는 전혀 선택되지 않은 경우 전체 선택
-          rowCellIds.forEach(cellId => newSet.add(cellId));
-        }
-        
-        return newSet;
-      });
+      setSelectedCells(prev => toggleCellIds(rowCellIds, prev, e.ctrlKey || e.metaKey));
     }
 
     // 마지막 선택 행 기록
@@ -454,27 +426,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     e.preventDefault();
     
     const isAdditive = e.ctrlKey || e.metaKey;
-    
-    setDragState({
-      type: 'row',
-      isActive: true,
-      start: { row: rowIndex, col: 0 },
-      isAdditive,
-      originalSelection: isAdditive ? new Set(selectedCells) : null
-    });
-    
-    // 드래그 시작할 때 해당 행 선택
     const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
     
-    if (isAdditive) {
-      // Cmd + 드래그: 기존 선택 유지하면서 현재 행 추가
-      setSelectedCells(prev => new Set([...prev, ...rowCellIds]));
-    } else {
-      // 일반 드래그: 새로 선택
-      setSelectedCells(rowCellIds);
-    }
+    setSelectedCells(prev => {
+      setDragState(createDragState('row', { row: rowIndex, col: 0 }, isAdditive, isAdditive ? new Set(prev) : null));
+      
+      if (isAdditive) {
+        // Cmd + 드래그: 기존 선택 유지하면서 현재 행 추가
+        return new Set([...prev, ...rowCellIds]);
+      } else {
+        // 일반 드래그: 새로 선택
+        return rowCellIds;
+      }
+    });
     setLastSelectedRow(rowIndex);
-  }, [currentFacilities.length, handleRowClick, selectedCells]);
+  }, [currentFacilities.length, handleRowClick]);
 
   const handleRowMouseEnter = useCallback((rowIndex: number, e: React.MouseEvent) => {
     if (dragState.isActive && dragState.type === 'row' && dragState.start) {
@@ -495,13 +461,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   }, [dragState, currentFacilities.length]);
 
   const handleRowMouseUp = useCallback(() => {
-    setDragState({
-      type: null,
-      isActive: false,
-      start: null,
-      isAdditive: false,
-      originalSelection: null
-    });
+    setDragState(resetDragState);
   }, []);
 
   // 키보드 이벤트 등록
@@ -539,13 +499,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setShiftSelectStart(null);
     setLastSelectedRow(null);
     setLastSelectedCol(null);
-    setDragState({
-      type: null,
-      isActive: false,
-      start: null,
-      isAdditive: false,
-      originalSelection: null
-    });
+    setDragState(resetDragState);
   }, [selectedProcessIndex, selectedZone]);
 
   if (processFlow.length === 0) {
