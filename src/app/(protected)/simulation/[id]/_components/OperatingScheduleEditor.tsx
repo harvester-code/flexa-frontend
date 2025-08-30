@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Clock, Plane, Users, MapPin, Star, Trash2 } from 'lucide-react';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
@@ -33,25 +33,33 @@ interface BadgeCondition {
 interface CategoryBadge {
   category: string;
   options: string[];
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
 }
 
-// 더미 데이터: 조건 카테고리와 옵션들
+// 🎨 차트 스타일 색상으로 통일된 조건 카테고리 (영어)
 const CONDITION_CATEGORIES = {
-  "항공사": {
-    icon: "🔵",
+  "Airline": {
+    icon: Plane,
     options: ["KE", "OZ"],
-    variant: "default" as const
+    bgColor: "bg-blue-50",
+    textColor: "text-blue-700",
+    borderColor: "border-blue-200"
   },
-  "승객유형": {
-    icon: "🟢", 
-    options: ["일반", "승무원"],
-    variant: "secondary" as const
+  "Passenger Type": {
+    icon: Users, 
+    options: ["Regular", "Crew"],
+    bgColor: "bg-emerald-50",
+    textColor: "text-emerald-700", 
+    borderColor: "border-emerald-200"
   },
-  "국적": {
-    icon: "🟡",
-    options: ["내국인", "외국인"],
-    variant: "outline" as const
+  "Nationality": {
+    icon: MapPin,
+    options: ["Domestic", "International"],
+    bgColor: "bg-amber-50",
+    textColor: "text-amber-700",
+    borderColor: "border-amber-200"
   }
 };
 
@@ -91,19 +99,24 @@ const createDragState = (
   originalSelection
 });
 
-// 선택 토글 헬퍼 함수
+// 🧠 스마트 토글 헬퍼 함수 (일부 선택됨 → 모두 선택됨 → 모두 해제됨)
 const toggleCellIds = (
   cellIds: Set<string>, 
   currentSelection: Set<string>, 
   preserveExisting: boolean = false
 ): Set<string> => {
   const newSet = preserveExisting ? new Set(currentSelection) : new Set<string>();
-  const isFullySelected = Array.from(cellIds).every(cellId => newSet.has(cellId));
   
-  if (isFullySelected) {
-    cellIds.forEach(cellId => newSet.delete(cellId));
-  } else {
+  // 토글할 셀들의 현재 상태 분석
+  const selectedCells = Array.from(cellIds).filter(cellId => newSet.has(cellId));
+  const unselectedCells = Array.from(cellIds).filter(cellId => !newSet.has(cellId));
+  
+  if (unselectedCells.length > 0) {
+    // 하나라도 선택되지 않은 셀이 있으면 → 모든 셀을 선택 상태로
     cellIds.forEach(cellId => newSet.add(cellId));
+  } else {
+    // 모든 셀이 선택되어 있으면 → 모든 셀을 선택 해제
+    cellIds.forEach(cellId => newSet.delete(cellId));
   }
   
   return newSet;
@@ -201,6 +214,25 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     targetCells: string[];
   }>({ show: false, cellId: '', targetCells: [] });
 
+  // 🔧 성능 최적화: useRef로 최신 상태 참조 (이벤트 리스너 재등록 방지)
+  const selectedCellsRef = useRef(selectedCells);
+  const lastSpaceTimeRef = useRef(lastSpaceTime);
+  const setSelectedCellsRef = useRef(setSelectedCells);
+  const setShiftSelectStartRef = useRef(setShiftSelectStart);
+  const setCheckedCellsRef = useRef(setCheckedCells);
+  const setCellBadgesRef = useRef(setCellBadges);
+
+  // 🎯 키보드 포커스 관리용 ref
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ref 값들을 최신 상태로 동기화
+  selectedCellsRef.current = selectedCells;
+  lastSpaceTimeRef.current = lastSpaceTime;
+  setSelectedCellsRef.current = setSelectedCells;
+  setShiftSelectStartRef.current = setShiftSelectStart;
+  setCheckedCellsRef.current = setCheckedCells;
+  setCellBadgesRef.current = setCellBadges;
+
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
@@ -213,10 +245,19 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     return slots;
   }, []);
 
-  // 현재 선택된 존의 시설들
+  // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
   const currentFacilities = useMemo(() => {
-    if (!processFlow[selectedProcessIndex] || !selectedZone) return [];
-    const zone = processFlow[selectedProcessIndex].zones[selectedZone];
+    // 배열 범위 검사 추가
+    if (!processFlow || processFlow.length === 0 || selectedProcessIndex < 0 || selectedProcessIndex >= processFlow.length) {
+      return [];
+    }
+    
+    const currentProcess = processFlow[selectedProcessIndex];
+    if (!currentProcess || !selectedZone || !currentProcess.zones) {
+      return [];
+    }
+    
+    const zone = currentProcess.zones[selectedZone];
     return zone?.facilities || [];
   }, [processFlow, selectedProcessIndex, selectedZone]);
 
@@ -292,7 +333,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
           const newCategoryBadge: CategoryBadge = {
             category,
             options: [option],
-            variant: categoryConfig.variant
+            bgColor: categoryConfig.bgColor,
+            textColor: categoryConfig.textColor,
+            borderColor: categoryConfig.borderColor
           };
           existingBadges.push(newCategoryBadge);
         }
@@ -369,7 +412,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             newBadges.push({
               category,
               options: [...config.options],
-              variant: config.variant
+              bgColor: config.bgColor,
+              textColor: config.textColor,
+              borderColor: config.borderColor
             });
           }
         });
@@ -741,76 +786,82 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setDragState(resetDragState);
   }, []);
 
-  // 키보드 이벤트 등록
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        // 스페이스바 로직을 직접 구현
-        const currentTime = Date.now();
-        const isDoubleSpace = currentTime - lastSpaceTime < DOUBLE_CLICK_THRESHOLD;
-        
-        if (selectedCells.size > 0) {
-          if (isDoubleSpace) {
-            // 더블 스페이스: 선택 영역 해제
-            setSelectedCells(new Set());
-            setShiftSelectStart(null);
-          } else {
-            // 단일 스페이스: 체크박스 토글 (선택 영역 유지)
-            setCheckedCells(prev => {
-              const newSet = new Set(prev);
-              
-              // 선택된 셀들 중 하나라도 체크되어 있는지 확인
-              const hasAnyChecked = Array.from(selectedCells).some(cellId => newSet.has(cellId));
-              
-              if (hasAnyChecked) {
-                // 하나라도 체크되어 있으면 모두 해제
-                selectedCells.forEach(cellId => newSet.delete(cellId));
-              } else {
-                // 모두 체크되어 있지 않으면 모두 체크
-                selectedCells.forEach(cellId => newSet.add(cellId));
-              }
-              
-              return newSet;
-            });
-          }
-        }
-        
-        setLastSpaceTime(currentTime);
-      } else if (e.code === 'Escape') {
-        // ESC: 모든 선택 해제
-        e.preventDefault();
-        setSelectedCells(new Set());
-        setShiftSelectStart(null);
-      } else if (e.code === 'Delete' || e.code === 'Backspace') {
-        // Delete/Backspace: 선택된 셀들의 체크박스와 뱃지 모두 제거
-        e.preventDefault();
-        
-        if (selectedCells.size > 0) {
-          const targetCells = Array.from(selectedCells);
-          
-          // 체크박스 제거
-          setCheckedCells(prev => {
+  // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      // 스페이스바 로직을 ref를 통해 최신 상태로 구현
+      const currentTime = Date.now();
+      const currentLastSpaceTime = lastSpaceTimeRef.current;
+      const currentSelectedCells = selectedCellsRef.current;
+      const isDoubleSpace = currentTime - currentLastSpaceTime < DOUBLE_CLICK_THRESHOLD;
+      
+      if (currentSelectedCells.size > 0) {
+        if (isDoubleSpace) {
+          // 더블 스페이스: 선택 영역 해제
+          setSelectedCellsRef.current(new Set());
+          setShiftSelectStartRef.current(null);
+        } else {
+          // 🧠 스마트 토글: 일부 선택됨 → 모두 선택됨 → 모두 해제됨
+          setCheckedCellsRef.current(prev => {
             const newSet = new Set(prev);
-            targetCells.forEach(cellId => newSet.delete(cellId));
+            
+            // 선택된 셀들의 체크 상태 분석
+            const checkedCells = Array.from(currentSelectedCells).filter(cellId => newSet.has(cellId));
+            const uncheckedCells = Array.from(currentSelectedCells).filter(cellId => !newSet.has(cellId));
+            
+            if (uncheckedCells.length > 0) {
+              // 하나라도 체크되지 않은 셀이 있으면 → 모든 셀을 체크 상태로
+              currentSelectedCells.forEach(cellId => newSet.add(cellId));
+            } else {
+              // 모든 셀이 체크되어 있으면 → 모든 셀을 체크 해제
+              currentSelectedCells.forEach(cellId => newSet.delete(cellId));
+            }
+            
             return newSet;
-          });
-          
-          // 뱃지 제거
-          setCellBadges(prev => {
-            const updated = { ...prev };
-            targetCells.forEach(cellId => {
-              updated[cellId] = [];
-            });
-            return updated;
           });
         }
       }
-    };
+      
+      setLastSpaceTime(currentTime);
+    } else if (e.code === 'Escape') {
+      // ESC: 모든 선택 해제
+      e.preventDefault();
+      setSelectedCellsRef.current(new Set());
+      setShiftSelectStartRef.current(null);
+    } else if (e.code === 'Delete' || e.code === 'Backspace') {
+      // Delete/Backspace: 선택된 셀들의 체크박스와 뱃지 모두 제거
+      e.preventDefault();
+      
+      const currentSelectedCells = selectedCellsRef.current;
+      if (currentSelectedCells.size > 0) {
+        const targetCells = Array.from(currentSelectedCells);
+        
+        // 체크박스 제거
+        setCheckedCellsRef.current(prev => {
+          const newSet = new Set(prev);
+          targetCells.forEach(cellId => newSet.delete(cellId));
+          return newSet;
+        });
+        
+        // 뱃지 제거
+        setCellBadgesRef.current(prev => {
+          const updated = { ...prev };
+          targetCells.forEach(cellId => {
+            updated[cellId] = [];
+          });
+          return updated;
+        });
+      }
+    }
+  }, []);
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCells, lastSpaceTime, setSelectedCells, setShiftSelectStart, setCheckedCells, setCellBadges]);
+  // 🎯 컴포넌트가 마운트될 때 포커스 설정
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, []);
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
@@ -824,9 +875,14 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setDragState(resetDragState);
   }, [selectedProcessIndex, selectedZone]);
 
-  // 첫 번째 존 자동 선택
+  // 🛡️ 안전한 첫 번째 존 자동 선택
   React.useEffect(() => {
-    if (processFlow[selectedProcessIndex]) {
+    if (processFlow && 
+        processFlow.length > 0 && 
+        selectedProcessIndex >= 0 && 
+        selectedProcessIndex < processFlow.length &&
+        processFlow[selectedProcessIndex] &&
+        processFlow[selectedProcessIndex].zones) {
       const zones = Object.keys(processFlow[selectedProcessIndex].zones);
       if (zones.length > 0) {
         setSelectedZone(zones[0]);
@@ -834,7 +890,8 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     }
   }, [selectedProcessIndex, processFlow]);
 
-  if (processFlow.length === 0) {
+  // 🛡️ 안전성 검사 강화
+  if (!processFlow || processFlow.length === 0) {
     return null;
   }
 
@@ -852,8 +909,15 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* 2중 탭 */}
-        <div className="mb-2 space-y-0">
+        {/* 🎯 키보드 이벤트 스코프 제한을 위한 컨테이너 */}
+        <div 
+          ref={containerRef}
+          tabIndex={-1} 
+          onKeyDown={handleKeyDown}
+          className="outline-none"
+        >
+          {/* 2중 탭 */}
+          <div className="mb-2 space-y-0">
           <div className="flex items-center gap-4">
             <div className="w-16 text-sm font-medium text-default-900">Process</div>
             <Tabs
@@ -871,12 +935,13 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             </Tabs>
           </div>
 
-          {processFlow[selectedProcessIndex] && (
+          {/* 🛡️ 안전한 존 탭 렌더링 */}
+          {processFlow && processFlow[selectedProcessIndex] && processFlow[selectedProcessIndex].zones && (
             <div className="flex items-center gap-4">
               <div className="w-16 text-sm font-medium text-default-900">Zone</div>
               <Tabs value={selectedZone} onValueChange={setSelectedZone} className="flex-1">
-                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones).length}, 1fr)` }}>
-                  {Object.keys(processFlow[selectedProcessIndex].zones).map((zoneName) => (
+                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones || {}).length}, 1fr)` }}>
+                  {Object.keys(processFlow[selectedProcessIndex].zones || {}).map((zoneName) => (
                     <TabsTrigger key={zoneName} value={zoneName} className="text-sm font-medium text-default-900">
                       {zoneName}
                     </TabsTrigger>
@@ -903,17 +968,17 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               setContextMenu({ show: false, cellId: '', targetCells: [] });
             }}
           >
-            {/* 선택된 셀 개수 안내 */}
+            {/* Selected cells count info */}
             {(contextMenu.targetCells?.length || 0) > 1 && (
               <>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                  선택된 {contextMenu.targetCells?.length || 0}개 셀에 적용
+                  Apply to {contextMenu.targetCells?.length || 0} selected cells
                 </div>
                 <DropdownMenuSeparator />
               </>
             )}
             
-            {/* 모두 선택 옵션 */}
+            {/* Select All option */}
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
@@ -922,8 +987,8 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               className="cursor-pointer"
             >
               <div className="flex items-center gap-2 w-full">
-                <span className="text-primary">⭐</span>
-                <span className="font-medium">모두 선택</span>
+                <Star size={16} className="text-primary" />
+                <span className="font-medium">Select All</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -932,7 +997,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               <DropdownMenuSub key={category}>
                 <DropdownMenuSubTrigger>
                   <span className="flex items-center gap-2">
-                    <span>{config.icon}</span>
+                    <config.icon size={16} className={config.textColor} />
                     <span>{category}</span>
                   </span>
                 </DropdownMenuSubTrigger>
@@ -975,7 +1040,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                     className="cursor-pointer"
                   >
                     <div className="flex items-center gap-2 w-full">
-                      <span>모두 토글</span>
+                      <span>Toggle All</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
@@ -989,7 +1054,10 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               }}
               className="text-red-600 cursor-pointer"
             >
-              🗑️ 모든 뱃지 삭제
+              <div className="flex items-center gap-2 w-full">
+                <Trash2 size={16} />
+                <span>Clear All Badges</span>
+              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1115,22 +1183,21 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                               </button>
                             </div>
                             
-                            {/* 뱃지 행 - 카테고리별 통합 표시 */}
+                            {/* Badge row - Category integrated display */}
                             {badges.length > 0 && (
                               <div className="flex flex-wrap gap-0.5 justify-center">
                                 {badges.map((categoryBadge) => (
-                                  <Badge 
+                                  <span
                                     key={`${cellId}-${categoryBadge.category}`}
-                                    variant={categoryBadge.variant}
-                                    className="text-[9px] px-1 py-0 h-4 cursor-pointer hover:opacity-70"
+                                    className={`inline-flex items-center px-1 py-0 h-4 text-[9px] font-medium rounded-sm border cursor-pointer hover:opacity-70 transition-opacity ${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleRemoveCategoryBadge(cellId, categoryBadge.category);
                                     }}
-                                    title={`${categoryBadge.category}: ${categoryBadge.options.join('|')} (클릭하여 전체 제거)`}
+                                    title={`${categoryBadge.category}: ${categoryBadge.options.join('|')} (Click to remove entire category)`}
                                   >
                                     {categoryBadge.options.join('|')}
-                                  </Badge>
+                                  </span>
                                 ))}
                               </div>
                             )}
@@ -1152,6 +1219,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             Select a process and zone to configure operating schedule
           </div>
         )}
+        </div>
       </CardContent>
     </Card>
   );
