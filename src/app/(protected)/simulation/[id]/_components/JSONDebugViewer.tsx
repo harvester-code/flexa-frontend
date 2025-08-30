@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Bug, ChevronRight, Download, FileText, Folder, Rocket, Send, X } from 'lucide-react';
+import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
   useFlightScheduleStore,
@@ -27,9 +27,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     flightSchedule: false, // 기본적으로 접힘
     passengerSchedule: false,
     processingProcedures: false,
-    finalJSON: true, // 최종 JSON 구조 (기본 펼침)
-    components: true, // components 키 (기본 접힘)
-    processes: true, // processes 키 (기본 접힘)
   });
 
   // 개별 모듈화된 스토어에서 모든 탭 데이터 수집
@@ -75,68 +72,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     };
   }, [simulationId, flightSchedule, passengerSchedule, airportProcessing]);
 
-  // 보조 함수들 (useMemo 위에서 먼저 정의)
-  const generateFacilitySchedules = (length: number) => {
-    return Array(18)
-      .fill(null)
-      .map(() => Array(length).fill(180.0));
-  };
 
-  const generateDefaultMatrix = () => {
-    return {
-      A: { Dep1: 0.96, Dep2: 0.04 },
-      B: { Dep1: 0.92, Dep2: 0.08 },
-      C: { Dep1: 0.88, Dep2: 0.12 },
-      D: { Dep1: 0.84, Dep2: 0.16 },
-      E: { Dep1: 0.8, Dep2: 0.2 },
-      F: { Dep1: 0.76, Dep2: 0.24 },
-      G: { Dep1: 0.6, Dep2: 0.4 },
-      H: { Dep1: 0.24, Dep2: 0.76 },
-    };
-  };
-
-  const generatePriorityMatrix = () => {
-    return passengerSchedule.pax_arrival_patterns.rules.map((rule) => ({
-      conditions: rule.conditions,
-      mean: rule.mean,
-      standard_deviation: rule.std,
-    }));
-  };
-
-  // 실시간 JSON 생성
-  const simulationJSON = useMemo(() => {
-    // Processing Procedures를 기반으로 components 생성
-    const components = airportProcessing.process_flow.map((process, index) => {
-      const nodes = Object.entries(process.zones || {}).flatMap(([zoneName, zone]: [string, any]) => 
-        (zone.facilities || []).map((facility: any, facilityIndex: number) => ({
-          id: facilityIndex,
-          name: facility.id || `${zoneName}_${facilityIndex + 1}`,
-          facility_count: 18,
-          facility_type: 'limited_facility',
-          max_queue_length: 200,
-          facility_schedules: generateFacilitySchedules(144),
-        }))
-      );
-
-      return {
-        name: process.name || 'Unnamed Process',
-        nodes: nodes,
-      };
-    });
-
-    // Processes는 빈 객체로 설정
-    const processes = {};
-
-    return {
-      components,
-      processes,
-    };
-  }, [
-    airportProcessing.process_flow,
-    passengerSchedule.pax_arrival_patterns.rules,
-    flightSchedule.airport,
-    flightSchedule.date,
-  ]);
 
   const toggleCollapse = (section: keyof typeof collapsed) => {
     setCollapsed((prev) => ({
@@ -162,7 +98,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     return (
       <div className="mb-4">
         <Button
-          variant="btn-link"
+          variant="link"
           onClick={() => toggleCollapse(collapsedKey)}
           className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
@@ -179,59 +115,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     );
   };
 
-  const renderJSONSection = (title: string, data: any, collapsedKey: keyof typeof collapsed) => {
-    const isCollapsed = collapsed[collapsedKey];
 
-    // facility_schedules 부분을 압축하여 표시
-    const processedData =
-      title === 'components' || title === 'Complete JSON Structure'
-        ? Array.isArray(data)
-          ? data.map((component: any) => ({
-              ...component,
-              nodes: component.nodes?.map((node: any) => ({
-                ...node,
-                facility_schedules: node.facility_schedules
-                  ? `[${node.facility_schedules.length} arrays x ${node.facility_schedules[0]?.length || 0} items each - COMPRESSED]`
-                  : node.facility_schedules,
-              })),
-            }))
-          : title === 'Complete JSON Structure'
-            ? {
-                ...data,
-                components: data.components?.map((component: any) => ({
-                  ...component,
-                  nodes: component.nodes?.map((node: any) => ({
-                    ...node,
-                    facility_schedules: node.facility_schedules
-                      ? `[${node.facility_schedules.length} arrays x ${node.facility_schedules[0]?.length || 0} items each - COMPRESSED]`
-                      : node.facility_schedules,
-                  })),
-                })),
-              }
-            : data
-        : data;
-
-    return (
-      <div className="mb-4">
-        <button
-          onClick={() => toggleCollapse(collapsedKey)}
-          className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          <ChevronRight className={`h-4 w-4 transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} />
-          {title} ({Array.isArray(data) ? data.length : Object.keys(data || {}).length} items)
-          {(title === 'components' || title === 'Complete JSON Structure') && (
-            <span className="text-xs text-default-500">(facility_schedules compressed)</span>
-          )}
-        </button>
-
-        {!isCollapsed && (
-          <pre className="max-h-80 overflow-auto rounded border bg-gray-100 p-3 text-xs">
-            {JSON.stringify(processedData, null, 2)}
-          </pre>
-        )}
-      </div>
-    );
-  };
 
   if (!visible) return null;
 
@@ -324,20 +208,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
           </pre>
         </div>
 
-        {/* 최종 생성 결과 - 위치 이동 */}
-        <div className="mt-6 border-t border-gray-300 pt-4">
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-default-900">
-            <FileText className="h-4 w-4" />
-            Final JSON Structure (S3 Ready)
-          </h4>
 
-          {/* 최종 JSON 전체 구조 */}
-          <pre className="max-h-96 overflow-auto rounded border bg-gray-50 p-2 text-xs">
-            {JSON.stringify(simulationJSON, null, 2)}
-          </pre>
-
-          {/* 전체 JSON 다운로드 버튼 및 관련 코드 완전히 제거 */}
-        </div>
       </div>
     </div>
   );
