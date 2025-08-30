@@ -29,6 +29,16 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   
   // 더블 스페이스 감지를 위한 상태
   const [lastSpaceTime, setLastSpaceTime] = useState<number>(0);
+  
+  // Shift 범위 선택을 위한 마지막 선택 위치
+  const [lastSelectedRow, setLastSelectedRow] = useState<number | null>(null);
+  const [lastSelectedCol, setLastSelectedCol] = useState<number | null>(null);
+  
+  // 행/열 드래그 상태
+  const [isRowDragging, setIsRowDragging] = useState(false);
+  const [isColDragging, setIsColDragging] = useState(false);
+  const [rowDragStart, setRowDragStart] = useState<number | null>(null);
+  const [colDragStart, setColDragStart] = useState<number | null>(null);
 
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
@@ -119,7 +129,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       // Shift + 클릭: 범위 선택 (기존 선택 대체)
       selectCellRange(shiftSelectStart.row, shiftSelectStart.col, rowIndex, colIndex);
     } else {
-      // 일반 클릭: 새로 선택
+      // 일반 클릭: 새로 선택 (기존 선택 해제)
       setShiftSelectStart({ row: rowIndex, col: colIndex });
       setSelectedCells(new Set([cellId]));
     }
@@ -136,6 +146,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     e.preventDefault();
     setIsDragging(true);
     setDragStart({ row: rowIndex, col: colIndex });
+    // 일반 드래그 시작: 새로 선택 (기존 선택 해제)
     setSelectedCells(new Set([cellId]));
     setShiftSelectStart({ row: rowIndex, col: colIndex });
   }, [handleCellClick]);
@@ -161,6 +172,10 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     const handleGlobalMouseUp = () => {
       setIsDragging(false);
       setDragStart(null);
+      setIsRowDragging(false);
+      setRowDragStart(null);
+      setIsColDragging(false);
+      setColDragStart(null);
     };
 
     document.addEventListener('mouseup', handleGlobalMouseUp);
@@ -201,6 +216,196 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setLastSpaceTime(currentTime);
   }, [selectedCells, lastSpaceTime]);
 
+  // 열 드래그 핸들러들
+  const handleColumnMouseDown = useCallback((colIndex: number, e: React.MouseEvent) => {
+    // Shift나 Ctrl 키가 눌려있으면 클릭 처리
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      handleColumnClick(colIndex, e);
+      return;
+    }
+
+    e.preventDefault();
+    setIsColDragging(true);
+    setColDragStart(colIndex);
+    
+    // 드래그 시작할 때 해당 열 선택
+    const columnCellIds = new Set<string>();
+    for (let row = 0; row < timeSlots.length; row++) {
+      columnCellIds.add(`${row}-${colIndex}`);
+    }
+    setSelectedCells(columnCellIds);
+    setLastSelectedCol(colIndex);
+  }, [timeSlots.length]);
+
+  const handleColumnMouseEnter = useCallback((colIndex: number, e: React.MouseEvent) => {
+    if (isColDragging && colDragStart !== null) {
+      e.preventDefault();
+      
+      // 드래그 범위의 모든 열 선택
+      const startCol = Math.min(colDragStart, colIndex);
+      const endCol = Math.max(colDragStart, colIndex);
+      
+      const rangeCellIds = new Set<string>();
+      for (let col = startCol; col <= endCol; col++) {
+        for (let row = 0; row < timeSlots.length; row++) {
+          rangeCellIds.add(`${row}-${col}`);
+        }
+      }
+      
+      setSelectedCells(rangeCellIds);
+    }
+  }, [isColDragging, colDragStart, timeSlots.length]);
+
+  const handleColumnMouseUp = useCallback(() => {
+    setIsColDragging(false);
+    setColDragStart(null);
+  }, []);
+
+  // 열 전체 선택/해제 핸들러 (클릭용)
+  const handleColumnClick = useCallback((colIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.shiftKey && lastSelectedCol !== null) {
+      // Shift + 클릭: 범위 선택 (이전 선택 열부터 현재 열까지)
+      const startCol = Math.min(lastSelectedCol, colIndex);
+      const endCol = Math.max(lastSelectedCol, colIndex);
+      
+      const rangeCellIds = new Set<string>();
+      for (let col = startCol; col <= endCol; col++) {
+        for (let row = 0; row < timeSlots.length; row++) {
+          rangeCellIds.add(`${row}-${col}`);
+        }
+      }
+      
+      setSelectedCells(rangeCellIds);
+    } else {
+      // 해당 열의 모든 셀 ID 생성 (0~143 행)
+      const columnCellIds = new Set<string>();
+      for (let row = 0; row < timeSlots.length; row++) {
+        columnCellIds.add(`${row}-${colIndex}`);
+      }
+
+      setSelectedCells(prev => {
+        // Ctrl/Cmd 키가 눌려있지 않으면 기존 선택 해제
+        const newSet = e.ctrlKey || e.metaKey ? new Set(prev) : new Set<string>();
+        
+        // 현재 선택된 셀들 중 해당 열이 전체 선택되어 있는지 확인
+        const isFullySelected = Array.from(columnCellIds).every(cellId => newSet.has(cellId));
+        
+        if (isFullySelected) {
+          // 전체 선택되어 있으면 해제
+          columnCellIds.forEach(cellId => newSet.delete(cellId));
+        } else {
+          // 일부 또는 전혀 선택되지 않은 경우 전체 선택
+          columnCellIds.forEach(cellId => newSet.add(cellId));
+        }
+        
+        return newSet;
+      });
+    }
+
+    // 마지막 선택 열 기록
+    setLastSelectedCol(colIndex);
+    // Shift 선택 시작점 설정
+    setShiftSelectStart({ row: 0, col: colIndex });
+  }, [timeSlots.length, lastSelectedCol]);
+
+  // 행 드래그 핸들러들
+  const handleRowMouseDown = useCallback((rowIndex: number, e: React.MouseEvent) => {
+    // Shift나 Ctrl 키가 눌려있으면 클릭 처리
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      handleRowClick(rowIndex, e);
+      return;
+    }
+
+    e.preventDefault();
+    setIsRowDragging(true);
+    setRowDragStart(rowIndex);
+    
+    // 드래그 시작할 때 해당 행 선택
+    const rowCellIds = new Set<string>();
+    for (let col = 0; col < currentFacilities.length; col++) {
+      rowCellIds.add(`${rowIndex}-${col}`);
+    }
+    setSelectedCells(rowCellIds);
+    setLastSelectedRow(rowIndex);
+  }, [currentFacilities.length]);
+
+  const handleRowMouseEnter = useCallback((rowIndex: number, e: React.MouseEvent) => {
+    if (isRowDragging && rowDragStart !== null) {
+      e.preventDefault();
+      
+      // 드래그 범위의 모든 행 선택
+      const startRow = Math.min(rowDragStart, rowIndex);
+      const endRow = Math.max(rowDragStart, rowIndex);
+      
+      const rangeCellIds = new Set<string>();
+      for (let row = startRow; row <= endRow; row++) {
+        for (let col = 0; col < currentFacilities.length; col++) {
+          rangeCellIds.add(`${row}-${col}`);
+        }
+      }
+      
+      setSelectedCells(rangeCellIds);
+    }
+  }, [isRowDragging, rowDragStart, currentFacilities.length]);
+
+  const handleRowMouseUp = useCallback(() => {
+    setIsRowDragging(false);
+    setRowDragStart(null);
+  }, []);
+
+  // 행 전체 선택/해제 핸들러 (클릭용)
+  const handleRowClick = useCallback((rowIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.shiftKey && lastSelectedRow !== null) {
+      // Shift + 클릭: 범위 선택 (이전 선택 행부터 현재 행까지)
+      const startRow = Math.min(lastSelectedRow, rowIndex);
+      const endRow = Math.max(lastSelectedRow, rowIndex);
+      
+      const rangeCellIds = new Set<string>();
+      for (let row = startRow; row <= endRow; row++) {
+        for (let col = 0; col < currentFacilities.length; col++) {
+          rangeCellIds.add(`${row}-${col}`);
+        }
+      }
+      
+      setSelectedCells(rangeCellIds);
+    } else {
+      // 해당 행의 모든 셀 ID 생성 (0~currentFacilities.length-1 열)
+      const rowCellIds = new Set<string>();
+      for (let col = 0; col < currentFacilities.length; col++) {
+        rowCellIds.add(`${rowIndex}-${col}`);
+      }
+
+      setSelectedCells(prev => {
+        // Ctrl/Cmd 키가 눌려있지 않으면 기존 선택 해제
+        const newSet = e.ctrlKey || e.metaKey ? new Set(prev) : new Set<string>();
+        
+        // 현재 선택된 셀들 중 해당 행이 전체 선택되어 있는지 확인
+        const isFullySelected = Array.from(rowCellIds).every(cellId => newSet.has(cellId));
+        
+        if (isFullySelected) {
+          // 전체 선택되어 있으면 해제
+          rowCellIds.forEach(cellId => newSet.delete(cellId));
+        } else {
+          // 일부 또는 전혀 선택되지 않은 경우 전체 선택
+          rowCellIds.forEach(cellId => newSet.add(cellId));
+        }
+        
+        return newSet;
+      });
+    }
+
+    // 마지막 선택 행 기록
+    setLastSelectedRow(rowIndex);
+    // Shift 선택 시작점 설정
+    setShiftSelectStart({ row: rowIndex, col: 0 });
+  }, [currentFacilities.length, lastSelectedRow]);
+
   // 키보드 이벤트 등록
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -236,6 +441,12 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setDragStart(null);
     setSelectedCells(new Set());
     setShiftSelectStart(null);
+    setLastSelectedRow(null);
+    setLastSelectedCol(null);
+    setIsRowDragging(false);
+    setRowDragStart(null);
+    setIsColDragging(false);
+    setColDragStart(null);
   }, [selectedProcessIndex, selectedZone]);
 
   if (processFlow.length === 0) {
@@ -299,9 +510,16 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             <table className="w-full table-fixed text-xs">
               <thead className="sticky top-0 bg-muted">
                 <tr>
-                  <th className="w-16 border-r p-2 text-left">Time</th>
-                  {currentFacilities.map((facility) => (
-                    <th key={facility.id} className="min-w-20 border-r p-2 text-center">
+                  <th className="w-16 border-r p-2 text-left select-none">Time</th>
+                  {currentFacilities.map((facility, colIndex) => (
+                    <th 
+                      key={facility.id} 
+                      className="min-w-20 border-r p-2 text-center cursor-pointer hover:bg-primary/10 transition-colors select-none"
+                      onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
+                      onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
+                      onMouseUp={handleColumnMouseUp}
+                      title={`Click or drag to select columns: ${facility.id}`}
+                    >
                       {facility.id}
                     </th>
                   ))}
@@ -310,7 +528,13 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
               <tbody>
                 {timeSlots.map((timeSlot, rowIndex) => (
                   <tr key={rowIndex} className="border-t">
-                    <td className="border-r p-1 text-center text-xs font-medium text-default-500">
+                    <td 
+                      className="border-r p-1 text-center text-xs font-medium text-default-500 cursor-pointer hover:bg-primary/10 transition-colors select-none"
+                      onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
+                      onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
+                      onMouseUp={handleRowMouseUp}
+                      title={`Click or drag to select rows: ${timeSlot}`}
+                    >
                       {timeSlot}
                     </td>
                     {currentFacilities.map((facility, colIndex) => {
