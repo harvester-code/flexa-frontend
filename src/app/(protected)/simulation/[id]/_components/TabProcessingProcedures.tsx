@@ -54,8 +54,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const [currentFacilities, setCurrentFacilities] = useState<FacilityItem[]>([]);
   const [editingFacilities, setEditingFacilities] = useState<FacilityItem[]>([]);
 
-  // Zone별 facility 개수 상태
-  const [facilityCountPerZone, setFacilityCountPerZone] = useState<{ [zoneName: string]: number }>({});
+
 
   // 시뮬레이션 실행 상태
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
@@ -94,19 +93,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     );
   }, [processFlow]);
 
-  // processFlow가 변경될 때마다 facilityCountPerZone 자동 계산
-  useEffect(() => {
-    const calculatedCounts: { [key: string]: number } = {};
 
-    processFlow.forEach((process, processIndex) => {
-      Object.entries(process.zones).forEach(([zoneName, zone]: [string, any]) => {
-        const count = zone.facilities?.length || 0;
-        calculatedCounts[`${processIndex}-${zoneName}`] = count;
-      });
-    });
-
-    setFacilityCountPerZone(calculatedCounts);
-  }, [processFlow]);
 
   // 시설명 확장 함수 (범용적 처리: DG12_3-4-6-2~5 → DG12_3-4-6-2,DG12_3-4-6-3,DG12_3-4-6-4,DG12_3-4-6-5)
   const expandFacilityNames = (input: string): FacilityItem[] => {
@@ -460,7 +447,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       </Card>
 
       {/* Process Flow Layout */}
-      <div className="grid h-[600px] grid-cols-3 gap-6">
+      <div className="grid h-[600px] grid-cols-2 gap-6">
         {/* Left Panel - Process Flow */}
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
@@ -796,86 +783,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           </CardContent>
         </Card>
 
-        {/* Third Panel - Facility Detail */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Facility Detail</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[500px] overflow-y-auto pb-16">
-            {processFlow.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-default-500">
-                <div className="text-center">
-                  <Settings2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <p>Add processes to configure facilities</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="text-sm text-default-500">Set facility count for each zone</div>
 
-                {processFlow.map((step, procIndex) => (
-                  <div key={procIndex} className="space-y-4">
-                    <div className="border-b pb-2">
-                      <h4 className="font-medium text-default-900">{formatProcessName(step.name)}</h4>
-                      <div className="text-xs text-default-500">
-                        {Object.keys(processFlow[procIndex]?.zones || {}).length} zones
-                      </div>
-                    </div>
-
-                    {Object.keys(processFlow[procIndex]?.zones || {}).map((zoneName, zoneIndex) => (
-                      <div key={zoneIndex} className="space-y-3 rounded-lg border border-gray-200 p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-default-900">Zone: {zoneName}</div>
-                            <div className="text-xs text-default-500">
-                              {facilityCountPerZone[`${procIndex}-${zoneName}`] || 0} facilities
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium">Count:</label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="20"
-                              className="w-20"
-                              value={facilityCountPerZone[`${procIndex}-${zoneName}`] || ''}
-                              onChange={(e) => {
-                                const count = parseInt(e.target.value) || 0;
-                                setFacilityCountPerZone((prev) => ({
-                                  ...prev,
-                                  [`${procIndex}-${zoneName}`]: count,
-                                }));
-                                // zustand store에 facilities 생성
-                                setFacilitiesForZone(procIndex, zoneName, count);
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Facility 목록 표시 */}
-                        {facilityCountPerZone[`${procIndex}-${zoneName}`] > 0 && (
-                          <div className="mt-3">
-                            <div className="mb-2 text-xs font-medium text-default-900">Generated Facilities:</div>
-                            <div className="flex flex-wrap gap-1">
-                              {Array.from({ length: facilityCountPerZone[`${procIndex}-${zoneName}`] || 0 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                                >
-                                  {zoneName}_{i + 1}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Operating Schedule Editor - Facility가 설정되면 자동 표시 */}
