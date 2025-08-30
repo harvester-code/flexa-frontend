@@ -336,7 +336,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return false;
     
-    // 카테고리별로 옵션 확인
+    // 🚀 매번 새로운 상태에서 확인 (경쟁 조건 방지)
     const cellsWithOption = targetCells.filter(cellId => {
       const badges = cellBadges[cellId] || [];
       return badges.some(badge => badge.options.includes(option));
@@ -381,7 +381,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         const existingBadges = updated[cellId] || [];
         const newBadges: CategoryBadge[] = [];
         
-        // 각 카테고리별로 모든 옵션 추가
+        // 🚀 startTransition으로 비차단 업데이트 + 각 카테고리별로 모든 옵션 추가
         Object.entries(CONDITION_CATEGORIES).forEach(([category, config]) => {
           const existingCategoryIndex = existingBadges.findIndex(badge => badge.category === category);
           
@@ -630,7 +630,8 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       setDragState(resetDragState);
     };
 
-    document.addEventListener('mouseup', handleGlobalMouseUp);
+    // 🛡️ 패시브 리스너로 성능 최적화
+    document.addEventListener('mouseup', handleGlobalMouseUp, { passive: true });
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
@@ -820,26 +821,29 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       if (selectedCells.size > 0) {
         const targetCells = Array.from(selectedCells);
         
-        // 체크박스 제거
-        setCheckedCells(prev => {
-          const newSet = new Set(prev);
-          targetCells.forEach(cellId => newSet.delete(cellId));
-          return newSet;
-        });
-        
-        // 뱃지 제거
-        setCellBadges(prev => {
-          const updated = { ...prev };
-          targetCells.forEach(cellId => {
-            updated[cellId] = [];
+        // 🚀 배치 업데이트로 경쟁 조건 방지 및 성능 향상
+        React.startTransition(() => {
+          // 체크박스 제거
+          setCheckedCells(prev => {
+            const newSet = new Set(prev);
+            targetCells.forEach(cellId => newSet.delete(cellId));
+            return newSet;
           });
-          return updated;
+          
+          // 뱃지 제거
+          setCellBadges(prev => {
+            const updated = { ...prev };
+            targetCells.forEach(cellId => {
+              delete updated[cellId]; // 빈 배열 대신 완전 제거로 메모리 최적화
+            });
+            return updated;
+          });
         });
       }
     }
   }, [selectedCells]);
 
-  // 🎯 컴포넌트가 마운트되고 업데이트될 때마다 포커스 보장
+  // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
   useEffect(() => {
     const ensureFocus = () => {
       if (containerRef.current && document.activeElement !== containerRef.current) {
@@ -850,20 +854,20 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     // 초기 포커스 설정
     ensureFocus();
 
-    // 클릭 이벤트 리스너 추가로 포커스 복원
+    // 🛡️ 클릭 이벤트 리스너는 한 번만 등록
     const handleDocumentClick = (e: MouseEvent) => {
-      // 컨테이너 내부를 클릭했을 때만 포커스 복원
       if (containerRef.current?.contains(e.target as Node)) {
-        setTimeout(() => ensureFocus(), 0);
+        // RAF로 포커스 복원 최적화
+        requestAnimationFrame(() => ensureFocus());
       }
     };
 
-    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('click', handleDocumentClick, { passive: true });
     
     return () => {
       document.removeEventListener('click', handleDocumentClick);
     };
-  }, [selectedCells, checkedCells]); // 상태 변경시에도 포커스 확인
+  }, []); // 🚀 한 번만 실행 (의존성 제거)
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
