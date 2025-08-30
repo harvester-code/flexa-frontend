@@ -4,7 +4,6 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
-  useFacilityConnectionStore,
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
@@ -35,11 +34,11 @@ export default function NextButton({
   const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
   const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
   const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
-  const facilityConnectionCompleted = useFacilityConnectionStore((s) => s.isCompleted);
+
 
   // 각 탭의 완료 상태에 따라 Next 버튼 활성화 제어
   const getCanGoNext = () => {
-    if (currentScenarioTab >= 3) return false; // 마지막 탭에서는 Next 버튼 비활성화
+    if (currentScenarioTab >= 2) return false; // 마지막 탭에서는 Next 버튼 비활성화
 
     switch (currentScenarioTab) {
       case 0: // Flight Schedule
@@ -48,8 +47,6 @@ export default function NextButton({
         return passengerScheduleCompleted;
       case 2: // Processing Procedures
         return processingProceduresCompleted;
-      case 3: // Facility Connection
-        return facilityConnectionCompleted;
       default:
         return false;
     }

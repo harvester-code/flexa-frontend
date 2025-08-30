@@ -25,13 +25,12 @@ import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
 import JSONDebugViewer from './_components/JSONDebugViewer';
 import TabDefault from './_components/TabDefault';
-import TabFacilityConnection from './_components/TabFacilityConnection';
+
 import TabFlightSchedule from './_components/TabFlightSchedule';
 import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 import {
-  useFacilityConnectionStore,
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
@@ -42,7 +41,6 @@ const tabs: { text: string; number: number }[] = [
   { text: 'Flight Schedule', number: 0 },
   { text: 'Passenger Schedule', number: 1 },
   { text: 'Processing Procedures', number: 2 },
-  { text: 'Facility Connection', number: 3 },
 ];
 
 export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -60,7 +58,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
   const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
   const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
-  const facilityConnectionCompleted = useFacilityConnectionStore((s) => s.isCompleted);
+
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -85,10 +83,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         useProcessingProceduresStore.getState().loadMetadata(tabs.processingProcedures);
       }
 
-      if (tabs.facilityConnection) {
-        console.log('Facility Connection 데이터 로드:', tabs.facilityConnection);
-        useFacilityConnectionStore.getState().loadMetadata(tabs.facilityConnection);
-      }
+
 
       // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외
 
@@ -104,7 +99,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       flightScheduleCompleted,
       passengerScheduleCompleted,
       processingProceduresCompleted,
-      facilityConnectionCompleted,
     ];
 
     // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
@@ -121,7 +115,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       const flightScheduleState = useFlightScheduleStore.getState();
       const passengerScheduleState = usePassengerScheduleStore.getState();
       const processingProceduresState = useProcessingProceduresStore.getState();
-      const facilityConnectionState = useFacilityConnectionStore.getState();
+
       const scenarioProfileState = useScenarioProfileStore.getState();
 
       const metadata = {
@@ -148,10 +142,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             process_flow: processingProceduresState.process_flow,
             isCompleted: processingProceduresState.isCompleted,
           },
-          facilityConnection: {
-            processes: facilityConnectionState.processes,
-            isCompleted: facilityConnectionState.isCompleted,
-          },
+
           scenarioProfile: {
             checkpoint: scenarioProfileState.checkpoint,
             scenarioName: scenarioProfileState.scenarioName,
@@ -317,7 +308,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             setApiRequestLog={setApiRequestLog}
           />
           <TabProcessingProcedures visible={currentScenarioTab === 2} simulationId={simulationId} />
-          <TabFacilityConnection visible={currentScenarioTab === 3} simulationId={simulationId} />
         </React.Fragment>
       ) : (
         <SimulationLoading minHeight="min-h-[200px]" />

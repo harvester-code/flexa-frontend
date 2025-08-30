@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { Bug, ChevronRight, Download, FileText, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
-  useFacilityConnectionStore,
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
@@ -27,7 +26,6 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
     flightSchedule: false, // 기본적으로 접힘
     passengerSchedule: false,
     processingProcedures: false,
-    facilityConnection: false,
     finalJSON: true, // 최종 JSON 구조 (기본 펼침)
     components: true, // components 키 (기본 접힘)
     processes: true, // processes 키 (기본 접힘)
@@ -59,10 +57,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
     isCompleted: useProcessingProceduresStore((s) => s.isCompleted),
   };
 
-  const facilityConnection = {
-    processes: useFacilityConnectionStore((s) => s.processes),
-    isCompleted: useFacilityConnectionStore((s) => s.isCompleted),
-  };
+
 
 
 
@@ -74,11 +69,10 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
         flightSchedule: flightSchedule,
         passengerSchedule: passengerSchedule,
         processingProcedures: airportProcessing,
-        facilityConnection: facilityConnection,
       },
       // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
     };
-  }, [flightSchedule, passengerSchedule, airportProcessing, facilityConnection]);
+  }, [flightSchedule, passengerSchedule, airportProcessing]);
 
   // 보조 함수들 (useMemo 위에서 먼저 정의)
   const generateFacilitySchedules = (length: number) => {
@@ -110,36 +104,34 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
 
   // 실시간 JSON 생성
   const simulationJSON = useMemo(() => {
-    // Components 생성 (Processing Procedures + Facility Information)
-    // facilityConnection.processes 객체에서 Entry(0번) 제외하고 나머지로 components 생성
-    const components = Object.entries(facilityConnection.processes || {})
-      .filter(([key, process]) => key !== '0') // Entry 프로세스 제외
-      .map(([key, process]) => {
-        // 간단한 노드 생성 - name과 nodes만 사용
-        const nodes = (process.nodes || []).map((nodeName) => ({
-          id: 0, // 모든 노드 id를 0으로 설정
-          name: nodeName,
+    // Processing Procedures를 기반으로 components 생성
+    const components = airportProcessing.process_flow.map((process, index) => {
+      const nodes = Object.entries(process.zones || {}).flatMap(([zoneName, zone]: [string, any]) => 
+        (zone.facilities || []).map((facility: any, facilityIndex: number) => ({
+          id: facilityIndex,
+          name: facility.id || `${zoneName}_${facilityIndex + 1}`,
           facility_count: 18,
           facility_type: 'limited_facility',
           max_queue_length: 200,
-          facility_schedules: generateFacilitySchedules(144), // 144개 기본값
-        }));
+          facility_schedules: generateFacilitySchedules(144),
+        }))
+      );
 
-        return {
-          name: process.name, // 원래 name 그대로 사용
-          nodes: nodes,
-        };
-      });
+      return {
+        name: process.name || 'Unnamed Process',
+        nodes: nodes,
+      };
+    });
 
-    // Processes 생성 (Facility Connection) - 원본 JSON 구조에 맞게 processes로 명명
-    const processes = facilityConnection.processes || {};
+    // Processes는 빈 객체로 설정
+    const processes = {};
 
     return {
       components,
       processes,
     };
   }, [
-    facilityConnection.processes,
+    airportProcessing.process_flow,
     passengerSchedule.pax_arrival_patterns.rules,
     flightSchedule.airport,
     flightSchedule.date,
@@ -316,8 +308,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
         {/* 3. Processing Procedures - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Processing Procedures', airportProcessing, 'processingProcedures', 'bg-yellow-50')}
 
-        {/* 4. Facility Connection - 전체 스토어 데이터 */}
-        {renderCollapsibleSection('Facility Connection', facilityConnection, 'facilityConnection', 'bg-purple-50')}
+
 
 
 

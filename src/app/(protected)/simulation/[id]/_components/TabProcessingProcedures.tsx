@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useToast } from '@/hooks/useToast';
 import { formatProcessName } from '@/lib/utils';
-import { useFacilityConnectionStore, useProcessingProceduresStore } from '../_stores';
+import { useProcessingProceduresStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 import OperatingScheduleEditor from './OperatingScheduleEditor';
@@ -33,7 +33,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const setIsCompleted = useProcessingProceduresStore((s) => s.setCompleted);
   const setFacilitiesForZone = useProcessingProceduresStore((s) => s.setFacilitiesForZone);
   const updateTravelTime = useProcessingProceduresStore((s) => s.updateTravelTime);
-  const generateProcesses = useFacilityConnectionStore((s) => s.generateProcessesFromProcedures);
+
   const { toast } = useToast();
 
   // 더 이상 변환 함수가 필요없음 - zustand의 process_flow를 직접 사용

@@ -22,7 +22,7 @@ interface ConnectionMatrix {
   };
 }
 
-interface TabFacilityConnectionTableProps {
+interface TabConnectionTableProps {
   connections: ProcessConnection[];
   connectionMatrices: Record<string, ConnectionMatrix>;
   onToggleConnection: (connectionId: string, sourceNode: string, destNode: string) => void;
@@ -40,7 +40,7 @@ export default function SimulationGridTableNew({
   getTotalPercentage,
   onToggleRow,
   onToggleColumn,
-}: TabFacilityConnectionTableProps) {
+}: TabConnectionTableProps) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ row: number; col: number } | null>(null);

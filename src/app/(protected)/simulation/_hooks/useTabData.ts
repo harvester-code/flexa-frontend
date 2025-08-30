@@ -1,7 +1,6 @@
 // 🚀 모듈화된 Zustand 기반 탭 데이터 훅들
 // 기존 useScenarioStore 대신 개별 모듈을 사용하여 성능과 유지보수성 향상
 import {
-  useFacilityConnectionStore,
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
@@ -138,36 +137,7 @@ export const useAirportProcessingData = () => {
   };
 };
 
-// ==================== 🔗 Facility Connection 탭 데이터 훅 ====================
-export const useFacilityConnectionData = () => {
-  const {
-    // Data
-    processes,
-    isCompleted,
 
-    // Actions
-    setProcesses,
-    generateProcessesFromProcedures,
-    setCompleted,
-    resetState,
-    loadMetadata,
-  } = useFacilityConnectionStore();
-
-  return {
-    // Data
-    processes,
-    isCompleted,
-
-    // Actions (기존 호환성을 위해 actions 객체로 감쌈)
-    actions: {
-      setProcesses,
-      generateProcessesFromProcedures,
-      setIsCompleted: setCompleted,
-      resetState,
-      loadMetadata,
-    },
-  };
-};
 
 // ==================== 📝 Legacy 호환성 지원 ====================
 /**
@@ -206,5 +176,4 @@ export {
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
-  useFacilityConnectionStore,
 } from '../[id]/_stores';

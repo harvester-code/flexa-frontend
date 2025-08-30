@@ -93,7 +93,6 @@ export interface MetadataLoadResponse {
       flightSchedule: any;
       passengerSchedule: any;
       processingProcedures: any;
-      facilityConnection: any;
     };
   };
   s3_key: string;
@@ -256,22 +255,7 @@ export interface PassengerCondition {
   values: string[];
 }
 
-export interface FacilityConnection {
-  processes: Record<string, FacilityProcess>;
-  isCompleted: boolean;
-}
 
-export interface FacilityProcess {
-  name: string;
-  nodes: string[];
-  source: string | null;
-  destination: string | null;
-  default_matrix: Record<string, Record<string, number>> | null;
-  priority_matrix: Array<{
-    condition: Array<{ criteria: string; operator: string; value: string[] }>;
-    matrix: Record<string, Record<string, number>>;
-  }> | null;
-}
 
 export interface FacilityCapacity {
   selectedNodes: number[];
