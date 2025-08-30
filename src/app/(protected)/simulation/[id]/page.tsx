@@ -108,8 +108,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 전체 메타데이터 수집용 함수 - 모든 stores에서 현재 상태 수집
   const getCompleteMetadata = useCallback((scenarioId: string) => {
-    console.log('메타데이터 수집 시작');
-
     try {
       // 각 store에서 현재 상태 수집
       const flightScheduleState = useFlightScheduleStore.getState();
@@ -155,7 +153,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         },
       };
 
-      console.log('메타데이터 수집 완료:', metadata);
       return metadata;
     } catch (error) {
       console.error('메타데이터 수집 중 오류 발생:', error);

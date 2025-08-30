@@ -2,6 +2,19 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { ProcessStep } from '@/types/simulationTypes';
 
+// ==================== Helpers ====================
+/**
+ * 프로세스 이름을 정규화하는 공통 함수
+ * 예: "Visa-Check" -> "visa_check"
+ */
+const normalizeProcessName = (name: string): string => {
+  return name
+    .toLowerCase() // 소문자 변환
+    .replace(/[^a-z0-9]/g, '_') // 영문, 숫자 외 모든 문자를 언더스코어로
+    .replace(/_+/g, '_') // 연속된 언더스코어를 하나로
+    .replace(/^_|_$/g, ''); // 앞뒤 언더스코어 제거
+};
+
 // ==================== Types ====================
 export interface ProcessingProceduresState {
   // Data
@@ -38,7 +51,11 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
     // Actions
     setProcessFlow: (flow) =>
       set((state) => {
-        state.process_flow = flow;
+        // 모든 프로세스 이름 정규화
+        state.process_flow = flow.map((process) => ({
+          ...process,
+          name: normalizeProcessName(process.name),
+        }));
       }),
 
     convertFromProcedures: (procedures, entryType = 'Entry') =>
@@ -48,7 +65,7 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
           .map((procedure, index) => {
             const processStep = {
               step: index,
-              name: procedure.process.toLowerCase().replace(/-/g, '_'), // "Visa-Check" -> "visa_check"
+              name: normalizeProcessName(procedure.process), // "Visa-Check" -> "visa_check"
               travel_time_minutes: 0, // 사용자가 UI에서 설정
               entry_conditions: [],
               zones: {} as Record<string, any>,
@@ -86,10 +103,19 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
           state.process_flow = convertedFlow;
           state.isCompleted = metadata.isCompleted || false;
         } else {
-          // 이미 새로운 형태인 경우 - 원본 데이터 그대로 사용
+          // 이미 새로운 형태인 경우 - 프로세스 이름 정규화 적용
+          const normalizedMetadata = { ...metadata };
+          
+          if (normalizedMetadata.process_flow && Array.isArray(normalizedMetadata.process_flow)) {
+            normalizedMetadata.process_flow = normalizedMetadata.process_flow.map((process: ProcessStep) => ({
+              ...process,
+              name: normalizeProcessName(process.name), // 기존 데이터도 정규화
+            }));
+          }
+          
           Object.assign(state, {
             ...initialState,
-            ...metadata,
+            ...normalizedMetadata,
           });
         }
       }),
@@ -207,7 +233,7 @@ const migrateProceduresToProcessFlow = (procedures: any[]): ProcessStep[] => {
     .map((procedure: any, index: number) => {
       const processStep = {
         step: index,
-        name: procedure.process, // 원본 이름 그대로 사용 (하드코딩 제거)
+        name: normalizeProcessName(procedure.process), // 정규화 적용
         travel_time_minutes: 0, // 사용자가 UI에서 설정
         entry_conditions: [],
         zones: {} as Record<string, any>,
