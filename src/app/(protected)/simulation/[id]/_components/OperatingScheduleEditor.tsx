@@ -5,21 +5,68 @@ import { Clock } from 'lucide-react';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Badge } from '@/components/ui/Badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/DropdownMenu";
 import { formatProcessName, cn } from '@/lib/utils';
 
 interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
 }
 
+// 뱃지 타입 정의
+interface BadgeCondition {
+  id: string;
+  label: string;
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+}
+
+// 더미 데이터: 조건 카테고리와 옵션들
+const CONDITION_CATEGORIES = {
+  "항공사": {
+    icon: "🔵",
+    options: ["KE", "OZ"],
+    variant: "default" as const
+  },
+  "승객유형": {
+    icon: "🟢", 
+    options: ["일반", "승무원"],
+    variant: "secondary" as const
+  },
+  "국적": {
+    icon: "🟡",
+    options: ["내국인", "외국인"],
+    variant: "outline" as const
+  }
+};
+
 // 상수들
 const DOUBLE_CLICK_THRESHOLD = 300;
-const DEFAULT_DRAG_STATE = {
+
+// 드래그 상태 타입 정의
+type DragState = {
+  type: 'cell' | 'row' | 'column' | null;
+  isActive: boolean;
+  start: { row: number; col: number } | null;
+  isAdditive: boolean;
+  originalSelection: Set<string> | null;
+};
+
+const DEFAULT_DRAG_STATE: DragState = {
   type: null,
   isActive: false,
   start: null,
   isAdditive: false,
   originalSelection: null
-} as const;
+};
 
 // 드래그 상태 헬퍼 함수들
 const resetDragState = () => ({ ...DEFAULT_DRAG_STATE });
@@ -122,8 +169,11 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   // 체크박스 상태 관리 (cellId를 키로 사용)
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   
+  // 뱃지 상태 관리 (cellId -> BadgeCondition[])
+  const [cellBadges, setCellBadges] = useState<Record<string, BadgeCondition[]>>({});
+  
   // 통합 드래그 상태
-  const [dragState, setDragState] = useState(resetDragState);
+  const [dragState, setDragState] = useState<DragState>(resetDragState);
   
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   
@@ -137,9 +187,16 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   const [lastSelectedRow, setLastSelectedRow] = useState<number | null>(null);
   const [lastSelectedCol, setLastSelectedCol] = useState<number | null>(null);
 
+  // 우클릭 컨텍스트 메뉴 상태
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    cellId: string;
+    targetCells: string[];
+  }>({ show: false, cellId: '', targetCells: [] });
+
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
-    const slots = [];
+    const slots: string[] = [];
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 10) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -169,6 +226,109 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       return newSet;
     });
   };
+
+  // 개별 뱃지 토글 핸들러 (체크박스용)
+  const handleToggleBadgeOption = useCallback((category: string, option: string) => {
+    const targetCells = contextMenu.targetCells || [];
+    if (targetCells.length === 0) return;
+    
+    const categoryConfig = CONDITION_CATEGORIES[category as keyof typeof CONDITION_CATEGORIES];
+    if (!categoryConfig) return;
+    
+    // 현재 해당 옵션이 모든 타겟 셀에 있는지 확인
+    const hasOptionInAllCells = targetCells.every(cellId => {
+      const badges = cellBadges[cellId] || [];
+      return badges.some(badge => badge.label === option);
+    });
+    
+    setCellBadges(prev => {
+      const updated = { ...prev };
+      
+      if (hasOptionInAllCells) {
+        // 모든 셀에서 해당 옵션 뱃지 제거
+        targetCells.forEach(cellId => {
+          updated[cellId] = (updated[cellId] || []).filter(badge => badge.label !== option);
+        });
+      } else {
+        // 해당 옵션이 없는 셀에만 추가
+        targetCells.forEach(cellId => {
+          const existingBadges = updated[cellId] || [];
+          const hasThisBadge = existingBadges.some(badge => badge.label === option);
+          
+          if (!hasThisBadge) {
+            const newBadge: BadgeCondition = {
+              id: `${category}-${option}-${cellId}-${Date.now()}`,
+              label: option,
+              variant: categoryConfig.variant
+            };
+            updated[cellId] = [...existingBadges, newBadge];
+          }
+        });
+      }
+      
+      return updated;
+    });
+  }, [contextMenu.targetCells, cellBadges]);
+
+  // 체크박스 상태 확인 헬퍼
+  const getOptionCheckState = useCallback((option: string) => {
+    const targetCells = contextMenu.targetCells || [];
+    if (targetCells.length === 0) return false;
+    
+    const cellsWithOption = targetCells.filter(cellId => {
+      const badges = cellBadges[cellId] || [];
+      return badges.some(badge => badge.label === option);
+    });
+    
+    if (cellsWithOption.length === 0) return false; // 없음
+    if (cellsWithOption.length === targetCells.length) return true; // 모두 있음
+    return 'indeterminate'; // 일부만 있음
+  }, [contextMenu.targetCells, cellBadges]);
+
+  // 뱃지 제거 핸들러
+  const handleRemoveBadge = useCallback((cellId: string, badgeId: string) => {
+    setCellBadges(prev => ({
+      ...prev,
+      [cellId]: (prev[cellId] || []).filter(badge => badge.id !== badgeId)
+    }));
+  }, []);
+
+  // 모든 뱃지 제거 핸들러 (선택된 모든 셀에서)
+  const handleClearAllBadges = useCallback(() => {
+    const targetCells = contextMenu.targetCells || [];
+    if (targetCells.length === 0) return;
+    
+    setCellBadges(prev => {
+      const updated = { ...prev };
+      targetCells.forEach(cellId => {
+        updated[cellId] = [];
+      });
+      return updated;
+    });
+  }, [contextMenu.targetCells]);
+
+  // 우클릭 핸들러
+  const handleCellRightClick = useCallback((e: React.MouseEvent, cellId: string) => {
+    e.preventDefault();
+    
+    // 우클릭한 셀이 현재 선택에 포함되어 있는지 확인
+    const isCurrentlySelected = selectedCells.has(cellId);
+    
+    let targetCells: string[];
+    if (isCurrentlySelected && selectedCells.size > 1) {
+      // 선택된 셀들 중 하나를 우클릭한 경우 → 모든 선택된 셀에 적용
+      targetCells = Array.from(selectedCells);
+    } else {
+      // 선택되지 않은 셀을 우클릭한 경우 → 해당 셀에만 적용
+      targetCells = [cellId];
+    }
+    
+    setContextMenu({
+      show: true,
+      cellId,
+      targetCells
+    });
+  }, [selectedCells]);
 
   // 범위 셀 ID 생성 헬퍼 함수 (시설 검증 포함)  
   const generateRangeCellIds = useCallback((startRow: number, startCol: number, endRow: number, endCol: number) => {
@@ -482,6 +642,18 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleSpaceKey]);
 
+  // 탭 변경 시 선택 상태들 초기화
+  React.useEffect(() => {
+    setCheckedCells(new Set());
+    setSelectedCells(new Set());
+    setCellBadges({});
+    setContextMenu({ show: false, cellId: '', targetCells: [] });
+    setShiftSelectStart(null);
+    setLastSelectedRow(null);
+    setLastSelectedCol(null);
+    setDragState(resetDragState);
+  }, [selectedProcessIndex, selectedZone]);
+
   // 첫 번째 존 자동 선택
   React.useEffect(() => {
     if (processFlow[selectedProcessIndex]) {
@@ -491,16 +663,6 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
       }
     }
   }, [selectedProcessIndex, processFlow]);
-
-  // 탭 변경 시 선택 상태들 초기화
-  React.useEffect(() => {
-    setCheckedCells(new Set());
-    setSelectedCells(new Set());
-    setShiftSelectStart(null);
-    setLastSelectedRow(null);
-    setLastSelectedCol(null);
-    setDragState(resetDragState);
-  }, [selectedProcessIndex, selectedZone]);
 
   if (processFlow.length === 0) {
     return null;
@@ -520,9 +682,8 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* 2중 탭 - 라벨을 좌측에, 탭들을 위아래로 딱 붙여서 배치 */}
+        {/* 2중 탭 */}
         <div className="mb-2 space-y-0">
-          {/* 1단계 탭: Process Selection */}
           <div className="flex items-center gap-4">
             <div className="w-16 text-sm font-medium text-default-900">Process</div>
             <Tabs
@@ -540,7 +701,6 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             </Tabs>
           </div>
 
-          {/* 2단계 탭: Zone Selection */}
           {processFlow[selectedProcessIndex] && (
             <div className="flex items-center gap-4">
               <div className="w-16 text-sm font-medium text-default-900">Zone</div>
@@ -556,6 +716,98 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             </div>
           )}
         </div>
+
+        {/* 우클릭 컨텍스트 메뉴 */}
+        <DropdownMenu 
+          open={contextMenu.show} 
+          onOpenChange={(open) => setContextMenu(prev => ({ ...prev, show: open, targetCells: open ? prev.targetCells || [] : [] }))}
+          modal={false}
+        >
+          <DropdownMenuTrigger />
+          <DropdownMenuContent 
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            onEscapeKeyDown={(e) => {
+              setContextMenu({ show: false, cellId: '', targetCells: [] });
+            }}
+            onPointerDownOutside={(e) => {
+              setContextMenu({ show: false, cellId: '', targetCells: [] });
+            }}
+          >
+            {/* 선택된 셀 개수 안내 */}
+            {(contextMenu.targetCells?.length || 0) > 1 && (
+              <>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                  선택된 {contextMenu.targetCells?.length || 0}개 셀에 적용
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            
+            {Object.entries(CONDITION_CATEGORIES).map(([category, config]) => (
+              <DropdownMenuSub key={category}>
+                <DropdownMenuSubTrigger>
+                  <span className="flex items-center gap-2">
+                    <span>{config.icon}</span>
+                    <span>{category}</span>
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {config.options.map((option) => {
+                    const checkState = getOptionCheckState(option);
+                    return (
+                      <DropdownMenuItem
+                        key={option}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          handleToggleBadgeOption(category, option);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="flex items-center justify-center w-4 h-4 border-2 rounded border-border">
+                            {checkState === true && (
+                              <svg className="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {checkState === 'indeterminate' && (
+                              <div className="w-2 h-2 bg-primary rounded-sm"></div>
+                            )}
+                          </div>
+                          <span>{option}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      config.options.forEach(option => {
+                        handleToggleBadgeOption(category, option);
+                      });
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <span>모두 토글</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleClearAllBadges();
+              }}
+              className="text-red-600 cursor-pointer"
+            >
+              🗑️ 모든 뱃지 삭제
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* 엑셀 그리드 테이블 */}
         {selectedZone && currentFacilities.length > 0 ? (
@@ -594,6 +846,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                       const cellId = `${rowIndex}-${colIndex}`;
                       const isChecked = checkedCells.has(cellId);
                       const isSelected = selectedCells.has(cellId);
+                      const badges = cellBadges[cellId] || [];
 
                       return (
                         <td 
@@ -602,40 +855,70 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                             "border-r cursor-pointer select-none p-1",
                             isSelected && "bg-primary/20"
                           )}
-                          onMouseDown={(e) => handleCellMouseDown(cellId, rowIndex, colIndex, e)}
+                          onMouseDown={(e) => {
+                            // 우클릭이 아닐 때만 드래그 처리
+                            if (e.button !== 2) {
+                              handleCellMouseDown(cellId, rowIndex, colIndex, e);
+                            }
+                          }}
                           onMouseEnter={(e) => handleCellMouseEnter(cellId, rowIndex, colIndex, e)}
                           onMouseUp={handleCellMouseUp}
                           onContextMenu={(e) => {
                             // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                             if (e.ctrlKey || e.metaKey) {
                               e.preventDefault();
+                            } else {
+                              handleCellRightClick(e, cellId);
                             }
                           }}
                         >
-                          <div className="flex h-6 items-center justify-center">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation(); // 드래그 이벤트와 충돌 방지
-                                handleCheckboxToggle(rowIndex, colIndex);
-                              }}
-                              className={cn(
-                                "flex h-4 w-4 cursor-pointer items-center justify-center rounded border-2 transition-all duration-200",
-                                isChecked 
-                                  ? "border-primary bg-primary hover:bg-primary/90" 
-                                  : "border-gray-300 bg-white hover:border-gray-400"
-                              )}
-                            >
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              )}
-                            </button>
+                          <div className="flex flex-col gap-1 min-h-[24px]">
+                            {/* 체크박스 행 */}
+                            <div className="flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // 드래그 이벤트와 충돌 방지
+                                  handleCheckboxToggle(rowIndex, colIndex);
+                                }}
+                                className={cn(
+                                  "flex h-4 w-4 cursor-pointer items-center justify-center rounded border-2 transition-all duration-200",
+                                  isChecked 
+                                    ? "border-primary bg-primary hover:bg-primary/90" 
+                                    : "border-gray-300 bg-white hover:border-gray-400"
+                                )}
+                              >
+                                {isChecked && (
+                                  <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                            
+                            {/* 뱃지 행 */}
+                            {badges.length > 0 && (
+                              <div className="flex flex-wrap gap-0.5 justify-center">
+                                {badges.map((badge) => (
+                                  <Badge 
+                                    key={badge.id} 
+                                    variant={badge.variant}
+                                    className="text-[9px] px-1 py-0 h-4 cursor-pointer hover:opacity-70"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveBadge(cellId, badge.id);
+                                    }}
+                                    title={`${badge.label} (클릭하여 제거)`}
+                                  >
+                                    {badge.label}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </td>
                       );
