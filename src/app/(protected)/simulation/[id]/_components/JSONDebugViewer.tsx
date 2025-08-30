@@ -11,6 +11,7 @@ import {
 
 interface JSONDebugViewerProps {
   visible: boolean;
+  simulationId: string; // 시나리오 ID 추가
   apiRequestLog?: {
     timestamp: string;
     request: any;
@@ -20,7 +21,7 @@ interface JSONDebugViewerProps {
   } | null;
 }
 
-export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugViewerProps) {
+export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }: JSONDebugViewerProps) {
   const [collapsed, setCollapsed] = useState({
     apiRequestLog: false, // API 요청 로그 (기본 펼침)
     flightSchedule: false, // 기본적으로 접힘
@@ -64,7 +65,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
   // 실제 S3 저장 구조로 합치기
   const scenarioMetadata = useMemo(() => {
     return {
-      scenario_id: 'debug-scenario', // TODO: URL에서 시나리오 ID 추출
+      scenario_id: simulationId, // 실제 시나리오 ID 사용
       tabs: {
         flightSchedule: flightSchedule,
         passengerSchedule: passengerSchedule,
@@ -72,7 +73,7 @@ export default function JSONDebugViewer({ visible, apiRequestLog }: JSONDebugVie
       },
       // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
     };
-  }, [flightSchedule, passengerSchedule, airportProcessing]);
+  }, [simulationId, flightSchedule, passengerSchedule, airportProcessing]);
 
   // 보조 함수들 (useMemo 위에서 먼저 정의)
   const generateFacilitySchedules = (length: number) => {

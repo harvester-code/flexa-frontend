@@ -310,7 +310,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         <SimulationLoading minHeight="min-h-[200px]" />
       )}
 
-      <JSONDebugViewer visible={true} apiRequestLog={apiRequestLog} />
+      <JSONDebugViewer visible={true} simulationId={simulationId} apiRequestLog={apiRequestLog} />
     </div>
   );
 }
