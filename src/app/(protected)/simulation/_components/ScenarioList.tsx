@@ -588,14 +588,18 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
             <AlertDialogDescription>
               Are you sure you want to delete {selRowCount} scenario{selRowCount > 1 ? 's' : ''}?
               <br />
-              The deleted list can be checked in Trash Bin.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
+            <AlertDialogAction 
+              variant="destructive" 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteConfirm}
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

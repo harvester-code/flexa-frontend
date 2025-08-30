@@ -1,60 +1,225 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckSquare, Circle, Clock, Plus, Save, Trash2, Users } from 'lucide-react';
-import { PassengerCondition, ProcessStep, TimeBlock } from '@/types/simulationTypes';
-import { Button } from '@/components/ui/Button';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Clock } from 'lucide-react';
+import { ProcessStep } from '@/types/simulationTypes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { useToast } from '@/hooks/useToast';
-import { formatProcessName } from '@/lib/utils';
-import { useProcessingProceduresStore } from '../_stores';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { formatProcessName, cn } from '@/lib/utils';
 
 interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
 }
 
-interface TimeBlockFormData {
-  period: string;
-  processTime: number;
-  conditions: PassengerCondition[];
-}
-
 export default function OperatingScheduleEditor({ processFlow }: OperatingScheduleEditorProps) {
-  const updateOperatingSchedule = useProcessingProceduresStore((s) => s.updateOperatingSchedule);
-  const { toast } = useToast();
-
-  // 선택된 프로세스와 존
+  // 기본 탭 상태
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number>(0);
   const [selectedZone, setSelectedZone] = useState<string>('');
+  
+  // 체크박스 상태 관리 (cellId를 키로 사용)
+  const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
+  
+  // 드래그 선택 상태
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ row: number; col: number } | null>(null);
+  const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
+  
+  // Shift 클릭 선택 상태
+  const [shiftSelectStart, setShiftSelectStart] = useState<{ row: number; col: number } | null>(null);
+  
+  // 더블 스페이스 감지를 위한 상태
+  const [lastSpaceTime, setLastSpaceTime] = useState<number>(0);
 
-  // 시간 블록 편집 상태
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlockFormData[]>([]);
-
-  // 선택된 프로세스와 존 변경 시 시간 블록 로드
-  React.useEffect(() => {
-    if (processFlow[selectedProcessIndex] && selectedZone) {
-      const zone = processFlow[selectedProcessIndex].zones[selectedZone];
-      if (zone?.facilities?.length > 0) {
-        const firstFacility = zone.facilities[0];
-        const schedule = firstFacility.operating_schedule?.today?.time_blocks || [];
-
-        const formData = schedule.map((block: TimeBlock) => ({
-          period: block.period,
-          processTime: block.process_time_seconds,
-          conditions: block.passenger_conditions || [],
-        }));
-
-        setTimeBlocks(formData.length > 0 ? formData : []);
-      } else {
-        setTimeBlocks([]);
+  // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(timeStr);
       }
     }
-  }, [selectedProcessIndex, selectedZone, processFlow]);
+    return slots;
+  }, []);
 
-  // 선택된 프로세스 변경 시 첫 번째 존 자동 선택
+  // 현재 선택된 존의 시설들
+  const currentFacilities = useMemo(() => {
+    if (!processFlow[selectedProcessIndex] || !selectedZone) return [];
+    const zone = processFlow[selectedProcessIndex].zones[selectedZone];
+    return zone?.facilities || [];
+  }, [processFlow, selectedProcessIndex, selectedZone]);
+
+  // 체크박스 토글 핸들러 (개별 클릭용)
+  const handleCheckboxToggle = (rowIndex: number, colIndex: number) => {
+    const cellId = `${rowIndex}-${colIndex}`;
+    setCheckedCells(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cellId)) {
+        newSet.delete(cellId);
+      } else {
+        newSet.add(cellId);
+      }
+      return newSet;
+    });
+  };
+
+  // 범위 셀 ID 생성 헬퍼 함수
+  const generateRangeCellIds = useCallback((startRow: number, startCol: number, endRow: number, endCol: number) => {
+    const cellIds = new Set<string>();
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        if (currentFacilities[col]) {
+          cellIds.add(`${row}-${col}`);
+        }
+      }
+    }
+
+    return cellIds;
+  }, [currentFacilities]);
+
+  // 범위 선택 함수
+  const selectCellRange = useCallback((startRow: number, startCol: number, endRow: number, endCol: number) => {
+    const rangeCells = generateRangeCellIds(startRow, startCol, endRow, endCol);
+    setSelectedCells(rangeCells);
+  }, [generateRangeCellIds]);
+
+  // 셀 클릭 핸들러 (Shift, Ctrl 클릭 지원)
+  const handleCellClick = useCallback((cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl + 클릭: 다중 선택
+      if (e.shiftKey && shiftSelectStart) {
+        // Ctrl + Shift + 클릭: 기존 선택 유지하면서 범위 추가
+        const rangeCells = generateRangeCellIds(shiftSelectStart.row, shiftSelectStart.col, rowIndex, colIndex);
+        setSelectedCells(prev => {
+          const newSet = new Set(prev);
+          rangeCells.forEach(id => newSet.add(id));
+          return newSet;
+        });
+      } else {
+        // Ctrl + 클릭: 개별 셀 토글
+        setSelectedCells(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(cellId)) {
+            newSet.delete(cellId);
+          } else {
+            newSet.add(cellId);
+          }
+          return newSet;
+        });
+        setShiftSelectStart({ row: rowIndex, col: colIndex });
+      }
+    } else if (e.shiftKey && shiftSelectStart) {
+      // Shift + 클릭: 범위 선택 (기존 선택 대체)
+      selectCellRange(shiftSelectStart.row, shiftSelectStart.col, rowIndex, colIndex);
+    } else {
+      // 일반 클릭: 새로 선택
+      setShiftSelectStart({ row: rowIndex, col: colIndex });
+      setSelectedCells(new Set([cellId]));
+    }
+  }, [shiftSelectStart, selectCellRange, generateRangeCellIds]);
+
+  // 드래그 이벤트 핸들러들
+  const handleCellMouseDown = useCallback((cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => {
+    // Shift 또는 Ctrl 키가 눌려있으면 드래그 시작하지 않음
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      handleCellClick(cellId, rowIndex, colIndex, e);
+      return;
+    }
+
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ row: rowIndex, col: colIndex });
+    setSelectedCells(new Set([cellId]));
+    setShiftSelectStart({ row: rowIndex, col: colIndex });
+  }, [handleCellClick]);
+
+  const handleCellMouseEnter = useCallback(
+    (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => {
+      e.preventDefault();
+      if (isDragging && dragStart) {
+        const rangeCells = generateRangeCellIds(dragStart.row, dragStart.col, rowIndex, colIndex);
+        setSelectedCells(rangeCells);
+      }
+    },
+    [isDragging, dragStart, generateRangeCellIds]
+  );
+
+  const handleCellMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragStart(null);
+  }, []);
+
+  // 전역 마우스업 이벤트
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setDragStart(null);
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
+  // 스페이스바 이벤트 - 선택된 셀들의 체크박스 모두 토글
+  const handleSpaceKey = useCallback(() => {
+    const currentTime = Date.now();
+    const isDoubleSpace = currentTime - lastSpaceTime < 300; // 300ms 내 더블 스페이스
+    
+    if (selectedCells.size > 0) {
+      if (isDoubleSpace) {
+        // 더블 스페이스: 선택 영역 해제
+        setSelectedCells(new Set());
+        setShiftSelectStart(null);
+      } else {
+        // 단일 스페이스: 체크박스 토글 (선택 영역 유지)
+        setCheckedCells(prev => {
+          const newSet = new Set(prev);
+          
+          // 선택된 셀들 중 하나라도 체크되어 있는지 확인
+          const hasAnyChecked = Array.from(selectedCells).some(cellId => newSet.has(cellId));
+          
+          if (hasAnyChecked) {
+            // 하나라도 체크되어 있으면 모두 해제
+            selectedCells.forEach(cellId => newSet.delete(cellId));
+          } else {
+            // 모두 체크되어 있지 않으면 모두 체크
+            selectedCells.forEach(cellId => newSet.add(cellId));
+          }
+          
+          return newSet;
+        });
+      }
+    }
+    
+    setLastSpaceTime(currentTime);
+  }, [selectedCells, lastSpaceTime]);
+
+  // 키보드 이벤트 등록
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleSpaceKey();
+      } else if (e.code === 'Escape') {
+        // ESC: 모든 선택 해제
+        e.preventDefault();
+        setSelectedCells(new Set());
+        setShiftSelectStart(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleSpaceKey]);
+
+  // 첫 번째 존 자동 선택
   React.useEffect(() => {
     if (processFlow[selectedProcessIndex]) {
       const zones = Object.keys(processFlow[selectedProcessIndex].zones);
@@ -64,427 +229,152 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     }
   }, [selectedProcessIndex, processFlow]);
 
-  // 새 시간 블록 추가
-  const addTimeBlock = () => {
-    setTimeBlocks((prev) => [
-      ...prev,
-      {
-        period: '00:00-24:00',
-        processTime: 30,
-        conditions: [], // 기본적으로 조건 없음 = 모든 승객 이용 가능
-      },
-    ]);
-  };
-
-  // 시간 블록 삭제
-  const removeTimeBlock = (index: number) => {
-    setTimeBlocks((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // 시간 블록 업데이트
-  const updateTimeBlock = (index: number, field: keyof TimeBlockFormData, value: any) => {
-    setTimeBlocks((prev) => prev.map((block, i) => (i === index ? { ...block, [field]: value } : block)));
-  };
-
-  // 승객 조건 추가
-  const addPassengerCondition = (blockIndex: number) => {
-    setTimeBlocks((prev) =>
-      prev.map((block, i) =>
-        i === blockIndex
-          ? {
-              ...block,
-              conditions: [...block.conditions, { field: 'operating_carrier_iata', values: [] }],
-            }
-          : block
-      )
-    );
-  };
-
-  // 승객 조건 제거
-  const removePassengerCondition = (blockIndex: number, conditionIndex: number) => {
-    setTimeBlocks((prev) =>
-      prev.map((block, i) =>
-        i === blockIndex
-          ? {
-              ...block,
-              conditions: block.conditions.filter((_, ci) => ci !== conditionIndex),
-            }
-          : block
-      )
-    );
-  };
-
-  // 승객 조건 업데이트
-  const updatePassengerCondition = (
-    blockIndex: number,
-    conditionIndex: number,
-    field: string,
-    value: string | string[]
-  ) => {
-    setTimeBlocks((prev) =>
-      prev.map((block, i) =>
-        i === blockIndex
-          ? {
-              ...block,
-              conditions: block.conditions.map((condition, ci) =>
-                ci === conditionIndex ? { ...condition, [field]: value } : condition
-              ),
-            }
-          : block
-      )
-    );
-  };
-
-  // 스케줄 저장
-  const saveSchedule = () => {
-    if (!processFlow[selectedProcessIndex] || !selectedZone) return;
-
-    updateOperatingSchedule(selectedProcessIndex, selectedZone, timeBlocks);
-
-    toast({
-      title: 'Schedule Saved',
-      description: `Operating schedule saved for ${formatProcessName(processFlow[selectedProcessIndex].name)} → ${selectedZone}`,
-    });
-  };
-
-  // 시각화용 데이터 생성
-  const visualizationData = useMemo(() => {
-    if (!processFlow[selectedProcessIndex] || !selectedZone) return null;
-
-    const zone = processFlow[selectedProcessIndex].zones[selectedZone];
-    const facilities = zone?.facilities || [];
-
-    // 24시간을 1시간 단위로 나눔
-    const hours = Array.from({ length: 24 }, (_, i) => i);
-
-    return facilities.map((facility: any) => {
-      const schedule = facility.operating_schedule?.today?.time_blocks || [];
-      const hourStatus = hours.map((hour) => {
-        // 해당 시간이 어떤 블록에 속하는지 확인
-        const matchedBlock = schedule.find((block: TimeBlock) => {
-          const [startTime, endTime] = block.period.split('-');
-          const startHour = parseInt(startTime.split(':')[0]);
-          const endHour = endTime === '24:00' ? 24 : parseInt(endTime.split(':')[0]);
-          return hour >= startHour && hour < endHour;
-        });
-
-        return {
-          hour,
-          active: !!matchedBlock,
-          processTime: matchedBlock?.process_time_seconds || 0,
-          conditions: matchedBlock?.passenger_conditions || [],
-        };
-      });
-
-      return {
-        facilityId: facility.id,
-        schedule: hourStatus,
-      };
-    });
-  }, [processFlow, selectedProcessIndex, selectedZone]);
+  // 탭 변경 시 선택 상태들 초기화
+  React.useEffect(() => {
+    setCheckedCells(new Set());
+    setIsDragging(false);
+    setDragStart(null);
+    setSelectedCells(new Set());
+    setShiftSelectStart(null);
+  }, [selectedProcessIndex, selectedZone]);
 
   if (processFlow.length === 0) {
-    return null; // 프로세스가 없으면 아예 표시하지 않음
+    return null;
   }
-
-  // 설정이 필요한 시설들 확인
-  const facilitiesWithoutSchedule = useMemo(() => {
-    const missing: string[] = [];
-    processFlow.forEach((process, processIndex) => {
-      Object.entries(process.zones).forEach(([zoneName, zone]: [string, any]) => {
-        if (zone.facilities && zone.facilities.length > 0) {
-          zone.facilities.forEach((facility: any) => {
-            if (
-              !facility.operating_schedule ||
-              !facility.operating_schedule.today ||
-              !facility.operating_schedule.today.time_blocks ||
-              facility.operating_schedule.today.time_blocks.length === 0
-            ) {
-              missing.push(`${formatProcessName(process.name)} → ${zoneName} → ${facility.id}`);
-            }
-          });
-        }
-      });
-    });
-    return missing;
-  }, [processFlow]);
-
-  const allSchedulesConfigured = facilitiesWithoutSchedule.length === 0;
 
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Operating Schedule Editor
+        <CardTitle className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <Clock className="h-6 w-6 text-primary" />
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            {allSchedulesConfigured ? (
-              <div className="flex items-center gap-1">
-                <CheckSquare className="h-4 w-4" />
-                All Schedules Set
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                {facilitiesWithoutSchedule.length} Facilities Pending
-              </div>
-            )}
+          <div>
+            <div className="text-lg font-semibold text-default-900">Operating Schedule Editor</div>
+            <div className="text-sm font-normal text-default-500">Configure time-based facility operations</div>
           </div>
         </CardTitle>
-        {!allSchedulesConfigured && facilitiesWithoutSchedule.length > 0 && (
-          <div className="mt-3 rounded-lg border bg-muted/30 p-3">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Facilities requiring schedule setup:
-            </div>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              {facilitiesWithoutSchedule.slice(0, 5).map((facility, index) => (
-                <div key={index}>{facility}</div>
-              ))}
-              {facilitiesWithoutSchedule.length > 5 && (
-                <div className="font-medium">... and {facilitiesWithoutSchedule.length - 5} more</div>
-              )}
-            </div>
-          </div>
-        )}
       </CardHeader>
       <CardContent>
-        {/* Process & Zone Selection */}
-        <div className="mb-6 flex gap-4">
-          <div className="flex-1">
-            <label className="mb-2 block text-sm font-medium">Process</label>
+        {/* 2중 탭 - 라벨을 좌측에, 탭들을 위아래로 딱 붙여서 배치 */}
+        <div className="mb-2 space-y-0">
+          {/* 1단계 탭: Process Selection */}
+          <div className="flex items-center gap-4">
+            <div className="w-16 text-sm font-medium text-default-900">Process</div>
             <Tabs
               value={selectedProcessIndex.toString()}
               onValueChange={(value) => setSelectedProcessIndex(parseInt(value))}
+              className="flex-1"
             >
-              <TabsList className="grid-cols-auto grid w-full">
+              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${processFlow.length}, 1fr)` }}>
                 {processFlow.map((step, index) => (
-                  <TabsTrigger key={index} value={index.toString()}>
+                  <TabsTrigger key={index} value={index.toString()} className="text-sm font-medium text-default-900">
                     {formatProcessName(step.name)}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
           </div>
+
+          {/* 2단계 탭: Zone Selection */}
+          {processFlow[selectedProcessIndex] && (
+            <div className="flex items-center gap-4">
+              <div className="w-16 text-sm font-medium text-default-900">Zone</div>
+              <Tabs value={selectedZone} onValueChange={setSelectedZone} className="flex-1">
+                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones).length}, 1fr)` }}>
+                  {Object.keys(processFlow[selectedProcessIndex].zones).map((zoneName) => (
+                    <TabsTrigger key={zoneName} value={zoneName} className="text-sm font-medium text-default-900">
+                      {zoneName}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
         </div>
 
-        {processFlow[selectedProcessIndex] && (
-          <div className="mb-6">
-            <label className="mb-2 block text-sm font-medium">Zone</label>
-            <Tabs value={selectedZone} onValueChange={setSelectedZone}>
-              <TabsList>
-                {Object.keys(processFlow[selectedProcessIndex].zones).map((zoneName) => (
-                  <TabsTrigger key={zoneName} value={zoneName}>
-                    {zoneName}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
-        )}
+        {/* 엑셀 그리드 테이블 */}
+        {selectedZone && currentFacilities.length > 0 ? (
+          <div className="max-h-96 overflow-auto rounded-lg border">
+            <table className="w-full table-fixed text-xs">
+              <thead className="sticky top-0 bg-muted">
+                <tr>
+                  <th className="w-16 border-r p-2 text-left">Time</th>
+                  {currentFacilities.map((facility) => (
+                    <th key={facility.id} className="min-w-20 border-r p-2 text-center">
+                      {facility.id}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {timeSlots.map((timeSlot, rowIndex) => (
+                  <tr key={rowIndex} className="border-t">
+                    <td className="border-r p-1 text-center text-xs font-medium text-default-500">
+                      {timeSlot}
+                    </td>
+                    {currentFacilities.map((facility, colIndex) => {
+                      const cellId = `${rowIndex}-${colIndex}`;
+                      const isChecked = checkedCells.has(cellId);
+                      const isSelected = selectedCells.has(cellId);
 
-        {selectedZone && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Time Block Editor */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Time Blocks</h3>
-                <Button onClick={addTimeBlock} size="sm" variant="outline">
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add Block
-                </Button>
-              </div>
-
-              <div className="max-h-96 space-y-4 overflow-y-auto">
-                {timeBlocks.map((block, blockIndex) => (
-                  <Card key={blockIndex} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <label className="mb-1 block text-sm font-medium">Time Period</label>
-                          <Input
-                            value={block.period}
-                            onChange={(e) => updateTimeBlock(blockIndex, 'period', e.target.value)}
-                            placeholder="06:00-12:00"
-                          />
-                        </div>
-                        <div className="w-32">
-                          <label className="mb-1 block text-sm font-medium">Process Time (s)</label>
-                          <Input
-                            type="number"
-                            value={block.processTime}
-                            onChange={(e) => updateTimeBlock(blockIndex, 'processTime', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <Button
-                          onClick={() => removeTimeBlock(blockIndex)}
-                          size="sm"
-                          variant="outline"
-                          className="mt-6 text-destructive hover:text-destructive"
+                      return (
+                        <td 
+                          key={`${rowIndex}-${colIndex}`}
+                          className={cn(
+                            "border-r cursor-pointer select-none p-1",
+                            isSelected && "bg-primary/20"
+                          )}
+                          onMouseDown={(e) => handleCellMouseDown(cellId, rowIndex, colIndex, e)}
+                          onMouseEnter={(e) => handleCellMouseEnter(cellId, rowIndex, colIndex, e)}
+                          onMouseUp={handleCellMouseUp}
+                          onContextMenu={(e) => {
+                            // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                            if (e.ctrlKey || e.metaKey) {
+                              e.preventDefault();
+                            }
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div>
-                        <div className="mb-2 flex items-center justify-between">
-                          <label className="text-sm font-medium">Passenger Conditions</label>
-                          <Button onClick={() => addPassengerCondition(blockIndex)} size="sm" variant="outline">
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        {/* 조건이 없을 때 표시 */}
-                        {block.conditions.length === 0 && (
-                          <div className="rounded-md border border-dashed bg-muted/50 p-3 text-center">
-                            <div className="text-sm">
-                              <Users className="mx-auto mb-1 h-4 w-4" />
-                              All Passengers Welcome
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              No conditions = All passenger types can use this facility
-                            </div>
-                          </div>
-                        )}
-
-                        {/* 조건 목록 */}
-                        <div className="space-y-2">
-                          {block.conditions.map((condition, conditionIndex) => (
-                            <div key={conditionIndex} className="flex items-center gap-2">
-                              <Select
-                                value={condition.field}
-                                onValueChange={(value) =>
-                                  updatePassengerCondition(blockIndex, conditionIndex, 'field', value)
-                                }
-                              >
-                                <SelectTrigger className="w-48">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="operating_carrier_iata">Airline</SelectItem>
-                                  <SelectItem value="profile">Profile</SelectItem>
-                                  <SelectItem value="nationality">Nationality</SelectItem>
-                                </SelectContent>
-                              </Select>
-
-                              <Input
-                                className="flex-1"
-                                value={condition.values.join(', ')}
-                                onChange={(e) =>
-                                  updatePassengerCondition(
-                                    blockIndex,
-                                    conditionIndex,
-                                    'values',
-                                    e.target.value
-                                      ? e.target.value
-                                          .split(',')
-                                          .map((v) => v.trim())
-                                          .filter((v) => v)
-                                      : []
-                                  )
-                                }
-                                placeholder={
-                                  condition.field === 'operating_carrier_iata'
-                                    ? 'KE, OZ'
-                                    : condition.field === 'profile'
-                                      ? 'general, business, crew'
-                                      : condition.field === 'nationality'
-                                        ? 'domestic, international'
-                                        : 'Enter values...'
-                                }
-                              />
-
-                              <Button
-                                onClick={() => removePassengerCondition(blockIndex, conditionIndex)}
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              <Button onClick={saveSchedule}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Schedule
-              </Button>
-            </div>
-
-            {/* Schedule Visualization */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Schedule Visualization</h3>
-
-              {visualizationData ? (
-                <div className="overflow-hidden rounded-lg border">
-                  <div className="bg-muted/50 p-3">
-                    <div className="text-sm font-medium">
-                      {formatProcessName(processFlow[selectedProcessIndex].name)} → {selectedZone}
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="border-r p-2 text-left">Facility</th>
-                          {Array.from({ length: 24 }, (_, i) => (
-                            <th key={i} className="min-w-8 border-r p-1 text-center">
-                              {i.toString().padStart(2, '0')}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visualizationData.map((facility, index) => (
-                          <tr key={index} className="border-t">
-                            <td className="border-r p-2 font-medium">{facility.facilityId}</td>
-                            {facility.schedule.map((slot, slotIndex) => (
-                              <td key={slotIndex} className="border-r text-center">
-                                <div
-                                  className={`flex h-8 w-full items-center justify-center text-xs font-bold ${
-                                    slot.active ? 'bg-primary/10' : 'bg-muted/30 text-muted-foreground'
-                                  }`}
-                                  title={
-                                    slot.active
-                                      ? `${slot.processTime}s${
-                                          slot.conditions.length > 0
-                                            ? ` | ${slot.conditions.map((c) => `${c.field}: ${c.values.join(',')}`).join(' & ')}`
-                                            : ' | All Passengers'
-                                        }`
-                                      : 'Inactive'
-                                  }
-                                >
-                                  <Circle 
-                                    className={`h-3 w-3 ${
-                                      slot.active 
-                                        ? 'fill-current text-green-500' 
-                                        : 'text-gray-300'
-                                    }`} 
+                          <div className="flex h-6 items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation(); // 드래그 이벤트와 충돌 방지
+                                handleCheckboxToggle(rowIndex, colIndex);
+                              }}
+                              className={cn(
+                                "flex h-4 w-4 cursor-pointer items-center justify-center rounded border-2 transition-all duration-200",
+                                isChecked 
+                                  ? "border-primary bg-primary hover:bg-primary/90" 
+                                  : "border-gray-300 bg-white hover:border-gray-400"
+                              )}
+                            >
+                              {isChecked && (
+                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
                                   />
-                                </div>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg border p-8 text-center text-muted-foreground">
-                  Select a zone with facilities to view schedule
-                </div>
-              )}
-            </div>
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : selectedZone ? (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            No facilities configured for this zone
+          </div>
+        ) : (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            Select a process and zone to configure operating schedule
           </div>
         )}
       </CardContent>

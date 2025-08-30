@@ -3,12 +3,23 @@
 import React, { use, useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Save } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { APIRequestLog } from '@/types/simulationTypes';
-import { saveScenarioMetadata } from '@/services/simulationService';
+import { saveScenarioMetadata, deleteScenarioMetadata } from '@/services/simulationService';
 import TheContentHeader from '@/components/TheContentHeader';
 import { Button } from '@/components/ui/Button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/AlertDialog';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
@@ -168,6 +179,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const [isInitialized, setIsInitialized] = useState(false);
   const [apiRequestLog, setApiRequestLog] = useState<APIRequestLog | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 임시저장 함수
   const handleTempSave = async () => {
@@ -191,6 +203,29 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 메타데이터 삭제 함수
+  const handleDeleteMetadata = async () => {
+    try {
+      setIsDeleting(true);
+
+      await deleteScenarioMetadata(simulationId);
+
+      toast({
+        title: 'Metadata Deleted',
+        description: 'Scenario metadata has been successfully deleted.',
+      });
+    } catch (error) {
+      console.error('메타데이터 삭제 실패:', error);
+      toast({
+        title: 'Delete Failed',
+        description: 'An error occurred while deleting the metadata.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -221,10 +256,41 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           )}
         </div>
 
-        <Button onClick={handleTempSave} disabled={isSaving}>
-          <Save size={16} />
-          {isSaving ? 'Saving...' : 'Save'}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleTempSave} disabled={isSaving}>
+            <Save size={16} />
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isDeleting}>
+                <Trash2 size={16} />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Metadata</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this scenario's metadata?
+                  <br />
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={handleDeleteMetadata}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <TabDefault

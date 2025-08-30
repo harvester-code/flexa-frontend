@@ -19,13 +19,18 @@ const SimulationPage = () => {
     try {
       await deleteScenario(selectedIds);
       toast({
-        title: 'Deletion Complete',
-        description: 'Successfully Deleted.',
+        title: `Scenario${selectedIds.length > 1 ? 's' : ''} Deleted`,
+        description: `${selectedIds.length} scenario${selectedIds.length > 1 ? 's' : ''} ${selectedIds.length > 1 ? 'have' : 'has'} been successfully deleted.`,
       });
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     } catch (error: any) {
       console.error('Failed to delete scenarios:', error);
       console.error('Error details:', error.response?.data);
+      toast({
+        title: 'Delete Failed',
+        description: 'An error occurred while deleting the scenario(s).',
+        variant: 'destructive',
+      });
     }
   };
 

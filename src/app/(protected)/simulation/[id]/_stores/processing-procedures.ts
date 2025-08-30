@@ -19,6 +19,7 @@ export interface ProcessingProceduresState {
   loadMetadata: (metadata: Record<string, unknown>) => void;
   setFacilitiesForZone: (processIndex: number, zoneName: string, count: number) => void;
   updateOperatingSchedule: (processIndex: number, zoneName: string, timeBlocks: any[]) => void;
+  toggleFacilityTimeBlock: (processIndex: number, zoneName: string, facilityId: string, period: string) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
 }
 
@@ -124,6 +125,65 @@ export const useProcessingProceduresStore = create<ProcessingProceduresState>()(
                 },
               };
             });
+          }
+        }
+      }),
+
+    // 개별 시설의 특정 시간 블록만 토글
+    toggleFacilityTimeBlock: (processIndex, zoneName, facilityId, period) =>
+      set((state) => {
+        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+          const zone = state.process_flow[processIndex].zones[zoneName];
+          const facility = zone.facilities?.find((f: any) => f.id === facilityId);
+          
+          if (facility) {
+            // 기존 스케줄 초기화
+            if (!facility.operating_schedule) {
+              facility.operating_schedule = {};
+            }
+            if (!facility.operating_schedule.today) {
+              facility.operating_schedule.today = { time_blocks: [] };
+            }
+            
+            const timeBlocks = facility.operating_schedule.today.time_blocks || [];
+            const [startTime] = period.split('~');
+            
+            // 시간을 분 단위로 변환
+            const timeToMinutes = (timeStr: string) => {
+              const [hours, minutes] = timeStr.split(':').map(Number);
+              return hours * 60 + minutes;
+            };
+            
+            const targetMinutes = timeToMinutes(startTime);
+            
+            // 해당 시간이 포함된 모든 기존 블록 찾기
+            const overlappingBlocks = timeBlocks.filter((block: any) => {
+              if (!block.period) return false;
+              const [blockStart, blockEnd] = block.period.split('~');
+              const blockStartMinutes = timeToMinutes(blockStart);
+              const blockEndMinutes = blockEnd === '00:00' ? 24 * 60 : timeToMinutes(blockEnd);
+              
+              return targetMinutes >= blockStartMinutes && targetMinutes < blockEndMinutes;
+            });
+            
+            if (overlappingBlocks.length > 0) {
+              // 겹치는 블록들이 있으면 모두 제거 (체크 해제)
+              overlappingBlocks.forEach(overlappingBlock => {
+                const index = timeBlocks.findIndex((block: any) => 
+                  block.period === overlappingBlock.period
+                );
+                if (index !== -1) {
+                  timeBlocks.splice(index, 1);
+                }
+              });
+            } else {
+              // 겹치는 블록이 없으면 새로운 10분 블록 추가 (체크)
+              timeBlocks.push({
+                period,
+                process_time_seconds: 30, // 기본값 - 추후 설정 가능하도록 개선 필요
+                passenger_conditions: [],
+              });
+            }
           }
         }
       }),

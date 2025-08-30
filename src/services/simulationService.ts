@@ -54,6 +54,10 @@ export const loadScenarioMetadata = (scenario_id: string) => {
   return api.withScenario(scenario_id).get<MetadataLoadResponse>('/metadata');
 };
 
+export const deleteScenarioMetadata = (scenario_id: string) => {
+  return api.withScenario(scenario_id).delete('/metadata');
+};
+
 export const runSimulation = (scenario_id: string, processFlow: any[]) => {
   return api.withScenario(scenario_id).post('/run-simulation', {
     process_flow: processFlow,
