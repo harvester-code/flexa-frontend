@@ -64,7 +64,6 @@ const CONDITION_CATEGORIES = {
 };
 
 // 상수들
-const DOUBLE_CLICK_THRESHOLD = 300;
 
 // 드래그 상태 타입 정의
 type DragState = {
@@ -200,8 +199,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   // Shift 클릭 선택 상태
   const [shiftSelectStart, setShiftSelectStart] = useState<{ row: number; col: number } | null>(null);
   
-  // 더블 스페이스 감지를 위한 상태
-  const [lastSpaceTime, setLastSpaceTime] = useState<number>(0);
+  // 더블 스페이스 기능 제거됨
   
   // Shift 범위 선택을 위한 마지막 선택 위치
   const [lastSelectedRow, setLastSelectedRow] = useState<number | null>(null);
@@ -212,26 +210,12 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     show: boolean;
     cellId: string;
     targetCells: string[];
-  }>({ show: false, cellId: '', targetCells: [] });
+    x: number;
+    y: number;
+  }>({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
 
-  // 🔧 성능 최적화: useRef로 최신 상태 참조 (이벤트 리스너 재등록 방지)
-  const selectedCellsRef = useRef(selectedCells);
-  const lastSpaceTimeRef = useRef(lastSpaceTime);
-  const setSelectedCellsRef = useRef(setSelectedCells);
-  const setShiftSelectStartRef = useRef(setShiftSelectStart);
-  const setCheckedCellsRef = useRef(setCheckedCells);
-  const setCellBadgesRef = useRef(setCellBadges);
-
-  // 🎯 키보드 포커스 관리용 ref
+  // 🎯 키보드 포커스 관리용 ref (이제 직접 상태 사용으로 성능 문제 해결)
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // ref 값들을 최신 상태로 동기화
-  selectedCellsRef.current = selectedCells;
-  lastSpaceTimeRef.current = lastSpaceTime;
-  setSelectedCellsRef.current = setSelectedCells;
-  setShiftSelectStartRef.current = setShiftSelectStart;
-  setCheckedCellsRef.current = setCheckedCells;
-  setCellBadgesRef.current = setCellBadges;
 
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
@@ -452,7 +436,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setContextMenu({
       show: true,
       cellId,
-      targetCells
+      targetCells,
+      x: e.clientX,
+      y: e.clientY
     });
   }, [selectedCells]);
 
@@ -467,7 +453,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setContextMenu({
       show: true,
       cellId: `${rowIndex}-0`, // 첫 번째 셀을 대표로 설정
-      targetCells
+      targetCells,
+      x: e.clientX,
+      y: e.clientY
     });
   }, [currentFacilities.length]);
 
@@ -482,7 +470,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setContextMenu({
       show: true,
       cellId: `0-${colIndex}`, // 첫 번째 셀을 대표로 설정
-      targetCells
+      targetCells,
+      x: e.clientX,
+      y: e.clientY
     });
   }, [timeSlots.length]);
 
@@ -520,7 +510,9 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
     setContextMenu({
       show: true,
       cellId: '0-0', // 첫 번째 셀을 대표로 설정
-      targetCells
+      targetCells,
+      x: e.clientX,
+      y: e.clientY
     });
   }, [generateAllCells]);
 
@@ -788,64 +780,55 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
 
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // 🎯 포커스 확인 및 보장
+    if (document.activeElement !== containerRef.current) {
+      containerRef.current?.focus();
+    }
+
     if (e.code === 'Space') {
       e.preventDefault();
-      // 스페이스바 로직을 ref를 통해 최신 상태로 구현
-      const currentTime = Date.now();
-      const currentLastSpaceTime = lastSpaceTimeRef.current;
-      const currentSelectedCells = selectedCellsRef.current;
-      const isDoubleSpace = currentTime - currentLastSpaceTime < DOUBLE_CLICK_THRESHOLD;
-      
-      if (currentSelectedCells.size > 0) {
-        if (isDoubleSpace) {
-          // 더블 스페이스: 선택 영역 해제
-          setSelectedCellsRef.current(new Set());
-          setShiftSelectStartRef.current(null);
-        } else {
-          // 🧠 스마트 토글: 일부 선택됨 → 모두 선택됨 → 모두 해제됨
-          setCheckedCellsRef.current(prev => {
-            const newSet = new Set(prev);
-            
-            // 선택된 셀들의 체크 상태 분석
-            const checkedCells = Array.from(currentSelectedCells).filter(cellId => newSet.has(cellId));
-            const uncheckedCells = Array.from(currentSelectedCells).filter(cellId => !newSet.has(cellId));
-            
-            if (uncheckedCells.length > 0) {
-              // 하나라도 체크되지 않은 셀이 있으면 → 모든 셀을 체크 상태로
-              currentSelectedCells.forEach(cellId => newSet.add(cellId));
-            } else {
-              // 모든 셀이 체크되어 있으면 → 모든 셀을 체크 해제
-              currentSelectedCells.forEach(cellId => newSet.delete(cellId));
-            }
-            
-            return newSet;
-          });
-        }
+      // ✨ 스페이스바 로직: 선택된 셀들의 체크박스 스마트 토글
+      if (selectedCells.size > 0) {
+        // 🧠 스마트 토글: 일부 선택됨 → 모두 선택됨 → 모두 해제됨
+        setCheckedCells(prev => {
+          const newSet = new Set(prev);
+          
+          // 선택된 셀들의 체크 상태 분석
+          const checkedCells = Array.from(selectedCells).filter(cellId => newSet.has(cellId));
+          const uncheckedCells = Array.from(selectedCells).filter(cellId => !newSet.has(cellId));
+          
+          if (uncheckedCells.length > 0) {
+            // 하나라도 체크되지 않은 셀이 있으면 → 모든 셀을 체크 상태로
+            selectedCells.forEach(cellId => newSet.add(cellId));
+          } else {
+            // 모든 셀이 체크되어 있으면 → 모든 셀을 체크 해제
+            selectedCells.forEach(cellId => newSet.delete(cellId));
+          }
+          
+          return newSet;
+        });
       }
-      
-      setLastSpaceTime(currentTime);
     } else if (e.code === 'Escape') {
       // ESC: 모든 선택 해제
       e.preventDefault();
-      setSelectedCellsRef.current(new Set());
-      setShiftSelectStartRef.current(null);
+      setSelectedCells(new Set());
+      setShiftSelectStart(null);
     } else if (e.code === 'Delete' || e.code === 'Backspace') {
       // Delete/Backspace: 선택된 셀들의 체크박스와 뱃지 모두 제거
       e.preventDefault();
       
-      const currentSelectedCells = selectedCellsRef.current;
-      if (currentSelectedCells.size > 0) {
-        const targetCells = Array.from(currentSelectedCells);
+      if (selectedCells.size > 0) {
+        const targetCells = Array.from(selectedCells);
         
         // 체크박스 제거
-        setCheckedCellsRef.current(prev => {
+        setCheckedCells(prev => {
           const newSet = new Set(prev);
           targetCells.forEach(cellId => newSet.delete(cellId));
           return newSet;
         });
         
         // 뱃지 제거
-        setCellBadgesRef.current(prev => {
+        setCellBadges(prev => {
           const updated = { ...prev };
           targetCells.forEach(cellId => {
             updated[cellId] = [];
@@ -854,21 +837,40 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         });
       }
     }
-  }, []);
+  }, [selectedCells]);
 
-  // 🎯 컴포넌트가 마운트될 때 포커스 설정
+  // 🎯 컴포넌트가 마운트되고 업데이트될 때마다 포커스 보장
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.focus();
-    }
-  }, []);
+    const ensureFocus = () => {
+      if (containerRef.current && document.activeElement !== containerRef.current) {
+        containerRef.current.focus();
+      }
+    };
+
+    // 초기 포커스 설정
+    ensureFocus();
+
+    // 클릭 이벤트 리스너 추가로 포커스 복원
+    const handleDocumentClick = (e: MouseEvent) => {
+      // 컨테이너 내부를 클릭했을 때만 포커스 복원
+      if (containerRef.current?.contains(e.target as Node)) {
+        setTimeout(() => ensureFocus(), 0);
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [selectedCells, checkedCells]); // 상태 변경시에도 포커스 확인
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
     setCheckedCells(new Set());
     setSelectedCells(new Set());
     setCellBadges({});
-    setContextMenu({ show: false, cellId: '', targetCells: [] });
+    setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
     setShiftSelectStart(null);
     setLastSelectedRow(null);
     setLastSelectedCol(null);
@@ -958,14 +960,28 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
           onOpenChange={(open) => setContextMenu(prev => ({ ...prev, show: open, targetCells: open ? prev.targetCells || [] : [] }))}
           modal={false}
         >
-          <DropdownMenuTrigger />
+          {/* Invisible trigger positioned at mouse coordinates */}
+          <DropdownMenuTrigger 
+            style={{
+              position: 'fixed',
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: 'none',
+              zIndex: -1,
+            }}
+          />
           <DropdownMenuContent 
+            side="right"
+            align="start"
             onCloseAutoFocus={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => {
-              setContextMenu({ show: false, cellId: '', targetCells: [] });
+              setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
             }}
             onPointerDownOutside={(e) => {
-              setContextMenu({ show: false, cellId: '', targetCells: [] });
+              setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
             }}
           >
             {/* Selected cells count info */}
@@ -1052,15 +1068,16 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                 e.preventDefault();
                 handleClearAllBadges();
               }}
-              className="text-red-600 cursor-pointer"
+              className="cursor-pointer"
             >
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex items-center gap-2 w-full text-red-600">
                 <Trash2 size={16} />
                 <span>Clear All Badges</span>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
 
         {/* 엑셀 그리드 테이블 */}
         {selectedZone && currentFacilities.length > 0 ? (
