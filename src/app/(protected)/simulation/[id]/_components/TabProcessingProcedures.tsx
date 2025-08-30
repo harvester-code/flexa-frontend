@@ -440,9 +440,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
                 <span className="text-sm font-medium text-gray-900">Entry</span>
               </div>
 
-              {/* Entry 뒤 화살표 */}
-              <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
-
               {/* Process Cards */}
               {processFlow.map((step, index) => {
                 const isSelected = selectedProcessIndex === index;
@@ -452,92 +449,80 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
                 return (
                   <React.Fragment key={index}>
-                    {/* Process Card with Travel Time Above */}
-                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                      {/* Travel Time Badge Above */}
+                    {/* Travel Time + Arrow */}
+                    <div className="flex flex-col items-center flex-shrink-0 relative">
                       {(step.travel_time_minutes ?? 0) > 0 && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap mb-1">
                           {step.travel_time_minutes}min
                         </span>
                       )}
+                      <ChevronRight className="h-5 w-5 text-primary" />
+                    </div>
 
-                      {/* Process Card */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, index)}
-                        className={`group relative rounded-lg border cursor-pointer shadow-sm transition-all duration-300 ease-in-out min-w-fit ${
-                          isSelected 
-                            ? 'bg-primary/15 border-primary/40 shadow-lg ring-2 ring-primary/20' 
-                            : 'bg-primary/5 border-primary/10'
-                        } ${
-                          draggedIndex === index ? 'opacity-50' : ''
-                        } ${
-                          dragOverIndex === index && draggedIndex !== index ? 'border-primary/40 bg-primary/15' : ''
-                        } ${
-                          draggedIndex === null && !isSelected ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''
-                        }`}
-                        onClick={() => handleProcessSelect(index)}
-                      >
-                        <div className="flex items-center gap-2 px-3 py-2">
-                          {/* Drag Handle */}
-                          <div
-                            className="cursor-move text-primary hover:text-primary/80"
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, index)}
-                            onDragEnd={handleDragEnd}
-                            onClick={(e) => e.stopPropagation()}
-                            title="Drag to reorder"
+                    {/* Process Card */}
+                    <div
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      className={`group relative rounded-lg border cursor-pointer shadow-sm transition-all duration-300 ease-in-out min-w-fit flex-shrink-0 ${
+                        isSelected 
+                          ? 'bg-primary/15 border-primary/40 shadow-lg ring-2 ring-primary/20' 
+                          : 'bg-primary/5 border-primary/10'
+                      } ${
+                        draggedIndex === index ? 'opacity-50' : ''
+                      } ${
+                        dragOverIndex === index && draggedIndex !== index ? 'border-primary/40 bg-primary/15' : ''
+                      } ${
+                        draggedIndex === null && !isSelected ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''
+                      }`}
+                      onClick={() => handleProcessSelect(index)}
+                    >
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        {/* Drag Handle */}
+                        <div
+                          className="cursor-move text-primary hover:text-primary/80"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragEnd={handleDragEnd}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Drag to reorder"
+                        >
+                          <ArrowLeftRight className="h-3 w-3" />
+                        </div>
+
+                        {/* Process Info */}
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                            {formatProcessName(step.name)}
+                          </h3>
+                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                            isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                          }`} />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1 ml-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeProcedure(index);
+                            }}
+                            title="Remove this process"
                           >
-                            <ArrowLeftRight className="h-3 w-3" />
-                          </div>
-
-                          {/* Process Info */}
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                              {formatProcessName(step.name)}
-                            </h3>
-                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                              isConfigured ? 'bg-green-500' : 'bg-yellow-500'
-                            }`} />
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1 ml-auto">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-5 w-5 p-0 text-primary hover:bg-primary/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditModal(index);
-                              }}
-                              title="Edit this process"
-                            >
-                              <Settings2 className="h-2.5 w-2.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeProcedure(index);
-                              }}
-                              title="Remove this process"
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </Button>
-                          </div>
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
-
-                    {/* Process 뒤 화살표 */}
-                    <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
                   </React.Fragment>
                 );
               })}
+
+              {/* Arrow before Add Process Button */}
+              <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
 
               {/* Add Process Button */}
               <Button
