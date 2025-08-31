@@ -7,6 +7,7 @@ import { useFlightScheduleData, usePassengerScheduleData } from '../../_hooks/us
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
+import TabPassengerScheduleNationalityConfiguration from './TabPassengerScheduleNationalityConfiguration';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
 import TabPassengerScheduleVirtualProfiles from './TabPassengerScheduleVirtualProfiles';
 
@@ -172,6 +173,9 @@ export default function TabPassengerSchedule({
     <div className="pt-8">
       <div className="space-y-6">
         <TabPassengerScheduleVirtualProfiles />
+
+        {/* Nationality Configuration */}
+        <TabPassengerScheduleNationalityConfiguration simulationId={simulationId} />
 
         {/* Airline Selector */}
         <TabPassengerScheduleAirlineSelector

@@ -7,6 +7,7 @@ import {
   useFlightScheduleStore,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
+  useSimulationUIStore,
 } from '../_stores';
 
 interface JSONDebugViewerProps {
@@ -24,12 +25,19 @@ interface JSONDebugViewerProps {
 export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }: JSONDebugViewerProps) {
   const [collapsed, setCollapsed] = useState({
     apiRequestLog: false, // API 요청 로그 (기본 펼침)
+    simulationUI: false, // Simulation UI Store (새로 추가)
     flightSchedule: false, // 기본적으로 접힘
     passengerSchedule: false,
     processingProcedures: false,
   });
 
   // 개별 모듈화된 스토어에서 모든 탭 데이터 수집
+
+  const simulationUI = {
+    flightSchedule: useSimulationUIStore((s) => s.flightSchedule),
+    passengerSchedule: useSimulationUIStore((s) => s.passengerSchedule),
+    processingProcedures: useSimulationUIStore((s) => s.processingProcedures),
+  };
 
   const flightSchedule = {
     airport: useFlightScheduleStore((s) => s.airport),
@@ -183,6 +191,9 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
             )}
           </div>
         )}
+
+        {/* 0. Simulation UI Store - UI 전용 상태 */}
+        {renderCollapsibleSection('Simulation UI Store', simulationUI, 'simulationUI', 'bg-purple-50')}
 
         {/* 1. Flight Schedule - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Flight Schedule', flightSchedule, 'flightSchedule', 'bg-blue-50')}

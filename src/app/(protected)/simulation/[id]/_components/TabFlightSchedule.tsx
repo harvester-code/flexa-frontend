@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/simulationTypes';
 import { getFlightSchedules } from '@/services/simulationService';
 import { useFlightScheduleData } from '../../_hooks/useTabData';
+import { useSimulationUIStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 import TabFlightScheduleChart from './TabFlightScheduleChart';
@@ -36,6 +37,9 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       setIsCompleted,
     },
   } = useFlightScheduleData();
+
+  // UI Store에서 분산 저장을 위한 액션들
+  const setPassengerScheduleUI = useSimulationUIStore((state) => state.setPassengerScheduleUI);
 
   // Tab Reset 시스템 제거 - 단순화
 
@@ -265,6 +269,11 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             data: chartYDataCopy,
           };
           setChartData(newChartData); // zustand에 전체 chartData 저장
+
+          // Parquet 메타데이터 분산 저장 (Passenger Schedule UI에서 사용)
+          if (data?.parquet_metadata) {
+            setPassengerScheduleUI({ parquetMetadata: data.parquet_metadata });
+          }
 
           // Flight Schedule 탭 완료 상태 설정
           setIsCompleted(true);
