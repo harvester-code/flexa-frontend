@@ -23,14 +23,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
   const {
     airport,
     date,
-    type,
     availableConditions,
     selectedConditions: zustandSelectedConditions,
     chartData,
     actions: {
       setAirport,
       setDate,
-      setType,
       setAvailableConditions,
       setSelectedConditions,
       setChartData,
@@ -101,7 +99,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       const params = {
         airport,
         date,
-        type,
         conditions: isAirportOrDateChanged ? [] : buildConditions(), // 공항/날짜 변경시에는 빈 조건, 필터 적용시에만 조건 포함
       };
       const timestamp = new Date().toISOString();
@@ -345,11 +342,9 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       <TabFlightScheduleLoadData
         airport={airport}
         date={date}
-        type={type}
         loadingFlightSchedule={loadingFlightSchedule}
         setAirport={setAirport}
         setDate={setDate}
-        setType={setType}
         setIsSomethingChanged={setIsSomethingChanged}
         onLoadData={handleLoadData}
       />

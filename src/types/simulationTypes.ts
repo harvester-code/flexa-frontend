@@ -75,7 +75,6 @@ export interface CreateScenarioParams {
 export interface FlightSchedulesParams {
   airport: string;
   date: string;
-  type: string;
   conditions: SimplifiedCondition[];
 }
 

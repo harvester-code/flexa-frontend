@@ -21,7 +21,6 @@ export interface FlightScheduleState {
   // Data
   airport: string;
   date: string;
-  type: string;
   availableConditions: AvailableConditions;
   selectedConditions: SelectedConditions;
   chartData: Record<string, unknown> | null;
@@ -31,7 +30,6 @@ export interface FlightScheduleState {
   // Actions
   setAirport: (airport: string) => void;
   setDate: (date: string) => void;
-  setType: (type: string) => void;
   setAvailableConditions: (conditions: AvailableConditions) => void;
   setSelectedConditions: (conditions: SelectedConditions) => void;
   setChartData: (data: Record<string, unknown> | null) => void;
@@ -45,7 +43,6 @@ export interface FlightScheduleState {
 const initialState = {
   airport: '',
   date: new Date().toISOString().split('T')[0], // 오늘 날짜 (YYYY-MM-DD 형식)
-  type: 'departure',
   availableConditions: {
     types: {
       International: [],
@@ -79,11 +76,6 @@ export const useFlightScheduleStore = create<FlightScheduleState>()(
     setDate: (date) =>
       set((state) => {
         state.date = date;
-      }),
-
-    setType: (type) =>
-      set((state) => {
-        state.type = type;
       }),
 
     setAvailableConditions: (conditions) =>

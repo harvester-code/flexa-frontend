@@ -9,8 +9,6 @@ import {
   Database,
   Loader2,
   Plane,
-  PlaneLanding,
-  PlaneTakeoff,
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -30,11 +28,9 @@ const JSON_AIRPORTS = _jsonAirport.map((item) => ({
 interface TabFlightScheduleLoadDataProps {
   airport: string;
   date: string;
-  type: 'departure' | 'arrival';
   loadingFlightSchedule: boolean;
   setAirport: (airport: string) => void;
   setDate: (date: string) => void;
-  setType: (type: 'departure' | 'arrival') => void;
   setIsSomethingChanged: (changed: boolean) => void;
   onLoadData: () => void;
 }
@@ -42,17 +38,14 @@ interface TabFlightScheduleLoadDataProps {
 function TabFlightScheduleLoadData({
   airport,
   date,
-  type,
   loadingFlightSchedule,
   setAirport,
   setDate,
-  setType,
   setIsSomethingChanged,
   onLoadData,
 }: TabFlightScheduleLoadDataProps) {
   const [openAirportPopover, setOpenAirportPopover] = useState(false);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
-  const [openTypePopover, setOpenTypePopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
 
   // 디바운싱된 검색어 (타이핑 중 과도한 필터링 방지) - 성능 최적화
@@ -190,60 +183,7 @@ function TabFlightScheduleLoadData({
               </PopoverContent>
             </Popover>
 
-            {/* Flight Type Selection - 표준 Combobox */}
-            <Popover open={openTypePopover} onOpenChange={setOpenTypePopover}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openTypePopover}
-                  className="min-w-fit flex-shrink-0 justify-between font-normal"
-                >
-                  <div className="flex items-center">
-                    {type === 'departure' ? (
-                      <PlaneTakeoff className="mr-2 h-4 w-4" />
-                    ) : (
-                      <PlaneLanding className="mr-2 h-4 w-4" />
-                    )}
-                    {type === 'departure' ? 'Departure' : 'Arrival'}
-                  </div>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <Command>
-                  <CommandList>
-                    <CommandEmpty>No flight type found.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          const newType = 'departure';
-                          setIsSomethingChanged(type !== newType);
-                          setType(newType);
-                          setOpenTypePopover(false);
-                        }}
-                      >
-                        <Check className={cn('mr-2 h-4 w-4', type === 'departure' ? 'opacity-100' : 'opacity-0')} />
-                        <PlaneTakeoff className="mr-2 h-4 w-4" />
-                        Departure
-                      </CommandItem>
-                      <CommandItem
-                        onSelect={() => {
-                          const newType = 'arrival';
-                          setIsSomethingChanged(type !== newType);
-                          setType(newType);
-                          setOpenTypePopover(false);
-                        }}
-                      >
-                        <Check className={cn('mr-2 h-4 w-4', type === 'arrival' ? 'opacity-100' : 'opacity-0')} />
-                        <PlaneLanding className="mr-2 h-4 w-4" />
-                        Arrival
-                      </CommandItem>
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+
           </div>
 
           {/* Load Button */}

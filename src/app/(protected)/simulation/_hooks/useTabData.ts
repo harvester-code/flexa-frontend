@@ -12,7 +12,6 @@ export const useFlightScheduleData = () => {
     // Data
     airport,
     date,
-    type,
     availableConditions,
     selectedConditions,
     chartData,
@@ -22,7 +21,6 @@ export const useFlightScheduleData = () => {
     // Actions
     setAirport,
     setDate,
-    setType,
     setAvailableConditions,
     setSelectedConditions,
     setChartData,
@@ -36,7 +34,6 @@ export const useFlightScheduleData = () => {
     // Data
     airport,
     date,
-    type,
     availableConditions,
     selectedConditions,
     chartData,
@@ -47,7 +44,6 @@ export const useFlightScheduleData = () => {
     actions: {
       setAirport,
       setDate,
-      setType,
       setAvailableConditions,
       setSelectedConditions,
       setChartData,
