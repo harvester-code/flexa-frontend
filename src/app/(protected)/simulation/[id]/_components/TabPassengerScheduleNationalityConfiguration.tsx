@@ -276,6 +276,15 @@ export default function TabPassengerScheduleNationalityConfiguration({
               </div>
             )}
 
+            {/* Step 2 완료 후 Step 3 안내 */}
+            {hasAvailableValues && (pax_demographics.nationality?.rules?.length || 0) === 0 && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <div className="text-sm text-blue-800">
+                  <strong>Next:</strong> Add at least one condition rule above to proceed to Step 3 (Set Distribution)
+                </div>
+              </div>
+            )}
+
             {/* Step 3: Saved Rules & Distribution Setting */}
             {hasAvailableValues && (pax_demographics.nationality?.rules?.length || 0) > 0 && (
               <div className="space-y-4">
