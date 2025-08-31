@@ -35,6 +35,7 @@ import {
   usePassengerScheduleStore,
   useProcessingProceduresStore,
   useScenarioProfileStore,
+  useSimulationUIStore,
 } from './_stores';
 
 const tabs: { text: string; number: number }[] = [
@@ -83,11 +84,25 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         useProcessingProceduresStore.getState().loadMetadata(tabs.processingProcedures);
       }
 
-
+      // Simulation UI Store 복원 (UI 전용 메타데이터)
+      if (data.metadata?.simulationUI) {
+        console.log('Simulation UI 데이터 로드:', data.metadata.simulationUI);
+        const uiState = useSimulationUIStore.getState();
+        
+        if (data.metadata.simulationUI.flightSchedule) {
+          uiState.setFlightScheduleUI(data.metadata.simulationUI.flightSchedule);
+        }
+        if (data.metadata.simulationUI.passengerSchedule) {
+          uiState.setPassengerScheduleUI(data.metadata.simulationUI.passengerSchedule);
+        }
+        if (data.metadata.simulationUI.processingProcedures) {
+          uiState.setProcessingProceduresUI(data.metadata.simulationUI.processingProcedures);
+        }
+      }
 
       // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외
 
-      console.log('모든 store 메타데이터 로드 완료');
+      console.log('모든 store 메타데이터 로드 완료 (UI Store 포함)');
     } catch (error) {
       console.error('S3 메타데이터 로드 중 오류 발생:', error);
     }
@@ -113,6 +128,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       const flightScheduleState = useFlightScheduleStore.getState();
       const passengerScheduleState = usePassengerScheduleStore.getState();
       const processingProceduresState = useProcessingProceduresStore.getState();
+      const simulationUIState = useSimulationUIStore.getState();
 
       const scenarioProfileState = useScenarioProfileStore.getState();
 
@@ -150,6 +166,11 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             availableScenarioTab: scenarioProfileState.availableScenarioTab,
             isCompleted: scenarioProfileState.isCompleted,
           },
+        },
+        simulationUI: {
+          flightSchedule: simulationUIState.flightSchedule,
+          passengerSchedule: simulationUIState.passengerSchedule,
+          processingProcedures: simulationUIState.processingProcedures,
         },
       };
 

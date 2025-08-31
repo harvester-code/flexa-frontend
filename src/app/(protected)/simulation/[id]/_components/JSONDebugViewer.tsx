@@ -76,9 +76,10 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
         passengerSchedule: passengerSchedule,
         processingProcedures: airportProcessing,
       },
+      simulationUI: simulationUI,
       // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
     };
-  }, [simulationId, flightSchedule, passengerSchedule, airportProcessing]);
+  }, [simulationId, flightSchedule, passengerSchedule, airportProcessing, simulationUI]);
 
 
 

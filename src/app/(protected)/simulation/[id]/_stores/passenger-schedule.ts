@@ -10,7 +10,24 @@ export interface PassengerScheduleState {
     load_factor: number;
     min_arrival_minutes: number;
   };
-  pax_demographics: Record<string, unknown>;
+  pax_demographics: {
+    nationality: {
+      available_values: string[];
+      rules: Array<{
+        conditions: Record<string, string[]>;
+        distribution: Record<string, number>;
+      }>;
+      default: Record<string, number>;
+    };
+    profile: {
+      available_values: string[];
+      rules: Array<{
+        conditions: Record<string, string[]>;
+        distribution: Record<string, number>;
+      }>;
+      default: Record<string, number>;
+    };
+  };
   pax_arrival_patterns: {
     rules: Array<{
       conditions: {
@@ -29,7 +46,16 @@ export interface PassengerScheduleState {
 
   // Actions
   setSettings: (settings: Partial<PassengerScheduleState['settings']>) => void;
-  setPaxDemographics: (demographics: Record<string, unknown>) => void;
+  setPaxDemographics: (demographics: PassengerScheduleState['pax_demographics']) => void;
+  setNationalityValues: (values: string[]) => void;
+  setProfileValues: (values: string[]) => void;
+  addNationalityRule: (conditions: Record<string, string[]>) => void;
+  addProfileRule: (conditions: Record<string, string[]>) => void;
+  removeNationalityRule: (ruleIndex: number) => void;
+  removeProfileRule: (ruleIndex: number) => void;
+  updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  reorderPaxDemographics: () => void;
   setPaxArrivalPatternRules: (rules: PassengerScheduleState['pax_arrival_patterns']['rules']) => void;
   addPaxArrivalPatternRule: (rule: PassengerScheduleState['pax_arrival_patterns']['rules'][0]) => void;
   updatePaxArrivalPatternRule: (
@@ -51,7 +77,18 @@ const initialState = {
     load_factor: 0.85,
     min_arrival_minutes: 30,
   },
-  pax_demographics: {},
+  pax_demographics: {
+    nationality: {
+      available_values: [],
+      rules: [],
+      default: {}
+    },
+    profile: {
+      available_values: [],
+      rules: [],
+      default: {}
+    }
+  },
   pax_arrival_patterns: {
     rules: [],
     default: {
@@ -78,6 +115,95 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
     setPaxDemographics: (demographics) =>
       set((state) => {
         state.pax_demographics = demographics;
+      }),
+
+    setNationalityValues: (values) =>
+      set((state) => {
+        // 올바른 순서로 nationality 객체 재구성
+        const currentRules = state.pax_demographics.nationality.rules || [];
+        const currentDefault = state.pax_demographics.nationality.default || {};
+        
+        state.pax_demographics.nationality = {
+          available_values: values,
+          rules: currentRules,
+          default: currentDefault
+        };
+      }),
+
+    setProfileValues: (values) =>
+      set((state) => {
+        // 올바른 순서로 profile 객체 재구성
+        const currentRules = state.pax_demographics.profile.rules || [];
+        const currentDefault = state.pax_demographics.profile.default || {};
+        
+        state.pax_demographics.profile = {
+          available_values: values,
+          rules: currentRules,
+          default: currentDefault
+        };
+      }),
+
+    addNationalityRule: (conditions) =>
+      set((state) => {
+        state.pax_demographics.nationality.rules.push({
+          conditions,
+          distribution: {} // available_values 기반으로 설정할 예정
+        });
+      }),
+
+    addProfileRule: (conditions) =>
+      set((state) => {
+        state.pax_demographics.profile.rules.push({
+          conditions,
+          distribution: {} // available_values 기반으로 설정할 예정
+        });
+      }),
+
+    removeNationalityRule: (ruleIndex) =>
+      set((state) => {
+        state.pax_demographics.nationality.rules.splice(ruleIndex, 1);
+      }),
+
+    removeProfileRule: (ruleIndex) =>
+      set((state) => {
+        state.pax_demographics.profile.rules.splice(ruleIndex, 1);
+      }),
+
+    updateNationalityDistribution: (ruleIndex, distribution) =>
+      set((state) => {
+        if (state.pax_demographics.nationality.rules[ruleIndex]) {
+          state.pax_demographics.nationality.rules[ruleIndex].distribution = distribution;
+        }
+      }),
+
+    updateProfileDistribution: (ruleIndex, distribution) =>
+      set((state) => {
+        if (state.pax_demographics.profile.rules[ruleIndex]) {
+          state.pax_demographics.profile.rules[ruleIndex].distribution = distribution;
+        }
+      }),
+
+    reorderPaxDemographics: () =>
+      set((state) => {
+        // nationality 재정렬 (안전하게 체크)
+        if (state.pax_demographics.nationality) {
+          const nationalityData = state.pax_demographics.nationality;
+          state.pax_demographics.nationality = {
+            available_values: nationalityData.available_values || [],
+            rules: nationalityData.rules || [],
+            default: nationalityData.default || {}
+          };
+        }
+        
+        // profile 재정렬 (안전하게 체크)
+        if (state.pax_demographics.profile) {
+          const profileData = state.pax_demographics.profile;
+          state.pax_demographics.profile = {
+            available_values: profileData.available_values || [],
+            rules: profileData.rules || [],
+            default: profileData.default || {}
+          };
+        }
       }),
 
     setPaxArrivalPatternRules: (rules) =>

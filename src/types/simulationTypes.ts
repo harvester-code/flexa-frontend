@@ -94,6 +94,11 @@ export interface MetadataLoadResponse {
       passengerSchedule: any;
       processingProcedures: any;
     };
+    simulationUI?: {
+      flightSchedule: Record<string, unknown>;
+      passengerSchedule: Record<string, unknown>;
+      processingProcedures: Record<string, unknown>;
+    };
   };
   s3_key: string;
   loaded_at: string;

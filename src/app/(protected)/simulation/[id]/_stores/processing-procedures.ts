@@ -27,6 +27,7 @@ export interface ProcessingProceduresState {
     procedures: Array<{ order: number; process: string; facility_names: string[] }>,
     entryType?: string
   ) => void;
+
   setCompleted: (completed: boolean) => void;
   resetState: () => void;
   loadMetadata: (metadata: Record<string, unknown>) => void;
