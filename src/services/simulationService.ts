@@ -36,6 +36,11 @@ export const getFlightSchedules = (scenario_id: string, params: FlightSchedulesP
   return api.withScenario(scenario_id).post<FlightScheduleResponse>('/flight-schedules', params);
 };
 
+// 새로운 GET flight-filters 엔드포인트
+export const getFlightFilters = (scenario_id: string, airport: string, date: string) => {
+  return api.withScenario(scenario_id).get(`/flight-filters?airport=${airport}&date=${date}`);
+};
+
 export const getPassengerSchedules = (scenarioId: string, params: PassengerSchedulesParams) => {
   return api.withScenario(scenarioId).post<PassengerScheduleResponse>('/show-up-passenger', params);
 };

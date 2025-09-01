@@ -41,7 +41,7 @@ export interface FlightScheduleState {
 
 // ==================== Initial State ====================
 const initialState = {
-  airport: '',
+  airport: 'ICN', // ICN을 기본값으로 설정
   date: new Date().toISOString().split('T')[0], // 오늘 날짜 (YYYY-MM-DD 형식)
   availableConditions: {
     types: {

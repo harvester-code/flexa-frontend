@@ -4,10 +4,10 @@ import React, { useMemo, useState } from 'react';
 import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
-  useFlightScheduleStore,
+  useFlightScheduleV2Store,
   usePassengerScheduleStore,
   useProcessingProceduresStore,
-  useSimulationUIStore,
+  useSimulationStore,
 } from '../_stores';
 
 interface JSONDebugViewerProps {
@@ -15,8 +15,8 @@ interface JSONDebugViewerProps {
   simulationId: string; // 시나리오 ID 추가
   apiRequestLog?: {
     timestamp: string;
-    request: any;
-    response: any;
+    request?: any;
+    response?: any;
     status: 'loading' | 'success' | 'error';
     error?: string;
   } | null;
@@ -25,29 +25,40 @@ interface JSONDebugViewerProps {
 export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }: JSONDebugViewerProps) {
   const [collapsed, setCollapsed] = useState({
     apiRequestLog: false, // API 요청 로그 (기본 펼침)
-    simulationUI: false, // Simulation UI Store (새로 추가)
+    unifiedStore: false, // 🆕 통합 Store (기본 펼침)
     flightSchedule: false, // 기본적으로 접힘
     passengerSchedule: false,
     processingProcedures: false,
   });
 
+  // 🆕 통합 Simulation Store 데이터 수집
+  const unifiedStore = useSimulationStore();
+
   // 개별 모듈화된 스토어에서 모든 탭 데이터 수집
 
-  const simulationUI = {
-    flightSchedule: useSimulationUIStore((s) => s.flightSchedule),
-    passengerSchedule: useSimulationUIStore((s) => s.passengerSchedule),
-    processingProcedures: useSimulationUIStore((s) => s.processingProcedures),
-  };
-
   const flightSchedule = {
-    airport: useFlightScheduleStore((s) => s.airport),
-    date: useFlightScheduleStore((s) => s.date),
-    type: useFlightScheduleStore((s) => s.type),
-    availableConditions: useFlightScheduleStore((s) => s.availableConditions),
-    selectedConditions: useFlightScheduleStore((s) => s.selectedConditions),
-    chartData: useFlightScheduleStore((s) => s.chartData),
-    total: useFlightScheduleStore((s) => s.total),
-    isCompleted: useFlightScheduleStore((s) => s.isCompleted),
+    // Basic parameters
+    airport: useFlightScheduleV2Store((s) => s.airport),
+    date: useFlightScheduleV2Store((s) => s.date),
+    isCompleted: useFlightScheduleV2Store((s) => s.isCompleted),
+
+    // Filter system
+    filtersData: useFlightScheduleV2Store((s) => s.filtersData),
+
+    // Loading states
+    loadingFlightSchedule: useFlightScheduleV2Store((s) => s.loadingFlightSchedule),
+    loadError: useFlightScheduleV2Store((s) => s.loadError),
+    applyFilterLoading: useFlightScheduleV2Store((s) => s.applyFilterLoading),
+
+    // Apply filter results
+    applyFilterData: useFlightScheduleV2Store((s) => s.applyFilterData),
+    applyFilterError: useFlightScheduleV2Store((s) => s.applyFilterError),
+
+    // API request log
+    apiRequestLog: useFlightScheduleV2Store((s) => s.apiRequestLog),
+
+    // Legacy chart data (for migration period)
+    chartData: useFlightScheduleV2Store((s) => s.chartData),
   };
 
   const passengerSchedule = {
@@ -63,25 +74,20 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     isCompleted: useProcessingProceduresStore((s) => s.isCompleted),
   };
 
-
-
-
-
   // 실제 S3 저장 구조로 합치기
   const scenarioMetadata = useMemo(() => {
     return {
       scenario_id: simulationId, // 실제 시나리오 ID 사용
+      unified_store: unifiedStore, // 🆕 통합 Store 데이터 추가
       tabs: {
         flightSchedule: flightSchedule,
         passengerSchedule: passengerSchedule,
         processingProcedures: airportProcessing,
       },
-      simulationUI: simulationUI,
+
       // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
     };
-  }, [simulationId, flightSchedule, passengerSchedule, airportProcessing, simulationUI]);
-
-
+  }, [simulationId, unifiedStore, flightSchedule, passengerSchedule, airportProcessing]);
 
   const toggleCollapse = (section: keyof typeof collapsed) => {
     setCollapsed((prev) => ({
@@ -111,7 +117,9 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
           onClick={() => toggleCollapse(collapsedKey)}
           className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
-          <ChevronRight className={`h-4 w-4 transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} />
+          <ChevronRight
+            className={`h-4 w-4 transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}
+          />
           {title}
         </Button>
 
@@ -123,8 +131,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
       </div>
     );
   };
-
-
 
   if (!visible) return null;
 
@@ -145,7 +151,9 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
               className="mb-2 flex w-full items-center gap-2 rounded bg-red-50 p-2 text-left font-medium text-default-900 hover:bg-red-100"
               onClick={() => setCollapsed((prev) => ({ ...prev, apiRequestLog: !prev.apiRequestLog }))}
             >
-              <ChevronRight className={`h-4 w-4 transform transition-transform ${collapsed.apiRequestLog ? 'rotate-0' : 'rotate-90'}`} />
+              <ChevronRight
+                className={`h-4 w-4 transform transition-transform ${collapsed.apiRequestLog ? 'rotate-0' : 'rotate-90'}`}
+              />
               <Rocket className="h-4 w-4" />
               Last API Request ({apiRequestLog.status === 'loading' ? 'Loading...' : apiRequestLog.status})
               <span className="ml-auto text-xs text-default-500">
@@ -193,21 +201,17 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
           </div>
         )}
 
-        {/* 0. Simulation UI Store - UI 전용 상태 */}
-        {renderCollapsibleSection('Simulation UI Store', simulationUI, 'simulationUI', 'bg-purple-50')}
+        {/* 0. 🆕 Unified Simulation Store - 통합 단일 스토어 */}
+        {renderCollapsibleSection('🆕 Unified Simulation Store', unifiedStore, 'unifiedStore', 'bg-green-50')}
 
-        {/* 1. Flight Schedule - 전체 스토어 데이터 */}
-        {renderCollapsibleSection('Flight Schedule', flightSchedule, 'flightSchedule', 'bg-blue-50')}
+        {/* 1. Flight Schedule V2 - 새로운 모던 스토어 데이터 */}
+        {renderCollapsibleSection('Flight Schedule V2 🆕', flightSchedule, 'flightSchedule', 'bg-blue-50')}
 
         {/* 2. Passenger Schedule - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Passenger Schedule', passengerSchedule, 'passengerSchedule', 'bg-green-50')}
 
         {/* 3. Processing Procedures - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Processing Procedures', airportProcessing, 'processingProcedures', 'bg-yellow-50')}
-
-
-
-
 
         {/* S3 저장 구조 메타데이터 표시 */}
         <div className="mt-8 border-t pt-6">
@@ -219,8 +223,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
             {JSON.stringify(scenarioMetadata, null, 2)}
           </pre>
         </div>
-
-
       </div>
     </div>
   );

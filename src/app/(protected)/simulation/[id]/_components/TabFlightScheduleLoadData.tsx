@@ -2,15 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import {
-  Calendar as CalendarIcon,
-  Check,
-  ChevronsUpDown,
-  Database,
-  Loader2,
-  Plane,
-  Search,
-} from 'lucide-react';
+import { Calendar as CalendarIcon, Check, ChevronsUpDown, Database, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/Calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -47,6 +39,11 @@ function TabFlightScheduleLoadData({
   const [openAirportPopover, setOpenAirportPopover] = useState(false);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
+
+  // 🔍 디버깅용 - loadingFlightSchedule 상태 변화 확인
+  useEffect(() => {
+    console.log('🔍 TabFlightScheduleLoadData: loadingFlightSchedule changed to:', loadingFlightSchedule);
+  }, [loadingFlightSchedule]);
 
   // 디바운싱된 검색어 (타이핑 중 과도한 필터링 방지) - 성능 최적화
   const [debouncedSearchAirport, setDebouncedSearchAirport] = useState('');
@@ -129,6 +126,10 @@ function TabFlightScheduleLoadData({
                     placeholder="Search airport..."
                     value={searchAirport}
                     onValueChange={setSearchAirport}
+                    inputMode="latin"
+                    lang="en"
+                    autoCapitalize="characters"
+                    spellCheck={false}
                   />
                   <CommandList>
                     <CommandEmpty>No airport found.</CommandEmpty>
@@ -182,13 +183,14 @@ function TabFlightScheduleLoadData({
                 />
               </PopoverContent>
             </Popover>
-
-
           </div>
 
           {/* Load Button */}
           <Button
-            onClick={onLoadData}
+            onClick={() => {
+              console.log('🎯 Load button clicked, loadingFlightSchedule:', loadingFlightSchedule);
+              onLoadData();
+            }}
             disabled={loadingFlightSchedule || !airport}
             title={!airport ? 'Please select an airport first' : 'Load flight schedule data'}
           >
@@ -206,16 +208,6 @@ function TabFlightScheduleLoadData({
             )}
           </Button>
         </div>
-
-        {/* Validation Message */}
-        {!airport && (
-          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
-            <div className="flex items-center">
-              <Plane className="h-4 w-4 flex-shrink-0 text-amber-600" />
-              <p className="ml-2 text-sm text-amber-700">Please select an airport to load flight schedule data.</p>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

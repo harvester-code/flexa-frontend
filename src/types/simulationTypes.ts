@@ -245,9 +245,12 @@ export interface Zone {
 
 export interface Facility {
   id: string;
-  operating_schedule: Record<string, {
-    time_blocks: TimeBlock[];
-  }>;
+  operating_schedule: Record<
+    string,
+    {
+      time_blocks: TimeBlock[];
+    }
+  >;
 }
 
 export interface TimeBlock {
@@ -265,8 +268,6 @@ export interface PassengerCondition {
   field: string;
   values: string[];
 }
-
-
 
 export interface FacilityCapacity {
   selectedNodes: number[];
@@ -321,11 +322,14 @@ export interface AllocationTableRow {
 
 export interface APIRequestLog {
   timestamp: string;
-  endpoint: string;
-  method: string;
+  endpoint?: string;
+  method?: string;
+  request?: any; // 요청 파라미터
+  response?: any; // 응답 데이터
   requestBody?: any;
   responseData?: any;
   status: 'loading' | 'success' | 'error';
   duration?: number;
+  error?: string; // 에러 메시지
   errorMessage?: string;
 }

@@ -6,9 +6,8 @@ import dayjs from 'dayjs';
 import { Save, Trash2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { APIRequestLog } from '@/types/simulationTypes';
-import { saveScenarioMetadata, deleteScenarioMetadata } from '@/services/simulationService';
+import { deleteScenarioMetadata, saveScenarioMetadata } from '@/services/simulationService';
 import TheContentHeader from '@/components/TheContentHeader';
-import { Button } from '@/components/ui/Button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/AlertDialog';
+import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
 import JSONDebugViewer from './_components/JSONDebugViewer';
 import TabDefault from './_components/TabDefault';
-
 import TabFlightSchedule from './_components/TabFlightSchedule';
 import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
@@ -35,7 +34,7 @@ import {
   usePassengerScheduleStore,
   useProcessingProceduresStore,
   useScenarioProfileStore,
-  useSimulationUIStore,
+  useSimulationStore,
 } from './_stores';
 
 const tabs: { text: string; number: number }[] = [
@@ -60,7 +59,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
   const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
 
-
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
     console.log('S3 metadata 로드 시작:', data);
@@ -84,25 +82,9 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         useProcessingProceduresStore.getState().loadMetadata(tabs.processingProcedures);
       }
 
-      // Simulation UI Store 복원 (UI 전용 메타데이터)
-      if (data.metadata?.simulationUI) {
-        console.log('Simulation UI 데이터 로드:', data.metadata.simulationUI);
-        const uiState = useSimulationUIStore.getState();
-        
-        if (data.metadata.simulationUI.flightSchedule) {
-          uiState.setFlightScheduleUI(data.metadata.simulationUI.flightSchedule);
-        }
-        if (data.metadata.simulationUI.passengerSchedule) {
-          uiState.setPassengerScheduleUI(data.metadata.simulationUI.passengerSchedule);
-        }
-        if (data.metadata.simulationUI.processingProcedures) {
-          uiState.setProcessingProceduresUI(data.metadata.simulationUI.processingProcedures);
-        }
-      }
-
       // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외
 
-      console.log('모든 store 메타데이터 로드 완료 (UI Store 포함)');
+      console.log('모든 store 메타데이터 로드 완료');
     } catch (error) {
       console.error('S3 메타데이터 로드 중 오류 발생:', error);
     }
@@ -110,76 +92,53 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 탭 접근성 계산
   const getAvailableTabs = () => {
-    const completedStates = [
-      flightScheduleCompleted,
-      passengerScheduleCompleted,
-      processingProceduresCompleted,
-    ];
+    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted, processingProceduresCompleted];
 
     // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
     const lastCompletedIndex = completedStates.lastIndexOf(true);
     return Math.max(0, Math.min(lastCompletedIndex + 1, tabs.length - 1));
   };
 
-  // 전체 메타데이터 수집용 함수 - 모든 stores에서 현재 상태 수집
+  // 🆕 통합 Store에서 메타데이터 수집용 함수
   const getCompleteMetadata = useCallback((scenarioId: string) => {
     try {
-      // 각 store에서 현재 상태 수집
-      const flightScheduleState = useFlightScheduleStore.getState();
-      const passengerScheduleState = usePassengerScheduleStore.getState();
-      const processingProceduresState = useProcessingProceduresStore.getState();
-      const simulationUIState = useSimulationUIStore.getState();
+      // 통합 Store에서 전체 상태 가져오기
+      const simulationState = useSimulationStore.getState();
 
-      const scenarioProfileState = useScenarioProfileStore.getState();
-
+      // 현재 시간으로 savedAt 업데이트
       const metadata = {
-        scenario_id: scenarioId,
-        tabs: {
-          flightSchedule: {
-            airport: flightScheduleState.airport,
-            date: flightScheduleState.date,
-            type: flightScheduleState.type,
-            availableConditions: flightScheduleState.availableConditions,
-            selectedConditions: flightScheduleState.selectedConditions,
-            chartData: flightScheduleState.chartData,
-            total: flightScheduleState.total,
-            isCompleted: flightScheduleState.isCompleted,
-          },
-          passengerSchedule: {
-            settings: passengerScheduleState.settings,
-            pax_demographics: passengerScheduleState.pax_demographics,
-            pax_arrival_patterns: passengerScheduleState.pax_arrival_patterns,
-            apiResponseData: passengerScheduleState.apiResponseData,
-            isCompleted: passengerScheduleState.isCompleted,
-          },
-          processingProcedures: {
-            process_flow: processingProceduresState.process_flow,
-            isCompleted: processingProceduresState.isCompleted,
-          },
-
-          scenarioProfile: {
-            checkpoint: scenarioProfileState.checkpoint,
-            scenarioName: scenarioProfileState.scenarioName,
-            scenarioTerminal: scenarioProfileState.scenarioTerminal,
-            scenarioHistory: scenarioProfileState.scenarioHistory,
-            currentScenarioTab: scenarioProfileState.currentScenarioTab,
-            availableScenarioTab: scenarioProfileState.availableScenarioTab,
-            isCompleted: scenarioProfileState.isCompleted,
-          },
-        },
-        simulationUI: {
-          flightSchedule: simulationUIState.flightSchedule,
-          passengerSchedule: simulationUIState.passengerSchedule,
-          processingProcedures: simulationUIState.processingProcedures,
-        },
+        ...simulationState,
+        savedAt: new Date().toISOString(),
       };
 
+      console.log('🆕 통합 Store 메타데이터 수집 완료:', metadata);
       return metadata;
     } catch (error) {
-      console.error('메타데이터 수집 중 오류 발생:', error);
+      console.error('🆕 통합 Store 메타데이터 수집 중 오류 발생:', error);
       return {
-        scenario_id: scenarioId,
-        tabs: {},
+        context: {
+          scenarioId: scenarioId,
+          airport: '',
+          date: '',
+          lastSavedAt: null,
+        },
+        flight: {
+          total_flights: null,
+          airlines: null,
+          filters: null,
+          selectedConditions: null,
+          appliedFilterResult: null,
+        },
+        passenger: { settings: {}, demographics: {}, arrivalPatterns: {}, showUpResults: null },
+        process: { flow: [] },
+        workflow: {
+          currentStep: 1,
+          step1Completed: false,
+          step2Completed: false,
+          step3Completed: false,
+          availableSteps: [1],
+        },
+        savedAt: new Date().toISOString(),
       };
     }
   }, []);
@@ -190,6 +149,17 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 🆕 통합 Store 액션들
+  const setScenarioId = useSimulationStore((s) => s.setScenarioId);
+  const setLastSavedAt = useSimulationStore((s) => s.setLastSavedAt);
+
+  // scenarioId 초기화
+  React.useEffect(() => {
+    if (simulationId) {
+      setScenarioId(simulationId);
+    }
+  }, [simulationId, setScenarioId]);
+
   // 임시저장 함수
   const handleTempSave = async () => {
     try {
@@ -199,9 +169,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
 
+      // 🆕 저장 성공 시 lastSavedAt 업데이트
+      const savedTimestamp = new Date().toISOString();
+      setLastSavedAt(savedTimestamp);
+
       toast({
-        title: '임시저장 완료',
-        description: `시나리오 메타데이터가 성공적으로 저장되었습니다.\n저장 위치: ${saveResult.s3_key}`,
+        title: '🆕 통합 Store 저장 완료',
+        description: `시나리오 메타데이터가 성공적으로 저장되었습니다.\n저장 위치: ${saveResult.s3_key}\n저장 시간: ${new Date().toLocaleString()}`,
       });
     } catch (error) {
       console.error('임시저장 실패:', error);
@@ -250,7 +224,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   }, [scenarioHistory]);
 
   return (
-    <div className="max-w-page px-page-x pb-page-b mx-auto">
+    <div className="mx-auto max-w-page px-page-x pb-page-b">
       <TheContentHeader text="Simulation" />
 
       <div className="mt-[15px] flex justify-between">
