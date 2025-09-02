@@ -12,19 +12,38 @@ export interface SimulationStoreState {
     lastSavedAt: string | null;
   };
   flight: {
-    total_flights: number | null;
-    airlines: Record<string, string> | null;
-    filters: Record<string, unknown> | null;
     selectedConditions: {
-      mode: 'departure' | 'arrival' | null;
-      category: string | null;
-      value: string | null;
+      type: 'departure' | 'arrival';
+      conditions: Array<{
+        field: string; // "departure_terminal", "operating_carrier_iata", etc.
+        values: string[]; // ["2"], ["KE", "LJ"], etc.
+      }>;
     } | null;
     appliedFilterResult: {
       requestBody: Record<string, unknown>;
-      responseData: Record<string, unknown>;
+      responseData: {
+        total: number;
+        chart_x_data: string[]; // ["00:00", "01:00", ...]
+        chart_y_data: {
+          airline: Array<{
+            name: string;
+            order: number;
+            y: number[];
+            acc_y: number[];
+          }>;
+          terminal: Array<{
+            name: string;
+            order: number;
+            y: number[];
+            acc_y: number[];
+          }>;
+        };
+      };
       appliedAt: string;
     } | null;
+    total_flights: number | null;
+    airlines: Record<string, string> | null;
+    filters: Record<string, unknown> | null;
   };
   passenger: {
     settings: Record<string, unknown>;
@@ -60,14 +79,42 @@ export interface SimulationStoreState {
     filters: Record<string, unknown>;
   }) => void;
   resetFlightData: () => void; // 🆕 flight 영역만 리셋
-  setSelectedConditions: (conditions: {
-    mode: 'departure' | 'arrival' | null;
-    category: string | null;
-    value: string | null;
+  setSelectedConditions: (selectedConditions: {
+    type: 'departure' | 'arrival';
+    conditions: Array<{
+      field: string;
+      values: string[];
+    }>;
   }) => void;
+
+  // 🆕 편의 액션들 - API 바디 형태 조작
+  setFlightType: (type: 'departure' | 'arrival') => void;
+  addCondition: (field: string, values: string[]) => void;
+  removeCondition: (field: string) => void;
+  updateConditionValues: (field: string, values: string[]) => void;
+  toggleConditionValue: (field: string, value: string) => void;
+  clearAllConditions: () => void;
+
   setAppliedFilterResult: (result: {
     requestBody: Record<string, unknown>;
-    responseData: Record<string, unknown>;
+    responseData: {
+      total: number;
+      chart_x_data: string[];
+      chart_y_data: {
+        airline: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
+        terminal: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
+      };
+    };
   }) => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
@@ -82,11 +129,11 @@ const createInitialState = (scenarioId?: string) => ({
     lastSavedAt: null,
   },
   flight: {
+    selectedConditions: null,
+    appliedFilterResult: null,
     total_flights: null,
     airlines: null,
     filters: null,
-    selectedConditions: null,
-    appliedFilterResult: null,
   },
   passenger: {
     settings: {},
@@ -150,16 +197,126 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     resetFlightData: () =>
       set((state) => {
+        state.flight.selectedConditions = null;
+        state.flight.appliedFilterResult = null;
         state.flight.total_flights = null;
         state.flight.airlines = null;
         state.flight.filters = null;
-        state.flight.selectedConditions = null;
-        state.flight.appliedFilterResult = null;
       }),
 
-    setSelectedConditions: (conditions) =>
+    setSelectedConditions: (selectedConditions) =>
       set((state) => {
-        state.flight.selectedConditions = conditions;
+        state.flight.selectedConditions = selectedConditions;
+      }),
+
+    // 🆕 편의 액션들 구현 - API 바디 형태 조작
+    setFlightType: (type) =>
+      set((state) => {
+        if (!state.flight.selectedConditions) {
+          state.flight.selectedConditions = {
+            type,
+            conditions: [],
+          };
+        } else {
+          state.flight.selectedConditions.type = type;
+        }
+      }),
+
+    addCondition: (field, values) =>
+      set((state) => {
+        if (!state.flight.selectedConditions) {
+          state.flight.selectedConditions = {
+            type: 'departure',
+            conditions: [{ field, values }],
+          };
+        } else {
+          // 같은 field가 이미 있으면 제거하고 새로 추가
+          state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
+            (condition) => condition.field !== field
+          );
+          if (values.length > 0) {
+            state.flight.selectedConditions.conditions.push({ field, values });
+          }
+        }
+      }),
+
+    removeCondition: (field) =>
+      set((state) => {
+        if (state.flight.selectedConditions) {
+          state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
+            (condition) => condition.field !== field
+          );
+        }
+      }),
+
+    updateConditionValues: (field, values) =>
+      set((state) => {
+        if (!state.flight.selectedConditions) {
+          state.flight.selectedConditions = {
+            type: 'departure',
+            conditions: values.length > 0 ? [{ field, values }] : [],
+          };
+        } else {
+          const existingCondition = state.flight.selectedConditions.conditions.find(
+            (condition) => condition.field === field
+          );
+
+          if (existingCondition) {
+            if (values.length > 0) {
+              existingCondition.values = values;
+            } else {
+              // values가 비어있으면 조건 제거
+              state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
+                (condition) => condition.field !== field
+              );
+            }
+          } else if (values.length > 0) {
+            // 새로운 조건 추가
+            state.flight.selectedConditions.conditions.push({ field, values });
+          }
+        }
+      }),
+
+    toggleConditionValue: (field, value) =>
+      set((state) => {
+        if (!state.flight.selectedConditions) {
+          state.flight.selectedConditions = {
+            type: 'departure',
+            conditions: [{ field, values: [value] }],
+          };
+        } else {
+          const existingCondition = state.flight.selectedConditions.conditions.find(
+            (condition) => condition.field === field
+          );
+
+          if (existingCondition) {
+            const valueIndex = existingCondition.values.indexOf(value);
+            if (valueIndex === -1) {
+              // 값 추가
+              existingCondition.values.push(value);
+            } else {
+              // 값 제거
+              existingCondition.values.splice(valueIndex, 1);
+
+              // 값이 모두 없어지면 조건 제거
+              if (existingCondition.values.length === 0) {
+                state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
+                  (condition) => condition.field !== field
+                );
+              }
+            }
+          } else {
+            // 새로운 조건 추가
+            state.flight.selectedConditions.conditions.push({ field, values: [value] });
+          }
+        }
+      }),
+
+    clearAllConditions: () =>
+      set((state) => {
+        if (state.flight.selectedConditions) {
+          state.flight.selectedConditions.conditions = [];
+        }
       }),
 
     setAppliedFilterResult: (result) =>

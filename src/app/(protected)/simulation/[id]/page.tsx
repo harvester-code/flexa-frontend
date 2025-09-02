@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useCallback, useMemo, useState } from 'react';
+import React, { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { Save, Trash2 } from 'lucide-react';
@@ -28,7 +28,8 @@ import TabDefault from './_components/TabDefault';
 import TabFlightSchedule from './_components/TabFlightSchedule';
 import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
-import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
+// 🚧 임시 주석처리: 메타데이터 로드 에러 방지
+// import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 import {
   useFlightScheduleStore,
   usePassengerScheduleStore,
@@ -212,12 +213,26 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }
   };
 
-  useLoadScenarioData(simulationId, {
-    loadCompleteS3Metadata,
-    loadScenarioProfileMetadata,
-    setCurrentScenarioTab,
-    setIsInitialized,
-  });
+  // 🚧 임시 주석처리: 메타데이터 로드 에러 (500) 방지
+  // useLoadScenarioData(simulationId, {
+  //   loadCompleteS3Metadata,
+  //   loadScenarioProfileMetadata,
+  //   setCurrentScenarioTab,
+  //   setIsInitialized,
+  // });
+
+  // 🚧 임시 기본값 설정 - 메타데이터 로드 없이 초기화
+  useEffect(() => {
+    loadScenarioProfileMetadata({
+      checkpoint: 'overview',
+      scenarioName: `Scenario ${simulationId}`,
+      scenarioTerminal: 'unknown',
+      scenarioHistory: [],
+      availableScenarioTab: 2,
+      currentScenarioTab: 0,
+    });
+    setIsInitialized(true);
+  }, [simulationId, loadScenarioProfileMetadata, setIsInitialized]);
 
   const latestHistory = useMemo(() => {
     return scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;

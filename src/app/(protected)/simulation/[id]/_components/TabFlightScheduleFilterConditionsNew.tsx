@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { ChevronDown, Filter, Loader2, Minus, Plus, Search } from 'lucide-react';
+import { Building2, ChevronDown, Filter, Flag, Loader2, MapPin, Plane, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/Collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useSimulationStore } from '../_stores';
@@ -23,15 +24,13 @@ interface FlightFiltersApiResponse {
     departure: {
       total_flights: number; // ✅ 백엔드에서 계산된 값
       departure_terminal?: Record<string, FilterOption>;
-      arrival_region?: Record<string, FilterOption>;
-      arrival_country?: Record<string, FilterOption>;
+      arrival_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
       flight_type?: Record<string, FilterOption>;
     };
     arrival: {
       total_flights: number; // ✅ 백엔드에서 계산된 값
       arrival_terminal?: Record<string, FilterOption>;
-      departure_region?: Record<string, FilterOption>;
-      departure_country?: Record<string, FilterOption>;
+      departure_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
       flight_type?: Record<string, FilterOption>;
     };
   };
@@ -48,13 +47,21 @@ interface FilterOption {
   >;
 }
 
+// 🆕 Region-Country 계층 구조를 위한 새로운 타입
+interface RegionFilterOption {
+  total_flights: number;
+  countries: Record<string, FilterOption>; // Country별 데이터
+}
+
 interface SelectedFilter {
   mode: 'departure' | 'arrival';
   categories: {
-    flight_type?: string; // 'International' or 'Domestic'
-    terminal?: string; // '1', '2', 'unknown'
-    region?: string; // 'Asia', 'Europe', etc.
-    country?: string; // 'Korea', 'Japan', etc.
+    flight_type?: string[]; // 🆕 multiple selection: ['international', 'domestic']
+    departure_terminal?: string[]; // 🆕 multiple selection: ['1', '2', 'unknown']
+    arrival_terminal?: string[]; // 🆕 multiple selection: ['1', '2', 'unknown']
+    region?: string[]; // 🆕 multiple regions: ['Asia', 'Europe']
+    countries?: string[]; // 🆕 multiple countries: ['Korea', 'Japan', 'China']
+    terminal_airlines?: string[]; // 🆕 Terminal-Airline 조합: ['2B_BT', '1_KE', '2B_EI']
   };
 }
 
@@ -70,16 +77,19 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   const flightData = useSimulationStore((state) => state.flight);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
 
+  // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
+  const [isApplying, setIsApplying] = useState(false);
+
   // 🆕 데이터 구조를 기존 인터페이스에 맞게 변환
   const filtersData: FlightFiltersApiResponse | null = flightData.total_flights
-    ? {
+    ? ({
         airport: useSimulationStore((s) => s.context.airport),
         date: useSimulationStore((s) => s.context.date),
         scenario_id: useSimulationStore((s) => s.context.scenarioId),
         total_flights: flightData.total_flights,
         airlines: flightData.airlines || {},
         filters: flightData.filters || { departure: {}, arrival: {} },
-      }
+      } as FlightFiltersApiResponse)
     : null;
   // ==================== Local State ====================
   const [selectedFilter, setSelectedFilter] = useState<SelectedFilter>({
@@ -87,15 +97,17 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
     categories: {},
   });
 
+  // 🆕 Region 드롭다운 open 상태는 DropdownMenu가 자체 관리
+
   // ✅ Response Preview 상태 제거 (부모 컴포넌트에서 관리)
 
   // ==================== Helper Functions ====================
 
-  // 카테고리 순서 정의: Type -> Terminal -> Location(Region/Country)
+  // 카테고리 순서 정의: Type -> Terminal -> Location(Region with Countries)
   const getCategoryOrder = useCallback((mode: string) => {
-    // departure 모드일 때는 도착지 지역/국가를, arrival 모드일 때는 출발지 지역/국가를 필터링
+    // departure 모드일 때는 도착지 지역을, arrival 모드일 때는 출발지 지역을 필터링
     const oppositeMode = mode === 'departure' ? 'arrival' : 'departure';
-    const order = ['flight_type', `${mode}_terminal`, `${oppositeMode}_region`, `${oppositeMode}_country`];
+    const order = ['flight_type', `${mode}_terminal`, `${oppositeMode}_region`];
     return order;
   }, []);
 
@@ -126,46 +138,461 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
     });
   }, []);
 
-  // 카테고리 값 선택/해제
-  const handleCategoryValueChange = useCallback((category: string, value: string, checked: boolean) => {
-    setSelectedFilter((prev) => ({
-      ...prev,
-      categories: {
-        ...prev.categories,
-        [category]: checked ? value : undefined,
-      },
-    }));
+  // 🆕 Region 전체 선택/해제
+  const handleRegionToggle = useCallback((regionName: string, regionData: RegionFilterOption, checked: boolean) => {
+    setSelectedFilter((prev) => {
+      const currentRegions = prev.categories.region || [];
+      const currentCountries = prev.categories.countries || [];
+
+      if (checked) {
+        // Region 선택: Region과 모든 하위 Countries 추가
+        const allCountriesInRegion = Object.keys(regionData.countries);
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            region: [...currentRegions.filter((r) => r !== regionName), regionName],
+            countries: [...currentCountries.filter((c) => !allCountriesInRegion.includes(c)), ...allCountriesInRegion],
+          },
+        };
+      } else {
+        // Region 해제: Region과 모든 하위 Countries 제거
+        const allCountriesInRegion = Object.keys(regionData.countries);
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            region: currentRegions.filter((r) => r !== regionName),
+            countries: currentCountries.filter((c) => !allCountriesInRegion.includes(c)),
+          },
+        };
+      }
+    });
   }, []);
 
-  // Apply Filter 실행
-  const handleApplyFilter = useCallback(async () => {
-    // 선택된 조건들을 API 형식으로 변환
+  // 🆕 개별 Country 선택/해제 (UI 개선: 하나라도 선택되면 Region 체크 표시)
+  const handleCountryToggle = useCallback(
+    (countryName: string, regionName: string, regionData: RegionFilterOption, checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const currentRegions = prev.categories.region || [];
+        const currentCountries = prev.categories.countries || [];
+        const allCountriesInRegion = Object.keys(regionData.countries);
+
+        if (checked) {
+          // Country 추가
+          const newCountries = [...currentCountries.filter((c) => c !== countryName), countryName];
+          const selectedCountriesInRegion = newCountries.filter((c) => allCountriesInRegion.includes(c));
+
+          // 🆕 개선: 해당 Region의 국가가 하나라도 선택되었으면 Region도 선택 표시
+          const newRegions =
+            selectedCountriesInRegion.length > 0
+              ? [...currentRegions.filter((r) => r !== regionName), regionName]
+              : currentRegions.filter((r) => r !== regionName);
+
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              region: newRegions,
+              countries: newCountries,
+            },
+          };
+        } else {
+          // Country 제거
+          const newCountries = currentCountries.filter((c) => c !== countryName);
+          const selectedCountriesInRegion = newCountries.filter((c) => allCountriesInRegion.includes(c));
+
+          // 🆕 개선: 해당 Region의 국가가 하나도 선택되지 않았으면 Region 해제
+          const newRegions =
+            selectedCountriesInRegion.length === 0
+              ? currentRegions.filter((r) => r !== regionName)
+              : [...currentRegions.filter((r) => r !== regionName), regionName];
+
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              region: newRegions,
+              countries: newCountries,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
+  // 🆕 Terminal 전체 선택/해제 (Terminal-Airline 조합 방식)
+  const handleTerminalToggle = useCallback((terminalName: string, terminalData: any, checked: boolean) => {
+    setSelectedFilter((prev) => {
+      const terminalField = `${prev.mode}_terminal`;
+      const currentTerminals = (prev.categories[terminalField] as string[]) || [];
+      const currentTerminalAirlines = prev.categories.terminal_airlines || [];
+
+      if (checked) {
+        // Terminal 선택: Terminal과 모든 하위 Terminal-Airline 조합 추가
+        const terminalAirlineCombos = Object.keys(terminalData.airlines).map(
+          (airlineCode) => `${terminalName}_${airlineCode}`
+        );
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            [terminalField]: [...currentTerminals.filter((t) => t !== terminalName), terminalName],
+            terminal_airlines: [
+              ...currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`)),
+              ...terminalAirlineCombos,
+            ],
+          },
+        };
+      } else {
+        // Terminal 해제: Terminal과 해당 Terminal의 모든 Terminal-Airline 조합 제거
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            [terminalField]:
+              currentTerminals.filter((t) => t !== terminalName).length > 0
+                ? currentTerminals.filter((t) => t !== terminalName)
+                : undefined,
+            terminal_airlines:
+              currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`)).length > 0
+                ? currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`))
+                : undefined,
+          },
+        };
+      }
+    });
+  }, []);
+
+  // 🆕 Airline 선택/해제 (Terminal-Airline 조합 방식)
+  const handleAirlineToggle = useCallback(
+    (terminalName: string, airlineCode: string, airlineData: any, checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const terminalField = `${prev.mode}_terminal`;
+        const currentTerminals = (prev.categories[terminalField] as string[]) || [];
+        const currentTerminalAirlines = prev.categories.terminal_airlines || [];
+        const terminalAirlineCombo = `${terminalName}_${airlineCode}`;
+
+        if (checked) {
+          // Airline 선택: Terminal-Airline 조합 추가, Terminal도 체크 표시를 위해 추가
+          const updatedTerminals = currentTerminals.includes(terminalName)
+            ? currentTerminals
+            : [...currentTerminals, terminalName];
+          const updatedTerminalAirlines = [
+            ...currentTerminalAirlines.filter((combo) => combo !== terminalAirlineCombo),
+            terminalAirlineCombo,
+          ];
+
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              [terminalField]: updatedTerminals,
+              terminal_airlines: updatedTerminalAirlines,
+            },
+          };
+        } else {
+          // Airline 해제: Terminal-Airline 조합만 제거 (Terminal 체크는 유지)
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              terminal_airlines:
+                currentTerminalAirlines.filter((combo) => combo !== terminalAirlineCombo).length > 0
+                  ? currentTerminalAirlines.filter((combo) => combo !== terminalAirlineCombo)
+                  : undefined,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
+  // 카테고리 값 선택/해제 (기존 로직: terminal, flight_type용)
+  const handleCategoryValueChange = useCallback((category: string, value: string, checked: boolean) => {
+    setSelectedFilter((prev) => {
+      const currentValues = prev.categories[category as keyof typeof prev.categories];
+
+      if (category === 'flight_type' || category.includes('terminal')) {
+        // Type과 Terminal은 다중 선택 (배열)
+        const currentArray = (currentValues as string[]) || [];
+        const newArray = checked ? [...currentArray, value] : currentArray.filter((v) => v !== value);
+
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            [category]: newArray.length > 0 ? newArray : undefined,
+          },
+        };
+      } else {
+        // Region/Country는 기존 로직 유지 (handleRegionToggle, handleCountryToggle에서 처리)
+        return prev;
+      }
+    });
+  }, []);
+
+  // 🆕 선택된 국가들의 편수 계산
+  const getSelectedFlightsCount = useCallback(
+    (regionName: string, regionData: RegionFilterOption): number => {
+      const currentCountries = selectedFilter.categories.countries || [];
+      const selectedCountriesInRegion = currentCountries.filter((c) => Object.keys(regionData.countries).includes(c));
+
+      return selectedCountriesInRegion.reduce((total, countryName) => {
+        return total + (regionData.countries[countryName]?.total_flights || 0);
+      }, 0);
+    },
+    [selectedFilter.categories.countries]
+  );
+
+  // 🆕 편명 교집합으로 정확한 필터링 편수 계산 (간단한 버전)
+  const getEstimatedFilteredFlights = useCallback((): string => {
+    if (!filtersData?.filters?.[selectedFilter.mode]) return '0';
+
+    const modeFilters = filtersData.filters[selectedFilter.mode];
+    const categories = selectedFilter.categories;
+
+    // 선택된 조건이 없으면 전체 편수 반환
+    const hasFilters = Object.values(categories).some((value) => (Array.isArray(value) ? value.length > 0 : !!value));
+    if (!hasFilters) {
+      return (modeFilters.total_flights || 0).toString();
+    }
+
+    // 🎯 각 조건별 항공편 식별자 집합 수집 (airline_code + flight_number)
+    const conditionFlightSets: Set<string>[] = [];
+
+    try {
+      // 1. Flight Type 조건 (airline_code + flight_number 조합) - 다중 선택 지원
+      const selectedTypes = categories.flight_type;
+      if (selectedTypes && selectedTypes.length > 0) {
+        const typeFlightIds = new Set<string>();
+
+        selectedTypes.forEach((flightType) => {
+          if (modeFilters.flight_type?.[flightType]) {
+            const typeAirlines = modeFilters.flight_type[flightType].airlines;
+
+            Object.entries(typeAirlines).forEach(([airlineCode, airlineData]: [string, any]) => {
+              airlineData.flight_numbers.forEach((flightNumber: number) => {
+                typeFlightIds.add(`${airlineCode}_${flightNumber}`);
+              });
+            });
+          }
+        });
+
+        conditionFlightSets.push(typeFlightIds);
+      }
+
+      // 2. Terminal 조건 (airline_code + flight_number 조합) - Terminal-Airline 조합 방식
+      const terminalField = `${selectedFilter.mode}_terminal`;
+      const selectedTerminalAirlines = categories.terminal_airlines;
+      if (selectedTerminalAirlines && selectedTerminalAirlines.length > 0) {
+        const terminalFlightIds = new Set<string>();
+        const terminalOptions = modeFilters[terminalField];
+
+        // 선택된 Terminal-Airline 조합에서 flight_numbers 수집
+        selectedTerminalAirlines.forEach((terminalAirlineCombo) => {
+          const [terminalName, airlineCode] = terminalAirlineCombo.split('_');
+          const terminalData = terminalOptions?.[terminalName];
+          const airlineData = terminalData?.airlines?.[airlineCode];
+
+          if (airlineData) {
+            airlineData.flight_numbers.forEach((flightNumber: number) => {
+              terminalFlightIds.add(`${airlineCode}_${flightNumber}`);
+            });
+          }
+        });
+
+        conditionFlightSets.push(terminalFlightIds);
+      }
+
+      // 3. Location (Region/Country) 조건 (airline_code + flight_number 조합)
+      const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
+      const regionOptions = modeFilters[regionField];
+
+      if (categories.region && categories.region.length > 0 && regionOptions) {
+        const locationFlightIds = new Set<string>();
+
+        categories.region.forEach((regionName) => {
+          const regionData = regionOptions[regionName];
+          if (regionData) {
+            const currentCountries = categories.countries || [];
+            const allCountriesInRegion = Object.keys(regionData.countries);
+            const selectedCountriesInRegion = currentCountries.filter((c) => allCountriesInRegion.includes(c));
+
+            // 전체 Region 또는 일부 Country 선택에 따른 처리
+            const targetCountries =
+              selectedCountriesInRegion.length === 0 || selectedCountriesInRegion.length === allCountriesInRegion.length
+                ? allCountriesInRegion
+                : selectedCountriesInRegion;
+
+            // 해당 국가들의 항공편 식별자 수집
+            targetCountries.forEach((countryName) => {
+              const countryData = regionData.countries[countryName];
+              if (countryData?.airlines) {
+                Object.entries(countryData.airlines).forEach(([airlineCode, airlineData]: [string, any]) => {
+                  airlineData.flight_numbers.forEach((flightNumber: number) => {
+                    locationFlightIds.add(`${airlineCode}_${flightNumber}`);
+                  });
+                });
+              }
+            });
+          }
+        });
+
+        if (locationFlightIds.size > 0) {
+          conditionFlightSets.push(locationFlightIds);
+        }
+      }
+
+      // 🔄 교집합 계산
+      if (conditionFlightSets.length === 0) {
+        return (modeFilters.total_flights || 0).toString();
+      }
+
+      // 단일 조건일 때는 교집합 계산 없이 바로 반환
+      if (conditionFlightSets.length === 1) {
+        return conditionFlightSets[0].size.toString();
+      }
+
+      // 다중 조건일 때만 교집합 계산
+      let intersectionFlights = conditionFlightSets[0];
+
+      for (let i = 1; i < conditionFlightSets.length; i++) {
+        intersectionFlights = new Set(
+          [...intersectionFlights].filter((flightId) => conditionFlightSets[i].has(flightId))
+        );
+      }
+
+      return intersectionFlights.size.toString();
+    } catch (error) {
+      console.error('❌ Error calculating intersection flights:', error);
+      // 에러 시 기본값 반환
+      return (modeFilters.total_flights || 0).toString();
+    }
+  }, [selectedFilter, filtersData]);
+
+  // 🆕 조건을 API 형식으로 변환하는 공통 함수
+  const convertConditionsForAPI = useCallback((): Array<{ field: string; values: string[] }> => {
     const conditions: Array<{ field: string; values: string[] }> = [];
 
     Object.entries(selectedFilter.categories).forEach(([category, value]) => {
       if (value) {
-        conditions.push({
-          field: category,
-          values: [value],
-        });
+        if (category === 'region' && Array.isArray(value) && value.length > 0) {
+          // Region 필터: 모드에 따라 올바른 field 사용
+          const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
+          conditions.push({
+            field: regionField,
+            values: value,
+          });
+        } else if (category === 'countries') {
+          // 🆕 Countries는 Region이 전체 선택이 아닌 경우에만 전송
+          const currentRegions = selectedFilter.categories.region || [];
+          const currentCountries = selectedFilter.categories.countries || [];
+
+          // 전체가 아닌 부분 선택된 국가들만 전송
+          const partialCountries: string[] = [];
+
+          // 각 선택된 Region에 대해 확인
+          if (filtersData?.filters?.[selectedFilter.mode]) {
+            const modeFilters = filtersData.filters[selectedFilter.mode];
+            const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
+            const regionOptions = modeFilters[regionField];
+
+            if (regionOptions) {
+              Object.entries(regionOptions).forEach(([regionName, regionData]: [string, any]) => {
+                const allCountriesInRegion = Object.keys(regionData.countries);
+                const selectedCountriesInRegion = currentCountries.filter((c) => allCountriesInRegion.includes(c));
+
+                // Region이 선택되었지만 일부 국가만 선택된 경우
+                if (
+                  currentRegions.includes(regionName) &&
+                  selectedCountriesInRegion.length < allCountriesInRegion.length &&
+                  selectedCountriesInRegion.length > 0
+                ) {
+                  partialCountries.push(...selectedCountriesInRegion);
+                }
+              });
+            }
+          }
+
+          if (partialCountries.length > 0) {
+            // Countries 필터: 모드에 따라 올바른 field 사용
+            const countryField = selectedFilter.mode === 'departure' ? 'arrival_country' : 'departure_country';
+            conditions.push({
+              field: countryField,
+              values: partialCountries,
+            });
+          }
+        } else if (category === 'terminal_airlines' && Array.isArray(value) && value.length > 0) {
+          // 🆕 Terminal-Airline 조합을 기존 airlines 형태로 변환
+          const airlineSet = new Set<string>();
+          value.forEach((combo: string) => {
+            const [, airlineCode] = combo.split('_');
+            if (airlineCode) {
+              airlineSet.add(airlineCode);
+            }
+          });
+
+          if (airlineSet.size > 0) {
+            conditions.push({
+              field: 'operating_carrier_iata',
+              values: Array.from(airlineSet),
+            });
+          }
+        } else if (Array.isArray(value) && value.length > 0) {
+          // 배열인 경우 (Type, Terminal - 다중 선택)
+          let fieldName = category;
+
+          // Terminal 필드는 모드에 따라 매핑
+          if (category === 'departure_terminal' || category === 'arrival_terminal') {
+            fieldName = category; // 이미 올바른 형태
+          }
+
+          conditions.push({
+            field: fieldName,
+            values: value,
+          });
+        } else if (typeof value === 'string') {
+          // 문자열인 경우 (backward compatibility)
+          let fieldName = category;
+
+          // Terminal 필드는 모드에 따라 매핑
+          if (category === 'departure_terminal' || category === 'arrival_terminal') {
+            fieldName = category; // 이미 올바른 형태
+          }
+
+          conditions.push({
+            field: fieldName,
+            values: [value],
+          });
+        }
       }
     });
 
-    try {
-      // zustand에 선택된 조건 저장
-      setSelectedConditions(selectedFilter);
-      console.log('💾 Selected conditions saved to zustand:', selectedFilter);
+    return conditions;
+  }, [selectedFilter, filtersData]);
 
-      console.log('🚀 Sending API request:', {
-        type: selectedFilter.mode,
-        conditions,
-      });
+  // Apply Filter 실행
+  const handleApplyFilter = useCallback(async () => {
+    const conditions = convertConditionsForAPI();
+
+    try {
+      // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
+      setIsApplying(true);
+
+      // zustand에 선택된 조건 저장
+      setSelectedConditions(selectedFilter as any);
 
       await onApplyFilter(selectedFilter.mode, conditions);
     } catch (error) {
       console.error('❌ API request failed:', error);
+    } finally {
+      // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
+      setIsApplying(false);
     }
-  }, [selectedFilter, onApplyFilter]);
+  }, [selectedFilter, onApplyFilter, convertConditionsForAPI]);
 
   // 초기화
   const handleClearAll = useCallback(() => {
@@ -197,22 +624,234 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
           {availableCategories.map((category) => {
             const options = modeFilters[category];
             const displayName = getCategoryDisplayName(category);
-            const isLocation = category.includes('region') || category.includes('country');
+            const isRegionCategory = category.includes('region');
 
+            // 🆕 Region 카테고리: Terminal과 동일한 스타일 + 드롭다운
+            if (isRegionCategory) {
+              return (
+                <div key={category} className="space-y-3">
+                  <div className="border-b pb-2">
+                    <Label className="text-sm font-medium">Location</Label>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {Object.entries(options).map(([regionName, regionData]: [string, any]) => {
+                      const currentRegions = selectedFilter.categories.region || [];
+                      const currentCountries = selectedFilter.categories.countries || [];
+                      const allCountriesInRegion = Object.keys(regionData.countries);
+                      const selectedCountriesInRegion = currentCountries.filter((c) =>
+                        allCountriesInRegion.includes(c)
+                      );
+
+                      // 🆕 개선된 Region 선택 로직: 하나라도 선택되면 체크 표시
+                      const isRegionSelected = currentRegions.includes(regionName);
+                      const isRegionFullySelected = selectedCountriesInRegion.length === allCountriesInRegion.length;
+                      const isRegionPartiallySelected = selectedCountriesInRegion.length > 0 && !isRegionFullySelected;
+
+                      // 🆕 선택된 편수 계산
+                      const selectedFlights = getSelectedFlightsCount(regionName, regionData);
+
+                      return (
+                        <div key={regionName} className="flex items-center space-x-2">
+                          {/* Region 체크박스 */}
+                          <Checkbox
+                            id={`region-${regionName}`}
+                            checked={isRegionSelected}
+                            ref={(el) => {
+                              if (el && 'indeterminate' in el) {
+                                (el as any).indeterminate = isRegionPartiallySelected;
+                              }
+                            }}
+                            onCheckedChange={(checked) => handleRegionToggle(regionName, regionData, !!checked)}
+                          />
+
+                          {/* Region 라벨 + 드롭다운 (팝업 방식) */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
+                              >
+                                <span className="cursor-pointer">
+                                  {regionName} (
+                                  {selectedFlights > 0 && selectedFlights < regionData.total_flights
+                                    ? `${selectedFlights} / ${regionData.total_flights} flights`
+                                    : `${regionData.total_flights} flights`}
+                                  )
+                                </span>
+                                <ChevronDown className="ml-2 h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                              className="max-h-60 w-80 overflow-y-auto p-2"
+                              align="start"
+                              side="bottom"
+                            >
+                              <div className="space-y-1">
+                                <div className="mb-2 border-b px-2 py-1 text-xs font-medium text-muted-foreground">
+                                  Countries in {regionName}
+                                </div>
+                                {Object.entries(regionData.countries).map(
+                                  ([countryName, countryData]: [string, any]) => {
+                                    const isCountrySelected = currentCountries.includes(countryName);
+
+                                    return (
+                                      <div
+                                        key={countryName}
+                                        className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
+                                      >
+                                        <Checkbox
+                                          id={`country-${regionName}-${countryName}`}
+                                          checked={isCountrySelected}
+                                          onCheckedChange={(checked) =>
+                                            handleCountryToggle(countryName, regionName, regionData, !!checked)
+                                          }
+                                        />
+                                        <Label
+                                          htmlFor={`country-${regionName}-${countryName}`}
+                                          className="flex-1 cursor-pointer text-sm"
+                                        >
+                                          {countryName} ({countryData.total_flights} flights)
+                                        </Label>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
+            // 🆕 Terminal 카테고리: Location과 동일한 드롭다운 스타일
+            const isTerminalCategory = category.includes('terminal');
+            if (isTerminalCategory) {
+              return (
+                <div key={category} className="space-y-3">
+                  <div className="border-b pb-2">
+                    <Label className="text-sm font-medium">Terminal</Label>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {Object.entries(options).map(([terminalName, terminalData]: [string, any]) => {
+                      const currentTerminals = (selectedFilter.categories[category] as string[]) || [];
+                      const currentTerminalAirlines = selectedFilter.categories.terminal_airlines || [];
+                      const allAirlinesInTerminal = Object.keys(terminalData.airlines);
+
+                      // 🆕 Terminal-Airline 조합으로 선택된 항공사 찾기
+                      const selectedAirlinesInTerminal = allAirlinesInTerminal.filter((airlineCode) =>
+                        currentTerminalAirlines.includes(`${terminalName}_${airlineCode}`)
+                      );
+
+                      // Terminal 선택 로직: 하나라도 선택되면 체크 표시
+                      const isTerminalSelected = currentTerminals.includes(terminalName);
+                      const isTerminalFullySelected =
+                        selectedAirlinesInTerminal.length === allAirlinesInTerminal.length;
+                      const isTerminalPartiallySelected =
+                        selectedAirlinesInTerminal.length > 0 && !isTerminalFullySelected;
+
+                      // 선택된 편수 계산
+                      const selectedFlights = selectedAirlinesInTerminal.reduce((total, airlineCode) => {
+                        return total + (terminalData.airlines[airlineCode]?.count || 0);
+                      }, 0);
+
+                      return (
+                        <div key={terminalName} className="flex items-center space-x-2">
+                          {/* Terminal 체크박스 */}
+                          <Checkbox
+                            id={`terminal-${terminalName}`}
+                            checked={isTerminalSelected}
+                            ref={(el) => {
+                              if (el && 'indeterminate' in el) {
+                                (el as any).indeterminate = isTerminalPartiallySelected;
+                              }
+                            }}
+                            onCheckedChange={(checked) => handleTerminalToggle(terminalName, terminalData, !!checked)}
+                          />
+
+                          {/* Terminal 라벨 + 드롭다운 (팝업 방식) */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
+                              >
+                                <span className="cursor-pointer">
+                                  {getValueDisplayName(category, terminalName)} (
+                                  {selectedFlights > 0 && selectedFlights < terminalData.total_flights
+                                    ? `${selectedFlights} / ${terminalData.total_flights} flights`
+                                    : `${terminalData.total_flights} flights`}
+                                  )
+                                </span>
+                                <ChevronDown className="ml-2 h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                              className="max-h-60 w-80 overflow-y-auto p-2"
+                              align="start"
+                              side="bottom"
+                            >
+                              <div className="space-y-1">
+                                <div className="mb-2 border-b px-2 py-1 text-xs font-medium text-muted-foreground">
+                                  Airlines in {getValueDisplayName(category, terminalName)}
+                                </div>
+                                {Object.entries(terminalData.airlines)
+                                  .sort(([, a]: [string, any], [, b]: [string, any]) => b.count - a.count)
+                                  .map(([airlineCode, airlineData]: [string, any]) => {
+                                    const isAirlineSelected = currentTerminalAirlines.includes(
+                                      `${terminalName}_${airlineCode}`
+                                    );
+                                    const airlineName = airlinesMapping?.[airlineCode] || airlineCode;
+
+                                    return (
+                                      <div
+                                        key={airlineCode}
+                                        className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
+                                      >
+                                        <Checkbox
+                                          id={`airline-${terminalName}-${airlineCode}`}
+                                          checked={isAirlineSelected}
+                                          onCheckedChange={(checked) =>
+                                            handleAirlineToggle(terminalName, airlineCode, airlineData, !!checked)
+                                          }
+                                        />
+                                        <Label
+                                          htmlFor={`airline-${terminalName}-${airlineCode}`}
+                                          className="flex-1 cursor-pointer text-sm"
+                                        >
+                                          {airlineCode} - {airlineName} ({airlineData.count} flights)
+                                        </Label>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
+            // 기존 로직 (flight_type만) - Type 전용
             return (
               <div key={category} className="space-y-3">
                 <div className="border-b pb-2">
-                  <Label className="text-sm font-medium">{isLocation ? 'Location' : displayName}</Label>
-                  {isLocation && (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {category.includes('region') ? 'By Region' : 'By Country'}
-                    </div>
-                  )}
+                  <Label className="text-sm font-medium">{displayName}</Label>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(options).map(([value, option]: [string, any]) => {
-                    const isSelected = selectedFilter.categories[category] === value;
+                    const isSelected = ((selectedFilter.categories[category] as string[]) || []).includes(value);
 
                     return (
                       <div key={value} className="flex items-center space-x-2">
@@ -221,104 +860,13 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                           checked={isSelected}
                           onCheckedChange={(checked) => handleCategoryValueChange(category, value, !!checked)}
                         />
-                        <Label htmlFor={`${category}-${value}`} className="cursor-pointer text-sm">
+                        <Label htmlFor={`${category}-${value}`} className="cursor-pointer text-sm font-normal">
                           {getValueDisplayName(category, value)} ({option.total_flights} flights)
                         </Label>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* 선택된 값의 Airlines 정보를 장바구니 스타일로 표시 */}
-                {selectedFilter.categories[category] && (
-                  <div className="mt-4">
-                    <Label className="mb-3 block text-sm font-medium">
-                      Airlines in {getValueDisplayName(category, selectedFilter.categories[category]!)}
-                    </Label>
-
-                    {/* 장바구니 스타일 UI */}
-                    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-3 xl:gap-4">
-                      {/* 왼쪽: 사용 가능한 항공사 */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Available Airlines</Label>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // 해당 카테고리의 모든 항공사를 선택된 목록으로 이동
-                              const categoryAirlines = Object.entries(
-                                options[selectedFilter.categories[category]!]?.airlines || {}
-                              ).map(([iataCode, _]) => ({
-                                iata: iataCode,
-                                name: airlinesMapping[iataCode] || 'Unknown',
-                              }));
-                              // 이 부분은 실제 구현 시 handleCategoryValueChange와 연동 필요
-                            }}
-                            className="h-6 px-2 text-xs hover:bg-primary/10"
-                          >
-                            Add All
-                          </Button>
-                        </div>
-                        <div className="h-40 overflow-y-auto rounded-md border bg-muted/20 p-2 sm:h-44 lg:h-48">
-                          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                            {Object.entries(options[selectedFilter.categories[category]!]?.airlines || {}).map(
-                              ([iataCode, airlineData]: [string, any]) => {
-                                const airlineName = airlinesMapping[iataCode] || 'Unknown Airline';
-
-                                return (
-                                  <Button
-                                    key={iataCode}
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      // 개별 항공사를 선택된 목록으로 이동하는 로직
-                                      console.log('Add airline:', iataCode, airlineName);
-                                    }}
-                                    className="h-8 w-full justify-between p-2 text-left transition-colors hover:bg-primary/10"
-                                  >
-                                    <div className="flex min-w-0 flex-1 items-center">
-                                      <span className="mr-1 text-sm font-medium sm:mr-2">{iataCode}</span>
-                                      <span className="truncate text-xs text-muted-foreground">- {airlineName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-xs text-muted-foreground">{airlineData.count}</span>
-                                      <Plus className="ml-1 h-3 w-3 flex-shrink-0 sm:ml-2" />
-                                    </div>
-                                  </Button>
-                                );
-                              }
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 오른쪽: 선택된 항공사 */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Selected Airlines (0)</Label>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // 모든 선택된 항공사를 사용 가능한 목록으로 이동
-                              console.log('Remove all airlines');
-                            }}
-                            className="h-6 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            Remove All
-                          </Button>
-                        </div>
-                        <div className="h-40 overflow-y-auto rounded-md border bg-primary/5 p-2 sm:h-44 lg:h-48">
-                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                            No airlines selected
-                          </div>
-                          {/* 선택된 항공사들이 여기에 표시될 예정 */}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -331,6 +879,12 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       getCategoryDisplayName,
       getValueDisplayName,
       handleCategoryValueChange,
+      handleRegionToggle,
+      handleCountryToggle,
+      handleTerminalToggle,
+      handleAirlineToggle,
+      getSelectedFlightsCount,
+      getEstimatedFilteredFlights,
       airlinesMapping,
     ]
   );
@@ -397,66 +951,76 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="departure">
-                  Departure ({filtersData.filters.departure?.total_flights || 0} flights)
+                  Departure ({filtersData?.filters.departure?.total_flights || 0} flights)
                 </TabsTrigger>
                 <TabsTrigger value="arrival">
-                  Arrival ({filtersData.filters.arrival?.total_flights || 0} flights)
+                  Arrival ({filtersData?.filters.arrival?.total_flights || 0} flights)
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="departure" className="mt-6">
-                {renderFilterOptions('departure', filtersData.filters.departure)}
+                {filtersData && renderFilterOptions('departure', filtersData.filters.departure)}
               </TabsContent>
 
               <TabsContent value="arrival" className="mt-6">
-                {renderFilterOptions('arrival', filtersData.filters.arrival)}
+                {filtersData && renderFilterOptions('arrival', filtersData.filters.arrival)}
               </TabsContent>
             </Tabs>
 
             {/* 각 모드에 따른 옵션들이 이제 TabsContent 안에서 렌더링됨 */}
 
-            {/* Request Body Preview */}
-            {canApplyFilter && (
-              <div className="mt-6 rounded-lg border bg-slate-50 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="rounded bg-blue-100 p-1">
-                    <Search className="h-4 w-4 text-blue-600" />
+            {/* ✅ Response Preview 제거 - 독립 컴포넌트로 분리 */}
+
+            {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
+            {Object.entries(selectedFilter.categories).some(([_, value]) =>
+              Array.isArray(value) ? value.length > 0 : !!value
+            ) && (
+              <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+                <div className="flex items-start gap-4">
+                  {/* 선택 요약 */}
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="rounded-full bg-primary/20 p-1">
+                        <Filter className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-sm font-semibold text-primary">Selection Summary</span>
+                    </div>
                   </div>
-                  <span className="font-medium text-slate-800">Request Body Preview</span>
-                </div>
-                <div className="rounded border bg-white p-3 font-mono text-sm">
-                  <pre className="whitespace-pre-wrap text-slate-700">
-                    {JSON.stringify(
-                      {
-                        airport: filtersData?.airport || '',
-                        date: filtersData?.date || '',
-                        type: selectedFilter.mode,
-                        conditions: Object.entries(selectedFilter.categories)
-                          .filter(([_, value]) => value)
-                          .map(([field, value]) => ({
-                            field,
-                            values: [value],
-                          })),
-                      },
-                      null,
-                      2
-                    )}
-                  </pre>
+
+                  {/* 편수 통계 */}
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">Expected Flights</div>
+                    <div className="text-lg font-bold text-primary">
+                      {(() => {
+                        const totalFiltered = getEstimatedFilteredFlights();
+                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                        return `${totalFiltered} / ${totalAvailable}`;
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* ✅ Response Preview 제거 - 독립 컴포넌트로 분리 */}
-
             {/* Selection Summary & Actions */}
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-muted-foreground">
-                Mode: <strong>{selectedFilter.mode.charAt(0).toUpperCase() + selectedFilter.mode.slice(1)}</strong>
-                {Object.keys(selectedFilter.categories).length > 0 && (
-                  <span className="ml-2 text-green-600">
-                    • {Object.keys(selectedFilter.categories).length} filter(s) selected
-                  </span>
-                )}
+                {(() => {
+                  const totalSelections = Object.entries(selectedFilter.categories).reduce((count, [_, value]) => {
+                    if (Array.isArray(value)) return count + value.length;
+                    if (value) return count + 1;
+                    return count;
+                  }, 0);
+
+                  return totalSelections > 0 ? (
+                    <span className="flex items-center gap-1 text-green-600">
+                      <Filter className="h-3 w-3" />
+                      {totalSelections} filter(s) active
+                    </span>
+                  ) : (
+                    <span>No filters selected</span>
+                  );
+                })()}
               </div>
 
               <div className="flex gap-2">
@@ -464,46 +1028,30 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                   variant="outline"
                   size="sm"
                   onClick={handleClearAll}
-                  disabled={Object.keys(selectedFilter.categories).length === 0}
+                  disabled={Object.entries(selectedFilter.categories).every(([_, value]) =>
+                    Array.isArray(value) ? value.length === 0 : !value
+                  )}
                 >
                   Clear All
                 </Button>
 
-                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || loading}>
-                  {loading ? (
+                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying}>
+                  {isApplying ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">Applying...</span>
-                      <span className="sm:hidden">Apply</span>
+                      <span className="hidden sm:inline">Searching...</span>
+                      <span className="sm:hidden">Search</span>
                     </>
                   ) : (
                     <>
                       <Search className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Apply Filters</span>
-                      <span className="sm:hidden">Apply</span>
+                      <span className="hidden sm:inline">Search Flights</span>
+                      <span className="sm:hidden">Search</span>
                     </>
                   )}
                 </Button>
               </div>
             </div>
-
-            {/* 현재 선택 상태 표시 */}
-            {Object.keys(selectedFilter.categories).length > 0 && (
-              <div className="rounded-lg bg-blue-50 p-3 text-sm">
-                <div className="mb-1 font-medium text-blue-900">Current Selection:</div>
-                <div className="space-y-1 text-blue-700">
-                  <div>
-                    • Mode:{' '}
-                    <strong>{selectedFilter.mode.charAt(0).toUpperCase() + selectedFilter.mode.slice(1)}</strong>
-                  </div>
-                  {Object.entries(selectedFilter.categories).map(([category, value]) => (
-                    <div key={category}>
-                      • {getCategoryDisplayName(category)}: <strong>{getValueDisplayName(category, value!)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </CardContent>
         </CollapsibleContent>
       </Card>
