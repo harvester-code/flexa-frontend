@@ -8,99 +8,63 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import SimulationLoading from '../../_components/SimulationLoading';
+import { useSimulationStore } from '../_stores';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
-interface TabFlightScheduleChartProps {
-  loadingFlightSchedule: boolean;
-  chartData: any;
-  loadError: boolean;
-}
+function TabFlightScheduleChart() {
+  // 🆕 1원칙: 통합 store에서만 데이터 가져오기
+  const chartData = useSimulationStore((state) => state.flight.appliedFilterResult);
 
-function TabFlightScheduleChart({ loadingFlightSchedule, chartData, loadError }: TabFlightScheduleChartProps) {
-  // 로딩 중일 때
-  if (loadingFlightSchedule) {
-    return <SimulationLoading minHeight="min-h-[200px]" />;
-  }
+  // 차트 데이터가 없으면 렌더링 안함
+  if (!chartData) return null;
 
-  // 차트 데이터 존재 여부 확인
-  const hasChartData = chartData && chartData.data && Object.keys(chartData.data).length > 0;
-  const totalFlights = chartData?.total || 0;
-
-  // 차트 데이터가 있을 때 (total 조건 제거)
-  if (hasChartData) {
-    return (
-      <>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-default-900">Flight Schedule Chart</div>
-                  <p className="text-sm font-normal text-default-500">Visual representation of flight data</p>
-                </div>
-              </CardTitle>
-              <Badge variant="secondary">Total Flights: {totalFlights}</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <BarChart
-              chartData={
-                Object.keys(chartData?.data || {}).length > 0
-                  ? [...(chartData?.data?.[Object.keys(chartData?.data)[0]] || [])]
-                      .sort((a, b) => b.order - a.order)
-                      .map((item) => {
-                        return {
-                          x: chartData?.x,
-                          y: item.y,
-                          name: item.name,
-                          type: 'bar',
-                          marker: { opacity: 1, cornerradius: 7 },
-                          hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
-                        };
-                      })
-                  : []
-              }
-              chartLayout={{
-                barmode: 'stack',
-                margin: { l: 30, r: 10, t: 0, b: 30 },
-                legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
-                bargap: 0.4,
-              }}
-              config={{ displayModeBar: false }}
-            />
-          </CardContent>
-        </Card>
-      </>
-    );
-  }
-
-  // 로드 에러가 있을 때
-  if (loadError) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="mb-2 text-lg font-medium">Unable to load data</div>
-            <div className="mb-6 text-sm">Please check the airport name or date and re-enter the information</div>
-            <div className="flex gap-2">
-              <Button variant="outline">Clear Search</Button>
-              <Button variant="secondary">
-                <Search className="mr-2 h-4 w-4" />
-                Inquire About Data Access
-              </Button>
-            </div>
+  const totalFlights = chartData.total || 0;
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-default-900">Flight Schedule Chart</div>
+                <p className="text-sm font-normal text-default-500">Visual representation of flight data</p>
+              </div>
+            </CardTitle>
+            <Badge variant="secondary">Total Flights: {totalFlights}</Badge>
           </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  // 데이터가 없을 때는 아무것도 표시하지 않음
-  return null;
+        </CardHeader>
+        <CardContent>
+          <BarChart
+            chartData={
+              chartData?.chart_y_data?.airline
+                ? [...chartData.chart_y_data.airline]
+                    .sort((a, b) => a.order - b.order)
+                    .map((item) => ({
+                      x: chartData.chart_x_data,
+                      y: item.y,
+                      name: item.name,
+                      type: 'bar',
+                      marker: { opacity: 1, cornerradius: 7 },
+                      hovertemplate: item.y?.map((val) => `[%{x}] ${val}`),
+                    }))
+                : []
+            }
+            chartLayout={{
+              barmode: 'stack',
+              margin: { l: 30, r: 10, t: 0, b: 30 },
+              legend: { x: 1, y: 1.2, xanchor: 'right', yanchor: 'top', orientation: 'h' },
+              bargap: 0.4,
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </CardContent>
+      </Card>
+    </>
+  );
 }
 
 export default React.memo(TabFlightScheduleChart);

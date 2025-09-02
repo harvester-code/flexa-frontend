@@ -11,6 +11,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useSimulationStore } from '../_stores';
+import {
+  type TerminalAirlineCombo,
+  convertTerminalAirlinesToApiCondition,
+  createAllCombosForTerminal,
+  createTerminalAirlineCombo,
+  filterCombosByTerminal,
+  parseTerminalAirlineCombo,
+  removeCombo,
+  removeCombosByTerminal,
+} from './terminal-airline-utils';
 
 // ==================== Types ====================
 // 실제 API 응답 구조에 맞춰 수정 (flight-filter.json 기준)
@@ -61,7 +71,7 @@ interface SelectedFilter {
     arrival_terminal?: string[]; // 🆕 multiple selection: ['1', '2', 'unknown']
     region?: string[]; // 🆕 multiple regions: ['Asia', 'Europe']
     countries?: string[]; // 🆕 multiple countries: ['Korea', 'Japan', 'China']
-    terminal_airlines?: string[]; // 🆕 Terminal-Airline 조합: ['2B_BT', '1_KE', '2B_EI']
+    terminal_airlines?: TerminalAirlineCombo[]; // 🆕 Terminal-Airline 조합: ['2_KE', '1_LJ', 'unknown_AA']
   };
 }
 
@@ -231,34 +241,29 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
       if (checked) {
         // Terminal 선택: Terminal과 모든 하위 Terminal-Airline 조합 추가
-        const terminalAirlineCombos = Object.keys(terminalData.airlines).map(
-          (airlineCode) => `${terminalName}_${airlineCode}`
-        );
+        const terminalAirlineCombos = createAllCombosForTerminal(terminalName, Object.keys(terminalData.airlines));
         return {
           ...prev,
           categories: {
             ...prev.categories,
             [terminalField]: [...currentTerminals.filter((t) => t !== terminalName), terminalName],
             terminal_airlines: [
-              ...currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`)),
+              ...removeCombosByTerminal(currentTerminalAirlines, terminalName),
               ...terminalAirlineCombos,
             ],
           },
         };
       } else {
         // Terminal 해제: Terminal과 해당 Terminal의 모든 Terminal-Airline 조합 제거
+        const remainingTerminals = currentTerminals.filter((t) => t !== terminalName);
+        const remainingCombos = removeCombosByTerminal(currentTerminalAirlines, terminalName);
+
         return {
           ...prev,
           categories: {
             ...prev.categories,
-            [terminalField]:
-              currentTerminals.filter((t) => t !== terminalName).length > 0
-                ? currentTerminals.filter((t) => t !== terminalName)
-                : undefined,
-            terminal_airlines:
-              currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`)).length > 0
-                ? currentTerminalAirlines.filter((combo) => !combo.startsWith(`${terminalName}_`))
-                : undefined,
+            [terminalField]: remainingTerminals.length > 0 ? remainingTerminals : undefined,
+            terminal_airlines: remainingCombos.length > 0 ? remainingCombos : undefined,
           },
         };
       }
@@ -272,7 +277,7 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
         const terminalField = `${prev.mode}_terminal`;
         const currentTerminals = (prev.categories[terminalField] as string[]) || [];
         const currentTerminalAirlines = prev.categories.terminal_airlines || [];
-        const terminalAirlineCombo = `${terminalName}_${airlineCode}`;
+        const terminalAirlineCombo = createTerminalAirlineCombo(terminalName, airlineCode);
 
         if (checked) {
           // Airline 선택: Terminal-Airline 조합 추가, Terminal도 체크 표시를 위해 추가
@@ -294,14 +299,13 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
           };
         } else {
           // Airline 해제: Terminal-Airline 조합만 제거 (Terminal 체크는 유지)
+          const remainingCombos = removeCombo(currentTerminalAirlines, terminalAirlineCombo);
+
           return {
             ...prev,
             categories: {
               ...prev.categories,
-              terminal_airlines:
-                currentTerminalAirlines.filter((combo) => combo !== terminalAirlineCombo).length > 0
-                  ? currentTerminalAirlines.filter((combo) => combo !== terminalAirlineCombo)
-                  : undefined,
+              terminal_airlines: remainingCombos.length > 0 ? remainingCombos : undefined,
             },
           };
         }
@@ -393,7 +397,10 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
         // 선택된 Terminal-Airline 조합에서 flight_numbers 수집
         selectedTerminalAirlines.forEach((terminalAirlineCombo) => {
-          const [terminalName, airlineCode] = terminalAirlineCombo.split('_');
+          const parsed = parseTerminalAirlineCombo(terminalAirlineCombo);
+          if (!parsed) return;
+
+          const { terminal: terminalName, airline: airlineCode } = parsed;
           const terminalData = terminalOptions?.[terminalName];
           const airlineData = terminalData?.airlines?.[airlineCode];
 
@@ -526,20 +533,10 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
             });
           }
         } else if (category === 'terminal_airlines' && Array.isArray(value) && value.length > 0) {
-          // 🆕 Terminal-Airline 조합을 기존 airlines 형태로 변환
-          const airlineSet = new Set<string>();
-          value.forEach((combo: string) => {
-            const [, airlineCode] = combo.split('_');
-            if (airlineCode) {
-              airlineSet.add(airlineCode);
-            }
-          });
-
-          if (airlineSet.size > 0) {
-            conditions.push({
-              field: 'operating_carrier_iata',
-              values: Array.from(airlineSet),
-            });
+          // 🆕 Terminal-Airline 조합을 API 바디 형태로 변환
+          const apiCondition = convertTerminalAirlinesToApiCondition(value);
+          if (apiCondition) {
+            conditions.push(apiCondition);
           }
         } else if (Array.isArray(value) && value.length > 0) {
           // 배열인 경우 (Type, Terminal - 다중 선택)
@@ -582,8 +579,11 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
 
-      // zustand에 선택된 조건 저장
-      setSelectedConditions(selectedFilter as any);
+      // zustand에 API 바디 형태로 선택된 조건 저장
+      setSelectedConditions({
+        type: selectedFilter.mode as 'departure' | 'arrival',
+        conditions: conditions,
+      });
 
       await onApplyFilter(selectedFilter.mode, conditions);
     } catch (error) {
@@ -746,7 +746,7 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
                       // 🆕 Terminal-Airline 조합으로 선택된 항공사 찾기
                       const selectedAirlinesInTerminal = allAirlinesInTerminal.filter((airlineCode) =>
-                        currentTerminalAirlines.includes(`${terminalName}_${airlineCode}`)
+                        currentTerminalAirlines.includes(createTerminalAirlineCombo(terminalName, airlineCode))
                       );
 
                       // Terminal 선택 로직: 하나라도 선택되면 체크 표시
@@ -806,7 +806,7 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                                   .sort(([, a]: [string, any], [, b]: [string, any]) => b.count - a.count)
                                   .map(([airlineCode, airlineData]: [string, any]) => {
                                     const isAirlineSelected = currentTerminalAirlines.includes(
-                                      `${terminalName}_${airlineCode}`
+                                      createTerminalAirlineCombo(terminalName, airlineCode)
                                     );
                                     const airlineName = airlinesMapping?.[airlineCode] || airlineCode;
 

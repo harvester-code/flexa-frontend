@@ -10,6 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
 import _jsonAirport from '../_json/airport_constants.json';
+import { useSimulationStore } from '../_stores';
 
 const JSON_AIRPORTS = _jsonAirport.map((item) => ({
   iata: item.iata,
@@ -18,24 +19,25 @@ const JSON_AIRPORTS = _jsonAirport.map((item) => ({
 }));
 
 interface TabFlightScheduleLoadDataProps {
-  airport: string;
-  date: string;
   loadingFlightSchedule: boolean;
-  setAirport: (airport: string) => void;
-  setDate: (date: string) => void;
   setIsSomethingChanged: (changed: boolean) => void;
-  onLoadData: () => void;
+  onLoadData: (airport: string, date: string) => void;
 }
 
 function TabFlightScheduleLoadData({
-  airport,
-  date,
   loadingFlightSchedule,
-  setAirport,
-  setDate,
   setIsSomethingChanged,
   onLoadData,
 }: TabFlightScheduleLoadDataProps) {
+  // 🆕 초기값은 store에서 가져오되, 로컬 상태로 관리 (Load 버튼 클릭 시에만 저장)
+  const storeAirport = useSimulationStore((s) => s.context.airport);
+  const storeDate = useSimulationStore((s) => s.context.date);
+  const setStoreAirport = useSimulationStore((s) => s.setAirport);
+  const setStoreDate = useSimulationStore((s) => s.setDate);
+  
+  // 로컬 상태로 관리 (초기값은 store에서 가져오기)
+  const [airport, setAirport] = useState(storeAirport);
+  const [date, setDate] = useState(storeDate);
   const [openAirportPopover, setOpenAirportPopover] = useState(false);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
@@ -189,7 +191,14 @@ function TabFlightScheduleLoadData({
           <Button
             onClick={() => {
               console.log('🎯 Load button clicked, loadingFlightSchedule:', loadingFlightSchedule);
-              onLoadData();
+              console.log('🎯 Saving to store - airport:', airport, 'date:', date);
+              
+              // Load 버튼 클릭 시에만 store에 저장
+              setStoreAirport(airport);
+              setStoreDate(date);
+              
+              // 부모 컴포넌트의 loadData 함수 호출
+              onLoadData(airport, date);
             }}
             disabled={loadingFlightSchedule || !airport}
             title={!airport ? 'Please select an airport first' : 'Load flight schedule data'}

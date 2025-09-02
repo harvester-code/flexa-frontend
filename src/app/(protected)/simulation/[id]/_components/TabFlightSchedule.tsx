@@ -5,10 +5,9 @@ import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } f
 import { getFlightFilters, getFlightSchedules } from '@/services/simulationService';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from '../../_components/SimulationLoading';
-import { useFlightScheduleData } from '../../_hooks/useTabData';
 import { useFlightScheduleV2Store, useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
-import TabFlightScheduleChart from './TabFlightScheduleChart';
+// import TabFlightScheduleChart from './TabFlightScheduleChart'; // 🚧 잘못된 그래프 - 제거
 import TabFlightScheduleFilterConditions from './TabFlightScheduleFilterConditions';
 import TabFlightScheduleFilterConditionsNew from './TabFlightScheduleFilterConditionsNew';
 import TabFlightScheduleLoadData from './TabFlightScheduleLoadData';
@@ -24,14 +23,9 @@ interface TabFlightScheduleProps {
 
 function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabFlightScheduleProps) {
   // 표준화된 훅으로 데이터와 액션들 가져오기
-  const {
-    airport,
-    date,
-    availableConditions,
-    selectedConditions: zustandSelectedConditions,
-    chartData,
-    actions: { setAirport, setDate, setAvailableConditions, setSelectedConditions, setChartData, setIsCompleted },
-  } = useFlightScheduleData();
+  // 🆕 1원칙: 통합 store에서만 데이터 가져오기
+  const airport = useSimulationStore((s) => s.context.airport);
+  const date = useSimulationStore((s) => s.context.date);
 
   // 🆕 통합 Store 액션들 (airport, date 동기화용)
   const setUnifiedAirport = useSimulationStore((s) => s.setAirport);
@@ -45,12 +39,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
   // Tab Reset 시스템 제거 - 단순화
 
-  // 로컬 상태로 selectedConditions 관리 (Apply Filter 버튼 누를 때까지 zustand에 저장하지 않음)
-  const [selectedConditions, setLocalSelectedConditions] = useState<SelectedConditions>({
-    types: [],
-    terminal: [],
-    selectedAirlines: [],
-  });
+  // 🚧 로컬 상태 제거 예정 - 통합 store 전환 중
 
   // UI 상태 관리 (최소화)
   const [loadError, setLoadError] = useState(false);
@@ -79,26 +68,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
     return match ? match[1] : displayName;
   }, []);
 
-  // 선택된 조건들을 API 형태로 변환 (Terminal 조건은 제외)
-  const buildConditions = useCallback(() => {
-    const conditions: Array<{ field: string; values: string[] }> = [];
-
-    if (selectedConditions.types.length > 0) {
-      conditions.push({
-        field: 'types',
-        values: selectedConditions.types,
-      });
-    }
-
-    if (selectedConditions.selectedAirlines.length > 0) {
-      conditions.push({
-        field: 'airline',
-        values: selectedConditions.selectedAirlines.map((airline) => String(airline)),
-      });
-    }
-
-    return conditions;
-  }, [selectedConditions]);
+  // 🚧 buildConditions 제거 - 통합 store 전환 중
 
   // API에서 데이터를 불러온다.
   // isAirportOrDateChanged: true면 새로운 공항/날짜로 로드(빈 조건), false면 기존 데이터에 필터만 적용
@@ -107,14 +77,13 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       if (!simulationId) return;
       if (!airport) return;
 
-      setChartData(null);
       setLoadError(false);
 
       // API 요청 파라미터와 타임스탬프를 미리 준비 (스코프 밖에서 정의)
       const params = {
         airport,
         date,
-        conditions: isAirportOrDateChanged ? [] : buildConditions(), // 공항/날짜 변경시에는 빈 조건, 필터 적용시에만 조건 포함
+        conditions: [], // 🚧 buildConditions 제거 - 통합 store 전환 중
       };
       const timestamp = new Date().toISOString();
 
@@ -209,53 +178,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             return a.localeCompare(b);
           });
 
-        // 공항/날짜 변경일 때만 조건 설정 및 UI 표시
-        if (isAirportOrDateChanged) {
-          setAvailableConditions({
-            types: {
-              International: Array.from(typesData.International || []).map((airline: AirlineInfo) => ({ ...airline })),
-              Domestic: Array.from(typesData.Domestic || []).map((airline: AirlineInfo) => ({ ...airline })),
-            },
-            terminals: Object.fromEntries(
-              Object.entries(terminalsData).map(([key, airlines]: [string, AirlineInfo[]]) => [
-                key,
-                Array.from(airlines || []).map((airline: AirlineInfo) => ({ ...airline })),
-              ])
-            ),
-            airlines: allAirlines.map((airline: AirlineInfo) => ({ ...airline })),
-          });
-
-          // zustand에도 동일한 데이터 저장
-          setAvailableConditions({
-            types: {
-              International: Array.from(typesData.International || []).map((airline: AirlineInfo) => ({ ...airline })),
-              Domestic: Array.from(typesData.Domestic || []).map((airline: AirlineInfo) => ({ ...airline })),
-            },
-            terminals: Object.fromEntries(
-              Object.entries(terminalsData).map(([key, airlines]: [string, AirlineInfo[]]) => [
-                key,
-                Array.from(airlines || []).map((airline: AirlineInfo) => ({ ...airline })),
-              ])
-            ),
-            airlines: allAirlines.map((airline: AirlineInfo) => ({ ...airline })),
-          });
-
-          // 초기 selectedConditions 설정 - 로컬 상태에만 설정
-          setLocalSelectedConditions({
-            types: [],
-            terminal: [],
-            selectedAirlines: [],
-          });
-
-          // 차트 데이터가 있으면 조건 UI도 표시
-          const hasTypes = typesData.International.length > 0 || typesData.Domestic.length > 0;
-          const hasTerminals = availableTerminals.length > 0;
-          const hasAirlines = allAirlines.length > 0;
-
-          if (hasTypes || hasTerminals || hasAirlines) {
-            setShowConditions(true);
-          }
-        }
+        // 🚧 기존 조건 처리 로직 제거 - 통합 store 전환 중
 
         if (data?.chart_x_data && data?.chart_y_data) {
           // 차트 데이터를 안전하게 복사하고 처리
@@ -280,10 +203,9 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             x: Array.from(data?.chart_x_data || []),
             data: chartYDataCopy,
           };
-          setChartData(newChartData); // zustand에 전체 chartData 저장
+          // 🚧 setChartData 제거 - 통합 store 전환 중
 
-          // Flight Schedule 탭 완료 상태 설정
-          setIsCompleted(true);
+          // 🚧 setIsCompleted 제거 - 통합 store 전환 중
         }
       } catch (error) {
         // API 에러 로그 업데이트 (timestamp와 request 정보 유지)
@@ -301,157 +223,136 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setLoadingFlightSchedule(false);
       }
     },
-    [
-      simulationId,
-      airport,
-      date,
-      buildConditions,
-      setApiRequestLog,
-      setAvailableConditions,
-      setChartData,
-      setShowConditions,
-      setIsCompleted,
-    ]
+    [simulationId, airport, date, setApiRequestLog]
   );
 
-  // 차트 데이터 로드 시 자동으로 조건 UI 표시
-  useEffect(() => {
-    if (chartData && Object.keys(chartData).length > 0) {
-      const hasTypes =
-        availableConditions.types.International.length > 0 || availableConditions.types.Domestic.length > 0;
-      const hasTerminals = Object.keys(availableConditions.terminals).length > 0;
-      const hasAirlines = availableConditions.airlines.length > 0;
-
-      if (hasTypes || hasTerminals || hasAirlines) {
-        setShowConditions(true);
-      }
-    }
-  }, [chartData, availableConditions]);
+  // 🚧 차트 관련 useEffect 제거 - 통합 store 전환 중
 
   // 데이터 로드 핸들러 - GET flight-filters로 변경
-  const handleLoadData = useCallback(async () => {
-    if (!simulationId || !airport) return;
+  const handleLoadData = useCallback(
+    async (airport: string, date: string) => {
+      if (!simulationId || !airport) return;
 
-    // 조건 초기화
-    const initialConditions = { types: [], terminal: [], selectedAirlines: [] };
-    setLocalSelectedConditions(initialConditions);
-    setSelectedConditions(initialConditions as any);
-    setShowConditions(false);
+      // 🚧 조건 초기화 제거 - 통합 store 전환 중
+      setShowConditions(false);
 
-    // ✅ Apply Filter 결과 초기화 (기존 차트들 제거)
-    setApplyFilterData(null);
-    setApplyFilterError(null);
-    setChartData(null); // 기존 차트 데이터도 초기화
+      // ✅ Apply Filter 결과 초기화 (기존 차트들 제거)
+      setApplyFilterData(null);
+      setApplyFilterError(null);
+      // 🚧 setChartData 제거 - 통합 store 전환 중
 
-    try {
-      console.log('🔄 Setting loading state to TRUE');
-      setLoadingFlightSchedule(true);
-      setLoadError(false);
+      try {
+        console.log('🔄 Setting loading state to TRUE');
+        setLoadingFlightSchedule(true);
+        setLoadError(false);
 
-      // 🆕 기존 flight 데이터 완전 초기화 (Filter Conditions가 로딩 상태로 전환됨)
-      resetFlightData();
-      console.log('🗑️ Previous flight data cleared');
+        // 🆕 기존 flight 데이터 완전 초기화 (Filter Conditions가 로딩 상태로 전환됨)
+        resetFlightData();
+        console.log('🗑️ Previous flight data cleared');
 
-      // 🆕 Load 버튼 클릭 시 airport/date를 zustand에 저장
-      setUnifiedAirport(airport);
-      setUnifiedDate(date);
-      console.log('📍 Airport/Date saved to unified store:', { airport, date });
+        // 🆕 airport/date는 이미 TabFlightScheduleLoadData에서 저장됨
+        console.log('📍 Loading data with airport/date:', { airport, date });
 
-      // ✅ Load 버튼 API 요청 로그 저장 (시작)
-      const timestamp = new Date().toISOString();
+        // ✅ Load 버튼 API 요청 로그 저장 (시작)
+        const timestamp = new Date().toISOString();
 
-      setApiRequestLog({
-        timestamp,
-        request: {
-          method: 'GET',
-          endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-          params: { airport, date },
-        },
-        response: null,
-        status: 'loading',
-      });
-
-      // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
-      const { data } = await getFlightFilters(simulationId, airport, date);
-
-      console.log('🆕 Flight filters data received:', data);
-
-      // ✅ Load 버튼 API 요청 로그 저장 (성공)
-      setApiRequestLog({
-        timestamp,
-        request: {
-          method: 'GET',
-          endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-          params: { airport, date },
-        },
-        response: data,
-        status: 'success',
-      });
-
-      // 🆕 새로운 필터 데이터 구조 처리
-      if (data && data.filters) {
-        setFiltersData(data); // 🆕 필터 데이터 저장
-
-        // 🆕 통합 Store에도 저장
-        setFlightFilters({
-          total_flights: data.total_flights,
-          airlines: data.airlines,
-          filters: data.filters,
-        });
-        console.log('🆕 Flight filters saved to unified store:', {
-          total_flights: data.total_flights,
-          airlines: Object.keys(data.airlines || {}).length,
-          filters: Object.keys(data.filters || {}).length,
+        setApiRequestLog({
+          timestamp,
+          request: {
+            method: 'GET',
+            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
+            params: { airport, date },
+          },
+          response: null,
+          status: 'loading',
         });
 
-        setShowConditions(true);
+        // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
+        const { data } = await getFlightFilters(simulationId, airport, date);
 
-        // 필터 메타데이터가 로드되었음을 표시
-        setIsCompleted(true);
+        console.log('🆕 Flight filters data received:', data);
 
-        console.log('✅ Flight filters loaded successfully');
+        // ✅ Load 버튼 API 요청 로그 저장 (성공)
+        setApiRequestLog({
+          timestamp,
+          request: {
+            method: 'GET',
+            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
+            params: { airport, date },
+          },
+          response: data,
+          status: 'success',
+        });
+
+        // 🆕 새로운 필터 데이터 구조 처리
+        if (data && data.filters) {
+          setFiltersData(data); // 🆕 필터 데이터 저장
+
+          // 🆕 통합 Store에도 저장
+          setFlightFilters({
+            total_flights: data.total_flights,
+            airlines: data.airlines,
+            filters: data.filters,
+          });
+          console.log('🆕 Flight filters saved to unified store:', {
+            total_flights: data.total_flights,
+            airlines: Object.keys(data.airlines || {}).length,
+            filters: Object.keys(data.filters || {}).length,
+          });
+
+          setShowConditions(true);
+
+          // 🚧 setIsCompleted 제거 - 통합 store 전환 중
+
+          console.log('✅ Flight filters loaded successfully');
+        }
+      } catch (error: any) {
+        console.error('❌ Failed to load flight filters:', error);
+
+        // 🎯 503 에러에 대한 사용자 친화적 메시지
+        let errorMessage = 'Failed to load flight data';
+
+        if (error?.response?.status === 503) {
+          errorMessage = 'Server is temporarily overloaded. Please try again in a moment.';
+        } else if (error?.response?.status === 504 || error?.code === 'ECONNABORTED') {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        }
+
+        console.error('Error details:', errorMessage);
+        setLoadError(true);
+
+        // ✅ Load 버튼 API 요청 로그 저장 (에러)
+        setApiRequestLog({
+          timestamp: new Date().toISOString(),
+          request: {
+            method: 'GET',
+            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
+            params: { airport, date },
+          },
+          response: null,
+          status: 'error',
+          error: errorMessage,
+        });
+      } finally {
+        console.log('🔄 Setting loading state to FALSE');
+        setLoadingFlightSchedule(false);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to load flight filters:', error);
-
-      // 🎯 503 에러에 대한 사용자 친화적 메시지
-      let errorMessage = 'Failed to load flight data';
-
-      if (error?.response?.status === 503) {
-        errorMessage = 'Server is temporarily overloaded. Please try again in a moment.';
-      } else if (error?.response?.status === 504 || error?.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. Please check your connection and try again.';
-      }
-
-      console.error('Error details:', errorMessage);
-      setLoadError(true);
-
-      // ✅ Load 버튼 API 요청 로그 저장 (에러)
-      setApiRequestLog({
-        timestamp,
-        request: {
-          method: 'GET',
-          endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-          params: { airport, date },
-        },
-        response: null,
-        status: 'error',
-        error: errorMessage,
-      });
-    } finally {
-      console.log('🔄 Setting loading state to FALSE');
-      setLoadingFlightSchedule(false);
-    }
-  }, [simulationId, airport, date, setSelectedConditions, setShowConditions, setIsCompleted, setApiRequestLog]);
+    },
+    [simulationId, setShowConditions, setApiRequestLog, resetFlightData]
+  );
 
   // 🆕 새로운 Apply Filter 핸들러 (새 필터 시스템용) - 응답 반환
   const handleApplyFiltersNew = useCallback(
     async (type: string, conditions: Array<{ field: string; values: string[] }>) => {
-      if (!simulationId || !airport) return null;
+      // Store에서 현재 airport, date 가져오기
+      const currentAirport = useSimulationStore.getState().context.airport;
+      const currentDate = useSimulationStore.getState().context.date;
+
+      if (!simulationId || !currentAirport) return null;
 
       const params = {
-        airport,
-        date,
+        airport: currentAirport,
+        date: currentDate,
         type, // 🆕 1단계에서 선택한 mode 값
         conditions, // 🆕 새로운 조건 형식
       };
@@ -485,12 +386,9 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         // ✅ Apply Filter 응답 상태에 저장
         setApplyFilterData(data);
 
-        // 🆕 Apply Filter 요청/응답을 zustand에 저장
-        setAppliedFilterResult({
-          requestBody: params,
-          responseData: data,
-        });
-        console.log('💾 Apply Filter result saved to zustand:', { requestBody: params, responseData: data });
+        // 🆕 Apply Filter 응답을 zustand에 저장
+        setAppliedFilterResult(data);
+        console.log('💾 Apply Filter result saved to zustand:', data);
 
         return data;
       } catch (error: any) {
@@ -529,18 +427,14 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setApplyFilterLoading(false);
       }
     },
-    [simulationId, airport, date, setApiRequestLog]
+    [simulationId, setApiRequestLog]
   );
 
   return !visible ? null : (
     <div className="space-y-6 pt-8">
       {/* Load Flight Schedule Data Section */}
       <TabFlightScheduleLoadData
-        airport={airport}
-        date={date}
         loadingFlightSchedule={loadingFlightSchedule}
-        setAirport={setAirport}
-        setDate={setDate}
         setIsSomethingChanged={setIsSomethingChanged}
         onLoadData={handleLoadData}
       />
@@ -568,15 +462,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             </div>
           )}
 
-          {/* 기존 Chart 데이터 표시 */}
-          {chartData && !loadingFlightSchedule && (
-            <TabFlightScheduleChart loadingFlightSchedule={false} chartData={chartData} loadError={loadError} />
-          )}
-
-          {/* 로드 에러 상태 표시 */}
-          {loadError && !loadingFlightSchedule && !applyFilterLoading && (
-            <TabFlightScheduleChart loadingFlightSchedule={false} chartData={null} loadError={true} />
-          )}
+          {/* 🚧 잘못된 그래프 제거 - TabFlightScheduleChart */}
+          {/* <TabFlightScheduleChart /> */}
         </>
       )}
 

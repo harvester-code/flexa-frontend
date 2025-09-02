@@ -20,24 +20,21 @@ export interface SimulationStoreState {
       }>;
     } | null;
     appliedFilterResult: {
-      requestBody: Record<string, unknown>;
-      responseData: {
-        total: number;
-        chart_x_data: string[]; // ["00:00", "01:00", ...]
-        chart_y_data: {
-          airline: Array<{
-            name: string;
-            order: number;
-            y: number[];
-            acc_y: number[];
-          }>;
-          terminal: Array<{
-            name: string;
-            order: number;
-            y: number[];
-            acc_y: number[];
-          }>;
-        };
+      total: number;
+      chart_x_data: string[]; // ["00:00", "01:00", ...]
+      chart_y_data: {
+        airline: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
+        terminal: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
       };
       appliedAt: string;
     } | null;
@@ -96,24 +93,21 @@ export interface SimulationStoreState {
   clearAllConditions: () => void;
 
   setAppliedFilterResult: (result: {
-    requestBody: Record<string, unknown>;
-    responseData: {
-      total: number;
-      chart_x_data: string[];
-      chart_y_data: {
-        airline: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-        terminal: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-      };
+    total: number;
+    chart_x_data: string[];
+    chart_y_data: {
+      airline: Array<{
+        name: string;
+        order: number;
+        y: number[];
+        acc_y: number[];
+      }>;
+      terminal: Array<{
+        name: string;
+        order: number;
+        y: number[];
+        acc_y: number[];
+      }>;
     };
   }) => void;
 
@@ -125,7 +119,7 @@ const createInitialState = (scenarioId?: string) => ({
   context: {
     scenarioId: scenarioId || '',
     airport: 'ICN', // ICN을 기본값으로 설정
-    date: '',
+    date: new Date().toISOString().split('T')[0], // 오늘 날짜 (YYYY-MM-DD 형식)
     lastSavedAt: null,
   },
   flight: {

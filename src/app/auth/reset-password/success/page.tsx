@@ -1,7 +1,11 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { CheckCircle2, Shield } from 'lucide-react';
-import { BackToLogin } from '@/components/BackToLogin';
+import { Button } from '@/components/ui/Button';
 
 export default function ResetPasswordSuccess() {
+  const router = useRouter();
   return (
     <div className="signUpContainer">
       <h1>
@@ -14,7 +18,9 @@ export default function ResetPasswordSuccess() {
         <div className="flex justify-center">
           <CheckCircle2 className="h-24 w-24 text-green-500" />
         </div>
-        <BackToLogin className="mt-55" />
+        <Button className="mt-55 w-full" variant="primary" onClick={() => router.push('/auth/login')}>
+          Back to Login
+        </Button>
       </div>
     </div>
   );

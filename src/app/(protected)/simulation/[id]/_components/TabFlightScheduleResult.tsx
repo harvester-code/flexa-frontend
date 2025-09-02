@@ -53,6 +53,7 @@ export default function TabFlightScheduleResult({ data }: TabFlightScheduleResul
       x: xLabels,
       y: series.y,
       type: 'bar' as const,
+      showlegend: true, // ✅ 하나만 있어도 legend 표시
       marker: {
         color: CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
       },
@@ -81,6 +82,7 @@ export default function TabFlightScheduleResult({ data }: TabFlightScheduleResul
     font: { family: 'Pretendard, Arial, sans-serif' },
     margin: { l: 60, r: 60, t: 80, b: 100 },
     height: 500,
+    showlegend: true, // ✅ 하나만 있어도 legend 강제 표시
     legend: {
       orientation: 'h' as const,
       x: 0,
