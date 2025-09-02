@@ -32,7 +32,6 @@ import TabProcessingProcedures from './_components/TabProcessingProcedures';
 // import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 import {
   useFlightScheduleStore,
-  usePassengerScheduleStore,
   useProcessingProceduresStore,
   useScenarioProfileStore,
   useSimulationStore,
@@ -57,7 +56,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const loadScenarioProfileMetadata = useScenarioProfileStore((s) => s.loadMetadata);
 
   const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
-  const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
+  // Passenger Schedule completion은 통합 store에서 관리
   const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
@@ -75,7 +74,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       if (tabs.passengerSchedule) {
         console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);
-        usePassengerScheduleStore.getState().loadMetadata(tabs.passengerSchedule);
+        useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
       }
 
       if (tabs.processingProcedures) {
@@ -93,7 +92,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 탭 접근성 계산
   const getAvailableTabs = () => {
-    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted, processingProceduresCompleted];
+    const completedStates = [flightScheduleCompleted, false, processingProceduresCompleted];
 
     // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
     const lastCompletedIndex = completedStates.lastIndexOf(true);

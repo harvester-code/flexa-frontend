@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
 import { Card, CardContent } from '@/components/ui/Card';
-import { useFlightScheduleData, usePassengerScheduleData } from '../../_hooks/useTabData';
+import { useFlightScheduleV2Store, useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
@@ -33,21 +33,15 @@ export default function TabPassengerSchedule({
 }: TabPassengerScheduleProps) {
   const [loading, setLoading] = useState(false);
 
-  // Flight Schedule 데이터에서 선택된 항공사 가져오기
-  const { selectedConditions } = useFlightScheduleData();
+  // 🆕 통합 Store에서 직접 데이터 가져오기
+  const selectedConditions = useFlightScheduleV2Store((s) => s.filtersData?.selectedConditions);
+  const pax_arrival_patterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
 
-  // Passenger Schedule 데이터
-  const {
-    pax_arrival_patterns,
-    apiResponseData,
-    actions: {
-      setPaxArrivalPatternRules,
-      addPaxArrivalPatternRule,
-      updatePaxArrivalPatternRule,
-      removePaxArrivalPatternRule,
-      setApiResponseData,
-    },
-  } = usePassengerScheduleData();
+  // 🆕 통합 Store에서 직접 액션들 가져오기
+  const setPaxArrivalPatternRules = useSimulationStore((s) => s.setPaxArrivalPatternRules);
+  const addPaxArrivalPatternRule = useSimulationStore((s) => s.addPaxArrivalPatternRule);
+  const updatePaxArrivalPatternRule = useSimulationStore((s) => s.updatePaxArrivalPatternRule);
+  const removePaxArrivalPatternRule = useSimulationStore((s) => s.removePaxArrivalPatternRule);
 
   // UI 로딩 상태만 로컬로 관리
 
@@ -215,7 +209,7 @@ export default function TabPassengerSchedule({
         />
 
         {/* Passenger Show-up Result Chart */}
-        {apiResponseData && (
+        {false && (
           <div className="mt-6">
             <TabPassengerScheduleResult />
           </div>

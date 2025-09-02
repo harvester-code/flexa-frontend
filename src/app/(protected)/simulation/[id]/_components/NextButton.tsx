@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
   useFlightScheduleStore,
-  usePassengerScheduleStore,
+
   useProcessingProceduresStore,
   useScenarioProfileStore,
   useSimulationStore,

@@ -7,7 +7,7 @@ import { PassengerShowUpResponse } from '@/types/simulationTypes';
 import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { usePassengerScheduleStore } from '../_stores';
+// Passenger data now passed via props only
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -16,11 +16,8 @@ interface TabPassengerScheduleResultProps {
 }
 
 export default function TabPassengerScheduleResult({ data: propData }: TabPassengerScheduleResultProps) {
-  // 새로운 모듈화된 PassengerSchedule 스토어에서 API 응답 데이터 가져오기
-  const { apiResponseData } = usePassengerScheduleStore();
-
-  // props로 받은 데이터가 있으면 그것을 우선 사용, 없으면 zustand store에서 가져온 데이터 사용
-  const data = propData || apiResponseData;
+  // props로 받은 데이터만 사용
+  const data = propData;
 
   // 데이터가 없으면 렌더링하지 않음
   if (!data) return null;

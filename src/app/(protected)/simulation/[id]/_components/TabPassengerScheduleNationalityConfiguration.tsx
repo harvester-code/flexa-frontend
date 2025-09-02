@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { usePassengerScheduleStore } from '../_stores';
+import { useSimulationStore } from '../_stores';
 
 interface TabPassengerScheduleNationalityConfigurationProps {
   simulationId: string;
@@ -19,11 +19,11 @@ export default function TabPassengerScheduleNationalityConfiguration({
   // UI Store에서 parquet metadata 가져오기
 
   // Passenger Schedule Store에서 nationality 관련 데이터와 액션들 가져오기
-  const pax_demographics = usePassengerScheduleStore((state) => state.pax_demographics);
-  const setNationalityValues = usePassengerScheduleStore((state) => state.setNationalityValues);
-  const addNationalityRule = usePassengerScheduleStore((state) => state.addNationalityRule);
-  const removeNationalityRule = usePassengerScheduleStore((state) => state.removeNationalityRule);
-  const updateNationalityDistribution = usePassengerScheduleStore((state) => state.updateNationalityDistribution);
+  const pax_demographics = useSimulationStore((state) => state.passenger.pax_demographics);
+  const setNationalityValues = useSimulationStore((state) => state.setNationalityValues);
+  const addNationalityRule = useSimulationStore((state) => state.addNationalityRule);
+  const removeNationalityRule = useSimulationStore((state) => state.removeNationalityRule);
+  const updateNationalityDistribution = useSimulationStore((state) => state.updateNationalityDistribution);
 
   // 1단계: available_values 정의용 로컬 상태
   const [valueInput, setValueInput] = useState<string>('');

@@ -3,6 +3,45 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+// ==================== Passenger Types ====================
+export interface PassengerData {
+  settings: {
+    load_factor: number | null;
+    min_arrival_minutes: number | null;
+  };
+  pax_demographics: {
+    nationality: {
+      available_values: string[];
+      rules: Array<{
+        conditions: Record<string, string[]>;
+        distribution: Record<string, number>;
+      }>;
+      default: Record<string, number>;
+    };
+    profile: {
+      available_values: string[];
+      rules: Array<{
+        conditions: Record<string, string[]>;
+        distribution: Record<string, number>;
+      }>;
+      default: Record<string, number>;
+    };
+  };
+  pax_arrival_patterns: {
+    rules: Array<{
+      conditions: {
+        operating_carrier_iata: string[];
+      };
+      mean: number;
+      std: number;
+    }>;
+    default: {
+      mean: number | null;
+      std: number | null;
+    };
+  };
+}
+
 // ==================== Types ====================
 export interface SimulationStoreState {
   context: {
@@ -42,19 +81,7 @@ export interface SimulationStoreState {
     airlines: Record<string, string> | null;
     filters: Record<string, unknown> | null;
   };
-  passenger: {
-    settings: Record<string, unknown>;
-    demographics: Record<string, unknown>;
-    arrivalPatterns: Record<string, unknown>;
-    showUpResults: Record<string, unknown> | null;
-    parquetMeta: {
-      columns: Array<{
-        name: string;
-        unique_values: string[];
-        count: number;
-      }>;
-    } | null;
-  };
+  passenger: PassengerData;
   process: {
     flow: Array<Record<string, unknown>>;
   };
@@ -123,14 +150,27 @@ export interface SimulationStoreState {
   setStepCompleted: (step: number, completed: boolean) => void;
   updateAvailableSteps: () => void; // 완료된 단계에 따라 availableSteps 업데이트
 
-  // Passenger 관련 액션들
-  setParquetMeta: (parquetMeta: {
-    columns: Array<{
-      name: string;
-      unique_values: string[];
-      count: number;
-    }>;
-  }) => void;
+  // ==================== Passenger Actions ====================
+  setSettings: (settings: Partial<PassengerData['settings']>) => void;
+  setPaxDemographics: (demographics: PassengerData['pax_demographics']) => void;
+  setNationalityValues: (values: string[]) => void;
+  setProfileValues: (values: string[]) => void;
+  addNationalityRule: (conditions: Record<string, string[]>) => void;
+  addProfileRule: (conditions: Record<string, string[]>) => void;
+  removeNationalityRule: (ruleIndex: number) => void;
+  removeProfileRule: (ruleIndex: number) => void;
+  updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  reorderPaxDemographics: () => void;
+  setPaxArrivalPatternRules: (rules: PassengerData['pax_arrival_patterns']['rules']) => void;
+  addPaxArrivalPatternRule: (rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
+  updatePaxArrivalPatternRule: (
+    index: number,
+    rule: PassengerData['pax_arrival_patterns']['rules'][0]
+  ) => void;
+  removePaxArrivalPatternRule: (index: number) => void;
+  resetPassenger: () => void;
+  loadPassengerMetadata: (metadata: Record<string, unknown>) => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
 }
@@ -151,11 +191,29 @@ const createInitialState = (scenarioId?: string) => ({
     filters: null,
   },
   passenger: {
-    settings: {},
-    demographics: {},
-    arrivalPatterns: {},
-    showUpResults: null,
-    parquetMeta: null,
+    settings: {
+      load_factor: null,
+      min_arrival_minutes: null,
+    },
+    pax_demographics: {
+      nationality: {
+        available_values: [],
+        rules: [],
+        default: {},
+      },
+      profile: {
+        available_values: [],
+        rules: [],
+        default: {},
+      },
+    },
+    pax_arrival_patterns: {
+      rules: [],
+      default: {
+        mean: null,
+        std: null,
+      },
+    },
   },
   process: {
     flow: [],
@@ -220,7 +278,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.flight.filters = null;
 
         // ✅ flight 데이터 리셋 시 관련된 passenger 데이터도 리셋
-        state.passenger.parquetMeta = null;
 
         // ✅ flight 데이터 리셋 시 workflow도 리셋
         state.workflow.step1Completed = false;
@@ -388,9 +445,184 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     // ==================== Passenger Actions ====================
 
-    setParquetMeta: (parquetMeta) =>
+    setSettings: (newSettings) =>
       set((state) => {
-        state.passenger.parquetMeta = parquetMeta;
+        Object.assign(state.passenger.settings, newSettings);
+      }),
+
+    setPaxDemographics: (demographics) =>
+      set((state) => {
+        state.passenger.pax_demographics = demographics;
+      }),
+
+    setNationalityValues: (values) =>
+      set((state) => {
+        // 올바른 순서로 nationality 객체 재구성
+        const currentRules = state.passenger.pax_demographics.nationality.rules || [];
+        const currentDefault = state.passenger.pax_demographics.nationality.default || {};
+
+        state.passenger.pax_demographics.nationality = {
+          available_values: values,
+          rules: currentRules,
+          default: currentDefault,
+        };
+      }),
+
+    setProfileValues: (values) =>
+      set((state) => {
+        // 올바른 순서로 profile 객체 재구성
+        const currentRules = state.passenger.pax_demographics.profile.rules || [];
+        const currentDefault = state.passenger.pax_demographics.profile.default || {};
+
+        state.passenger.pax_demographics.profile = {
+          available_values: values,
+          rules: currentRules,
+          default: currentDefault,
+        };
+      }),
+
+    addNationalityRule: (conditions) =>
+      set((state) => {
+        state.passenger.pax_demographics.nationality.rules.push({
+          conditions,
+          distribution: {}, // available_values 기반으로 설정할 예정
+        });
+      }),
+
+    addProfileRule: (conditions) =>
+      set((state) => {
+        state.passenger.pax_demographics.profile.rules.push({
+          conditions,
+          distribution: {}, // available_values 기반으로 설정할 예정
+        });
+      }),
+
+    removeNationalityRule: (ruleIndex) =>
+      set((state) => {
+        state.passenger.pax_demographics.nationality.rules.splice(ruleIndex, 1);
+      }),
+
+    removeProfileRule: (ruleIndex) =>
+      set((state) => {
+        state.passenger.pax_demographics.profile.rules.splice(ruleIndex, 1);
+      }),
+
+    updateNationalityDistribution: (ruleIndex, distribution) =>
+      set((state) => {
+        if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
+          state.passenger.pax_demographics.nationality.rules[ruleIndex].distribution = distribution;
+        }
+      }),
+
+    updateProfileDistribution: (ruleIndex, distribution) =>
+      set((state) => {
+        if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
+          state.passenger.pax_demographics.profile.rules[ruleIndex].distribution = distribution;
+        }
+      }),
+
+    reorderPaxDemographics: () =>
+      set((state) => {
+        // nationality 재정렬 (안전하게 체크)
+        if (state.passenger.pax_demographics.nationality) {
+          const nationalityData = state.passenger.pax_demographics.nationality;
+          state.passenger.pax_demographics.nationality = {
+            available_values: nationalityData.available_values || [],
+            rules: nationalityData.rules || [],
+            default: nationalityData.default || {},
+          };
+        }
+
+        // profile 재정렬 (안전하게 체크)
+        if (state.passenger.pax_demographics.profile) {
+          const profileData = state.passenger.pax_demographics.profile;
+          state.passenger.pax_demographics.profile = {
+            available_values: profileData.available_values || [],
+            rules: profileData.rules || [],
+            default: profileData.default || {},
+          };
+        }
+      }),
+
+    setPaxArrivalPatternRules: (rules) =>
+      set((state) => {
+        state.passenger.pax_arrival_patterns.rules = rules;
+      }),
+
+    addPaxArrivalPatternRule: (rule) =>
+      set((state) => {
+        state.passenger.pax_arrival_patterns.rules.push(rule);
+      }),
+
+    updatePaxArrivalPatternRule: (index, rule) =>
+      set((state) => {
+        if (state.passenger.pax_arrival_patterns.rules[index]) {
+          state.passenger.pax_arrival_patterns.rules[index] = rule;
+        }
+      }),
+
+    removePaxArrivalPatternRule: (index) =>
+      set((state) => {
+        state.passenger.pax_arrival_patterns.rules.splice(index, 1);
+      }),
+
+    resetPassenger: () =>
+      set((state) => {
+        Object.assign(state.passenger, {
+          settings: {
+            load_factor: null,
+            min_arrival_minutes: null,
+          },
+          pax_demographics: {
+            nationality: {
+              available_values: [],
+              rules: [],
+              default: {},
+            },
+            profile: {
+              available_values: [],
+              rules: [],
+              default: {},
+            },
+          },
+          pax_arrival_patterns: {
+            rules: [],
+            default: {
+              mean: null,
+              std: null,
+            },
+          },
+        });
+      }),
+
+    loadPassengerMetadata: (metadata) =>
+      set((state) => {
+        Object.assign(state.passenger, {
+          settings: {
+            load_factor: null,
+            min_arrival_minutes: null,
+          },
+          pax_demographics: {
+            nationality: {
+              available_values: [],
+              rules: [],
+              default: {},
+            },
+            profile: {
+              available_values: [],
+              rules: [],
+              default: {},
+            },
+          },
+          pax_arrival_patterns: {
+            rules: [],
+            default: {
+              mean: null,
+              std: null,
+            },
+          },
+          ...metadata,
+        });
       }),
 
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정

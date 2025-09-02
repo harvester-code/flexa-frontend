@@ -13,7 +13,7 @@
 export { useScenarioProfileStore } from './scenario-profile';
 export { useFlightScheduleStore } from './flight-schedule';
 export { useFlightScheduleV2Store } from './flight-schedule-v2'; // 🆕 Modern Flight Schedule Store
-export { usePassengerScheduleStore } from './passenger-schedule';
+// export { usePassengerScheduleStore } from './passenger-schedule'; // 🚫 Migrated to useSimulationStore
 export { useProcessingProceduresStore } from './processing-procedures';
 export { useSimulationStore } from './store'; // 🆕 통합 단일 Store
 

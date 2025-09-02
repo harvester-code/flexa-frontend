@@ -6,7 +6,7 @@ import { APIRequestLog, DestributionCondition } from '@/types/simulationTypes';
 import { createPassengerShowUp } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { useFlightScheduleStore, usePassengerScheduleStore } from '../_stores';
+import { useFlightScheduleStore, useSimulationStore } from '../_stores';
 import { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleNormalDistribution from './TabPassengerScheduleNormalDistribution';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
@@ -45,7 +45,7 @@ export default function TabPassengerScheduleGroupConfiguration({
   const [loading, setLoading] = useState(false);
 
   // 새로운 모듈화된 PassengerSchedule 스토어에서 액션 가져오기
-  const { setApiResponseData, setCompleted: setIsCompleted } = usePassengerScheduleStore();
+  // Passenger actions are now handled elsewhere in unified store
 
   // Convert minutes to hours:minutes format
   const minutesToHoursMinutes = (minutes: number) => {
@@ -56,7 +56,7 @@ export default function TabPassengerScheduleGroupConfiguration({
 
   // 새로운 스토어들에서 데이터 가져오기
   const { date: flightScheduleDate, airport: flightScheduleAirport } = useFlightScheduleStore();
-  const { pax_arrival_patterns: paxArrivalPatterns } = usePassengerScheduleStore();
+  const paxArrivalPatterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
 
   // zustand의 pax_arrival_patterns를 API가 기대하는 형식으로 변환
   // Convert pax_arrival_patterns to API payload format

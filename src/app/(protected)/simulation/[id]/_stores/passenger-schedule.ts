@@ -5,10 +5,8 @@ import { immer } from 'zustand/middleware/immer';
 export interface PassengerScheduleState {
   // Data
   settings: {
-    date: string;
-    airport: string;
-    load_factor: number;
-    min_arrival_minutes: number;
+    load_factor: number | null;
+    min_arrival_minutes: number | null;
   };
   pax_demographics: {
     nationality: {
@@ -37,12 +35,10 @@ export interface PassengerScheduleState {
       std: number;
     }>;
     default: {
-      mean: number;
-      std: number;
+      mean: number | null;
+      std: number | null;
     };
   };
-  apiResponseData: Record<string, unknown> | null;
-  isCompleted: boolean;
 
   // Actions
   setSettings: (settings: Partial<PassengerScheduleState['settings']>) => void;
@@ -63,8 +59,6 @@ export interface PassengerScheduleState {
     rule: PassengerScheduleState['pax_arrival_patterns']['rules'][0]
   ) => void;
   removePaxArrivalPatternRule: (index: number) => void;
-  setApiResponseData: (data: Record<string, unknown> | null) => void;
-  setCompleted: (completed: boolean) => void;
   resetState: () => void;
   loadMetadata: (metadata: Record<string, unknown>) => void;
 }
@@ -72,32 +66,28 @@ export interface PassengerScheduleState {
 // ==================== Initial State ====================
 const initialState = {
   settings: {
-    date: new Date().toISOString().split('T')[0], // 오늘 날짜 (YYYY-MM-DD 형식)
-    airport: '',
-    load_factor: 0.85,
-    min_arrival_minutes: 30,
+    load_factor: null,
+    min_arrival_minutes: null,
   },
   pax_demographics: {
     nationality: {
       available_values: [],
       rules: [],
-      default: {}
+      default: {},
     },
     profile: {
       available_values: [],
       rules: [],
-      default: {}
-    }
+      default: {},
+    },
   },
   pax_arrival_patterns: {
     rules: [],
     default: {
-      mean: 120,
-      std: 30,
+      mean: null,
+      std: null,
     },
   },
-  apiResponseData: null,
-  isCompleted: false,
 };
 
 // ==================== Store ====================
@@ -122,11 +112,11 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
         // 올바른 순서로 nationality 객체 재구성
         const currentRules = state.pax_demographics.nationality.rules || [];
         const currentDefault = state.pax_demographics.nationality.default || {};
-        
+
         state.pax_demographics.nationality = {
           available_values: values,
           rules: currentRules,
-          default: currentDefault
+          default: currentDefault,
         };
       }),
 
@@ -135,11 +125,11 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
         // 올바른 순서로 profile 객체 재구성
         const currentRules = state.pax_demographics.profile.rules || [];
         const currentDefault = state.pax_demographics.profile.default || {};
-        
+
         state.pax_demographics.profile = {
           available_values: values,
           rules: currentRules,
-          default: currentDefault
+          default: currentDefault,
         };
       }),
 
@@ -147,7 +137,7 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
       set((state) => {
         state.pax_demographics.nationality.rules.push({
           conditions,
-          distribution: {} // available_values 기반으로 설정할 예정
+          distribution: {}, // available_values 기반으로 설정할 예정
         });
       }),
 
@@ -155,7 +145,7 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
       set((state) => {
         state.pax_demographics.profile.rules.push({
           conditions,
-          distribution: {} // available_values 기반으로 설정할 예정
+          distribution: {}, // available_values 기반으로 설정할 예정
         });
       }),
 
@@ -191,17 +181,17 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
           state.pax_demographics.nationality = {
             available_values: nationalityData.available_values || [],
             rules: nationalityData.rules || [],
-            default: nationalityData.default || {}
+            default: nationalityData.default || {},
           };
         }
-        
+
         // profile 재정렬 (안전하게 체크)
         if (state.pax_demographics.profile) {
           const profileData = state.pax_demographics.profile;
           state.pax_demographics.profile = {
             available_values: profileData.available_values || [],
             rules: profileData.rules || [],
-            default: profileData.default || {}
+            default: profileData.default || {},
           };
         }
       }),
@@ -226,16 +216,6 @@ export const usePassengerScheduleStore = create<PassengerScheduleState>()(
     removePaxArrivalPatternRule: (index) =>
       set((state) => {
         state.pax_arrival_patterns.rules.splice(index, 1);
-      }),
-
-    setApiResponseData: (data) =>
-      set((state) => {
-        state.apiResponseData = data;
-      }),
-
-    setCompleted: (completed) =>
-      set((state) => {
-        state.isCompleted = completed;
       }),
 
     resetState: () =>

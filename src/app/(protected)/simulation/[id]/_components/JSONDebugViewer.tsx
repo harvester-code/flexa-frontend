@@ -5,7 +5,6 @@ import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-rea
 import { Button } from '@/components/ui/Button';
 import {
   useFlightScheduleV2Store,
-  usePassengerScheduleStore,
   useProcessingProceduresStore,
   useSimulationStore,
 } from '../_stores';
@@ -62,16 +61,13 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
   };
 
   const passengerSchedule = {
-    settings: usePassengerScheduleStore((s) => s.settings),
-    pax_demographics: usePassengerScheduleStore((s) => s.pax_demographics),
-    pax_arrival_patterns: usePassengerScheduleStore((s) => s.pax_arrival_patterns),
-    apiResponseData: usePassengerScheduleStore((s) => s.apiResponseData),
-    isCompleted: usePassengerScheduleStore((s) => s.isCompleted),
+    settings: useSimulationStore((s) => s.passenger.settings),
+    pax_demographics: useSimulationStore((s) => s.passenger.pax_demographics),
+    pax_arrival_patterns: useSimulationStore((s) => s.passenger.pax_arrival_patterns),
   };
 
   const airportProcessing = {
     process_flow: useProcessingProceduresStore((s) => s.process_flow),
-    isCompleted: useProcessingProceduresStore((s) => s.isCompleted),
   };
 
   // 실제 S3 저장 구조로 합치기
