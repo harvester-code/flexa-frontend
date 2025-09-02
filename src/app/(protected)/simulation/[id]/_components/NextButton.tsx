@@ -3,13 +3,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import {
-  useFlightScheduleStore,
-
-  useProcessingProceduresStore,
-  useScenarioProfileStore,
-  useSimulationStore,
-} from '../_stores';
+import { useFlightScheduleStore, useScenarioProfileStore, useSimulationStore } from '../_stores';
 
 interface NextButtonProps {
   className?: string;

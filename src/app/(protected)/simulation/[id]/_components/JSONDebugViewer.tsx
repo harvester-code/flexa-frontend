@@ -3,11 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import {
-  useFlightScheduleV2Store,
-  useProcessingProceduresStore,
-  useSimulationStore,
-} from '../_stores';
+import { useFlightScheduleV2Store, useSimulationStore } from '../_stores';
 
 interface JSONDebugViewerProps {
   visible: boolean;
@@ -67,7 +63,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
   };
 
   const airportProcessing = {
-    process_flow: useProcessingProceduresStore((s) => s.process_flow),
+    process_flow: useSimulationStore((s) => s.process_flow),
   };
 
   // 실제 S3 저장 구조로 합치기

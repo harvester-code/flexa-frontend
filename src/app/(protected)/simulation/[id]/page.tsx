@@ -30,12 +30,7 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 // 🚧 임시 주석처리: 메타데이터 로드 에러 방지
 // import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
-import {
-  useFlightScheduleStore,
-  useProcessingProceduresStore,
-  useScenarioProfileStore,
-  useSimulationStore,
-} from './_stores';
+import { useFlightScheduleStore, useScenarioProfileStore, useSimulationStore } from './_stores';
 
 const tabs: { text: string; number: number }[] = [
   { text: 'Flight Schedule', number: 0 },
@@ -57,7 +52,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
   // Passenger Schedule completion은 통합 store에서 관리
-  const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
+  const processingProceduresCompleted = useSimulationStore((s) => s.workflow.step3Completed);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -79,7 +74,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       if (tabs.processingProcedures) {
         console.log('Processing Procedures 데이터 로드:', tabs.processingProcedures);
-        useProcessingProceduresStore.getState().loadMetadata(tabs.processingProcedures);
+        useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
       }
 
       // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외

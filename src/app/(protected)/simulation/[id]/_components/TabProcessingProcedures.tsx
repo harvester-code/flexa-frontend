@@ -5,16 +5,13 @@ import { CheckSquare, Plane, Settings2 } from 'lucide-react';
 import { runSimulation } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-
 import { useToast } from '@/hooks/useToast';
-import { useProcessingProceduresStore } from '../_stores';
+import { useSimulationStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
 import OperatingScheduleEditor from './OperatingScheduleEditor';
 import ProcessConfigurationModal from './ProcessConfigurationModal';
 import ProcessFlowChart from './ProcessFlowChart';
-
-
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -28,13 +25,13 @@ interface TabProcessingProceduresProps {
 }
 
 export default function TabProcessingProcedures({ simulationId, visible }: TabProcessingProceduresProps) {
-  // 개별 store에서 필요한 데이터만 직접 가져오기
-  const processFlow = useProcessingProceduresStore((s) => s.process_flow);
-  const isCompleted = useProcessingProceduresStore((s) => s.isCompleted);
-  const setProcessFlow = useProcessingProceduresStore((s) => s.setProcessFlow);
-  const setIsCompleted = useProcessingProceduresStore((s) => s.setCompleted);
-  const setFacilitiesForZone = useProcessingProceduresStore((s) => s.setFacilitiesForZone);
-  const updateTravelTime = useProcessingProceduresStore((s) => s.updateTravelTime);
+  // 🆕 통합 Store에서 직접 데이터 가져오기
+  const processFlow = useSimulationStore((s) => s.process_flow);
+  const isCompleted = useSimulationStore((s) => s.workflow.step3Completed);
+  const setProcessFlow = useSimulationStore((s) => s.setProcessFlow);
+  const setIsCompleted = useSimulationStore((s) => s.setProcessCompleted);
+  const setFacilitiesForZone = useSimulationStore((s) => s.setFacilitiesForZone);
+  const updateTravelTime = useSimulationStore((s) => s.updateTravelTime);
 
   const { toast } = useToast();
 
@@ -46,10 +43,10 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  
+
   // Selected process for detail view (instead of accordion)
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
-  
+
   // Modal state
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -59,8 +56,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     facilities: string[];
     travelTime: number;
   } | null>(null);
-
-
 
   // 시뮬레이션 실행 상태
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
@@ -94,14 +89,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   // Zones가 설정된 프로세스가 있는지 체크 (zustand 기준)
   const hasZonesConfigured = useMemo(() => {
-    return processFlow.some((process) =>
-      process.zones && Object.keys(process.zones).length > 0
-    );
+    return processFlow.some((process) => process.zones && Object.keys(process.zones).length > 0);
   }, [processFlow]);
-
-
-
-
 
   // Modal 열기/닫기 함수들
   const handleOpenCreateModal = () => {
@@ -129,7 +118,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   // Select process for detail view
   const handleProcessSelect = (index: number) => {
-    setSelectedProcessIndex(prev => prev === index ? null : index);
+    setSelectedProcessIndex((prev) => (prev === index ? null : index));
   };
 
   // Name 정규화 함수 (특수문자 → 언더스코어, 소문자 변환)
@@ -142,11 +131,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   };
 
   // Modal에서 프로세스 저장
-  const handleSaveProcess = (data: {
-    name: string;
-    facilities: FacilityItem[];
-    travelTime: number;
-  }) => {
+  const handleSaveProcess = (data: { name: string; facilities: FacilityItem[]; travelTime: number }) => {
     const activeFacilities = data.facilities.filter((f) => f.isActive).map((f) => f.name);
     const normalizedName = normalizeProcessName(data.name);
 
@@ -191,10 +176,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     }
   };
 
-
-
-
-
   const removeProcedure = (index: number) => {
     const newProcessFlow = processFlow.filter((_, i) => i !== index);
 
@@ -205,8 +186,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     }));
 
     setProcessFlow(reorderedProcessFlow);
-
-
   };
 
   // 간단하고 안정적인 드래그앤드롭 함수들
@@ -219,7 +198,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    
+
     if (draggedIndex === null || draggedIndex === index) {
       return;
     }
@@ -232,7 +211,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
-    
+
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverIndex(null);
     }
@@ -250,7 +229,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     // 배열 재배열 - 간단한 로직
     const newProcessFlow = [...processFlow];
     const [draggedItem] = newProcessFlow.splice(draggedIndex, 1);
-    
+
     // 드래그된 아이템을 새 위치에 삽입
     newProcessFlow.splice(dropIndex, 0, draggedItem);
 
@@ -356,8 +335,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   return (
     <div className="space-y-6 pt-8">
-
-
       {/* Process Flow Chart */}
       <ProcessFlowChart
         processFlow={processFlow as any}
@@ -445,11 +422,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
             <div
               className={`flex items-center gap-2 ${hasZonesConfigured ? 'text-foreground' : 'text-muted-foreground'}`}
             >
-              {hasZonesConfigured ? (
-                <CheckSquare className="h-3 w-3" />
-              ) : (
-                <div className="h-3 w-3 rounded border" />
-              )}
+              {hasZonesConfigured ? <CheckSquare className="h-3 w-3" /> : <div className="h-3 w-3 rounded border" />}
               Zones Configured
             </div>
             <div
