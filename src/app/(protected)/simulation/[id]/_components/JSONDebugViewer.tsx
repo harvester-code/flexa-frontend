@@ -22,8 +22,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     apiRequestLog: false, // API 요청 로그 (기본 펼침)
     unifiedStore: false, // 🆕 통합 Store (기본 펼침)
     flightSchedule: false, // 기본적으로 접힘
-    passengerSchedule: false,
-    processingProcedures: false,
   });
 
   // 🆕 통합 Simulation Store 데이터 수집
@@ -54,16 +52,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
 
     // Legacy chart data (for migration period)
     chartData: useFlightScheduleV2Store((s) => s.chartData),
-  };
-
-  const passengerSchedule = {
-    settings: useSimulationStore((s) => s.passenger.settings),
-    pax_demographics: useSimulationStore((s) => s.passenger.pax_demographics),
-    pax_arrival_patterns: useSimulationStore((s) => s.passenger.pax_arrival_patterns),
-  };
-
-  const airportProcessing = {
-    process_flow: useSimulationStore((s) => s.process_flow),
   };
 
   const toggleCollapse = (section: keyof typeof collapsed) => {
@@ -183,12 +171,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
 
         {/* 1. Flight Schedule V2 - 새로운 모던 스토어 데이터 */}
         {renderCollapsibleSection('Flight Schedule V2 🆕', flightSchedule, 'flightSchedule', 'bg-blue-50')}
-
-        {/* 2. Passenger Schedule - 전체 스토어 데이터 */}
-        {renderCollapsibleSection('Passenger Schedule', passengerSchedule, 'passengerSchedule', 'bg-green-50')}
-
-        {/* 3. Processing Procedures - 전체 스토어 데이터 */}
-        {renderCollapsibleSection('Processing Procedures', airportProcessing, 'processingProcedures', 'bg-yellow-50')}
       </div>
     </div>
   );
