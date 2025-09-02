@@ -8,6 +8,7 @@ import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
 import TabPassengerScheduleNationalityConfiguration from './TabPassengerScheduleNationalityConfiguration';
+import TabPassengerScheduleParquetFilter from './TabPassengerScheduleParquetFilter';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
 import TabPassengerScheduleVirtualProfiles from './TabPassengerScheduleVirtualProfiles';
 
@@ -35,6 +36,7 @@ export default function TabPassengerSchedule({
 
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const selectedConditions = useSimulationStore((s) => s.flight.selectedConditions);
+  const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
   const pax_arrival_patterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
 
   // 🆕 통합 Store에서 직접 액션들 가져오기
@@ -129,43 +131,49 @@ export default function TabPassengerSchedule({
   // 탭이 보이지 않으면 렌더링하지 않음
   if (!visible) return null;
 
+  // 🚧 임시 비활성화: 새로운 ParquetFilter 개발을 위해 항공사 선택 조건 제거
   // 선택된 항공사가 없는 경우
-  if ((selectedConditions?.selectedAirlines || []).length === 0) {
-    return (
-      <div>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="mb-4">
-              <svg
-                className="mx-auto h-12 w-12 text-muted-foreground"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-            </div>
-            <p className="text-lg text-default-500">Please select airlines from Flight Schedule first.</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Selected airlines will appear here for passenger timing configuration.
-            </p>
-          </CardContent>
-        </Card>
-        <div className="mt-8">
-          <NextButton showPrevious={true} />
-        </div>
-      </div>
-    );
-  }
+  // if ((selectedConditions?.selectedAirlines || []).length === 0) {
+  //   return (
+  //     <div>
+  //       <Card>
+  //         <CardContent className="py-12 text-center">
+  //           <div className="mb-4">
+  //             <svg
+  //               className="mx-auto h-12 w-12 text-muted-foreground"
+  //               fill="none"
+  //               viewBox="0 0 24 24"
+  //               stroke="currentColor"
+  //             >
+  //               <path
+  //                 strokeLinecap="round"
+  //                 strokeLinejoin="round"
+  //                 strokeWidth={2}
+  //                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+  //               />
+  //             </svg>
+  //           </div>
+  //           <p className="text-lg text-default-500">Please select airlines from Flight Schedule first.</p>
+  //           <p className="mt-2 text-sm text-muted-foreground">
+  //             Selected airlines will appear here for passenger timing configuration.
+  //           </p>
+  //         </CardContent>
+  //       </Card>
+  //       <div className="mt-8">
+  //         <NextButton showPrevious={true} />
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="pt-8">
       <div className="space-y-6">
+        {/* 🆕 새로운 Parquet Filter - 임시 테스트용 */}
+        {(appliedFilterResult as any)?.parquet_metadata && (
+          <TabPassengerScheduleParquetFilter parquetMetadata={(appliedFilterResult as any).parquet_metadata} />
+        )}
+
         <TabPassengerScheduleVirtualProfiles />
 
         {/* Nationality Configuration */}
@@ -173,7 +181,7 @@ export default function TabPassengerSchedule({
 
         {/* Airline Selector */}
         <TabPassengerScheduleAirlineSelector
-          availableAirlines={selectedConditions?.selectedAirlines || []}
+          availableAirlines={[]} // 🚧 임시로 빈 배열 - 나중에 parquet_metadata에서 추출 예정
           usedAirlineIatas={usedAirlineIatas}
           onMakeGroup={handleMakeGroup}
         />
