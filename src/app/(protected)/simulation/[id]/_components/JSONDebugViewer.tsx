@@ -66,21 +66,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     process_flow: useSimulationStore((s) => s.process_flow),
   };
 
-  // 실제 S3 저장 구조로 합치기
-  const scenarioMetadata = useMemo(() => {
-    return {
-      scenario_id: simulationId, // 실제 시나리오 ID 사용
-      unified_store: unifiedStore, // 🆕 통합 Store 데이터 추가
-      tabs: {
-        flightSchedule: flightSchedule,
-        passengerSchedule: passengerSchedule,
-        processingProcedures: airportProcessing,
-      },
-
-      // last_updated: new Date().toISOString(), // SSR/CSR hydration 오류 방지 위해 제거
-    };
-  }, [simulationId, unifiedStore, flightSchedule, passengerSchedule, airportProcessing]);
-
   const toggleCollapse = (section: keyof typeof collapsed) => {
     setCollapsed((prev) => ({
       ...prev,
@@ -204,17 +189,6 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
 
         {/* 3. Processing Procedures - 전체 스토어 데이터 */}
         {renderCollapsibleSection('Processing Procedures', airportProcessing, 'processingProcedures', 'bg-yellow-50')}
-
-        {/* S3 저장 구조 메타데이터 표시 */}
-        <div className="mt-8 border-t pt-6">
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-default-900">
-            <Folder className="h-4 w-4" />
-            Scenario Metadata (S3 저장 구조)
-          </h4>
-          <pre className="max-h-96 overflow-auto rounded border bg-blue-50 p-2 text-xs">
-            {JSON.stringify(scenarioMetadata, null, 2)}
-          </pre>
-        </div>
       </div>
     </div>
   );
