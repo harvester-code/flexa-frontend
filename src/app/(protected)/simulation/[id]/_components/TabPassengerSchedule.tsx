@@ -130,7 +130,7 @@ export default function TabPassengerSchedule({
   if (!visible) return null;
 
   // 선택된 항공사가 없는 경우
-  if ((selectedConditions.selectedAirlines || []).length === 0) {
+  if ((selectedConditions?.selectedAirlines || []).length === 0) {
     return (
       <div>
         <Card>
@@ -173,7 +173,7 @@ export default function TabPassengerSchedule({
 
         {/* Airline Selector */}
         <TabPassengerScheduleAirlineSelector
-          availableAirlines={selectedConditions.selectedAirlines || []}
+          availableAirlines={selectedConditions?.selectedAirlines || []}
           usedAirlineIatas={usedAirlineIatas}
           onMakeGroup={handleMakeGroup}
         />
