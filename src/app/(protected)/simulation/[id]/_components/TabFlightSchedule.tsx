@@ -33,6 +33,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
   const setFlightFilters = useSimulationStore((s) => s.setFlightFilters);
   const resetFlightData = useSimulationStore((s) => s.resetFlightData);
   const setAppliedFilterResult = useSimulationStore((s) => s.setAppliedFilterResult);
+  const setParquetMeta = useSimulationStore((s) => s.setParquetMeta);
 
   // 🆕 zustand에서 flight 데이터 존재 여부 확인
   const hasFlightData = useSimulationStore((s) => s.flight.total_flights !== null);
@@ -389,6 +390,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         // 🆕 Apply Filter 응답을 zustand에 저장
         setAppliedFilterResult(data);
         console.log('💾 Apply Filter result saved to zustand:', data);
+
+        // 🆕 parquet_metadata가 있으면 passenger 영역에 저장
+        if (data.parquet_metadata) {
+          setParquetMeta(data.parquet_metadata);
+          console.log('💾 Parquet metadata saved to passenger store:', data.parquet_metadata);
+        }
 
         return data;
       } catch (error: any) {

@@ -47,6 +47,13 @@ export interface SimulationStoreState {
     demographics: Record<string, unknown>;
     arrivalPatterns: Record<string, unknown>;
     showUpResults: Record<string, unknown> | null;
+    parquetMeta: {
+      columns: Array<{
+        name: string;
+        unique_values: string[];
+        count: number;
+      }>;
+    } | null;
   };
   process: {
     flow: Array<Record<string, unknown>>;
@@ -111,6 +118,20 @@ export interface SimulationStoreState {
     };
   }) => void;
 
+  // Workflow 관련 액션들
+  setCurrentStep: (step: number) => void;
+  setStepCompleted: (step: number, completed: boolean) => void;
+  updateAvailableSteps: () => void; // 완료된 단계에 따라 availableSteps 업데이트
+
+  // Passenger 관련 액션들
+  setParquetMeta: (parquetMeta: {
+    columns: Array<{
+      name: string;
+      unique_values: string[];
+      count: number;
+    }>;
+  }) => void;
+
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
 }
 
@@ -134,6 +155,7 @@ const createInitialState = (scenarioId?: string) => ({
     demographics: {},
     arrivalPatterns: {},
     showUpResults: null,
+    parquetMeta: null,
   },
   process: {
     flow: [],
@@ -196,6 +218,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.flight.total_flights = null;
         state.flight.airlines = null;
         state.flight.filters = null;
+
+        // ✅ flight 데이터 리셋 시 관련된 passenger 데이터도 리셋
+        state.passenger.parquetMeta = null;
+
+        // ✅ flight 데이터 리셋 시 workflow도 리셋
+        state.workflow.step1Completed = false;
+        state.workflow.availableSteps = [1]; // 첫 번째 단계만 접근 가능
       }),
 
     setSelectedConditions: (selectedConditions) =>
@@ -319,6 +348,49 @@ export const useSimulationStore = create<SimulationStoreState>()(
           ...result,
           appliedAt: new Date().toISOString(),
         };
+
+        // ✅ appliedFilterResult가 설정되면 step1 완료 처리
+        state.workflow.step1Completed = true;
+
+        // availableSteps 업데이트 (step1이 완료되면 step2 접근 가능)
+        if (!state.workflow.availableSteps.includes(2)) {
+          state.workflow.availableSteps.push(2);
+        }
+      }),
+
+    // ==================== Workflow Actions ====================
+
+    setCurrentStep: (step) =>
+      set((state) => {
+        state.workflow.currentStep = step;
+      }),
+
+    setStepCompleted: (step, completed) =>
+      set((state) => {
+        if (step === 1) state.workflow.step1Completed = completed;
+        else if (step === 2) state.workflow.step2Completed = completed;
+        else if (step === 3) state.workflow.step3Completed = completed;
+      }),
+
+    updateAvailableSteps: () =>
+      set((state) => {
+        const availableSteps = [1]; // 첫 번째 단계는 항상 접근 가능
+
+        if (state.workflow.step1Completed && !availableSteps.includes(2)) {
+          availableSteps.push(2);
+        }
+        if (state.workflow.step2Completed && !availableSteps.includes(3)) {
+          availableSteps.push(3);
+        }
+
+        state.workflow.availableSteps = availableSteps;
+      }),
+
+    // ==================== Passenger Actions ====================
+
+    setParquetMeta: (parquetMeta) =>
+      set((state) => {
+        state.passenger.parquetMeta = parquetMeta;
       }),
 
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정

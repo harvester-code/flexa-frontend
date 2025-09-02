@@ -8,6 +8,7 @@ import {
   usePassengerScheduleStore,
   useProcessingProceduresStore,
   useScenarioProfileStore,
+  useSimulationStore,
 } from '../_stores';
 
 interface NextButtonProps {
@@ -27,14 +28,16 @@ export default function NextButton({
   previousDisabled = false,
   onPreviousClick,
 }: NextButtonProps) {
-  // 개별 store에서 필요한 데이터만 직접 가져오기
+  // 🆕 통합 store에서 workflow 정보 가져오기
+  const currentStep = useSimulationStore((s) => s.workflow.currentStep);
+  const step1Completed = useSimulationStore((s) => s.workflow.step1Completed);
+  const step2Completed = useSimulationStore((s) => s.workflow.step2Completed);
+  const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
+  const setCurrentStep = useSimulationStore((s) => s.setCurrentStep);
+
+  // 🚧 기존 scenario profile store도 유지 (다른 탭에서 사용 중일 수 있음)
   const currentScenarioTab = useScenarioProfileStore((s) => s.currentScenarioTab);
   const setCurrentScenarioTab = useScenarioProfileStore((s) => s.setCurrentScenarioTab);
-
-  const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
-  const passengerScheduleCompleted = usePassengerScheduleStore((s) => s.isCompleted);
-  const processingProceduresCompleted = useProcessingProceduresStore((s) => s.isCompleted);
-
 
   // 각 탭의 완료 상태에 따라 Next 버튼 활성화 제어
   const getCanGoNext = () => {
@@ -42,11 +45,11 @@ export default function NextButton({
 
     switch (currentScenarioTab) {
       case 0: // Flight Schedule
-        return flightScheduleCompleted;
+        return step1Completed; // ✅ appliedFilterResult 존재 여부로 판단
       case 1: // Passenger Schedule
-        return passengerScheduleCompleted;
+        return step2Completed;
       case 2: // Processing Procedures
-        return processingProceduresCompleted;
+        return step3Completed;
       default:
         return false;
     }
@@ -59,7 +62,9 @@ export default function NextButton({
     if (onClick) {
       onClick(); // 커스텀 핸들러가 있으면 실행
     } else if (canGoNext) {
-      setCurrentScenarioTab(currentScenarioTab + 1); // 기본 동작: 다음 탭으로 이동
+      const nextTab = currentScenarioTab + 1;
+      setCurrentScenarioTab(nextTab); // 기본 동작: 다음 탭으로 이동
+      setCurrentStep(nextTab + 1); // ✅ workflow currentStep도 동기화 (tab 0 = step 1)
     }
   };
 
@@ -67,7 +72,9 @@ export default function NextButton({
     if (onPreviousClick) {
       onPreviousClick(); // 커스텀 핸들러가 있으면 실행
     } else if (canGoPrev) {
-      setCurrentScenarioTab(currentScenarioTab - 1); // 기본 동작: 이전 탭으로 이동
+      const prevTab = currentScenarioTab - 1;
+      setCurrentScenarioTab(prevTab); // 기본 동작: 이전 탭으로 이동
+      setCurrentStep(prevTab + 1); // ✅ workflow currentStep도 동기화 (tab 0 = step 1)
     }
   };
 
