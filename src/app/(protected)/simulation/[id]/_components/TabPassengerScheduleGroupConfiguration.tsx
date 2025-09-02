@@ -6,7 +6,7 @@ import { APIRequestLog, DestributionCondition } from '@/types/simulationTypes';
 import { createPassengerShowUp } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { useFlightScheduleStore, useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../_stores';
 import { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleNormalDistribution from './TabPassengerScheduleNormalDistribution';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
@@ -54,8 +54,9 @@ export default function TabPassengerScheduleGroupConfiguration({
     return `${hours}h ${mins}m`;
   };
 
-  // 새로운 스토어들에서 데이터 가져오기
-  const { date: flightScheduleDate, airport: flightScheduleAirport } = useFlightScheduleStore();
+  // 🆕 통합 스토어에서 데이터 가져오기
+  const flightScheduleDate = useSimulationStore((s) => s.context.date);
+  const flightScheduleAirport = useSimulationStore((s) => s.context.airport);
   const paxArrivalPatterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
 
   // zustand의 pax_arrival_patterns를 API가 기대하는 형식으로 변환

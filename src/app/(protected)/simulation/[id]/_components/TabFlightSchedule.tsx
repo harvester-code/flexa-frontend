@@ -5,7 +5,7 @@ import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } f
 import { getFlightFilters, getFlightSchedules } from '@/services/simulationService';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from '../../_components/SimulationLoading';
-import { useFlightScheduleV2Store, useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
 // import TabFlightScheduleChart from './TabFlightScheduleChart'; // 🚧 잘못된 그래프 - 제거
 import TabFlightScheduleFilterConditions from './TabFlightScheduleFilterConditions';

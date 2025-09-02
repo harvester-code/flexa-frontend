@@ -30,7 +30,7 @@ import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
 // 🚧 임시 주석처리: 메타데이터 로드 에러 방지
 // import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
-import { useFlightScheduleStore, useScenarioProfileStore, useSimulationStore } from './_stores';
+import { useScenarioProfileStore, useSimulationStore } from './_stores';
 
 const tabs: { text: string; number: number }[] = [
   { text: 'Flight Schedule', number: 0 },
@@ -50,7 +50,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const setCurrentScenarioTab = useScenarioProfileStore((s) => s.setCurrentScenarioTab);
   const loadScenarioProfileMetadata = useScenarioProfileStore((s) => s.loadMetadata);
 
-  const flightScheduleCompleted = useFlightScheduleStore((s) => s.isCompleted);
+  const flightScheduleCompleted = useSimulationStore((s) => s.workflow.step1Completed);
   // Passenger Schedule completion은 통합 store에서 관리
   const processingProceduresCompleted = useSimulationStore((s) => s.workflow.step3Completed);
 
@@ -62,10 +62,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       const tabs = data.metadata?.tabs || {};
 
       // 각 store에 해당 탭 데이터 로드
-      if (tabs.flightSchedule) {
-        console.log('Flight Schedule 데이터 로드:', tabs.flightSchedule);
-        useFlightScheduleStore.getState().loadMetadata(tabs.flightSchedule);
-      }
+      // 🗑️ Flight Schedule 데이터 로드는 단일 스토어로 통합됨 (제거됨)
 
       if (tabs.passengerSchedule) {
         console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);

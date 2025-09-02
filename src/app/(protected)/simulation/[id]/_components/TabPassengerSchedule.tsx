@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
 import { Card, CardContent } from '@/components/ui/Card';
-import { useFlightScheduleV2Store, useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
@@ -34,7 +34,7 @@ export default function TabPassengerSchedule({
   const [loading, setLoading] = useState(false);
 
   // 🆕 통합 Store에서 직접 데이터 가져오기
-  const selectedConditions = useFlightScheduleV2Store((s) => s.filtersData?.selectedConditions);
+  const selectedConditions = useSimulationStore((s) => s.flight.selectedConditions);
   const pax_arrival_patterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
 
   // 🆕 통합 Store에서 직접 액션들 가져오기
