@@ -599,10 +599,29 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
 
-      // zustand에 API 바디 형태로 선택된 조건 저장
+      // 🆕 예상 편수 계산
+      const estimatedFlights = getEstimatedFilteredFlights();
+      const totalFlights = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+
+      // 🆕 zustand에 로컬 상태 형태로 선택된 조건 저장 (UI 복원용)
+      const localStateConditions: Array<{ field: string; values: string[] }> = [];
+
+      Object.entries(selectedFilter.categories).forEach(([category, value]) => {
+        if (value && Array.isArray(value) && value.length > 0) {
+          localStateConditions.push({
+            field: category,
+            values: value,
+          });
+        }
+      });
+
       setSelectedConditions({
         type: selectedFilter.mode as 'departure' | 'arrival',
-        conditions: conditions,
+        conditions: localStateConditions, // 로컬 field 이름으로 저장
+        expected_flights: {
+          selected: parseInt(estimatedFlights),
+          total: totalFlights,
+        },
       });
 
       await onApplyFilter(selectedFilter.mode, conditions);
@@ -612,7 +631,7 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
       setIsApplying(false);
     }
-  }, [selectedFilter, onApplyFilter, convertConditionsForAPI]);
+  }, [selectedFilter, onApplyFilter, convertConditionsForAPI, getEstimatedFilteredFlights, filtersData]);
 
   // 초기화
   const handleClearAll = useCallback(() => {
@@ -1011,14 +1030,12 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground">Expected Flights</div>
                     <div className="text-lg font-bold text-primary">
-                      {/* 🎯 Zustand에서 expected_flights 값 우선 사용, 없으면 기존 계산 방식 사용 */}
-                      {selectedConditions?.expected_flights
-                        ? `${selectedConditions.expected_flights.selected} / ${selectedConditions.expected_flights.total}`
-                        : (() => {
-                            const totalFiltered = getEstimatedFilteredFlights();
-                            const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                            return `${totalFiltered} / ${totalAvailable}`;
-                          })()}
+                      {/* 🎯 실시간 계산을 항상 우선 사용 */}
+                      {(() => {
+                        const totalFiltered = getEstimatedFilteredFlights();
+                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                        return `${totalFiltered} / ${totalAvailable}`;
+                      })()}
                     </div>
                   </div>
                 </div>
