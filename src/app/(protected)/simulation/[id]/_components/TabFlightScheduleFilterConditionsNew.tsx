@@ -83,7 +83,7 @@ interface TabFlightScheduleFilterConditionsNewProps {
 
 // ==================== Component ====================
 function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFlightScheduleFilterConditionsNewProps) {
-  // 🆕 zustand에서 직접 flight 데이터 구독
+  // 🆕 zustand에서 flight 데이터 구독
   const flightData = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
@@ -108,24 +108,38 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
     categories: {},
   });
 
-  // 🎯 Zustand selectedConditions를 로컬 상태로 동기화
+  // 🎯 페이지 로드 시 한 번만 복원하기 위한 플래그
+  const [hasRestoredFromZustand, setHasRestoredFromZustand] = useState(false);
+
+  // 🎯 페이지 로드 시 한 번만 zustand에서 복원 (S3 복원용)
   useEffect(() => {
-    if (selectedConditions) {
-      console.log('🔄 Zustand selectedConditions를 로컬 상태로 복원:', selectedConditions);
+    if (selectedConditions && !hasRestoredFromZustand) {
+      console.log('🔄 Page load: Restoring from zustand once');
 
-      // Zustand의 selectedConditions를 로컬 selectedFilter 형태로 변환
-      const categories: Record<string, string[]> = {};
+      let categories: Record<string, any> = {};
 
-      selectedConditions.conditions.forEach((condition) => {
-        categories[condition.field] = condition.values;
-      });
+      // 🎯 원본 로컬 상태가 있으면 우선 사용 (정확한 복원)
+      if (selectedConditions.originalLocalState) {
+        categories = selectedConditions.originalLocalState;
+        console.log('✅ Using originalLocalState for exact restoration');
+      } else {
+        // 🎯 fallback: conditions에서 간단히 복원
+        selectedConditions.conditions.forEach((condition) => {
+          categories[condition.field] = condition.values;
+        });
+        console.log('⚠️ Using fallback restoration from conditions');
+      }
 
-      setSelectedFilter({
-        mode: selectedConditions.type,
-        categories: categories,
-      });
+      if (Object.keys(categories).length > 0) {
+        setSelectedFilter({
+          mode: selectedConditions.type,
+          categories: categories,
+        });
+      }
+
+      setHasRestoredFromZustand(true); // 한 번만 복원
     }
-  }, [selectedConditions]);
+  }, [selectedConditions, hasRestoredFromZustand]);
 
   // 🆕 Region 드롭다운 open 상태는 DropdownMenu가 자체 관리
 
@@ -599,10 +613,20 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
 
-      // zustand에 API 바디 형태로 선택된 조건 저장
+      // 🎯 Expected Flights 계산
+      const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
+      const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+
+      // 🎯 Search Flights 클릭 시 zustand에 저장 (S3 저장용)
       setSelectedConditions({
         type: selectedFilter.mode as 'departure' | 'arrival',
         conditions: conditions,
+        expected_flights: {
+          selected: totalFiltered,
+          total: totalAvailable,
+        },
+        // 🎯 원본 로컬 상태도 함께 저장 (복원용)
+        originalLocalState: selectedFilter.categories,
       });
 
       await onApplyFilter(selectedFilter.mode, conditions);
@@ -612,7 +636,14 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
       setIsApplying(false);
     }
-  }, [selectedFilter, onApplyFilter, convertConditionsForAPI]);
+  }, [
+    selectedFilter,
+    onApplyFilter,
+    convertConditionsForAPI,
+    getEstimatedFilteredFlights,
+    filtersData,
+    setSelectedConditions,
+  ]);
 
   // 초기화
   const handleClearAll = useCallback(() => {
@@ -620,7 +651,14 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       mode: 'departure',
       categories: {},
     });
-  }, []);
+
+    // 🎯 Clear All 시 zustand도 함께 초기화
+    setSelectedConditions({
+      type: 'departure',
+      conditions: [],
+      originalLocalState: {},
+    });
+  }, [setSelectedConditions]);
 
   // ==================== Computed Values ====================
 
@@ -1011,14 +1049,12 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground">Expected Flights</div>
                     <div className="text-lg font-bold text-primary">
-                      {/* 🎯 Zustand에서 expected_flights 값 우선 사용, 없으면 기존 계산 방식 사용 */}
-                      {selectedConditions?.expected_flights
-                        ? `${selectedConditions.expected_flights.selected} / ${selectedConditions.expected_flights.total}`
-                        : (() => {
-                            const totalFiltered = getEstimatedFilteredFlights();
-                            const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                            return `${totalFiltered} / ${totalAvailable}`;
-                          })()}
+                      {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
+                      {(() => {
+                        const totalFiltered = getEstimatedFilteredFlights();
+                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                        return `${totalFiltered} / ${totalAvailable}`;
+                      })()}
                     </div>
                   </div>
                 </div>
