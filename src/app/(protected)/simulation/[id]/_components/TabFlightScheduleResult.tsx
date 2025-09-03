@@ -7,6 +7,7 @@ import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { useSimulationStore } from '../_stores';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -23,22 +24,27 @@ interface FlightScheduleChartData {
   };
 }
 
-interface TabFlightScheduleResultProps {
-  data: FlightScheduleChartData;
-}
-
-export default function TabFlightScheduleResult({ data }: TabFlightScheduleResultProps) {
+// Props 제거 - Zustand에서 직접 데이터 가져오기
+export default function TabFlightScheduleResult() {
   const [selectedCategory, setSelectedCategory] = useState<string>('airline');
 
+  // 🎯 Zustand에서 직접 데이터 가져오기
+  const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
+
+  // 데이터가 없으면 아예 렌더링하지 않음
+  if (!appliedFilterResult) {
+    return null;
+  }
+
   // 사용 가능한 카테고리 목록
-  const categories = Object.keys(data.chart_y_data);
+  const categories = Object.keys(appliedFilterResult.chart_y_data);
 
   // Plotly용 데이터 변환
   const { plotlyData, xAxisLabels } = useMemo(() => {
-    if (!data.chart_y_data[selectedCategory]) return { plotlyData: [], xAxisLabels: [] };
+    if (!appliedFilterResult.chart_y_data[selectedCategory]) return { plotlyData: [], xAxisLabels: [] };
 
-    const categoryData = data.chart_y_data[selectedCategory];
-    const xLabels = data.chart_x_data;
+    const categoryData = appliedFilterResult.chart_y_data[selectedCategory];
+    const xLabels = appliedFilterResult.chart_x_data;
 
     // ✅ 항공사별 총 운항횟수 기준으로 내림차순 정렬
     const sortedCategoryData = [...categoryData].sort((a, b) => {
@@ -61,7 +67,7 @@ export default function TabFlightScheduleResult({ data }: TabFlightScheduleResul
     }));
 
     return { plotlyData: traces, xAxisLabels: xLabels };
-  }, [data, selectedCategory]);
+  }, [appliedFilterResult, selectedCategory]);
 
   // Plotly 레이아웃 설정
   const layout = {
@@ -123,7 +129,7 @@ export default function TabFlightScheduleResult({ data }: TabFlightScheduleResul
         <div className="mb-6 flex items-center justify-between">
           <div>
             <span className="text-default-600 text-sm">Total Flights: </span>
-            <span className="text-sm font-medium text-default-900">{data.total.toLocaleString()}</span>
+            <span className="text-sm font-medium text-default-900">{appliedFilterResult.total.toLocaleString()}</span>
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-28">

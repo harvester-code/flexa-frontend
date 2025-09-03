@@ -98,6 +98,10 @@ export interface SimulationStoreState {
         field: string; // "departure_terminal", "operating_carrier_iata", etc.
         values: string[]; // ["2"], ["KE", "LJ"], etc.
       }>;
+      expected_flights?: {
+        selected: number; // 실제 필터된 결과 수
+        total: number;    // 전체 항공편 수
+      };
     } | null;
     appliedFilterResult: {
       total: number;
@@ -155,6 +159,10 @@ export interface SimulationStoreState {
       field: string;
       values: string[];
     }>;
+    expected_flights?: {
+      selected: number;
+      total: number;
+    };
   }) => void;
 
   // 🆕 편의 액션들 - API 바디 형태 조작
@@ -165,24 +173,7 @@ export interface SimulationStoreState {
   toggleConditionValue: (field: string, value: string) => void;
   clearAllConditions: () => void;
 
-  setAppliedFilterResult: (result: {
-    total: number;
-    chart_x_data: string[];
-    chart_y_data: {
-      airline: Array<{
-        name: string;
-        order: number;
-        y: number[];
-        acc_y: number[];
-      }>;
-      terminal: Array<{
-        name: string;
-        order: number;
-        y: number[];
-        acc_y: number[];
-      }>;
-    };
-  }) => void;
+  setAppliedFilterResult: (result: any) => void;
 
   // Workflow 관련 액션들
   setCurrentStep: (step: number) => void;
@@ -449,6 +440,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setAppliedFilterResult: (result) =>
       set((state) => {
+        if (result === null) {
+          state.flight.appliedFilterResult = null;
+          return;
+        }
+
         state.flight.appliedFilterResult = {
           ...result,
           appliedAt: new Date().toISOString(),

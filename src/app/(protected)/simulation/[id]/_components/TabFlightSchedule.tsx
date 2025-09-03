@@ -7,11 +7,10 @@ import { getFlightFilters, getFlightSchedules } from '@/services/simulationServi
 import SimulationLoading from '../../_components/SimulationLoading';
 import { useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
-// import TabFlightScheduleChart from './TabFlightScheduleChart'; // 🚧 잘못된 그래프 - 제거
-import TabFlightScheduleFilterConditions from './TabFlightScheduleFilterConditions';
+// TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
 import TabFlightScheduleFilterConditionsNew from './TabFlightScheduleFilterConditionsNew';
 import TabFlightScheduleLoadData from './TabFlightScheduleLoadData';
-import TabFlightScheduleResponsePreview from './TabFlightScheduleResponsePreview';
+// TabFlightScheduleResponsePreview 제거됨
 import TabFlightScheduleResult from './TabFlightScheduleResult';
 
 interface TabFlightScheduleProps {
@@ -394,6 +393,10 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setAppliedFilterResult(data);
         console.log('💾 Apply Filter result saved to zustand:', data);
 
+        // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음
+        // 실제 결과는 appliedFilterResult에만 저장하여 차트에서 사용
+        // Filter Conditions 컴포넌트는 변화 없이 유지됨
+
         // 🆕 parquet_metadata는 하드코딩된 컬럼으로 대체됨 (제거됨)
 
         return data;
@@ -458,18 +461,10 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       ) : (
         <>
           {/* Apply Filter 결과 표시 - 성공 시 차트, 에러 시 에러 메시지 */}
-          {(applyFilterData || applyFilterError) && !applyFilterLoading && (
-            <div className="mt-6">
-              {applyFilterData && applyFilterData.chart_x_data ? (
-                <TabFlightScheduleResult data={applyFilterData} />
-              ) : (
-                <TabFlightScheduleResponsePreview loading={false} data={applyFilterData} error={applyFilterError} />
-              )}
-            </div>
-          )}
+          {/* 🎯 Zustand에서 appliedFilterResult가 있으면 자동으로 차트 표시 */}
+          <TabFlightScheduleResult />
 
-          {/* 🚧 잘못된 그래프 제거 - TabFlightScheduleChart */}
-          {/* <TabFlightScheduleChart /> */}
+          {/* TabFlightScheduleResponsePreview 제거 - 불필요한 컴포넌트 */}
         </>
       )}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Building2, ChevronDown, Filter, Flag, Loader2, MapPin, Plane, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -85,6 +85,7 @@ interface TabFlightScheduleFilterConditionsNewProps {
 function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFlightScheduleFilterConditionsNewProps) {
   // 🆕 zustand에서 직접 flight 데이터 구독
   const flightData = useSimulationStore((state) => state.flight);
+  const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
 
   // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
@@ -106,6 +107,25 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
     mode: 'departure', // default는 departure
     categories: {},
   });
+
+  // 🎯 Zustand selectedConditions를 로컬 상태로 동기화
+  useEffect(() => {
+    if (selectedConditions) {
+      console.log('🔄 Zustand selectedConditions를 로컬 상태로 복원:', selectedConditions);
+
+      // Zustand의 selectedConditions를 로컬 selectedFilter 형태로 변환
+      const categories: Record<string, string[]> = {};
+
+      selectedConditions.conditions.forEach((condition) => {
+        categories[condition.field] = condition.values;
+      });
+
+      setSelectedFilter({
+        mode: selectedConditions.type,
+        categories: categories,
+      });
+    }
+  }, [selectedConditions]);
 
   // 🆕 Region 드롭다운 open 상태는 DropdownMenu가 자체 관리
 
@@ -991,11 +1011,14 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground">Expected Flights</div>
                     <div className="text-lg font-bold text-primary">
-                      {(() => {
-                        const totalFiltered = getEstimatedFilteredFlights();
-                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                        return `${totalFiltered} / ${totalAvailable}`;
-                      })()}
+                      {/* 🎯 Zustand에서 expected_flights 값 우선 사용, 없으면 기존 계산 방식 사용 */}
+                      {selectedConditions?.expected_flights
+                        ? `${selectedConditions.expected_flights.selected} / ${selectedConditions.expected_flights.total}`
+                        : (() => {
+                            const totalFiltered = getEstimatedFilteredFlights();
+                            const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                            return `${totalFiltered} / ${totalAvailable}`;
+                          })()}
                     </div>
                   </div>
                 </div>
@@ -1004,24 +1027,8 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
             {/* Selection Summary & Actions */}
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-muted-foreground">
-                {(() => {
-                  const totalSelections = Object.entries(selectedFilter.categories).reduce((count, [_, value]) => {
-                    if (Array.isArray(value)) return count + value.length;
-                    if (value) return count + 1;
-                    return count;
-                  }, 0);
-
-                  return totalSelections > 0 ? (
-                    <span className="flex items-center gap-1 text-green-600">
-                      <Filter className="h-3 w-3" />
-                      {totalSelections} filter(s) active
-                    </span>
-                  ) : (
-                    <span>No filters selected</span>
-                  );
-                })()}
-              </div>
+              {/* 왼쪽은 비워두고 버튼들은 오른쪽에 배치 */}
+              <div></div>
 
               <div className="flex gap-2">
                 <Button

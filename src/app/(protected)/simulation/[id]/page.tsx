@@ -28,8 +28,7 @@ import TabDefault from './_components/TabDefault';
 import TabFlightSchedule from './_components/TabFlightSchedule';
 import TabPassengerSchedule from './_components/TabPassengerSchedule';
 import TabProcessingProcedures from './_components/TabProcessingProcedures';
-// 🚧 임시 주석처리: 메타데이터 로드 에러 방지
-// import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
+import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 import { useScenarioProfileStore, useSimulationStore } from './_stores';
 
 const tabs: { text: string; number: number }[] = [
@@ -42,6 +41,9 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const urlScenarioName = searchParams.get('name');
+
+  // ✅ simulationId를 맨 위로 이동 (다른 훅들보다 먼저)
+  const simulationId = use(params).id;
 
   // 개별 store에서 필요한 데이터만 직접 가져오기
   const currentScenarioTab = useScenarioProfileStore((s) => s.currentScenarioTab);
@@ -56,27 +58,105 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
-    console.log('S3 metadata 로드 시작:', data);
+    console.log('🔍 S3 metadata 로드 시작 - 전체 데이터:', data);
+    console.log('🔍 data.metadata:', data.metadata);
 
     try {
-      const tabs = data.metadata?.tabs || {};
+      // 🔧 새로운 통합 Store 구조에 맞게 수정
+      const metadata = data.metadata || {};
+      const tabs = metadata.tabs || {};
 
-      // 각 store에 해당 탭 데이터 로드
-      // 🗑️ Flight Schedule 데이터 로드는 단일 스토어로 통합됨 (제거됨)
+      console.log('🔍 tabs 구조:', tabs);
+      console.log('🔍 metadata 직접 구조:', metadata);
 
-      if (tabs.passengerSchedule) {
-        console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);
-        useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
+      // 🎯 S3에서 받은 데이터를 Zustand에 통째로 갈아끼우기
+      if (metadata.context || metadata.flight || metadata.passenger || metadata.process_flow || metadata.workflow) {
+        console.log('🚀 S3에서 데이터를 발견했습니다. Zustand에 갈아끼우기 시작:', metadata);
+
+        // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
+        const currentStore = useSimulationStore.getState();
+
+        // S3 데이터 + 액션들 조합
+        const newState = {
+          // 데이터는 S3에서 받은 것으로 덮어쓰기
+          ...metadata,
+
+          // scenarioId는 현재 URL 값으로 보정
+          context: {
+            ...metadata.context,
+            scenarioId: simulationId,
+          },
+
+          // 액션들은 현재 store에서 그대로 유지
+          resetStore: currentStore.resetStore,
+          setScenarioId: currentStore.setScenarioId,
+          setAirport: currentStore.setAirport,
+          setDate: currentStore.setDate,
+          setLastSavedAt: currentStore.setLastSavedAt,
+          setFlightFilters: currentStore.setFlightFilters,
+          resetFlightData: currentStore.resetFlightData,
+          setSelectedConditions: currentStore.setSelectedConditions,
+          setFlightType: currentStore.setFlightType,
+          addCondition: currentStore.addCondition,
+          removeCondition: currentStore.removeCondition,
+          updateConditionValues: currentStore.updateConditionValues,
+          toggleConditionValue: currentStore.toggleConditionValue,
+          clearAllConditions: currentStore.clearAllConditions,
+          setAppliedFilterResult: currentStore.setAppliedFilterResult,
+          setCurrentStep: currentStore.setCurrentStep,
+          setStepCompleted: currentStore.setStepCompleted,
+          updateAvailableSteps: currentStore.updateAvailableSteps,
+          setSettings: currentStore.setSettings,
+          setPaxDemographics: currentStore.setPaxDemographics,
+          setNationalityValues: currentStore.setNationalityValues,
+          setProfileValues: currentStore.setProfileValues,
+          addNationalityRule: currentStore.addNationalityRule,
+          addProfileRule: currentStore.addProfileRule,
+          removeNationalityRule: currentStore.removeNationalityRule,
+          removeProfileRule: currentStore.removeProfileRule,
+          updateNationalityDistribution: currentStore.updateNationalityDistribution,
+          updateProfileDistribution: currentStore.updateProfileDistribution,
+          reorderPaxDemographics: currentStore.reorderPaxDemographics,
+          setPaxArrivalPatternRules: currentStore.setPaxArrivalPatternRules,
+          addPaxArrivalPatternRule: currentStore.addPaxArrivalPatternRule,
+          updatePaxArrivalPatternRule: currentStore.updatePaxArrivalPatternRule,
+          removePaxArrivalPatternRule: currentStore.removePaxArrivalPatternRule,
+          resetPassenger: currentStore.resetPassenger,
+          loadPassengerMetadata: currentStore.loadPassengerMetadata,
+          setProcessFlow: currentStore.setProcessFlow,
+          convertFromProcedures: currentStore.convertFromProcedures,
+          setProcessCompleted: currentStore.setProcessCompleted,
+          resetProcessFlow: currentStore.resetProcessFlow,
+          loadProcessMetadata: currentStore.loadProcessMetadata,
+          setFacilitiesForZone: currentStore.setFacilitiesForZone,
+          updateOperatingSchedule: currentStore.updateOperatingSchedule,
+          toggleFacilityTimeBlock: currentStore.toggleFacilityTimeBlock,
+          updateTravelTime: currentStore.updateTravelTime,
+        };
+
+        // 🚀 한 방에 갈아끼우기
+        useSimulationStore.setState(newState);
+        console.log('✅ Zustand 통째로 교체 완료! 이제 모든 컴포넌트가 업데이트됩니다.');
       }
 
-      if (tabs.processingProcedures) {
-        console.log('Processing Procedures 데이터 로드:', tabs.processingProcedures);
-        useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
+      // 🚧 Legacy tabs 구조 지원 (하위 호환성)
+      else if (tabs.passengerSchedule || tabs.processingProcedures) {
+        console.log('🔧 Legacy tabs 구조 감지, 기존 방식으로 로드');
+
+        if (tabs.passengerSchedule) {
+          console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);
+          useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
+        }
+
+        if (tabs.processingProcedures) {
+          console.log('Processing Procedures 데이터 로드:', tabs.processingProcedures);
+          useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
+        }
+
+        console.log('✅ Legacy 메타데이터 로드 완료');
+      } else {
+        console.log('⚠️ 로드할 메타데이터가 없습니다');
       }
-
-      // Scenario Profile은 useLoadScenarioData.ts에서 별도 처리하므로 여기서는 제외
-
-      console.log('모든 store 메타데이터 로드 완료');
     } catch (error) {
       console.error('S3 메타데이터 로드 중 오류 발생:', error);
     }
@@ -135,22 +215,15 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }
   }, []);
 
-  const simulationId = use(params).id;
   const [isInitialized, setIsInitialized] = useState(false);
   const [apiRequestLog, setApiRequestLog] = useState<APIRequestLog | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // 🆕 통합 Store 액션들
-  const setScenarioId = useSimulationStore((s) => s.setScenarioId);
   const setLastSavedAt = useSimulationStore((s) => s.setLastSavedAt);
 
-  // scenarioId 초기화
-  React.useEffect(() => {
-    if (simulationId) {
-      setScenarioId(simulationId);
-    }
-  }, [simulationId, setScenarioId]);
+  // ✅ scenarioId는 loadCompleteS3Metadata에서 직접 설정하므로 별도 useEffect 불필요
 
   // 임시저장 함수
   const handleTempSave = async () => {
@@ -204,29 +277,18 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }
   };
 
-  // 🚧 임시 주석처리: 메타데이터 로드 에러 (500) 방지
-  // useLoadScenarioData(simulationId, {
-  //   loadCompleteS3Metadata,
-  //   loadScenarioProfileMetadata,
-  //   setCurrentScenarioTab,
-  //   setIsInitialized,
-  // });
-
-  // 🚧 임시 기본값 설정 - 메타데이터 로드 없이 초기화
-  useEffect(() => {
-    loadScenarioProfileMetadata({
-      checkpoint: 'overview',
-      scenarioName: `Scenario ${simulationId}`,
-      scenarioTerminal: 'unknown',
-      scenarioHistory: [],
-      availableScenarioTab: 2,
-      currentScenarioTab: 0,
-    });
-    setIsInitialized(true);
-  }, [simulationId, loadScenarioProfileMetadata, setIsInitialized]);
+  // ✅ S3 메타데이터 로드 기능 활성화
+  useLoadScenarioData(simulationId, {
+    loadCompleteS3Metadata,
+    loadScenarioProfileMetadata,
+    setCurrentScenarioTab,
+    setIsInitialized,
+  });
 
   const latestHistory = useMemo(() => {
-    return scenarioHistory && scenarioHistory?.length > 0 ? scenarioHistory[scenarioHistory?.length - 1] : null;
+    return scenarioHistory && scenarioHistory?.length > 0
+      ? { checkpoint: scenarioHistory[scenarioHistory?.length - 1] }
+      : null;
   }, [scenarioHistory]);
 
   return (

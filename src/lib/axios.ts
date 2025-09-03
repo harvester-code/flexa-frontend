@@ -11,19 +11,48 @@ const instanceWithAuth = axios.create({
 
 instanceWithAuth.interceptors.request.use(
   async (config) => {
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-    const token = session?.access_token;
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      if (sessionError) {
+        console.warn('🔐 Supabase 세션 가져오기 실패:', sessionError.message);
+      }
+
+      const token = session?.access_token;
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔑 API 요청에 Bearer 토큰 추가됨');
+      } else {
+        console.warn('🚨 인증 토큰이 없습니다. 익명 요청으로 진행합니다.');
+      }
+
+      return config;
+    } catch (error) {
+      console.error('🔐 인증 토큰 처리 중 오류:', error);
+      return config; // 토큰 없이 요청 진행
     }
-    return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling auth errors
+instanceWithAuth.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.warn('🔐 401 Unauthorized: 인증이 필요하거나 토큰이 만료되었습니다.');
+      // 여기서 토큰 리프레시 또는 로그인 리다이렉트를 할 수 있습니다
+    }
+
     return Promise.reject(error);
   }
 );
