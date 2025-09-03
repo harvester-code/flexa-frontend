@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, Filter, Loader2, Search } from 'lucide-react';
+import { Building2, ChevronDown, Filter, Flag, Loader2, MapPin, Plane, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -82,13 +83,10 @@ interface TabFlightScheduleFilterConditionsNewProps {
 
 // ==================== Component ====================
 function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFlightScheduleFilterConditionsNewProps) {
-  // 🆕 zustand에서 직접 flight 데이터 구독 (개별 호출로 무한루프 방지)
+  // 🆕 zustand에서 직접 flight 데이터 구독
   const flightData = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
-  const airport = useSimulationStore((state) => state.context.airport);
-  const date = useSimulationStore((state) => state.context.date);
-  const scenarioId = useSimulationStore((state) => state.context.scenarioId);
 
   // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
   const [isApplying, setIsApplying] = useState(false);
@@ -96,9 +94,9 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   // 🆕 데이터 구조를 기존 인터페이스에 맞게 변환
   const filtersData: FlightFiltersApiResponse | null = flightData.total_flights
     ? ({
-        airport,
-        date,
-        scenario_id: scenarioId,
+        airport: useSimulationStore((s) => s.context.airport),
+        date: useSimulationStore((s) => s.context.date),
+        scenario_id: useSimulationStore((s) => s.context.scenarioId),
         total_flights: flightData.total_flights,
         airlines: flightData.airlines || {},
         filters: flightData.filters || { departure: {}, arrival: {} },
@@ -113,6 +111,8 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   // 🎯 Zustand selectedConditions를 로컬 상태로 동기화
   useEffect(() => {
     if (selectedConditions) {
+      console.log('🔄 Zustand selectedConditions를 로컬 상태로 복원:', selectedConditions);
+
       // Zustand의 selectedConditions를 로컬 selectedFilter 형태로 변환
       const categories: Record<string, string[]> = {};
 
@@ -599,29 +599,10 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
 
-      // 🆕 예상 편수 계산
-      const estimatedFlights = getEstimatedFilteredFlights();
-      const totalFlights = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-
-      // 🆕 zustand에 로컬 상태 형태로 선택된 조건 저장 (UI 복원용)
-      const localStateConditions: Array<{ field: string; values: string[] }> = [];
-
-      Object.entries(selectedFilter.categories).forEach(([category, value]) => {
-        if (value && Array.isArray(value) && value.length > 0) {
-          localStateConditions.push({
-            field: category,
-            values: value,
-          });
-        }
-      });
-
+      // zustand에 API 바디 형태로 선택된 조건 저장
       setSelectedConditions({
         type: selectedFilter.mode as 'departure' | 'arrival',
-        conditions: localStateConditions, // 로컬 field 이름으로 저장
-        expected_flights: {
-          selected: parseInt(estimatedFlights),
-          total: totalFlights,
-        },
+        conditions: conditions,
       });
 
       await onApplyFilter(selectedFilter.mode, conditions);
@@ -631,7 +612,7 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
       setIsApplying(false);
     }
-  }, [selectedFilter, onApplyFilter, convertConditionsForAPI, getEstimatedFilteredFlights, filtersData]);
+  }, [selectedFilter, onApplyFilter, convertConditionsForAPI]);
 
   // 초기화
   const handleClearAll = useCallback(() => {
@@ -1030,12 +1011,14 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground">Expected Flights</div>
                     <div className="text-lg font-bold text-primary">
-                      {/* 🎯 실시간 계산을 항상 우선 사용 */}
-                      {(() => {
-                        const totalFiltered = getEstimatedFilteredFlights();
-                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                        return `${totalFiltered} / ${totalAvailable}`;
-                      })()}
+                      {/* 🎯 Zustand에서 expected_flights 값 우선 사용, 없으면 기존 계산 방식 사용 */}
+                      {selectedConditions?.expected_flights
+                        ? `${selectedConditions.expected_flights.selected} / ${selectedConditions.expected_flights.total}`
+                        : (() => {
+                            const totalFiltered = getEstimatedFilteredFlights();
+                            const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                            return `${totalFiltered} / ${totalAvailable}`;
+                          })()}
                     </div>
                   </div>
                 </div>
