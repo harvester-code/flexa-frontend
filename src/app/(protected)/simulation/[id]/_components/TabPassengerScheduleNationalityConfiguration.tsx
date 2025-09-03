@@ -359,10 +359,10 @@ export default function TabPassengerScheduleNationalityConfiguration({
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {Object.keys(rule.distribution).length > 0 ? (
+                        {Object.keys(rule.value || {}).length > 0 ? (
                           <div className="space-y-1">
                             <div className="text-default-700 text-sm font-medium">Distribution:</div>
-                            {Object.entries(rule.distribution).map(([value, percentage]) => (
+                            {Object.entries(rule.value || {}).map(([value, percentage]) => (
                               <div key={value} className="flex items-center justify-between text-sm">
                                 <span className="text-default-600">{value}</span>
                                 <span className="text-default-700 font-medium">{Math.round(percentage * 100)}%</span>

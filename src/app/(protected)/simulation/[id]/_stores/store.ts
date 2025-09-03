@@ -7,15 +7,25 @@ import { ProcessStep } from '@/types/simulationTypes';
 // ==================== Passenger Types ====================
 export interface PassengerData {
   settings: {
-    load_factor: number | null;
     min_arrival_minutes: number | null;
+  };
+  pax_generation: {
+    rules: Array<{
+      conditions: Record<string, string[]>;
+      value: {
+        load_factor: number;
+      };
+    }>;
+    default: {
+      load_factor: number;
+    };
   };
   pax_demographics: {
     nationality: {
       available_values: string[];
       rules: Array<{
         conditions: Record<string, string[]>;
-        distribution: Record<string, number>;
+        value: Record<string, number>;
       }>;
       default: Record<string, number>;
     };
@@ -23,18 +33,18 @@ export interface PassengerData {
       available_values: string[];
       rules: Array<{
         conditions: Record<string, string[]>;
-        distribution: Record<string, number>;
+        value: Record<string, number>;
       }>;
       default: Record<string, number>;
     };
   };
   pax_arrival_patterns: {
     rules: Array<{
-      conditions: {
-        operating_carrier_iata: string[];
+      conditions: Record<string, string[]>;
+      value: {
+        mean: number;
+        std: number;
       };
-      mean: number;
-      std: number;
     }>;
     default: {
       mean: number | null;
@@ -100,8 +110,9 @@ export interface SimulationStoreState {
       }>;
       expected_flights?: {
         selected: number; // 실제 필터된 결과 수
-        total: number;    // 전체 항공편 수
+        total: number; // 전체 항공편 수
       };
+      originalLocalState?: Record<string, any>; // 🎯 원본 로컬 상태 저장 (복원용)
     } | null;
     appliedFilterResult: {
       total: number;
@@ -183,14 +194,21 @@ export interface SimulationStoreState {
   // ==================== Passenger Actions ====================
   setSettings: (settings: Partial<PassengerData['settings']>) => void;
   setPaxDemographics: (demographics: PassengerData['pax_demographics']) => void;
+  setPaxGenerationValues: (values: string[]) => void;
   setNationalityValues: (values: string[]) => void;
   setProfileValues: (values: string[]) => void;
+  addPaxGenerationRule: (conditions: Record<string, string[]>, value: number) => void;
   addNationalityRule: (conditions: Record<string, string[]>) => void;
   addProfileRule: (conditions: Record<string, string[]>) => void;
+  removePaxGenerationRule: (ruleIndex: number) => void;
   removeNationalityRule: (ruleIndex: number) => void;
   removeProfileRule: (ruleIndex: number) => void;
+  updatePaxGenerationValue: (ruleIndex: number, value: number) => void;
+  setPaxGenerationDefault: (value: number) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  setNationalityDefault: (defaultValues: Record<string, number>) => void;
+  setProfileDefault: (defaultValues: Record<string, number>) => void;
   reorderPaxDemographics: () => void;
   setPaxArrivalPatternRules: (rules: PassengerData['pax_arrival_patterns']['rules']) => void;
   addPaxArrivalPatternRule: (rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
@@ -233,8 +251,13 @@ const createInitialState = (scenarioId?: string) => ({
   },
   passenger: {
     settings: {
-      load_factor: null,
       min_arrival_minutes: null,
+    },
+    pax_generation: {
+      rules: [],
+      default: {
+        load_factor: 0.85,
+      },
     },
     pax_demographics: {
       nationality: {
@@ -525,11 +548,41 @@ export const useSimulationStore = create<SimulationStoreState>()(
         };
       }),
 
+    setPaxGenerationValues: (values) =>
+      set((state) => {
+        // pax_generation에는 available_values가 따로 없으므로 제거
+      }),
+
+    addPaxGenerationRule: (conditions, value) =>
+      set((state) => {
+        state.passenger.pax_generation.rules.push({
+          conditions,
+          value: { load_factor: value },
+        });
+      }),
+
+    removePaxGenerationRule: (ruleIndex) =>
+      set((state) => {
+        state.passenger.pax_generation.rules.splice(ruleIndex, 1);
+      }),
+
+    updatePaxGenerationValue: (ruleIndex, value) =>
+      set((state) => {
+        if (state.passenger.pax_generation.rules[ruleIndex]) {
+          state.passenger.pax_generation.rules[ruleIndex].value.load_factor = value;
+        }
+      }),
+
+    setPaxGenerationDefault: (value) =>
+      set((state) => {
+        state.passenger.pax_generation.default.load_factor = value;
+      }),
+
     addNationalityRule: (conditions) =>
       set((state) => {
         state.passenger.pax_demographics.nationality.rules.push({
           conditions,
-          distribution: {}, // available_values 기반으로 설정할 예정
+          value: {}, // available_values 기반으로 설정할 예정
         });
       }),
 
@@ -537,7 +590,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         state.passenger.pax_demographics.profile.rules.push({
           conditions,
-          distribution: {}, // available_values 기반으로 설정할 예정
+          value: {}, // available_values 기반으로 설정할 예정
         });
       }),
 
@@ -554,15 +607,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateNationalityDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
-          state.passenger.pax_demographics.nationality.rules[ruleIndex].distribution = distribution;
+          state.passenger.pax_demographics.nationality.rules[ruleIndex].value = distribution;
         }
       }),
 
     updateProfileDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
-          state.passenger.pax_demographics.profile.rules[ruleIndex].distribution = distribution;
+          state.passenger.pax_demographics.profile.rules[ruleIndex].value = distribution;
         }
+      }),
+
+    setNationalityDefault: (defaultValues) =>
+      set((state) => {
+        state.passenger.pax_demographics.nationality.default = defaultValues;
+      }),
+
+    setProfileDefault: (defaultValues) =>
+      set((state) => {
+        state.passenger.pax_demographics.profile.default = defaultValues;
       }),
 
     reorderPaxDemographics: () =>
@@ -614,10 +677,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         Object.assign(state.passenger, {
           settings: {
-            load_factor: null,
             min_arrival_minutes: null,
           },
           pax_demographics: {
+            load_factor: {
+              available_values: [],
+              rules: [],
+              default: 0.85,
+            },
             nationality: {
               available_values: [],
               rules: [],
@@ -643,10 +710,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         Object.assign(state.passenger, {
           settings: {
-            load_factor: null,
             min_arrival_minutes: null,
           },
           pax_demographics: {
+            load_factor: {
+              available_values: [],
+              rules: [],
+              default: 0.85,
+            },
             nationality: {
               available_values: [],
               rules: [],
