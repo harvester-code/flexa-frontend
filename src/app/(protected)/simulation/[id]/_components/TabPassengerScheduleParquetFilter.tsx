@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, Users } from 'lucide-react';
+import { ChevronDown, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { useSimulationStore } from '../_stores';
 
 interface ParquetMetadataItem {
@@ -24,199 +23,256 @@ interface TabPassengerScheduleParquetFilterProps {
 }
 
 export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: TabPassengerScheduleParquetFilterProps) {
-  // 새로운 상태: 컬럼별로 선택된 values 관리
-  const [selectedColumns, setSelectedColumns] = useState<Record<string, string[]>>({});
-  const [selectedFlights, setSelectedFlights] = useState<string[]>([]);
-  const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
+  // 🎯 단순한 UI 상태만 관리
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+  const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // zustand에서 selectedConditions 가져오기
-  const selectedConditions = useSimulationStore((s) => s.flight.selectedConditions);
+  // 🎯 zustand에서 type 정보 가져오기
+  const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
+  const filterType = selectedConditions?.type || 'departure'; // 기본값 departure
 
-  // 컬럼명 매핑 및 카테고리 정의
-  const getColumnDisplayInfo = (columnKey: string) => {
-    const columnMapping: Record<string, { label: string; category: string }> = {
-      // Airline & Aircraft Info
-      operating_carrier_name: { label: 'Airline', category: 'Airline & Aircraft' },
-      aircraft_type_icao: { label: 'Aircraft Type', category: 'Airline & Aircraft' },
-      total_seats: { label: 'Total Seats', category: 'Airline & Aircraft' },
-      flight_type: { label: 'Flight Type', category: 'Airline & Aircraft' },
+  // 🎯 컬럼 분류 (올바른 카테고리로)
+  const getColumnCategory = (columnKey: string): string | null => {
+    if (
+      columnKey === 'operating_carrier_name' ||
+      columnKey === 'aircraft_type_icao' ||
+      columnKey === 'total_seats' ||
+      columnKey === 'flight_type'
+    ) {
+      return 'Airline & Aircraft';
+    }
 
-      // Departure Info
-      departure_terminal: { label: 'Departure Terminal', category: 'Departure Info' },
-      scheduled_departure_local: { label: 'Departure Time', category: 'Departure Info' },
-      departure_city: { label: 'Departure City', category: 'Departure Info' },
-      departure_country: { label: 'Departure Country', category: 'Departure Info' },
-      departure_region: { label: 'Departure Region', category: 'Departure Info' },
-      departure_airport_iata: { label: 'Departure Airport', category: 'Departure Info' },
+    // arrival_terminal과 scheduled_arrival_local은 항상 제외
+    if (columnKey === 'arrival_terminal' || columnKey === 'scheduled_arrival_local') {
+      return null;
+    }
 
-      // Arrival Info
-      arrival_airport_iata: { label: 'Arrival Airport', category: 'Arrival Info' },
-      arrival_terminal: { label: 'Arrival Terminal', category: 'Arrival Info' },
-      scheduled_arrival_local: { label: 'Arrival Time', category: 'Arrival Info' },
-      arrival_city: { label: 'Arrival City', category: 'Arrival Info' },
-      arrival_country: { label: 'Arrival Country', category: 'Arrival Info' },
-      arrival_region: { label: 'Arrival Region', category: 'Arrival Info' },
+    // type에 따른 분류
+    if (filterType === 'departure') {
+      // departure 모드
+      if (columnKey === 'departure_terminal' || columnKey === 'scheduled_departure_local') {
+        return 'Departure Info';
+      }
+      // arrival 관련 컬럼들은 Arrival Info (arrival_terminal, scheduled_arrival_local 제외)
+      if (columnKey.startsWith('arrival')) {
+        return 'Arrival Info';
+      }
+      // 나머지 departure 관련 컬럼들은 제외 (실제로는 표시하지 않음)
+      return null;
+    } else {
+      // arrival 모드
+      // departure 관련 컬럼들은 Departure Info
+      if (columnKey.startsWith('departure') || columnKey === 'scheduled_departure_local') {
+        return 'Departure Info';
+      }
+      // 나머지 arrival 관련 컬럼들은 제외 (arrival_terminal, scheduled_arrival_local은 이미 위에서 제외됨)
+      return null;
+    }
+  };
+
+  const getColumnLabel = (columnKey: string) => {
+    const labels: Record<string, string> = {
+      operating_carrier_name: 'Airline',
+      aircraft_type_icao: 'Aircraft Type',
+      total_seats: 'Total Seats',
+      flight_type: 'Flight Type',
+      arrival_airport_iata: 'Arrival Airport',
+      arrival_terminal: 'Arrival Terminal',
+      arrival_city: 'Arrival City',
+      arrival_country: 'Arrival Country',
+      arrival_region: 'Arrival Region',
+      departure_terminal: 'Departure Terminal',
+      departure_airport_iata: 'Departure Airport Iata',
+      departure_city: 'Departure City',
+      departure_country: 'Departure Country',
+      departure_region: 'Departure Region',
+      scheduled_departure_local: 'Scheduled Departure Local',
+      scheduled_arrival_local: 'Scheduled Arrival Local',
+    };
+    return labels[columnKey] || columnKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  // 🎯 카테고리별 그룹화 (type에 따른 필터링 포함)
+  const columnsByCategory: Record<string, Array<{ key: string; label: string; values: string[] }>> = {};
+
+  parquetMetadata.forEach((item) => {
+    // 🎯 적절한 카테고리로 분류
+    const category = getColumnCategory(item.column);
+
+    // null인 경우 (표시하지 않을 컬럼) 건너뛰기
+    if (!category) return;
+
+    const columnData = {
+      key: item.column,
+      label: getColumnLabel(item.column),
+      values: Object.keys(item.values).sort((a, b) => {
+        const flightsA = item.values[a].flights.length;
+        const flightsB = item.values[b].flights.length;
+        return flightsB - flightsA; // 내림차순 정렬 (항공편 수가 많은 것부터)
+      }),
     };
 
-    return (
-      columnMapping[columnKey] || {
-        label: columnKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-        category: 'Other',
-      }
-    );
-  };
-
-  // 사용 가능한 컬럼 목록 추출 (카테고리별로 그룹화)
-  const availableColumnsByCategory = useMemo(() => {
-    const filteredColumns = parquetMetadata.filter((item) => {
-      // selectedConditions의 type에 따라 컬럼 필터링
-      if (selectedConditions?.type === 'departure') {
-        if (item.column.startsWith('departure') && item.column !== 'departure_terminal') {
-          return false;
-        }
-      } else if (selectedConditions?.type === 'arrival') {
-        if (item.column.startsWith('arrival') && item.column !== 'arrival_terminal') {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    const columnsByCategory: Record<
-      string,
-      Array<{
-        key: string;
-        label: string;
-        values: string[];
-        totalFlights: number;
-      }>
-    > = {};
-
-    filteredColumns.forEach((item) => {
-      const displayInfo = getColumnDisplayInfo(item.column);
-      const columnData = {
-        key: item.column,
-        label: displayInfo.label,
-        values: Object.keys(item.values),
-        totalFlights: Object.values(item.values).reduce((sum, valueData) => sum + valueData.flights.length, 0),
-      };
-
-      if (!columnsByCategory[displayInfo.category]) {
-        columnsByCategory[displayInfo.category] = [];
-      }
-      columnsByCategory[displayInfo.category].push(columnData);
-    });
-
-    return columnsByCategory;
-  }, [parquetMetadata, selectedConditions?.type]);
-
-  // 조건을 만족하는 항공편들 계산 (OR/AND 로직)
-  const matchingFlights = useMemo(() => {
-    const columnKeys = Object.keys(selectedColumns);
-    if (columnKeys.length === 0) return [];
-
-    // 각 컬럼별로 항공편 수집 (OR 조건)
-    const flightSetsByColumn = columnKeys.map((columnKey) => {
-      const values = selectedColumns[columnKey];
-      if (values.length === 0) return new Set<string>();
-
-      const columnData = parquetMetadata.find((item) => item.column === columnKey);
-      if (!columnData) return new Set<string>();
-
-      const flights = new Set<string>();
-      values.forEach((value) => {
-        columnData.values[value]?.flights.forEach((flight) => flights.add(flight));
-      });
-      return flights;
-    });
-
-    // 컬럼 간 AND 조건 적용
-    if (flightSetsByColumn.length === 0) return [];
-
-    let result = flightSetsByColumn[0];
-    for (let i = 1; i < flightSetsByColumn.length; i++) {
-      result = new Set([...result].filter((flight) => flightSetsByColumn[i].has(flight)));
+    if (!columnsByCategory[category]) {
+      columnsByCategory[category] = [];
     }
+    columnsByCategory[category].push(columnData);
+  });
 
-    return Array.from(result)
-      .sort()
-      .map((flight) => ({
-        key: flight,
-        label: flight,
-      }));
-  }, [parquetMetadata, selectedColumns]);
+  // 🎯 실시간 매칭 항공편 계산 (기존 OR/AND 로직 동일)
+  const flightCalculations = useMemo(() => {
+    const selectedKeys = Object.keys(selectedItems).filter((key) => selectedItems[key]);
+    const airlineColumnData = parquetMetadata.find((item) => item.column === 'operating_carrier_name');
 
-  // 컬럼/값 체크박스 토글 핸들러
-  const handleColumnValueToggle = (columnKey: string, value: string) => {
-    setSelectedColumns((prev) => {
-      const currentValues = prev[columnKey] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((v) => v !== value)
-        : [...currentValues, value];
+    // 항공사별 세부 정보 계산 (항상 모든 항공사 표시)
+    const airlineBreakdown: Array<{ name: string; selected: number; total: number }> = [];
 
-      if (newValues.length === 0) {
-        // 값이 없으면 컬럼 자체를 제거
-        const { [columnKey]: removed, ...rest } = prev;
-        return rest;
-      } else {
-        return { ...prev, [columnKey]: newValues };
+    if (selectedKeys.length === 0) {
+      // 아무것도 선택하지 않은 경우 - 모든 항공사를 0 / total로 표시
+      if (airlineColumnData) {
+        Object.keys(airlineColumnData.values).forEach((airlineName) => {
+          const totalForAirline = airlineColumnData.values[airlineName].flights.length;
+          airlineBreakdown.push({
+            name: airlineName,
+            selected: 0,
+            total: totalForAirline,
+          });
+        });
       }
-    });
-
-    // 조건이 변경되면 항공편 선택 초기화
-    setSelectedFlights([]);
-  };
-
-  // 항공편 체크박스 토글 핸들러
-  const handleFlightToggle = (flight: string) => {
-    setSelectedFlights((prev) => (prev.includes(flight) ? prev.filter((f) => f !== flight) : [...prev, flight]));
-  };
-
-  // 모든 항공편 선택/해제
-  const handleSelectAllFlights = () => {
-    if (selectedFlights.length === matchingFlights.length) {
-      setSelectedFlights([]);
-    } else {
-      setSelectedFlights(matchingFlights.map((f) => f.key));
-    }
-  };
-
-  // 컬럼 expand/collapse 토글
-  const handleToggleColumn = (columnKey: string) => {
-    setExpandedColumns((prev) => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(columnKey)) {
-        newExpanded.delete(columnKey);
-      } else {
-        newExpanded.add(columnKey);
-      }
-      return newExpanded;
-    });
-  };
-
-  // 모든 조건 초기화
-  const handleClearAll = () => {
-    setSelectedColumns({});
-    setSelectedFlights([]);
-    setExpandedColumns(new Set());
-  };
-
-  // 선택된 조건 요약 정보
-  const selectedCriteriaSummary = useMemo(() => {
-    const columnKeys = Object.keys(selectedColumns);
-    if (columnKeys.length === 0) return null;
-
-    return columnKeys.map((columnKey) => {
-      const displayInfo = getColumnDisplayInfo(columnKey);
-      const values = selectedColumns[columnKey];
-
       return {
-        columnLabel: displayInfo.label,
-        values: values,
-        count: values.length,
+        totalSelected: 0,
+        airlineBreakdown: airlineBreakdown.sort((a, b) => b.total - a.total), // 전체 항공편 수 기준 내림차순
       };
+    }
+
+    // 컬럼별로 선택된 값들을 그룹화
+    const conditionsByColumn: Record<string, string[]> = {};
+    selectedKeys.forEach((key) => {
+      const [columnKey, value] = key.split(':');
+      if (!conditionsByColumn[columnKey]) {
+        conditionsByColumn[columnKey] = [];
+      }
+      conditionsByColumn[columnKey].push(value);
     });
-  }, [selectedColumns]);
+
+    // 각 컬럼의 조건을 만족하는 항공편 세트들을 구함
+    const flightSetsByColumn: Set<string>[] = [];
+
+    Object.entries(conditionsByColumn).forEach(([columnKey, values]) => {
+      const columnData = parquetMetadata.find((item) => item.column === columnKey);
+      if (!columnData) return;
+
+      // 해당 컬럼에서 선택된 값들의 항공편들을 모두 수집 (OR 조건)
+      const flightsInColumn = new Set<string>();
+      values.forEach((value) => {
+        if (columnData.values[value]) {
+          columnData.values[value].flights.forEach((flight) => {
+            flightsInColumn.add(flight);
+          });
+        }
+      });
+
+      if (flightsInColumn.size > 0) {
+        flightSetsByColumn.push(flightsInColumn);
+      }
+    });
+
+    // 모든 조건을 만족하는 항공편들의 교집합 구하기 (AND 조건)
+    let matchingFlights: Set<string>;
+
+    if (flightSetsByColumn.length === 0) {
+      matchingFlights = new Set();
+    } else if (flightSetsByColumn.length === 1) {
+      matchingFlights = flightSetsByColumn[0];
+    } else {
+      matchingFlights = flightSetsByColumn[0];
+      for (let i = 1; i < flightSetsByColumn.length; i++) {
+        matchingFlights = new Set([...matchingFlights].filter((flight) => flightSetsByColumn[i].has(flight)));
+      }
+    }
+
+    // 선택된 조건이 있는 경우 - 모든 항공사에 대해 계산
+    if (airlineColumnData) {
+      Object.keys(airlineColumnData.values).forEach((airlineName) => {
+        const airlineFlights = new Set(airlineColumnData.values[airlineName].flights);
+        // 선택된 항공편과 이 항공사 항공편의 교집합
+        const selectedForAirline = [...matchingFlights].filter((flight) => airlineFlights.has(flight)).length;
+        const totalForAirline = airlineColumnData.values[airlineName].flights.length;
+
+        airlineBreakdown.push({
+          name: airlineName,
+          selected: selectedForAirline,
+          total: totalForAirline,
+        });
+      });
+    }
+
+    return {
+      totalSelected: matchingFlights.size,
+      airlineBreakdown: airlineBreakdown.sort((a, b) => b.total - a.total), // 전체 항공편 수 기준 내림차순 (순서 고정)
+    };
+  }, [selectedItems, parquetMetadata]);
+
+  // 전체 항공편 수 계산 (parquetMetadata에서)
+  const totalFlights = useMemo(() => {
+    const allFlights = new Set<string>();
+    parquetMetadata.forEach((item) => {
+      Object.values(item.values).forEach((valueData) => {
+        valueData.flights.forEach((flight) => {
+          allFlights.add(flight);
+        });
+      });
+    });
+    return allFlights.size;
+  }, [parquetMetadata]);
+
+  // 🎯 단순한 핸들러들
+  const handleItemToggle = (itemKey: string) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [itemKey]: !prev[itemKey],
+    }));
+  };
+
+  const handleColumnSelect = (columnKey: string) => {
+    setSelectedColumn((prev) => (prev === columnKey ? null : columnKey));
+    setSearchQuery(''); // 컬럼 변경 시 검색어 리셋
+  };
+
+  const handleClearAll = () => {
+    setSelectedItems({});
+  };
+
+  // Select All 로직
+  const handleSelectAllInColumn = (columnKey: string, allValues: string[]) => {
+    const allItemKeys = allValues.map((value) => `${columnKey}:${value}`);
+    const allSelected = allItemKeys.every((key) => selectedItems[key]);
+
+    if (allSelected) {
+      // 모두 선택되어 있으면 모두 해제
+      const newSelectedItems = { ...selectedItems };
+      allItemKeys.forEach((key) => {
+        delete newSelectedItems[key];
+      });
+      setSelectedItems(newSelectedItems);
+    } else {
+      // 모두 선택
+      const newSelectedItems = { ...selectedItems };
+      allItemKeys.forEach((key) => {
+        newSelectedItems[key] = true;
+      });
+      setSelectedItems(newSelectedItems);
+    }
+  };
+
+  // 현재 컬럼의 전체 선택 상태 확인
+  const isAllSelectedInColumn = (columnKey: string, allValues: string[]) => {
+    if (allValues.length === 0) return false; // 검색 결과가 없으면 체크 해제
+    const allItemKeys = allValues.map((value) => `${columnKey}:${value}`);
+    return allItemKeys.every((key) => selectedItems[key]);
+  };
+
+  const selectedCount = Object.values(selectedItems).filter(Boolean).length;
 
   return (
     <Card>
@@ -232,159 +288,209 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Search Criteria - 상단 */}
+        {/* Search Criteria */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium text-default-900">Search Criteria</h4>
-            {Object.keys(selectedColumns).length > 0 && (
-              <Button variant="ghost" size="sm" onClick={handleClearAll}>
+            <div className="flex items-center">
+              <Button variant="outline" onClick={handleClearAll} disabled={selectedCount === 0}>
                 Clear All
               </Button>
-            )}
+            </div>
           </div>
 
-          {/* Column Checkboxes by Category */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {Object.keys(availableColumnsByCategory).length === 0 ? (
-              <div className="col-span-full py-8 text-center text-sm text-default-500">No columns available</div>
-            ) : (
-              Object.entries(availableColumnsByCategory).map(([categoryName, columns]) => (
-                <div key={categoryName} className="space-y-3">
-                  <h5 className="text-default-800 border-default-200 border-b pb-1 text-sm font-semibold">
-                    {categoryName}
-                  </h5>
-                  <div className="space-y-2">
-                    {columns.map((column) => (
-                      <div key={column.key} className="space-y-2">
-                        <div
-                          className="hover:bg-default-50 flex cursor-pointer items-center justify-between rounded border p-2"
-                          onClick={() => handleToggleColumn(column.key)}
-                          title={`Values: ${column.values.slice(0, 5).join(', ')}${column.values.length > 5 ? `, ... and ${column.values.length - 5} more` : ''}`}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <ChevronDown
-                              className={`h-4 w-4 transition-transform ${expandedColumns.has(column.key) ? 'rotate-0' : '-rotate-90'}`}
-                            />
-                            <span className="text-sm font-medium text-default-900">{column.label}</span>
-                            {selectedColumns[column.key] && (
-                              <span className="rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                                {selectedColumns[column.key].length}
-                              </span>
-                            )}
+          {/* 좌우 구조 */}
+          <div className="flex h-96 gap-4">
+            {/* 좌측: 컬럼 목록 */}
+            <div className="w-1/3 rounded-md border p-3">
+              <div className="max-h-full space-y-4 overflow-y-auto">
+                {Object.keys(columnsByCategory).length === 0 ? (
+                  <div className="py-8 text-center text-sm text-default-500">No columns available</div>
+                ) : (
+                  Object.entries(columnsByCategory).map(([categoryName, columns]) => (
+                    <div key={categoryName} className="space-y-2">
+                      {/* 카테고리 제목 */}
+                      <div className="text-sm font-semibold text-default-900">{categoryName}</div>
+                      <div className="border-default-200 mb-2 border-b"></div>
+
+                      {/* 컬럼 목록 */}
+                      <div className="ml-2 space-y-1">
+                        {columns.map((column) => (
+                          <div
+                            key={column.key}
+                            className={`hover:bg-default-50 flex cursor-pointer items-center justify-between rounded px-2 py-1.5 transition-colors ${
+                              selectedColumn === column.key ? 'bg-primary/10 text-primary' : ''
+                            }`}
+                            onClick={() => handleColumnSelect(column.key)}
+                          >
+                            <span className="truncate text-sm">{column.label}</span>
+                            <ChevronDown className="h-3 w-3 -rotate-90" />
                           </div>
-                          <span className="text-xs text-default-500">{column.values.length}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 우측: 선택된 컬럼의 상세 데이터 */}
+            <div className="flex-1 rounded-md border p-3">
+              {selectedColumn ? (
+                <div className="flex h-full flex-col">
+                  {(() => {
+                    const columnData = parquetMetadata.find((item) => item.column === selectedColumn);
+                    if (!columnData) {
+                      return <div className="text-sm text-default-500">Column data not found</div>;
+                    }
+
+                    const sortedValues = Object.keys(columnData.values).sort((a, b) => {
+                      const flightsA = columnData.values[a].flights.length;
+                      const flightsB = columnData.values[b].flights.length;
+                      return flightsB - flightsA; // 항공편 수 기준 내림차순
+                    });
+
+                    // 검색어에 따른 필터링
+                    const filteredValues = sortedValues.filter((value) =>
+                      value.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+
+                    const isAllSelected = isAllSelectedInColumn(selectedColumn, filteredValues);
+
+                    return (
+                      <>
+                        {/* 헤더와 Select All */}
+                        <div className="mb-3 flex items-center justify-between border-b pb-2">
+                          <h6 className="text-sm font-semibold text-default-900">{getColumnLabel(selectedColumn)}</h6>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`select-all-${selectedColumn}`}
+                              checked={isAllSelected}
+                              onCheckedChange={() => handleSelectAllInColumn(selectedColumn, filteredValues)}
+                            />
+                            <label
+                              htmlFor={`select-all-${selectedColumn}`}
+                              className="text-default-700 cursor-pointer text-xs font-medium"
+                            >
+                              Select All
+                            </label>
+                          </div>
                         </div>
 
-                        {/* Values for this column */}
-                        {expandedColumns.has(column.key) && (
-                          <div className="bg-default-50 ml-6 space-y-1 rounded p-2">
-                            {column.values.map((value) => (
-                              <div key={`${column.key}-${value}`} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`${column.key}-${value}`}
-                                  checked={selectedColumns[column.key]?.includes(value) || false}
-                                  onCheckedChange={() => handleColumnValueToggle(column.key, value)}
-                                />
-                                <label
-                                  htmlFor={`${column.key}-${value}`}
-                                  className="text-default-700 flex-1 cursor-pointer truncate text-sm"
-                                  title={value}
-                                >
-                                  {value}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                        {/* 검색창 */}
+                        <div className="relative mb-2">
+                          <Search className="text-default-400 absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="border-default-200/60 placeholder:text-default-400 w-full border-b bg-transparent py-1.5 pl-8 pr-3 text-xs focus:outline-none"
+                          />
+                        </div>
 
-          {/* Selected Criteria Summary */}
-          {selectedCriteriaSummary && (
-            <div className="rounded-md bg-blue-50 p-4">
-              <h5 className="mb-3 text-sm font-medium text-blue-800">Selected Criteria</h5>
-              <div className="grid grid-cols-1 gap-2 text-sm text-blue-700 lg:grid-cols-3">
-                {selectedCriteriaSummary.map((criteria, index) => (
-                  <div key={index} className="rounded bg-white p-2">
-                    <div className="font-medium">{criteria.columnLabel}</div>
-                    <div className="text-xs">
-                      {criteria.values.join(', ')}
-                      {criteria.count > 1 && <span className="text-blue-600"> (OR)</span>}
+                        {/* 목록 */}
+                        <div className="flex-1 overflow-y-auto">
+                          <div className="space-y-1">
+                            {filteredValues.length === 0 && searchQuery ? (
+                              <div className="py-4 text-center text-sm text-default-500">
+                                No results found for "{searchQuery}"
+                              </div>
+                            ) : (
+                              filteredValues.map((value) => {
+                                const itemKey = `${selectedColumn}:${value}`;
+                                const isSelected = selectedItems[itemKey] || false;
+                                const flightCount = columnData.values[value].flights.length;
+
+                                return (
+                                  <div key={value} className="flex items-center space-x-2 py-1 text-sm">
+                                    <Checkbox
+                                      id={itemKey}
+                                      checked={isSelected}
+                                      onCheckedChange={() => handleItemToggle(itemKey)}
+                                    />
+                                    <label
+                                      htmlFor={itemKey}
+                                      className="text-default-700 flex-1 cursor-pointer truncate"
+                                    >
+                                      {value}
+                                    </label>
+                                    <span className="text-default-400 text-xs font-medium">{flightCount} flights</span>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-default-500">
+                  Select a column to view details
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Flights - 항상 표시 */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-default-900">Selected Flights</h4>
+
+          <div className="max-h-60 rounded-md border">
+            <div className="p-3">
+              <div className="grid grid-cols-4 gap-2 lg:grid-cols-6 xl:grid-cols-8">
+                {flightCalculations.airlineBreakdown.map((airline) => (
+                  <div key={airline.name} className="bg-default-50 rounded border p-2 text-center">
+                    <div className="truncate text-xs font-medium text-default-900">{airline.name}</div>
+                    <div className="mt-1 text-xs">
+                      <span className={`font-bold ${airline.selected > 0 ? 'text-primary' : 'text-default-900'}`}>
+                        {airline.selected}
+                      </span>
+                      <span className="font-normal text-default-900"> / {airline.total}</span>
                     </div>
                   </div>
                 ))}
               </div>
-              {selectedCriteriaSummary.length > 1 && (
-                <div className="mt-2 border-t border-blue-200 pt-2 text-center font-medium text-blue-600">
-                  Criteria relationship: AND
-                </div>
-              )}
-            </div>
-          )}
-        </div>
 
-        {/* Matching Flights - 하단 */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-default-900">
-              Matching Flights ({selectedFlights.length} of {matchingFlights.length})
-            </h4>
-            {matchingFlights.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={handleSelectAllFlights}>
-                {selectedFlights.length === matchingFlights.length ? 'Deselect All' : 'Select All'}
-              </Button>
-            )}
+              {/* 뱃지와 총계를 한 줄로 표시 */}
+              <div className="border-default-200 mt-3 border-t pt-2">
+                <div className="flex items-center gap-4">
+                  {/* 뱃지 부분 (80%) */}
+                  <div className="min-w-0 flex-1">
+                    {selectedCount > 0 ? (
+                      <div className="flex flex-wrap justify-center gap-1">
+                        {Object.keys(selectedItems)
+                          .filter((key) => selectedItems[key])
+                          .map((key) => {
+                            const [, value] = key.split(':');
+                            return (
+                              <span
+                                key={key}
+                                className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                              >
+                                {value}
+                              </span>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div></div>
+                    )}
+                  </div>
+
+                  {/* 총계 부분 (20%) */}
+                  <div className="flex-shrink-0">
+                    <span className="text-sm font-medium text-default-900">
+                      {flightCalculations.totalSelected} of {totalFlights} flights selected
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          {Object.keys(selectedColumns).length === 0 ? (
-            <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-              <span className="text-default-400 text-sm">Set search criteria first</span>
-            </div>
-          ) : (
-            <div className="max-h-60 rounded-md border">
-              {matchingFlights.length === 0 ? (
-                <div className="py-8 text-center text-sm text-default-500">No flights match the selected criteria</div>
-              ) : (
-                <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto p-3 lg:grid-cols-4 xl:grid-cols-6">
-                  {matchingFlights.map((flight) => (
-                    <div
-                      key={flight.key}
-                      className="hover:bg-default-50 flex items-center space-x-2 rounded border p-2"
-                    >
-                      <Checkbox
-                        id={`flight-${flight.key}`}
-                        checked={selectedFlights.includes(flight.key)}
-                        onCheckedChange={() => handleFlightToggle(flight.key)}
-                      />
-                      <label
-                        htmlFor={`flight-${flight.key}`}
-                        className="cursor-pointer truncate text-sm font-medium text-default-900"
-                        title={flight.label}
-                      >
-                        {flight.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <Button className="flex-1" disabled={Object.keys(selectedColumns).length === 0}>
-            Create Passenger Profile ({selectedFlights.length > 0 ? selectedFlights.length : matchingFlights.length}{' '}
-            flights)
-          </Button>
-          <Button variant="outline" onClick={handleClearAll}>
-            Clear All
-          </Button>
         </div>
       </CardContent>
     </Card>
