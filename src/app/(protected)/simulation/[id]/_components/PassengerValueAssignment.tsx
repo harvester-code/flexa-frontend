@@ -108,13 +108,16 @@ export default function PassengerValueAssignment({ configType, definedProperties
                 className="flex-1"
               />
               <Input
-                type="number"
-                value={values.load_factor || 0}
-                onChange={(e) => onChange('load_factor', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={Math.round((values.load_factor || 0) * 100)}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  const percentage = parseInt(numericValue) || 0;
+                  const clampedPercentage = Math.min(100, Math.max(0, percentage));
+                  onChange('load_factor', clampedPercentage / 100);
+                }}
+                onClick={(e) => e.target.select()}
                 className="w-20"
-                min="0"
-                max="1"
-                step="0.01"
               />
               <span className="text-sm text-default-500">{((values.load_factor || 0) * 100).toFixed(1)}%</span>
             </div>
@@ -131,23 +134,27 @@ export default function PassengerValueAssignment({ configType, definedProperties
             <div className="space-y-2">
               <label className="text-default-600 text-sm">Average (minutes)</label>
               <Input
-                type="number"
+                type="text"
                 value={values.mean || 120}
-                onChange={(e) => onChange('mean', parseFloat(e.target.value) || 120)}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                  onChange('mean', parseFloat(numericValue) || 120);
+                }}
+                onClick={(e) => e.target.select()}
                 placeholder="120"
-                min="15"
-                max="300"
               />
             </div>
             <div className="space-y-2">
               <label className="text-default-600 text-sm">Std Dev (minutes)</label>
               <Input
-                type="number"
+                type="text"
                 value={values.std || 30}
-                onChange={(e) => onChange('std', parseFloat(e.target.value) || 30)}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                  onChange('std', parseFloat(numericValue) || 30);
+                }}
+                onClick={(e) => e.target.select()}
                 placeholder="30"
-                min="5"
-                max="60"
               />
             </div>
           </div>
@@ -182,13 +189,16 @@ export default function PassengerValueAssignment({ configType, definedProperties
                     className="flex-1"
                   />
                   <Input
-                    type="number"
-                    value={value}
-                    onChange={(e) => onChange(property, parseFloat(e.target.value) || 0)}
+                    type="text"
+                    value={Math.round(value * 100)}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      const percentage = parseInt(numericValue) || 0;
+                      const clampedPercentage = Math.min(100, Math.max(0, percentage));
+                      onChange(property, clampedPercentage / 100);
+                    }}
+                    onClick={(e) => e.target.select()}
                     className="w-20"
-                    min="0"
-                    max="1"
-                    step="0.01"
                   />
                   <span className="w-12 text-sm text-default-500">{(value * 100).toFixed(1)}%</span>
                 </div>

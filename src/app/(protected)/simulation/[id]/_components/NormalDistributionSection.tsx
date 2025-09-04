@@ -56,17 +56,21 @@ export const NormalDistributionSection: React.FC<NormalDistributionSectionProps>
     return '';
   };
 
-  // 실시간 검증
+  // 실시간 검증 (숫자만 허용)
   const handleMeanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setMean(value);
-    setMeanError(validateInput(value, 'mean'));
+    // 숫자와 소수점만 허용
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    setMean(numericValue);
+    setMeanError(validateInput(numericValue, 'mean'));
   };
 
   const handleStdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setStdDev(value);
-    setStdError(validateInput(value, 'std'));
+    // 숫자와 소수점만 허용
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    setStdDev(numericValue);
+    setStdError(validateInput(numericValue, 'std'));
   };
 
   // 엔터키 처리
@@ -164,14 +168,12 @@ export const NormalDistributionSection: React.FC<NormalDistributionSectionProps>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
             <Input
-              type="number"
+              type="text"
               value={mean}
               onChange={handleMeanChange}
               onKeyDown={handleKeyDown}
+              onClick={(e) => e.target.select()}
               placeholder="120"
-              min="0"
-              max="1000"
-              step="0.1"
               className={meanError ? 'border-red-500 focus:ring-red-500' : ''}
             />
             {meanError && <span className="text-xs text-red-600">{meanError}</span>}
@@ -180,14 +182,12 @@ export const NormalDistributionSection: React.FC<NormalDistributionSectionProps>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
             <Input
-              type="number"
+              type="text"
               value={stdDev}
               onChange={handleStdChange}
               onKeyDown={handleKeyDown}
+              onClick={(e) => e.target.select()}
               placeholder="30"
-              min="0.1"
-              max="200"
-              step="0.1"
               className={stdError ? 'border-red-500 focus:ring-red-500' : ''}
             />
             {stdError && <span className="text-xs text-red-600">{stdError}</span>}

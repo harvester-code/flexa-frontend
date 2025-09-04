@@ -190,6 +190,7 @@ export interface SimulationStoreState {
   setCurrentStep: (step: number) => void;
   setStepCompleted: (step: number, completed: boolean) => void;
   updateAvailableSteps: () => void; // 완료된 단계에 따라 availableSteps 업데이트
+  checkStep2Completion: () => void; // Step 2 완료 조건 확인 및 자동 완료
 
   // ==================== Passenger Actions ====================
   setSettings: (settings: Partial<PassengerData['settings']>) => void;
@@ -516,6 +517,34 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.workflow.availableSteps = availableSteps;
       }),
 
+    // Step 2 완료 조건 확인 및 자동 완료 처리
+    checkStep2Completion: () =>
+      set((state) => {
+        // pax_arrival_patterns.default 값 확인
+        const arrivalDefault = state.passenger.pax_arrival_patterns?.default;
+        const hasArrivalDefault =
+          arrivalDefault &&
+          typeof arrivalDefault.mean === 'number' &&
+          arrivalDefault.mean !== null &&
+          typeof arrivalDefault.std === 'number' &&
+          arrivalDefault.std !== null;
+
+        // pax_generation.default 값 확인
+        const genDefault = state.passenger.pax_generation?.default;
+        const hasGenDefault =
+          genDefault && typeof genDefault.load_factor === 'number' && genDefault.load_factor !== null;
+
+        // 두 조건이 모두 만족되면 step2 완료 처리
+        if (hasArrivalDefault && hasGenDefault && !state.workflow.step2Completed) {
+          state.workflow.step2Completed = true;
+
+          // step3 접근 가능하도록 업데이트
+          if (!state.workflow.availableSteps.includes(3)) {
+            state.workflow.availableSteps.push(3);
+          }
+        }
+      }),
+
     // ==================== Passenger Actions ====================
 
     setSettings: (newSettings) =>
@@ -590,10 +619,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
-    setPaxGenerationDefault: (value) =>
+    setPaxGenerationDefault: (value) => {
       set((state) => {
         state.passenger.pax_generation.default.load_factor = value;
-      }),
+      });
+      // Step 2 완료 조건 확인
+      useSimulationStore.getState().checkStep2Completion();
+    },
 
     addNationalityRule: (conditions, flightCount, value = {}) =>
       set((state) => {
@@ -675,10 +707,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.pax_arrival_patterns.rules = rules;
       }),
 
-    setPaxArrivalPatternDefault: (defaultValues) =>
+    setPaxArrivalPatternDefault: (defaultValues) => {
       set((state) => {
         state.passenger.pax_arrival_patterns.default = defaultValues;
-      }),
+      });
+      // Step 2 완료 조건 확인
+      useSimulationStore.getState().checkStep2Completion();
+    },
 
     addPaxArrivalPatternRule: (rule) =>
       set((state) => {

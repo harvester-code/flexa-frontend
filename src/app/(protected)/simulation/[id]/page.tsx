@@ -53,7 +53,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   const loadScenarioProfileMetadata = useScenarioProfileStore((s) => s.loadMetadata);
 
   const flightScheduleCompleted = useSimulationStore((s) => s.workflow.step1Completed);
-  // Passenger Schedule completion은 통합 store에서 관리
+  const passengerScheduleCompleted = useSimulationStore((s) => s.workflow.step2Completed);
   const processingProceduresCompleted = useSimulationStore((s) => s.workflow.step3Completed);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
@@ -164,7 +164,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 탭 접근성 계산
   const getAvailableTabs = () => {
-    const completedStates = [flightScheduleCompleted, false, processingProceduresCompleted];
+    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted, processingProceduresCompleted];
 
     // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
     const lastCompletedIndex = completedStates.lastIndexOf(true);

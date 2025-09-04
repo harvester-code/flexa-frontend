@@ -1114,11 +1114,15 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
-                    type="number"
-                    min="0"
-                    max="50"
+                    type="text"
                     value={tempFacilityCount}
-                    onChange={(e) => setTempFacilityCount(e.target.value)}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      const count = parseInt(numericValue) || 0;
+                      const clampedCount = Math.min(50, Math.max(0, count));
+                      setTempFacilityCount(clampedCount.toString());
+                    }}
+                    onClick={(e) => e.target.select()}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();

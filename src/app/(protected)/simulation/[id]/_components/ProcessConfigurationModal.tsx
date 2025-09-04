@@ -3,13 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -26,11 +21,7 @@ interface ProcessConfigurationModalProps {
     facilities: string[];
     travelTime: number;
   } | null;
-  onSave: (data: {
-    name: string;
-    facilities: FacilityItem[];
-    travelTime: number;
-  }) => void;
+  onSave: (data: { name: string; facilities: FacilityItem[]; travelTime: number }) => void;
   mode: 'create' | 'edit';
 }
 
@@ -98,7 +89,7 @@ export default function ProcessConfigurationModal({
         setProcessName(processData.name);
         setFacilitiesInput(processData.facilities.join(','));
         setTravelTime(processData.travelTime);
-        setFacilities(processData.facilities.map(name => ({ name, isActive: true })));
+        setFacilities(processData.facilities.map((name) => ({ name, isActive: true })));
       } else {
         // 새로 생성하는 경우 초기화
         setProcessName('');
@@ -110,23 +101,24 @@ export default function ProcessConfigurationModal({
   }, [isOpen, mode, processData]);
 
   // 시설 입력 변경 처리
-  const handleFacilityInputChange = useCallback((value: string) => {
-    setFacilitiesInput(value);
-    if (value.trim()) {
-      const expandedFacilities = expandFacilityNames(value);
-      setFacilities(expandedFacilities);
-    } else {
-      setFacilities([]);
-    }
-  }, [expandFacilityNames]);
+  const handleFacilityInputChange = useCallback(
+    (value: string) => {
+      setFacilitiesInput(value);
+      if (value.trim()) {
+        const expandedFacilities = expandFacilityNames(value);
+        setFacilities(expandedFacilities);
+      } else {
+        setFacilities([]);
+      }
+    },
+    [expandFacilityNames]
+  );
 
   // 시설 토글
   const toggleFacility = useCallback((facilityName: string) => {
-    setFacilities(prev => 
-      prev.map(facility =>
-        facility.name === facilityName 
-          ? { ...facility, isActive: !facility.isActive }
-          : facility
+    setFacilities((prev) =>
+      prev.map((facility) =>
+        facility.name === facilityName ? { ...facility, isActive: !facility.isActive } : facility
       )
     );
   }, []);
@@ -145,12 +137,15 @@ export default function ProcessConfigurationModal({
   }, [processName, facilities, travelTime, onSave, onClose]);
 
   // 엔터키 처리
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && processName.trim() && facilities.length > 0) {
-      e.preventDefault();
-      handleSave();
-    }
-  }, [handleSave, processName, facilities]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && processName.trim() && facilities.length > 0) {
+        e.preventDefault();
+        handleSave();
+      }
+    },
+    [handleSave, processName, facilities]
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -165,9 +160,7 @@ export default function ProcessConfigurationModal({
         <div className="space-y-6">
           {/* Process Name */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-default-900">
-              Process Name
-            </label>
+            <label className="mb-2 block text-sm font-medium text-default-900">Process Name</label>
             <Input
               type="text"
               placeholder="e.g., Check In, Security, Immigration"
@@ -180,24 +173,24 @@ export default function ProcessConfigurationModal({
 
           {/* Travel Time */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-default-900">
-              Travel Time (minutes)
-            </label>
+            <label className="mb-2 block text-sm font-medium text-default-900">Travel Time (minutes)</label>
             <Input
-              type="number"
-              min="0"
-              max="60"
+              type="text"
               value={travelTime}
-              onChange={(e) => setTravelTime(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                const time = parseInt(numericValue) || 0;
+                const clampedTime = Math.min(60, Math.max(0, time));
+                setTravelTime(clampedTime);
+              }}
+              onClick={(e) => e.target.select()}
               placeholder="0"
             />
           </div>
 
           {/* Facilities */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-default-900">
-              Facility Names
-            </label>
+            <label className="mb-2 block text-sm font-medium text-default-900">Facility Names</label>
             <Input
               type="text"
               placeholder="e.g., A~E, Gate1~5, DG12_3-4-6-2~5, Counter1,Counter2"
@@ -210,9 +203,7 @@ export default function ProcessConfigurationModal({
             {/* Facility Badges */}
             {facilities.length > 0 && (
               <div className="mt-3">
-                <p className="mb-2 text-sm font-medium text-default-900">
-                  Facilities (click to toggle):
-                </p>
+                <p className="mb-2 text-sm font-medium text-default-900">Facilities (click to toggle):</p>
                 <div className="flex flex-wrap gap-2">
                   {facilities.map((facility) => (
                     <Button
@@ -241,10 +232,7 @@ export default function ProcessConfigurationModal({
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!processName.trim() || facilities.length === 0}
-          >
+          <Button onClick={handleSave} disabled={!processName.trim() || facilities.length === 0}>
             <Save className="mr-2 h-4 w-4" />
             {mode === 'create' ? 'Create Process' : 'Save Changes'}
           </Button>

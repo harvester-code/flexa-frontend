@@ -369,18 +369,15 @@ export default function SimulationGridTableNew({
 
                         {/* Percentage input (only enabled when checkbox is checked) */}
                         <Input
-                          type="number"
-                          min="0"
-                          max="100"
+                          type="text"
                           value={percentage}
-                          onChange={(e) =>
-                            onUpdatePercentage(
-                              sourceInfo.connectionId,
-                              sourceInfo.node,
-                              destInfo.node,
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                            const value = parseFloat(numericValue) || 0;
+                            const clampedValue = Math.min(100, Math.max(0, value));
+                            onUpdatePercentage(sourceInfo.connectionId, sourceInfo.node, destInfo.node, clampedValue);
+                          }}
+                          onClick={(e) => e.target.select()}
                           onMouseDown={(e) => e.stopPropagation()} // 드래그 이벤트와 충돌 방지
                           onFocus={(e) => e.stopPropagation()} // 포커스 시 드래그 방지
                           disabled={!isEnabled}

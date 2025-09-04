@@ -146,11 +146,16 @@ export default function InteractivePercentageBar({
                 {editingIndex === index && showValues ? (
                   <input
                     ref={inputRef}
-                    type="number"
+                    type="text"
                     value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
+                    onChange={(e) => {
+                      // 숫자만 허용
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      setEditingValue(numericValue);
+                    }}
                     onBlur={handleEditComplete}
                     onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleEditComplete();
                       if (e.key === 'Escape') handleEditCancel();
