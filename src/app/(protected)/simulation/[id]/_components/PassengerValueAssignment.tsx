@@ -32,7 +32,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
     if (definedProperties.length > 0) {
       const initialDefault: Record<string, number> = {};
       if (configType === 'load_factor') {
-        initialDefault['load_factor'] = 0.85;
+        initialDefault['load_factor'] = 0; // 하드코딩 제거
       } else if (configType === 'pax_arrival_patterns') {
         initialDefault['mean'] = 120;
         initialDefault['std'] = 30;
@@ -100,7 +100,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
             <label className="text-default-600 text-sm">Load Factor</label>
             <div className="flex items-center space-x-4">
               <Slider
-                value={[values.load_factor || 0.85]}
+                value={[values.load_factor || 0]}
                 onValueChange={([val]) => onChange('load_factor', val)}
                 max={1}
                 min={0}
@@ -109,14 +109,14 @@ export default function PassengerValueAssignment({ configType, definedProperties
               />
               <Input
                 type="number"
-                value={values.load_factor || 0.85}
+                value={values.load_factor || 0}
                 onChange={(e) => onChange('load_factor', parseFloat(e.target.value) || 0)}
                 className="w-20"
                 min="0"
                 max="1"
                 step="0.01"
               />
-              <span className="text-sm text-default-500">{((values.load_factor || 0.85) * 100).toFixed(1)}%</span>
+              <span className="text-sm text-default-500">{((values.load_factor || 0) * 100).toFixed(1)}%</span>
             </div>
           </div>
         </div>

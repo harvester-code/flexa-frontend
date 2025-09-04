@@ -42,7 +42,7 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
     },
     loadfactor: {
       type: 'load_factor' as const,
-      defaultValues: { default: 0.85 },
+      defaultValues: {},
       labels: {
         step1Title: 'Define Load Factor',
         step3Title: 'Assign Values',

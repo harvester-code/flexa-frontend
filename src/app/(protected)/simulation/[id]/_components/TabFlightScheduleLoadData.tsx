@@ -34,7 +34,9 @@ function TabFlightScheduleLoadData({
   const storeDate = useSimulationStore((s) => s.context.date);
   const setStoreAirport = useSimulationStore((s) => s.setAirport);
   const setStoreDate = useSimulationStore((s) => s.setDate);
-  
+  const resetPassenger = useSimulationStore((s) => s.resetPassenger);
+  const resetProcessFlow = useSimulationStore((s) => s.resetProcessFlow);
+
   // 로컬 상태로 관리 (초기값은 store에서 가져오기)
   const [airport, setAirport] = useState(storeAirport);
   const [date, setDate] = useState(storeDate);
@@ -192,11 +194,16 @@ function TabFlightScheduleLoadData({
             onClick={() => {
               console.log('🎯 Load button clicked, loadingFlightSchedule:', loadingFlightSchedule);
               console.log('🎯 Saving to store - airport:', airport, 'date:', date);
-              
+
+              // 🔄 새로운 데이터 로드 전에 기존 데이터 리셋
+              resetPassenger();
+              resetProcessFlow();
+              console.log('✅ Passenger and ProcessFlow data reset before loading new data');
+
               // Load 버튼 클릭 시에만 store에 저장
               setStoreAirport(airport);
               setStoreDate(date);
-              
+
               // 부모 컴포넌트의 loadData 함수 호출
               onLoadData(airport, date);
             }}

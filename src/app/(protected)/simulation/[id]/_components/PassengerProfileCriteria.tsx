@@ -21,16 +21,12 @@ interface PassengerProfileCriteriaProps {
   parquetMetadata: ParquetMetadataItem[];
   definedProperties?: string[];
   configType?: string;
-  editingRuleIndex?: number | null;
-  onRuleSaved?: () => void;
 }
 
 export default function PassengerProfileCriteria({
   parquetMetadata,
   definedProperties = [],
   configType,
-  editingRuleIndex = null,
-  onRuleSaved,
 }: PassengerProfileCriteriaProps) {
   // 🎯 단순한 UI 상태만 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
@@ -640,11 +636,6 @@ export default function PassengerProfileCriteria({
                         values: propertyValues,
                         flights: flightCalculations.totalSelected,
                       });
-
-                      // Dialog 닫기
-                      if (onRuleSaved) {
-                        onRuleSaved();
-                      }
                     } catch (error) {
                       console.error('❌ Failed to save configuration:', error);
                     }

@@ -17,7 +17,7 @@ export interface PassengerData {
       };
     }>;
     default: {
-      load_factor: number;
+      load_factor: number | null;
     };
   };
   pax_demographics: {
@@ -204,7 +204,7 @@ export interface SimulationStoreState {
   removeNationalityRule: (ruleIndex: number) => void;
   removeProfileRule: (ruleIndex: number) => void;
   updatePaxGenerationValue: (ruleIndex: number, value: number) => void;
-  setPaxGenerationDefault: (value: number) => void;
+  setPaxGenerationDefault: (value: number | null) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   setNationalityDefault: (defaultValues: Record<string, number>) => void;
@@ -256,7 +256,7 @@ const createInitialState = (scenarioId?: string) => ({
     pax_generation: {
       rules: [],
       default: {
-        load_factor: 0.85,
+        load_factor: null, // 하드코딩 완전 제거, UI에서만 설정
       },
     },
     pax_demographics: {
@@ -679,12 +679,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
           settings: {
             min_arrival_minutes: null,
           },
-          pax_demographics: {
-            load_factor: {
-              available_values: [],
-              rules: [],
-              default: 0.85,
+          pax_generation: {
+            rules: [],
+            default: {
+              load_factor: null, // 하드코딩 완전 제거
             },
+          },
+          pax_demographics: {
+            // load_factor 완전 제거! pax_generation으로 이동했음
             nationality: {
               available_values: [],
               rules: [],
@@ -712,12 +714,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
           settings: {
             min_arrival_minutes: null,
           },
-          pax_demographics: {
-            load_factor: {
-              available_values: [],
-              rules: [],
-              default: 0.85,
+          pax_generation: {
+            rules: [],
+            default: {
+              load_factor: null, // 하드코딩 완전 제거
             },
+          },
+          pax_demographics: {
+            // load_factor 완전 제거! pax_generation으로 이동했음
             nationality: {
               available_values: [],
               rules: [],

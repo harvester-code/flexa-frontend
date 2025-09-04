@@ -100,7 +100,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
   const handleAutoEqual = () => {
     if (definedProperties.length === 0) return;
 
-    const equalValue = config.type === 'load_factor' ? 0.85 : 1 / definedProperties.length;
+    const equalValue = config.type === 'load_factor' ? 0.5 : 1 / definedProperties.length; // UI 편의상 50%로 시작
     const newDefaults: Record<string, number> = {};
 
     if (config.type === 'load_factor') {
@@ -126,7 +126,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
       } else if (config.type === 'profile') {
         setProfileDefault({});
       } else if (config.type === 'load_factor') {
-        setPaxGenerationDefault(0.85); // load_factor는 숫자값
+        setPaxGenerationDefault(null); // 하드코딩 제거, 빈값으로 설정
       }
     } else {
       // Save default values
@@ -135,7 +135,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
       } else if (config.type === 'profile') {
         setProfileDefault(defaultValues);
       } else if (config.type === 'load_factor') {
-        setPaxGenerationDefault(defaultValues.load_factor || 0.85);
+        setPaxGenerationDefault(defaultValues.load_factor || null);
       }
     }
 
@@ -298,7 +298,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
                             <label className="text-default-600 text-xs">Load Factor</label>
                             <div className="flex items-center space-x-3">
                               <Slider
-                                value={[defaultValues.load_factor || 0.85]}
+                                value={[defaultValues.load_factor || 0]}
                                 onValueChange={([val]) => handleDefaultValueChange('load_factor', val)}
                                 max={1}
                                 min={0}
@@ -307,7 +307,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
                               />
                               <Input
                                 type="number"
-                                value={defaultValues.load_factor || 0.85}
+                                value={defaultValues.load_factor || 0}
                                 onChange={(e) =>
                                   handleDefaultValueChange('load_factor', parseFloat(e.target.value) || 0)
                                 }
@@ -317,7 +317,7 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
                                 step="0.01"
                               />
                               <span className="w-12 text-xs text-default-500">
-                                {((defaultValues.load_factor || 0.85) * 100).toFixed(1)}%
+                                {((defaultValues.load_factor || 0) * 100).toFixed(1)}%
                               </span>
                             </div>
                           </div>
@@ -481,8 +481,6 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
                 parquetMetadata={parquetMetadata}
                 definedProperties={definedProperties}
                 configType={config.type}
-                editingRuleIndex={editingRuleIndex}
-                onRuleSaved={() => setIsRuleDialogOpen(false)}
               />
             </div>
           </DialogContent>

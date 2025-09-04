@@ -64,7 +64,7 @@ export default function TabPassengerScheduleGroupConfiguration({
   const convertToShowUpPaxFormat = () => {
     return {
       settings: {
-        load_factor: 0.85,
+        load_factor: 0, // 하드코딩 제거
         min_arrival_minutes: 15,
         date: flightScheduleDate || new Date().toISOString().split('T')[0], // Fallback to current date
         airport: flightScheduleAirport || 'ICN', // Fallback to ICN

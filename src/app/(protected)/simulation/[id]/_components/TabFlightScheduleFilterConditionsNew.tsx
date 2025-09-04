@@ -87,6 +87,8 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   const flightData = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
+  const resetPassenger = useSimulationStore((state) => state.resetPassenger);
+  const resetProcessFlow = useSimulationStore((state) => state.resetProcessFlow);
 
   // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
   const [isApplying, setIsApplying] = useState(false);
@@ -612,6 +614,11 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
     try {
       // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
+
+      // 🔄 새로운 필터 적용 전에 기존 승객 및 프로세스 데이터 리셋
+      resetPassenger();
+      resetProcessFlow();
+      console.log('✅ Passenger and ProcessFlow data reset before applying filters');
 
       // 🎯 Expected Flights 계산
       const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
