@@ -12,9 +12,7 @@ export interface PassengerData {
   pax_generation: {
     rules: Array<{
       conditions: Record<string, string[]>;
-      value: {
-        load_factor: number;
-      };
+      value: Record<string, number>;
     }>;
     default: {
       load_factor: number | null;
@@ -26,6 +24,7 @@ export interface PassengerData {
       rules: Array<{
         conditions: Record<string, string[]>;
         value: Record<string, number>;
+        flightCount?: number;
       }>;
       default: Record<string, number>;
     };
@@ -34,6 +33,7 @@ export interface PassengerData {
       rules: Array<{
         conditions: Record<string, string[]>;
         value: Record<string, number>;
+        flightCount?: number;
       }>;
       default: Record<string, number>;
     };
@@ -197,13 +197,18 @@ export interface SimulationStoreState {
   setPaxGenerationValues: (values: string[]) => void;
   setNationalityValues: (values: string[]) => void;
   setProfileValues: (values: string[]) => void;
-  addPaxGenerationRule: (conditions: Record<string, string[]>, value: number) => void;
-  addNationalityRule: (conditions: Record<string, string[]>) => void;
-  addProfileRule: (conditions: Record<string, string[]>) => void;
+  addPaxGenerationRule: (conditions: Record<string, string[]>, value: number | Record<string, number>) => void;
+  addNationalityRule: (
+    conditions: Record<string, string[]>,
+    flightCount?: number,
+    value?: Record<string, number>
+  ) => void;
+  addProfileRule: (conditions: Record<string, string[]>, flightCount?: number, value?: Record<string, number>) => void;
   removePaxGenerationRule: (ruleIndex: number) => void;
   removeNationalityRule: (ruleIndex: number) => void;
   removeProfileRule: (ruleIndex: number) => void;
-  updatePaxGenerationValue: (ruleIndex: number, value: number) => void;
+  updatePaxGenerationValue: (ruleIndex: number, value: number | Record<string, number>) => void;
+  updatePaxGenerationDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   setPaxGenerationDefault: (value: number | null) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
@@ -211,6 +216,7 @@ export interface SimulationStoreState {
   setProfileDefault: (defaultValues: Record<string, number>) => void;
   reorderPaxDemographics: () => void;
   setPaxArrivalPatternRules: (rules: PassengerData['pax_arrival_patterns']['rules']) => void;
+  setPaxArrivalPatternDefault: (defaultValues: { mean: number; std: number }) => void;
   addPaxArrivalPatternRule: (rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
   updatePaxArrivalPatternRule: (index: number, rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
   removePaxArrivalPatternRule: (index: number) => void;
@@ -557,7 +563,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         state.passenger.pax_generation.rules.push({
           conditions,
-          value: { load_factor: value },
+          value: typeof value === 'number' ? { load_factor: value } : value,
         });
       }),
 
@@ -569,7 +575,18 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updatePaxGenerationValue: (ruleIndex, value) =>
       set((state) => {
         if (state.passenger.pax_generation.rules[ruleIndex]) {
-          state.passenger.pax_generation.rules[ruleIndex].value.load_factor = value;
+          if (typeof value === 'number') {
+            state.passenger.pax_generation.rules[ruleIndex].value.load_factor = value;
+          } else {
+            state.passenger.pax_generation.rules[ruleIndex].value = value;
+          }
+        }
+      }),
+
+    updatePaxGenerationDistribution: (ruleIndex, distribution) =>
+      set((state) => {
+        if (state.passenger.pax_generation.rules[ruleIndex]) {
+          state.passenger.pax_generation.rules[ruleIndex].value = distribution;
         }
       }),
 
@@ -578,19 +595,21 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.pax_generation.default.load_factor = value;
       }),
 
-    addNationalityRule: (conditions) =>
+    addNationalityRule: (conditions, flightCount, value = {}) =>
       set((state) => {
         state.passenger.pax_demographics.nationality.rules.push({
           conditions,
-          value: {}, // available_values 기반으로 설정할 예정
+          value: value,
+          flightCount,
         });
       }),
 
-    addProfileRule: (conditions) =>
+    addProfileRule: (conditions, flightCount, value = {}) =>
       set((state) => {
         state.passenger.pax_demographics.profile.rules.push({
           conditions,
-          value: {}, // available_values 기반으로 설정할 예정
+          value: value,
+          flightCount,
         });
       }),
 
@@ -654,6 +673,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
     setPaxArrivalPatternRules: (rules) =>
       set((state) => {
         state.passenger.pax_arrival_patterns.rules = rules;
+      }),
+
+    setPaxArrivalPatternDefault: (defaultValues) =>
+      set((state) => {
+        state.passenger.pax_arrival_patterns.default = defaultValues;
       }),
 
     addPaxArrivalPatternRule: (rule) =>
@@ -795,7 +819,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     loadProcessMetadata: (metadata) =>
       set((state) => {
         // 기존 procedures 형태인 경우 자동 마이그레이션
-        if (metadata.procedures && !metadata.process_flow) {
+        if (metadata.procedures && Array.isArray(metadata.procedures) && !metadata.process_flow) {
           const convertedFlow = migrateProceduresToProcessFlow(metadata.procedures);
           state.process_flow = convertedFlow;
         } else {
@@ -808,7 +832,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
               name: normalizeProcessName(process.name), // 기존 데이터도 정규화
             }));
 
-            state.process_flow = normalizedMetadata.process_flow;
+            state.process_flow = normalizedMetadata.process_flow as ProcessStep[];
           }
         }
       }),

@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { ChevronDown, Search } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle, ChevronDown, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { useSimulationStore } from '../_stores';
+import { SetDistributionDialog } from './SetDistributionDialog';
+import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from './ValueSetters';
 
 interface ParquetMetadataItem {
   column: string;
@@ -21,18 +23,262 @@ interface PassengerProfileCriteriaProps {
   parquetMetadata: ParquetMetadataItem[];
   definedProperties?: string[];
   configType?: string;
+  onRuleSaved?: () => void;
+  editingRule?: any; // 편집할 rule 데이터
+  editingRuleIndex?: number; // 편집할 rule의 인덱스
 }
 
 export default function PassengerProfileCriteria({
   parquetMetadata,
   definedProperties = [],
   configType,
+  onRuleSaved,
+  editingRule,
+  editingRuleIndex,
 }: PassengerProfileCriteriaProps) {
   // 🎯 단순한 UI 상태만 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [propertyValues, setPropertyValues] = useState<Record<string, number>>({});
+  const [isValidDistribution, setIsValidDistribution] = useState(true);
+  const [currentTotal, setCurrentTotal] = useState(100);
+
+  // 초기값 설정 (새 생성 모드)
+  useEffect(() => {
+    if (!editingRule && definedProperties.length > 0) {
+      if (configType === 'nationality' || configType === 'profile') {
+        // 균등분배로 초기화 (1% 단위로 올림 처리)
+        const equalPercentage = Math.floor(100 / definedProperties.length);
+        let remainder = 100 - equalPercentage * definedProperties.length;
+
+        const initialValues: Record<string, number> = {};
+        definedProperties.forEach((prop, index) => {
+          initialValues[prop] = equalPercentage + (index < remainder ? 1 : 0);
+        });
+        setPropertyValues(initialValues);
+      } else if (configType === 'load_factor') {
+        setPropertyValues({ load_factor: 0.8 }); // 80% 기본값
+      } else if (configType === 'pax_arrival_patterns') {
+        setPropertyValues({ mean: 120, std: 30 });
+      }
+    }
+  }, [definedProperties, configType, editingRule]);
+
+  // Reset 핸들러
+  const handleReset = () => {
+    if (configType === 'nationality' || configType === 'profile') {
+      // 균등분배 로직 (1% 단위로 올림 처리)
+      const equalPercentage = Math.floor(100 / definedProperties.length);
+      let remainder = 100 - equalPercentage * definedProperties.length;
+
+      const newValues: Record<string, number> = {};
+      definedProperties.forEach((prop, index) => {
+        newValues[prop] = equalPercentage + (index < remainder ? 1 : 0);
+      });
+      setPropertyValues(newValues);
+    } else if (configType === 'load_factor') {
+      // Load Factor는 0.8 (80%)로 초기화
+      setPropertyValues({ load_factor: 0.8 });
+    } else if (configType === 'pax_arrival_patterns') {
+      // Pax Arrival Patterns 기본값
+      setPropertyValues({ mean: 120, std: 30 });
+    }
+  };
+
+  // Create 핸들러
+  const handleCreate = () => {
+    try {
+      // 🎯 1. available_values 저장
+      if (configType === 'nationality') {
+        setNationalityValues(definedProperties);
+      } else if (configType === 'profile') {
+        setProfileValues(definedProperties);
+      } else if (configType === 'load_factor') {
+        setPaxGenerationValues(definedProperties);
+      }
+
+      // 🎯 2. 선택된 조건을 API 형태로 변환
+      const conditions: Record<string, string[]> = {};
+      Object.keys(selectedItems)
+        .filter((key) => selectedItems[key])
+        .forEach((key) => {
+          const [columnKey, value] = key.split(':');
+
+          // 선택된 값을 그대로 사용 (하드코딩 제거)
+          let apiField = columnKey;
+          let apiValue = value;
+
+          if (!conditions[apiField]) {
+            conditions[apiField] = [];
+          }
+          if (!conditions[apiField].includes(apiValue)) {
+            conditions[apiField].push(apiValue);
+          }
+        });
+
+      // 🎯 3. 규칙 추가 또는 수정
+      const isEditMode = editingRuleIndex !== undefined && editingRuleIndex !== null;
+
+      if (configType === 'nationality') {
+        const decimalValues = Object.keys(propertyValues).reduce(
+          (acc, key) => {
+            acc[key] = (propertyValues[key] || 0) / 100; // 백분율 → 소수점
+            return acc;
+          },
+          {} as Record<string, number>
+        );
+
+        if (isEditMode) {
+          updateNationalityDistribution(editingRuleIndex, decimalValues);
+        } else {
+          const currentRulesLength = Object.keys(passengerData.nationality?.rules || {}).length;
+          addNationalityRule(conditions, flightCalculations.totalSelected, decimalValues);
+          updateNationalityDistribution(currentRulesLength, decimalValues);
+        }
+      } else if (configType === 'profile') {
+        const decimalValues = Object.keys(propertyValues).reduce(
+          (acc, key) => {
+            acc[key] = (propertyValues[key] || 0) / 100;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
+
+        if (isEditMode) {
+          updateProfileDistribution(editingRuleIndex, decimalValues);
+        } else {
+          const currentRulesLength = Object.keys(passengerData.profile?.rules || {}).length;
+          addProfileRule(conditions, flightCalculations.totalSelected, decimalValues);
+          updateProfileDistribution(currentRulesLength, decimalValues);
+        }
+      } else if (configType === 'load_factor') {
+        // Load Factor는 단일 값으로 처리 (이미 0.0-1.0 범위임)
+        const loadFactorValue = Object.values(propertyValues)[0] || 0;
+
+        if (isEditMode) {
+          updatePaxGenerationValue(editingRuleIndex, loadFactorValue);
+        } else {
+          addPaxGenerationRule(conditions, loadFactorValue);
+        }
+      } else if (configType === 'pax_arrival_patterns') {
+        const newRule = {
+          conditions,
+          value: propertyValues,
+        };
+
+        if (isEditMode) {
+          updatePaxArrivalPatternRule(editingRuleIndex, newRule);
+        } else {
+          addPaxArrivalPatternRule(newRule);
+        }
+      }
+
+      // 🎯 4. 성공 처리
+      if (onRuleSaved) {
+        onRuleSaved();
+      }
+    } catch (error) {
+      console.error('❌ Failed to save configuration:', error);
+    }
+  };
+
+  // 타입별 제목 생성
+  const getDialogTitle = () => {
+    switch (configType) {
+      case 'nationality':
+        return 'Set Nationality Distribution';
+      case 'profile':
+        return 'Set Profile Distribution';
+      case 'load_factor':
+        return 'Set Load Factor';
+      case 'pax_arrival_patterns':
+        return 'Set Show-up Time';
+      default:
+        return 'Set Distribution';
+    }
+  };
+
+  // 값 설정 컴포넌트 렌더링
+  const renderValueSetter = () => {
+    if (configType === 'nationality' || configType === 'profile') {
+      return (
+        <DistributionValueSetter
+          properties={definedProperties}
+          values={propertyValues}
+          onChange={setPropertyValues}
+          onValidationChange={setIsValidDistribution}
+          onTotalChange={setCurrentTotal}
+          configType={configType}
+        />
+      );
+    } else if (configType === 'load_factor') {
+      return (
+        <LoadFactorValueSetter properties={definedProperties} values={propertyValues} onChange={setPropertyValues} />
+      );
+    } else if (configType === 'pax_arrival_patterns') {
+      // 기본값을 store에서 가져와 전달
+      const defaultValues = passengerData.pax_arrival_patterns?.default || { mean: 120, std: 30 };
+
+      return (
+        <ShowUpTimeValueSetter
+          properties={definedProperties}
+          values={propertyValues}
+          onChange={setPropertyValues}
+          defaultValues={defaultValues}
+        />
+      );
+    }
+    return null;
+  };
+
+  // 편집 모드일 때 기존 데이터 복원
+  useEffect(() => {
+    if (editingRule) {
+      // 1. propertyValues 복원 (소수 → 백분율)
+      if (editingRule.value) {
+        if (configType === 'load_factor') {
+          // 편집 모드: 0.0-1.0 값을 그대로 사용 (슬라이더에서 자동 변환됨)
+          setPropertyValues({ load_factor: editingRule.value.load_factor || 0.8 });
+        } else if (configType === 'pax_arrival_patterns') {
+          setPropertyValues({
+            mean: editingRule.value.mean || 120,
+            std: editingRule.value.std || 30,
+          });
+        } else {
+          // nationality, profile
+          const percentValues = Object.keys(editingRule.value).reduce(
+            (acc, key) => {
+              acc[key] = (editingRule.value[key] || 0) * 100; // 0.5 → 50
+              return acc;
+            },
+            {} as Record<string, number>
+          );
+          setPropertyValues(percentValues);
+        }
+      }
+
+      // 2. selectedItems 복원 (조건 → UI 선택 상태)
+      if (editingRule.conditions) {
+        const restoredSelectedItems: Record<string, boolean> = {};
+
+        Object.entries(editingRule.conditions).forEach(([apiField, values]: [string, any]) => {
+          if (Array.isArray(values)) {
+            values.forEach((apiValue) => {
+              // 저장된 값을 그대로 사용 (변환 로직 제거)
+              let uiField = apiField;
+              let uiValue = apiValue;
+
+              const itemKey = `${uiField}:${uiValue}`;
+              restoredSelectedItems[itemKey] = true;
+            });
+          }
+        });
+
+        setSelectedItems(restoredSelectedItems);
+      }
+    }
+  }, [editingRule, configType]);
 
   // 🎯 zustand에서 type 정보 가져오기
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
@@ -42,15 +288,20 @@ export default function PassengerProfileCriteria({
   const setNationalityValues = useSimulationStore((state) => state.setNationalityValues);
   const addNationalityRule = useSimulationStore((state) => state.addNationalityRule);
   const updateNationalityDistribution = useSimulationStore((state) => state.updateNationalityDistribution);
+  const removeNationalityRule = useSimulationStore((state) => state.removeNationalityRule);
   const setProfileValues = useSimulationStore((state) => state.setProfileValues);
   const addProfileRule = useSimulationStore((state) => state.addProfileRule);
   const updateProfileDistribution = useSimulationStore((state) => state.updateProfileDistribution);
+  const removeProfileRule = useSimulationStore((state) => state.removeProfileRule);
   const setPaxGenerationValues = useSimulationStore((state) => state.setPaxGenerationValues);
   const addPaxGenerationRule = useSimulationStore((state) => state.addPaxGenerationRule);
+  const removePaxGenerationRule = useSimulationStore((state) => state.removePaxGenerationRule);
+  const updatePaxGenerationValue = useSimulationStore((state) => state.updatePaxGenerationValue);
   const setPaxGenerationDefault = useSimulationStore((state) => state.setPaxGenerationDefault);
 
   // Show-up-Time 관련 액션들
   const addPaxArrivalPatternRule = useSimulationStore((state) => state.addPaxArrivalPatternRule);
+  const removePaxArrivalPatternRule = useSimulationStore((state) => state.removePaxArrivalPatternRule);
   const updatePaxArrivalPatternRule = useSimulationStore((state) => state.updatePaxArrivalPatternRule);
 
   // 🎯 현재 상태 가져오기 (ruleIndex 계산용)
@@ -311,10 +562,10 @@ export default function PassengerProfileCriteria({
           </div>
         </div>
 
-        {/* 좌우 구조 */}
+        {/* 3열 구조 */}
         <div className="flex h-96 gap-4">
-          {/* 좌측: 컬럼 목록 */}
-          <div className="w-1/3 rounded-md border p-3">
+          {/* 첫번째: 컬럼 목록 */}
+          <div className="w-[40%] rounded-md border p-3">
             <div className="max-h-full space-y-4 overflow-y-auto">
               {Object.keys(columnsByCategory).length === 0 ? (
                 <div className="py-8 text-center text-sm text-default-500">No columns available</div>
@@ -346,8 +597,8 @@ export default function PassengerProfileCriteria({
             </div>
           </div>
 
-          {/* 우측: 선택된 컬럼의 상세 데이터 */}
-          <div className="flex-1 rounded-md border p-3">
+          {/* 두번째: 선택된 컬럼의 상세 데이터 */}
+          <div className="w-[40%] rounded-md border p-3">
             {selectedColumn ? (
               <div className="flex h-full flex-col">
                 {(() => {
@@ -441,60 +692,27 @@ export default function PassengerProfileCriteria({
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Selected Flights - 항상 표시 */}
-      <div className="space-y-4">
-        <h4 className="text-sm font-medium text-default-900">Selected Flights</h4>
+          {/* 세번째: Selected Flights */}
+          <div className="w-[30%] rounded-md border p-3">
+            <div className="flex h-full flex-col">
+              <h4 className="mb-3 text-sm font-bold text-default-900">Flights</h4>
 
-        <div className="max-h-60 rounded-md border">
-          <div className="p-3">
-            <div className="grid grid-cols-4 gap-2 lg:grid-cols-6 xl:grid-cols-8">
-              {flightCalculations.airlineBreakdown.map((airline) => (
-                <div key={airline.name} className="bg-default-50 rounded border p-2 text-center">
-                  <div className="truncate text-xs font-medium text-default-900">{airline.name}</div>
-                  <div className="mt-1 text-xs">
-                    <span className={`font-bold ${airline.selected > 0 ? 'text-primary' : 'text-default-900'}`}>
-                      {airline.selected}
-                    </span>
-                    <span className="font-normal text-default-900"> / {airline.total}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 뱃지와 총계를 한 줄로 표시 */}
-            <div className="border-default-200 mt-3 border-t pt-2">
-              <div className="flex items-center gap-4">
-                {/* 뱃지 부분 (80%) */}
-                <div className="min-w-0 flex-1">
-                  {selectedCount > 0 ? (
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {Object.keys(selectedItems)
-                        .filter((key) => selectedItems[key])
-                        .map((key) => {
-                          const [, value] = key.split(':');
-                          return (
-                            <span
-                              key={key}
-                              className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                            >
-                              {value}
-                            </span>
-                          );
-                        })}
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-1">
+                  {flightCalculations.airlineBreakdown.map((airline) => (
+                    <div key={airline.name} className="rounded border px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-default-900">{airline.name}</span>
+                        <span className="text-sm">
+                          <span className={`font-bold ${airline.selected > 0 ? 'text-primary' : 'text-default-600'}`}>
+                            {airline.selected}
+                          </span>
+                          <span className="text-default-900"> / {airline.total}</span>
+                        </span>
+                      </div>
                     </div>
-                  ) : (
-                    <div></div>
-                  )}
-                </div>
-
-                {/* 총계 부분 (20%) */}
-                <div className="flex-shrink-0">
-                  <span className="text-sm font-medium text-default-900">
-                    {flightCalculations.totalSelected} of {totalFlights} flights selected
-                  </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -502,151 +720,25 @@ export default function PassengerProfileCriteria({
         </div>
       </div>
 
-      {/* Property Value Assignment - only show if properties are defined and flights are selected */}
-      {definedProperties.length > 0 && flightCalculations.totalSelected > 0 && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-default-900">
-            Assign Values for Selected Flights ({flightCalculations.totalSelected} flights)
-          </h4>
-
-          <div className="rounded-md border p-4">
-            <div className="grid gap-4">
-              {definedProperties.map((property) => (
-                <div key={property} className="flex items-center gap-3">
-                  <label className="w-24 min-w-0 flex-shrink-0 text-sm font-medium text-default-900">{property}:</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      min="0"
-                      max={configType === 'load_factor' ? '1' : '100'}
-                      step="0.01"
-                      value={propertyValues[property] || ''}
-                      onChange={(e) =>
-                        setPropertyValues((prev) => ({
-                          ...prev,
-                          [property]: parseFloat(e.target.value) || 0,
-                        }))
-                      }
-                      className="w-24 rounded border px-2 py-1 text-sm"
-                    />
-                    <span className="text-sm text-default-500">
-                      {configType === 'load_factor'
-                        ? '(0.0 - 1.0)'
-                        : configType === 'pax_arrival_patterns'
-                          ? property === 'mean'
-                            ? 'minutes'
-                            : 'std'
-                          : '%'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              {/* Validation message for percentages */}
-              {(configType === 'nationality' || configType === 'profile') && (
-                <div className="text-xs text-default-500">
-                  Total percentage:{' '}
-                  {Object.values(propertyValues)
-                    .reduce((sum, val) => sum + (val || 0), 0)
-                    .toFixed(1)}
-                  %
-                  {Object.values(propertyValues).reduce((sum, val) => sum + (val || 0), 0) !== 100 && (
-                    <span className="text-amber-600"> (should equal 100%)</span>
-                  )}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <button
-                  className="rounded bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
-                  onClick={() => {
-                    try {
-                      // 🎯 1. available_values 저장
-                      if (configType === 'nationality') {
-                        setNationalityValues(definedProperties);
-                      } else if (configType === 'profile') {
-                        setProfileValues(definedProperties);
-                      } else if (configType === 'load_factor') {
-                        setPaxGenerationValues(definedProperties);
-                      }
-
-                      // 🎯 2. 선택된 조건을 API 형태로 변환
-                      const conditions: Record<string, string[]> = {};
-                      Object.keys(selectedItems)
-                        .filter((key) => selectedItems[key])
-                        .forEach((key) => {
-                          const [columnKey, value] = key.split(':');
-
-                          // operating_carrier_name을 operating_carrier_iata로 변환
-                          let apiField = columnKey;
-                          let apiValue = value;
-
-                          if (columnKey === 'operating_carrier_name') {
-                            apiField = 'operating_carrier_iata';
-                            // 항공사 이름을 IATA 코드로 변환 (간단한 매핑)
-                            const airlineMapping: Record<string, string> = {
-                              'Korean Air': 'KE',
-                              'Asiana Airlines': 'OZ',
-                              'Jin Air': 'LJ',
-                              'Air Busan': 'BX',
-                              // 필요에 따라 더 추가
-                            };
-                            apiValue = airlineMapping[value] || value;
-                          }
-
-                          if (!conditions[apiField]) {
-                            conditions[apiField] = [];
-                          }
-                          if (!conditions[apiField].includes(apiValue)) {
-                            conditions[apiField].push(apiValue);
-                          }
-                        });
-
-                      // 🎯 3. 규칙 추가
-                      if (configType === 'nationality') {
-                        // 현재 rules 개수를 가져와서 새 규칙의 인덱스로 사용
-                        const currentRulesLength = passengerData.pax_demographics.nationality.rules.length;
-                        addNationalityRule(conditions);
-                        updateNationalityDistribution(currentRulesLength, propertyValues);
-                      } else if (configType === 'profile') {
-                        const currentRulesLength = passengerData.pax_demographics.profile.rules.length;
-                        addProfileRule(conditions);
-                        updateProfileDistribution(currentRulesLength, propertyValues);
-                      } else if (configType === 'load_factor') {
-                        // Load Factor는 단일 값
-                        const value = Object.values(propertyValues)[0] || 0;
-                        addPaxGenerationRule(conditions, value);
-                      } else if (configType === 'pax_arrival_patterns') {
-                        // Show-up-Time은 새로운 value 구조 사용
-                        const rule = {
-                          conditions: conditions,
-                          value: {
-                            mean: propertyValues.mean || 120,
-                            std: propertyValues.std || 30,
-                          },
-                        };
-                        addPaxArrivalPatternRule(rule);
-                      }
-
-                      console.log('✅ Configuration saved successfully:', {
-                        configType,
-                        availableValues: definedProperties,
-                        conditions,
-                        values: propertyValues,
-                        flights: flightCalculations.totalSelected,
-                      });
-                    } catch (error) {
-                      console.error('❌ Failed to save configuration:', error);
-                    }
-                  }}
-                >
-                  Save Configuration
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Property Value Assignment - always show */}
+      {definedProperties.length > 0 && (
+        <SetDistributionDialog
+          title={getDialogTitle()}
+          onReset={handleReset}
+          onCreate={handleCreate}
+          isValid={isValidDistribution}
+          totalValue={currentTotal}
+          selectedFlights={flightCalculations.totalSelected}
+          totalFlights={flightCalculations.totalFlights}
+          showFlightValidation={configType === 'nationality' || configType === 'profile'}
+          showTotalValidation={configType === 'nationality' || configType === 'profile'}
+          isCreateDisabled={
+            (configType === 'nationality' || configType === 'profile') &&
+            (!isValidDistribution || flightCalculations.totalSelected === 0)
+          }
+        >
+          {renderValueSetter()}
+        </SetDistributionDialog>
       )}
     </div>
   );

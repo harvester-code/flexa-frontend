@@ -7,10 +7,8 @@ import { useSimulationStore } from '../_stores';
 import NextButton from './NextButton';
 import TabPassengerScheduleAirlineSelector, { Airline } from './TabPassengerScheduleAirlineSelector';
 import TabPassengerScheduleGroupConfiguration from './TabPassengerScheduleGroupConfiguration';
-import TabPassengerScheduleNationalityConfiguration from './TabPassengerScheduleNationalityConfiguration';
 import TabPassengerScheduleParquetFilter from './TabPassengerScheduleParquetFilter';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
-import TabPassengerScheduleVirtualProfiles from './TabPassengerScheduleVirtualProfiles';
 
 interface TabPassengerScheduleProps {
   simulationId: string;
@@ -41,6 +39,7 @@ export default function TabPassengerSchedule({
 
   // 🆕 통합 Store에서 직접 액션들 가져오기
   const setPaxArrivalPatternRules = useSimulationStore((s) => s.setPaxArrivalPatternRules);
+  const passengerData = useSimulationStore((state) => state.passenger);
   const addPaxArrivalPatternRule = useSimulationStore((s) => s.addPaxArrivalPatternRule);
   const updatePaxArrivalPatternRule = useSimulationStore((s) => s.updatePaxArrivalPatternRule);
   const removePaxArrivalPatternRule = useSimulationStore((s) => s.removePaxArrivalPatternRule);
@@ -64,21 +63,25 @@ export default function TabPassengerSchedule({
   // 사용된 항공사 목록 (zustand pax_arrival_patterns.rules 기반)
   const usedAirlineIatas = useMemo(() => {
     const used = new Set<string>();
-    pax_arrival_patterns.rules.forEach((rule) => {
-      rule.conditions.operating_carrier_iata.forEach((iata) => used.add(iata));
+    const rules = pax_arrival_patterns?.rules || [];
+    rules.forEach((rule) => {
+      const airlineIatas = rule?.conditions?.operating_carrier_iata || [];
+      airlineIatas.forEach((iata) => used.add(iata));
     });
     return used;
-  }, [pax_arrival_patterns.rules]);
+  }, [pax_arrival_patterns?.rules]);
 
   // 다음 사용 가능한 그룹 번호 찾기 (pax_arrival_patterns.rules 기반)
   const getNextAvailableGroupNumber = useMemo(() => {
-    return pax_arrival_patterns.rules.length + 1;
-  }, [pax_arrival_patterns.rules.length]);
+    const rules = pax_arrival_patterns?.rules || [];
+    return rules.length + 1;
+  }, [pax_arrival_patterns?.rules?.length]);
 
   // 다음 사용 가능한 색상 찾기 (인덱스 기반)
   const getNextAvailableColor = useMemo(() => {
-    return colorPalette[pax_arrival_patterns.rules.length % colorPalette.length];
-  }, [pax_arrival_patterns.rules.length, colorPalette]);
+    const rules = pax_arrival_patterns?.rules || [];
+    return colorPalette[rules.length % colorPalette.length];
+  }, [pax_arrival_patterns?.rules?.length, colorPalette]);
 
   // Make Group 핸들러 (zustand 사용)
   const handleMakeGroup = (selectedAirlines: Airline[]) => {
@@ -88,8 +91,10 @@ export default function TabPassengerSchedule({
       conditions: {
         operating_carrier_iata: selectedAirlines.map((airline) => airline.iata),
       },
-      mean: 150, // 기본값: 2시간 30분 전
-      std: 30, // 기본값: ±30분
+      value: {
+        mean: 150, // 기본값: 2시간 30분 전
+        std: 30, // 기본값: ±30분
+      },
     };
 
     addPaxArrivalPatternRule(newRule);
@@ -97,19 +102,26 @@ export default function TabPassengerSchedule({
 
   // 설정된 그룹 업데이트 (zustand 사용) - 인덱스 기반
   const handleUpdateConfiguredGroup = (ruleIndex: number, updates: any) => {
+    const rules = passengerData.pax_arrival_patterns?.rules || [];
+    const currentRule = rules[ruleIndex];
+    if (!currentRule) return;
+
     // Updates 객체를 pax_arrival_patterns.rules 형태로 변환
-    const ruleUpdates: Partial<{ conditions: { operating_carrier_iata: string[] }; mean: number; std: number }> = {};
+    const ruleUpdates: { conditions: Record<string, string[]>; value: { mean: number; std: number } } = {
+      conditions: { ...currentRule.conditions },
+      value: { ...currentRule.value },
+    };
 
     if (updates.airline_group) {
       ruleUpdates.conditions = {
         operating_carrier_iata: updates.airline_group.map((airline: Airline) => airline.iata),
       };
     }
-    if (updates.mean_minutes !== undefined) {
-      ruleUpdates.mean = updates.mean_minutes;
-    }
-    if (updates.std_dev_minutes !== undefined) {
-      ruleUpdates.std = updates.std_dev_minutes;
+    if (updates.mean_minutes !== undefined || updates.std_dev_minutes !== undefined) {
+      ruleUpdates.value = {
+        mean: updates.mean_minutes !== undefined ? updates.mean_minutes : currentRule.value.mean,
+        std: updates.std_dev_minutes !== undefined ? updates.std_dev_minutes : currentRule.value.std,
+      };
     }
 
     updatePaxArrivalPatternRule(ruleIndex, ruleUpdates);
@@ -126,7 +138,7 @@ export default function TabPassengerSchedule({
   };
 
   // Setup 완료 가능 여부 (pax_arrival_patterns.rules 기반)
-  const canCompleteSetup = pax_arrival_patterns.rules.length > 0;
+  const canCompleteSetup = (pax_arrival_patterns?.rules || []).length > 0;
 
   // 탭이 보이지 않으면 렌더링하지 않음
   if (!visible) return null;
@@ -174,11 +186,6 @@ export default function TabPassengerSchedule({
           <TabPassengerScheduleParquetFilter parquetMetadata={(appliedFilterResult as any).parquet_metadata} />
         )}
 
-        <TabPassengerScheduleVirtualProfiles />
-
-        {/* Nationality Configuration */}
-        <TabPassengerScheduleNationalityConfiguration simulationId={simulationId} />
-
         {/* Airline Selector */}
         <TabPassengerScheduleAirlineSelector
           availableAirlines={[]} // 🚧 임시로 빈 배열 - 나중에 parquet_metadata에서 추출 예정
@@ -189,15 +196,15 @@ export default function TabPassengerSchedule({
         {/* Group Configuration with Chart */}
         <TabPassengerScheduleGroupConfiguration
           simulationId={simulationId}
-          destributionConditions={pax_arrival_patterns.rules.map((rule, index) => ({
+          destributionConditions={(pax_arrival_patterns?.rules || []).map((rule, index) => ({
             id: `rule-${index}`,
             name: `Group ${index + 1}`,
-            airline_group: rule.conditions.operating_carrier_iata.map((iata) => ({
+            airline_group: (rule?.conditions?.operating_carrier_iata || []).map((iata) => ({
               iata,
               name: iata, // 임시로 IATA를 이름으로 사용
             })),
-            mean_minutes: rule.mean,
-            std_dev_minutes: rule.std,
+            mean_minutes: rule?.value?.mean || 0,
+            std_dev_minutes: rule?.value?.std || 0,
             color: colorPalette[index % colorPalette.length],
           }))}
           onUpdateConfiguredGroup={(groupId, updates) => {
