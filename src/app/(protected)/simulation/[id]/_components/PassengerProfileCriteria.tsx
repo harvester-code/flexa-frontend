@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, ChevronDown, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { useSimulationStore } from '../_stores';
+// import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 import { SetDistributionDialog } from './SetDistributionDialog';
 import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from './ValueSetters';
 
@@ -153,7 +153,9 @@ export default function PassengerProfileCriteria({
         });
         setPropertyValues(initialValues);
       } else if (configType === 'load_factor') {
-        setPropertyValues({ load_factor: 0.8 }); // 80% 기본값
+        setPropertyValues({ 'Load Factor': 0.8 }); // 80% 기본값 (0.0-1.0 범위)
+      } else if (configType === 'show_up_time') {
+        setPropertyValues({ mean: 120, std: 30 });
       } else if (configType === 'pax_arrival_patterns') {
         setPropertyValues({ mean: 120, std: 30 });
       }
@@ -170,6 +172,8 @@ export default function PassengerProfileCriteria({
         setProfileValues(definedProperties);
       } else if (configType === 'load_factor') {
         setPaxGenerationValues(definedProperties);
+      } else if (configType === 'show_up_time') {
+        // Show-up time은 별도 저장이 필요하지 않을 수 있음
       }
 
       // 🎯 2. 선택된 조건을 API 형태로 변환
@@ -245,7 +249,7 @@ export default function PassengerProfileCriteria({
       } else if (configType === 'profile') {
         const decimalValues = Object.keys(propertyValues).reduce(
           (acc, key) => {
-            acc[key] = (propertyValues[key] || 0) / 100;
+            acc[key] = (propertyValues[key] || 0) / 100; // 백분율 → 소수점
             return acc;
           },
           {} as Record<string, number>
@@ -254,9 +258,25 @@ export default function PassengerProfileCriteria({
         if (isEditMode) {
           updateProfileDistribution(editingRuleIndex, decimalValues);
         } else {
-          const currentRulesLength = Object.keys(passengerData.profile?.rules || {}).length;
-          addProfileRule(conditions, flightCalculations.totalSelected, decimalValues);
-          updateProfileDistribution(currentRulesLength, decimalValues);
+          addProfileRule(conditions, decimalValues);
+        }
+
+        // SimplePaxProfileTab으로 데이터 전달
+        console.log('🔄 Create - SimplePaxProfileTab으로 전달할 데이터:', {
+          conditions: conditionStrings,
+          flightCount: flightCalculations.totalSelected,
+          distribution: propertyValues,
+        });
+
+        if (typeof (window as any).handleSimpleRuleSaved === 'function') {
+          (window as any).handleSimpleRuleSaved({
+            conditions: conditionStrings,
+            flightCount: flightCalculations.totalSelected,
+            distribution: propertyValues, // 0-100% 범위 그대로 전달
+          });
+          console.log('✅ SimplePaxProfileTab으로 데이터 전달 완료');
+        } else {
+          console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
       } else if (configType === 'load_factor') {
         // Load Factor는 단일 값으로 처리 (이미 0.0-1.0 범위임)
@@ -266,6 +286,38 @@ export default function PassengerProfileCriteria({
           updatePaxGenerationValue(editingRuleIndex, loadFactorValue);
         } else {
           addPaxGenerationRule(conditions, loadFactorValue);
+        }
+
+        // SimpleLoadFactorTab에 데이터 전달
+        console.log('🔄 Create - SimpleLoadFactorTab으로 전달할 데이터:', {
+          conditions: conditionStrings,
+          flightCount: flightCalculations.totalSelected,
+          distribution: { 'Load Factor': loadFactorValue * 100 }, // 0.0-1.0 → 0-100% 변환
+        });
+
+        if ((window as any).handleSimpleRuleSaved) {
+          (window as any).handleSimpleRuleSaved({
+            conditions: conditionStrings,
+            flightCount: flightCalculations.totalSelected,
+            distribution: { 'Load Factor': loadFactorValue * 100 }, // 0.0-1.0 → 0-100% 변환
+          });
+          console.log('✅ SimpleLoadFactorTab으로 데이터 전달 완료');
+        }
+      } else if (configType === 'show_up_time') {
+        // Show-up Time은 mean과 std 값으로 처리
+        const showUpTimeValue = {
+          mean: propertyValues.mean || 120,
+          std: propertyValues.std || 30,
+        };
+
+        // SimpleShowUpTimeTab으로 데이터 전달
+        if (typeof (window as any).handleSimpleRuleSaved === 'function') {
+          (window as any).handleSimpleRuleSaved({
+            conditions: conditionStrings,
+            flightCount: flightCalculations.totalSelected,
+            distribution: showUpTimeValue,
+          });
+          console.log('✅ SimpleShowUpTimeTab으로 데이터 전달 완료');
         }
       } else if (configType === 'pax_arrival_patterns') {
         const newRule = {
@@ -295,6 +347,8 @@ export default function PassengerProfileCriteria({
         return 'Set Profile Distribution';
       case 'load_factor':
         return 'Set Load Factor';
+      case 'show_up_time':
+        return 'Set Normal Distribution';
       case 'pax_arrival_patterns':
         return 'Set Show-up Time';
       default:
@@ -319,6 +373,10 @@ export default function PassengerProfileCriteria({
       return (
         <LoadFactorValueSetter properties={definedProperties} values={propertyValues} onChange={setPropertyValues} />
       );
+    } else if (configType === 'show_up_time') {
+      return (
+        <ShowUpTimeValueSetter properties={definedProperties} values={propertyValues} onChange={setPropertyValues} />
+      );
     } else if (configType === 'pax_arrival_patterns') {
       // 기본값을 store에서 가져와 전달
       const defaultValues = passengerData.pax_arrival_patterns?.default || { mean: 120, std: 30 };
@@ -341,8 +399,14 @@ export default function PassengerProfileCriteria({
       // 1. propertyValues 복원 (소수 → 백분율)
       if (editingRule.value) {
         if (configType === 'load_factor') {
-          // 편집 모드: 0.0-1.0 값을 그대로 사용 (슬라이더에서 자동 변환됨)
-          setPropertyValues({ load_factor: editingRule.value.load_factor || 0.8 });
+          // 편집 모드: SimpleLoadFactorTab에서 오는 0-100% 값을 0.0-1.0으로 변환
+          setPropertyValues({ 'Load Factor': (editingRule.distribution?.['Load Factor'] || 80) / 100 });
+        } else if (configType === 'show_up_time') {
+          // 편집 모드: mean과 std 값 복원
+          setPropertyValues({
+            mean: editingRule.distribution?.mean || 120,
+            std: editingRule.distribution?.std || 30,
+          });
         } else if (configType === 'pax_arrival_patterns') {
           setPropertyValues({
             mean: editingRule.value.mean || 120,
@@ -383,32 +447,51 @@ export default function PassengerProfileCriteria({
     }
   }, [editingRule, configType]);
 
-  // 🎯 zustand에서 type 정보 가져오기
-  const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
-  const filterType = selectedConditions?.type || 'departure'; // 기본값 departure
+  // 🔴 zustand 연결 제거 - Mock 데이터로 교체
+  const filterType = 'departure'; // 기본값 departure
 
-  // 🎯 zustand 액션들 가져오기
-  const setNationalityValues = useSimulationStore((state) => state.setNationalityValues);
-  const addNationalityRule = useSimulationStore((state) => state.addNationalityRule);
-  const updateNationalityDistribution = useSimulationStore((state) => state.updateNationalityDistribution);
-  const removeNationalityRule = useSimulationStore((state) => state.removeNationalityRule);
-  const setProfileValues = useSimulationStore((state) => state.setProfileValues);
-  const addProfileRule = useSimulationStore((state) => state.addProfileRule);
-  const updateProfileDistribution = useSimulationStore((state) => state.updateProfileDistribution);
-  const removeProfileRule = useSimulationStore((state) => state.removeProfileRule);
-  const setPaxGenerationValues = useSimulationStore((state) => state.setPaxGenerationValues);
-  const addPaxGenerationRule = useSimulationStore((state) => state.addPaxGenerationRule);
-  const removePaxGenerationRule = useSimulationStore((state) => state.removePaxGenerationRule);
-  const updatePaxGenerationValue = useSimulationStore((state) => state.updatePaxGenerationValue);
-  const setPaxGenerationDefault = useSimulationStore((state) => state.setPaxGenerationDefault);
+  // 🔴 zustand 액션들을 빈 함수로 교체 (UI만 작동하도록)
+  const setNationalityValues = () => {};
+  const addNationalityRule = () => {};
+  const updateNationalityDistribution = () => {};
+  const removeNationalityRule = () => {};
+  const setProfileValues = () => {};
+  const addProfileRule = () => {};
+  const updateProfileDistribution = () => {};
+  const removeProfileRule = () => {};
+  const setPaxGenerationValues = () => {};
+  const addPaxGenerationRule = () => {};
+  const removePaxGenerationRule = () => {};
+  const updatePaxGenerationValue = () => {};
+  const setPaxGenerationDefault = () => {};
 
-  // Show-up-Time 관련 액션들
-  const addPaxArrivalPatternRule = useSimulationStore((state) => state.addPaxArrivalPatternRule);
-  const removePaxArrivalPatternRule = useSimulationStore((state) => state.removePaxArrivalPatternRule);
-  const updatePaxArrivalPatternRule = useSimulationStore((state) => state.updatePaxArrivalPatternRule);
+  // Show-up-Time 관련 액션들을 빈 함수로 교체
+  const addPaxArrivalPatternRule = () => {};
+  const removePaxArrivalPatternRule = () => {};
+  const updatePaxArrivalPatternRule = () => {};
 
-  // 🎯 현재 상태 가져오기 (ruleIndex 계산용)
-  const passengerData = useSimulationStore((state) => state.passenger);
+  // 🔴 passengerData Mock - useMemo로 안정화하여 무한루프 방지
+  const passengerData = useMemo(
+    () => ({
+      pax_demographics: {
+        nationality: {
+          rules: [],
+          available_values: [],
+        },
+        profile: {
+          rules: [],
+          available_values: [],
+        },
+      },
+      pax_generation: {
+        rules: [],
+      },
+      pax_arrival_patterns: {
+        rules: [],
+      },
+    }),
+    []
+  );
 
   // 🎯 컬럼 분류 (올바른 카테고리로)
   const getColumnCategory = (columnKey: string): string | null => {
@@ -593,6 +676,8 @@ export default function PassengerProfileCriteria({
 
   // 전체 항공편 수 계산 (parquetMetadata에서)
   const totalFlights = useMemo(() => {
+    if (!parquetMetadata || parquetMetadata.length === 0) return 0;
+
     const allFlights = new Set<string>();
     parquetMetadata.forEach((item) => {
       Object.values(item.values).forEach((valueData) => {
@@ -832,12 +917,18 @@ export default function PassengerProfileCriteria({
           totalValue={currentTotal}
           selectedFlights={flightCalculations.totalSelected}
           totalFlights={flightCalculations.totalFlights}
-          showFlightValidation={configType === 'nationality' || configType === 'profile'}
+          showFlightValidation={
+            configType === 'nationality' ||
+            configType === 'profile' ||
+            configType === 'load_factor' ||
+            configType === 'show_up_time'
+          }
           showTotalValidation={configType === 'nationality' || configType === 'profile'}
           createButtonText={editingRule ? 'Update' : 'Create'}
           isCreateDisabled={
-            (configType === 'nationality' || configType === 'profile') &&
-            (!isValidDistribution || flightCalculations.totalSelected === 0)
+            ((configType === 'nationality' || configType === 'profile') &&
+              (!isValidDistribution || flightCalculations.totalSelected === 0)) ||
+            ((configType === 'load_factor' || configType === 'show_up_time') && flightCalculations.totalSelected === 0)
           }
         >
           {renderValueSetter()}

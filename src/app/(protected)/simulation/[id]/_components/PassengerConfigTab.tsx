@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog';
 import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../_stores';
+// import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 import { DistributionSection } from './DistributionSection';
 import { LoadFactorSection } from './LoadFactorSection';
 import MultipleDistributionChart from './MultipleDistributionChart';
@@ -83,34 +83,54 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
   // Toast hook
   const { toast } = useToast();
 
-  // Zustand 액션들
-  const setNationalityValues = useSimulationStore((state) => state.setNationalityValues);
-  const setProfileValues = useSimulationStore((state) => state.setProfileValues);
-  const setPaxGenerationValues = useSimulationStore((state) => state.setPaxGenerationValues);
-  const updateNationalityDistribution = useSimulationStore((state) => state.updateNationalityDistribution);
-  const updateProfileDistribution = useSimulationStore((state) => state.updateProfileDistribution);
-  const updatePaxGenerationDistribution = useSimulationStore((state) => state.updatePaxGenerationDistribution);
-  const setNationalityDefault = useSimulationStore((state) => state.setNationalityDefault);
-  const setProfileDefault = useSimulationStore((state) => state.setProfileDefault);
-  const setPaxGenerationDefault = useSimulationStore((state) => state.setPaxGenerationDefault);
+  // 🔴 Zustand 액션들을 빈 함수로 교체 - nationality 절대 저장 금지
+  const setNationalityValues = () => {}; // 🚫 nationality zustand 저장 차단
+  const setProfileValues = () => {};
+  const setPaxGenerationValues = () => {};
+  const updateNationalityDistribution = () => {}; // 🚫 nationality zustand 저장 차단
+  const updateProfileDistribution = () => {};
+  const updatePaxGenerationDistribution = () => {};
+  const setNationalityDefault = () => {}; // 🚫 nationality zustand 저장 차단
+  const setProfileDefault = () => {};
+  const setPaxGenerationDefault = () => {};
 
-  // 저장된 rules 가져오기
-  const passengerData = useSimulationStore((state) => state.passenger);
-  const removeNationalityRule = useSimulationStore((state) => state.removeNationalityRule);
-  const removeProfileRule = useSimulationStore((state) => state.removeProfileRule);
-  const removePaxGenerationRule = useSimulationStore((state) => state.removePaxGenerationRule);
+  // 🔴 passengerData Mock - useMemo로 안정화하여 무한루프 방지
+  const passengerData = useMemo(
+    () => ({
+      pax_demographics: {
+        nationality: {
+          available_values: [],
+          rules: [],
+          default: {},
+        },
+        profile: {
+          available_values: [],
+          rules: [],
+          default: {},
+        },
+      },
+      pax_generation: {
+        rules: [],
+        default: { load_factor: null },
+      },
+    }),
+    []
+  );
+  const removeNationalityRule = () => {}; // 🚫 nationality zustand 저장 차단
+  const removeProfileRule = () => {};
+  const removePaxGenerationRule = () => {};
 
-  // Nationality 기본값 설정 useEffect
-  useEffect(() => {
-    // Nationality 타입이고 빈 배열이면 기본값 설정
-    if (config.type === 'nationality') {
-      const currentNationalityValues = passengerData.pax_demographics.nationality.available_values || [];
-      if (currentNationalityValues.length === 0) {
-        const defaultValues = ['Domestic', 'Foreign'];
-        setNationalityValues(defaultValues);
-      }
-    }
-  }, [config.type, passengerData.pax_demographics.nationality.available_values]);
+  // 🔴 Nationality 기본값 설정 useEffect 차단 - nationality zustand 저장 금지
+  // useEffect(() => {
+  //   // Nationality 타입이고 빈 배열이면 기본값 설정
+  //   if (config.type === 'nationality') {
+  //     const currentNationalityValues = passengerData.pax_demographics.nationality.available_values || [];
+  //     if (currentNationalityValues.length === 0) {
+  //       const defaultValues = ['Domestic', 'Foreign'];
+  //       setNationalityValues(defaultValues); // 🚫 차단됨
+  //     }
+  //   }
+  // }, [config.type, passengerData.pax_demographics.nationality.available_values]);
 
   // 초기화 useEffect
   useEffect(() => {
@@ -469,18 +489,25 @@ export default function PassengerConfigTab({ config, parquetMetadata }: Passenge
     let rules: any[] = [];
     let defaultValues: any = null;
 
-    if (config.type === 'nationality') {
-      rules = passengerData.pax_demographics.nationality.rules || [];
-      defaultValues = passengerData.pax_demographics.nationality.default;
-    } else if (config.type === 'profile') {
-      rules = passengerData.pax_demographics.profile.rules || [];
-      defaultValues = passengerData.pax_demographics.profile.default;
-    } else if (config.type === 'load_factor') {
-      rules = passengerData.pax_generation.rules || [];
-      defaultValues = passengerData.pax_generation.default;
-    } else if (config.type === 'pax_arrival_patterns') {
-      rules = passengerData.pax_arrival_patterns.rules || [];
-      defaultValues = passengerData.pax_arrival_patterns.default;
+    // 🔴 안전 체크: passengerData가 undefined이거나 구조가 없는 경우 처리
+    try {
+      if (config.type === 'nationality') {
+        rules = passengerData?.pax_demographics?.nationality?.rules || [];
+        defaultValues = passengerData?.pax_demographics?.nationality?.default;
+      } else if (config.type === 'profile') {
+        rules = passengerData?.pax_demographics?.profile?.rules || [];
+        defaultValues = passengerData?.pax_demographics?.profile?.default;
+      } else if (config.type === 'load_factor') {
+        rules = passengerData?.pax_generation?.rules || [];
+        defaultValues = passengerData?.pax_generation?.default;
+      } else if (config.type === 'pax_arrival_patterns') {
+        rules = passengerData?.pax_arrival_patterns?.rules || [];
+        defaultValues = passengerData?.pax_arrival_patterns?.default;
+      }
+    } catch (error) {
+      console.warn('getCurrentRules 에러:', error);
+      rules = [];
+      defaultValues = null;
     }
 
     // Default 값이 있으면 마지막 rule로 추가

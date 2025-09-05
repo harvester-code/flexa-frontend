@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { AlertTriangle, CheckCircle, Edit, Plus, Trash2, X, XCircle } from 'lucide-react';
 import {
   AlertDialog,
@@ -18,6 +19,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/Input';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
+
+// Plotly를 동적으로 로드 (SSR 문제 방지)
+const Plot = dynamic(() => import('react-plotly.js'), {
+  ssr: false,
+  loading: () => <div className="flex h-48 items-center justify-center text-gray-500">Loading chart...</div>,
+});
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -51,13 +58,18 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleNationalityTabProps {
+interface SimpleShowUpTimeTabProps {
   parquetMetadata?: ParquetMetadataItem[];
 }
 
-export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNationalityTabProps) {
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Domestic', 'International']);
+export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShowUpTimeTabProps) {
+  // Show-up Time은 mean과 std 두 개 값 필요
+  const [definedProperties, setDefinedProperties] = useState<string[]>(['mean', 'std']);
   const [newPropertyName, setNewPropertyName] = useState<string>('');
+
+  // 기본값을 state로 관리
+  const [defaultMean, setDefaultMean] = useState<number>(120); // 120분
+  const [defaultStd, setDefaultStd] = useState<number>(30); // 30분
 
   // Rule 관련 상태
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
@@ -385,7 +397,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
   };
 
   const handleApplyDefaultRule = () => {
-    const distribution = calculateEqualDistribution(definedProperties);
+    const distribution = { mean: defaultMean, std: defaultStd };
     setDefaultDistribution(distribution);
     setHasDefaultRule(true);
   };
@@ -445,7 +457,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
 
   // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
+    (savedRuleData: { conditions: string[]; flightCount: number; distribution: { mean: number; std: number } }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
@@ -456,7 +468,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                     ...rule,
                     conditions: savedRuleData.conditions,
                     flightCount: savedRuleData.flightCount,
-                    distribution: savedRuleData.distribution,
+                    distribution: savedRuleData.distribution, // { mean: number, std: number }
                   }
                 : rule
             )
@@ -474,7 +486,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution,
+            distribution: savedRuleData.distribution, // { mean: number, std: number }
             isExpanded: true,
           };
 
@@ -502,83 +514,167 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     );
   }, []);
 
-  // 퍼센트 총합 검증 (메모이제이션)
-  const isValidDistribution = useCallback((values: Record<string, number>) => {
+  // Show-up time 유효성 검증 (mean > 0 && std > 0)
+  const isValidDistribution = useCallback((values: Record<string, number> | { mean: number; std: number }) => {
+    if ('mean' in values && 'std' in values) {
+      return values.mean > 0 && values.std > 0;
+    }
+    // fallback for other types
     const total = Object.values(values).reduce((sum, value) => sum + value, 0);
     return Math.abs(total - 100) < 0.1; // 소수점 오차 고려
   }, []);
 
-  // 총합 계산 (메모이제이션)
-  const getDistributionTotal = useCallback((values: Record<string, number>) => {
+  // Show-up time 값 표시용 (mean과 std는 총합 개념이 없음)
+  const getDistributionTotal = useCallback((values: Record<string, number> | { mean: number; std: number }) => {
+    if ('mean' in values && 'std' in values) {
+      return `μ=${values.mean}, σ=${values.std}`;
+    }
     return Object.values(values).reduce((sum, value) => sum + value, 0);
   }, []);
+
+  // 정규분포 곡선 데이터 생성 (메모이제이션)
+  const plotData = useMemo(() => {
+    if (isNaN(defaultMean) || isNaN(defaultStd) || defaultStd <= 0) {
+      return { x: [], y: [] };
+    }
+
+    // 정규분포 범위: 평균 ± 4 표준편차
+    const rangeStart = Math.max(0, defaultMean - 4 * defaultStd);
+    const rangeEnd = defaultMean + 4 * defaultStd;
+    const steps = 200;
+    const stepSize = (rangeEnd - rangeStart) / steps;
+
+    const x: number[] = [];
+    const y: number[] = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const xVal = rangeStart + i * stepSize;
+      // 정규분포 확률밀도함수
+      const yVal =
+        (1 / (defaultStd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((xVal - defaultMean) / defaultStd, 2));
+      x.push(xVal);
+      y.push(yVal);
+    }
+
+    return { x, y };
+  }, [defaultMean, defaultStd]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Nationalities</h3>
-        <p className="text-sm text-default-500">Define what properties can be assigned</p>
+        <h3 className="text-lg font-semibold text-default-900">Define Show-up Time</h3>
+        <p className="text-sm text-default-500">Define default show-up time distribution parameters</p>
       </div>
 
-      {/* Property Input */}
-      <div className="flex gap-3">
-        <Input
-          type="text"
-          placeholder="Enter property name (e.g., domestic, international or a,b,c)..."
-          value={newPropertyName}
-          onChange={(e) => setNewPropertyName(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-1"
-        />
-        <Button onClick={handleAddProperty} disabled={!newPropertyName.trim()} className="flex items-center gap-2">
-          <Plus size={16} />
-          Add Property
-        </Button>
-      </div>
-
-      {/* Defined Properties */}
-      {definedProperties.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {definedProperties.map((property, index) => {
-            const color = COLORS[index % COLORS.length];
-            return (
-              <Badge
-                key={index}
-                className="flex items-center gap-2 border-0 px-3 py-1 font-bold text-white"
-                style={{ backgroundColor: color }}
-              >
-                {property}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 text-white hover:bg-black/20"
-                  onClick={() => handleRemoveProperty(property)}
-                >
-                  <X size={12} />
-                </Button>
-              </Badge>
-            );
-          })}
+      {/* Show-up Time Parameters */}
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+            <Input
+              type="text"
+              value={defaultMean}
+              onClick={(e) => {
+                // 클릭하면 전체 선택
+                (e.target as HTMLInputElement).select();
+              }}
+              onChange={(e) => {
+                const value = e.target.value;
+                // 숫자와 소수점만 허용
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  const numValue = parseFloat(value) || 0;
+                  setDefaultMean(numValue);
+                }
+              }}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+            <Input
+              type="text"
+              value={defaultStd}
+              onClick={(e) => {
+                // 클릭하면 전체 선택
+                (e.target as HTMLInputElement).select();
+              }}
+              onChange={(e) => {
+                const value = e.target.value;
+                // 숫자와 소수점만 허용
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  const numValue = parseFloat(value) || 0;
+                  setDefaultStd(numValue);
+                }
+              }}
+              className="w-full"
+            />
+          </div>
         </div>
-      )}
+
+        {/* Normal Distribution Chart */}
+        {defaultMean && defaultStd && plotData.x.length > 0 && (
+          <div className="rounded-lg border bg-white p-4">
+            <h4 className="mb-3 text-sm font-medium text-gray-700">Normal Distribution Preview</h4>
+            <Plot
+              data={[
+                {
+                  x: plotData.x,
+                  y: plotData.y,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Probability Density',
+                  line: {
+                    color: '#8B5CF6', // Primary color
+                    width: 3,
+                  },
+                  fill: 'tonexty',
+                  fillcolor: 'rgba(139, 92, 246, 0.1)',
+                },
+              ]}
+              layout={{
+                title: {
+                  text: `Normal Distribution (μ=${defaultMean}, σ=${defaultStd})`,
+                  font: { size: 14 },
+                },
+                xaxis: {
+                  title: 'Time (minutes)',
+                  showgrid: true,
+                  zeroline: false,
+                },
+                yaxis: {
+                  title: 'Probability Density',
+                  showgrid: true,
+                  zeroline: false,
+                },
+                margin: { t: 40, r: 20, b: 40, l: 60 },
+                height: 300,
+                showlegend: false,
+                hovermode: 'x',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+              }}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
+              style={{ width: '100%', height: '300px' }}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Add Rules Section - 항상 표시 */}
       <div className="mt-8 border-t border-gray-200 pt-6">
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Distribution Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">Assign Show-up Time Rules</h4>
             <p className="text-sm text-default-500">
-              Define how passengers will be distributed among the nationalities you created above
+              Apply different show-up time parameters to flights based on specific conditions
             </p>
           </div>
 
-          <Button
-            variant={definedProperties.length > 0 ? 'primary' : 'outline'}
-            disabled={definedProperties.length === 0}
-            onClick={handleOpenRuleModal}
-            className="flex items-center gap-2"
-          >
+          <Button variant="primary" onClick={handleOpenRuleModal} className="flex items-center gap-2">
             <Plus size={16} />
             Add Rules
           </Button>
@@ -670,24 +766,70 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                 {/* Distribution Bar */}
                 {rule.distribution && (
                   <div className="mt-3">
-                    <InteractivePercentageBar
-                      properties={definedProperties}
-                      values={rule.distribution}
-                      onChange={(newValues) => handleRuleDistributionChange(rule.id, newValues)}
-                      showValues={true}
-                    />
+                    <div className="space-y-3">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+                          <Input
+                            type="text"
+                            value={rule.distribution.mean || defaultMean}
+                            onClick={(e) => {
+                              (e.target as HTMLInputElement).select();
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                const numValue = parseFloat(value) || 0;
+                                handleRuleDistributionChange(rule.id, {
+                                  ...rule.distribution,
+                                  mean: numValue,
+                                });
+                              }
+                            }}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+                          <Input
+                            type="text"
+                            value={rule.distribution.std || defaultStd}
+                            onClick={(e) => {
+                              (e.target as HTMLInputElement).select();
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                const numValue = parseFloat(value) || 0;
+                                handleRuleDistributionChange(rule.id, {
+                                  ...rule.distribution,
+                                  std: numValue,
+                                });
+                              }
+                            }}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Validation Status */}
                     <div className="mt-2 flex items-center gap-2 text-sm">
                       {isValidDistribution(rule.distribution) ? (
                         <span className="flex items-center gap-1 text-green-600">
                           <CheckCircle size={14} />
-                          Valid distribution (Total: {getDistributionTotal(rule.distribution).toFixed(1)}%)
+                          Valid distribution (
+                          {typeof getDistributionTotal(rule.distribution) === 'string'
+                            ? getDistributionTotal(rule.distribution)
+                            : `Total: ${getDistributionTotal(rule.distribution).toFixed(1)}%`}
+                          )
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-600">
                           <XCircle size={14} />
-                          Total must equal 100% (Current: {getDistributionTotal(rule.distribution).toFixed(1)}%)
+                          {typeof getDistributionTotal(rule.distribution) === 'string'
+                            ? 'Invalid parameters (mean and std must be positive)'
+                            : `Total must equal 100% (Current: ${getDistributionTotal(rule.distribution).toFixed(1)}%)`}
                         </span>
                       )}
                     </div>
@@ -723,24 +865,70 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
 
                 {/* Default Distribution Bar */}
                 <div className="mt-3">
-                  <InteractivePercentageBar
-                    properties={definedProperties}
-                    values={defaultDistribution}
-                    onChange={handleDefaultDistributionChange}
-                    showValues={true}
-                  />
+                  <div className="space-y-3">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+                        <Input
+                          type="text"
+                          value={defaultDistribution.mean || defaultMean}
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).select();
+                          }}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              const numValue = parseFloat(value) || 0;
+                              handleDefaultDistributionChange({
+                                ...defaultDistribution,
+                                mean: numValue,
+                              });
+                            }
+                          }}
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+                        <Input
+                          type="text"
+                          value={defaultDistribution.std || defaultStd}
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).select();
+                          }}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              const numValue = parseFloat(value) || 0;
+                              handleDefaultDistributionChange({
+                                ...defaultDistribution,
+                                std: numValue,
+                              });
+                            }
+                          }}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Default Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     {isValidDistribution(defaultDistribution) ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid distribution (Total: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        Valid distribution (
+                        {typeof getDistributionTotal(defaultDistribution) === 'string'
+                          ? getDistributionTotal(defaultDistribution)
+                          : `Total: ${getDistributionTotal(defaultDistribution).toFixed(1)}%`}
+                        )
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        Total must equal 100% (Current: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        {typeof getDistributionTotal(defaultDistribution) === 'string'
+                          ? 'Invalid parameters (mean and std must be positive)'
+                          : `Total must equal 100% (Current: ${getDistributionTotal(defaultDistribution).toFixed(1)}%)`}
                       </span>
                     )}
                   </div>
@@ -789,8 +977,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and nationality distribution for this rule.'
-                : 'Select flight conditions and assign nationality distribution values.'}
+                ? 'Modify the flight conditions and show-up time parameters for this rule.'
+                : 'Select flight conditions and assign show-up time parameters.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +986,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             <PassengerProfileCriteria
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
-              configType="nationality"
+              configType="show_up_time"
               editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
             />
           </div>

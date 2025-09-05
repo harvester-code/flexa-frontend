@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../_stores';
+
+// import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 
 interface LoadFactorSectionProps {
   onSave?: () => void;
@@ -14,9 +15,9 @@ export const LoadFactorSection: React.FC<LoadFactorSectionProps> = ({ onSave }) 
   const [defaultLoadFactor, setDefaultLoadFactor] = useState<number>(80);
   const { toast } = useToast();
 
-  // Zustand store 연결
-  const passengerData = useSimulationStore((state) => state.passenger);
-  const setPaxGenerationDefault = useSimulationStore((state) => state.setPaxGenerationDefault);
+  // 🔴 Zustand store 연결 제거 - useMemo로 안정화
+  const passengerData = useMemo(() => ({ pax_generation: { default: { load_factor: null } } }), []);
+  const setPaxGenerationDefault = () => {}; // 빈 함수로 교체
 
   // 초기값 로드: store에서 현재 default load factor 값을 가져옴
   useEffect(() => {

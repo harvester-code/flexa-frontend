@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -51,12 +52,14 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleNationalityTabProps {
+interface SimpleLoadFactorTabProps {
   parquetMetadata?: ParquetMetadataItem[];
 }
 
-export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNationalityTabProps) {
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Domestic', 'International']);
+export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoadFactorTabProps) {
+  // Load Factor 기본값 상태
+  const [defaultLoadFactor, setDefaultLoadFactor] = useState<number>(80);
+  const [definedProperties, setDefinedProperties] = useState<string[]>(['Load Factor']);
   const [newPropertyName, setNewPropertyName] = useState<string>('');
 
   // Rule 관련 상태
@@ -385,7 +388,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
   };
 
   const handleApplyDefaultRule = () => {
-    const distribution = calculateEqualDistribution(definedProperties);
+    const distribution = { 'Load Factor': defaultLoadFactor };
     setDefaultDistribution(distribution);
     setHasDefaultRule(true);
   };
@@ -467,7 +470,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const distribution = savedRuleData.distribution || calculateEqualDistribution(definedProperties);
+          const distribution = savedRuleData.distribution || { 'Load Factor': defaultLoadFactor };
 
           const newRule: Rule = {
             id: `rule-${Date.now()}`,
@@ -483,7 +486,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         }
       }
     },
-    [editingRuleId, definedProperties, createdRules.length, calculateEqualDistribution]
+    [editingRuleId, createdRules.length, defaultLoadFactor]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -517,68 +520,26 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     <div className="space-y-6">
       {/* Header */}
       <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Nationalities</h3>
-        <p className="text-sm text-default-500">Define what properties can be assigned</p>
+        <h3 className="text-lg font-semibold text-default-900">Define Load Factor</h3>
+        <p className="text-sm text-default-500">Define default load factor for all flights</p>
       </div>
 
-      {/* Property Input */}
-      <div className="flex gap-3">
-        <Input
-          type="text"
-          placeholder="Enter property name (e.g., domestic, international or a,b,c)..."
-          value={newPropertyName}
-          onChange={(e) => setNewPropertyName(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-1"
-        />
-        <Button onClick={handleAddProperty} disabled={!newPropertyName.trim()} className="flex items-center gap-2">
-          <Plus size={16} />
-          Add Property
-        </Button>
+      {/* Load Factor Slider */}
+      <div className="max-w-md">
+        <LoadFactorSlider value={defaultLoadFactor} onChange={setDefaultLoadFactor} min={0} max={100} step={0.1} />
       </div>
-
-      {/* Defined Properties */}
-      {definedProperties.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {definedProperties.map((property, index) => {
-            const color = COLORS[index % COLORS.length];
-            return (
-              <Badge
-                key={index}
-                className="flex items-center gap-2 border-0 px-3 py-1 font-bold text-white"
-                style={{ backgroundColor: color }}
-              >
-                {property}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 text-white hover:bg-black/20"
-                  onClick={() => handleRemoveProperty(property)}
-                >
-                  <X size={12} />
-                </Button>
-              </Badge>
-            );
-          })}
-        </div>
-      )}
 
       {/* Add Rules Section - 항상 표시 */}
       <div className="mt-8 border-t border-gray-200 pt-6">
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Distribution Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">Assign Load Factor Rules</h4>
             <p className="text-sm text-default-500">
-              Define how passengers will be distributed among the nationalities you created above
+              Apply different load factors to flights based on specific conditions
             </p>
           </div>
 
-          <Button
-            variant={definedProperties.length > 0 ? 'primary' : 'outline'}
-            disabled={definedProperties.length === 0}
-            onClick={handleOpenRuleModal}
-            className="flex items-center gap-2"
-          >
+          <Button variant="primary" onClick={handleOpenRuleModal} className="flex items-center gap-2">
             <Plus size={16} />
             Add Rules
           </Button>
@@ -667,32 +628,39 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                   </div>
                 )}
 
-                {/* Distribution Bar */}
-                {rule.distribution && (
-                  <div className="mt-3">
-                    <InteractivePercentageBar
-                      properties={definedProperties}
-                      values={rule.distribution}
-                      onChange={(newValues) => handleRuleDistributionChange(rule.id, newValues)}
-                      showValues={true}
-                    />
-
-                    {/* Validation Status */}
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      {isValidDistribution(rule.distribution) ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle size={14} />
-                          Valid distribution (Total: {getDistributionTotal(rule.distribution).toFixed(1)}%)
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-red-600">
-                          <XCircle size={14} />
-                          Total must equal 100% (Current: {getDistributionTotal(rule.distribution).toFixed(1)}%)
-                        </span>
-                      )}
+                {/* Load Factor Input */}
+                <div className="mt-3">
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700">Load Factor:</label>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32">
+                        <LoadFactorSlider
+                          value={rule.distribution?.['Load Factor'] || defaultLoadFactor}
+                          onChange={(value) => handleRuleDistributionChange(rule.id, { 'Load Factor': value })}
+                          min={0}
+                          max={100}
+                          step={0.1}
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
+
+                  {/* Validation Status */}
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    {(rule.distribution?.['Load Factor'] || 0) >= 0 &&
+                    (rule.distribution?.['Load Factor'] || 0) <= 100 ? (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <CheckCircle size={14} />
+                        Valid load factor ({rule.distribution?.['Load Factor'] || defaultLoadFactor}%)
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-red-600">
+                        <XCircle size={14} />
+                        Load factor must be between 0% and 100%
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
 
@@ -721,26 +689,35 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                   </div>
                 </div>
 
-                {/* Default Distribution Bar */}
+                {/* Default Load Factor Input */}
                 <div className="mt-3">
-                  <InteractivePercentageBar
-                    properties={definedProperties}
-                    values={defaultDistribution}
-                    onChange={handleDefaultDistributionChange}
-                    showValues={true}
-                  />
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700">Default Load Factor:</label>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32">
+                        <LoadFactorSlider
+                          value={defaultDistribution['Load Factor'] || defaultLoadFactor}
+                          onChange={(value) => handleDefaultDistributionChange({ 'Load Factor': value })}
+                          min={0}
+                          max={100}
+                          step={0.1}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Default Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
-                    {isValidDistribution(defaultDistribution) ? (
+                    {(defaultDistribution['Load Factor'] || defaultLoadFactor) >= 0 &&
+                    (defaultDistribution['Load Factor'] || defaultLoadFactor) <= 100 ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid distribution (Total: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        Valid load factor ({defaultDistribution['Load Factor'] || defaultLoadFactor}%)
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        Total must equal 100% (Current: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        Load factor must be between 0% and 100%
                       </span>
                     )}
                   </div>
@@ -758,7 +735,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                           {flightCalculations.remainingFlights} flights have no rules
                         </h4>
                         <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default nationality distribution to these remaining flights?
+                          Would you like to apply a default load factor to these remaining flights?
                         </p>
                       </div>
                     </div>
@@ -789,8 +766,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and nationality distribution for this rule.'
-                : 'Select flight conditions and assign nationality distribution values.'}
+                ? 'Modify the flight conditions and load factor value for this rule.'
+                : 'Select flight conditions and assign load factor value.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +775,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             <PassengerProfileCriteria
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
-              configType="nationality"
+              configType="load_factor"
               editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
             />
           </div>

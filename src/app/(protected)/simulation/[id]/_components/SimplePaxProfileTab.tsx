@@ -51,12 +51,12 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleNationalityTabProps {
+interface SimplePaxProfileTabProps {
   parquetMetadata?: ParquetMetadataItem[];
 }
 
-export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNationalityTabProps) {
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Domestic', 'International']);
+export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxProfileTabProps) {
+  const [definedProperties, setDefinedProperties] = useState<string[]>(['Business', 'Leisure']);
   const [newPropertyName, setNewPropertyName] = useState<string>('');
 
   // Rule 관련 상태
@@ -517,15 +517,15 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     <div className="space-y-6">
       {/* Header */}
       <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Nationalities</h3>
-        <p className="text-sm text-default-500">Define what properties can be assigned</p>
+        <h3 className="text-lg font-semibold text-default-900">Define Passenger Profiles</h3>
+        <p className="text-sm text-default-500">Define passenger profile categories for classification</p>
       </div>
 
       {/* Property Input */}
       <div className="flex gap-3">
         <Input
           type="text"
-          placeholder="Enter property name (e.g., domestic, international or a,b,c)..."
+          placeholder="Enter profile name (e.g., business, leisure, premium or a,b,c)..."
           value={newPropertyName}
           onChange={(e) => setNewPropertyName(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -533,7 +533,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         />
         <Button onClick={handleAddProperty} disabled={!newPropertyName.trim()} className="flex items-center gap-2">
           <Plus size={16} />
-          Add Property
+          Add Profile
         </Button>
       </div>
 
@@ -567,9 +567,9 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       <div className="mt-8 border-t border-gray-200 pt-6">
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Distribution Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">Assign Profile Distribution Rules</h4>
             <p className="text-sm text-default-500">
-              Define how passengers will be distributed among the nationalities you created above
+              Define how passengers will be distributed among the profile categories you created above
             </p>
           </div>
 
@@ -789,8 +789,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and nationality distribution for this rule.'
-                : 'Select flight conditions and assign nationality distribution values.'}
+                ? 'Modify the flight conditions and profile distribution for this rule.'
+                : 'Select flight conditions and assign profile distribution values.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +798,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             <PassengerProfileCriteria
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
-              configType="nationality"
+              configType="profile"
               editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
             />
           </div>
@@ -811,12 +811,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={20} />
-              Confirm Property Changes
+              Confirm Profile Changes
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingAction?.type === 'add'
-                ? 'Adding new properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'
-                : 'Removing properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'}
+                ? 'Adding new profiles will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'
+                : 'Removing profiles will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 

@@ -26,10 +26,10 @@ export function useLoadScenarioData(
         console.log('🔍 S3 metadata 구조:', s3Data.metadata);
         console.log('🔍 S3 metadata.tabs 구조:', s3Data.metadata?.tabs);
 
-        // S3에서 데이터를 성공적으로 가져왔는지 확인
+        // 메타데이터가 있고 유효한 데이터가 있는 경우
         if (s3Data.metadata && (s3Data.metadata.tabs || s3Data.metadata.context || s3Data.metadata.flight)) {
           console.log('✅ S3에서 유효한 메타데이터를 발견했습니다. 복원을 시작합니다.');
-          // 기존 데이터가 있으면 복원
+          // 기존 데이터가 있으면 zustand store에 복원
           loadCompleteS3Metadata(s3Data);
 
           // ScenarioProfile 데이터가 있으면 별도 처리, 없으면 기본값 설정
@@ -46,8 +46,13 @@ export function useLoadScenarioData(
             });
           }
         } else {
-          // S3에서 받은 응답이 있지만 유효한 메타데이터가 없는 경우
-          console.log('📭 S3 응답은 있지만 유효한 메타데이터가 없습니다. 새 시나리오로 진행합니다.');
+          // 메타데이터가 없는 경우 (새 시나리오 또는 빈 메타데이터)
+          if (s3Data.is_new_scenario) {
+            console.log('📄 새 시나리오입니다. 기본값으로 초기화합니다.');
+          } else {
+            console.log('📭 메타데이터가 비어있습니다. 기본값으로 초기화합니다.');
+          }
+
           setCurrentScenarioTab(0);
           loadScenarioProfileMetadata({
             checkpoint: 'overview',
@@ -59,23 +64,20 @@ export function useLoadScenarioData(
           });
         }
       } catch (error: any) {
-        const isNotFound = error?.response?.status === 404;
         const isUnauthorized = error?.response?.status === 401;
         const isServerError = error?.response?.status >= 500;
 
-        if (isNotFound) {
-          console.log('📄 S3에 저장된 메타데이터가 없습니다. 새 시나리오로 진행합니다.');
-        } else if (isUnauthorized) {
-          console.log('🔐 인증이 필요하거나 만료되었습니다. 새 시나리오로 진행합니다.');
+        if (isUnauthorized) {
+          console.log('🔐 인증이 필요하거나 만료되었습니다. 기본값으로 진행합니다.');
           console.log('인증 에러:', error?.response?.data?.detail || error.message);
         } else if (isServerError) {
-          console.log('🔧 서버 에러로 메타데이터를 불러올 수 없습니다. 새 시나리오로 진행합니다.');
+          console.log('🔧 서버 에러로 메타데이터를 불러올 수 없습니다. 기본값으로 진행합니다.');
           console.log('상세 에러:', error?.response?.data?.detail || error.message);
         } else {
-          console.error('⚠️ 메타데이터 로드 중 알 수 없는 오류 발생:', error);
+          console.error('⚠️ 메타데이터 로드 중 네트워크 오류 발생:', error);
         }
 
-        // 404 (파일 없음), 401 (인증 에러), 500 (서버 에러), 또는 기타 오류 모두 기본값으로 설정
+        // 인증 에러, 서버 에러, 또는 네트워크 오류 시 기본값으로 설정
         setCurrentScenarioTab(0);
         loadScenarioProfileMetadata({
           checkpoint: 'overview',

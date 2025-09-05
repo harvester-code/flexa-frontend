@@ -2,7 +2,8 @@
 
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { useSimulationStore } from '../_stores/store';
+
+// import { useSimulationStore } from '../_stores/store'; // 🔴 zustand 연결 제거
 
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
@@ -53,7 +54,16 @@ interface MultipleDistributionChartProps {
 }
 
 const MultipleDistributionChart: React.FC<MultipleDistributionChartProps> = ({ height = 400 }) => {
-  const { passenger: passengerData } = useSimulationStore();
+  // 🔴 zustand 연결 제거 - useMemo로 안정화
+  const passengerData = useMemo(
+    () => ({
+      pax_demographics: {
+        nationality: { rules: [] },
+        profile: { rules: [] },
+      },
+    }),
+    []
+  );
 
   const plotData = useMemo(() => {
     const traces = [];

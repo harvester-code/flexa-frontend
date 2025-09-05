@@ -4,7 +4,8 @@ import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../_stores';
+
+// import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -23,9 +24,9 @@ export const NormalDistributionSection: React.FC<NormalDistributionSectionProps>
   const [stdError, setStdError] = useState<string>('');
   const { toast } = useToast();
 
-  // Zustand store 연결
-  const passengerData = useSimulationStore((state) => state.passenger);
-  const setPaxArrivalPatternDefault = useSimulationStore((state) => state.setPaxArrivalPatternDefault);
+  // 🔴 Zustand store 연결 제거 - useMemo로 안정화
+  const passengerData = useMemo(() => ({ pax_arrival_patterns: { default: { mean: null, std: null } } }), []);
+  const setPaxArrivalPatternDefault = () => {}; // 빈 함수로 교체
 
   // 초기값 로드
   useEffect(() => {
