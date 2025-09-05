@@ -13,7 +13,6 @@ interface SetDistributionDialogProps {
   totalFlights?: number;
 
   // 액션 핸들러
-  onReset: () => void;
   onCreate: () => void;
   onCancel?: () => void;
 
@@ -31,7 +30,6 @@ export const SetDistributionDialog: React.FC<SetDistributionDialogProps> = ({
   totalValue,
   selectedFlights = 0,
   totalFlights = 0,
-  onReset,
   onCreate,
   onCancel,
   showFlightValidation = true,
@@ -41,12 +39,9 @@ export const SetDistributionDialog: React.FC<SetDistributionDialogProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      {/* Header with title and reset button */}
+      {/* Header with title */}
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-default-900">{title}</h4>
-        <Button variant="outline" onClick={onReset} className="h-8 px-2 text-xs">
-          Reset
-        </Button>
       </div>
 
       {/* Content area - 타입별로 다른 값 설정 컴포넌트 */}

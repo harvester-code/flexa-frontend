@@ -181,17 +181,23 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       const metadata = {
         ...simulationState,
         savedAt: new Date().toISOString(),
+        // 날짜가 비어있으면 오늘 날짜로 설정
+        context: {
+          ...simulationState.context,
+          date: simulationState.context.date || new Date().toISOString().split('T')[0],
+        },
       };
 
       console.log('🆕 통합 Store 메타데이터 수집 완료:', metadata);
       return metadata;
     } catch (error) {
       console.error('🆕 통합 Store 메타데이터 수집 중 오류 발생:', error);
+      const currentDate = new Date().toISOString().split('T')[0];
       return {
         context: {
           scenarioId: scenarioId,
           airport: '',
-          date: '',
+          date: currentDate,
           lastSavedAt: null,
         },
         flight: {
@@ -222,8 +228,16 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 🆕 통합 Store 액션들
   const setLastSavedAt = useSimulationStore((s) => s.setLastSavedAt);
+  const setDate = useSimulationStore((s) => s.setDate);
+  const currentDate = useSimulationStore((s) => s.context.date);
 
-  // ✅ scenarioId는 loadCompleteS3Metadata에서 직접 설정하므로 별도 useEffect 불필요
+  // ✅ 클라이언트 측에서만 날짜 초기화 (hydration mismatch 방지)
+  useEffect(() => {
+    if (!currentDate) {
+      const today = new Date().toISOString().split('T')[0];
+      setDate(today);
+    }
+  }, [currentDate, setDate]);
 
   // 임시저장 함수
   const handleTempSave = async () => {

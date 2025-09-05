@@ -23,7 +23,6 @@ interface PassengerProfileCriteriaProps {
   parquetMetadata: ParquetMetadataItem[];
   definedProperties?: string[];
   configType?: string;
-  onRuleSaved?: () => void;
   editingRule?: any; // 편집할 rule 데이터
   editingRuleIndex?: number; // 편집할 rule의 인덱스
 }
@@ -32,7 +31,6 @@ export default function PassengerProfileCriteria({
   parquetMetadata,
   definedProperties = [],
   configType,
-  onRuleSaved,
   editingRule,
   editingRuleIndex,
 }: PassengerProfileCriteriaProps) {
@@ -44,11 +42,108 @@ export default function PassengerProfileCriteria({
   const [isValidDistribution, setIsValidDistribution] = useState(true);
   const [currentTotal, setCurrentTotal] = useState(100);
 
-  // 초기값 설정 (새 생성 모드)
+  // 초기값 설정 (새 생성 모드 + 편집 모드)
   useEffect(() => {
-    if (!editingRule && definedProperties.length > 0) {
+    // 🔄 새 생성 모드: 상태 초기화
+    if (!editingRule) {
+      setSelectedItems({});
+      setSelectedColumn(null);
+      setSearchQuery('');
+    }
+
+    if (editingRule) {
+      // 편집 모드: 기존 분배값 설정
+      if (editingRule.distribution) {
+        const percentageValues: Record<string, number> = {};
+        Object.keys(editingRule.distribution).forEach((key) => {
+          percentageValues[key] = editingRule.distribution[key]; // 이미 백분율 형태
+        });
+        setPropertyValues(percentageValues);
+      }
+
+      // 편집 모드: 배지에서 체크박스 상태 복구 🎯
+      if (editingRule.conditions && editingRule.conditions.length > 0) {
+        const selectedItemsFromConditions: Record<string, boolean> = {};
+        let firstColumnToSelect: string | null = null;
+
+        // Display label을 실제 column key로 변환하는 맵핑 (실제 parquet 컬럼명과 매치)
+        const labelToColumnMap: Record<string, string> = {
+          Airline: 'operating_carrier_name',
+          'Aircraft Type': 'aircraft_type_icao',
+          'Flight Type': 'flight_type',
+          'Total Seats': 'total_seats',
+          'Arrival Airport': 'arrival_airport_iata',
+          'Arrival Terminal': 'arrival_terminal',
+          'Arrival City': 'arrival_city',
+          'Arrival Country': 'arrival_country',
+          'Arrival Region': 'arrival_region',
+          'Departure Airport Iata': 'departure_airport_iata',
+          'Departure Terminal': 'departure_terminal',
+          'Departure City': 'departure_city',
+          'Departure Country': 'departure_country',
+          'Departure Region': 'departure_region',
+        };
+
+        // 🎯 배지 형태에서 개별 조건으로 파싱하는 로직 지원
+        const parseConditions = (conditions: string[]) => {
+          const parsedConditions: string[] = [];
+
+          conditions.forEach((condition) => {
+            // 일반 형태: "Airline: Korean Air"
+            if (condition.includes(': ') && !condition.includes(' | ')) {
+              parsedConditions.push(condition);
+            }
+            // 배지 형태: "Airline: Korean Air | Asiana Airlines"
+            else if (condition.includes(' | ')) {
+              const parts = condition.split(': ');
+              if (parts.length === 2) {
+                const category = parts[0];
+                const values = parts[1].split(' | ');
+                values.forEach((value) => {
+                  parsedConditions.push(`${category}: ${value.trim()}`);
+                });
+              }
+            }
+          });
+
+          return parsedConditions;
+        };
+
+        const individualConditions = parseConditions(editingRule.conditions);
+
+        individualConditions.forEach((condition: string) => {
+          // "Airline: Korean Air" 형태를 파싱
+          const parts = condition.split(': ');
+          if (parts.length === 2) {
+            const displayLabel = parts[0];
+            const value = parts[1];
+            const actualColumnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+            const key = `${actualColumnKey}:${value}`;
+            selectedItemsFromConditions[key] = true;
+
+            // 첫 번째 컬럼을 기본 선택 컬럼으로 설정 (2단계 선택 구조)
+            if (!firstColumnToSelect) {
+              firstColumnToSelect = actualColumnKey;
+            }
+          }
+        });
+
+        console.log('🔄 배지로부터 복구된 체크박스 상태:', selectedItemsFromConditions);
+        console.log('🔄 첫 번째 컬럼 선택:', firstColumnToSelect);
+
+        // 🎯 1단계: 먼저 컬럼 선택 (오른쪽 패널 렌더링 트리거)
+        if (firstColumnToSelect) {
+          setSelectedColumn(firstColumnToSelect);
+
+          // 🎯 2단계: 컬럼 선택 후 약간의 지연을 두고 체크박스 상태 설정
+          setTimeout(() => {
+            setSelectedItems(selectedItemsFromConditions);
+          }, 100); // 100ms 지연으로 렌더링 완료 후 체크박스 설정
+        }
+      }
+    } else if (!editingRule && definedProperties.length > 0) {
+      // 새 생성 모드: 균등분배로 초기화
       if (configType === 'nationality' || configType === 'profile') {
-        // 균등분배로 초기화 (1% 단위로 올림 처리)
         const equalPercentage = Math.floor(100 / definedProperties.length);
         let remainder = 100 - equalPercentage * definedProperties.length;
 
@@ -65,27 +160,6 @@ export default function PassengerProfileCriteria({
     }
   }, [definedProperties, configType, editingRule]);
 
-  // Reset 핸들러
-  const handleReset = () => {
-    if (configType === 'nationality' || configType === 'profile') {
-      // 균등분배 로직 (1% 단위로 올림 처리)
-      const equalPercentage = Math.floor(100 / definedProperties.length);
-      let remainder = 100 - equalPercentage * definedProperties.length;
-
-      const newValues: Record<string, number> = {};
-      definedProperties.forEach((prop, index) => {
-        newValues[prop] = equalPercentage + (index < remainder ? 1 : 0);
-      });
-      setPropertyValues(newValues);
-    } else if (configType === 'load_factor') {
-      // Load Factor는 0.8 (80%)로 초기화
-      setPropertyValues({ load_factor: 0.8 });
-    } else if (configType === 'pax_arrival_patterns') {
-      // Pax Arrival Patterns 기본값
-      setPropertyValues({ mean: 120, std: 30 });
-    }
-  };
-
   // Create 핸들러
   const handleCreate = () => {
     try {
@@ -100,22 +174,36 @@ export default function PassengerProfileCriteria({
 
       // 🎯 2. 선택된 조건을 API 형태로 변환
       const conditions: Record<string, string[]> = {};
-      Object.keys(selectedItems)
-        .filter((key) => selectedItems[key])
-        .forEach((key) => {
-          const [columnKey, value] = key.split(':');
+      const conditionStrings: string[] = [];
 
-          // 선택된 값을 그대로 사용 (하드코딩 제거)
-          let apiField = columnKey;
-          let apiValue = value;
+      console.log('🔍 Create 버튼 클릭 - 선택된 조건들:', selectedItems);
 
-          if (!conditions[apiField]) {
-            conditions[apiField] = [];
-          }
-          if (!conditions[apiField].includes(apiValue)) {
-            conditions[apiField].push(apiValue);
-          }
-        });
+      const selectedKeys = Object.keys(selectedItems).filter((key) => selectedItems[key]);
+      console.log('🔍 필터링된 선택 키들:', selectedKeys);
+
+      selectedKeys.forEach((key) => {
+        const [columnKey, value] = key.split(':');
+        console.log(`🔍 처리 중인 조건: ${columnKey} = ${value}`);
+
+        // 선택된 값을 그대로 사용 (하드코딩 제거)
+        let apiField = columnKey;
+        let apiValue = value;
+
+        if (!conditions[apiField]) {
+          conditions[apiField] = [];
+        }
+        if (!conditions[apiField].includes(apiValue)) {
+          conditions[apiField].push(apiValue);
+        }
+
+        // 표시용 조건 문자열 생성 (배지 형태로 저장)
+        const displayField = getColumnLabel(apiField);
+        const conditionString = `${displayField}: ${apiValue}`;
+        console.log(`🔍 생성된 조건 문자열: ${conditionString}`);
+        conditionStrings.push(conditionString);
+      });
+
+      console.log('🔍 최종 조건 문자열들:', conditionStrings);
 
       // 🎯 3. 규칙 추가 또는 수정
       const isEditMode = editingRuleIndex !== undefined && editingRuleIndex !== null;
@@ -135,6 +223,24 @@ export default function PassengerProfileCriteria({
           const currentRulesLength = Object.keys(passengerData.nationality?.rules || {}).length;
           addNationalityRule(conditions, flightCalculations.totalSelected, decimalValues);
           updateNationalityDistribution(currentRulesLength, decimalValues);
+        }
+
+        // SimpleNationalityTab에 데이터 전달
+        console.log('🔄 Create - SimpleNationalityTab으로 전달할 데이터:', {
+          conditions: conditionStrings,
+          flightCount: flightCalculations.totalSelected,
+          distribution: propertyValues,
+        });
+
+        if ((window as any).handleSimpleRuleSaved) {
+          (window as any).handleSimpleRuleSaved({
+            conditions: conditionStrings,
+            flightCount: flightCalculations.totalSelected,
+            distribution: propertyValues,
+          });
+          console.log('✅ SimpleNationalityTab으로 데이터 전달 완료');
+        } else {
+          console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
       } else if (configType === 'profile') {
         const decimalValues = Object.keys(propertyValues).reduce(
@@ -174,10 +280,7 @@ export default function PassengerProfileCriteria({
         }
       }
 
-      // 🎯 4. 성공 처리
-      if (onRuleSaved) {
-        onRuleSaved();
-      }
+      // 🎯 4. 성공 처리 (window.handleSimpleRuleSaved로 처리됨)
     } catch (error) {
       console.error('❌ Failed to save configuration:', error);
     }
@@ -724,7 +827,6 @@ export default function PassengerProfileCriteria({
       {definedProperties.length > 0 && (
         <SetDistributionDialog
           title={getDialogTitle()}
-          onReset={handleReset}
           onCreate={handleCreate}
           isValid={isValidDistribution}
           totalValue={currentTotal}
@@ -732,6 +834,7 @@ export default function PassengerProfileCriteria({
           totalFlights={flightCalculations.totalFlights}
           showFlightValidation={configType === 'nationality' || configType === 'profile'}
           showTotalValidation={configType === 'nationality' || configType === 'profile'}
+          createButtonText={editingRule ? 'Update' : 'Create'}
           isCreateDisabled={
             (configType === 'nationality' || configType === 'profile') &&
             (!isValidDistribution || flightCalculations.totalSelected === 0)

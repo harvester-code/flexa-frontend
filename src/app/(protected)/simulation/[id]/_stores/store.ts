@@ -246,7 +246,7 @@ const createInitialState = (scenarioId?: string) => ({
   context: {
     scenarioId: scenarioId || '',
     airport: 'ICN', // ICN을 기본값으로 설정
-    date: new Date().toISOString().split('T')[0], // 오늘 날짜 (YYYY-MM-DD 형식)
+    date: '', // 빈 문자열로 초기화 - 클라이언트에서 설정
     lastSavedAt: null,
   },
   flight: {
@@ -477,7 +477,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         state.flight.appliedFilterResult = {
           ...result,
-          appliedAt: new Date().toISOString(),
+          appliedAt: result.appliedAt || new Date().toISOString(), // 결과에 이미 있으면 사용, 없으면 생성
         };
 
         // ✅ appliedFilterResult가 설정되면 step1 완료 처리

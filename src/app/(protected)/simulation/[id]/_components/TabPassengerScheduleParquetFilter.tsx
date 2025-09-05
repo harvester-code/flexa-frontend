@@ -5,6 +5,7 @@ import { Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import PassengerConfigTab from './PassengerConfigTab';
+import SimpleNationalityTab from './SimpleNationalityTab';
 
 interface ParquetMetadataItem {
   column: string;
@@ -73,8 +74,9 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="nationality" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="nationality">Nationality</TabsTrigger>
+            <TabsTrigger value="nationality2">Nationality2</TabsTrigger>
             <TabsTrigger value="profile">Pax Profile</TabsTrigger>
             <TabsTrigger value="loadfactor">Load Factor</TabsTrigger>
             <TabsTrigger value="showuptime">Show-up-Time</TabsTrigger>
@@ -82,6 +84,10 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
 
           <TabsContent value="nationality" className="mt-6">
             <PassengerConfigTab config={tabConfigs.nationality} parquetMetadata={parquetMetadata} />
+          </TabsContent>
+
+          <TabsContent value="nationality2" className="mt-6">
+            <SimpleNationalityTab parquetMetadata={parquetMetadata} />
           </TabsContent>
 
           <TabsContent value="profile" className="mt-6">

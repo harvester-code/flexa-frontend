@@ -88,9 +88,25 @@ export default function InteractivePercentageBar({
     const newPercentage = Math.max(0, parseFloat(editingValue) || 0);
     const property = properties[editingIndex];
 
-    // 새로운 값 적용 (자동 조정하지 않음)
-    const newValues = { ...values };
-    newValues[property] = newPercentage;
+    // 새로운 값 적용
+    let newValues = { ...values };
+
+    // 🎯 1개 항목일 때: 항상 100%
+    if (properties.length === 1) {
+      newValues[property] = 100;
+    }
+    // 🎯 2개 항목일 때: 자동 배정 (나머지 = 100 - 현재값)
+    else if (properties.length === 2) {
+      newValues[property] = Math.min(100, newPercentage); // 100% 초과 방지
+      const otherProperty = properties.find((p) => p !== property);
+      if (otherProperty) {
+        newValues[otherProperty] = 100 - newValues[property];
+      }
+    }
+    // 🎯 3개 이상일 때: 사용자 입력 그대로 적용
+    else {
+      newValues[property] = newPercentage;
+    }
 
     onChange(newValues);
     setEditingIndex(-1);

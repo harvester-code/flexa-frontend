@@ -25,6 +25,86 @@ interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
 }
 
+// 🔢 Facility Count Editor 컴포넌트
+interface FacilityCountEditorProps {
+  selectedZone: string;
+  selectedProcessIndex: number;
+  currentFacilityCount: number;
+  onUpdateCount: (processIndex: number, zoneName: string, count: number) => void;
+}
+
+function FacilityCountEditor({
+  selectedZone,
+  selectedProcessIndex,
+  currentFacilityCount,
+  onUpdateCount,
+}: FacilityCountEditorProps) {
+  const [inputValue, setInputValue] = useState<string>('');
+
+  // 현재 시설 수를 input에 반영
+  useEffect(() => {
+    setInputValue(currentFacilityCount.toString());
+  }, [currentFacilityCount, selectedZone]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // 숫자만 허용
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setInputValue(numericValue);
+  };
+
+  const handleApply = () => {
+    const newCount = parseInt(inputValue) || 0;
+
+    if (newCount < 0 || newCount > 50) {
+      alert('Please enter a number between 0 and 50');
+      setInputValue(currentFacilityCount.toString());
+      return;
+    }
+
+    if (newCount !== currentFacilityCount) {
+      onUpdateCount(selectedProcessIndex, selectedZone, newCount);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleApply();
+    }
+  };
+
+  const isChanged = inputValue !== currentFacilityCount.toString();
+
+  return (
+    <div className="mb-4 rounded-lg border bg-slate-50 p-4">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Settings size={16} className="text-slate-600" />
+          <span className="text-sm font-medium text-slate-700">{selectedZone} Facilities</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onClick={(e) => e.currentTarget.select()}
+            onKeyDown={handleKeyDown}
+            className="w-20 text-center"
+            placeholder="0"
+          />
+          <Button size="sm" onClick={handleApply} disabled={!isChanged} className="px-3">
+            Apply
+          </Button>
+        </div>
+
+        <div className="text-xs text-slate-500">Current: {currentFacilityCount} facilities</div>
+      </div>
+    </div>
+  );
+}
+
 // 뱃지 타입 정의
 interface BadgeCondition {
   id: string;
@@ -191,9 +271,6 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number>(0);
   const [selectedZone, setSelectedZone] = useState<string>('');
 
-  // 🔢 Zone Counter 상태 (임시 입력값)
-  const [tempFacilityCount, setTempFacilityCount] = useState<string>('');
-
   // 체크박스 상태 관리 (cellId를 키로 사용)
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
 
@@ -263,75 +340,6 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   const currentFacilityCount = useMemo(() => {
     return currentFacilities.length;
   }, [currentFacilities]);
-
-  // 🔄 Zone 변경 시 임시 카운트 동기화
-  useEffect(() => {
-    setTempFacilityCount(currentFacilityCount.toString());
-  }, [currentFacilityCount, selectedZone]);
-
-  // 🎯 시설 개수 업데이트 핸들러 (상태 정리 포함)
-  const handleUpdateFacilityCount = useCallback(() => {
-    const newCount = parseInt(tempFacilityCount);
-    if (isNaN(newCount) || newCount < 0 || newCount > 50) {
-      alert('Please enter a valid number between 0 and 50');
-      setTempFacilityCount(currentFacilityCount.toString());
-      return;
-    }
-
-    if (newCount !== currentFacilityCount) {
-      // 🗑️ 시설 개수가 줄어들 때: 삭제될 열들의 모든 상태 정리
-      if (newCount < currentFacilityCount) {
-        const timeSlotCount = timeSlots.length;
-        const cellsToRemove: string[] = [];
-
-        // 삭제될 열들의 모든 셀 ID 수집
-        for (let colIndex = newCount; colIndex < currentFacilityCount; colIndex++) {
-          for (let rowIndex = 0; rowIndex < timeSlotCount; rowIndex++) {
-            cellsToRemove.push(`${rowIndex}-${colIndex}`);
-          }
-        }
-
-        // 🚀 배치 업데이트로 성능 최적화
-        React.startTransition(() => {
-          // 체크박스 상태 정리
-          setCheckedCells((prev) => {
-            const newSet = new Set(prev);
-            cellsToRemove.forEach((cellId) => newSet.delete(cellId));
-            return newSet;
-          });
-
-          // 뱃지 상태 정리
-          setCellBadges((prev) => {
-            const updated = { ...prev };
-            cellsToRemove.forEach((cellId) => {
-              delete updated[cellId];
-            });
-            return updated;
-          });
-
-          // 선택된 셀 상태 정리
-          setSelectedCells((prev) => {
-            const newSet = new Set(prev);
-            cellsToRemove.forEach((cellId) => newSet.delete(cellId));
-            return newSet;
-          });
-        });
-      }
-
-      // Zustand 업데이트
-      setFacilitiesForZone(selectedProcessIndex, selectedZone, newCount);
-    }
-  }, [
-    tempFacilityCount,
-    currentFacilityCount,
-    selectedProcessIndex,
-    selectedZone,
-    timeSlots.length,
-    setFacilitiesForZone,
-    setCheckedCells,
-    setCellBadges,
-    setSelectedCells,
-  ]);
 
   // 체크박스 토글 핸들러 (개별 클릭용)
   const handleCheckboxToggle = (rowIndex: number, colIndex: number) => {
@@ -1106,44 +1114,12 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
 
           {/* 🔢 Zone Counter - 시설 개수 설정 */}
           {selectedZone && (
-            <div className="mb-4 rounded-lg border bg-slate-50 p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Settings size={16} className="text-slate-600" />
-                  <span className="text-sm font-medium text-slate-700">{selectedZone} Facilities</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={tempFacilityCount}
-                    onChange={(e) => {
-                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                      const count = parseInt(numericValue) || 0;
-                      const clampedCount = Math.min(50, Math.max(0, count));
-                      setTempFacilityCount(clampedCount.toString());
-                    }}
-                    onClick={(e) => e.target.select()}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleUpdateFacilityCount();
-                      }
-                    }}
-                    className="w-20 text-center"
-                    placeholder="0"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleUpdateFacilityCount}
-                    disabled={tempFacilityCount === currentFacilityCount.toString()}
-                    className="px-3"
-                  >
-                    Apply
-                  </Button>
-                </div>
-                <div className="text-xs text-slate-500">Current: {currentFacilityCount} facilities</div>
-              </div>
-            </div>
+            <FacilityCountEditor
+              selectedZone={selectedZone}
+              selectedProcessIndex={selectedProcessIndex}
+              currentFacilityCount={currentFacilityCount}
+              onUpdateCount={setFacilitiesForZone}
+            />
           )}
 
           {/* 우클릭 컨텍스트 메뉴 */}
