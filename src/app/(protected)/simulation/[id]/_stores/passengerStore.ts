@@ -123,22 +123,26 @@ const convertUIConditionsToBackend = (uiConditions: string[]): Record<string, st
     },
   };
 
-  uiConditions.forEach((condition) => {
-    const parts = condition.split(': ');
-    if (parts.length === 2) {
-      const displayLabel = parts[0];
-      const value = parts[1];
-      const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+  if (Array.isArray(uiConditions)) {
+    uiConditions.forEach((condition) => {
+      if (typeof condition === 'string') {
+        const parts = condition.split(': ');
+        if (parts.length === 2) {
+          const displayLabel = parts[0];
+          const value = parts[1];
+          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
 
-      // 값 변환 적용 (있으면)
-      const convertedValue = valueMapping[columnKey]?.[value] || value;
+          // 값 변환 적용 (있으면)
+          const convertedValue = valueMapping[columnKey]?.[value] || value;
 
-      if (!backendConditions[columnKey]) {
-        backendConditions[columnKey] = [];
+          if (!backendConditions[columnKey]) {
+            backendConditions[columnKey] = [];
+          }
+          backendConditions[columnKey].push(convertedValue);
+        }
       }
-      backendConditions[columnKey].push(convertedValue);
-    }
-  });
+    });
+  }
 
   return backendConditions;
 };
@@ -149,9 +153,15 @@ const convertUIConditionsToBackend = (uiConditions: string[]): Record<string, st
  */
 const convertPercentageToDecimal = (percentageObj: Record<string, number>): Record<string, number> => {
   const result: Record<string, number> = {};
-  Object.entries(percentageObj).forEach(([key, value]) => {
-    result[key] = value / 100;
-  });
+  
+  if (percentageObj && typeof percentageObj === 'object') {
+    Object.entries(percentageObj).forEach(([key, value]) => {
+      if (typeof key === 'string' && typeof value === 'number' && !isNaN(value)) {
+        result[key] = value / 100;
+      }
+    });
+  }
+  
   return result;
 };
 
@@ -381,63 +391,116 @@ export const usePassengerStore = create<PassengerStoreState>()(
 
     // ==================== JSON Generation ====================
     generatePassengerJSON: () => {
-      const state = get();
-      const unifiedStore = useSimulationStore.getState();
+      try {
+        const state = get();
+        
+        // Unified Store에서 안전하게 airport, date 가져오기
+        let airport = '';
+        let date = '';
+        
+        try {
+          const unifiedStore = useSimulationStore.getState();
+          airport = unifiedStore?.context?.airport || '';
+          date = unifiedStore?.context?.date || '';
+        } catch (error) {
+          console.warn('Failed to get unified store data:', error);
+        }
 
-      // Unified Store에서 airport, date 가져오기
-      const { airport, date } = unifiedStore.context;
-
-      return {
+      const result: any = {
         settings: {
-          airport,
-          date,
-          min_arrival_minutes: 15, // 고정값, 나중에 설정 가능하도록 개선 필요
+          airport: airport || '',
+          date: date || '',
+          min_arrival_minutes: 15,
         },
-        pax_generation: {
-          rules: state.loadFactor.createdRules.map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions),
+        pax_generation: { rules: [], default: {} },
+        pax_demographics: {
+          nationality: { rules: [], default: {} },
+          profile: { rules: [], default: {} },
+        },
+        pax_arrival_patterns: { rules: [], default: {} },
+      };
+
+      // Load Factor 처리
+      try {
+        result.pax_generation = {
+          rules: (state.loadFactor?.createdRules || []).map((rule) => ({
+            conditions: convertUIConditionsToBackend(rule.conditions || []),
             value: {
-              load_factor: (rule.distribution?.['Load Factor'] || 80) / 100, // 하드코딩된 기본값
+              load_factor: (rule.distribution?.['Load Factor'] || 80) / 100,
             },
           })),
           default:
-            state.loadFactor.defaultLoadFactor !== null
+            state.loadFactor?.defaultLoadFactor !== null
               ? { load_factor: state.loadFactor.defaultLoadFactor / 100 }
               : {},
-        },
-        pax_demographics: {
-          nationality: {
-            rules: state.nationality.createdRules.map((rule) => ({
-              conditions: convertUIConditionsToBackend(rule.conditions),
-              value: convertPercentageToDecimal(rule.distribution || {}),
-            })),
-            default: convertPercentageToDecimal(state.nationality.defaultDistribution),
-          },
-          profile: {
-            rules: state.profile.createdRules.map((rule) => ({
-              conditions: convertUIConditionsToBackend(rule.conditions),
-              value: convertPercentageToDecimal(rule.distribution || {}),
-            })),
-            default: convertPercentageToDecimal(state.profile.defaultDistribution),
-          },
-        },
-        pax_arrival_patterns: {
-          rules: state.showUpTime.createdRules.map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions),
+        };
+      } catch (error) {
+        console.warn('Error processing load factor:', error);
+      }
+
+      // Nationality 처리  
+      try {
+        result.pax_demographics.nationality = {
+          rules: (state.nationality?.createdRules || []).map((rule) => ({
+            conditions: convertUIConditionsToBackend(rule.conditions || []),
+            value: convertPercentageToDecimal(rule.distribution || {}),
+          })),
+          default: convertPercentageToDecimal(state.nationality?.defaultDistribution || {}),
+        };
+      } catch (error) {
+        console.warn('Error processing nationality:', error);
+      }
+
+      // Profile 처리
+      try {
+        result.pax_demographics.profile = {
+          rules: (state.profile?.createdRules || []).map((rule) => ({
+            conditions: convertUIConditionsToBackend(rule.conditions || []),
+            value: convertPercentageToDecimal(rule.distribution || {}),
+          })),
+          default: convertPercentageToDecimal(state.profile?.defaultDistribution || {}),
+        };
+      } catch (error) {
+        console.warn('Error processing profile:', error);
+      }
+
+      // Show-up Time 처리
+      try {
+        result.pax_arrival_patterns = {
+          rules: (state.showUpTime?.createdRules || []).map((rule) => ({
+            conditions: convertUIConditionsToBackend(rule.conditions || []),
             value: {
-              mean: rule.distribution?.mean || 120, // 하드코딩된 기본값
-              std: rule.distribution?.std || 30, // 하드코딩된 기본값
+              mean: rule.distribution?.mean || 120,
+              std: rule.distribution?.std || 30,
             },
           })),
           default:
-            state.showUpTime.defaultMean !== null && state.showUpTime.defaultStd !== null
+            state.showUpTime?.defaultMean !== null && state.showUpTime?.defaultStd !== null
               ? {
                   mean: state.showUpTime.defaultMean,
                   std: state.showUpTime.defaultStd,
                 }
               : {},
-        },
-      };
+        };
+      } catch (error) {
+        console.warn('Error processing show-up time:', error);
+      }
+
+        return result;
+      } catch (error) {
+        console.error('Error generating passenger JSON:', error);
+        return {
+          error: 'Failed to generate passenger JSON',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          settings: { airport: '', date: '', min_arrival_minutes: 15 },
+          pax_generation: { rules: [], default: {} },
+          pax_demographics: {
+            nationality: { rules: [], default: {} },
+            profile: { rules: [], default: {} },
+          },
+          pax_arrival_patterns: { rules: [], default: {} },
+        };
+      }
     },
 
     // ==================== Utilities ====================
