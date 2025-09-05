@@ -33,8 +33,10 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <div className="text-lg font-semibold text-default-900">Add Passenger Profiles</div>
-            <p className="text-sm font-normal text-default-500">Set criteria to create passenger profiles</p>
+            <div className="text-lg font-semibold text-default-900">Configure Passenger Data</div>
+            <p className="text-sm font-normal text-default-500">
+              Generate passenger profiles by assigning properties like nationality, load factor, and show-up time
+            </p>
           </div>
         </CardTitle>
       </CardHeader>

@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
+import { usePassengerStore } from '../_stores/passengerStore';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -63,20 +65,25 @@ interface SimpleShowUpTimeTabProps {
 }
 
 export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShowUpTimeTabProps) {
-  // Show-up Time은 mean과 std 두 개 값 필요
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['mean', 'std']);
+  // 🆕 PassengerStore 연결
+  const {
+    showUpTime: { createdRules, hasDefaultRule, defaultMean, defaultStd },
+    addShowUpTimeRule,
+    updateShowUpTimeRule,
+    removeShowUpTimeRule,
+    reorderShowUpTimeRules,
+    updateShowUpTimeDefault,
+  } = usePassengerStore();
+
+  // 프론트엔드 기본값 (하드코딩)
+  const FRONTEND_DEFAULT_MEAN = 120;
+  const FRONTEND_DEFAULT_STD = 30;
+
+  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  const [definedProperties] = useState<string[]>(['mean', 'std']); // 고정값
   const [newPropertyName, setNewPropertyName] = useState<string>('');
-
-  // 기본값을 state로 관리
-  const [defaultMean, setDefaultMean] = useState<number>(120); // 120분
-  const [defaultStd, setDefaultStd] = useState<number>(30); // 30분
-
-  // Rule 관련 상태
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
-  const [createdRules, setCreatedRules] = useState<Rule[]>([]);
-  const [hasDefaultRule, setHasDefaultRule] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [defaultDistribution, setDefaultDistribution] = useState<Record<string, number>>({});
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -311,35 +318,6 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     };
   }, [createdRules, parquetMetadata]); // parquetMetadata도 의존성에 추가
 
-  const handleDeleteRule = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => prevRules.filter((rule) => rule.id !== ruleId));
-  }, []);
-
-  // 룰 순서 변경 함수들 (메모이제이션)
-  const moveRuleUp = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex > 0) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex - 1], newRules[currentIndex]] = [newRules[currentIndex], newRules[currentIndex - 1]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
-  const moveRuleDown = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex < prevRules.length - 1) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex], newRules[currentIndex + 1]] = [newRules[currentIndex + 1], newRules[currentIndex]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
@@ -386,7 +364,8 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    setCreatedRules(newRules);
+    // 🆕 PassengerStore 업데이트
+    reorderShowUpTimeRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
   };
@@ -394,17 +373,6 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
   const handleDragEnd = () => {
     setDraggingRuleId(null);
     setDragOverRuleId(null);
-  };
-
-  const handleApplyDefaultRule = () => {
-    const distribution = { mean: defaultMean, std: defaultStd };
-    setDefaultDistribution(distribution);
-    setHasDefaultRule(true);
-  };
-
-  const handleRemoveDefaultRule = () => {
-    setHasDefaultRule(false);
-    setDefaultDistribution({});
   };
 
   // 확인창 처리
@@ -442,11 +410,6 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     return groups;
   }, []);
 
-  // Default 분배 업데이트
-  const handleDefaultDistributionChange = (newValues: Record<string, number>) => {
-    setDefaultDistribution(newValues);
-  };
-
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
     setEditingRuleId(ruleId);
@@ -455,47 +418,43 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; distribution: { mean: number; std: number } }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
-          setCreatedRules((prevRules) =>
-            prevRules.map((rule) =>
-              rule.id === editingRuleId
-                ? {
-                    ...rule,
-                    conditions: savedRuleData.conditions,
-                    flightCount: savedRuleData.flightCount,
-                    distribution: savedRuleData.distribution, // { mean: number, std: number }
-                  }
-                : rule
-            )
-          );
+          updateShowUpTimeRule(editingRuleId, {
+            conditions: savedRuleData.conditions,
+            flightCount: savedRuleData.flightCount,
+            distribution: savedRuleData.distribution, // { mean: number, std: number }
+          });
         }
         setEditingRuleId(null);
         setIsRuleModalOpen(false);
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const distribution = savedRuleData.distribution || calculateEqualDistribution(definedProperties);
+          const distribution = savedRuleData.distribution || {
+            mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+            std: defaultStd || FRONTEND_DEFAULT_STD,
+          };
 
-          const newRule: Rule = {
+          const newRule = {
             id: `rule-${Date.now()}`,
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution: savedRuleData.distribution, // { mean: number, std: number }
+            distribution: savedRuleData.distribution || distribution, // { mean: number, std: number }
             isExpanded: true,
           };
 
-          setCreatedRules((prev) => [...prev, newRule]);
+          addShowUpTimeRule(newRule);
           setIsRuleModalOpen(false);
         }
       }
     },
-    [editingRuleId, definedProperties, createdRules.length, calculateEqualDistribution]
+    [editingRuleId, defaultMean, defaultStd, createdRules.length, updateShowUpTimeRule, addShowUpTimeRule]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -507,17 +466,10 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     };
   }, [handleRuleSaved]);
 
-  // Rule 분배 업데이트 (메모이제이션)
-  const handleRuleDistributionChange = useCallback((ruleId: string, newValues: Record<string, number>) => {
-    setCreatedRules((prevRules) =>
-      prevRules.map((rule) => (rule.id === ruleId ? { ...rule, distribution: newValues } : rule))
-    );
-  }, []);
-
-  // Show-up time 유효성 검증 (mean > 0 && std > 0)
+  // Show-up time 유효성 검증 (mean >= 0 && std > 0)
   const isValidDistribution = useCallback((values: Record<string, number> | { mean: number; std: number }) => {
     if ('mean' in values && 'std' in values) {
-      return values.mean > 0 && values.std > 0;
+      return values.mean >= 0 && values.std > 0;
     }
     // fallback for other types
     const total = Object.values(values).reduce((sum, value) => sum + value, 0);
@@ -532,140 +484,151 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     return Object.values(values).reduce((sum, value) => sum + value, 0);
   }, []);
 
-  // 정규분포 곡선 데이터 생성 (메모이제이션)
-  const plotData = useMemo(() => {
-    if (isNaN(defaultMean) || isNaN(defaultStd) || defaultStd <= 0) {
-      return { x: [], y: [] };
+  // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
+  const combinedChartConfig = useMemo(() => {
+    const traces: any[] = [];
+    const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#EC4899'];
+
+    // 전체 범위 계산 (모든 분포를 포함)
+    const allMeans = [
+      defaultMean || FRONTEND_DEFAULT_MEAN,
+      ...createdRules.map((rule) => rule.distribution?.mean || defaultMean || FRONTEND_DEFAULT_MEAN),
+    ];
+    const allStds = [
+      defaultStd || FRONTEND_DEFAULT_STD,
+      ...createdRules.map((rule) => rule.distribution?.std || defaultStd || FRONTEND_DEFAULT_STD),
+    ];
+
+    const minMean = Math.min(...allMeans);
+    const maxMean = Math.max(...allMeans);
+    const maxStd = Math.max(...allStds);
+
+    let rangeStart: number;
+    let rangeEnd: number;
+
+    // 단일 분포인지 확인 (default만 있는 경우)
+    if (createdRules.length === 0) {
+      // 단일 분포: 해당 분포 중심으로 적절한 범위 설정
+      rangeStart = (defaultMean || FRONTEND_DEFAULT_MEAN) - 4 * (defaultStd || FRONTEND_DEFAULT_STD);
+      rangeEnd = (defaultMean || FRONTEND_DEFAULT_MEAN) + 4 * (defaultStd || FRONTEND_DEFAULT_STD);
+    } else {
+      // 여러 분포: 모든 분포를 포함하는 범위
+      rangeStart = minMean - 3 * maxStd;
+      rangeEnd = maxMean + 3 * maxStd;
     }
 
-    // 정규분포 범위: 평균 ± 4 표준편차
-    const rangeStart = Math.max(0, defaultMean - 4 * defaultStd);
-    const rangeEnd = defaultMean + 4 * defaultStd;
+    // 최소 범위 보장 (너무 좁은 범위 방지)
+    const minRange = 20; // 최소 20 단위 범위
+    if (rangeEnd - rangeStart < minRange) {
+      const center = (rangeStart + rangeEnd) / 2;
+      rangeStart = center - minRange / 2;
+      rangeEnd = center + minRange / 2;
+    }
+
     const steps = 200;
     const stepSize = (rangeEnd - rangeStart) / steps;
 
-    const x: number[] = [];
-    const y: number[] = [];
-
+    // X축 공통 값
+    const xValues: number[] = [];
     for (let i = 0; i <= steps; i++) {
-      const xVal = rangeStart + i * stepSize;
-      // 정규분포 확률밀도함수
-      const yVal =
-        (1 / (defaultStd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((xVal - defaultMean) / defaultStd, 2));
-      x.push(xVal);
-      y.push(yVal);
+      xValues.push(rangeStart + i * stepSize);
     }
 
-    return { x, y };
-  }, [defaultMean, defaultStd]);
+    // Default 분포 추가
+    const effectiveDefaultMean = defaultMean || FRONTEND_DEFAULT_MEAN;
+    const effectiveDefaultStd = defaultStd || FRONTEND_DEFAULT_STD;
+    if (!isNaN(effectiveDefaultMean) && !isNaN(effectiveDefaultStd) && effectiveDefaultStd > 0) {
+      const defaultY = xValues.map(
+        (x) =>
+          (1 / (effectiveDefaultStd * Math.sqrt(2 * Math.PI))) *
+          Math.exp(-0.5 * Math.pow((x - effectiveDefaultMean) / effectiveDefaultStd, 2))
+      );
+
+      traces.push({
+        x: xValues,
+        y: defaultY,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Default',
+        line: {
+          color: colors[0],
+          width: 3,
+        },
+        fill: 'tonexty',
+        fillcolor: `${colors[0]}15`, // 더 투명하게
+      });
+    }
+
+    // Rule 분포들 추가
+    createdRules.forEach((rule, index) => {
+      const mean = rule.distribution?.mean || defaultMean || FRONTEND_DEFAULT_MEAN;
+      const std = rule.distribution?.std || defaultStd || FRONTEND_DEFAULT_STD;
+
+      if (!isNaN(mean) && !isNaN(std) && std > 0) {
+        const ruleY = xValues.map(
+          (x) => (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2))
+        );
+
+        traces.push({
+          x: xValues,
+          y: ruleY,
+          type: 'scatter',
+          mode: 'lines',
+          name: rule.name,
+          line: {
+            color: colors[(index + 1) % colors.length],
+            width: 2,
+          },
+          fill: 'tonexty',
+          fillcolor: `${colors[(index + 1) % colors.length]}10`, // 더 투명하게
+        });
+      }
+    });
+
+    // 레이아웃 설정
+    const layout = {
+      title: {
+        text: createdRules.length === 0 ? 'Normal Distribution Preview' : 'Combined Normal Distributions',
+        font: { size: 16 },
+      },
+      xaxis: {
+        title: 'Time (minutes)',
+        showgrid: true,
+        zeroline: true,
+        range: [rangeStart, rangeEnd], // 명시적 범위 설정
+        gridcolor: '#E5E7EB',
+        zerolinecolor: '#9CA3AF',
+      },
+      yaxis: {
+        title: 'Probability Density',
+        showgrid: true,
+        zeroline: false,
+        gridcolor: '#E5E7EB',
+      },
+      margin: { t: 60, r: 40, b: 60, l: 80 },
+      height: 400,
+      showlegend: createdRules.length > 0, // 단일 분포일 때는 범례 숨김
+      legend: {
+        x: 1,
+        xanchor: 'right',
+        y: 1,
+        yanchor: 'top',
+        bgcolor: 'rgba(255, 255, 255, 0.8)',
+        bordercolor: '#E5E7EB',
+        borderwidth: 1,
+      },
+      hovermode: 'x unified',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)',
+    };
+
+    return { data: traces, layout };
+  }, [defaultMean, defaultStd, createdRules, FRONTEND_DEFAULT_MEAN, FRONTEND_DEFAULT_STD]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Show-up Time</h3>
-        <p className="text-sm text-default-500">Define default show-up time distribution parameters</p>
-      </div>
-
-      {/* Show-up Time Parameters */}
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
-            <Input
-              type="text"
-              value={defaultMean}
-              onClick={(e) => {
-                // 클릭하면 전체 선택
-                (e.target as HTMLInputElement).select();
-              }}
-              onChange={(e) => {
-                const value = e.target.value;
-                // 숫자와 소수점만 허용
-                if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                  const numValue = parseFloat(value) || 0;
-                  setDefaultMean(numValue);
-                }
-              }}
-              className="w-full"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
-            <Input
-              type="text"
-              value={defaultStd}
-              onClick={(e) => {
-                // 클릭하면 전체 선택
-                (e.target as HTMLInputElement).select();
-              }}
-              onChange={(e) => {
-                const value = e.target.value;
-                // 숫자와 소수점만 허용
-                if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                  const numValue = parseFloat(value) || 0;
-                  setDefaultStd(numValue);
-                }
-              }}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        {/* Normal Distribution Chart */}
-        {defaultMean && defaultStd && plotData.x.length > 0 && (
-          <div className="rounded-lg border bg-white p-4">
-            <h4 className="mb-3 text-sm font-medium text-gray-700">Normal Distribution Preview</h4>
-            <Plot
-              data={[
-                {
-                  x: plotData.x,
-                  y: plotData.y,
-                  type: 'scatter',
-                  mode: 'lines',
-                  name: 'Probability Density',
-                  line: {
-                    color: '#8B5CF6', // Primary color
-                    width: 3,
-                  },
-                  fill: 'tonexty',
-                  fillcolor: 'rgba(139, 92, 246, 0.1)',
-                },
-              ]}
-              layout={{
-                title: {
-                  text: `Normal Distribution (μ=${defaultMean}, σ=${defaultStd})`,
-                  font: { size: 14 },
-                },
-                xaxis: {
-                  title: 'Time (minutes)',
-                  showgrid: true,
-                  zeroline: false,
-                },
-                yaxis: {
-                  title: 'Probability Density',
-                  showgrid: true,
-                  zeroline: false,
-                },
-                margin: { t: 40, r: 20, b: 40, l: 60 },
-                height: 300,
-                showlegend: false,
-                hovermode: 'x',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)',
-              }}
-              config={{
-                displayModeBar: false,
-                responsive: true,
-              }}
-              style={{ width: '100%', height: '300px' }}
-            />
-          </div>
-        )}
-      </div>
-
       {/* Add Rules Section - 항상 표시 */}
-      <div className="mt-8 border-t border-gray-200 pt-6">
+      <div>
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
             <h4 className="text-lg font-semibold text-default-900">Assign Show-up Time Rules</h4>
@@ -681,290 +644,288 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
         </div>
 
         {/* Created Rules */}
-        {createdRules.length > 0 && (
-          <div className="mt-4 space-y-4">
-            {createdRules.map((rule) => (
-              <div
-                key={rule.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, rule.id)}
-                onDragOver={handleDragOver}
-                onDragEnter={(e) => handleDragEnter(e, rule.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, rule.id)}
-                onDragEnd={handleDragEnd}
-                className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
-              >
-                {/* Rule Header */}
-                <div className="pointer-events-none flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {/* 드래그 인디케이터 */}
-                    <div className="flex flex-col gap-0.5 text-gray-400">
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium text-gray-700">
-                          {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
-                        </span>
-                        <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
-                        <span className="text-sm text-gray-500">flights</span>
-                      </div>
-                      {(() => {
-                        const limitedCount = flightCalculations.limitedCounts[rule.id];
-                        return limitedCount && limitedCount > 0 ? (
-                          <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
-                            -{limitedCount} limited
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
+        <div className="mt-4 space-y-4">
+          {createdRules.map((rule) => (
+            <div
+              key={rule.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, rule.id)}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => handleDragEnter(e, rule.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, rule.id)}
+              onDragEnd={handleDragEnd}
+              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
+            >
+              {/* Rule Header */}
+              <div className="pointer-events-none flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* 드래그 인디케이터 */}
+                  <div className="flex flex-col gap-0.5 text-gray-400">
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
                   </div>
-                  <div className="pointer-events-auto flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      onClick={() => handleEditRule(rule.id)}
-                    >
-                      <Edit size={12} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => handleDeleteRule(rule.id)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
 
-                {/* Rule Conditions - 카테고리별 배지 형태 */}
-                {rule.conditions.length > 0 && (
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
-                        <Badge
-                          key={category}
-                          variant="secondary"
-                          className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
-                        >
-                          {values.join(' | ')}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Distribution Bar */}
-                {rule.distribution && (
-                  <div className="mt-3">
-                    <div className="space-y-3">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
-                          <Input
-                            type="text"
-                            value={rule.distribution.mean || defaultMean}
-                            onClick={(e) => {
-                              (e.target as HTMLInputElement).select();
-                            }}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                const numValue = parseFloat(value) || 0;
-                                handleRuleDistributionChange(rule.id, {
-                                  ...rule.distribution,
-                                  mean: numValue,
-                                });
-                              }
-                            }}
-                            className="w-full"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
-                          <Input
-                            type="text"
-                            value={rule.distribution.std || defaultStd}
-                            onClick={(e) => {
-                              (e.target as HTMLInputElement).select();
-                            }}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                const numValue = parseFloat(value) || 0;
-                                handleRuleDistributionChange(rule.id, {
-                                  ...rule.distribution,
-                                  std: numValue,
-                                });
-                              }
-                            }}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Validation Status */}
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      {isValidDistribution(rule.distribution) ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle size={14} />
-                          Valid distribution (
-                          {typeof getDistributionTotal(rule.distribution) === 'string'
-                            ? getDistributionTotal(rule.distribution)
-                            : `Total: ${getDistributionTotal(rule.distribution).toFixed(1)}%`}
-                          )
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-red-600">
-                          <XCircle size={14} />
-                          {typeof getDistributionTotal(rule.distribution) === 'string'
-                            ? 'Invalid parameters (mean and std must be positive)'
-                            : `Total must equal 100% (Current: ${getDistributionTotal(rule.distribution).toFixed(1)}%)`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Default Rule 또는 Apply Default 카드 */}
-            {hasDefaultRule ? (
-              /* Default Section */
-              <div className="rounded-lg border bg-white px-4 py-3">
-                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge className="border-0 bg-green-100 text-green-700">Default</Badge>
                     <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
+                      <span className="font-medium text-gray-700">
+                        {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
+                      </span>
                       <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
                       <span className="text-sm text-gray-500">flights</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={handleRemoveDefaultRule}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
+                    {(() => {
+                      const limitedCount = flightCalculations.limitedCounts[rule.id];
+                      return limitedCount && limitedCount > 0 ? (
+                        <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
+                          -{limitedCount} limited
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
+                <div className="pointer-events-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                    onClick={() => handleEditRule(rule.id)}
+                  >
+                    <Edit size={12} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                    onClick={() => removeShowUpTimeRule(rule.id)}
+                  >
+                    <Trash2 size={12} />
+                  </Button>
+                </div>
+              </div>
 
-                {/* Default Distribution Bar */}
+              {/* Rule Conditions - 카테고리별 배지 형태 */}
+              {rule.conditions.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
+                      <Badge
+                        key={category}
+                        variant="secondary"
+                        className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
+                      >
+                        {values.join(' | ')}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Distribution Bar */}
+              {rule.distribution && (
                 <div className="mt-3">
                   <div className="space-y-3">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
-                        <Input
-                          type="text"
-                          value={defaultDistribution.mean || defaultMean}
-                          onClick={(e) => {
-                            (e.target as HTMLInputElement).select();
+                        <IntegerNumberInput
+                          value={
+                            rule.distribution.mean !== undefined
+                              ? rule.distribution.mean
+                              : defaultMean || FRONTEND_DEFAULT_MEAN
+                          }
+                          onChange={(newMean) => {
+                            updateShowUpTimeRule(rule.id, {
+                              distribution: {
+                                ...rule.distribution,
+                                mean: newMean,
+                              },
+                            });
                           }}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                              const numValue = parseFloat(value) || 0;
-                              handleDefaultDistributionChange({
-                                ...defaultDistribution,
-                                mean: numValue,
-                              });
-                            }
-                          }}
-                          className="w-full"
+                          placeholder={`${defaultMean || FRONTEND_DEFAULT_MEAN} minutes`}
+                          unit="minutes"
+                          min={0}
+                          max={999}
+                          className={
+                            rule.distribution && !isValidDistribution(rule.distribution)
+                              ? 'border-red-500 bg-red-50'
+                              : ''
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
-                        <Input
-                          type="text"
-                          value={defaultDistribution.std || defaultStd}
-                          onClick={(e) => {
-                            (e.target as HTMLInputElement).select();
+                        <IntegerNumberInput
+                          value={
+                            rule.distribution.std !== undefined
+                              ? rule.distribution.std
+                              : defaultStd || FRONTEND_DEFAULT_STD
+                          }
+                          onChange={(newStd) => {
+                            updateShowUpTimeRule(rule.id, {
+                              distribution: {
+                                ...rule.distribution,
+                                std: newStd,
+                              },
+                            });
                           }}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                              const numValue = parseFloat(value) || 0;
-                              handleDefaultDistributionChange({
-                                ...defaultDistribution,
-                                std: numValue,
-                              });
-                            }
-                          }}
-                          className="w-full"
+                          placeholder={(defaultStd || FRONTEND_DEFAULT_STD).toString()}
+                          min={1}
+                          max={999}
+                          className={
+                            rule.distribution && !isValidDistribution(rule.distribution)
+                              ? 'border-red-500 bg-red-50'
+                              : ''
+                          }
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Default Validation Status */}
+                  {/* Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
-                    {isValidDistribution(defaultDistribution) ? (
+                    {isValidDistribution(rule.distribution) ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
                         Valid distribution (
-                        {typeof getDistributionTotal(defaultDistribution) === 'string'
-                          ? getDistributionTotal(defaultDistribution)
-                          : `Total: ${getDistributionTotal(defaultDistribution).toFixed(1)}%`}
+                        {typeof getDistributionTotal(rule.distribution) === 'string'
+                          ? getDistributionTotal(rule.distribution)
+                          : `Total: ${getDistributionTotal(rule.distribution).toFixed(1)}%`}
                         )
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        {typeof getDistributionTotal(defaultDistribution) === 'string'
-                          ? 'Invalid parameters (mean and std must be positive)'
-                          : `Total must equal 100% (Current: ${getDistributionTotal(defaultDistribution).toFixed(1)}%)`}
+                        {typeof getDistributionTotal(rule.distribution) === 'string'
+                          ? 'Invalid parameters (mean must be ≥0, std must be >0)'
+                          : `Total must equal 100% (Current: ${getDistributionTotal(rule.distribution).toFixed(1)}%)`}
                       </span>
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          ))}
+
+          {/* Default Rule - 항상 표시 */}
+          <div className="rounded-lg border bg-white px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">Default</Badge>
+                <div className="flex items-center gap-1">
+                  <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
+                  <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                  <span className="text-sm text-gray-500">flights</span>
+                </div>
               </div>
-            ) : (
-              flightCalculations.remainingFlights > 0 && (
-                /* Apply Default Rule 카드 */
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {flightCalculations.remainingFlights} flights have no rules
-                        </h4>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default nationality distribution to these remaining flights?
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleApplyDefaultRule}
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
-                    >
-                      Apply Default Rule
-                    </Button>
+            </div>
+
+            {/* Default Distribution Parameters */}
+            <div className="mt-3">
+              <div className="space-y-3">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+                    <IntegerNumberInput
+                      value={defaultMean || FRONTEND_DEFAULT_MEAN}
+                      onChange={(newMean) => {
+                        updateShowUpTimeDefault({ mean: newMean, std: defaultStd || FRONTEND_DEFAULT_STD });
+                      }}
+                      placeholder={`${defaultMean || FRONTEND_DEFAULT_MEAN} minutes`}
+                      unit="minutes"
+                      min={0}
+                      max={999}
+                      className={
+                        !isValidDistribution({
+                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                          std: defaultStd || FRONTEND_DEFAULT_STD,
+                        })
+                          ? 'border-red-500 bg-red-50'
+                          : ''
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+                    <IntegerNumberInput
+                      value={defaultStd || FRONTEND_DEFAULT_STD}
+                      onChange={(newStd) => {
+                        updateShowUpTimeDefault({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: newStd });
+                      }}
+                      placeholder={(defaultStd || FRONTEND_DEFAULT_STD).toString()}
+                      min={1}
+                      max={999}
+                      className={
+                        !isValidDistribution({
+                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                          std: defaultStd || FRONTEND_DEFAULT_STD,
+                        })
+                          ? 'border-red-500 bg-red-50'
+                          : ''
+                      }
+                    />
                   </div>
                 </div>
-              )
-            )}
+              </div>
+
+              {/* Default Validation Status */}
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                {isValidDistribution({
+                  mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                  std: defaultStd || FRONTEND_DEFAULT_STD,
+                }) ? (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle size={14} />
+                    Valid distribution (
+                    {typeof getDistributionTotal({
+                      mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                      std: defaultStd || FRONTEND_DEFAULT_STD,
+                    }) === 'string'
+                      ? getDistributionTotal({
+                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                          std: defaultStd || FRONTEND_DEFAULT_STD,
+                        })
+                      : `Total: ${getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }).toFixed(1)}%`}
+                    )
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-red-600">
+                    <XCircle size={14} />
+                    {typeof getDistributionTotal({
+                      mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+                      std: defaultStd || FRONTEND_DEFAULT_STD,
+                    }) === 'string'
+                      ? 'Invalid parameters (mean must be ≥0, std must be >0)'
+                      : `Total must equal 100% (Current: ${getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }).toFixed(1)}%)`}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Combined Distribution Chart - 항상 표시 */}
+      {(defaultMean || FRONTEND_DEFAULT_MEAN) &&
+        (defaultStd || FRONTEND_DEFAULT_STD) &&
+        (defaultStd || FRONTEND_DEFAULT_STD) > 0 && (
+          <div className="mt-6 rounded-lg border bg-white p-4">
+            <h4 className="mb-4 text-lg font-medium text-gray-900">Show-up Time Distributions Comparison</h4>
+            <Plot
+              data={combinedChartConfig.data}
+              layout={combinedChartConfig.layout}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
+              style={{ width: '100%', height: '400px' }}
+            />
           </div>
         )}
-      </div>
 
       {/* Create New Rule Modal */}
       <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>

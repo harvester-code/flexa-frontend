@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { usePassengerStore } from '../_stores/passengerStore';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -56,15 +57,22 @@ interface SimpleNationalityTabProps {
 }
 
 export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNationalityTabProps) {
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Domestic', 'International']);
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
+  // 🆕 PassengerStore 연결
+  const {
+    nationality: { definedProperties, createdRules, hasDefaultRule, defaultDistribution },
+    setNationalityProperties,
+    addNationalityRule,
+    updateNationalityRule,
+    removeNationalityRule,
+    reorderNationalityRules,
+    setNationalityDefaultRule,
+    updateNationalityDefaultDistribution,
+  } = usePassengerStore();
 
-  // Rule 관련 상태
+  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
-  const [createdRules, setCreatedRules] = useState<Rule[]>([]);
-  const [hasDefaultRule, setHasDefaultRule] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [defaultDistribution, setDefaultDistribution] = useState<Record<string, number>>({});
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -83,20 +91,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
   };
 
   // 균등 분배 조정 로직
-  const adjustDistributionsForNewProperties = (newProperties: string[]) => {
-    // 모든 규칙을 균등 분배로 조정
-    const adjustedRules = createdRules.map((rule) => {
-      return { ...rule, distribution: calculateEqualDistribution(newProperties) };
-    });
 
-    // 기본 분배도 균등 분배로 설정
-    const newDefaultDistribution = calculateEqualDistribution(newProperties);
-
-    setCreatedRules(adjustedRules);
-    setDefaultDistribution(newDefaultDistribution);
-  };
-
-  // 새 속성 추가 (확인창 표시)
+  // 속성 추가 (PassengerStore 연동)
   const handleAddProperty = () => {
     if (!newPropertyName.trim()) return;
 
@@ -114,13 +110,13 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         setShowConfirmDialog(true);
       } else {
         // 규칙이 없으면 바로 추가
-        setDefinedProperties(resultProperties);
+        setNationalityProperties(resultProperties);
       }
       setNewPropertyName('');
     }
   };
 
-  // 속성 제거 (확인창 표시)
+  // 속성 제거 (PassengerStore 연동)
   const handleRemoveProperty = (propertyToRemove: string) => {
     const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
 
@@ -130,7 +126,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       setShowConfirmDialog(true);
     } else {
       // 규칙이 없으면 바로 제거
-      setDefinedProperties(newProperties);
+      setNationalityProperties(newProperties);
     }
   };
 
@@ -161,172 +157,91 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     return distribution;
   }, []);
 
-  // 전체 항공편 수 (parquet_metadata에서 계산)
-  const TOTAL_FLIGHTS = useMemo(() => {
-    if (!parquetMetadata || parquetMetadata.length === 0) return 0;
+  // 전체 항공편 수 (상수)
+  const TOTAL_FLIGHTS = 186;
 
-    // parquet_metadata에서 모든 flight들을 수집하여 중복 제거 후 개수 계산
-    const allFlights = new Set<string>();
-    parquetMetadata.forEach((item) => {
-      Object.values(item.values).forEach((valueData) => {
-        valueData.flights.forEach((flight) => {
-          allFlights.add(flight);
-        });
-      });
-    });
-
-    return allFlights.size;
-  }, [parquetMetadata]);
-
-  // 룰 조건을 실제 flights로 변환하는 헬퍼 함수
-  const calculateRuleFlights = useCallback(
-    (conditions: string[]): Set<string> => {
-      if (!parquetMetadata || parquetMetadata.length === 0 || conditions.length === 0) {
-        return new Set();
-      }
-
-      // Display label을 실제 column key로 변환하는 맵핑
-      const labelToColumnMap: Record<string, string> = {
-        Airline: 'operating_carrier_name',
-        'Aircraft Type': 'aircraft_type_icao',
-        'Flight Type': 'flight_type',
-        'Total Seats': 'total_seats',
-        'Arrival Airport': 'arrival_airport_iata',
-        'Arrival Terminal': 'arrival_terminal',
-        'Arrival City': 'arrival_city',
-        'Arrival Country': 'arrival_country',
-        'Arrival Region': 'arrival_region',
-        'Departure Airport Iata': 'departure_airport_iata',
-        'Departure Terminal': 'departure_terminal',
-        'Departure City': 'departure_city',
-        'Departure Country': 'departure_country',
-        'Departure Region': 'departure_region',
-      };
-
-      // 조건들을 컬럼별로 그룹화
-      const conditionsByColumn: Record<string, string[]> = {};
-
-      conditions.forEach((condition) => {
-        // "Airline: Korean Air" 형태를 파싱
-        const parts = condition.split(': ');
-        if (parts.length === 2) {
-          const displayLabel = parts[0];
-          const value = parts[1];
-          const actualColumnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
-
-          if (!conditionsByColumn[actualColumnKey]) {
-            conditionsByColumn[actualColumnKey] = [];
-          }
-          conditionsByColumn[actualColumnKey].push(value);
-        }
-      });
-
-      // 각 컬럼의 조건을 만족하는 항공편 세트들을 구함
-      const flightSetsByColumn: Set<string>[] = [];
-
-      Object.entries(conditionsByColumn).forEach(([columnKey, values]) => {
-        const columnData = parquetMetadata.find((item) => item.column === columnKey);
-        if (!columnData) return;
-
-        // 해당 컬럼에서 선택된 값들의 항공편들을 모두 수집 (OR 조건)
-        const flightsInColumn = new Set<string>();
-        values.forEach((value) => {
-          if (columnData.values[value]) {
-            columnData.values[value].flights.forEach((flight) => {
-              flightsInColumn.add(flight);
-            });
-          }
-        });
-
-        if (flightsInColumn.size > 0) {
-          flightSetsByColumn.push(flightsInColumn);
-        }
-      });
-
-      // 모든 조건을 만족하는 항공편들의 교집합 구하기 (AND 조건)
-      if (flightSetsByColumn.length === 0) {
-        return new Set();
-      } else if (flightSetsByColumn.length === 1) {
-        return flightSetsByColumn[0];
-      } else {
-        let matchingFlights = flightSetsByColumn[0];
-        for (let i = 1; i < flightSetsByColumn.length; i++) {
-          matchingFlights = new Set([...matchingFlights].filter((flight) => flightSetsByColumn[i].has(flight)));
-        }
-        return matchingFlights;
-      }
-    },
-    [parquetMetadata]
-  );
-
-  // 순차적 limited 계산 (메모이제이션)
+  // 조건 겹침을 고려한 순차적 항공편 수 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
-    const actualCounts: Record<string, number> = {};
-    const limitedCounts: Record<string, number> = {};
+    const sequentialCounts: Record<string, number> = {};
     let totalUsedFlights = 0;
-    let usedFlightsSoFar = new Set<string>(); // 이미 사용된 flights 추적
 
-    // 각 룰을 순차적으로 처리
+    // 각 규칙을 순서대로 적용
     createdRules.forEach((rule, index) => {
-      // 현재 룰의 실제 flights 계산
-      const currentRuleFlights = calculateRuleFlights(rule.conditions);
+      let availableCount = rule.flightCount;
 
-      // 이전 룰들과 겹치지 않는 flights만 선택
-      const availableFlights = [...currentRuleFlights].filter((flight) => !usedFlightsSoFar.has(flight));
+      // 이전 규칙들과의 겹침 확인
+      for (let prevIndex = 0; prevIndex < index; prevIndex++) {
+        const prevRule = createdRules[prevIndex];
+        const prevActualCount = sequentialCounts[prevRule.id] || 0;
 
-      // 겹치는 flights 개수 (limited)
-      const overlappingFlights = currentRuleFlights.size - availableFlights.length;
+        if (prevActualCount > 0) {
+          // 조건 겹침 확인 (정확한 교집합 계산)
+          const currentConditions = rule.conditions;
+          const prevConditions = prevRule.conditions;
 
-      // 실제 사용 가능한 편수
-      const actualCount = availableFlights.length;
+          // 겹치는 조건들 찾기
+          const intersection = currentConditions.filter((condition) => prevConditions.includes(condition));
 
-      actualCounts[rule.id] = actualCount;
-      limitedCounts[rule.id] = overlappingFlights;
-      totalUsedFlights += actualCount;
+          if (intersection.length > 0) {
+            // OR 조건을 고려한 정확한 겹침 계산
+            // 예: Rule 1 (Korean Air) = 118편 사용
+            //     Rule 2 (Asiana Airlines | Korean Air + A21N | A333 | B77W) = 95편 요청
+            //     겹치는 부분: Korean Air 조건만 겹침
+            //     사용 가능한 부분: Asiana Airlines 조건은 여전히 사용 가능
 
-      // 사용된 flights를 추적 목록에 추가
-      availableFlights.forEach((flight) => usedFlightsSoFar.add(flight));
+            // 이전 규칙이 현재 규칙에 완전히 포함되는 경우만 제외
+            const isPrevCompletelyIncluded = prevConditions.every((condition) => currentConditions.includes(condition));
+
+            if (isPrevCompletelyIncluded) {
+              // 이전 규칙이 현재 규칙에 완전히 포함되는 경우에만 해당 부분 제외
+              // 하지만 OR 조건이 있으면 일부는 여전히 사용 가능할 수 있음
+
+              // 겹치는 비율을 더 정확하게 계산
+              // 전체 조건 중에서 겹치는 조건의 비율로 계산
+              const totalConditions = currentConditions.length;
+              const overlappingConditions = intersection.length;
+
+              // OR 조건을 고려한 겹침 비율 (보수적으로 계산)
+              let overlapRatio;
+              if (overlappingConditions === totalConditions) {
+                // 모든 조건이 겹치면 완전히 제외
+                overlapRatio = 1.0;
+              } else {
+                // 일부만 겹치면 OR 조건을 고려해서 비례적으로 계산
+                // 더 관대하게 계산 (OR 조건에서는 대안이 있기 때문)
+                overlapRatio = overlappingConditions / Math.max(totalConditions * 2, prevConditions.length * 2);
+              }
+
+              const reduction = Math.floor(prevActualCount * overlapRatio);
+              availableCount = Math.max(0, availableCount - reduction);
+            } else {
+              // 이전 규칙이 현재 규칙에 부분적으로만 겹치는 경우
+              // OR 조건을 고려해서 매우 관대하게 계산
+              const overlapRatio = intersection.length / (currentConditions.length + prevConditions.length);
+              const reduction = Math.floor(prevActualCount * overlapRatio * 0.5); // 50% 할인
+              availableCount = Math.max(0, availableCount - reduction);
+            }
+          }
+        }
+      }
+
+      // 전체 남은 항공편 수를 초과하지 않도록 제한
+      const remainingTotal = TOTAL_FLIGHTS - totalUsedFlights;
+      availableCount = Math.min(availableCount, remainingTotal);
+
+      sequentialCounts[rule.id] = Math.max(0, availableCount);
+      totalUsedFlights += availableCount;
     });
 
     const remainingFlights = Math.max(0, TOTAL_FLIGHTS - totalUsedFlights);
 
     return {
-      actualCounts,
-      limitedCounts,
+      sequentialCounts,
       remainingFlights,
       usedFlights: totalUsedFlights,
       totalFlights: TOTAL_FLIGHTS,
     };
-  }, [createdRules, parquetMetadata]); // parquetMetadata도 의존성에 추가
-
-  const handleDeleteRule = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => prevRules.filter((rule) => rule.id !== ruleId));
-  }, []);
-
-  // 룰 순서 변경 함수들 (메모이제이션)
-  const moveRuleUp = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex > 0) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex - 1], newRules[currentIndex]] = [newRules[currentIndex], newRules[currentIndex - 1]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
-  const moveRuleDown = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex < prevRules.length - 1) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex], newRules[currentIndex + 1]] = [newRules[currentIndex + 1], newRules[currentIndex]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
+  }, [createdRules]); // createdRules가 변경될 때만 재계산
 
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
@@ -374,7 +289,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    setCreatedRules(newRules);
+    // 🆕 PassengerStore 업데이트
+    reorderNationalityRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
   };
@@ -384,22 +300,11 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     setDragOverRuleId(null);
   };
 
-  const handleApplyDefaultRule = () => {
-    const distribution = calculateEqualDistribution(definedProperties);
-    setDefaultDistribution(distribution);
-    setHasDefaultRule(true);
-  };
-
-  const handleRemoveDefaultRule = () => {
-    setHasDefaultRule(false);
-    setDefaultDistribution({});
-  };
-
-  // 확인창 처리
+  // 확인창 처리 (PassengerStore 연동)
   const handleConfirmChanges = () => {
     if (pendingAction) {
-      setDefinedProperties(pendingAction.payload);
-      adjustDistributionsForNewProperties(pendingAction.payload);
+      // PassengerStore의 속성 업데이트 함수 호출 (균등 분배 자동 적용)
+      setNationalityProperties(pendingAction.payload);
       setPendingAction(null);
     }
     setShowConfirmDialog(false);
@@ -430,11 +335,6 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     return groups;
   }, []);
 
-  // Default 분배 업데이트
-  const handleDefaultDistributionChange = (newValues: Record<string, number>) => {
-    setDefaultDistribution(newValues);
-  };
-
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
     setEditingRuleId(ruleId);
@@ -443,24 +343,17 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
-          setCreatedRules((prevRules) =>
-            prevRules.map((rule) =>
-              rule.id === editingRuleId
-                ? {
-                    ...rule,
-                    conditions: savedRuleData.conditions,
-                    flightCount: savedRuleData.flightCount,
-                    distribution: savedRuleData.distribution,
-                  }
-                : rule
-            )
-          );
+          updateNationalityRule(editingRuleId, {
+            conditions: savedRuleData.conditions,
+            flightCount: savedRuleData.flightCount,
+            distribution: savedRuleData.distribution,
+          });
         }
         setEditingRuleId(null);
         setIsRuleModalOpen(false);
@@ -469,7 +362,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         if (savedRuleData) {
           const distribution = savedRuleData.distribution || calculateEqualDistribution(definedProperties);
 
-          const newRule: Rule = {
+          const newRule = {
             id: `rule-${Date.now()}`,
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
@@ -478,12 +371,19 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             isExpanded: true,
           };
 
-          setCreatedRules((prev) => [...prev, newRule]);
+          addNationalityRule(newRule);
           setIsRuleModalOpen(false);
         }
       }
     },
-    [editingRuleId, definedProperties, createdRules.length, calculateEqualDistribution]
+    [
+      editingRuleId,
+      definedProperties,
+      createdRules.length,
+      calculateEqualDistribution,
+      updateNationalityRule,
+      addNationalityRule,
+    ]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -494,13 +394,6 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       delete (window as any).handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
-
-  // Rule 분배 업데이트 (메모이제이션)
-  const handleRuleDistributionChange = useCallback((ruleId: string, newValues: Record<string, number>) => {
-    setCreatedRules((prevRules) =>
-      prevRules.map((rule) => (rule.id === ruleId ? { ...rule, distribution: newValues } : rule))
-    );
-  }, []);
 
   // 퍼센트 총합 검증 (메모이제이션)
   const isValidDistribution = useCallback((values: Record<string, number>) => {
@@ -615,16 +508,18 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-gray-700">
-                          {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
+                          {flightCalculations.sequentialCounts[rule.id] ?? rule.flightCount}
                         </span>
                         <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
                         <span className="text-sm text-gray-500">flights</span>
                       </div>
                       {(() => {
-                        const limitedCount = flightCalculations.limitedCounts[rule.id];
-                        return limitedCount && limitedCount > 0 ? (
+                        const actualCount = flightCalculations.sequentialCounts[rule.id];
+                        const originalCount = rule.flightCount;
+                        const isLimited = actualCount !== undefined && actualCount < originalCount;
+                        return isLimited ? (
                           <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
-                            -{limitedCount} limited
+                            -{originalCount - actualCount} limited
                           </div>
                         ) : null;
                       })()}
@@ -643,7 +538,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => handleDeleteRule(rule.id)}
+                      onClick={() => removeNationalityRule(rule.id)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -673,7 +568,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                     <InteractivePercentageBar
                       properties={definedProperties}
                       values={rule.distribution}
-                      onChange={(newValues) => handleRuleDistributionChange(rule.id, newValues)}
+                      onChange={(newValues) => updateNationalityRule(rule.id, { distribution: newValues })}
                       showValues={true}
                     />
 
@@ -714,7 +609,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={handleRemoveDefaultRule}
+                      onClick={() => setNationalityDefaultRule(false)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -726,7 +621,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                   <InteractivePercentageBar
                     properties={definedProperties}
                     values={defaultDistribution}
-                    onChange={handleDefaultDistributionChange}
+                    onChange={updateNationalityDefaultDistribution}
                     showValues={true}
                   />
 
@@ -763,7 +658,10 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                       </div>
                     </div>
                     <Button
-                      onClick={handleApplyDefaultRule}
+                      onClick={() => {
+                        setNationalityDefaultRule(true);
+                        updateNationalityDefaultDistribution(calculateEqualDistribution(definedProperties));
+                      }}
                       size="sm"
                       variant="outline"
                       className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle, Edit, Plus, Trash2, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Edit, Plus, Trash2, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
+import { usePassengerStore } from '../_stores/passengerStore';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -57,17 +58,24 @@ interface SimpleLoadFactorTabProps {
 }
 
 export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoadFactorTabProps) {
-  // Load Factor 기본값 상태
-  const [defaultLoadFactor, setDefaultLoadFactor] = useState<number>(80);
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Load Factor']);
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
+  // 🆕 PassengerStore 연결
+  const {
+    loadFactor: { createdRules, hasDefaultRule, defaultLoadFactor },
+    addLoadFactorRule,
+    updateLoadFactorRule,
+    removeLoadFactorRule,
+    reorderLoadFactorRules,
+    updateLoadFactorDefault,
+  } = usePassengerStore();
 
-  // Rule 관련 상태
+  // 프론트엔드 기본값 (하드코딩)
+  const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
+
+  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  const [definedProperties] = useState<string[]>(['Load Factor']); // 고정값
+  const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
-  const [createdRules, setCreatedRules] = useState<Rule[]>([]);
-  const [hasDefaultRule, setHasDefaultRule] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [defaultDistribution, setDefaultDistribution] = useState<Record<string, number>>({});
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -85,56 +93,16 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // 균등 분배 조정 로직
-  const adjustDistributionsForNewProperties = (newProperties: string[]) => {
-    // 모든 규칙을 균등 분배로 조정
-    const adjustedRules = createdRules.map((rule) => {
-      return { ...rule, distribution: calculateEqualDistribution(newProperties) };
-    });
+  // Load Factor는 고정 속성이므로 조정 로직 불필요
+  // const adjustDistributionsForNewProperties = () => {};
 
-    // 기본 분배도 균등 분배로 설정
-    const newDefaultDistribution = calculateEqualDistribution(newProperties);
-
-    setCreatedRules(adjustedRules);
-    setDefaultDistribution(newDefaultDistribution);
-  };
-
-  // 새 속성 추가 (확인창 표시)
+  // Load Factor는 고정 속성이므로 추가/제거 로직 불필요
   const handleAddProperty = () => {
-    if (!newPropertyName.trim()) return;
-
-    // 콤마로 구분해서 여러 개 처리
-    const newProperties = newPropertyName
-      .split(',')
-      .map((prop) => capitalizeFirst(prop.trim()))
-      .filter((prop) => prop.length > 0 && !definedProperties.includes(prop));
-
-    if (newProperties.length > 0) {
-      const resultProperties = [...definedProperties, ...newProperties];
-      if (createdRules.length > 0 || hasDefaultRule) {
-        // 규칙이 있으면 확인창 표시 (추가 시에도)
-        setPendingAction({ type: 'add', payload: resultProperties });
-        setShowConfirmDialog(true);
-      } else {
-        // 규칙이 없으면 바로 추가
-        setDefinedProperties(resultProperties);
-      }
-      setNewPropertyName('');
-    }
+    // Load Factor 탭은 속성 고정
   };
 
-  // 속성 제거 (확인창 표시)
-  const handleRemoveProperty = (propertyToRemove: string) => {
-    const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
-
-    if (createdRules.length > 0 || hasDefaultRule) {
-      // 규칙이 있으면 확인창 표시
-      setPendingAction({ type: 'remove', payload: newProperties });
-      setShowConfirmDialog(true);
-    } else {
-      // 규칙이 없으면 바로 제거
-      setDefinedProperties(newProperties);
-    }
+  const handleRemoveProperty = () => {
+    // Load Factor 탭은 속성 고정
   };
 
   // Enter 키 처리
@@ -302,35 +270,6 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     };
   }, [createdRules, parquetMetadata]); // parquetMetadata도 의존성에 추가
 
-  const handleDeleteRule = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => prevRules.filter((rule) => rule.id !== ruleId));
-  }, []);
-
-  // 룰 순서 변경 함수들 (메모이제이션)
-  const moveRuleUp = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex > 0) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex - 1], newRules[currentIndex]] = [newRules[currentIndex], newRules[currentIndex - 1]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
-  const moveRuleDown = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex < prevRules.length - 1) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex], newRules[currentIndex + 1]] = [newRules[currentIndex + 1], newRules[currentIndex]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
@@ -377,7 +316,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    setCreatedRules(newRules);
+    // 🆕 PassengerStore 업데이트
+    reorderLoadFactorRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
   };
@@ -387,24 +327,9 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     setDragOverRuleId(null);
   };
 
-  const handleApplyDefaultRule = () => {
-    const distribution = { 'Load Factor': defaultLoadFactor };
-    setDefaultDistribution(distribution);
-    setHasDefaultRule(true);
-  };
-
-  const handleRemoveDefaultRule = () => {
-    setHasDefaultRule(false);
-    setDefaultDistribution({});
-  };
-
-  // 확인창 처리
+  // 확인창 처리 (Load Factor는 속성 고정이므로 단순화)
   const handleConfirmChanges = () => {
-    if (pendingAction) {
-      setDefinedProperties(pendingAction.payload);
-      adjustDistributionsForNewProperties(pendingAction.payload);
-      setPendingAction(null);
-    }
+    setPendingAction(null);
     setShowConfirmDialog(false);
   };
 
@@ -433,11 +358,6 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     return groups;
   }, []);
 
-  // Default 분배 업데이트
-  const handleDefaultDistributionChange = (newValues: Record<string, number>) => {
-    setDefaultDistribution(newValues);
-  };
-
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
     setEditingRuleId(ruleId);
@@ -452,18 +372,11 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
-          setCreatedRules((prevRules) =>
-            prevRules.map((rule) =>
-              rule.id === editingRuleId
-                ? {
-                    ...rule,
-                    conditions: savedRuleData.conditions,
-                    flightCount: savedRuleData.flightCount,
-                    distribution: savedRuleData.distribution,
-                  }
-                : rule
-            )
-          );
+          updateLoadFactorRule(editingRuleId, {
+            conditions: savedRuleData.conditions,
+            flightCount: savedRuleData.flightCount,
+            distribution: savedRuleData.distribution,
+          });
         }
         setEditingRuleId(null);
         setIsRuleModalOpen(false);
@@ -472,7 +385,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
         if (savedRuleData) {
           const distribution = savedRuleData.distribution || { 'Load Factor': defaultLoadFactor };
 
-          const newRule: Rule = {
+          const newRule = {
             id: `rule-${Date.now()}`,
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
@@ -481,12 +394,12 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
             isExpanded: true,
           };
 
-          setCreatedRules((prev) => [...prev, newRule]);
+          addLoadFactorRule(newRule);
           setIsRuleModalOpen(false);
         }
       }
     },
-    [editingRuleId, createdRules.length, defaultLoadFactor]
+    [editingRuleId, createdRules.length, defaultLoadFactor, updateLoadFactorRule, addLoadFactorRule]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -497,13 +410,6 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
       delete (window as any).handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
-
-  // Rule 분배 업데이트 (메모이제이션)
-  const handleRuleDistributionChange = useCallback((ruleId: string, newValues: Record<string, number>) => {
-    setCreatedRules((prevRules) =>
-      prevRules.map((rule) => (rule.id === ruleId ? { ...rule, distribution: newValues } : rule))
-    );
-  }, []);
 
   // 퍼센트 총합 검증 (메모이제이션)
   const isValidDistribution = useCallback((values: Record<string, number>) => {
@@ -518,19 +424,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Load Factor</h3>
-        <p className="text-sm text-default-500">Define default load factor for all flights</p>
-      </div>
-
-      {/* Load Factor Slider */}
-      <div className="max-w-md">
-        <LoadFactorSlider value={defaultLoadFactor} onChange={setDefaultLoadFactor} min={0} max={100} step={0.1} />
-      </div>
-
       {/* Add Rules Section - 항상 표시 */}
-      <div className="mt-8 border-t border-gray-200 pt-6">
+      <div>
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
             <h4 className="text-lg font-semibold text-default-900">Assign Load Factor Rules</h4>
@@ -546,213 +441,135 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
         </div>
 
         {/* Created Rules */}
-        {createdRules.length > 0 && (
-          <div className="mt-4 space-y-4">
-            {createdRules.map((rule) => (
-              <div
-                key={rule.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, rule.id)}
-                onDragOver={handleDragOver}
-                onDragEnter={(e) => handleDragEnter(e, rule.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, rule.id)}
-                onDragEnd={handleDragEnd}
-                className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
-              >
-                {/* Rule Header */}
-                <div className="pointer-events-none flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {/* 드래그 인디케이터 */}
-                    <div className="flex flex-col gap-0.5 text-gray-400">
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                      <div className="h-1 w-1 rounded-full bg-current"></div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium text-gray-700">
-                          {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
-                        </span>
-                        <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
-                        <span className="text-sm text-gray-500">flights</span>
-                      </div>
-                      {(() => {
-                        const limitedCount = flightCalculations.limitedCounts[rule.id];
-                        return limitedCount && limitedCount > 0 ? (
-                          <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
-                            -{limitedCount} limited
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  </div>
-                  <div className="pointer-events-auto flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      onClick={() => handleEditRule(rule.id)}
-                    >
-                      <Edit size={12} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => handleDeleteRule(rule.id)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Rule Conditions - 카테고리별 배지 형태 */}
-                {rule.conditions.length > 0 && (
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
-                        <Badge
-                          key={category}
-                          variant="secondary"
-                          className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
-                        >
-                          {values.join(' | ')}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Load Factor Input */}
-                <div className="mt-3">
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700">Load Factor:</label>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32">
-                        <LoadFactorSlider
-                          value={rule.distribution?.['Load Factor'] || defaultLoadFactor}
-                          onChange={(value) => handleRuleDistributionChange(rule.id, { 'Load Factor': value })}
-                          min={0}
-                          max={100}
-                          step={0.1}
-                        />
-                      </div>
-                    </div>
+        <div className="mt-4 space-y-4">
+          {createdRules.map((rule) => (
+            <div
+              key={rule.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, rule.id)}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => handleDragEnter(e, rule.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, rule.id)}
+              onDragEnd={handleDragEnd}
+              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
+            >
+              {/* Rule Header */}
+              <div className="pointer-events-none flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* 드래그 인디케이터 */}
+                  <div className="flex flex-col gap-0.5 text-gray-400">
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
+                    <div className="h-1 w-1 rounded-full bg-current"></div>
                   </div>
 
-                  {/* Validation Status */}
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    {(rule.distribution?.['Load Factor'] || 0) >= 0 &&
-                    (rule.distribution?.['Load Factor'] || 0) <= 100 ? (
-                      <span className="flex items-center gap-1 text-green-600">
-                        <CheckCircle size={14} />
-                        Valid load factor ({rule.distribution?.['Load Factor'] || defaultLoadFactor}%)
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-red-600">
-                        <XCircle size={14} />
-                        Load factor must be between 0% and 100%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Default Rule 또는 Apply Default 카드 */}
-            {hasDefaultRule ? (
-              /* Default Section */
-              <div className="rounded-lg border bg-white px-4 py-3">
-                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge className="border-0 bg-green-100 text-green-700">Default</Badge>
                     <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
+                      <span className="font-medium text-gray-700">
+                        {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
+                      </span>
                       <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
                       <span className="text-sm text-gray-500">flights</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={handleRemoveDefaultRule}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
+                    {(() => {
+                      const limitedCount = flightCalculations.limitedCounts[rule.id];
+                      return limitedCount && limitedCount > 0 ? (
+                        <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
+                          -{limitedCount} limited
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
+                <div className="pointer-events-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                    onClick={() => handleEditRule(rule.id)}
+                  >
+                    <Edit size={12} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                    onClick={() => removeLoadFactorRule(rule.id)}
+                  >
+                    <Trash2 size={12} />
+                  </Button>
+                </div>
+              </div>
 
-                {/* Default Load Factor Input */}
-                <div className="mt-3">
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700">Default Load Factor:</label>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32">
-                        <LoadFactorSlider
-                          value={defaultDistribution['Load Factor'] || defaultLoadFactor}
-                          onChange={(value) => handleDefaultDistributionChange({ 'Load Factor': value })}
-                          min={0}
-                          max={100}
-                          step={0.1}
-                        />
-                      </div>
-                    </div>
+              {/* Rule Conditions - 카테고리별 배지 형태 */}
+              {rule.conditions.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
+                      <Badge
+                        key={category}
+                        variant="secondary"
+                        className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
+                      >
+                        {values.join(' | ')}
+                      </Badge>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  {/* Default Validation Status */}
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    {(defaultDistribution['Load Factor'] || defaultLoadFactor) >= 0 &&
-                    (defaultDistribution['Load Factor'] || defaultLoadFactor) <= 100 ? (
-                      <span className="flex items-center gap-1 text-green-600">
-                        <CheckCircle size={14} />
-                        Valid load factor ({defaultDistribution['Load Factor'] || defaultLoadFactor}%)
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-red-600">
-                        <XCircle size={14} />
-                        Load factor must be between 0% and 100%
-                      </span>
-                    )}
+              {/* Load Factor Input */}
+              <div className="mt-3">
+                <div className="flex items-center gap-4">
+                  <label className="flex-shrink-0 text-sm font-medium text-gray-700">Load Factor:</label>
+                  <div className="flex-1 px-4">
+                    <LoadFactorSlider
+                      value={rule.distribution?.['Load Factor'] || defaultLoadFactor || FRONTEND_DEFAULT_LOAD_FACTOR}
+                      onChange={(value) => updateLoadFactorRule(rule.id, { distribution: { 'Load Factor': value } })}
+                      min={0}
+                      max={100}
+                      step={0.1}
+                    />
                   </div>
                 </div>
               </div>
-            ) : (
-              flightCalculations.remainingFlights > 0 && (
-                /* Apply Default Rule 카드 */
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {flightCalculations.remainingFlights} flights have no rules
-                        </h4>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default load factor to these remaining flights?
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleApplyDefaultRule}
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
-                    >
-                      Apply Default Rule
-                    </Button>
-                  </div>
+            </div>
+          ))}
+
+          {/* Default Rule - 항상 표시 */}
+          <div className="rounded-lg border bg-white px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">Default</Badge>
+                <div className="flex items-center gap-1">
+                  <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
+                  <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                  <span className="text-sm text-gray-500">flights</span>
                 </div>
-              )
-            )}
+              </div>
+            </div>
+
+            {/* Default Load Factor Input */}
+            <div className="mt-3">
+              <div className="flex items-center gap-4">
+                <label className="flex-shrink-0 text-sm font-medium text-gray-700">Default Load Factor:</label>
+                <div className="flex-1 px-4">
+                  <LoadFactorSlider
+                    value={defaultLoadFactor || FRONTEND_DEFAULT_LOAD_FACTOR}
+                    onChange={updateLoadFactorDefault}
+                    min={0}
+                    max={100}
+                    step={0.1}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Create New Rule Modal */}

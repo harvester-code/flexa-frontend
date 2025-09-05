@@ -396,18 +396,18 @@ export default function PassengerProfileCriteria({
   // 편집 모드일 때 기존 데이터 복원
   useEffect(() => {
     if (editingRule) {
-      // 1. propertyValues 복원 (소수 → 백분율)
-      if (editingRule.value) {
-        if (configType === 'load_factor') {
-          // 편집 모드: SimpleLoadFactorTab에서 오는 0-100% 값을 0.0-1.0으로 변환
-          setPropertyValues({ 'Load Factor': (editingRule.distribution?.['Load Factor'] || 80) / 100 });
-        } else if (configType === 'show_up_time') {
-          // 편집 모드: mean과 std 값 복원
-          setPropertyValues({
-            mean: editingRule.distribution?.mean || 120,
-            std: editingRule.distribution?.std || 30,
-          });
-        } else if (configType === 'pax_arrival_patterns') {
+      // 1. propertyValues 복원
+      if (configType === 'load_factor' && editingRule.distribution) {
+        // Load Factor 편집 모드: 퍼센트 값을 소수로 변환 (80 → 0.8)
+        setPropertyValues({ 'Load Factor': (editingRule.distribution['Load Factor'] || 80) / 100 });
+      } else if (configType === 'show_up_time' && editingRule.distribution) {
+        // Show-up Time 편집 모드: mean과 std 값 복원
+        setPropertyValues({
+          mean: editingRule.distribution.mean || 120,
+          std: editingRule.distribution.std || 30,
+        });
+      } else if (editingRule.value) {
+        if (configType === 'pax_arrival_patterns') {
           setPropertyValues({
             mean: editingRule.value.mean || 120,
             std: editingRule.value.std || 30,

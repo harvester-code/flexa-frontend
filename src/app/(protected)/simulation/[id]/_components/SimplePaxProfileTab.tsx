@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { usePassengerStore } from '../_stores/passengerStore';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -56,15 +57,22 @@ interface SimplePaxProfileTabProps {
 }
 
 export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxProfileTabProps) {
-  const [definedProperties, setDefinedProperties] = useState<string[]>(['Business', 'Leisure']);
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
+  // 🆕 PassengerStore 연결
+  const {
+    profile: { definedProperties, createdRules, hasDefaultRule, defaultDistribution },
+    setProfileProperties,
+    addProfileRule,
+    updateProfileRule,
+    removeProfileRule,
+    reorderProfileRules,
+    setProfileDefaultRule,
+    updateProfileDefaultDistribution,
+  } = usePassengerStore();
 
-  // Rule 관련 상태
+  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
-  const [createdRules, setCreatedRules] = useState<Rule[]>([]);
-  const [hasDefaultRule, setHasDefaultRule] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [defaultDistribution, setDefaultDistribution] = useState<Record<string, number>>({});
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -82,21 +90,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // 균등 분배 조정 로직
-  const adjustDistributionsForNewProperties = (newProperties: string[]) => {
-    // 모든 규칙을 균등 분배로 조정
-    const adjustedRules = createdRules.map((rule) => {
-      return { ...rule, distribution: calculateEqualDistribution(newProperties) };
-    });
-
-    // 기본 분배도 균등 분배로 설정
-    const newDefaultDistribution = calculateEqualDistribution(newProperties);
-
-    setCreatedRules(adjustedRules);
-    setDefaultDistribution(newDefaultDistribution);
-  };
-
-  // 새 속성 추가 (확인창 표시)
+  // 속성 추가 (PassengerStore 연동)
   const handleAddProperty = () => {
     if (!newPropertyName.trim()) return;
 
@@ -114,13 +108,13 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
         setShowConfirmDialog(true);
       } else {
         // 규칙이 없으면 바로 추가
-        setDefinedProperties(resultProperties);
+        setProfileProperties(resultProperties);
       }
       setNewPropertyName('');
     }
   };
 
-  // 속성 제거 (확인창 표시)
+  // 속성 제거 (PassengerStore 연동)
   const handleRemoveProperty = (propertyToRemove: string) => {
     const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
 
@@ -130,7 +124,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
       setShowConfirmDialog(true);
     } else {
       // 규칙이 없으면 바로 제거
-      setDefinedProperties(newProperties);
+      setProfileProperties(newProperties);
     }
   };
 
@@ -299,35 +293,6 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     };
   }, [createdRules, parquetMetadata]); // parquetMetadata도 의존성에 추가
 
-  const handleDeleteRule = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => prevRules.filter((rule) => rule.id !== ruleId));
-  }, []);
-
-  // 룰 순서 변경 함수들 (메모이제이션)
-  const moveRuleUp = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex > 0) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex - 1], newRules[currentIndex]] = [newRules[currentIndex], newRules[currentIndex - 1]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
-  const moveRuleDown = useCallback((ruleId: string) => {
-    setCreatedRules((prevRules) => {
-      const currentIndex = prevRules.findIndex((rule) => rule.id === ruleId);
-      if (currentIndex < prevRules.length - 1) {
-        const newRules = [...prevRules];
-        [newRules[currentIndex], newRules[currentIndex + 1]] = [newRules[currentIndex + 1], newRules[currentIndex]];
-        return newRules;
-      }
-      return prevRules;
-    });
-  }, []);
-
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
@@ -374,7 +339,8 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    setCreatedRules(newRules);
+    // 🆕 PassengerStore 업데이트
+    reorderProfileRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
   };
@@ -384,22 +350,11 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     setDragOverRuleId(null);
   };
 
-  const handleApplyDefaultRule = () => {
-    const distribution = calculateEqualDistribution(definedProperties);
-    setDefaultDistribution(distribution);
-    setHasDefaultRule(true);
-  };
-
-  const handleRemoveDefaultRule = () => {
-    setHasDefaultRule(false);
-    setDefaultDistribution({});
-  };
-
-  // 확인창 처리
+  // 확인창 처리 (PassengerStore 연동)
   const handleConfirmChanges = () => {
     if (pendingAction) {
-      setDefinedProperties(pendingAction.payload);
-      adjustDistributionsForNewProperties(pendingAction.payload);
+      // PassengerStore의 속성 업데이트 함수 호출 (균등 분배 자동 적용)
+      setProfileProperties(pendingAction.payload);
       setPendingAction(null);
     }
     setShowConfirmDialog(false);
@@ -430,11 +385,6 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     return groups;
   }, []);
 
-  // Default 분배 업데이트
-  const handleDefaultDistributionChange = (newValues: Record<string, number>) => {
-    setDefaultDistribution(newValues);
-  };
-
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
     setEditingRuleId(ruleId);
@@ -443,24 +393,17 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
-          setCreatedRules((prevRules) =>
-            prevRules.map((rule) =>
-              rule.id === editingRuleId
-                ? {
-                    ...rule,
-                    conditions: savedRuleData.conditions,
-                    flightCount: savedRuleData.flightCount,
-                    distribution: savedRuleData.distribution,
-                  }
-                : rule
-            )
-          );
+          updateProfileRule(editingRuleId, {
+            conditions: savedRuleData.conditions,
+            flightCount: savedRuleData.flightCount,
+            distribution: savedRuleData.distribution,
+          });
         }
         setEditingRuleId(null);
         setIsRuleModalOpen(false);
@@ -469,7 +412,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
         if (savedRuleData) {
           const distribution = savedRuleData.distribution || calculateEqualDistribution(definedProperties);
 
-          const newRule: Rule = {
+          const newRule = {
             id: `rule-${Date.now()}`,
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
@@ -478,12 +421,19 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
             isExpanded: true,
           };
 
-          setCreatedRules((prev) => [...prev, newRule]);
+          addProfileRule(newRule);
           setIsRuleModalOpen(false);
         }
       }
     },
-    [editingRuleId, definedProperties, createdRules.length, calculateEqualDistribution]
+    [
+      editingRuleId,
+      definedProperties,
+      createdRules.length,
+      calculateEqualDistribution,
+      updateProfileRule,
+      addProfileRule,
+    ]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -494,13 +444,6 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
       delete (window as any).handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
-
-  // Rule 분배 업데이트 (메모이제이션)
-  const handleRuleDistributionChange = useCallback((ruleId: string, newValues: Record<string, number>) => {
-    setCreatedRules((prevRules) =>
-      prevRules.map((rule) => (rule.id === ruleId ? { ...rule, distribution: newValues } : rule))
-    );
-  }, []);
 
   // 퍼센트 총합 검증 (메모이제이션)
   const isValidDistribution = useCallback((values: Record<string, number>) => {
@@ -643,7 +586,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => handleDeleteRule(rule.id)}
+                      onClick={() => removeProfileRule(rule.id)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -673,7 +616,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                     <InteractivePercentageBar
                       properties={definedProperties}
                       values={rule.distribution}
-                      onChange={(newValues) => handleRuleDistributionChange(rule.id, newValues)}
+                      onChange={(newValues) => updateProfileRule(rule.id, { distribution: newValues })}
                       showValues={true}
                     />
 
@@ -714,7 +657,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={handleRemoveDefaultRule}
+                      onClick={() => setProfileDefaultRule(false)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -726,7 +669,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                   <InteractivePercentageBar
                     properties={definedProperties}
                     values={defaultDistribution}
-                    onChange={handleDefaultDistributionChange}
+                    onChange={updateProfileDefaultDistribution}
                     showValues={true}
                   />
 
@@ -763,7 +706,10 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                       </div>
                     </div>
                     <Button
-                      onClick={handleApplyDefaultRule}
+                      onClick={() => {
+                        setProfileDefaultRule(true);
+                        updateProfileDefaultDistribution(calculateEqualDistribution(definedProperties));
+                      }}
                       size="sm"
                       variant="outline"
                       className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"

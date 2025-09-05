@@ -186,56 +186,6 @@ export const ShowUpTimeValueSetter: React.FC<ShowUpTimeValueSetterProps> = ({
         ))}
       </div>
 
-      {/* Normal Distribution Chart */}
-      {hasValidValues && plotData.x.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h4 className="mb-3 text-sm font-medium text-gray-700">Normal Distribution Preview</h4>
-          <Plot
-            data={[
-              {
-                x: plotData.x,
-                y: plotData.y,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Probability Density',
-                line: {
-                  color: '#8B5CF6', // Primary color
-                  width: 3,
-                },
-                fill: 'tonexty',
-                fillcolor: 'rgba(139, 92, 246, 0.1)',
-              },
-            ]}
-            layout={{
-              title: {
-                text: `Normal Distribution (μ=${values.mean || defaultValues?.mean || 120}, σ=${values.std || defaultValues?.std || 30})`,
-                font: { size: 14 },
-              },
-              xaxis: {
-                title: 'Time (minutes)',
-                showgrid: true,
-                zeroline: false,
-              },
-              yaxis: {
-                title: 'Probability Density',
-                showgrid: true,
-                zeroline: false,
-              },
-              margin: { t: 40, r: 20, b: 40, l: 60 },
-              height: 240, // 더 작게 조정
-              showlegend: false,
-              hovermode: 'x',
-              plot_bgcolor: 'rgba(0,0,0,0)',
-              paper_bgcolor: 'rgba(0,0,0,0)',
-            }}
-            config={{
-              displayModeBar: false,
-              responsive: true,
-            }}
-            style={{ width: '100%', height: '240px' }}
-          />
-        </div>
-      )}
     </div>
   );
 };
