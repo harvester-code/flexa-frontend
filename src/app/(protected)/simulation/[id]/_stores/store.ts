@@ -222,6 +222,13 @@ export interface SimulationStoreState {
   ) => void;
   reorderNationalityRules: (newOrder: PassengerData['pax_demographics']['nationality']['rules']) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updateProfileRule: (
+    ruleIndex: number,
+    conditions: Record<string, string[]>,
+    flightCount: number,
+    distribution: Record<string, number>
+  ) => void;
+  reorderProfileRules: (newOrder: PassengerData['pax_demographics']['profile']['rules']) => void;
   setNationalityDefault: (defaultValues: Record<string, number>) => void;
   setProfileDefault: (defaultValues: Record<string, number>) => void;
   reorderPaxDemographics: () => void;
@@ -705,6 +712,22 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
           state.passenger.pax_demographics.profile.rules[ruleIndex].value = distribution;
         }
+      }),
+
+    updateProfileRule: (ruleIndex, conditions, flightCount, distribution) =>
+      set((state) => {
+        if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
+          state.passenger.pax_demographics.profile.rules[ruleIndex] = {
+            conditions,
+            flightCount,
+            value: distribution,
+          };
+        }
+      }),
+
+    reorderProfileRules: (newOrder) =>
+      set((state) => {
+        state.passenger.pax_demographics.profile.rules = newOrder;
       }),
 
     setNationalityDefault: (defaultValues) =>

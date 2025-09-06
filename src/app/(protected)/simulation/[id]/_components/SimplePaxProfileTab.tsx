@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { usePassengerStore } from '../_stores/passengerStore';
+import { useSimulationStore } from '../_stores';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -57,17 +57,223 @@ interface SimplePaxProfileTabProps {
 }
 
 export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxProfileTabProps) {
-  // 🆕 PassengerStore 연결
-  const {
-    profile: { definedProperties, createdRules, hasDefaultRule, defaultDistribution },
-    setProfileProperties,
-    addProfileRule,
-    updateProfileRule,
-    removeProfileRule,
-    reorderProfileRules,
-    setProfileDefaultRule,
-    updateProfileDefaultDistribution,
-  } = usePassengerStore();
+  // 🆕 SimulationStore 연결
+  const profileData = useSimulationStore((s) => s.passenger.pax_demographics.profile);
+  const setProfileValues = useSimulationStore((s) => s.setProfileValues);
+  const addProfileRule = useSimulationStore((s) => s.addProfileRule);
+  const removeProfileRule = useSimulationStore((s) => s.removeProfileRule);
+  const updateProfileDistribution = useSimulationStore((s) => s.updateProfileDistribution);
+  const updateProfileRuleStore = useSimulationStore((s) => s.updateProfileRule);
+  const reorderProfileRulesStore = useSimulationStore((s) => s.reorderProfileRules);
+  const setProfileDefault = useSimulationStore((s) => s.setProfileDefault);
+
+  // 🆕 조건 변환 로직 (다른 탭들과 동일)
+  const labelToColumnMap: Record<string, string> = {
+    Airline: 'operating_carrier_iata',
+    'Aircraft Type': 'aircraft_type_icao',
+    'Flight Type': 'flight_type',
+    'Total Seats': 'total_seats',
+    'Arrival Airport': 'arrival_airport_iata',
+    'Arrival Terminal': 'arrival_terminal',
+    'Arrival City': 'arrival_city',
+    'Arrival Country': 'arrival_country',
+    'Arrival Region': 'arrival_region',
+    'Departure Airport Iata': 'departure_airport_iata',
+    'Departure Terminal': 'departure_terminal',
+    'Departure City': 'departure_city',
+    'Departure Country': 'departure_country',
+    'Departure Region': 'departure_region',
+  };
+
+  const valueMapping: Record<string, Record<string, string>> = {
+    operating_carrier_iata: {
+      'Korean Air': 'KE',
+      'Asiana Airlines': 'OZ',
+      // 필요에 따라 추가
+    },
+  };
+
+  // 백엔드 → UI 역변환 맵핑
+  const columnToLabelMap: Record<string, string> = {
+    operating_carrier_iata: 'Airline',
+    aircraft_type_icao: 'Aircraft Type',
+    flight_type: 'Flight Type',
+    total_seats: 'Total Seats',
+    arrival_airport_iata: 'Arrival Airport',
+    arrival_terminal: 'Arrival Terminal',
+    arrival_city: 'Arrival City',
+    arrival_country: 'Arrival Country',
+    arrival_region: 'Arrival Region',
+    departure_airport_iata: 'Departure Airport Iata',
+    departure_terminal: 'Departure Terminal',
+    departure_city: 'Departure City',
+    departure_country: 'Departure Country',
+    departure_region: 'Departure Region',
+  };
+
+  const reverseValueMapping: Record<string, Record<string, string>> = {
+    operating_carrier_iata: {
+      KE: 'Korean Air',
+      OZ: 'Asiana Airlines',
+      // 필요에 따라 추가
+    },
+  };
+
+  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  const definedProperties = profileData?.available_values || [];
+  const createdRules: Rule[] = useMemo(() => {
+    return (profileData?.rules || []).map((rule, index) => ({
+      id: `rule-${index}`,
+      name: `Rule ${index + 1}`,
+      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
+        const displayLabel = columnToLabelMap[columnKey] || columnKey;
+        return values.map((value) => {
+          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
+          return `${displayLabel}: ${displayValue}`;
+        });
+      }),
+      flightCount: rule.flightCount || 0,
+      distribution: rule.value || {},
+      isExpanded: false,
+    }));
+  }, [profileData?.rules]);
+
+  const hasDefaultRule = profileData?.default && Object.keys(profileData.default).length > 0;
+  const defaultDistribution = profileData?.default || {};
+
+  // 🔄 PassengerStore 스타일 액션 어댑터들
+  const setProfileProperties = useCallback(
+    (properties: string[]) => {
+      setProfileValues(properties);
+    },
+    [setProfileValues]
+  );
+
+  const updateProfileRule = useCallback(
+    (ruleId: string, updatedRule: Partial<Rule>) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+
+      // 전체 규칙 업데이트인경우 (조건 + 분배 + 플라이트카운트)
+      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.distribution) {
+        // 현재 규칙 가져오기
+        const currentRule = profileData?.rules[ruleIndex];
+        if (!currentRule) return;
+
+        // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
+        let backendConditions = currentRule.conditions;
+        if (updatedRule.conditions) {
+          backendConditions = {};
+          updatedRule.conditions.forEach((condition) => {
+            const parts = condition.split(': ');
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+              if (!backendConditions[columnKey]) {
+                backendConditions[columnKey] = [];
+              }
+              backendConditions[columnKey].push(convertedValue);
+            }
+          });
+        }
+
+        // 전체 규칙 업데이트
+        updateProfileRuleStore(
+          ruleIndex,
+          backendConditions,
+          updatedRule.flightCount ?? currentRule.flightCount ?? 0,
+          updatedRule.distribution ?? currentRule.value ?? {}
+        );
+      }
+    },
+    [updateProfileRuleStore, profileData?.rules, labelToColumnMap, valueMapping]
+  );
+
+  const removeProfileRuleById = useCallback(
+    (ruleId: string) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      removeProfileRule(ruleIndex);
+    },
+    [removeProfileRule]
+  );
+
+  const setProfileDefaultRule = useCallback(
+    (hasDefault: boolean) => {
+      if (!hasDefault) {
+        setProfileDefault({});
+      }
+    },
+    [setProfileDefault]
+  );
+
+  const updateProfileDefaultDistribution = useCallback(
+    (distribution: Record<string, number>) => {
+      setProfileDefault(distribution);
+    },
+    [setProfileDefault]
+  );
+
+  const reorderProfileRules = useCallback(
+    (newOrder: Rule[]) => {
+      // UI Rule[]을 백엔드 형식으로 변환
+      const backendRules = newOrder.map((rule) => {
+        // UI 조건을 백엔드 형식으로 변환
+        const backendConditions: Record<string, string[]> = {};
+
+        rule.conditions.forEach((condition) => {
+          const parts = condition.split(': ');
+          if (parts.length === 2) {
+            const displayLabel = parts[0];
+            const value = parts[1];
+            const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+            const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+            if (!backendConditions[columnKey]) {
+              backendConditions[columnKey] = [];
+            }
+            backendConditions[columnKey].push(convertedValue);
+          }
+        });
+
+        return {
+          conditions: backendConditions,
+          flightCount: rule.flightCount || 0,
+          value: rule.distribution || {},
+        };
+      });
+
+      // SimulationStore에 새로운 순서 적용
+      reorderProfileRulesStore(backendRules);
+    },
+    [reorderProfileRulesStore, labelToColumnMap, valueMapping]
+  );
+
+  const addProfileRuleWithConversion = useCallback(
+    (rule: Rule) => {
+      // UI 조건을 백엔드 형식으로 변환
+      const backendConditions: Record<string, string[]> = {};
+
+      rule.conditions.forEach((condition) => {
+        const parts = condition.split(': ');
+        if (parts.length === 2) {
+          const displayLabel = parts[0];
+          const value = parts[1];
+          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+          if (!backendConditions[columnKey]) {
+            backendConditions[columnKey] = [];
+          }
+          backendConditions[columnKey].push(convertedValue);
+        }
+      });
+
+      addProfileRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
+    },
+    [addProfileRule]
+  );
 
   // 로컬 UI 상태 (PassengerStore와 무관한 것들)
   const [newPropertyName, setNewPropertyName] = useState<string>('');
@@ -339,7 +545,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    // 🆕 PassengerStore 업데이트
+    // 🆕 SimulationStore 업데이트 (변환 포함)
     reorderProfileRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
@@ -421,7 +627,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
             isExpanded: true,
           };
 
-          addProfileRule(newRule);
+          addProfileRuleWithConversion(newRule);
           setIsRuleModalOpen(false);
         }
       }
@@ -432,7 +638,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
       createdRules.length,
       calculateEqualDistribution,
       updateProfileRule,
-      addProfileRule,
+      addProfileRuleWithConversion,
     ]
   );
 
@@ -586,7 +792,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => removeProfileRule(rule.id)}
+                      onClick={() => removeProfileRuleById(rule.id)}
                     >
                       <Trash2 size={12} />
                     </Button>
