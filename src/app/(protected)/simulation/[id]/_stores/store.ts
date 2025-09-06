@@ -13,9 +13,11 @@ export interface PassengerData {
     rules: Array<{
       conditions: Record<string, string[]>;
       value: Record<string, number>;
+      flightCount?: number;
     }>;
     default: {
       load_factor: number | null;
+      flightCount?: number;
     };
   };
   pax_demographics: {
@@ -26,7 +28,7 @@ export interface PassengerData {
         value: Record<string, number>;
         flightCount?: number;
       }>;
-      default: Record<string, number>;
+      default: Record<string, number> & { flightCount?: number };
     };
     profile: {
       available_values: string[];
@@ -35,7 +37,7 @@ export interface PassengerData {
         value: Record<string, number>;
         flightCount?: number;
       }>;
-      default: Record<string, number>;
+      default: Record<string, number> & { flightCount?: number };
     };
   };
   pax_arrival_patterns: {
@@ -45,10 +47,30 @@ export interface PassengerData {
         mean: number;
         std: number;
       };
+      flightCount?: number;
     }>;
     default: {
       mean: number | null;
       std: number | null;
+      flightCount?: number;
+    };
+  };
+  // 여객 차트 결과 데이터
+  chartResult?: {
+    total: number;
+    chart_x_data: string[];
+    chart_y_data: {
+      [category: string]: Array<{
+        name: string;
+        order: number;
+        y: number[];
+      }>;
+    };
+    summary?: {
+      flights: number;
+      avg_seats: number;
+      load_factor: number;
+      min_arrival_minutes: number;
     };
   };
 }
@@ -190,7 +212,7 @@ export interface SimulationStoreState {
   setCurrentStep: (step: number) => void;
   setStepCompleted: (step: number, completed: boolean) => void;
   updateAvailableSteps: () => void; // 완료된 단계에 따라 availableSteps 업데이트
-  checkStep2Completion: () => void; // Step 2 완료 조건 확인 및 자동 완료
+  // checkStep2Completion 제거됨 - Generate Pax 버튼으로만 Step 2 완료
 
   // ==================== Passenger Actions ====================
   setSettings: (settings: Partial<PassengerData['settings']>) => void;
@@ -198,7 +220,11 @@ export interface SimulationStoreState {
   setPaxGenerationValues: (values: string[]) => void;
   setNationalityValues: (values: string[]) => void;
   setProfileValues: (values: string[]) => void;
-  addPaxGenerationRule: (conditions: Record<string, string[]>, value: number | Record<string, number>) => void;
+  addPaxGenerationRule: (
+    conditions: Record<string, string[]>,
+    value: number | Record<string, number>,
+    flightCount?: number
+  ) => void;
   addNationalityRule: (
     conditions: Record<string, string[]>,
     flightCount?: number,
@@ -210,7 +236,12 @@ export interface SimulationStoreState {
   removeProfileRule: (ruleIndex: number) => void;
   updatePaxGenerationValue: (ruleIndex: number, value: number | Record<string, number>) => void;
   updatePaxGenerationDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
-  updatePaxGenerationRule: (ruleIndex: number, conditions: Record<string, string[]>, loadFactor: number) => void;
+  updatePaxGenerationRule: (
+    ruleIndex: number,
+    conditions: Record<string, string[]>,
+    loadFactor: number,
+    flightCount?: number
+  ) => void;
   setPaxGenerationDefault: (value: number | null) => void;
   reorderPaxGenerationRules: (newOrder: PassengerData['pax_generation']['rules']) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
@@ -239,6 +270,7 @@ export interface SimulationStoreState {
   removePaxArrivalPatternRule: (index: number) => void;
   resetPassenger: () => void;
   loadPassengerMetadata: (metadata: Record<string, unknown>) => void;
+  setPassengerChartResult: (chartData: PassengerData['chartResult']) => void;
 
   // ==================== Processing Procedures Actions ====================
   setProcessFlow: (flow: ProcessStep[]) => void;
@@ -280,25 +312,27 @@ const createInitialState = (scenarioId?: string) => ({
       rules: [],
       default: {
         load_factor: 0.85, // 🆕 Load Factor 초기값 85% (0.85)
+        flightCount: 0,
       },
     },
     pax_demographics: {
       nationality: {
         available_values: [],
         rules: [],
-        default: {},
+        default: { flightCount: 0 },
       },
       profile: {
         available_values: [],
         rules: [],
-        default: {},
+        default: { flightCount: 0 },
       },
     },
     pax_arrival_patterns: {
       rules: [],
       default: {
-        mean: null,
-        std: null,
+        mean: 120, // 기본값 120분
+        std: 30, // 기본값 30
+        flightCount: 0,
       },
     },
   },
@@ -512,12 +546,15 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.workflow.currentStep = step;
       }),
 
-    setStepCompleted: (step, completed) =>
+    setStepCompleted: (step, completed) => {
       set((state) => {
         if (step === 1) state.workflow.step1Completed = completed;
         else if (step === 2) state.workflow.step2Completed = completed;
         else if (step === 3) state.workflow.step3Completed = completed;
-      }),
+      });
+      // 단계 완료 후 availableSteps 업데이트
+      useSimulationStore.getState().updateAvailableSteps();
+    },
 
     updateAvailableSteps: () =>
       set((state) => {
@@ -533,33 +570,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.workflow.availableSteps = availableSteps;
       }),
 
-    // Step 2 완료 조건 확인 및 자동 완료 처리
-    checkStep2Completion: () =>
-      set((state) => {
-        // pax_arrival_patterns.default 값 확인
-        const arrivalDefault = state.passenger.pax_arrival_patterns?.default;
-        const hasArrivalDefault =
-          arrivalDefault &&
-          typeof arrivalDefault.mean === 'number' &&
-          arrivalDefault.mean !== null &&
-          typeof arrivalDefault.std === 'number' &&
-          arrivalDefault.std !== null;
-
-        // pax_generation.default 값 확인
-        const genDefault = state.passenger.pax_generation?.default;
-        const hasGenDefault =
-          genDefault && typeof genDefault.load_factor === 'number' && genDefault.load_factor !== null;
-
-        // 두 조건이 모두 만족되면 step2 완료 처리
-        if (hasArrivalDefault && hasGenDefault && !state.workflow.step2Completed) {
-          state.workflow.step2Completed = true;
-
-          // step3 접근 가능하도록 업데이트
-          if (!state.workflow.availableSteps.includes(3)) {
-            state.workflow.availableSteps.push(3);
-          }
-        }
-      }),
+    // checkStep2Completion 함수 제거됨
+    // Generate Pax 버튼 클릭을 통해서만 Step 2 완료 처리
 
     // ==================== Passenger Actions ====================
 
@@ -604,11 +616,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         // pax_generation에는 available_values가 따로 없으므로 제거
       }),
 
-    addPaxGenerationRule: (conditions, value) =>
+    addPaxGenerationRule: (conditions, value, flightCount) =>
       set((state) => {
         state.passenger.pax_generation.rules.push({
           conditions,
           value: typeof value === 'number' ? { load_factor: value } : value,
+          flightCount,
         });
       }),
 
@@ -635,11 +648,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
-    updatePaxGenerationRule: (ruleIndex, conditions, loadFactor) =>
+    updatePaxGenerationRule: (ruleIndex, conditions, loadFactor, flightCount) =>
       set((state) => {
         if (state.passenger.pax_generation.rules[ruleIndex]) {
           state.passenger.pax_generation.rules[ruleIndex].conditions = conditions;
           state.passenger.pax_generation.rules[ruleIndex].value = { load_factor: loadFactor };
+          state.passenger.pax_generation.rules[ruleIndex].flightCount = flightCount;
         }
       }),
 
@@ -647,8 +661,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         state.passenger.pax_generation.default.load_factor = value;
       });
-      // Step 2 완료 조건 확인
-      useSimulationStore.getState().checkStep2Completion();
+      // 자동 완료 제거 - Generate Pax 버튼으로만 완료
     },
 
     reorderPaxGenerationRules: (newOrder) =>
@@ -772,8 +785,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         state.passenger.pax_arrival_patterns.default = defaultValues;
       });
-      // Step 2 완료 조건 확인
-      useSimulationStore.getState().checkStep2Completion();
+      // 자동 완료 제거 - Generate Pax 버튼으로만 완료
     },
 
     addPaxArrivalPatternRule: (rule) =>
@@ -803,6 +815,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             rules: [],
             default: {
               load_factor: null, // 컴포넌트에서 초기값 관리
+              flightCount: 0,
             },
           },
           pax_demographics: {
@@ -810,19 +823,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
             nationality: {
               available_values: [],
               rules: [],
-              default: {},
+              default: { flightCount: 0 },
             },
             profile: {
               available_values: [],
               rules: [],
-              default: {},
+              default: { flightCount: 0 },
             },
           },
           pax_arrival_patterns: {
             rules: [],
             default: {
-              mean: null,
-              std: null,
+              mean: 120, // 기본값 120분
+              std: 30, // 기본값 30
+              flightCount: 0,
             },
           },
         });
@@ -838,6 +852,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             rules: [],
             default: {
               load_factor: null, // 컴포넌트에서 초기값 관리
+              flightCount: 0,
             },
           },
           pax_demographics: {
@@ -845,23 +860,29 @@ export const useSimulationStore = create<SimulationStoreState>()(
             nationality: {
               available_values: [],
               rules: [],
-              default: {},
+              default: { flightCount: 0 },
             },
             profile: {
               available_values: [],
               rules: [],
-              default: {},
+              default: { flightCount: 0 },
             },
           },
           pax_arrival_patterns: {
             rules: [],
             default: {
-              mean: null,
-              std: null,
+              mean: 120, // 기본값 120분
+              std: 30, // 기본값 30
+              flightCount: 0,
             },
           },
           ...metadata,
         });
+      }),
+
+    setPassengerChartResult: (chartData) =>
+      set((state) => {
+        state.passenger.chartResult = chartData;
       }),
 
     // ==================== Processing Procedures Actions ====================

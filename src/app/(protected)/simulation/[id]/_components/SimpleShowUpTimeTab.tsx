@@ -65,9 +65,14 @@ interface ParquetMetadataItem {
 interface SimpleShowUpTimeTabProps {
   parquetMetadata?: ParquetMetadataItem[];
   simulationId?: string;
+  hideGenerateButton?: boolean;
 }
 
-export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId }: SimpleShowUpTimeTabProps) {
+export default function SimpleShowUpTimeTab({
+  parquetMetadata = [],
+  simulationId,
+  hideGenerateButton = false,
+}: SimpleShowUpTimeTabProps) {
   // 🆕 SimulationStore 연결
   const paxArrivalPatternRules = useSimulationStore((s) => s.passenger.pax_arrival_patterns.rules);
   const arrivalPatternsDefault = useSimulationStore((s) => s.passenger.pax_arrival_patterns.default);
@@ -1133,13 +1138,15 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
           </div>
         )}
 
-      {/* Generate Pax Button */}
-      <div className="mt-6 flex justify-end">
-        <Button onClick={handleGeneratePax} disabled={isGenerating}>
-          <Play size={16} />
-          {isGenerating ? 'Generating...' : 'Generate Pax'}
-        </Button>
-      </div>
+      {/* Generate Pax Button - 조건부 렌더링 */}
+      {!hideGenerateButton && (
+        <div className="mt-6 flex justify-end">
+          <Button onClick={handleGeneratePax} disabled={isGenerating}>
+            <Play size={16} />
+            {isGenerating ? 'Generating...' : 'Generate Pax'}
+          </Button>
+        </div>
+      )}
 
       {/* Create New Rule Modal */}
       <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>

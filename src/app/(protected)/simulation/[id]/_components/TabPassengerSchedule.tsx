@@ -40,6 +40,8 @@ export default function TabPassengerSchedule({
           <TabPassengerScheduleParquetFilter
             parquetMetadata={(appliedFilterResult as any).parquet_metadata}
             simulationId={simulationId}
+            apiRequestLog={apiRequestLog}
+            setApiRequestLog={setApiRequestLog}
           />
         )}
 
