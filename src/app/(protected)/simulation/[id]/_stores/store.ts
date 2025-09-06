@@ -592,10 +592,48 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const currentRules = state.passenger.pax_demographics.nationality.rules || [];
         const currentDefault = state.passenger.pax_demographics.nationality.default || {};
 
+        // 🆕 Load Factor 패턴: 새로운 properties에 맞게 자동 균등분배
+        let newDefault = currentDefault;
+        if (values.length > 0) {
+          // 균등분배 계산 (정수 백분율)
+          const equalPercentage = Math.floor(100 / values.length);
+          let remainder = 100 - equalPercentage * values.length;
+
+          const equalDistribution: Record<string, number> = {};
+          values.forEach((prop, index) => {
+            const percentage = equalPercentage + (index < remainder ? 1 : 0);
+            equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
+          });
+
+          // 기존 default가 있으면 균등분배로 업데이트, 없으면 빈 객체 유지
+          if (Object.keys(currentDefault).length > 0) {
+            newDefault = equalDistribution;
+          }
+        }
+
+        // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트
+        const updatedRules = currentRules.map((rule) => ({
+          ...rule,
+          value:
+            values.length > 0 && Object.keys(rule.value || {}).length > 0
+              ? (() => {
+                  const equalPercentage = Math.floor(100 / values.length);
+                  let remainder = 100 - equalPercentage * values.length;
+
+                  const equalDistribution: Record<string, number> = {};
+                  values.forEach((prop, index) => {
+                    const percentage = equalPercentage + (index < remainder ? 1 : 0);
+                    equalDistribution[prop] = convertToDecimal(percentage);
+                  });
+                  return equalDistribution;
+                })()
+              : rule.value,
+        }));
+
         state.passenger.pax_demographics.nationality = {
           available_values: values,
-          rules: currentRules,
-          default: currentDefault,
+          rules: updatedRules,
+          default: newDefault,
         };
       }),
 
@@ -605,10 +643,48 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const currentRules = state.passenger.pax_demographics.profile.rules || [];
         const currentDefault = state.passenger.pax_demographics.profile.default || {};
 
+        // 🆕 Load Factor 패턴: 새로운 properties에 맞게 자동 균등분배
+        let newDefault = currentDefault;
+        if (values.length > 0) {
+          // 균등분배 계산 (정수 백분율)
+          const equalPercentage = Math.floor(100 / values.length);
+          let remainder = 100 - equalPercentage * values.length;
+
+          const equalDistribution: Record<string, number> = {};
+          values.forEach((prop, index) => {
+            const percentage = equalPercentage + (index < remainder ? 1 : 0);
+            equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
+          });
+
+          // 기존 default가 있으면 균등분배로 업데이트, 없으면 빈 객체 유지
+          if (Object.keys(currentDefault).length > 0) {
+            newDefault = equalDistribution;
+          }
+        }
+
+        // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트
+        const updatedRules = currentRules.map((rule) => ({
+          ...rule,
+          value:
+            values.length > 0 && Object.keys(rule.value || {}).length > 0
+              ? (() => {
+                  const equalPercentage = Math.floor(100 / values.length);
+                  let remainder = 100 - equalPercentage * values.length;
+
+                  const equalDistribution: Record<string, number> = {};
+                  values.forEach((prop, index) => {
+                    const percentage = equalPercentage + (index < remainder ? 1 : 0);
+                    equalDistribution[prop] = convertToDecimal(percentage);
+                  });
+                  return equalDistribution;
+                })()
+              : rule.value,
+        }));
+
         state.passenger.pax_demographics.profile = {
           available_values: values,
-          rules: currentRules,
-          default: currentDefault,
+          rules: updatedRules,
+          default: newDefault,
         };
       }),
 

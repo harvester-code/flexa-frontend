@@ -138,8 +138,12 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     }));
   }, [profileData?.rules]);
 
-  const hasDefaultRule = profileData?.default && Object.keys(profileData.default).length > 0;
+  const hasDefaultRule =
+    profileData?.default && Object.keys(profileData.default).filter((key) => key !== 'flightCount').length > 0;
   const defaultDistribution = profileData?.default || {};
+
+  // Rules 존재 여부 확인
+  const hasRules = createdRules.length > 0;
 
   // 액션 어댑터들
   const setProfileProperties = useCallback(
@@ -887,18 +891,17 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                 </div>
               </div>
             ) : (
-              flightCalculations.remainingFlights > 0 && (
-                /* Apply Default Rule 카드 */
+              definedProperties.length > 0 &&
+              (!hasRules ? (
+                /* Rules 없을 때: "No distribution rules defined" */
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
                       <div>
-                        <h4 className="font-medium text-gray-900">
-                          {flightCalculations.remainingFlights} flights have no rules
-                        </h4>
+                        <h4 className="font-medium text-gray-900">No distribution rules defined</h4>
                         <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default nationality distribution to these remaining flights?
+                          Would you like to apply a default profile distribution to all flights?
                         </p>
                       </div>
                     </div>
@@ -915,7 +918,37 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
                     </Button>
                   </div>
                 </div>
-              )
+              ) : (
+                flightCalculations.remainingFlights > 0 && (
+                  /* Rules 있을 때: "{남은 수} flights have no rules" */
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {flightCalculations.remainingFlights} flights have no rules
+                          </h4>
+                          <p className="mt-1 text-sm text-gray-600">
+                            Would you like to apply a default profile distribution to these remaining flights?
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setProfileDefaultRule(true);
+                          updateProfileDefaultDistribution(calculateEqualDistribution(definedProperties));
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
+                      >
+                        Apply Default Rule
+                      </Button>
+                    </div>
+                  </div>
+                )
+              ))
             )}
           </div>
         )}

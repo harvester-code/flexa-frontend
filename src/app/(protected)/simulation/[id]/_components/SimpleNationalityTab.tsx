@@ -138,8 +138,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     }));
   }, [nationalityData?.rules]);
 
-  const hasDefaultRule = nationalityData?.default && Object.keys(nationalityData.default).length > 0;
+  const hasDefaultRule =
+    nationalityData?.default && Object.keys(nationalityData.default).filter((key) => key !== 'flightCount').length > 0;
   const defaultDistribution = nationalityData?.default || {};
+
+  // Rules 존재 여부 확인
+  const hasRules = createdRules.length > 0;
 
   // 액션 어댑터들
   const setNationalityProperties = useCallback(
@@ -789,7 +793,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                 )}
               </div>
             ))}
+          </div>
+        )}
 
+        {/* 🆕 Default Rule 카드를 Rules 조건 블록 밖으로 이동 */}
+        {definedProperties.length > 0 && (
+          <div className="mt-4">
             {/* Default Rule 또는 Apply Default 카드 */}
             {hasDefaultRule ? (
               /* Default Section */
@@ -840,9 +849,35 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                   </div>
                 </div>
               </div>
+            ) : !hasRules ? (
+              /* Rules 없을 때: "No distribution rules defined" */
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
+                    <div>
+                      <h4 className="font-medium text-gray-900">No distribution rules defined</h4>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Would you like to apply a default nationality distribution to all flights?
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setNationalityDefaultRule(true);
+                      updateNationalityDefaultDistribution(calculateEqualDistribution(definedProperties));
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
+                  >
+                    Apply Default Rule
+                  </Button>
+                </div>
+              </div>
             ) : (
               flightCalculations.remainingFlights > 0 && (
-                /* Apply Default Rule 카드 */
+                /* Rules 있을 때: "{남은 수} flights have no rules" */
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
