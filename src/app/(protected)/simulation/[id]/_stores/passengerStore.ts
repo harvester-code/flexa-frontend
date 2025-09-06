@@ -153,7 +153,7 @@ const convertUIConditionsToBackend = (uiConditions: string[]): Record<string, st
  */
 const convertPercentageToDecimal = (percentageObj: Record<string, number>): Record<string, number> => {
   const result: Record<string, number> = {};
-  
+
   if (percentageObj && typeof percentageObj === 'object') {
     Object.entries(percentageObj).forEach(([key, value]) => {
       if (typeof key === 'string' && typeof value === 'number' && !isNaN(value)) {
@@ -161,7 +161,7 @@ const convertPercentageToDecimal = (percentageObj: Record<string, number>): Reco
       }
     });
   }
-  
+
   return result;
 };
 
@@ -182,13 +182,13 @@ const createInitialState = (): Omit<PassengerStoreState, keyof PassengerStoreAct
   loadFactor: {
     createdRules: [],
     hasDefaultRule: true, // Load Factor는 항상 Default 표시
-    defaultLoadFactor: null, // 빈값으로 시작
+    defaultLoadFactor: 85, // 🆕 기본값 85%로 설정 (UI는 퍼센트 단위)
   },
   showUpTime: {
     createdRules: [],
     hasDefaultRule: true, // Show-up Time은 항상 Default 표시
-    defaultMean: null,
-    defaultStd: null,
+    defaultMean: 120, // 🆕 기본값 120분으로 설정
+    defaultStd: 30, // 🆕 기본값 30으로 설정
   },
 });
 
@@ -393,11 +393,11 @@ export const usePassengerStore = create<PassengerStoreState>()(
     generatePassengerJSON: () => {
       try {
         const state = get();
-        
+
         // Unified Store에서 안전하게 airport, date 가져오기
         let airport = '';
         let date = '';
-        
+
         try {
           const unifiedStore = useSimulationStore.getState();
           airport = unifiedStore?.context?.airport || '';
@@ -406,85 +406,85 @@ export const usePassengerStore = create<PassengerStoreState>()(
           console.warn('Failed to get unified store data:', error);
         }
 
-      const result: any = {
-        settings: {
-          airport: airport || '',
-          date: date || '',
-          min_arrival_minutes: 15,
-        },
-        pax_generation: { rules: [], default: {} },
-        pax_demographics: {
-          nationality: { rules: [], default: {} },
-          profile: { rules: [], default: {} },
-        },
-        pax_arrival_patterns: { rules: [], default: {} },
-      };
-
-      // Load Factor 처리
-      try {
-        result.pax_generation = {
-          rules: (state.loadFactor?.createdRules || []).map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions || []),
-            value: {
-              load_factor: (rule.distribution?.['Load Factor'] || 80) / 100,
-            },
-          })),
-          default:
-            state.loadFactor?.defaultLoadFactor !== null
-              ? { load_factor: state.loadFactor.defaultLoadFactor / 100 }
-              : {},
+        const result: any = {
+          settings: {
+            airport: airport || '',
+            date: date || '',
+            min_arrival_minutes: 15,
+          },
+          pax_generation: { rules: [], default: {} },
+          pax_demographics: {
+            nationality: { rules: [], default: {} },
+            profile: { rules: [], default: {} },
+          },
+          pax_arrival_patterns: { rules: [], default: {} },
         };
-      } catch (error) {
-        console.warn('Error processing load factor:', error);
-      }
 
-      // Nationality 처리  
-      try {
-        result.pax_demographics.nationality = {
-          rules: (state.nationality?.createdRules || []).map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions || []),
-            value: convertPercentageToDecimal(rule.distribution || {}),
-          })),
-          default: convertPercentageToDecimal(state.nationality?.defaultDistribution || {}),
-        };
-      } catch (error) {
-        console.warn('Error processing nationality:', error);
-      }
+        // Load Factor 처리
+        try {
+          result.pax_generation = {
+            rules: (state.loadFactor?.createdRules || []).map((rule) => ({
+              conditions: convertUIConditionsToBackend(rule.conditions || []),
+              value: {
+                load_factor: (rule.distribution?.['Load Factor'] || 80) / 100,
+              },
+            })),
+            default:
+              state.loadFactor?.defaultLoadFactor !== null
+                ? { load_factor: state.loadFactor.defaultLoadFactor / 100 }
+                : {},
+          };
+        } catch (error) {
+          console.warn('Error processing load factor:', error);
+        }
 
-      // Profile 처리
-      try {
-        result.pax_demographics.profile = {
-          rules: (state.profile?.createdRules || []).map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions || []),
-            value: convertPercentageToDecimal(rule.distribution || {}),
-          })),
-          default: convertPercentageToDecimal(state.profile?.defaultDistribution || {}),
-        };
-      } catch (error) {
-        console.warn('Error processing profile:', error);
-      }
+        // Nationality 처리
+        try {
+          result.pax_demographics.nationality = {
+            rules: (state.nationality?.createdRules || []).map((rule) => ({
+              conditions: convertUIConditionsToBackend(rule.conditions || []),
+              value: convertPercentageToDecimal(rule.distribution || {}),
+            })),
+            default: convertPercentageToDecimal(state.nationality?.defaultDistribution || {}),
+          };
+        } catch (error) {
+          console.warn('Error processing nationality:', error);
+        }
 
-      // Show-up Time 처리
-      try {
-        result.pax_arrival_patterns = {
-          rules: (state.showUpTime?.createdRules || []).map((rule) => ({
-            conditions: convertUIConditionsToBackend(rule.conditions || []),
-            value: {
-              mean: rule.distribution?.mean || 120,
-              std: rule.distribution?.std || 30,
-            },
-          })),
-          default:
-            state.showUpTime?.defaultMean !== null && state.showUpTime?.defaultStd !== null
-              ? {
-                  mean: state.showUpTime.defaultMean,
-                  std: state.showUpTime.defaultStd,
-                }
-              : {},
-        };
-      } catch (error) {
-        console.warn('Error processing show-up time:', error);
-      }
+        // Profile 처리
+        try {
+          result.pax_demographics.profile = {
+            rules: (state.profile?.createdRules || []).map((rule) => ({
+              conditions: convertUIConditionsToBackend(rule.conditions || []),
+              value: convertPercentageToDecimal(rule.distribution || {}),
+            })),
+            default: convertPercentageToDecimal(state.profile?.defaultDistribution || {}),
+          };
+        } catch (error) {
+          console.warn('Error processing profile:', error);
+        }
+
+        // Show-up Time 처리
+        try {
+          result.pax_arrival_patterns = {
+            rules: (state.showUpTime?.createdRules || []).map((rule) => ({
+              conditions: convertUIConditionsToBackend(rule.conditions || []),
+              value: {
+                mean: rule.distribution?.mean || 120,
+                std: rule.distribution?.std || 30,
+              },
+            })),
+            default:
+              state.showUpTime?.defaultMean !== null && state.showUpTime?.defaultStd !== null
+                ? {
+                    mean: state.showUpTime.defaultMean,
+                    std: state.showUpTime.defaultStd,
+                  }
+                : {},
+          };
+        } catch (error) {
+          console.warn('Error processing show-up time:', error);
+        }
 
         return result;
       } catch (error) {

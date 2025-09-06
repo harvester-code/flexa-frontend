@@ -246,7 +246,7 @@ const createInitialState = (scenarioId?: string) => ({
   context: {
     scenarioId: scenarioId || '',
     airport: 'ICN', // ICN을 기본값으로 설정
-    date: '', // 빈 문자열로 초기화 - 클라이언트에서 설정
+    date: new Date().toISOString().split('T')[0], // 🆕 오늘 날짜로 초기화
     lastSavedAt: null,
   },
   flight: {

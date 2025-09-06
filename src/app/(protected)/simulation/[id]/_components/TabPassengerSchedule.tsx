@@ -37,7 +37,10 @@ export default function TabPassengerSchedule({
       <div className="space-y-6">
         {/* 🆕 새로운 Parquet Filter - 임시 테스트용 */}
         {(appliedFilterResult as any)?.parquet_metadata && (
-          <TabPassengerScheduleParquetFilter parquetMetadata={(appliedFilterResult as any).parquet_metadata} />
+          <TabPassengerScheduleParquetFilter
+            parquetMetadata={(appliedFilterResult as any).parquet_metadata}
+            simulationId={simulationId}
+          />
         )}
 
         {/* Passenger Show-up Result Chart */}

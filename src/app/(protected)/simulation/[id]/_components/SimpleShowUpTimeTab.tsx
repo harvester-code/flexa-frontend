@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, CheckCircle, Edit, Plus, Trash2, X, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Edit, Play, Plus, Trash2, X, XCircle } from 'lucide-react';
+import { createPassengerShowUp } from '@/services/simulationService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
+import { useToast } from '@/hooks/useToast';
+import { useSimulationStore } from '../_stores';
 import { usePassengerStore } from '../_stores/passengerStore';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
@@ -62,9 +65,10 @@ interface ParquetMetadataItem {
 
 interface SimpleShowUpTimeTabProps {
   parquetMetadata?: ParquetMetadataItem[];
+  simulationId?: string;
 }
 
-export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShowUpTimeTabProps) {
+export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId }: SimpleShowUpTimeTabProps) {
   // 🆕 PassengerStore 연결
   const {
     showUpTime: { createdRules, hasDefaultRule, defaultMean, defaultStd },
@@ -75,22 +79,190 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     updateShowUpTimeDefault,
   } = usePassengerStore();
 
+  // 🆕 SimulationStore에서 passenger 데이터 및 context 가져오기
+  const passengerData = useSimulationStore((state) => state.passenger);
+  const contextData = useSimulationStore((state) => state.context);
+
+  // 🆕 PassengerStore에서 모든 필요한 데이터 가져오기
+  const { loadFactor, nationality, profile } = usePassengerStore();
+
+  // 🆕 Toast 및 API 호출 관련 상태
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
   // 프론트엔드 기본값 (하드코딩)
   const FRONTEND_DEFAULT_MEAN = 120;
   const FRONTEND_DEFAULT_STD = 30;
 
+  // 🆕 Generate Pax API 호출 함수
+  const handleGeneratePax = async () => {
+    if (!simulationId) {
+      toast({
+        title: 'Error',
+        description: 'Simulation ID is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+
+      // 🔧 PassengerStore에서 실제 데이터 수집하여 API 요청 body 구성
+      const requestBody = {
+        settings: {
+          ...passengerData.settings,
+          airport: contextData.airport || 'ICN',
+          date: contextData.date || new Date().toISOString().split('T')[0], // 빈 날짜면 오늘 날짜 사용
+          min_arrival_minutes: passengerData.settings?.min_arrival_minutes || 15,
+        },
+        pax_generation: {
+          rules:
+            loadFactor?.createdRules?.map((rule: any) => ({
+              conditions: rule.conditions.reduce(
+                (acc: any, condition: string) => {
+                  const [key, value] = condition.split(': ');
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push(value);
+                  return acc;
+                },
+                {} as Record<string, string[]>
+              ),
+              value: { load_factor: (rule.distribution?.load_factor || 85) / 100 }, // 퍼센트를 소수점으로 변환
+            })) || [],
+          default: {
+            // 🆕 확실한 기본값 보장: null, undefined, 0이 아닌 경우만 사용
+            load_factor:
+              (loadFactor?.defaultLoadFactor !== null &&
+              loadFactor?.defaultLoadFactor !== undefined &&
+              loadFactor?.defaultLoadFactor !== 0
+                ? loadFactor.defaultLoadFactor
+                : 85) / 100, // 퍼센트를 소수점으로 변환
+          },
+        },
+        pax_demographics: {
+          nationality: {
+            available_values: nationality?.definedProperties || [],
+            rules:
+              nationality?.createdRules?.map((rule: any) => ({
+                conditions: rule.conditions.reduce(
+                  (acc: any, condition: string) => {
+                    const [key, value] = condition.split(': ');
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(value);
+                    return acc;
+                  },
+                  {} as Record<string, string[]>
+                ),
+                value: rule.distribution || {},
+              })) || [],
+            default: nationality?.defaultDistribution || {},
+          },
+          profile: {
+            available_values: profile?.definedProperties || [],
+            rules:
+              profile?.createdRules?.map((rule: any) => ({
+                conditions: rule.conditions.reduce(
+                  (acc: any, condition: string) => {
+                    const [key, value] = condition.split(': ');
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(value);
+                    return acc;
+                  },
+                  {} as Record<string, string[]>
+                ),
+                value: rule.distribution || {},
+              })) || [],
+            default: profile?.defaultDistribution || {},
+          },
+        },
+        pax_arrival_patterns: {
+          rules: createdRules.map((rule) => ({
+            conditions: rule.conditions.reduce(
+              (acc, condition) => {
+                const [key, value] = condition.split(': ');
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(value);
+                return acc;
+              },
+              {} as Record<string, string[]>
+            ),
+            value: rule.distribution || {
+              mean: defaultMean !== null && defaultMean !== undefined ? defaultMean : FRONTEND_DEFAULT_MEAN,
+              std: defaultStd !== null && defaultStd !== undefined ? defaultStd : FRONTEND_DEFAULT_STD,
+            },
+          })),
+          default: {
+            // 🆕 확실한 기본값 보장: null, undefined가 아닌 경우만 사용
+            mean: defaultMean !== null && defaultMean !== undefined ? defaultMean : FRONTEND_DEFAULT_MEAN,
+            std: defaultStd !== null && defaultStd !== undefined ? defaultStd : FRONTEND_DEFAULT_STD,
+          },
+        },
+      };
+
+      // 🔍 디버깅: 초기 상태에서 기본값 확인
+      console.log('🔍 Context Data:', contextData);
+      console.log('🔍 SimulationStore Passenger Data:', passengerData);
+      console.log('🔍 PassengerStore Show-up Time:', {
+        defaultMean,
+        defaultStd,
+        createdRules: createdRules.length,
+      });
+      console.log('🔍 PassengerStore Load Factor:', {
+        defaultLoadFactor: loadFactor?.defaultLoadFactor,
+        hasDefaultRule: loadFactor?.hasDefaultRule,
+        createdRules: loadFactor?.createdRules?.length || 0,
+      });
+      console.log('🔍 PassengerStore Nationality:', {
+        definedProperties: nationality?.definedProperties?.length || 0,
+        defaultDistribution: Object.keys(nationality?.defaultDistribution || {}).length,
+      });
+      console.log('🔍 PassengerStore Profile:', {
+        definedProperties: profile?.definedProperties?.length || 0,
+        defaultDistribution: Object.keys(profile?.defaultDistribution || {}).length,
+      });
+
+      // 🎯 최종 API 요청 Body의 기본값들 확인
+      console.log('🎯 Final API Request - Key Values:');
+      console.log('   date:', requestBody.settings.date);
+      console.log('   airport:', requestBody.settings.airport);
+      console.log(
+        '   load_factor:',
+        requestBody.pax_generation.default.load_factor,
+        `(${loadFactor?.defaultLoadFactor || 85}% → 소수점 변환)`
+      );
+      console.log('   show_up_mean:', requestBody.pax_arrival_patterns.default.mean);
+      console.log('   show_up_std:', requestBody.pax_arrival_patterns.default.std);
+
+      console.log('🚀 Complete API Request Body:', requestBody);
+
+      const { data: response } = await createPassengerShowUp(simulationId, requestBody);
+
+      console.log('✅ API Response:', response);
+
+      toast({
+        title: 'Success',
+        description: 'Passenger data has been generated successfully!',
+      });
+
+      // TODO: 응답 데이터 처리 (필요에 따라)
+      // useSimulationStore.getState().setPassengerResults(response);
+    } catch (error) {
+      console.error('❌ Generate Pax API Error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate passenger data. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // 로컬 UI 상태 (PassengerStore와 무관한 것들)
   const [definedProperties] = useState<string[]>(['mean', 'std']); // 고정값
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-
-  // 항목 변경 확인창 상태
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    type: 'add' | 'remove';
-    payload: string[];
-  } | null>(null);
 
   // 드래그 앤 드랍 상태
   const [draggingRuleId, setDraggingRuleId] = useState<string | null>(null);
@@ -101,65 +273,14 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // 균등 분배 조정 로직
-  const adjustDistributionsForNewProperties = (newProperties: string[]) => {
-    // 모든 규칙을 균등 분배로 조정
-    const adjustedRules = createdRules.map((rule) => {
-      return { ...rule, distribution: calculateEqualDistribution(newProperties) };
-    });
+  // Show-up Time 탭에서는 속성 조정이 필요하지 않음 (mean, std 고정)
+  // 균등 분배 조정 로직 제거됨
 
-    // 기본 분배도 균등 분배로 설정
-    const newDefaultDistribution = calculateEqualDistribution(newProperties);
+  // Show-up Time 탭에서는 속성 추가/제거 기능을 사용하지 않음
+  // handleAddProperty, handleRemoveProperty 제거됨
 
-    setCreatedRules(adjustedRules);
-    setDefaultDistribution(newDefaultDistribution);
-  };
-
-  // 새 속성 추가 (확인창 표시)
-  const handleAddProperty = () => {
-    if (!newPropertyName.trim()) return;
-
-    // 콤마로 구분해서 여러 개 처리
-    const newProperties = newPropertyName
-      .split(',')
-      .map((prop) => capitalizeFirst(prop.trim()))
-      .filter((prop) => prop.length > 0 && !definedProperties.includes(prop));
-
-    if (newProperties.length > 0) {
-      const resultProperties = [...definedProperties, ...newProperties];
-      if (createdRules.length > 0 || hasDefaultRule) {
-        // 규칙이 있으면 확인창 표시 (추가 시에도)
-        setPendingAction({ type: 'add', payload: resultProperties });
-        setShowConfirmDialog(true);
-      } else {
-        // 규칙이 없으면 바로 추가
-        setDefinedProperties(resultProperties);
-      }
-      setNewPropertyName('');
-    }
-  };
-
-  // 속성 제거 (확인창 표시)
-  const handleRemoveProperty = (propertyToRemove: string) => {
-    const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
-
-    if (createdRules.length > 0 || hasDefaultRule) {
-      // 규칙이 있으면 확인창 표시
-      setPendingAction({ type: 'remove', payload: newProperties });
-      setShowConfirmDialog(true);
-    } else {
-      // 규칙이 없으면 바로 제거
-      setDefinedProperties(newProperties);
-    }
-  };
-
-  // Enter 키 처리
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddProperty();
-    }
-  };
+  // Show-up Time 탭에서는 Enter 키 처리가 필요하지 않음
+  // handleKeyPress 제거됨
 
   // Rule 관련 함수들
   const handleOpenRuleModal = () => {
@@ -375,20 +496,10 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
     setDragOverRuleId(null);
   };
 
-  // 확인창 처리
-  const handleConfirmChanges = () => {
-    if (pendingAction) {
-      setDefinedProperties(pendingAction.payload);
-      adjustDistributionsForNewProperties(pendingAction.payload);
-      setPendingAction(null);
-    }
-    setShowConfirmDialog(false);
-  };
+  // Show-up Time 탭에서는 속성 변경 확인창이 필요하지 않음
+  // handleConfirmChanges 제거됨
 
-  const handleCancelChanges = () => {
-    setPendingAction(null);
-    setShowConfirmDialog(false);
-  };
+  // handleCancelChanges도 제거됨
 
   // 조건들을 카테고리별로 그룹화하는 함수 (메모이제이션)
   const groupConditionsByCategory = useCallback((conditions: string[]) => {
@@ -794,7 +905,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
                         Valid distribution (
                         {typeof getDistributionTotal(rule.distribution) === 'string'
                           ? getDistributionTotal(rule.distribution)
-                          : `Total: ${getDistributionTotal(rule.distribution).toFixed(1)}%`}
+                          : `Total: ${(getDistributionTotal(rule.distribution) as number).toFixed(1)}%`}
                         )
                       </span>
                     ) : (
@@ -802,7 +913,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
                         <XCircle size={14} />
                         {typeof getDistributionTotal(rule.distribution) === 'string'
                           ? 'Invalid parameters (mean must be ≥0, std must be >0)'
-                          : `Total must equal 100% (Current: ${getDistributionTotal(rule.distribution).toFixed(1)}%)`}
+                          : `Total must equal 100% (Current: ${(getDistributionTotal(rule.distribution) as number).toFixed(1)}%)`}
                       </span>
                     )}
                   </div>
@@ -889,7 +1000,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
                           mean: defaultMean || FRONTEND_DEFAULT_MEAN,
                           std: defaultStd || FRONTEND_DEFAULT_STD,
                         })
-                      : `Total: ${getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }).toFixed(1)}%`}
+                      : `Total: ${(getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }) as number).toFixed(1)}%`}
                     )
                   </span>
                 ) : (
@@ -900,7 +1011,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
                       std: defaultStd || FRONTEND_DEFAULT_STD,
                     }) === 'string'
                       ? 'Invalid parameters (mean must be ≥0, std must be >0)'
-                      : `Total must equal 100% (Current: ${getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }).toFixed(1)}%)`}
+                      : `Total must equal 100% (Current: ${(getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }) as number).toFixed(1)}%)`}
                   </span>
                 )}
               </div>
@@ -915,17 +1026,25 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
         (defaultStd || FRONTEND_DEFAULT_STD) > 0 && (
           <div className="mt-6 rounded-lg border bg-white p-4">
             <h4 className="mb-4 text-lg font-medium text-gray-900">Show-up Time Distributions Comparison</h4>
-            <Plot
-              data={combinedChartConfig.data}
-              layout={combinedChartConfig.layout}
-              config={{
+            {React.createElement(Plot as any, {
+              data: combinedChartConfig.data,
+              layout: combinedChartConfig.layout,
+              config: {
                 displayModeBar: false,
                 responsive: true,
-              }}
-              style={{ width: '100%', height: '400px' }}
-            />
+              },
+              style: { width: '100%', height: '400px' },
+            })}
           </div>
         )}
+
+      {/* Generate Pax Button */}
+      <div className="mt-6 flex justify-end">
+        <Button onClick={handleGeneratePax} disabled={isGenerating}>
+          <Play size={16} />
+          {isGenerating ? 'Generating...' : 'Generate Pax'}
+        </Button>
+      </div>
 
       {/* Create New Rule Modal */}
       <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
@@ -954,44 +1073,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [] }: SimpleShow
         </DialogContent>
       </Dialog>
 
-      {/* Property Change Confirmation Alert Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="text-amber-500" size={20} />
-              Confirm Property Changes
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingAction?.type === 'add'
-                ? 'Adding new properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'
-                : 'Removing properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="flex flex-col gap-3 py-4">
-            <div className="text-sm text-muted-foreground">Affected items:</div>
-            <ul className="list-inside list-disc space-y-1 rounded bg-muted p-3 text-sm">
-              {createdRules.length > 0 && (
-                <li>
-                  {createdRules.length} distribution rule{createdRules.length > 1 ? 's' : ''}
-                </li>
-              )}
-              {hasDefaultRule && <li>Default distribution rule</li>}
-            </ul>
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelChanges}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmChanges}
-              className="bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500"
-            >
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Show-up Time 탭에서는 속성 변경 확인창이 필요하지 않음 */}
     </div>
   );
 }

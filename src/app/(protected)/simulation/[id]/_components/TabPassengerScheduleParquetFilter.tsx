@@ -22,9 +22,13 @@ interface ParquetMetadataItem {
 
 interface TabPassengerScheduleParquetFilterProps {
   parquetMetadata: ParquetMetadataItem[];
+  simulationId?: string;
 }
 
-export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: TabPassengerScheduleParquetFilterProps) {
+export default function TabPassengerScheduleParquetFilter({
+  parquetMetadata,
+  simulationId,
+}: TabPassengerScheduleParquetFilterProps) {
   return (
     <Card>
       <CardHeader>
@@ -62,7 +66,7 @@ export default function TabPassengerScheduleParquetFilter({ parquetMetadata }: T
           </TabsContent>
 
           <TabsContent value="showuptime" className="mt-6">
-            <SimpleShowUpTimeTab parquetMetadata={parquetMetadata} />
+            <SimpleShowUpTimeTab parquetMetadata={parquetMetadata} simulationId={simulationId} />
           </TabsContent>
         </Tabs>
       </CardContent>
