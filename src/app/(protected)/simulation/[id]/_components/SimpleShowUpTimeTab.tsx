@@ -218,17 +218,44 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
   const updateShowUpTimeRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
       const ruleIndex = parseInt(ruleId.replace('rule-', ''));
-      if (updatedRule.parameters) {
+
+      // 전체 규칙 업데이트인경우 (조건 + parameters + 플라이트카운트)
+      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.parameters) {
+        // 현재 규칙 가져오기
+        const currentRule = paxArrivalPatternRules[ruleIndex];
+        if (!currentRule) return;
+
+        // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
+        let backendConditions = currentRule.conditions;
+        if (updatedRule.conditions) {
+          backendConditions = {};
+          updatedRule.conditions.forEach((condition) => {
+            const parts = condition.split(': ');
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+              if (!backendConditions[columnKey]) {
+                backendConditions[columnKey] = [];
+              }
+              backendConditions[columnKey].push(convertedValue);
+            }
+          });
+        }
+
+        // 전체 규칙 업데이트
         updatePaxArrivalPatternRule(ruleIndex, {
-          conditions: paxArrivalPatternRules[ruleIndex]?.conditions || {},
+          conditions: backendConditions,
           value: {
-            mean: updatedRule.parameters['Mean'] || FRONTEND_DEFAULT_MEAN,
-            std: updatedRule.parameters['Std'] || FRONTEND_DEFAULT_STD,
+            mean: updatedRule.parameters?.Mean ?? currentRule.value?.mean ?? FRONTEND_DEFAULT_MEAN,
+            std: updatedRule.parameters?.Std ?? currentRule.value?.std ?? FRONTEND_DEFAULT_STD,
           },
         });
       }
     },
-    [updatePaxArrivalPatternRule, paxArrivalPatternRules]
+    [updatePaxArrivalPatternRule, paxArrivalPatternRules, labelToColumnMap, valueMapping]
   );
 
   const removeShowUpTimeRule = useCallback(
