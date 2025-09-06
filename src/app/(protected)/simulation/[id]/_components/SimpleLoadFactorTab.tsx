@@ -119,7 +119,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     return value <= 1 ? Math.round(value * 100) : Math.round(value);
   }, []);
 
-  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
     // 백엔드 → UI 역변환 맵핑
     const columnToLabelMap: Record<string, string> = {
@@ -173,10 +173,10 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     }
   }, []); // 한 번만 실행
 
-  // 🔄 PassengerStore 스타일 액션 어댑터들
+  // 액션 어댑터들
   const addLoadFactorRule = useCallback(
     (rule: Rule) => {
-      // 🆕 PassengerStore와 동일한 변환 로직 적용
+      // 변환 로직 적용
       const backendConditions: Record<string, string[]> = {};
 
       // Display label을 실제 column key로 변환하는 맵핑
@@ -354,7 +354,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   // 프론트엔드 기본값 (하드코딩)
   const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
 
-  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  // 로컬 UI 상태
   const [definedProperties] = useState<string[]>(['Load Factor']); // 고정값
   const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
@@ -590,7 +590,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    // 🆕 PassengerStore 업데이트
+    // Store 업데이트
     reorderLoadFactorRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);

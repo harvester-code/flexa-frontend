@@ -21,7 +21,6 @@ import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../_stores';
-// import { usePassengerStore } from '../_stores/passengerStore'; // 🔄 Step 2에서 제거 예정
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -142,7 +141,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     },
   };
 
-  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
     return paxArrivalPatternRules.map((rule, index) => ({
       id: `rule-${index}`,
@@ -181,7 +180,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     }
   }, []); // 한 번만 실행
 
-  // 🔄 PassengerStore 스타일 액션 어댑터들 (Step 1과 동일한 패턴)
+  // 액션 어댑터들
   const addShowUpTimeRule = useCallback(
     (rule: Rule) => {
       // UI 조건을 백엔드 형식으로 변환
@@ -422,7 +421,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     }
   };
 
-  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  // 로컬 UI 상태
   const [definedProperties] = useState<string[]>(['mean', 'std']); // 고정값
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -639,7 +638,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     // 새 위치에 삽입
     newRules.splice(dropIndex, 0, draggedRule);
 
-    // 🆕 PassengerStore 업데이트
+    // Store 업데이트
     reorderShowUpTimeRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
@@ -683,7 +682,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
+  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; parameters: { Mean: number; Std: number } }) => {
       if (editingRuleId) {

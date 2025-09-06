@@ -119,7 +119,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     },
   };
 
-  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  // SimulationStore 데이터 변환
   const definedProperties = profileData?.available_values || [];
   const createdRules: Rule[] = useMemo(() => {
     return (profileData?.rules || []).map((rule, index) => ({
@@ -141,7 +141,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
   const hasDefaultRule = profileData?.default && Object.keys(profileData.default).length > 0;
   const defaultDistribution = profileData?.default || {};
 
-  // 🔄 PassengerStore 스타일 액션 어댑터들
+  // 액션 어댑터들
   const setProfileProperties = useCallback(
     (properties: string[]) => {
       setProfileValues(properties);
@@ -275,7 +275,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     [addProfileRule]
   );
 
-  // 로컬 UI 상태 (PassengerStore와 무관한 것들)
+  // 로컬 UI 상태
   const [newPropertyName, setNewPropertyName] = useState<string>('');
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -296,7 +296,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // 속성 추가 (PassengerStore 연동)
+  // 속성 추가
   const handleAddProperty = () => {
     if (!newPropertyName.trim()) return;
 
@@ -320,7 +320,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     }
   };
 
-  // 속성 제거 (PassengerStore 연동)
+  // 속성 제거
   const handleRemoveProperty = (propertyToRemove: string) => {
     const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
 
@@ -556,10 +556,10 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
     setDragOverRuleId(null);
   };
 
-  // 확인창 처리 (PassengerStore 연동)
+  // 확인창 처리
   const handleConfirmChanges = () => {
     if (pendingAction) {
-      // PassengerStore의 속성 업데이트 함수 호출 (균등 분배 자동 적용)
+      // 속성 업데이트 함수 호출 (균등 분배 자동 적용)
       setProfileProperties(pendingAction.payload);
       setPendingAction(null);
     }
@@ -599,7 +599,7 @@ export default function SimplePaxProfileTab({ parquetMetadata = [] }: SimplePaxP
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
+  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
       if (editingRuleId) {
