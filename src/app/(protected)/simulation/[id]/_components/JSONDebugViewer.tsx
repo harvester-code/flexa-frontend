@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useSimulationStore } from '../_stores';
+import { usePassengerStore } from '../_stores/passengerStore';
 
 interface JSONDebugViewerProps {
   visible: boolean;
@@ -27,49 +28,20 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
   // 🆕 통합 Simulation Store 데이터 수집
   const unifiedStore = useSimulationStore();
 
-  // 🆕 Generated Passenger JSON - SimulationStore에서 직접 생성 (메모이제이션)
+  // 🆕 PassengerStore 데이터 수집
+  const passengerStore = usePassengerStore();
+
+  // 🆕 Generated Passenger JSON (메모이제이션)
   const generatedPassengerJSON = useMemo(() => {
     try {
-      // SimulationStore의 passenger 데이터를 그대로 사용
-      return {
-        settings: {
-          airport: unifiedStore.context.airport || 'ICN',
-          date: unifiedStore.context.date || new Date().toISOString().split('T')[0],
-          min_arrival_minutes: unifiedStore.passenger.settings.min_arrival_minutes || 15,
-        },
-        pax_generation: {
-          rules: unifiedStore.passenger.pax_generation.rules || [],
-          default: {
-            load_factor: unifiedStore.passenger.pax_generation.default.load_factor || 0.85,
-          },
-        },
-        pax_demographics: {
-          nationality: {
-            available_values: unifiedStore.passenger.pax_demographics.nationality.available_values || [],
-            rules: unifiedStore.passenger.pax_demographics.nationality.rules || [],
-            default: unifiedStore.passenger.pax_demographics.nationality.default || {},
-          },
-          profile: {
-            available_values: unifiedStore.passenger.pax_demographics.profile.available_values || [],
-            rules: unifiedStore.passenger.pax_demographics.profile.rules || [],
-            default: unifiedStore.passenger.pax_demographics.profile.default || {},
-          },
-        },
-        pax_arrival_patterns: {
-          rules: unifiedStore.passenger.pax_arrival_patterns.rules || [],
-          default: {
-            mean: unifiedStore.passenger.pax_arrival_patterns.default.mean || 120,
-            std: unifiedStore.passenger.pax_arrival_patterns.default.std || 30,
-          },
-        },
-      };
+      return passengerStore.generatePassengerJSON();
     } catch (error) {
       return {
-        error: 'Failed to generate JSON from SimulationStore',
+        error: 'Failed to generate JSON',
         message: error instanceof Error ? error.message : 'Unknown error',
       };
     }
-  }, [unifiedStore]);
+  }, [passengerStore]);
 
   const toggleCollapse = (section: keyof typeof collapsed) => {
     setCollapsed((prev) => ({

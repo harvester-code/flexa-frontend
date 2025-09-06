@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
-import { usePassengerStore } from '../_stores/passengerStore';
+import { useSimulationStore } from '../_stores';
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -58,15 +58,221 @@ interface SimpleLoadFactorTabProps {
 }
 
 export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoadFactorTabProps) {
-  // 🆕 PassengerStore 연결
-  const {
-    loadFactor: { createdRules, hasDefaultRule, defaultLoadFactor },
-    addLoadFactorRule,
-    updateLoadFactorRule,
-    removeLoadFactorRule,
-    reorderLoadFactorRules,
-    updateLoadFactorDefault,
-  } = usePassengerStore();
+  // 🆕 SimulationStore 연결
+  const paxGenerationRules = useSimulationStore((s) => s.passenger.pax_generation.rules);
+  const defaultLoadFactor = useSimulationStore((s) => s.passenger.pax_generation.default.load_factor);
+  const addPaxGenerationRule = useSimulationStore((s) => s.addPaxGenerationRule);
+  const removePaxGenerationRule = useSimulationStore((s) => s.removePaxGenerationRule);
+  const updatePaxGenerationValue = useSimulationStore((s) => s.updatePaxGenerationValue);
+  const setPaxGenerationDefault = useSimulationStore((s) => s.setPaxGenerationDefault);
+  const reorderPaxGenerationRules = useSimulationStore((s) => s.reorderPaxGenerationRules);
+
+  // 🆕 스마트 변환 함수: 입력값에 따라 자동 변환
+  const convertToDecimal = useCallback((value: number) => {
+    return value <= 1 ? value : value / 100;
+  }, []);
+
+  // 🆕 소수점을 백분율로 변환 (UI 표시용)
+  const convertToPercentage = useCallback((value: number) => {
+    return value <= 1 ? value * 100 : value;
+  }, []);
+
+  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  const createdRules: Rule[] = useMemo(() => {
+    // 백엔드 → UI 역변환 맵핑
+    const columnToLabelMap: Record<string, string> = {
+      operating_carrier_iata: 'Airline',
+      aircraft_type_icao: 'Aircraft Type',
+      flight_type: 'Flight Type',
+      total_seats: 'Total Seats',
+      arrival_airport_iata: 'Arrival Airport',
+      arrival_terminal: 'Arrival Terminal',
+      arrival_city: 'Arrival City',
+      arrival_country: 'Arrival Country',
+      arrival_region: 'Arrival Region',
+      departure_airport_iata: 'Departure Airport Iata',
+      departure_terminal: 'Departure Terminal',
+      departure_city: 'Departure City',
+      departure_country: 'Departure Country',
+      departure_region: 'Departure Region',
+    };
+
+    // 값 역변환 맵핑
+    const reverseValueMapping: Record<string, Record<string, string>> = {
+      operating_carrier_iata: {
+        KE: 'Korean Air',
+        OZ: 'Asiana Airlines',
+        // 필요에 따라 추가
+      },
+    };
+
+    return paxGenerationRules.map((rule, index) => ({
+      id: `rule-${index}`,
+      name: `Rule ${index + 1}`,
+      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
+        const displayLabel = columnToLabelMap[columnKey] || columnKey;
+        return values.map((value) => {
+          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
+          return `${displayLabel}: ${displayValue}`;
+        });
+      }),
+      flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
+      distribution: { 'Load Factor': convertToPercentage(rule.value?.load_factor || 0.8) },
+      isExpanded: false,
+    }));
+  }, [paxGenerationRules, convertToPercentage]);
+
+  const hasDefaultRule = defaultLoadFactor !== null && defaultLoadFactor !== undefined;
+
+  // 🆕 컴포넌트에서 초기값 설정
+  useEffect(() => {
+    if (defaultLoadFactor === null || defaultLoadFactor === undefined) {
+      setPaxGenerationDefault(0.85); // 85% → 0.85로 직접 설정
+    }
+  }, []); // 한 번만 실행
+
+  // 🔄 PassengerStore 스타일 액션 어댑터들
+  const addLoadFactorRule = useCallback(
+    (rule: Rule) => {
+      // 🆕 PassengerStore와 동일한 변환 로직 적용
+      const backendConditions: Record<string, string[]> = {};
+
+      // Display label을 실제 column key로 변환하는 맵핑
+      const labelToColumnMap: Record<string, string> = {
+        Airline: 'operating_carrier_iata',
+        'Aircraft Type': 'aircraft_type_icao',
+        'Flight Type': 'flight_type',
+        'Total Seats': 'total_seats',
+        'Arrival Airport': 'arrival_airport_iata',
+        'Arrival Terminal': 'arrival_terminal',
+        'Arrival City': 'arrival_city',
+        'Arrival Country': 'arrival_country',
+        'Arrival Region': 'arrival_region',
+        'Departure Airport Iata': 'departure_airport_iata',
+        'Departure Terminal': 'departure_terminal',
+        'Departure City': 'departure_city',
+        'Departure Country': 'departure_country',
+        'Departure Region': 'departure_region',
+      };
+
+      // 값 변환 맵핑 (필요시)
+      const valueMapping: Record<string, Record<string, string>> = {
+        operating_carrier_iata: {
+          'Korean Air': 'KE',
+          'Asiana Airlines': 'OZ',
+          // 필요에 따라 추가
+        },
+      };
+
+      rule.conditions.forEach((condition) => {
+        const parts = condition.split(': ');
+        if (parts.length === 2) {
+          const displayLabel = parts[0];
+          const value = parts[1];
+          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+
+          // 값 변환 적용 (있으면)
+          const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+          if (!backendConditions[columnKey]) {
+            backendConditions[columnKey] = [];
+          }
+          backendConditions[columnKey].push(convertedValue);
+        }
+      });
+
+      addPaxGenerationRule(backendConditions, convertToDecimal(rule.distribution?.['Load Factor'] || 80));
+    },
+    [addPaxGenerationRule, convertToDecimal]
+  );
+
+  const updateLoadFactorRule = useCallback(
+    (ruleId: string, updatedRule: Partial<Rule>) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      if (updatedRule.distribution?.['Load Factor'] !== undefined) {
+        updatePaxGenerationValue(ruleIndex, convertToDecimal(updatedRule.distribution['Load Factor']));
+      }
+    },
+    [updatePaxGenerationValue, convertToDecimal]
+  );
+
+  const removeLoadFactorRule = useCallback(
+    (ruleId: string) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      removePaxGenerationRule(ruleIndex);
+    },
+    [removePaxGenerationRule]
+  );
+
+  const reorderLoadFactorRules = useCallback(
+    (newOrder: Rule[]) => {
+      // Rule[] 형식을 SimulationStore 형식으로 변환 (동일한 변환 로직 사용)
+      const convertedRules = newOrder.map((rule) => {
+        const backendConditions: Record<string, string[]> = {};
+
+        // Display label을 실제 column key로 변환하는 맵핑
+        const labelToColumnMap: Record<string, string> = {
+          Airline: 'operating_carrier_iata',
+          'Aircraft Type': 'aircraft_type_icao',
+          'Flight Type': 'flight_type',
+          'Total Seats': 'total_seats',
+          'Arrival Airport': 'arrival_airport_iata',
+          'Arrival Terminal': 'arrival_terminal',
+          'Arrival City': 'arrival_city',
+          'Arrival Country': 'arrival_country',
+          'Arrival Region': 'arrival_region',
+          'Departure Airport Iata': 'departure_airport_iata',
+          'Departure Terminal': 'departure_terminal',
+          'Departure City': 'departure_city',
+          'Departure Country': 'departure_country',
+          'Departure Region': 'departure_region',
+        };
+
+        // 값 변환 맵핑 (필요시)
+        const valueMapping: Record<string, Record<string, string>> = {
+          operating_carrier_iata: {
+            'Korean Air': 'KE',
+            'Asiana Airlines': 'OZ',
+            // 필요에 따라 추가
+          },
+        };
+
+        rule.conditions.forEach((condition) => {
+          const parts = condition.split(': ');
+          if (parts.length === 2) {
+            const displayLabel = parts[0];
+            const value = parts[1];
+            const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+
+            // 값 변환 적용 (있으면)
+            const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+            if (!backendConditions[columnKey]) {
+              backendConditions[columnKey] = [];
+            }
+            backendConditions[columnKey].push(convertedValue);
+          }
+        });
+
+        return {
+          conditions: backendConditions,
+          value: { load_factor: convertToDecimal(rule.distribution?.['Load Factor'] || 80) },
+        };
+      });
+
+      reorderPaxGenerationRules(convertedRules);
+    },
+    [reorderPaxGenerationRules, convertToDecimal]
+  );
+
+  const updateLoadFactorDefault = useCallback(
+    (value: number | null) => {
+      if (value !== null && value !== undefined) {
+        setPaxGenerationDefault(convertToDecimal(value)); // 🆕 스마트 변환 적용
+      }
+    },
+    [setPaxGenerationDefault, convertToDecimal]
+  );
 
   // 프론트엔드 기본값 (하드코딩)
   const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
@@ -559,7 +765,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
                 <label className="flex-shrink-0 text-sm font-medium text-gray-700">Default Load Factor:</label>
                 <div className="flex-1 px-4">
                   <LoadFactorSlider
-                    value={defaultLoadFactor || FRONTEND_DEFAULT_LOAD_FACTOR}
+                    value={defaultLoadFactor ? convertToPercentage(defaultLoadFactor) : FRONTEND_DEFAULT_LOAD_FACTOR}
                     onChange={updateLoadFactorDefault}
                     min={0}
                     max={100}

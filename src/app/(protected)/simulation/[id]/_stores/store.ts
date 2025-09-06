@@ -211,6 +211,7 @@ export interface SimulationStoreState {
   updatePaxGenerationValue: (ruleIndex: number, value: number | Record<string, number>) => void;
   updatePaxGenerationDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   setPaxGenerationDefault: (value: number | null) => void;
+  reorderPaxGenerationRules: (newOrder: PassengerData['pax_generation']['rules']) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   setNationalityDefault: (defaultValues: Record<string, number>) => void;
@@ -263,7 +264,7 @@ const createInitialState = (scenarioId?: string) => ({
     pax_generation: {
       rules: [],
       default: {
-        load_factor: null, // 하드코딩 완전 제거, UI에서만 설정
+        load_factor: 0.85, // 🆕 Load Factor 초기값 85% (0.85)
       },
     },
     pax_demographics: {
@@ -627,6 +628,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
       useSimulationStore.getState().checkStep2Completion();
     },
 
+    reorderPaxGenerationRules: (newOrder) =>
+      set((state) => {
+        state.passenger.pax_generation.rules = newOrder;
+      }),
+
     addNationalityRule: (conditions, flightCount, value = {}) =>
       set((state) => {
         state.passenger.pax_demographics.nationality.rules.push({
@@ -741,7 +747,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           pax_generation: {
             rules: [],
             default: {
-              load_factor: null, // 하드코딩 완전 제거
+              load_factor: null, // 컴포넌트에서 초기값 관리
             },
           },
           pax_demographics: {
@@ -776,7 +782,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           pax_generation: {
             rules: [],
             default: {
-              load_factor: null, // 하드코딩 완전 제거
+              load_factor: null, // 컴포넌트에서 초기값 관리
             },
           },
           pax_demographics: {
