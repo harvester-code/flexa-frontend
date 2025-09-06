@@ -41,7 +41,8 @@ export default function InteractivePercentageBar({
   // 비율을 백분율로 변환 (초기값은 균등분배)
   const percentages = properties.reduce(
     (acc, prop) => {
-      acc[prop] = values[prop] || 100 / properties.length; // 균등분배 기본값
+      // 🐛 수정: 0%도 유효한 값으로 인식하도록 nullish coalescing 사용
+      acc[prop] = values[prop] ?? 100 / properties.length; // 균등분배 기본값
       return acc;
     },
     {} as Record<string, number>
@@ -50,10 +51,31 @@ export default function InteractivePercentageBar({
   // 총합 계산
   const totalPercentage = Object.values(percentages).reduce((sum, val) => sum + val, 0);
 
-  // 정규화된 비율 계산 (총합이 100%가 되도록)
+  // 🔄 수정: 5% 이하 항목들이 실제 5% 폭을 차지한다고 가정한 정규화
   const normalizedPercentages = properties.reduce(
     (acc, prop) => {
-      acc[prop] = totalPercentage > 0 ? (percentages[prop] / totalPercentage) * 100 : 0;
+      const displayPercentage = percentages[prop] || 0;
+      
+      // 5% 이하면 실제 표시폭 5%로 고정
+      if (displayPercentage <= 5) {
+        acc[prop] = 5;
+      } else {
+        // 6% 이상인 항목들만 비례배분 계산
+        const smallItemsCount = properties.filter(p => (percentages[p] || 0) <= 5).length;
+        const reservedWidth = smallItemsCount * 5; // 5% 이하 항목들이 차지할 총 폭
+        const availableWidth = Math.max(0, 100 - reservedWidth); // 나머지 사용 가능한 폭
+        
+        // 6% 이상인 항목들의 총 비율
+        const largeItemsTotal = properties
+          .filter(p => (percentages[p] || 0) > 5)
+          .reduce((sum, p) => sum + (percentages[p] || 0), 0);
+        
+        // 사용 가능한 폭 내에서 비례배분
+        acc[prop] = largeItemsTotal > 0 
+          ? (displayPercentage / largeItemsTotal) * availableWidth 
+          : 0;
+      }
+      
       return acc;
     },
     {} as Record<string, number>
@@ -119,6 +141,8 @@ export default function InteractivePercentageBar({
     setEditingValue('');
   };
 
+  // 🆕 normalizedPercentages에서 이미 5% 이하는 5%로, 6% 이상은 비례배분으로 올바르게 계산됨
+
   return (
     <div className="space-y-4">
       {/* 인터랙티브 바 */}
@@ -133,15 +157,13 @@ export default function InteractivePercentageBar({
             const normalizedPercentage = normalizedPercentages[property] || 0; // 바 너비용
             const color = COLORS[index % COLORS.length];
 
-            // 실제 표시될 너비 계산 (0%인 경우 최소 너비 보장)
-            const actualWidth = Math.max(normalizedPercentage, displayPercentage === 0 ? 2 : 0);
+            // 실제 표시될 너비 (normalizedPercentages에서 이미 올바르게 계산됨)
+            const actualWidth = normalizedPercentage;
 
             // leftPosition은 이전 항목들의 실제 너비를 고려해서 계산
             const leftPosition = properties.slice(0, index).reduce((sum, prop) => {
-              const prevDisplayPercentage = percentages[prop] || 0;
               const prevNormalizedPercentage = normalizedPercentages[prop] || 0;
-              const prevActualWidth = Math.max(prevNormalizedPercentage, prevDisplayPercentage === 0 ? 2 : 0);
-              return sum + prevActualWidth;
+              return sum + prevNormalizedPercentage;
             }, 0);
 
             return (
@@ -183,8 +205,8 @@ export default function InteractivePercentageBar({
                     step="1"
                   />
                 ) : (
-                  /* 라벨 표시 - 0%도 표시하되, 너비가 너무 좁으면 숨김 */
-                  actualWidth > 3 && (
+                  /* 라벨 표시 - 최소폭이 있으면 항상 표시 (0%도 포함) */
+                  actualWidth >= 3 && (
                     <div className="flex flex-col items-center text-xs font-medium text-white">
                       <div>{property}</div>
                       <div>{showValues ? `${Math.round(displayPercentage)}%` : '−'}</div>
