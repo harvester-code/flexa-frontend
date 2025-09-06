@@ -38,7 +38,7 @@ interface Rule {
   name: string;
   conditions: string[];
   flightCount: number;
-  distribution?: Record<string, number>;
+  loadFactor?: number; // 🔄 distribution → loadFactor (단순 백분율 값)
   isExpanded?: boolean;
 }
 
@@ -67,14 +67,29 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   const setPaxGenerationDefault = useSimulationStore((s) => s.setPaxGenerationDefault);
   const reorderPaxGenerationRules = useSimulationStore((s) => s.reorderPaxGenerationRules);
 
-  // 🆕 스마트 변환 함수: 입력값에 따라 자동 변환
-  const convertToDecimal = useCallback((value: number) => {
-    return value <= 1 ? value : value / 100;
+  // 🆕 입력값 정규화 (1~100 정수로 제한)
+  const normalizeLoadFactor = useCallback((value: number | null | undefined): number => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return FRONTEND_DEFAULT_LOAD_FACTOR; // 85
+    }
+    return Math.max(1, Math.min(100, Math.round(value)));
   }, []);
 
-  // 🆕 소수점을 백분율로 변환 (UI 표시용)
-  const convertToPercentage = useCallback((value: number) => {
-    return value <= 1 ? value * 100 : value;
+  // 🆕 스마트 변환 함수: 입력값에 따라 자동 변환 (정수 처리)
+  const convertToDecimal = useCallback(
+    (value: number | null | undefined) => {
+      const normalized = normalizeLoadFactor(value);
+      return normalized / 100; // 정수 백분율을 소수점으로
+    },
+    [normalizeLoadFactor]
+  );
+
+  // 🆕 소수점을 백분율로 변환 (UI 표시용, 정수)
+  const convertToPercentage = useCallback((value: number | null | undefined) => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return FRONTEND_DEFAULT_LOAD_FACTOR;
+    }
+    return value <= 1 ? Math.round(value * 100) : Math.round(value);
   }, []);
 
   // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
@@ -117,7 +132,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
         });
       }),
       flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
-      distribution: { 'Load Factor': convertToPercentage(rule.value?.load_factor || 0.8) },
+      loadFactor: convertToPercentage(rule.value?.load_factor || 0.8), // 백분율 값
       isExpanded: false,
     }));
   }, [paxGenerationRules, convertToPercentage]);
@@ -181,7 +196,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
         }
       });
 
-      addPaxGenerationRule(backendConditions, convertToDecimal(rule.distribution?.['Load Factor'] || 80));
+      addPaxGenerationRule(backendConditions, convertToDecimal(rule.loadFactor));
     },
     [addPaxGenerationRule, convertToDecimal]
   );
@@ -189,8 +204,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   const updateLoadFactorRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
       const ruleIndex = parseInt(ruleId.replace('rule-', ''));
-      if (updatedRule.distribution?.['Load Factor'] !== undefined) {
-        updatePaxGenerationValue(ruleIndex, convertToDecimal(updatedRule.distribution['Load Factor']));
+      if (updatedRule.loadFactor !== undefined) {
+        updatePaxGenerationValue(ruleIndex, convertToDecimal(updatedRule.loadFactor));
       }
     },
     [updatePaxGenerationValue, convertToDecimal]
@@ -256,7 +271,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
         return {
           conditions: backendConditions,
-          value: { load_factor: convertToDecimal(rule.distribution?.['Load Factor'] || 80) },
+          value: { load_factor: convertToDecimal(rule.loadFactor) },
         };
       });
 
@@ -266,10 +281,9 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   );
 
   const updateLoadFactorDefault = useCallback(
-    (value: number | null) => {
-      if (value !== null && value !== undefined) {
-        setPaxGenerationDefault(convertToDecimal(value)); // 🆕 스마트 변환 적용
-      }
+    (value: number | null | undefined) => {
+      const safeValue = convertToDecimal(value); // 정규화 + 변환 적용
+      setPaxGenerationDefault(safeValue);
     },
     [setPaxGenerationDefault, convertToDecimal]
   );
@@ -326,17 +340,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     setIsRuleModalOpen(true);
   };
 
-  // 균등분배 계산 함수 (메모이제이션)
-  const calculateEqualDistribution = useCallback((properties: string[]) => {
-    const equalPercentage = Math.floor(100 / properties.length);
-    let remainder = 100 - equalPercentage * properties.length;
-
-    const distribution: Record<string, number> = {};
-    properties.forEach((prop, index) => {
-      distribution[prop] = equalPercentage + (index < remainder ? 1 : 0);
-    });
-    return distribution;
-  }, []);
+  // 🚫 Load Factor에서는 분배(distribution) 개념이 없음 (단순 탑승률 값만 사용)
+  // Show-up Time처럼 복사된 불필요한 분배 함수 → 제거됨
 
   // 전체 항공편 수 (parquet_metadata에서 계산)
   const TOTAL_FLIGHTS = useMemo(() => {
@@ -574,14 +579,14 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
   // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
+    (savedRuleData: { conditions: string[]; flightCount: number; loadFactor: number }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
           updateLoadFactorRule(editingRuleId, {
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution: savedRuleData.distribution,
+            loadFactor: savedRuleData.loadFactor,
           });
         }
         setEditingRuleId(null);
@@ -589,14 +594,16 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const distribution = savedRuleData.distribution || { 'Load Factor': defaultLoadFactor };
+          const loadFactor = normalizeLoadFactor(
+            savedRuleData.loadFactor || (defaultLoadFactor ? defaultLoadFactor * 100 : undefined)
+          );
 
           const newRule = {
             id: `rule-${Date.now()}`,
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution,
+            loadFactor,
             isExpanded: true,
           };
 
@@ -734,11 +741,13 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
                   <label className="flex-shrink-0 text-sm font-medium text-gray-700">Load Factor:</label>
                   <div className="flex-1 px-4">
                     <LoadFactorSlider
-                      value={rule.distribution?.['Load Factor'] || defaultLoadFactor || FRONTEND_DEFAULT_LOAD_FACTOR}
-                      onChange={(value) => updateLoadFactorRule(rule.id, { distribution: { 'Load Factor': value } })}
-                      min={0}
+                      value={normalizeLoadFactor(
+                        rule.loadFactor || (defaultLoadFactor ? defaultLoadFactor * 100 : undefined)
+                      )}
+                      onChange={(value) => updateLoadFactorRule(rule.id, { loadFactor: normalizeLoadFactor(value) })}
+                      min={1}
                       max={100}
-                      step={0.1}
+                      step={1}
                     />
                   </div>
                 </div>
@@ -765,11 +774,11 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
                 <label className="flex-shrink-0 text-sm font-medium text-gray-700">Default Load Factor:</label>
                 <div className="flex-1 px-4">
                   <LoadFactorSlider
-                    value={defaultLoadFactor ? convertToPercentage(defaultLoadFactor) : FRONTEND_DEFAULT_LOAD_FACTOR}
-                    onChange={updateLoadFactorDefault}
-                    min={0}
+                    value={normalizeLoadFactor(defaultLoadFactor ? defaultLoadFactor * 100 : undefined)}
+                    onChange={(value) => updateLoadFactorDefault(normalizeLoadFactor(value))}
+                    min={1}
                     max={100}
-                    step={0.1}
+                    step={1}
                   />
                 </div>
               </div>
@@ -815,8 +824,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingAction?.type === 'add'
-                ? 'Adding new properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'
-                : 'Removing properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'}
+                ? 'Adding new properties will affect existing load factor rules. Do you want to continue?'
+                : 'Removing properties will affect existing load factor rules. Do you want to continue?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -825,10 +834,10 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
             <ul className="list-inside list-disc space-y-1 rounded bg-muted p-3 text-sm">
               {createdRules.length > 0 && (
                 <li>
-                  {createdRules.length} distribution rule{createdRules.length > 1 ? 's' : ''}
+                  {createdRules.length} load factor rule{createdRules.length > 1 ? 's' : ''}
                 </li>
               )}
-              {hasDefaultRule && <li>Default distribution rule</li>}
+              {hasDefaultRule && <li>Default load factor rule</li>}
             </ul>
           </div>
 
