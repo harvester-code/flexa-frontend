@@ -64,8 +64,35 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   const addPaxGenerationRule = useSimulationStore((s) => s.addPaxGenerationRule);
   const removePaxGenerationRule = useSimulationStore((s) => s.removePaxGenerationRule);
   const updatePaxGenerationValue = useSimulationStore((s) => s.updatePaxGenerationValue);
+  const updatePaxGenerationRuleStore = useSimulationStore((s) => s.updatePaxGenerationRule);
   const setPaxGenerationDefault = useSimulationStore((s) => s.setPaxGenerationDefault);
   const reorderPaxGenerationRules = useSimulationStore((s) => s.reorderPaxGenerationRules);
+
+  // 🆕 조건 변환 로직 (다른 탭들과 동일)
+  const labelToColumnMap: Record<string, string> = {
+    Airline: 'operating_carrier_iata',
+    'Aircraft Type': 'aircraft_type_icao',
+    'Flight Type': 'flight_type',
+    'Total Seats': 'total_seats',
+    'Arrival Airport': 'arrival_airport_iata',
+    'Arrival Terminal': 'arrival_terminal',
+    'Arrival City': 'arrival_city',
+    'Arrival Country': 'arrival_country',
+    'Arrival Region': 'arrival_region',
+    'Departure Airport Iata': 'departure_airport_iata',
+    'Departure Terminal': 'departure_terminal',
+    'Departure City': 'departure_city',
+    'Departure Country': 'departure_country',
+    'Departure Region': 'departure_region',
+  };
+
+  const valueMapping: Record<string, Record<string, string>> = {
+    operating_carrier_iata: {
+      'Korean Air': 'KE',
+      'Asiana Airlines': 'OZ',
+      // 필요에 따라 추가
+    },
+  };
 
   // 🆕 입력값 정규화 (1~100 정수로 제한)
   const normalizeLoadFactor = useCallback((value: number | null | undefined): number => {
@@ -204,11 +231,47 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   const updateLoadFactorRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
       const ruleIndex = parseInt(ruleId.replace('rule-', ''));
-      if (updatedRule.loadFactor !== undefined) {
-        updatePaxGenerationValue(ruleIndex, convertToDecimal(updatedRule.loadFactor));
+
+      // 전체 규칙 업데이트인경우 (조건 + loadFactor + 플라이트카운트)
+      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.loadFactor !== undefined) {
+        // 현재 규칙 가져오기
+        const currentRule = paxGenerationRules[ruleIndex];
+        if (!currentRule) return;
+
+        // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
+        let backendConditions = currentRule.conditions;
+        if (updatedRule.conditions) {
+          backendConditions = {};
+          updatedRule.conditions.forEach((condition) => {
+            const parts = condition.split(': ');
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+              if (!backendConditions[columnKey]) {
+                backendConditions[columnKey] = [];
+              }
+              backendConditions[columnKey].push(convertedValue);
+            }
+          });
+        }
+
+        // 전체 규칙 업데이트
+        updatePaxGenerationRuleStore(
+          ruleIndex,
+          backendConditions,
+          convertToDecimal(
+            updatedRule.loadFactor ??
+              (typeof currentRule.value === 'object' && currentRule.value?.load_factor
+                ? currentRule.value.load_factor * 100
+                : 85)
+          )
+        );
       }
     },
-    [updatePaxGenerationValue, convertToDecimal]
+    [updatePaxGenerationRuleStore, paxGenerationRules, labelToColumnMap, valueMapping, convertToDecimal]
   );
 
   const removeLoadFactorRule = useCallback(

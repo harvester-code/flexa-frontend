@@ -210,9 +210,17 @@ export interface SimulationStoreState {
   removeProfileRule: (ruleIndex: number) => void;
   updatePaxGenerationValue: (ruleIndex: number, value: number | Record<string, number>) => void;
   updatePaxGenerationDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updatePaxGenerationRule: (ruleIndex: number, conditions: Record<string, string[]>, loadFactor: number) => void;
   setPaxGenerationDefault: (value: number | null) => void;
   reorderPaxGenerationRules: (newOrder: PassengerData['pax_generation']['rules']) => void;
   updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updateNationalityRule: (
+    ruleIndex: number,
+    conditions: Record<string, string[]>,
+    flightCount: number,
+    distribution: Record<string, number>
+  ) => void;
+  reorderNationalityRules: (newOrder: PassengerData['pax_demographics']['nationality']['rules']) => void;
   updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
   setNationalityDefault: (defaultValues: Record<string, number>) => void;
   setProfileDefault: (defaultValues: Record<string, number>) => void;
@@ -620,6 +628,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
+    updatePaxGenerationRule: (ruleIndex, conditions, loadFactor) =>
+      set((state) => {
+        if (state.passenger.pax_generation.rules[ruleIndex]) {
+          state.passenger.pax_generation.rules[ruleIndex].conditions = conditions;
+          state.passenger.pax_generation.rules[ruleIndex].value = { load_factor: loadFactor };
+        }
+      }),
+
     setPaxGenerationDefault: (value) => {
       set((state) => {
         state.passenger.pax_generation.default.load_factor = value;
@@ -666,6 +682,22 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
           state.passenger.pax_demographics.nationality.rules[ruleIndex].value = distribution;
         }
+      }),
+
+    updateNationalityRule: (ruleIndex, conditions, flightCount, distribution) =>
+      set((state) => {
+        if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
+          state.passenger.pax_demographics.nationality.rules[ruleIndex] = {
+            conditions,
+            flightCount,
+            value: distribution,
+          };
+        }
+      }),
+
+    reorderNationalityRules: (newOrder) =>
+      set((state) => {
+        state.passenger.pax_demographics.nationality.rules = newOrder;
       }),
 
     updateProfileDistribution: (ruleIndex, distribution) =>
