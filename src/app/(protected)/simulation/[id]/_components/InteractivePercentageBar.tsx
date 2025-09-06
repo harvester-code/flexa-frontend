@@ -38,10 +38,10 @@ export default function InteractivePercentageBar({
   const barRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 비율을 백분율로 변환 (초기값은 균등분배)
+  // 입력값 그대로 사용 (초기값은 균등분배)
   const percentages = properties.reduce(
     (acc, prop) => {
-      // 🐛 수정: 0%도 유효한 값으로 인식하도록 nullish coalescing 사용
+      // 🎯 입력값 그대로 사용 - 변환하지 않음
       acc[prop] = values[prop] ?? 100 / properties.length; // 균등분배 기본값
       return acc;
     },
@@ -108,24 +108,25 @@ export default function InteractivePercentageBar({
     const newPercentage = Math.max(0, parseFloat(editingValue) || 0);
     const property = properties[editingIndex];
 
-    // 새로운 값 적용
+    // 새로운 값 적용 - 입력값 그대로 저장
     let newValues = { ...values };
 
-    // 🎯 1개 항목일 때: 항상 100%
+    // 🎯 1개 항목일 때: 항상 100
     if (properties.length === 1) {
-      newValues[property] = 100;
+      newValues[property] = 100; // 100 그대로
     }
     // 🎯 2개 항목일 때: 자동 배정 (나머지 = 100 - 현재값)
     else if (properties.length === 2) {
-      newValues[property] = Math.min(100, newPercentage); // 100% 초과 방지
+      const clampedPercentage = Math.min(100, newPercentage); // 100% 초과 방지
+      newValues[property] = clampedPercentage; // 입력값 그대로
       const otherProperty = properties.find((p) => p !== property);
       if (otherProperty) {
-        newValues[otherProperty] = 100 - newValues[property];
+        newValues[otherProperty] = 100 - clampedPercentage; // 나머지도 그대로
       }
     }
     // 🎯 3개 이상일 때: 사용자 입력 그대로 적용
     else {
-      newValues[property] = newPercentage;
+      newValues[property] = newPercentage; // 입력값 그대로
     }
 
     onChange(newValues);

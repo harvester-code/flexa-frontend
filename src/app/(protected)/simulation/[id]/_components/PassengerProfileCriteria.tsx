@@ -56,7 +56,8 @@ export default function PassengerProfileCriteria({
       if (editingRule.distribution) {
         const percentageValues: Record<string, number> = {};
         Object.keys(editingRule.distribution).forEach((key) => {
-          percentageValues[key] = editingRule.distribution[key]; // 이미 백분율 형태
+          // ✅ zustand 값 그대로 사용 - 변환하지 않음
+          percentageValues[key] = editingRule.distribution[key];
         });
         setPropertyValues(percentageValues);
       }
@@ -213,20 +214,13 @@ export default function PassengerProfileCriteria({
       const isEditMode = editingRuleIndex !== undefined && editingRuleIndex !== null;
 
       if (configType === 'nationality') {
-        const decimalValues = Object.keys(propertyValues).reduce(
-          (acc, key) => {
-            acc[key] = (propertyValues[key] || 0) / 100; // 백분율 → 소수점
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-
+        // 🎯 정수값 그대로 사용 - 변환하지 않음
         if (isEditMode) {
-          updateNationalityDistribution(editingRuleIndex, decimalValues);
+          updateNationalityDistribution(editingRuleIndex, propertyValues);
         } else {
           const currentRulesLength = Object.keys(passengerData.nationality?.rules || {}).length;
-          addNationalityRule(conditions, flightCalculations.totalSelected, decimalValues);
-          updateNationalityDistribution(currentRulesLength, decimalValues);
+          addNationalityRule(conditions, flightCalculations.totalSelected, propertyValues);
+          updateNationalityDistribution(currentRulesLength, propertyValues);
         }
 
         // SimpleNationalityTab에 데이터 전달
@@ -247,18 +241,11 @@ export default function PassengerProfileCriteria({
           console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
       } else if (configType === 'profile') {
-        const decimalValues = Object.keys(propertyValues).reduce(
-          (acc, key) => {
-            acc[key] = (propertyValues[key] || 0) / 100; // 백분율 → 소수점
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-
+        // 🎯 정수값 그대로 사용 - 변환하지 않음
         if (isEditMode) {
-          updateProfileDistribution(editingRuleIndex, decimalValues);
+          updateProfileDistribution(editingRuleIndex, propertyValues);
         } else {
-          addProfileRule(conditions, decimalValues);
+          addProfileRule(conditions, flightCalculations.totalSelected, propertyValues);
         }
 
         // SimplePaxProfileTab으로 데이터 전달

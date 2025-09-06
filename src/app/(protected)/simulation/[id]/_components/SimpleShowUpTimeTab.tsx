@@ -21,7 +21,6 @@ import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../_stores';
-import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)

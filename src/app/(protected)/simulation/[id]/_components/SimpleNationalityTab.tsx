@@ -17,8 +17,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { useSimulationStore } from '../_stores';
-import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
+import PercentageInteractiveBar, { getDistributionTotal, isValidDistribution } from './PercentageInteractiveBar';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -603,16 +603,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     };
   }, [handleRuleSaved]);
 
-  // 퍼센트 총합 검증 (메모이제이션)
-  const isValidDistribution = useCallback((values: Record<string, number>) => {
-    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
-    return Math.abs(total - 100) < 0.1; // 소수점 오차 고려
-  }, []);
-
-  // 총합 계산 (메모이제이션)
-  const getDistributionTotal = useCallback((values: Record<string, number>) => {
-    return Object.values(values).reduce((sum, value) => sum + value, 0);
-  }, []);
+  // ✅ validation 함수들은 PercentageInteractiveBar에서 import
 
   return (
     <div className="space-y-6">
@@ -773,24 +764,24 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                 {/* Distribution Bar */}
                 {rule.distribution && (
                   <div className="mt-3">
-                    <InteractivePercentageBar
+                    <PercentageInteractiveBar
                       properties={definedProperties}
-                      values={rule.distribution}
+                      values={rule.distribution || {}}
                       onChange={(newValues) => updateNationalityRule(rule.id, { distribution: newValues })}
                       showValues={true}
                     />
 
                     {/* Validation Status */}
                     <div className="mt-2 flex items-center gap-2 text-sm">
-                      {isValidDistribution(rule.distribution) ? (
+                      {isValidDistribution(rule.distribution || {}) ? (
                         <span className="flex items-center gap-1 text-green-600">
                           <CheckCircle size={14} />
-                          Valid distribution (Total: {getDistributionTotal(rule.distribution).toFixed(1)}%)
+                          Valid distribution (Total: {getDistributionTotal(rule.distribution || {}).toFixed(1)}%)
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-600">
                           <XCircle size={14} />
-                          Total must equal 100% (Current: {getDistributionTotal(rule.distribution).toFixed(1)}%)
+                          Total must equal 100% (Current: {getDistributionTotal(rule.distribution || {}).toFixed(1)}%)
                         </span>
                       )}
                     </div>
@@ -826,24 +817,24 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
 
                 {/* Default Distribution Bar */}
                 <div className="mt-3">
-                  <InteractivePercentageBar
+                  <PercentageInteractiveBar
                     properties={definedProperties}
-                    values={defaultDistribution}
+                    values={defaultDistribution || {}}
                     onChange={updateNationalityDefaultDistribution}
                     showValues={true}
                   />
 
                   {/* Default Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
-                    {isValidDistribution(defaultDistribution) ? (
+                    {isValidDistribution(defaultDistribution || {}) ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid distribution (Total: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        Valid distribution (Total: {getDistributionTotal(defaultDistribution || {}).toFixed(1)}%)
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        Total must equal 100% (Current: {getDistributionTotal(defaultDistribution).toFixed(1)}%)
+                        Total must equal 100% (Current: {getDistributionTotal(defaultDistribution || {}).toFixed(1)}%)
                       </span>
                     )}
                   </div>

@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import { useSimulationStore } from '../_stores';
-import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트

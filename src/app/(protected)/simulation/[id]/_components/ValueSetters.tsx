@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
-import InteractivePercentageBar from './InteractivePercentageBar';
+import PercentageInteractiveBar from './PercentageInteractiveBar';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -60,7 +60,7 @@ export const DistributionValueSetter: React.FC<DistributionValueSetterProps> = (
   configType,
 }) => {
   return (
-    <InteractivePercentageBar
+    <PercentageInteractiveBar
       properties={properties}
       values={values}
       onChange={onChange}
@@ -185,7 +185,6 @@ export const ShowUpTimeValueSetter: React.FC<ShowUpTimeValueSetterProps> = ({
           </div>
         ))}
       </div>
-
     </div>
   );
 };

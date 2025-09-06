@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { ProcessStep } from '@/types/simulationTypes';
+import { convertToDecimal } from '../_components/PercentageInteractiveBar';
 
 // ==================== Passenger Types ====================
 export interface PassengerData {
@@ -671,18 +672,26 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     addNationalityRule: (conditions, flightCount, value = {}) =>
       set((state) => {
+        // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+        const convertedValue = Object.fromEntries(
+          Object.entries(value).map(([key, val]) => [key, convertToDecimal(val)])
+        );
         state.passenger.pax_demographics.nationality.rules.push({
           conditions,
-          value: value,
+          value: convertedValue,
           flightCount,
         });
       }),
 
     addProfileRule: (conditions, flightCount, value = {}) =>
       set((state) => {
+        // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+        const convertedValue = Object.fromEntries(
+          Object.entries(value).map(([key, val]) => [key, convertToDecimal(val)])
+        );
         state.passenger.pax_demographics.profile.rules.push({
           conditions,
-          value: value,
+          value: convertedValue,
           flightCount,
         });
       }),
@@ -700,17 +709,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateNationalityDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
-          state.passenger.pax_demographics.nationality.rules[ruleIndex].value = distribution;
+          // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+          const convertedDistribution = Object.fromEntries(
+            Object.entries(distribution).map(([key, val]) => [key, convertToDecimal(val)])
+          );
+          state.passenger.pax_demographics.nationality.rules[ruleIndex].value = convertedDistribution;
         }
       }),
 
     updateNationalityRule: (ruleIndex, conditions, flightCount, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
+          // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+          const convertedDistribution = Object.fromEntries(
+            Object.entries(distribution).map(([key, val]) => [key, convertToDecimal(val)])
+          );
           state.passenger.pax_demographics.nationality.rules[ruleIndex] = {
             conditions,
             flightCount,
-            value: distribution,
+            value: convertedDistribution,
           };
         }
       }),
@@ -723,17 +740,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateProfileDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
-          state.passenger.pax_demographics.profile.rules[ruleIndex].value = distribution;
+          // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+          const convertedDistribution = Object.fromEntries(
+            Object.entries(distribution).map(([key, val]) => [key, convertToDecimal(val)])
+          );
+          state.passenger.pax_demographics.profile.rules[ruleIndex].value = convertedDistribution;
         }
       }),
 
     updateProfileRule: (ruleIndex, conditions, flightCount, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
+          // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+          const convertedDistribution = Object.fromEntries(
+            Object.entries(distribution).map(([key, val]) => [key, convertToDecimal(val)])
+          );
           state.passenger.pax_demographics.profile.rules[ruleIndex] = {
             conditions,
             flightCount,
-            value: distribution,
+            value: convertedDistribution,
           };
         }
       }),
@@ -745,12 +770,26 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setNationalityDefault: (defaultValues) =>
       set((state) => {
-        state.passenger.pax_demographics.nationality.default = defaultValues;
+        // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+        const convertedDefaults = Object.fromEntries(
+          Object.entries(defaultValues).map(([key, val]) => [
+            key,
+            typeof val === 'number' ? convertToDecimal(val) : val,
+          ])
+        );
+        state.passenger.pax_demographics.nationality.default = convertedDefaults;
       }),
 
     setProfileDefault: (defaultValues) =>
       set((state) => {
-        state.passenger.pax_demographics.profile.default = defaultValues;
+        // 🆕 Load Factor와 동일한 변환: 정수 백분율 → 소수점
+        const convertedDefaults = Object.fromEntries(
+          Object.entries(defaultValues).map(([key, val]) => [
+            key,
+            typeof val === 'number' ? convertToDecimal(val) : val,
+          ])
+        );
+        state.passenger.pax_demographics.profile.default = convertedDefaults;
       }),
 
     reorderPaxDemographics: () =>

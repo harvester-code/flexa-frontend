@@ -439,7 +439,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
     [simulationId, setApiRequestLog]
   );
 
-  return !visible ? null : (
+  // ✅ Hook 호출 후 조건부 렌더링 (Rules of Hooks 준수)
+  if (!visible) {
+    return null;
+  }
+
+  return (
     <div className="space-y-6 pt-8">
       {/* Load Flight Schedule Data Section */}
       <TabFlightScheduleLoadData
