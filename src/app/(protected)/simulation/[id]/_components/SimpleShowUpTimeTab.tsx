@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../_stores';
-import { usePassengerStore } from '../_stores/passengerStore';
+// import { usePassengerStore } from '../_stores/passengerStore'; // 🔄 Step 2에서 제거 예정
 import InteractivePercentageBar from './InteractivePercentageBar';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
@@ -48,7 +48,7 @@ interface Rule {
   name: string;
   conditions: string[];
   flightCount: number;
-  distribution?: Record<string, number>;
+  parameters?: { Mean: number; Std: number }; // 🔄 distribution → parameters (평균, 표준편차)
   isExpanded?: boolean;
 }
 
@@ -69,30 +69,217 @@ interface SimpleShowUpTimeTabProps {
 }
 
 export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId }: SimpleShowUpTimeTabProps) {
-  // 🆕 PassengerStore 연결
-  const {
-    showUpTime: { createdRules, hasDefaultRule, defaultMean, defaultStd },
-    addShowUpTimeRule,
-    updateShowUpTimeRule,
-    removeShowUpTimeRule,
-    reorderShowUpTimeRules,
-    updateShowUpTimeDefault,
-  } = usePassengerStore();
+  // 🆕 SimulationStore 연결
+  const paxArrivalPatternRules = useSimulationStore((s) => s.passenger.pax_arrival_patterns.rules);
+  const arrivalPatternsDefault = useSimulationStore((s) => s.passenger.pax_arrival_patterns.default);
+  const addPaxArrivalPatternRule = useSimulationStore((s) => s.addPaxArrivalPatternRule);
+  const updatePaxArrivalPatternRule = useSimulationStore((s) => s.updatePaxArrivalPatternRule);
+  const removePaxArrivalPatternRule = useSimulationStore((s) => s.removePaxArrivalPatternRule);
+  const setPaxArrivalPatternDefault = useSimulationStore((s) => s.setPaxArrivalPatternDefault);
 
   // 🆕 SimulationStore에서 passenger 데이터 및 context 가져오기
   const passengerData = useSimulationStore((state) => state.passenger);
   const contextData = useSimulationStore((state) => state.context);
 
-  // 🆕 PassengerStore에서 모든 필요한 데이터 가져오기
-  const { loadFactor, nationality, profile } = usePassengerStore();
+  // 🔄 다른 탭 데이터들도 SimulationStore에서 직접 가져오기 (Generate Pax API용)
+  const loadFactorData = useSimulationStore((s) => s.passenger.pax_generation);
+  const nationalityData = useSimulationStore((s) => s.passenger.pax_demographics.nationality);
+  const profileData = useSimulationStore((s) => s.passenger.pax_demographics.profile);
 
   // 🆕 Toast 및 API 호출 관련 상태
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // 🆕 조건 변환 로직 (Step 1과 동일)
+  const labelToColumnMap: Record<string, string> = {
+    Airline: 'operating_carrier_iata',
+    'Aircraft Type': 'aircraft_type_icao',
+    'Flight Type': 'flight_type',
+    'Total Seats': 'total_seats',
+    'Arrival Airport': 'arrival_airport_iata',
+    'Arrival Terminal': 'arrival_terminal',
+    'Arrival City': 'arrival_city',
+    'Arrival Country': 'arrival_country',
+    'Arrival Region': 'arrival_region',
+    'Departure Airport Iata': 'departure_airport_iata',
+    'Departure Terminal': 'departure_terminal',
+    'Departure City': 'departure_city',
+    'Departure Country': 'departure_country',
+    'Departure Region': 'departure_region',
+  };
+
+  const valueMapping: Record<string, Record<string, string>> = {
+    operating_carrier_iata: {
+      'Korean Air': 'KE',
+      'Asiana Airlines': 'OZ',
+      // 필요에 따라 추가
+    },
+  };
+
+  // 백엔드 → UI 역변환 맵핑
+  const columnToLabelMap: Record<string, string> = {
+    operating_carrier_iata: 'Airline',
+    aircraft_type_icao: 'Aircraft Type',
+    flight_type: 'Flight Type',
+    total_seats: 'Total Seats',
+    arrival_airport_iata: 'Arrival Airport',
+    arrival_terminal: 'Arrival Terminal',
+    arrival_city: 'Arrival City',
+    arrival_country: 'Arrival Country',
+    arrival_region: 'Arrival Region',
+    departure_airport_iata: 'Departure Airport Iata',
+    departure_terminal: 'Departure Terminal',
+    departure_city: 'Departure City',
+    departure_country: 'Departure Country',
+    departure_region: 'Departure Region',
+  };
+
+  const reverseValueMapping: Record<string, Record<string, string>> = {
+    operating_carrier_iata: {
+      KE: 'Korean Air',
+      OZ: 'Asiana Airlines',
+      // 필요에 따라 추가
+    },
+  };
+
+  // 🔄 SimulationStore 데이터를 PassengerStore 형식으로 변환
+  const createdRules: Rule[] = useMemo(() => {
+    return paxArrivalPatternRules.map((rule, index) => ({
+      id: `rule-${index}`,
+      name: `Rule ${index + 1}`,
+      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
+        const displayLabel = columnToLabelMap[columnKey] || columnKey;
+        return values.map((value) => {
+          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
+          return `${displayLabel}: ${displayValue}`;
+        });
+      }),
+      flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
+      parameters: {
+        Mean: rule.value?.mean || 120,
+        Std: rule.value?.std || 30,
+      },
+      isExpanded: false,
+    }));
+  }, [paxArrivalPatternRules]);
+
+  const hasDefaultRule = arrivalPatternsDefault.mean !== null && arrivalPatternsDefault.std !== null;
+  const defaultMean = arrivalPatternsDefault.mean;
+  const defaultStd = arrivalPatternsDefault.std;
+
   // 프론트엔드 기본값 (하드코딩)
   const FRONTEND_DEFAULT_MEAN = 120;
   const FRONTEND_DEFAULT_STD = 30;
+
+  // 🆕 컴포넌트에서 초기값 설정 (Step 1과 동일한 패턴)
+  useEffect(() => {
+    if (defaultMean === null || defaultStd === null) {
+      setPaxArrivalPatternDefault({
+        mean: FRONTEND_DEFAULT_MEAN,
+        std: FRONTEND_DEFAULT_STD,
+      });
+    }
+  }, []); // 한 번만 실행
+
+  // 🔄 PassengerStore 스타일 액션 어댑터들 (Step 1과 동일한 패턴)
+  const addShowUpTimeRule = useCallback(
+    (rule: Rule) => {
+      // UI 조건을 백엔드 형식으로 변환
+      const backendConditions: Record<string, string[]> = {};
+
+      rule.conditions.forEach((condition) => {
+        const parts = condition.split(': ');
+        if (parts.length === 2) {
+          const displayLabel = parts[0];
+          const value = parts[1];
+          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+
+          // 값 변환 적용 (있으면)
+          const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+          if (!backendConditions[columnKey]) {
+            backendConditions[columnKey] = [];
+          }
+          backendConditions[columnKey].push(convertedValue);
+        }
+      });
+
+      addPaxArrivalPatternRule({
+        conditions: backendConditions,
+        value: {
+          mean: rule.parameters?.['Mean'] || FRONTEND_DEFAULT_MEAN,
+          std: rule.parameters?.['Std'] || FRONTEND_DEFAULT_STD,
+        },
+      });
+    },
+    [addPaxArrivalPatternRule]
+  );
+
+  const updateShowUpTimeRule = useCallback(
+    (ruleId: string, updatedRule: Partial<Rule>) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      if (updatedRule.parameters) {
+        updatePaxArrivalPatternRule(ruleIndex, {
+          conditions: paxArrivalPatternRules[ruleIndex]?.conditions || {},
+          value: {
+            mean: updatedRule.parameters['Mean'] || FRONTEND_DEFAULT_MEAN,
+            std: updatedRule.parameters['Std'] || FRONTEND_DEFAULT_STD,
+          },
+        });
+      }
+    },
+    [updatePaxArrivalPatternRule, paxArrivalPatternRules]
+  );
+
+  const removeShowUpTimeRule = useCallback(
+    (ruleId: string) => {
+      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      removePaxArrivalPatternRule(ruleIndex);
+    },
+    [removePaxArrivalPatternRule]
+  );
+
+  const reorderShowUpTimeRules = useCallback((newOrder: Rule[]) => {
+    // Rule[] 형식을 SimulationStore 형식으로 변환 (동일한 변환 로직 사용)
+    const convertedRules = newOrder.map((rule) => {
+      const backendConditions: Record<string, string[]> = {};
+
+      rule.conditions.forEach((condition) => {
+        const parts = condition.split(': ');
+        if (parts.length === 2) {
+          const displayLabel = parts[0];
+          const value = parts[1];
+          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+
+          // 값 변환 적용 (있으면)
+          const convertedValue = valueMapping[columnKey]?.[value] || value;
+
+          if (!backendConditions[columnKey]) {
+            backendConditions[columnKey] = [];
+          }
+          backendConditions[columnKey].push(convertedValue);
+        }
+      });
+
+      return {
+        conditions: backendConditions,
+        value: {
+          mean: rule.parameters?.['Mean'] || FRONTEND_DEFAULT_MEAN,
+          std: rule.parameters?.['Std'] || FRONTEND_DEFAULT_STD,
+        },
+      };
+    });
+
+    // 전체 룰 배열을 교체
+    useSimulationStore.getState().setPaxArrivalPatternRules(convertedRules);
+  }, []);
+
+  const updateShowUpTimeDefault = useCallback(
+    (mean: number, std: number) => {
+      setPaxArrivalPatternDefault({ mean, std });
+    },
+    [setPaxArrivalPatternDefault]
+  );
 
   // 🆕 Generate Pax API 호출 함수
   const handleGeneratePax = async () => {
@@ -108,7 +295,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     try {
       setIsGenerating(true);
 
-      // 🔧 PassengerStore에서 실제 데이터 수집하여 API 요청 body 구성
+      // 🔧 SimulationStore에서 실제 데이터 수집하여 API 요청 body 구성
       const requestBody = {
         settings: {
           ...passengerData.settings,
@@ -117,81 +304,29 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
           min_arrival_minutes: passengerData.settings?.min_arrival_minutes || 15,
         },
         pax_generation: {
-          rules:
-            loadFactor?.createdRules?.map((rule: any) => ({
-              conditions: rule.conditions.reduce(
-                (acc: any, condition: string) => {
-                  const [key, value] = condition.split(': ');
-                  if (!acc[key]) acc[key] = [];
-                  acc[key].push(value);
-                  return acc;
-                },
-                {} as Record<string, string[]>
-              ),
-              value: { load_factor: (rule.distribution?.load_factor || 85) / 100 }, // 퍼센트를 소수점으로 변환
-            })) || [],
+          rules: loadFactorData.rules || [],
           default: {
-            // 🆕 확실한 기본값 보장: null, undefined, 0이 아닌 경우만 사용
+            // 🆕 확실한 기본값 보장: null, undefined가 아닌 경우만 사용
             load_factor:
-              (loadFactor?.defaultLoadFactor !== null &&
-              loadFactor?.defaultLoadFactor !== undefined &&
-              loadFactor?.defaultLoadFactor !== 0
-                ? loadFactor.defaultLoadFactor
-                : 85) / 100, // 퍼센트를 소수점으로 변환
+              loadFactorData.default?.load_factor !== null && loadFactorData.default?.load_factor !== undefined
+                ? loadFactorData.default.load_factor
+                : 0.85, // 기본값 85% (이미 소수점 형식)
           },
         },
         pax_demographics: {
           nationality: {
-            available_values: nationality?.definedProperties || [],
-            rules:
-              nationality?.createdRules?.map((rule: any) => ({
-                conditions: rule.conditions.reduce(
-                  (acc: any, condition: string) => {
-                    const [key, value] = condition.split(': ');
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(value);
-                    return acc;
-                  },
-                  {} as Record<string, string[]>
-                ),
-                value: rule.distribution || {},
-              })) || [],
-            default: nationality?.defaultDistribution || {},
+            available_values: nationalityData.available_values || [],
+            rules: nationalityData.rules || [],
+            default: nationalityData.default || {},
           },
           profile: {
-            available_values: profile?.definedProperties || [],
-            rules:
-              profile?.createdRules?.map((rule: any) => ({
-                conditions: rule.conditions.reduce(
-                  (acc: any, condition: string) => {
-                    const [key, value] = condition.split(': ');
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(value);
-                    return acc;
-                  },
-                  {} as Record<string, string[]>
-                ),
-                value: rule.distribution || {},
-              })) || [],
-            default: profile?.defaultDistribution || {},
+            available_values: profileData.available_values || [],
+            rules: profileData.rules || [],
+            default: profileData.default || {},
           },
         },
         pax_arrival_patterns: {
-          rules: createdRules.map((rule) => ({
-            conditions: rule.conditions.reduce(
-              (acc, condition) => {
-                const [key, value] = condition.split(': ');
-                if (!acc[key]) acc[key] = [];
-                acc[key].push(value);
-                return acc;
-              },
-              {} as Record<string, string[]>
-            ),
-            value: rule.distribution || {
-              mean: defaultMean !== null && defaultMean !== undefined ? defaultMean : FRONTEND_DEFAULT_MEAN,
-              std: defaultStd !== null && defaultStd !== undefined ? defaultStd : FRONTEND_DEFAULT_STD,
-            },
-          })),
+          rules: paxArrivalPatternRules || [],
           default: {
             // 🆕 확실한 기본값 보장: null, undefined가 아닌 경우만 사용
             mean: defaultMean !== null && defaultMean !== undefined ? defaultMean : FRONTEND_DEFAULT_MEAN,
@@ -203,23 +338,24 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
       // 🔍 디버깅: 초기 상태에서 기본값 확인
       console.log('🔍 Context Data:', contextData);
       console.log('🔍 SimulationStore Passenger Data:', passengerData);
-      console.log('🔍 PassengerStore Show-up Time:', {
+      console.log('🔍 SimulationStore Show-up Time:', {
         defaultMean,
         defaultStd,
-        createdRules: createdRules.length,
+        rulesCount: paxArrivalPatternRules.length,
       });
-      console.log('🔍 PassengerStore Load Factor:', {
-        defaultLoadFactor: loadFactor?.defaultLoadFactor,
-        hasDefaultRule: loadFactor?.hasDefaultRule,
-        createdRules: loadFactor?.createdRules?.length || 0,
+      console.log('🔍 SimulationStore Load Factor:', {
+        defaultLoadFactor: loadFactorData?.default?.load_factor,
+        rulesCount: loadFactorData?.rules?.length || 0,
       });
-      console.log('🔍 PassengerStore Nationality:', {
-        definedProperties: nationality?.definedProperties?.length || 0,
-        defaultDistribution: Object.keys(nationality?.defaultDistribution || {}).length,
+      console.log('🔍 SimulationStore Nationality:', {
+        availableValues: nationalityData?.available_values?.length || 0,
+        rulesCount: nationalityData?.rules?.length || 0,
+        defaultKeys: Object.keys(nationalityData?.default || {}).length,
       });
-      console.log('🔍 PassengerStore Profile:', {
-        definedProperties: profile?.definedProperties?.length || 0,
-        defaultDistribution: Object.keys(profile?.defaultDistribution || {}).length,
+      console.log('🔍 SimulationStore Profile:', {
+        availableValues: profileData?.available_values?.length || 0,
+        rulesCount: profileData?.rules?.length || 0,
+        defaultKeys: Object.keys(profileData?.default || {}).length,
       });
 
       // 🎯 최종 API 요청 Body의 기본값들 확인
@@ -229,7 +365,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
       console.log(
         '   load_factor:',
         requestBody.pax_generation.default.load_factor,
-        `(${loadFactor?.defaultLoadFactor || 85}% → 소수점 변환)`
+        `(${(loadFactorData?.default?.load_factor || 0.85) * 100}% 기준)`
       );
       console.log('   show_up_mean:', requestBody.pax_arrival_patterns.default.mean);
       console.log('   show_up_std:', requestBody.pax_arrival_patterns.default.std);
@@ -289,17 +425,8 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     setIsRuleModalOpen(true);
   };
 
-  // 균등분배 계산 함수 (메모이제이션)
-  const calculateEqualDistribution = useCallback((properties: string[]) => {
-    const equalPercentage = Math.floor(100 / properties.length);
-    let remainder = 100 - equalPercentage * properties.length;
-
-    const distribution: Record<string, number> = {};
-    properties.forEach((prop, index) => {
-      distribution[prop] = equalPercentage + (index < remainder ? 1 : 0);
-    });
-    return distribution;
-  }, []);
+  // 🚫 Show-up Time에서는 distribution 개념이 없음 (평균, 표준편차만 사용)
+  // Load Factor에서 복사된 불필요한 함수 → 제거됨
 
   // 전체 항공편 수 (parquet_metadata에서 계산)
   const TOTAL_FLIGHTS = useMemo(() => {
@@ -531,14 +658,14 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
 
   // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백 (PassengerStore 연동)
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; distribution: { mean: number; std: number } }) => {
+    (savedRuleData: { conditions: string[]; flightCount: number; parameters: { Mean: number; Std: number } }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
           updateShowUpTimeRule(editingRuleId, {
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution: savedRuleData.distribution, // { mean: number, std: number }
+            parameters: savedRuleData.parameters, // { Mean: number, Std: number }
           });
         }
         setEditingRuleId(null);
@@ -546,9 +673,9 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const distribution = savedRuleData.distribution || {
-            mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-            std: defaultStd || FRONTEND_DEFAULT_STD,
+          const parameters = savedRuleData.parameters || {
+            Mean: defaultMean || FRONTEND_DEFAULT_MEAN,
+            Std: defaultStd || FRONTEND_DEFAULT_STD,
           };
 
           const newRule = {
@@ -556,7 +683,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
             name: `Rule ${createdRules.length + 1}`,
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
-            distribution: savedRuleData.distribution || distribution, // { mean: number, std: number }
+            parameters: savedRuleData.parameters || parameters, // { Mean: number, Std: number }
             isExpanded: true,
           };
 
@@ -577,24 +704,6 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     };
   }, [handleRuleSaved]);
 
-  // Show-up time 유효성 검증 (mean >= 0 && std > 0)
-  const isValidDistribution = useCallback((values: Record<string, number> | { mean: number; std: number }) => {
-    if ('mean' in values && 'std' in values) {
-      return values.mean >= 0 && values.std > 0;
-    }
-    // fallback for other types
-    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
-    return Math.abs(total - 100) < 0.1; // 소수점 오차 고려
-  }, []);
-
-  // Show-up time 값 표시용 (mean과 std는 총합 개념이 없음)
-  const getDistributionTotal = useCallback((values: Record<string, number> | { mean: number; std: number }) => {
-    if ('mean' in values && 'std' in values) {
-      return `μ=${values.mean}, σ=${values.std}`;
-    }
-    return Object.values(values).reduce((sum, value) => sum + value, 0);
-  }, []);
-
   // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
   const combinedChartConfig = useMemo(() => {
     const traces: any[] = [];
@@ -603,11 +712,11 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
     // 전체 범위 계산 (모든 분포를 포함)
     const allMeans = [
       defaultMean || FRONTEND_DEFAULT_MEAN,
-      ...createdRules.map((rule) => rule.distribution?.mean || defaultMean || FRONTEND_DEFAULT_MEAN),
+      ...createdRules.map((rule) => rule.parameters?.Mean || defaultMean || FRONTEND_DEFAULT_MEAN),
     ];
     const allStds = [
       defaultStd || FRONTEND_DEFAULT_STD,
-      ...createdRules.map((rule) => rule.distribution?.std || defaultStd || FRONTEND_DEFAULT_STD),
+      ...createdRules.map((rule) => rule.parameters?.Std || defaultStd || FRONTEND_DEFAULT_STD),
     ];
 
     const minMean = Math.min(...allMeans);
@@ -672,8 +781,8 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
 
     // Rule 분포들 추가
     createdRules.forEach((rule, index) => {
-      const mean = rule.distribution?.mean || defaultMean || FRONTEND_DEFAULT_MEAN;
-      const std = rule.distribution?.std || defaultStd || FRONTEND_DEFAULT_STD;
+      const mean = rule.parameters?.Mean || defaultMean || FRONTEND_DEFAULT_MEAN;
+      const std = rule.parameters?.Std || defaultStd || FRONTEND_DEFAULT_STD;
 
       if (!isNaN(mean) && !isNaN(std) && std > 0) {
         const ruleY = xValues.map(
@@ -837,7 +946,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
               )}
 
               {/* Distribution Bar */}
-              {rule.distribution && (
+              {rule.parameters && (
                 <div className="mt-3">
                   <div className="space-y-3">
                     <div className="grid gap-4 md:grid-cols-2">
@@ -845,15 +954,15 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                         <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
                         <IntegerNumberInput
                           value={
-                            rule.distribution.mean !== undefined
-                              ? rule.distribution.mean
+                            rule.parameters.Mean !== undefined
+                              ? rule.parameters.Mean
                               : defaultMean || FRONTEND_DEFAULT_MEAN
                           }
                           onChange={(newMean) => {
                             updateShowUpTimeRule(rule.id, {
-                              distribution: {
-                                ...rule.distribution,
-                                mean: newMean,
+                              parameters: {
+                                Mean: newMean,
+                                Std: rule.parameters?.Std || FRONTEND_DEFAULT_STD,
                               },
                             });
                           }}
@@ -862,7 +971,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                           min={0}
                           max={999}
                           className={
-                            rule.distribution && !isValidDistribution(rule.distribution)
+                            rule.parameters && (rule.parameters.Mean < 0 || rule.parameters.Std <= 0)
                               ? 'border-red-500 bg-red-50'
                               : ''
                           }
@@ -872,15 +981,13 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                         <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
                         <IntegerNumberInput
                           value={
-                            rule.distribution.std !== undefined
-                              ? rule.distribution.std
-                              : defaultStd || FRONTEND_DEFAULT_STD
+                            rule.parameters.Std !== undefined ? rule.parameters.Std : defaultStd || FRONTEND_DEFAULT_STD
                           }
                           onChange={(newStd) => {
                             updateShowUpTimeRule(rule.id, {
-                              distribution: {
-                                ...rule.distribution,
-                                std: newStd,
+                              parameters: {
+                                Mean: rule.parameters?.Mean || FRONTEND_DEFAULT_MEAN,
+                                Std: newStd,
                               },
                             });
                           }}
@@ -888,7 +995,7 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                           min={1}
                           max={999}
                           className={
-                            rule.distribution && !isValidDistribution(rule.distribution)
+                            rule.parameters && (rule.parameters.Mean < 0 || rule.parameters.Std <= 0)
                               ? 'border-red-500 bg-red-50'
                               : ''
                           }
@@ -899,21 +1006,15 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
 
                   {/* Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
-                    {isValidDistribution(rule.distribution) ? (
+                    {rule.parameters && rule.parameters.Mean >= 0 && rule.parameters.Std > 0 ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid distribution (
-                        {typeof getDistributionTotal(rule.distribution) === 'string'
-                          ? getDistributionTotal(rule.distribution)
-                          : `Total: ${(getDistributionTotal(rule.distribution) as number).toFixed(1)}%`}
-                        )
+                        Valid parameters (μ={rule.parameters.Mean}, σ={rule.parameters.Std})
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        {typeof getDistributionTotal(rule.distribution) === 'string'
-                          ? 'Invalid parameters (mean must be ≥0, std must be >0)'
-                          : `Total must equal 100% (Current: ${(getDistributionTotal(rule.distribution) as number).toFixed(1)}%)`}
+                        Invalid parameters (mean must be ≥0, std must be &gt;0)
                       </span>
                     )}
                   </div>
@@ -944,20 +1045,13 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                     <IntegerNumberInput
                       value={defaultMean || FRONTEND_DEFAULT_MEAN}
                       onChange={(newMean) => {
-                        updateShowUpTimeDefault({ mean: newMean, std: defaultStd || FRONTEND_DEFAULT_STD });
+                        updateShowUpTimeDefault(newMean, defaultStd || FRONTEND_DEFAULT_STD);
                       }}
                       placeholder={`${defaultMean || FRONTEND_DEFAULT_MEAN} minutes`}
                       unit="minutes"
                       min={0}
                       max={999}
-                      className={
-                        !isValidDistribution({
-                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                          std: defaultStd || FRONTEND_DEFAULT_STD,
-                        })
-                          ? 'border-red-500 bg-red-50'
-                          : ''
-                      }
+                      className={(defaultMean || FRONTEND_DEFAULT_MEAN) < 0 ? 'border-red-500 bg-red-50' : ''}
                     />
                   </div>
                   <div className="space-y-2">
@@ -965,19 +1059,12 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
                     <IntegerNumberInput
                       value={defaultStd || FRONTEND_DEFAULT_STD}
                       onChange={(newStd) => {
-                        updateShowUpTimeDefault({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: newStd });
+                        updateShowUpTimeDefault(defaultMean || FRONTEND_DEFAULT_MEAN, newStd);
                       }}
                       placeholder={(defaultStd || FRONTEND_DEFAULT_STD).toString()}
                       min={1}
                       max={999}
-                      className={
-                        !isValidDistribution({
-                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                          std: defaultStd || FRONTEND_DEFAULT_STD,
-                        })
-                          ? 'border-red-500 bg-red-50'
-                          : ''
-                      }
+                      className={(defaultStd || FRONTEND_DEFAULT_STD) <= 0 ? 'border-red-500 bg-red-50' : ''}
                     />
                   </div>
                 </div>
@@ -985,33 +1072,15 @@ export default function SimpleShowUpTimeTab({ parquetMetadata = [], simulationId
 
               {/* Default Validation Status */}
               <div className="mt-2 flex items-center gap-2 text-sm">
-                {isValidDistribution({
-                  mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                  std: defaultStd || FRONTEND_DEFAULT_STD,
-                }) ? (
+                {(defaultMean || FRONTEND_DEFAULT_MEAN) >= 0 && (defaultStd || FRONTEND_DEFAULT_STD) > 0 ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle size={14} />
-                    Valid distribution (
-                    {typeof getDistributionTotal({
-                      mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                      std: defaultStd || FRONTEND_DEFAULT_STD,
-                    }) === 'string'
-                      ? getDistributionTotal({
-                          mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                          std: defaultStd || FRONTEND_DEFAULT_STD,
-                        })
-                      : `Total: ${(getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }) as number).toFixed(1)}%`}
-                    )
+                    Valid parameters (μ={defaultMean || FRONTEND_DEFAULT_MEAN}, σ={defaultStd || FRONTEND_DEFAULT_STD})
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-red-600">
                     <XCircle size={14} />
-                    {typeof getDistributionTotal({
-                      mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-                      std: defaultStd || FRONTEND_DEFAULT_STD,
-                    }) === 'string'
-                      ? 'Invalid parameters (mean must be ≥0, std must be >0)'
-                      : `Total must equal 100% (Current: ${(getDistributionTotal({ mean: defaultMean || FRONTEND_DEFAULT_MEAN, std: defaultStd || FRONTEND_DEFAULT_STD }) as number).toFixed(1)}%)`}
+                    Invalid parameters (mean must be ≥0, std must be &gt;0)
                   </span>
                 )}
               </div>
