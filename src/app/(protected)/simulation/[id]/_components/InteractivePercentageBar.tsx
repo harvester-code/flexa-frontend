@@ -55,27 +55,25 @@ export default function InteractivePercentageBar({
   const normalizedPercentages = properties.reduce(
     (acc, prop) => {
       const displayPercentage = percentages[prop] || 0;
-      
+
       // 5% 이하면 실제 표시폭 5%로 고정
       if (displayPercentage <= 5) {
         acc[prop] = 5;
       } else {
         // 6% 이상인 항목들만 비례배분 계산
-        const smallItemsCount = properties.filter(p => (percentages[p] || 0) <= 5).length;
+        const smallItemsCount = properties.filter((p) => (percentages[p] || 0) <= 5).length;
         const reservedWidth = smallItemsCount * 5; // 5% 이하 항목들이 차지할 총 폭
         const availableWidth = Math.max(0, 100 - reservedWidth); // 나머지 사용 가능한 폭
-        
+
         // 6% 이상인 항목들의 총 비율
         const largeItemsTotal = properties
-          .filter(p => (percentages[p] || 0) > 5)
+          .filter((p) => (percentages[p] || 0) > 5)
           .reduce((sum, p) => sum + (percentages[p] || 0), 0);
-        
+
         // 사용 가능한 폭 내에서 비례배분
-        acc[prop] = largeItemsTotal > 0 
-          ? (displayPercentage / largeItemsTotal) * availableWidth 
-          : 0;
+        acc[prop] = largeItemsTotal > 0 ? (displayPercentage / largeItemsTotal) * availableWidth : 0;
       }
-      
+
       return acc;
     },
     {} as Record<string, number>
