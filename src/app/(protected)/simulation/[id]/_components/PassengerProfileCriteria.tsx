@@ -223,8 +223,8 @@ export default function PassengerProfileCriteria({
           updateNationalityDistribution(currentRulesLength, propertyValues);
         }
 
-        // SimpleNationalityTab에 데이터 전달
-        console.log('🔄 Create - SimpleNationalityTab으로 전달할 데이터:', {
+        // AddColumnTab (nationality)에 데이터 전달
+        console.log('🔄 Create - AddColumnTab (nationality)으로 전달할 데이터:', {
           conditions: conditionStrings,
           flightCount: flightCalculations.totalSelected,
           distribution: propertyValues,
@@ -236,7 +236,7 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues,
           });
-          console.log('✅ SimpleNationalityTab으로 데이터 전달 완료');
+          console.log('✅ AddColumnTab (nationality)으로 데이터 전달 완료');
         } else {
           console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
@@ -248,8 +248,8 @@ export default function PassengerProfileCriteria({
           addProfileRule(conditions, flightCalculations.totalSelected, propertyValues);
         }
 
-        // SimplePaxProfileTab으로 데이터 전달
-        console.log('🔄 Create - SimplePaxProfileTab으로 전달할 데이터:', {
+        // AddColumnTab (profile)으로 데이터 전달
+        console.log('🔄 Create - AddColumnTab (profile)으로 전달할 데이터:', {
           conditions: conditionStrings,
           flightCount: flightCalculations.totalSelected,
           distribution: propertyValues,
@@ -261,7 +261,7 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues, // 0-100% 범위 그대로 전달
           });
-          console.log('✅ SimplePaxProfileTab으로 데이터 전달 완료');
+          console.log('✅ AddColumnTab (profile)으로 데이터 전달 완료');
         } else {
           console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }

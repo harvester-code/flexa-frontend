@@ -8,9 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../_stores';
+import AddColumnTab from './AddColumnTab';
 import SimpleLoadFactorTab from './SimpleLoadFactorTab';
-import SimpleNationalityTab from './SimpleNationalityTab';
-import SimplePaxProfileTab from './SimplePaxProfileTab';
 import SimpleShowUpTimeTab from './SimpleShowUpTimeTab';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
 
@@ -196,11 +195,11 @@ export default function TabPassengerScheduleParquetFilter({
           </TabsList>
 
           <TabsContent value="nationality" className="mt-6">
-            <SimpleNationalityTab parquetMetadata={parquetMetadata} />
+            <AddColumnTab parquetMetadata={parquetMetadata} configType="nationality" />
           </TabsContent>
 
           <TabsContent value="profile" className="mt-6">
-            <SimplePaxProfileTab parquetMetadata={parquetMetadata} />
+            <AddColumnTab parquetMetadata={parquetMetadata} configType="profile" />
           </TabsContent>
 
           <TabsContent value="loadfactor" className="mt-6">

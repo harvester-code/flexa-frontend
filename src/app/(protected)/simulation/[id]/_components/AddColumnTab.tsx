@@ -52,20 +52,28 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleNationalityTabProps {
+interface AddColumnTabProps {
   parquetMetadata?: ParquetMetadataItem[];
+  configType?: 'nationality' | 'profile';
 }
 
-export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNationalityTabProps) {
-  // 🆕 SimulationStore 연결
-  const nationalityData = useSimulationStore((s) => s.passenger.pax_demographics.nationality);
-  const setNationalityValues = useSimulationStore((s) => s.setNationalityValues);
-  const addNationalityRule = useSimulationStore((s) => s.addNationalityRule);
-  const removeNationalityRule = useSimulationStore((s) => s.removeNationalityRule);
-  const updateNationalityDistribution = useSimulationStore((s) => s.updateNationalityDistribution);
-  const updateNationalityRuleStore = useSimulationStore((s) => s.updateNationalityRule);
-  const reorderNationalityRulesStore = useSimulationStore((s) => s.reorderNationalityRules);
-  const setNationalityDefault = useSimulationStore((s) => s.setNationalityDefault);
+export default function AddColumnTab({ parquetMetadata = [], configType = 'nationality' }: AddColumnTabProps) {
+  // 🆕 SimulationStore 연결 - configType에 따라 분기
+  const isNationality = configType === 'nationality';
+  const demographicsData = useSimulationStore((s) =>
+    isNationality ? s.passenger.pax_demographics.nationality : s.passenger.pax_demographics.profile
+  );
+  const setValues = useSimulationStore((s) => (isNationality ? s.setNationalityValues : s.setProfileValues));
+  const addRule = useSimulationStore((s) => (isNationality ? s.addNationalityRule : s.addProfileRule));
+  const removeRule = useSimulationStore((s) => (isNationality ? s.removeNationalityRule : s.removeProfileRule));
+  const updateDistribution = useSimulationStore((s) =>
+    isNationality ? s.updateNationalityDistribution : s.updateProfileDistribution
+  );
+  const updateRuleStore = useSimulationStore((s) => (isNationality ? s.updateNationalityRule : s.updateProfileRule));
+  const reorderRulesStore = useSimulationStore((s) =>
+    isNationality ? s.reorderNationalityRules : s.reorderProfileRules
+  );
+  const setDefault = useSimulationStore((s) => (isNationality ? s.setNationalityDefault : s.setProfileDefault));
 
   // 🆕 조건 변환 로직 (Step 1, 2와 동일) - 함수들보다 앞에 위치
   const labelToColumnMap: Record<string, string> = {
@@ -120,9 +128,9 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
   };
 
   // SimulationStore 데이터 변환
-  const definedProperties = nationalityData?.available_values || [];
+  const definedProperties = demographicsData?.available_values || [];
   const createdRules: Rule[] = useMemo(() => {
-    return (nationalityData?.rules || []).map((rule, index) => ({
+    return (demographicsData?.rules || []).map((rule, index) => ({
       id: `rule-${index}`,
       name: `Rule ${index + 1}`,
       conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
@@ -136,31 +144,38 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       distribution: rule.value || {},
       isExpanded: false,
     }));
-  }, [nationalityData?.rules]);
+  }, [demographicsData?.rules]);
 
   const hasDefaultRule =
-    nationalityData?.default && Object.keys(nationalityData.default).filter((key) => key !== 'flightCount').length > 0;
-  const defaultDistribution = nationalityData?.default || {};
+    demographicsData?.default &&
+    Object.keys(demographicsData.default).filter((key) => key !== 'flightCount').length > 0;
+  const defaultDistribution = demographicsData?.default || {};
 
   // Rules 존재 여부 확인
   const hasRules = createdRules.length > 0;
 
-  // 액션 어댑터들
-  const setNationalityProperties = useCallback(
+  // 액션 어댑터들 - configType에 따라 동적으로 처리
+  const setProperties = useCallback(
     (properties: string[]) => {
-      setNationalityValues(properties);
+      setValues(properties);
+
+      // 🆕 properties가 모두 제거되면 관련 rules와 default도 함께 제거
+      if (properties.length === 0) {
+        reorderRulesStore([]); // 모든 rules 제거
+        setDefault({}); // default 설정 제거
+      }
     },
-    [setNationalityValues]
+    [setValues, reorderRulesStore, setDefault]
   );
 
-  const updateNationalityRule = useCallback(
+  const updateRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
       const ruleIndex = parseInt(ruleId.replace('rule-', ''));
 
       // 전체 규칙 업데이트인경우 (조건 + 분배 + 플라이트카운트)
       if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.distribution) {
         // 현재 규칙 가져오기
-        const currentRule = nationalityData?.rules[ruleIndex];
+        const currentRule = demographicsData?.rules[ruleIndex];
         if (!currentRule) return;
 
         // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
@@ -184,7 +199,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         }
 
         // 전체 규칙 업데이트
-        updateNationalityRuleStore(
+        updateRuleStore(
           ruleIndex,
           backendConditions,
           updatedRule.flightCount ?? currentRule.flightCount ?? 0,
@@ -192,34 +207,34 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         );
       }
     },
-    [updateNationalityRuleStore, nationalityData?.rules, labelToColumnMap, valueMapping]
+    [updateRuleStore, demographicsData?.rules, labelToColumnMap, valueMapping]
   );
 
-  const removeNationalityRuleById = useCallback(
+  const removeRuleById = useCallback(
     (ruleId: string) => {
       const ruleIndex = parseInt(ruleId.replace('rule-', ''));
-      removeNationalityRule(ruleIndex);
+      removeRule(ruleIndex);
     },
-    [removeNationalityRule]
+    [removeRule]
   );
 
-  const setNationalityDefaultRule = useCallback(
+  const setDefaultRule = useCallback(
     (hasDefault: boolean) => {
       if (!hasDefault) {
-        setNationalityDefault({});
+        setDefault({});
       }
     },
-    [setNationalityDefault]
+    [setDefault]
   );
 
-  const updateNationalityDefaultDistribution = useCallback(
+  const updateDefaultDistribution = useCallback(
     (distribution: Record<string, number>) => {
-      setNationalityDefault(distribution);
+      setDefault(distribution);
     },
-    [setNationalityDefault]
+    [setDefault]
   );
 
-  const reorderNationalityRules = useCallback(
+  const reorderRules = useCallback(
     (newOrder: Rule[]) => {
       // UI Rule[]을 백엔드 형식으로 변환
       const backendRules = newOrder.map((rule) => {
@@ -249,12 +264,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       });
 
       // SimulationStore에 새로운 순서 적용
-      reorderNationalityRulesStore(backendRules);
+      reorderRulesStore(backendRules);
     },
-    [reorderNationalityRulesStore, labelToColumnMap, valueMapping]
+    [reorderRulesStore, labelToColumnMap, valueMapping]
   );
 
-  const addNationalityRuleWithConversion = useCallback(
+  const addRuleWithConversion = useCallback(
     (rule: Rule) => {
       // UI 조건을 백엔드 형식으로 변환
       const backendConditions: Record<string, string[]> = {};
@@ -276,9 +291,9 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         }
       });
 
-      addNationalityRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
+      addRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
     },
-    [addNationalityRule]
+    [addRule]
   );
 
   // 로컬 UI 상태
@@ -322,7 +337,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         setShowConfirmDialog(true);
       } else {
         // 규칙이 없으면 바로 추가
-        setNationalityProperties(resultProperties);
+        setProperties(resultProperties);
       }
       setNewPropertyName('');
     }
@@ -338,7 +353,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       setShowConfirmDialog(true);
     } else {
       // 규칙이 없으면 바로 제거
-      setNationalityProperties(newProperties);
+      setProperties(newProperties);
     }
   };
 
@@ -502,7 +517,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     newRules.splice(dropIndex, 0, draggedRule);
 
     // Store 업데이트
-    reorderNationalityRules(newRules);
+    reorderRules(newRules);
     setDraggingRuleId(null);
     setDragOverRuleId(null);
   };
@@ -516,7 +531,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
   const handleConfirmChanges = () => {
     if (pendingAction) {
       // 속성 업데이트 함수 호출 (균등 분배 자동 적용)
-      setNationalityProperties(pendingAction.payload);
+      setProperties(pendingAction.payload);
       setPendingAction(null);
     }
     setShowConfirmDialog(false);
@@ -561,7 +576,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
-          updateNationalityRule(editingRuleId, {
+          updateRule(editingRuleId, {
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
             distribution: savedRuleData.distribution,
@@ -583,7 +598,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             isExpanded: true,
           };
 
-          addNationalityRuleWithConversion(newRule);
+          addRuleWithConversion(newRule);
           setIsRuleModalOpen(false);
         }
       }
@@ -593,8 +608,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       definedProperties,
       createdRules.length,
       calculateEqualDistribution,
-      updateNationalityRule,
-      addNationalityRuleWithConversion,
+      updateRule,
+      addRuleWithConversion,
     ]
   );
 
@@ -613,15 +628,19 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
     <div className="space-y-6">
       {/* Header */}
       <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">Define Nationalities</h3>
-        <p className="text-sm text-default-500">Define what properties can be assigned</p>
+        <h3 className="text-lg font-semibold text-default-900">
+          Define {isNationality ? 'Nationalities' : 'Passenger Profiles'}
+        </h3>
+        <p className="text-sm text-default-500">
+          Define {isNationality ? 'what properties can be assigned' : 'passenger profile categories for classification'}
+        </p>
       </div>
 
       {/* Property Input */}
       <div className="flex gap-3">
         <Input
           type="text"
-          placeholder="Enter property name (e.g., domestic, international or a,b,c)..."
+          placeholder={`Enter ${isNationality ? 'property name (e.g., domestic, international or a,b,c)' : 'profile name (e.g., business, leisure, premium or a,b,c)'}...`}
           value={newPropertyName}
           onChange={(e) => setNewPropertyName(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -629,7 +648,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
         />
         <Button onClick={handleAddProperty} disabled={!newPropertyName.trim()} className="flex items-center gap-2">
           <Plus size={16} />
-          Add Property
+          Add {isNationality ? 'Property' : 'Profile'}
         </Button>
       </div>
 
@@ -663,9 +682,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
       <div className="mt-8 border-t border-gray-200 pt-6">
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Distribution Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">
+              Assign {isNationality ? 'Distribution' : 'Profile Distribution'} Rules
+            </h4>
             <p className="text-sm text-default-500">
-              Define how passengers will be distributed among the nationalities you created above
+              Define how passengers will be distributed among the{' '}
+              {isNationality ? 'nationalities' : 'profile categories'} you created above
             </p>
           </div>
 
@@ -741,7 +763,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => removeNationalityRuleById(rule.id)}
+                      onClick={() => removeRuleById(rule.id)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -771,7 +793,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                     <PercentageInteractiveBar
                       properties={definedProperties}
                       values={rule.distribution || {}}
-                      onChange={(newValues) => updateNationalityRule(rule.id, { distribution: newValues })}
+                      onChange={(newValues) => updateRule(rule.id, { distribution: newValues })}
                       showValues={true}
                     />
 
@@ -817,7 +839,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => setNationalityDefaultRule(false)}
+                      onClick={() => setDefaultRule(false)}
                     >
                       <Trash2 size={12} />
                     </Button>
@@ -829,7 +851,7 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                   <PercentageInteractiveBar
                     properties={definedProperties}
                     values={defaultDistribution || {}}
-                    onChange={updateNationalityDefaultDistribution}
+                    onChange={updateDefaultDistribution}
                     showValues={true}
                   />
 
@@ -858,14 +880,15 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                     <div>
                       <h4 className="font-medium text-gray-900">No distribution rules defined</h4>
                       <p className="mt-1 text-sm text-gray-600">
-                        Would you like to apply a default nationality distribution to all flights?
+                        Would you like to apply a default {isNationality ? 'nationality' : 'profile'} distribution to
+                        all flights?
                       </p>
                     </div>
                   </div>
                   <Button
                     onClick={() => {
-                      setNationalityDefaultRule(true);
-                      updateNationalityDefaultDistribution(calculateEqualDistribution(definedProperties));
+                      setDefaultRule(true);
+                      updateDefaultDistribution(calculateEqualDistribution(definedProperties));
                     }}
                     size="sm"
                     variant="outline"
@@ -887,14 +910,15 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
                           {flightCalculations.remainingFlights} flights have no rules
                         </h4>
                         <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default nationality distribution to these remaining flights?
+                          Would you like to apply a default {isNationality ? 'nationality' : 'profile'} distribution to
+                          these remaining flights?
                         </p>
                       </div>
                     </div>
                     <Button
                       onClick={() => {
-                        setNationalityDefaultRule(true);
-                        updateNationalityDefaultDistribution(calculateEqualDistribution(definedProperties));
+                        setDefaultRule(true);
+                        updateDefaultDistribution(calculateEqualDistribution(definedProperties));
                       }}
                       size="sm"
                       variant="outline"
@@ -921,8 +945,8 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and nationality distribution for this rule.'
-                : 'Select flight conditions and assign nationality distribution values.'}
+                ? `Modify the flight conditions and ${isNationality ? 'nationality' : 'profile'} distribution for this rule.`
+                : `Select flight conditions and assign ${isNationality ? 'nationality' : 'profile'} distribution values.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -943,12 +967,12 @@ export default function SimpleNationalityTab({ parquetMetadata = [] }: SimpleNat
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={20} />
-              Confirm Property Changes
+              Confirm {isNationality ? 'Property' : 'Profile'} Changes
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingAction?.type === 'add'
-                ? 'Adding new properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'
-                : 'Removing properties will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?'}
+                ? `Adding new ${isNationality ? 'properties' : 'profiles'} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`
+                : `Removing ${isNationality ? 'properties' : 'profiles'} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
