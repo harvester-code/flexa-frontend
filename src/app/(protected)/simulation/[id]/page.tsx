@@ -229,6 +229,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   // 🆕 통합 Store 액션들
   const setLastSavedAt = useSimulationStore((s) => s.setLastSavedAt);
   const setDate = useSimulationStore((s) => s.setDate);
+  const setCurrentStep = useSimulationStore((s) => s.setCurrentStep);
   const currentDate = useSimulationStore((s) => s.context.date);
 
   // ✅ 클라이언트 측에서만 날짜 초기화 (hydration mismatch 방지)
@@ -238,6 +239,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       setDate(today);
     }
   }, [currentDate, setDate]);
+
+  // 🔧 currentScenarioTab 변경 시 currentStep 동기화 (초기 로드 포함)
+  useEffect(() => {
+    if (isInitialized) {
+      setCurrentStep(currentScenarioTab + 1);
+    }
+  }, [currentScenarioTab, isInitialized, setCurrentStep]);
 
   // 임시저장 함수
   const handleTempSave = async () => {
@@ -291,11 +299,21 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }
   };
 
-  // ✅ S3 메타데이터 로드 기능 활성화
+  // 🆕 탭 변경 시 두 store 모두 업데이트하는 통합 함수
+  const handleTabChange = useCallback(
+    (tabIndex: number) => {
+      setCurrentScenarioTab(tabIndex);
+      // 탭 인덱스를 step 번호로 변환 (0-based → 1-based)
+      setCurrentStep(tabIndex + 1);
+    },
+    [setCurrentScenarioTab, setCurrentStep]
+  );
+
+  // ✅ S3 메타데이터 로드 기능 활성화 (초기 로드용)
   useLoadScenarioData(simulationId, {
     loadCompleteS3Metadata,
     loadScenarioProfileMetadata,
-    setCurrentScenarioTab,
+    setCurrentScenarioTab, // 🔧 초기 로드는 기존 함수 사용
     setIsInitialized,
   });
 
@@ -364,7 +382,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         availableTabs={getAvailableTabs()}
         tabCount={tabs.length}
         tabs={tabs.map((tab) => ({ text: tab.text }))}
-        onTabChange={setCurrentScenarioTab}
+        onTabChange={handleTabChange}
       />
 
       {isInitialized ? (

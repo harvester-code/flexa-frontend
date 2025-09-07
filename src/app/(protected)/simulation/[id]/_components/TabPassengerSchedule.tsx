@@ -28,6 +28,7 @@ export default function TabPassengerSchedule({
   setApiRequestLog,
 }: TabPassengerScheduleProps) {
   const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
+  const passengerData = useSimulationStore((s) => s.passenger);
 
   // 탭이 보이지 않으면 렌더링하지 않음
   if (!visible) return null;
@@ -35,7 +36,7 @@ export default function TabPassengerSchedule({
   return (
     <div className="pt-8">
       <div className="space-y-6">
-        {/* 🆕 새로운 Parquet Filter - 임시 테스트용 */}
+        {/* 🎯 Configure Passenger Data - 독립적인 첫 번째 컴포넌트 */}
         {(appliedFilterResult as any)?.parquet_metadata && (
           <TabPassengerScheduleParquetFilter
             parquetMetadata={(appliedFilterResult as any).parquet_metadata}
@@ -45,12 +46,8 @@ export default function TabPassengerSchedule({
           />
         )}
 
-        {/* Passenger Show-up Result Chart */}
-        {false && (
-          <div className="mt-6">
-            <TabPassengerScheduleResult />
-          </div>
-        )}
+        {/* 🎯 Passenger Schedule Chart - 독립적인 두 번째 컴포넌트 */}
+        {passengerData.chartResult && <TabPassengerScheduleResult />}
       </div>
 
       {/* Navigation */}

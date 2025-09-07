@@ -11,7 +11,6 @@ import { useSimulationStore } from '../_stores';
 import AddColumnTab from './AddColumnTab';
 import SimpleLoadFactorTab from './SimpleLoadFactorTab';
 import SimpleShowUpTimeTab from './SimpleShowUpTimeTab';
-import TabPassengerScheduleResult from './TabPassengerScheduleResult';
 
 interface ParquetMetadataItem {
   column: string;
@@ -214,9 +213,6 @@ export default function TabPassengerScheduleParquetFilter({
             />
           </TabsContent>
         </Tabs>
-
-        {/* 🎯 여객 차트 결과 - API 응답 받았을 때만 표시 */}
-        {passengerData.chartResult && <TabPassengerScheduleResult />}
       </CardContent>
     </Card>
   );
