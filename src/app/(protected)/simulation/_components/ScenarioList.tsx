@@ -491,7 +491,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                     <td className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button
-                          variant="btn-link"
+                          variant="link"
                           className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
                           title={isEditing ? 'Cancel' : 'Edit'}
                           onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}

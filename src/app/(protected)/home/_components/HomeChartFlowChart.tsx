@@ -32,7 +32,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
           pad: 15,
           thickness: 20,
           label: nodeLabels,
-          color: SANKEY_COLOR_SCALES,
+          color: [...SANKEY_COLOR_SCALES],
         },
         link: sankey.link,
       },

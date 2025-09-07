@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapPin, Plane, Settings, Star, Trash2, Users } from 'lucide-react';
+import { MapPin, Plane, Star, Trash2, Users } from 'lucide-react';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -22,91 +22,6 @@ import { useSimulationStore } from '../_stores';
 
 interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
-}
-
-// 🔢 Facility Count Editor 컴포넌트
-interface FacilityCountEditorProps {
-  selectedZone: string;
-  selectedProcessIndex: number;
-  currentFacilityCount: number;
-  onUpdateCount: (processIndex: number, zoneName: string, count: number) => void;
-}
-
-function FacilityCountEditor({
-  selectedZone,
-  selectedProcessIndex,
-  currentFacilityCount,
-  onUpdateCount,
-}: FacilityCountEditorProps) {
-  const [inputValue, setInputValue] = useState<string>('');
-
-  // 현재 시설 수를 input에 반영
-  useEffect(() => {
-    setInputValue(currentFacilityCount.toString());
-  }, [currentFacilityCount, selectedZone]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // type="number"이므로 브라우저가 기본 검증을 수행하지만,
-    // 빈 문자열이나 유효하지 않은 값들을 처리
-    if (value === '' || (!isNaN(Number(value)) && Number(value) >= 0)) {
-      setInputValue(value);
-    }
-  };
-
-  const handleApply = () => {
-    const newCount = parseInt(inputValue) || 0;
-
-    if (newCount < 0 || newCount > 50) {
-      alert('Please enter a number between 0 and 50');
-      setInputValue(currentFacilityCount.toString());
-      return;
-    }
-
-    if (newCount !== currentFacilityCount) {
-      onUpdateCount(selectedProcessIndex, selectedZone, newCount);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleApply();
-    }
-  };
-
-  const isChanged = inputValue !== currentFacilityCount.toString();
-
-  return (
-    <div className="mb-4 rounded-lg border bg-slate-50 p-4">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Settings size={16} className="text-slate-600" />
-          <span className="text-sm font-medium text-slate-700">{selectedZone} Facilities</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={inputValue}
-            onChange={handleInputChange}
-            onClick={(e) => e.currentTarget.select()}
-            onKeyDown={handleKeyDown}
-            className="w-20 text-center"
-            placeholder="0"
-            min="0"
-            max="50"
-            step="1"
-          />
-          <Button size="sm" onClick={handleApply} disabled={!isChanged} className="px-3">
-            Apply
-          </Button>
-        </div>
-
-        <div className="text-xs text-slate-500">Current: {currentFacilityCount} facilities</div>
-      </div>
-    </div>
-  );
 }
 
 // 뱃지 타입 정의
@@ -1103,16 +1018,6 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
             </div>
           )}
         </div>
-
-        {/* 🔢 Zone Counter - 시설 개수 설정 */}
-        {selectedZone && (
-          <FacilityCountEditor
-            selectedZone={selectedZone}
-            selectedProcessIndex={selectedProcessIndex}
-            currentFacilityCount={currentFacilityCount}
-            onUpdateCount={setFacilitiesForZone}
-          />
-        )}
 
         {/* 우클릭 컨텍스트 메뉴 */}
         <DropdownMenu

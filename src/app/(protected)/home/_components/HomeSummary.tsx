@@ -211,7 +211,7 @@ function HomeSummary({
         {/* open 상태에 따라 트리거(화살표)를 상단/하단에 한 번만 렌더링 */}
         {!accordionOpen && (
           <div className="mt-[14px] flex justify-center">
-            <Button variant="btn-link" onClick={() => setAccordionOpen(true)}>
+            <Button variant="link" onClick={() => setAccordionOpen(true)}>
               <svg
                 className="h-6 w-6 text-muted-foreground transition-transform duration-200"
                 style={{ transform: 'rotate(0deg)' }}
@@ -370,7 +370,7 @@ function HomeSummary({
         {/* open 상태에 따라 하단에만 화살표 렌더링 */}
         {accordionOpen && (
           <div className="mt-[14px] flex justify-center">
-            <Button variant="btn-link" onClick={() => setAccordionOpen(false)}>
+            <Button variant="link" onClick={() => setAccordionOpen(false)}>
               <svg
                 className="h-6 w-6 rotate-180 text-muted-foreground transition-transform duration-200"
                 fill="none"

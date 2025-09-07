@@ -1041,6 +1041,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setFacilitiesForZone: (processIndex, zoneName, count) =>
       set((state) => {
+        console.log(
+          `🏪 setFacilitiesForZone called: processIndex=${processIndex}, zoneName=${zoneName}, count=${count}`
+        );
+        console.log('🏪 Current process_flow:', state.process_flow);
+
         if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
           // 지정된 개수만큼 facilities 생성
           const facilities = Array.from({ length: count }, (_, i) => ({
@@ -1049,6 +1054,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
           }));
 
           state.process_flow[processIndex].zones[zoneName].facilities = facilities;
+          console.log(`✅ Set ${count} facilities for zone ${zoneName}:`, facilities);
+        } else {
+          console.log(`❌ Zone ${zoneName} not found in process ${processIndex}`);
+          console.log('Available zones:', state.process_flow[processIndex]?.zones);
         }
       }),
 

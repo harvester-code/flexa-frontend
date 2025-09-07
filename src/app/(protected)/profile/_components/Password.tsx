@@ -229,10 +229,10 @@ export default function Password() {
           <dd className="text-sm font-normal">Enter your current password to update it.</dd>
         </dl>
         <div className="flex flex-shrink-0 items-center gap-4">
-          <Button variant="btn-default" size="btn-md" onClick={handleCancel}>
+          <Button variant="secondary" size="default" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button variant="btn-primary" size="btn-md" onClick={handleUpdatePassword} disabled={isLoading}>
+          <Button variant="primary" size="default" onClick={handleUpdatePassword} disabled={isLoading}>
             {isLoading ? 'Updating...' : 'Update Password'}
           </Button>
         </div>
@@ -249,7 +249,6 @@ export default function Password() {
             </div>
             <div className="form-item-content pr-500">
               <Input
-                variant="custom"
                 type="password"
                 placeholder="Current Password"
                 value={currentPassword}
@@ -268,7 +267,6 @@ export default function Password() {
             </div>
             <div className="form-item-content pr-500">
               <Input
-                variant="custom"
                 type="password"
                 placeholder="New Password"
                 value={newPassword}
@@ -309,7 +307,6 @@ export default function Password() {
             </div>
             <div className="form-item-content pr-500">
               <Input
-                variant="custom"
                 type="password"
                 placeholder="Confirm New Password"
                 value={confirmPassword}

@@ -622,14 +622,14 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             <span className="font-medium">Direction</span>
             <Button
               type="button"
-              variant={nodeData.direction === 'forward' ? 'default' : 'outline'}
+              variant={nodeData.direction === 'forward' ? 'primary' : 'outline'}
               onClick={() => handleInputChange('direction', 'forward')}
             >
               Forward
             </Button>
             <Button
               type="button"
-              variant={nodeData.direction === 'backward' ? 'default' : 'outline'}
+              variant={nodeData.direction === 'backward' ? 'primary' : 'outline'}
               onClick={() => handleInputChange('direction', 'backward')}
             >
               Reverse
@@ -657,7 +657,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant="btn-link"
+                  variant="link"
                   type="button"
                   className="ml-1 rounded-full p-1 hover:bg-gray-100 focus:outline-none"
                   title="Show layout example"
@@ -1091,9 +1091,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
         {/* Apply Button */}
         {!isLoading && Object.keys(servicePoints).length > 0 && (
           <div className="mt-6 flex justify-end">
-            <Button onClick={handleApply}>
-              Apply
-            </Button>
+            <Button onClick={handleApply}>Apply</Button>
           </div>
         )}
         {/* Modal */}

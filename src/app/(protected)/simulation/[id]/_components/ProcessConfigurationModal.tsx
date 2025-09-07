@@ -23,7 +23,12 @@ interface ProcessConfigurationModalProps {
     facilities: string[];
     travelTime: number;
   } | null;
-  onSave: (data: { name: string; facilities: FacilityItem[]; travelTime: number }) => void;
+  onSave: (data: {
+    name: string;
+    facilities: FacilityItem[];
+    travelTime: number;
+    zoneFacilityCounts?: Record<string, number>;
+  }) => void;
   mode: 'create' | 'edit';
   processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
 }
@@ -40,6 +45,8 @@ export default function ProcessConfigurationModal({
   const [facilitiesInput, setFacilitiesInput] = useState('');
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
   const [travelTime, setTravelTime] = useState(0);
+  // 🆕 Zone별 시설 개수 관리
+  const [zoneFacilityCounts, setZoneFacilityCounts] = useState<Record<string, number>>({});
 
   // 시설명 확장 함수 (기존 로직과 동일)
   const expandFacilityNames = useCallback((input: string): FacilityItem[] => {
@@ -86,6 +93,14 @@ export default function ProcessConfigurationModal({
     return facilityList;
   }, []);
 
+  // 🆕 Zone별 시설 개수 변경 함수
+  const handleZoneCountChange = useCallback((zoneName: string, count: number) => {
+    setZoneFacilityCounts((prev) => ({
+      ...prev,
+      [zoneName]: Math.max(1, Math.min(50, count)), // 1~50 사이로 제한
+    }));
+  }, []);
+
   // Modal 열릴 때 데이터 초기화
   useEffect(() => {
     if (isOpen) {
@@ -94,12 +109,19 @@ export default function ProcessConfigurationModal({
         setFacilitiesInput(processData.facilities.join(','));
         setTravelTime(processData.travelTime);
         setFacilities(processData.facilities.map((name) => ({ name, isActive: true })));
+        // 🆕 편집 모드에서는 기본값 1개로 초기화
+        const editZoneCounts: Record<string, number> = {};
+        processData.facilities.forEach((name) => {
+          editZoneCounts[name] = 1;
+        });
+        setZoneFacilityCounts(editZoneCounts);
       } else {
         // 새로 생성하는 경우 초기화
         setProcessName('');
         setFacilitiesInput('');
         setTravelTime(0);
         setFacilities([]);
+        setZoneFacilityCounts({}); // 🆕 Zone 개수도 초기화
       }
     }
   }, [isOpen, mode, processData]);
@@ -135,10 +157,11 @@ export default function ProcessConfigurationModal({
       name: processName,
       facilities: facilities,
       travelTime: travelTime,
+      zoneFacilityCounts, // 🆕 Zone별 시설 개수 정보도 함께 전달
     });
 
     onClose();
-  }, [processName, facilities, travelTime, onSave, onClose]);
+  }, [processName, facilities, travelTime, zoneFacilityCounts, onSave, onClose]);
 
   // 엔터키 처리
   const handleKeyDown = useCallback(
@@ -270,6 +293,40 @@ export default function ProcessConfigurationModal({
               </div>
             )}
           </div>
+
+          {/* 🆕 Zone별 시설 개수 설정 */}
+          {facilities.length > 0 && (
+            <div>
+              <label className="mb-3 block text-sm font-medium text-default-900">Facility Configuration</label>
+              <div className="space-y-3">
+                {facilities.map((facility) => (
+                  <div
+                    key={facility.name}
+                    className="flex items-center justify-between rounded-lg border bg-gray-50 px-4 py-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900">Zone {facility.name}</span>
+                      <span className="text-xs text-gray-500">facilities</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={zoneFacilityCounts[facility.name] || 1}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value) || 1;
+                          handleZoneCountChange(facility.name, count);
+                        }}
+                        className="w-16 text-center"
+                      />
+                      <span className="text-sm text-gray-500">ea</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

@@ -83,7 +83,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
     return (
       <Button
         key={page}
-        variant={page === currentPage ? 'default' : 'outline'}
+        variant={page === currentPage ? 'primary' : 'outline'}
         size="sm"
         onClick={() => onPageClick(page)}
         type="button"
@@ -346,7 +346,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
 
                               <span className="truncate">{item.name}</span>
 
-                              {item.isMaster && (
+                              {(item as any)?.isMaster && (
                                 <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
                                   Master
                                 </span>

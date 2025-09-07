@@ -191,8 +191,8 @@ export default function InteractivePercentageBar({
                       setEditingValue(numericValue);
                     }}
                     onBlur={handleEditComplete}
-                    onFocus={(e) => e.target.select()}
-                    onClick={(e) => e.target.select()}
+                    onFocus={(e) => (e.target as HTMLInputElement).select()}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleEditComplete();
                       if (e.key === 'Escape') handleEditCancel();

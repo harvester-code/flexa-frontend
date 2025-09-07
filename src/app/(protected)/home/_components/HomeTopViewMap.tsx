@@ -364,7 +364,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             </PopoverTrigger>
             <PopoverContent align="end" side="top">
               <Button
-                variant="btn-link"
+                variant="link"
                 type="button"
                 onClick={() => setShowDotSizePopover(false)}
                 aria-label="Close"

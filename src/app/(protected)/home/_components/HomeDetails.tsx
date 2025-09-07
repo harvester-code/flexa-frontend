@@ -248,7 +248,6 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                                 {calculate_type && (
                                   <span
                                     className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    className="text-xs font-normal"
                                     style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
                                   >
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}
@@ -270,7 +269,6 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                                 {calculate_type && (
                                   <span
                                     className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    className="text-xs font-normal"
                                     style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
                                   >
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}

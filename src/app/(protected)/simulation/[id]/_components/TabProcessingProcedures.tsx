@@ -40,8 +40,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   // zustand의 process_flow를 직접 사용
 
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Selected process for detail view (instead of accordion)
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
@@ -130,7 +128,12 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   };
 
   // Modal에서 프로세스 저장
-  const handleSaveProcess = (data: { name: string; facilities: FacilityItem[]; travelTime: number }) => {
+  const handleSaveProcess = (data: {
+    name: string;
+    facilities: FacilityItem[];
+    travelTime: number;
+    zoneFacilityCounts?: Record<string, number>;
+  }) => {
     const activeFacilities = data.facilities.filter((f) => f.isActive).map((f) => f.name);
     const normalizedName = normalizeProcessName(data.name);
 
@@ -151,7 +154,19 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         };
       });
 
-      setProcessFlow([...processFlow, newStep]);
+      const updatedProcessFlow = [...processFlow, newStep];
+      setProcessFlow(updatedProcessFlow);
+
+      // 🆕 Zone별 시설 개수 자동 설정
+      if (data.zoneFacilityCounts) {
+        const processIndex = processFlow.length; // 새로 추가된 프로세스의 인덱스
+        // 시설 개수 즉시 설정
+        Object.entries(data.zoneFacilityCounts!).forEach(([zoneName, count]) => {
+          if (activeFacilities.includes(zoneName)) {
+            setFacilitiesForZone(processIndex, zoneName, count);
+          }
+        });
+      }
     } else {
       // 기존 프로세스 수정
       if (editingProcessData) {
@@ -171,8 +186,21 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         });
 
         setProcessFlow(newProcessFlow);
+
+        // 🆕 편집 모드에서도 Zone별 시설 개수 업데이트
+        if (data.zoneFacilityCounts) {
+          setTimeout(() => {
+            Object.entries(data.zoneFacilityCounts!).forEach(([zoneName, count]) => {
+              if (activeFacilities.includes(zoneName)) {
+                setFacilitiesForZone(editingProcessData.index, zoneName, count);
+              }
+            });
+          }, 100);
+        }
       }
     }
+
+    handleCloseModal();
   };
 
   const removeProcedure = (index: number) => {
@@ -187,79 +215,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setProcessFlow(reorderedProcessFlow);
   };
 
-  // 간단하고 안정적인 드래그앤드롭 함수들
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-
-    if (draggedIndex === null || draggedIndex === index) {
-      return;
-    }
-
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    // 컨테이너를 완전히 벗어날 때만 dragOverIndex 초기화
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDragOverIndex(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    // 배열 재배열 - 간단한 로직
-    const newProcessFlow = [...processFlow];
-    const [draggedItem] = newProcessFlow.splice(draggedIndex, 1);
-
-    // 드래그된 아이템을 새 위치에 삽입
-    newProcessFlow.splice(dropIndex, 0, draggedItem);
-
-    // step 재정렬 (0부터 시작)
-    const reorderedProcessFlow = newProcessFlow.map((step, i) => ({
-      ...step,
-      step: i,
-    }));
-
-    setProcessFlow(reorderedProcessFlow);
-
-    // 선택된 인덱스 업데이트
-    if (selectedProcessIndex === draggedIndex) {
-      setSelectedProcessIndex(dropIndex);
-    } else if (selectedProcessIndex !== null) {
-      // 선택된 아이템의 새로운 인덱스 계산
-      if (selectedProcessIndex > draggedIndex && selectedProcessIndex <= dropIndex) {
-        setSelectedProcessIndex(selectedProcessIndex - 1);
-      } else if (selectedProcessIndex < draggedIndex && selectedProcessIndex >= dropIndex) {
-        setSelectedProcessIndex(selectedProcessIndex + 1);
-      }
-    }
-
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
 
   // 시뮬레이션 실행 함수
   const handleRunSimulation = async () => {
@@ -335,21 +290,14 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   return (
     <div className="space-y-6 pt-8">
       {/* Process Flow Chart */}
-      <ProcessFlowChart
-        processFlow={processFlow as any}
-        selectedProcessIndex={selectedProcessIndex}
-        draggedIndex={draggedIndex}
-        dragOverIndex={dragOverIndex}
-        onProcessSelect={handleProcessSelect}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onDragEnd={handleDragEnd}
-        onOpenCreateModal={handleOpenCreateModal}
-        onOpenEditModal={handleOpenEditModal}
-        onRemoveProcess={removeProcedure}
-      />
+        <ProcessFlowChart
+          processFlow={processFlow as any}
+          selectedProcessIndex={selectedProcessIndex}
+          onProcessSelect={handleProcessSelect}
+          onOpenCreateModal={handleOpenCreateModal}
+          onOpenEditModal={handleOpenEditModal}
+          onRemoveProcess={removeProcedure}
+        />
 
       {/* Process Configuration Modal */}
       <ProcessConfigurationModal

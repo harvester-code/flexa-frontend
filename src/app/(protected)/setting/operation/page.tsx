@@ -37,7 +37,7 @@ function SettingOperationPage() {
           onChange={(e) => setAirportName(e.target.value)}
           className="h-[40px] w-[150px] bg-transparent text-lg font-semibold text-default-900 !outline-none"
         />
-        <Button variant="btn-link">
+        <Button variant="link">
           <PencilLineIcon />
         </Button>
       </div>
@@ -45,7 +45,7 @@ function SettingOperationPage() {
         <div className="tab-setting">
           {terminals.map((terminal, index) => (
             <div key={`tab${index}`} className={`tab ${terminalIndex === index ? 'active' : ''}`}>
-              <Button variant="btn-link" onClick={() => setTerminalIndex(index)}>
+              <Button variant="link" onClick={() => setTerminalIndex(index)}>
                 {terminal}
               </Button>
               <DropdownMenu>
@@ -68,7 +68,7 @@ function SettingOperationPage() {
             </div>
           ))}
         </div>
-        <Button variant="btn-default" size="btn-md" onClick={() => {}}>
+        <Button variant="secondary" size="default" onClick={() => {}}>
           <Plus className="size-4" />
           Terminal
         </Button>
@@ -104,7 +104,7 @@ function SettingOperationPage() {
               <div className="tab-setting tab-black">
                 {processes?.[terminalIndex]?.map((process, index) => (
                   <div key={`tab${index}`} className={`tab ${processIndex === index ? 'active' : ''}`}>
-                    <Button variant="btn-link" onClick={() => setProcessIndex(index)}>
+                    <Button variant="link" onClick={() => setProcessIndex(index)}>
                       {process}
                     </Button>
                     <DropdownMenu>
@@ -127,7 +127,7 @@ function SettingOperationPage() {
                   </div>
                 ))}
               </div>
-              <Button variant="btn-default" size="btn-md" onClick={() => {}}>
+              <Button variant="secondary" size="default" onClick={() => {}}>
                 <Plus className="size-4" />
                 Process
               </Button>
@@ -182,11 +182,11 @@ function SettingOperationPage() {
                 <div className="process-item-title">
                   <div className="flex items-center gap-[10px]">
                     Zone H
-                    <Button variant="btn-link">
+                    <Button variant="link">
                       <PencilLineIcon />
                     </Button>
                   </div>
-                  <Button variant="btn-link">
+                  <Button variant="link">
                     <ChevronDown />
                   </Button>
                 </div>
@@ -197,7 +197,7 @@ function SettingOperationPage() {
       </div>
       <Canvas />;
       <div className="mt-[50px] flex justify-end">
-        <Button variant="btn-primary" size="btn-md" onClick={() => {}}>
+        <Button variant="primary" size="default" onClick={() => {}}>
           <RefreshCw className="mr-2 h-5 w-5" />
           Update
         </Button>

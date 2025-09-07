@@ -48,21 +48,16 @@ function HomePage() {
 
   // 처음 랜더링될 때 시나리오 중 가장 최근 실행된 시나리오를 선택
   useEffect(() => {
-    if (scenarios?.scenarios?.[0]) {
-      setScenario(scenarios.scenarios[0]);
+    if ((scenarios as any)?.scenarios?.[0]) {
+      setScenario((scenarios as any).scenarios[0]);
     }
   }, [scenarios]);
 
   return (
-    <div className="max-w-page px-page-x pb-page-b mx-auto">
+    <div className="mx-auto max-w-page px-page-x pb-page-b">
       <TheContentHeader text="Home" />
 
-      <HomeScenario
-        className="mt-8"
-        data={scenarios || []}
-        scenario={scenario}
-        onSelectScenario={setScenario}
-      />
+      <HomeScenario className="mt-8" data={scenarios || []} scenario={scenario} onSelectScenario={setScenario} />
 
       <div className="mt-4 flex items-center justify-start gap-2">
         <HomeKpiSelector value={kpi} onChange={setKpi} />

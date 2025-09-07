@@ -3,6 +3,7 @@
 import { utils, writeFile } from 'xlsx';
 import { ScenarioData } from '@/types/homeTypes';
 import { useAemosTemplate } from '@/queries/homeQueries';
+import { Button } from '@/components/ui/Button';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
 
@@ -167,7 +168,7 @@ const SectionWithDownload = ({ title, data, filename }: { title: string; data: a
       </h2>
 
       <Button
-        variant="btn-gradient"
+        variant="brand"
         style={buttonStyle}
         onClick={() => downloadExcel(data, filename)}
         onMouseOver={(e) => (e.currentTarget.style.background = '#6D28D9')}

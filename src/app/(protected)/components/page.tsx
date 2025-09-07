@@ -261,7 +261,7 @@ export default function ComponentsPage() {
 
   return (
     <div>
-      <TheContentHeader breadcrumb={breadcrumb} />
+      <TheContentHeader text={breadcrumb[0]?.text || 'Components'} />
 
       <div className="container mx-auto max-w-page px-page-x pb-page-b pt-12">
         <div className="mb-8 text-center">
@@ -390,18 +390,18 @@ export default function ComponentsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <span className="w-16 text-xs font-normal text-default-500">sm:</span>
-                    <Input size="sm" placeholder="Small" className="max-w-xs" />
-                    <Input size="sm" placeholder="Disabled" disabled className="max-w-xs" />
+                    <Input placeholder="Small" className="h-8 max-w-xs px-2 text-xs" />
+                    <Input placeholder="Disabled" disabled className="h-8 max-w-xs px-2 text-xs" />
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="w-16 text-xs font-normal text-default-500">default:</span>
-                    <Input size="default" placeholder="Default" className="max-w-xs" />
-                    <Input size="default" placeholder="Disabled" disabled className="max-w-xs" />
+                    <Input placeholder="Default" className="h-9 max-w-xs px-3 text-sm" />
+                    <Input placeholder="Disabled" disabled className="h-9 max-w-xs px-3 text-sm" />
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="w-16 text-xs font-normal text-default-500">lg:</span>
-                    <Input size="lg" placeholder="Large" className="max-w-xs" />
-                    <Input size="lg" placeholder="Disabled" disabled className="max-w-xs" />
+                    <Input placeholder="Large" className="h-10 max-w-xs px-4 text-lg" />
+                    <Input placeholder="Disabled" disabled className="h-10 max-w-xs px-4 text-lg" />
                   </div>
                 </div>
               </div>
@@ -452,7 +452,11 @@ export default function ComponentsPage() {
                     <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="checkbox1" checked={isChecked} onCheckedChange={setIsChecked} />
+                        <Checkbox
+                          id="checkbox1"
+                          checked={isChecked}
+                          onCheckedChange={(checked) => setIsChecked(checked === true)}
+                        />
                         <Label htmlFor="checkbox1">Accept terms and conditions</Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -479,7 +483,7 @@ export default function ComponentsPage() {
                         <Checkbox
                           id="checkbox5"
                           checked={isCheckedDisabled}
-                          onCheckedChange={setIsCheckedDisabled}
+                          onCheckedChange={(checked) => setIsCheckedDisabled(checked === true)}
                           disabled
                         />
                         <Label htmlFor="checkbox5" className="text-muted-foreground">

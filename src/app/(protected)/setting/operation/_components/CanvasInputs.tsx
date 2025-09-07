@@ -11,7 +11,6 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           <div className="flex flex-col">
             <label htmlFor="lineCount">Circle Size:</label>
             <Input
-              variant="custom"
               id="circleSize"
               className="border border-green-600"
               type="number"
@@ -29,7 +28,6 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           <div className="flex flex-col">
             <label htmlFor="passengerCount">Passenger Count:</label>
             <Input
-              variant="custom"
               id="passengerCount"
               className="border border-blue-600"
               type="number"
@@ -47,7 +45,6 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           <div className="flex flex-col">
             <label htmlFor="lineCount">Line Count:</label>
             <Input
-              variant="custom"
               id="lineCount"
               className="border border-green-600"
               type="number"
@@ -63,7 +60,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           </div>
 
           <Button
-            variant="btn-secondary"
+            variant="secondary"
             disabled={rectangles.length < idx + 1}
             className="bg-slate-300 px-4 py-2"
             onClick={() => drawLines(idx)}
@@ -72,7 +69,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           </Button>
 
           <Button
-            variant="btn-delete"
+            variant="destructive"
             disabled={rectangles.length !== idx + 1}
             className="bg-rose-300 px-4 py-2"
             onClick={() => {

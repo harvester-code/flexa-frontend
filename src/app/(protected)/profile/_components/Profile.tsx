@@ -71,10 +71,10 @@ export default function Profile() {
           <dd className="text-sm">Update your detailed personal information.</dd>
         </dl>
         <div className="flex items-center gap-10">
-          <Button variant="btn-default" size="btn-md" onClick={handleCancel}>
+          <Button variant="secondary" size="default" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button variant="btn-primary" size="btn-md" onClick={(e) => handleSubmit(e)}>
+          <Button variant="primary" size="default" onClick={(e) => handleSubmit(e)}>
             Save
           </Button>
         </div>
@@ -93,7 +93,6 @@ export default function Profile() {
               <div className="flex flex-col gap-1">
                 <p>First Name</p>
                 <Input
-                  variant="custom"
                   type="text"
                   placeholder="First Name"
                   value={firstName}
@@ -104,7 +103,6 @@ export default function Profile() {
               <div className="flex flex-col gap-1">
                 <p>Last Name</p>
                 <Input
-                  variant="custom"
                   type="text"
                   placeholder="Last Name"
                   value={lastName}
@@ -126,7 +124,6 @@ export default function Profile() {
           </div>
           <div className="form-item-content">
             <Input
-              variant="custom"
               type="email"
               placeholder="Email Address"
               value={email}
@@ -145,7 +142,6 @@ export default function Profile() {
           </div>
           <div className="form-item-content">
             <Input
-              variant="custom"
               type="text"
               placeholder="Position"
               value={position}

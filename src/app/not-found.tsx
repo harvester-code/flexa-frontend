@@ -23,11 +23,11 @@ const ErrorPage: React.FC = () => {
         </p>
 
         <div className="mx-auto mt-5 flex w-80 gap-2.5">
-          <Button variant="btn-default" size="btn-lg" onClick={() => router.back()}>
+          <Button variant="secondary" size="btn-lg" onClick={() => router.back()}>
             <ChevronLeft className="size-4" />
             Go back
           </Button>
-          <Button variant="btn-primary" size="btn-lg" onClick={() => router.push('/home')}>
+          <Button variant="primary" size="btn-lg" onClick={() => router.push('/home')}>
             Take me home
           </Button>
         </div>
