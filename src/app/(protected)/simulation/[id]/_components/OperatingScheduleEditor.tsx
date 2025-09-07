@@ -48,9 +48,11 @@ function FacilityCountEditor({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // 숫자만 허용
-    const numericValue = value.replace(/[^0-9]/g, '');
-    setInputValue(numericValue);
+    // type="number"이므로 브라우저가 기본 검증을 수행하지만,
+    // 빈 문자열이나 유효하지 않은 값들을 처리
+    if (value === '' || (!isNaN(Number(value)) && Number(value) >= 0)) {
+      setInputValue(value);
+    }
   };
 
   const handleApply = () => {
@@ -86,13 +88,16 @@ function FacilityCountEditor({
 
         <div className="flex items-center gap-2">
           <Input
-            type="text"
+            type="number"
             value={inputValue}
             onChange={handleInputChange}
             onClick={(e) => e.currentTarget.select()}
             onKeyDown={handleKeyDown}
             className="w-20 text-center"
             placeholder="0"
+            min="0"
+            max="50"
+            step="1"
           />
           <Button size="sm" onClick={handleApply} disabled={!isChanged} className="px-3">
             Apply

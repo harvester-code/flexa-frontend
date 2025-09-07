@@ -25,6 +25,14 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>,
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, size, readOnly, disabled, onChange, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // readOnly나 disabled일 때만 onChange 무시
+      if (readOnly || disabled) {
+        return;
+      }
+      onChange?.(e);
+    };
+
     return (
       <input
         type={type}
@@ -32,8 +40,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         readOnly={readOnly}
         disabled={disabled}
-        // TheInput 로직: readOnly나 disabled일 때 onChange 무시
-        onChange={readOnly || disabled ? undefined : onChange}
+        onChange={handleChange}
         {...props}
       />
     );
