@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, MapPin, Plane, Settings, Star, Trash2, Users } from 'lucide-react';
+import { MapPin, Plane, Settings, Star, Trash2, Users } from 'lucide-react';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1061,356 +1060,343 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   }
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-            <Clock className="h-6 w-6 text-primary" />
+    <div>
+      {/* 🎯 키보드 이벤트 스코프 제한을 위한 컨테이너 */}
+      <div ref={containerRef} tabIndex={-1} onKeyDown={handleKeyDown} className="outline-none">
+        {/* 2중 탭 */}
+        <div className="mb-2 space-y-0">
+          <div className="flex items-center gap-4">
+            <div className="w-16 text-sm font-medium text-default-900">Process</div>
+            <Tabs
+              value={selectedProcessIndex.toString()}
+              onValueChange={(value) => setSelectedProcessIndex(parseInt(value))}
+              className="flex-1"
+            >
+              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${processFlow.length}, 1fr)` }}>
+                {processFlow.map((step, index) => (
+                  <TabsTrigger key={index} value={index.toString()} className="text-sm font-medium text-default-900">
+                    {formatProcessName(step.name)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
-          <div>
-            <div className="text-lg font-semibold text-default-900">Operating Schedule Editor</div>
-            <div className="text-sm font-normal text-default-500">Configure time-based facility operations</div>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* 🎯 키보드 이벤트 스코프 제한을 위한 컨테이너 */}
-        <div ref={containerRef} tabIndex={-1} onKeyDown={handleKeyDown} className="outline-none">
-          {/* 2중 탭 */}
-          <div className="mb-2 space-y-0">
+
+          {/* 🛡️ 안전한 존 탭 렌더링 */}
+          {processFlow && processFlow[selectedProcessIndex] && processFlow[selectedProcessIndex].zones && (
             <div className="flex items-center gap-4">
-              <div className="w-16 text-sm font-medium text-default-900">Process</div>
-              <Tabs
-                value={selectedProcessIndex.toString()}
-                onValueChange={(value) => setSelectedProcessIndex(parseInt(value))}
-                className="flex-1"
-              >
-                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${processFlow.length}, 1fr)` }}>
-                  {processFlow.map((step, index) => (
-                    <TabsTrigger key={index} value={index.toString()} className="text-sm font-medium text-default-900">
-                      {formatProcessName(step.name)}
+              <div className="w-16 text-sm font-medium text-default-900">Zone</div>
+              <Tabs value={selectedZone} onValueChange={setSelectedZone} className="flex-1">
+                <TabsList
+                  className="grid w-full"
+                  style={{
+                    gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones || {}).length}, 1fr)`,
+                  }}
+                >
+                  {Object.keys(processFlow[selectedProcessIndex].zones || {}).map((zoneName) => (
+                    <TabsTrigger key={zoneName} value={zoneName} className="text-sm font-medium text-default-900">
+                      {zoneName}
                     </TabsTrigger>
                   ))}
                 </TabsList>
               </Tabs>
             </div>
-
-            {/* 🛡️ 안전한 존 탭 렌더링 */}
-            {processFlow && processFlow[selectedProcessIndex] && processFlow[selectedProcessIndex].zones && (
-              <div className="flex items-center gap-4">
-                <div className="w-16 text-sm font-medium text-default-900">Zone</div>
-                <Tabs value={selectedZone} onValueChange={setSelectedZone} className="flex-1">
-                  <TabsList
-                    className="grid w-full"
-                    style={{
-                      gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones || {}).length}, 1fr)`,
-                    }}
-                  >
-                    {Object.keys(processFlow[selectedProcessIndex].zones || {}).map((zoneName) => (
-                      <TabsTrigger key={zoneName} value={zoneName} className="text-sm font-medium text-default-900">
-                        {zoneName}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </div>
-            )}
-          </div>
-
-          {/* 🔢 Zone Counter - 시설 개수 설정 */}
-          {selectedZone && (
-            <FacilityCountEditor
-              selectedZone={selectedZone}
-              selectedProcessIndex={selectedProcessIndex}
-              currentFacilityCount={currentFacilityCount}
-              onUpdateCount={setFacilitiesForZone}
-            />
           )}
+        </div>
 
-          {/* 우클릭 컨텍스트 메뉴 */}
-          <DropdownMenu
-            open={contextMenu.show}
-            onOpenChange={(open) =>
-              setContextMenu((prev) => ({ ...prev, show: open, targetCells: open ? prev.targetCells || [] : [] }))
-            }
-            modal={false}
+        {/* 🔢 Zone Counter - 시설 개수 설정 */}
+        {selectedZone && (
+          <FacilityCountEditor
+            selectedZone={selectedZone}
+            selectedProcessIndex={selectedProcessIndex}
+            currentFacilityCount={currentFacilityCount}
+            onUpdateCount={setFacilitiesForZone}
+          />
+        )}
+
+        {/* 우클릭 컨텍스트 메뉴 */}
+        <DropdownMenu
+          open={contextMenu.show}
+          onOpenChange={(open) =>
+            setContextMenu((prev) => ({ ...prev, show: open, targetCells: open ? prev.targetCells || [] : [] }))
+          }
+          modal={false}
+        >
+          {/* Invisible trigger positioned at mouse coordinates */}
+          <DropdownMenuTrigger
+            style={{
+              position: 'fixed',
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: 'none',
+              zIndex: -1,
+            }}
+          />
+          <DropdownMenuContent
+            side="right"
+            align="start"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            onEscapeKeyDown={(e) => {
+              setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
+            }}
+            onPointerDownOutside={(e) => {
+              setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
+            }}
           >
-            {/* Invisible trigger positioned at mouse coordinates */}
-            <DropdownMenuTrigger
-              style={{
-                position: 'fixed',
-                left: `${contextMenu.x}px`,
-                top: `${contextMenu.y}px`,
-                width: 1,
-                height: 1,
-                opacity: 0,
-                pointerEvents: 'none',
-                zIndex: -1,
+            {/* Selected cells count info */}
+            {(contextMenu.targetCells?.length || 0) > 1 && (
+              <>
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Apply to {contextMenu.targetCells?.length || 0} selected cells
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            {/* Select All option */}
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleSelectAllCategories();
               }}
-            />
-            <DropdownMenuContent
-              side="right"
-              align="start"
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              onEscapeKeyDown={(e) => {
-                setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
-              }}
-              onPointerDownOutside={(e) => {
-                setContextMenu({ show: false, cellId: '', targetCells: [], x: 0, y: 0 });
-              }}
+              className="cursor-pointer"
             >
-              {/* Selected cells count info */}
-              {(contextMenu.targetCells?.length || 0) > 1 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                    Apply to {contextMenu.targetCells?.length || 0} selected cells
-                  </div>
-                  <DropdownMenuSeparator />
-                </>
-              )}
+              <div className="flex w-full items-center gap-2">
+                <Star size={16} className="text-primary" />
+                <span className="font-medium">Select All</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
 
-              {/* Select All option */}
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  handleSelectAllCategories();
-                }}
-                className="cursor-pointer"
-              >
-                <div className="flex w-full items-center gap-2">
-                  <Star size={16} className="text-primary" />
-                  <span className="font-medium">Select All</span>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-
-              {Object.entries(CONDITION_CATEGORIES).map(([category, config]) => (
-                <DropdownMenuSub key={category}>
-                  <DropdownMenuSubTrigger>
-                    <span className="flex items-center gap-2">
-                      <config.icon size={16} className={config.textColor} />
-                      <span>{category}</span>
-                    </span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    {config.options.map((option) => {
-                      const checkState = getOptionCheckState(option);
-                      return (
-                        <DropdownMenuItem
-                          key={option}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            handleToggleBadgeOption(category, option);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <div className="flex w-full items-center gap-2">
-                            <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-border">
-                              {checkState === true && (
-                                <svg className="h-3 w-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              )}
-                              {checkState === 'indeterminate' && <div className="h-2 w-2 rounded-sm bg-primary"></div>}
-                            </div>
-                            <span>{option}</span>
-                          </div>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        config.options.forEach((option) => {
+            {Object.entries(CONDITION_CATEGORIES).map(([category, config]) => (
+              <DropdownMenuSub key={category}>
+                <DropdownMenuSubTrigger>
+                  <span className="flex items-center gap-2">
+                    <config.icon size={16} className={config.textColor} />
+                    <span>{category}</span>
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {config.options.map((option) => {
+                    const checkState = getOptionCheckState(option);
+                    return (
+                      <DropdownMenuItem
+                        key={option}
+                        onSelect={(e) => {
+                          e.preventDefault();
                           handleToggleBadgeOption(category, option);
-                        });
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex w-full items-center gap-2">
-                        <span>Toggle All</span>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  handleClearAllBadges();
-                }}
-                className="cursor-pointer"
-              >
-                <div className="flex w-full items-center gap-2 text-red-600">
-                  <Trash2 size={16} />
-                  <span>Clear All Badges</span>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex w-full items-center gap-2">
+                          <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-border">
+                            {checkState === true && (
+                              <svg className="h-3 w-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
+                            {checkState === 'indeterminate' && <div className="h-2 w-2 rounded-sm bg-primary"></div>}
+                          </div>
+                          <span>{option}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      config.options.forEach((option) => {
+                        handleToggleBadgeOption(category, option);
+                      });
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex w-full items-center gap-2">
+                      <span>Toggle All</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleClearAllBadges();
+              }}
+              className="cursor-pointer"
+            >
+              <div className="flex w-full items-center gap-2 text-red-600">
+                <Trash2 size={16} />
+                <span>Clear All Badges</span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-          {/* 엑셀 그리드 테이블 */}
-          {selectedZone && currentFacilities.length > 0 ? (
-            <div className="max-h-96 overflow-auto rounded-lg border">
-              <table className="w-full table-fixed text-xs">
-                <thead className="sticky top-0 bg-muted">
-                  <tr>
+        {/* 엑셀 그리드 테이블 */}
+        {selectedZone && currentFacilities.length > 0 ? (
+          <div className="max-h-96 overflow-auto rounded-lg border">
+            <table className="w-full table-fixed text-xs">
+              <thead className="sticky top-0 bg-muted">
+                <tr>
+                  <th
+                    className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
+                    onClick={handleTimeHeaderClick}
+                    onContextMenu={(e) => {
+                      // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                      } else {
+                        handleTimeHeaderRightClick(e);
+                      }
+                    }}
+                    title="Click to select all cells. Right-click to apply badges to all cells."
+                  >
+                    Time
+                  </th>
+                  {currentFacilities.map((facility, colIndex) => (
                     <th
-                      className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
-                      onClick={handleTimeHeaderClick}
+                      key={facility.id}
+                      className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
+                      onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
+                      onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
+                      onMouseUp={handleColumnMouseUp}
                       onContextMenu={(e) => {
                         // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                         if (e.ctrlKey || e.metaKey) {
                           e.preventDefault();
                         } else {
-                          handleTimeHeaderRightClick(e);
+                          handleColumnRightClick(e, colIndex);
                         }
                       }}
-                      title="Click to select all cells. Right-click to apply badges to all cells."
+                      title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
                     >
-                      Time
+                      {facility.id}
                     </th>
-                    {currentFacilities.map((facility, colIndex) => (
-                      <th
-                        key={facility.id}
-                        className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
-                        onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
-                        onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
-                        onMouseUp={handleColumnMouseUp}
-                        onContextMenu={(e) => {
-                          // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                          if (e.ctrlKey || e.metaKey) {
-                            e.preventDefault();
-                          } else {
-                            handleColumnRightClick(e, colIndex);
-                          }
-                        }}
-                        title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
-                      >
-                        {facility.id}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {timeSlots.map((timeSlot, rowIndex) => (
-                    <tr key={rowIndex} className="border-t">
-                      <td
-                        className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
-                        onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
-                        onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
-                        onMouseUp={handleRowMouseUp}
-                        onContextMenu={(e) => {
-                          // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                          if (e.ctrlKey || e.metaKey) {
-                            e.preventDefault();
-                          } else {
-                            handleRowRightClick(e, rowIndex);
-                          }
-                        }}
-                        title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
-                      >
-                        {timeSlot}
-                      </td>
-                      {currentFacilities.map((facility, colIndex) => {
-                        const cellId = `${rowIndex}-${colIndex}`;
-                        const isChecked = checkedCells.has(cellId);
-                        const isSelected = selectedCells.has(cellId);
-                        const badges = cellBadges[cellId] || [];
-
-                        return (
-                          <td
-                            key={`${rowIndex}-${colIndex}`}
-                            className={cn('cursor-pointer select-none border-r p-1', isSelected && 'bg-primary/20')}
-                            onMouseDown={(e) => {
-                              // 우클릭이 아닐 때만 드래그 처리
-                              if (e.button !== 2) {
-                                handleCellMouseDown(cellId, rowIndex, colIndex, e);
-                              }
-                            }}
-                            onMouseEnter={(e) => handleCellMouseEnter(cellId, rowIndex, colIndex, e)}
-                            onMouseUp={handleCellMouseUp}
-                            onContextMenu={(e) => {
-                              // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                              if (e.ctrlKey || e.metaKey) {
-                                e.preventDefault();
-                              } else {
-                                handleCellRightClick(e, cellId);
-                              }
-                            }}
-                          >
-                            <div className="flex min-h-[24px] flex-col gap-1">
-                              {/* 체크박스 행 */}
-                              <div className="flex items-center justify-center">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // 드래그 이벤트와 충돌 방지
-                                    handleCheckboxToggle(rowIndex, colIndex);
-                                  }}
-                                  className={cn(
-                                    'flex h-4 w-4 cursor-pointer items-center justify-center rounded border-2 transition-all duration-200',
-                                    isChecked
-                                      ? 'border-primary bg-primary hover:bg-primary/90'
-                                      : 'border-gray-300 bg-white hover:border-gray-400'
-                                  )}
-                                >
-                                  {isChecked && (
-                                    <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
-
-                              {/* Badge row - Category integrated display */}
-                              {badges.length > 0 && (
-                                <div className="flex flex-wrap justify-center gap-0.5">
-                                  {badges.map((categoryBadge) => (
-                                    <span
-                                      key={`${cellId}-${categoryBadge.category}`}
-                                      className={`inline-flex h-4 cursor-pointer items-center rounded-sm border px-1 py-0 text-[9px] font-medium transition-opacity hover:opacity-70 ${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveCategoryBadge(cellId, categoryBadge.category);
-                                      }}
-                                      title={`${categoryBadge.category}: ${categoryBadge.options.join('|')} (Click to remove entire category)`}
-                                    >
-                                      {categoryBadge.options.join('|')}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          ) : selectedZone ? (
-            <div className="rounded-lg border p-8 text-center text-muted-foreground">
-              No facilities configured for this zone
-            </div>
-          ) : (
-            <div className="rounded-lg border p-8 text-center text-muted-foreground">
-              Select a process and zone to configure operating schedule
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                </tr>
+              </thead>
+              <tbody>
+                {timeSlots.map((timeSlot, rowIndex) => (
+                  <tr key={rowIndex} className="border-t">
+                    <td
+                      className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
+                      onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
+                      onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
+                      onMouseUp={handleRowMouseUp}
+                      onContextMenu={(e) => {
+                        // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                        if (e.ctrlKey || e.metaKey) {
+                          e.preventDefault();
+                        } else {
+                          handleRowRightClick(e, rowIndex);
+                        }
+                      }}
+                      title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
+                    >
+                      {timeSlot}
+                    </td>
+                    {currentFacilities.map((facility, colIndex) => {
+                      const cellId = `${rowIndex}-${colIndex}`;
+                      const isChecked = checkedCells.has(cellId);
+                      const isSelected = selectedCells.has(cellId);
+                      const badges = cellBadges[cellId] || [];
+
+                      return (
+                        <td
+                          key={`${rowIndex}-${colIndex}`}
+                          className={cn('cursor-pointer select-none border-r p-1', isSelected && 'bg-primary/20')}
+                          onMouseDown={(e) => {
+                            // 우클릭이 아닐 때만 드래그 처리
+                            if (e.button !== 2) {
+                              handleCellMouseDown(cellId, rowIndex, colIndex, e);
+                            }
+                          }}
+                          onMouseEnter={(e) => handleCellMouseEnter(cellId, rowIndex, colIndex, e)}
+                          onMouseUp={handleCellMouseUp}
+                          onContextMenu={(e) => {
+                            // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                            if (e.ctrlKey || e.metaKey) {
+                              e.preventDefault();
+                            } else {
+                              handleCellRightClick(e, cellId);
+                            }
+                          }}
+                        >
+                          <div className="flex min-h-[24px] flex-col gap-1">
+                            {/* 체크박스 행 */}
+                            <div className="flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // 드래그 이벤트와 충돌 방지
+                                  handleCheckboxToggle(rowIndex, colIndex);
+                                }}
+                                className={cn(
+                                  'flex h-4 w-4 cursor-pointer items-center justify-center rounded border-2 transition-all duration-200',
+                                  isChecked
+                                    ? 'border-primary bg-primary hover:bg-primary/90'
+                                    : 'border-gray-300 bg-white hover:border-gray-400'
+                                )}
+                              >
+                                {isChecked && (
+                                  <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Badge row - Category integrated display */}
+                            {badges.length > 0 && (
+                              <div className="flex flex-wrap justify-center gap-0.5">
+                                {badges.map((categoryBadge) => (
+                                  <span
+                                    key={`${cellId}-${categoryBadge.category}`}
+                                    className={`inline-flex h-4 cursor-pointer items-center rounded-sm border px-1 py-0 text-[9px] font-medium transition-opacity hover:opacity-70 ${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveCategoryBadge(cellId, categoryBadge.category);
+                                    }}
+                                    title={`${categoryBadge.category}: ${categoryBadge.options.join('|')} (Click to remove entire category)`}
+                                  >
+                                    {categoryBadge.options.join('|')}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : selectedZone ? (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            No facilities configured for this zone
+          </div>
+        ) : (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            Select a process and zone to configure operating schedule
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

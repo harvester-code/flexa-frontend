@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Save, X } from 'lucide-react';
+import { ChevronRight, Plane, Plus, Save, Users, X } from 'lucide-react';
+import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { formatProcessName } from '@/lib/utils';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -23,6 +25,7 @@ interface ProcessConfigurationModalProps {
   } | null;
   onSave: (data: { name: string; facilities: FacilityItem[]; travelTime: number }) => void;
   mode: 'create' | 'edit';
+  processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
 }
 
 export default function ProcessConfigurationModal({
@@ -31,6 +34,7 @@ export default function ProcessConfigurationModal({
   processData,
   onSave,
   mode,
+  processFlow = [], // 🆕 현재 프로세스 플로우
 }: ProcessConfigurationModalProps) {
   const [processName, setProcessName] = useState('');
   const [facilitiesInput, setFacilitiesInput] = useState('');
@@ -156,6 +160,48 @@ export default function ProcessConfigurationModal({
             {mode === 'create' ? 'Create New Process' : 'Edit Process'}
           </DialogTitle>
         </DialogHeader>
+
+        {/* 🆕 Current Process Flow Display */}
+        {processFlow.length > 0 && (
+          <div className="rounded-lg border bg-gray-50 p-4">
+            <div className="mb-3 text-sm font-medium text-gray-700">Current Process Flow:</div>
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {/* Entry */}
+              <div className="flex flex-shrink-0 items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-2 py-1">
+                <Users className="h-3 w-3 text-primary" />
+                <span className="text-xs font-medium text-gray-800">Entry</span>
+              </div>
+
+              {/* Process Cards */}
+              {processFlow.map((step, index) => (
+                <React.Fragment key={`${step.name}-${step.step}`}>
+                  {/* Travel Time + Arrow */}
+                  <div className="flex flex-shrink-0 items-center gap-1">
+                    {step.travel_time_minutes != null && step.travel_time_minutes > 0 && (
+                      <span className="text-xs text-primary">{step.travel_time_minutes}min</span>
+                    )}
+                    <ChevronRight className="h-3 w-3 text-primary" />
+                  </div>
+
+                  {/* Process Card */}
+                  <div className="flex flex-shrink-0 items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
+                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+                    <span className="text-xs font-medium text-gray-800">{formatProcessName(step.name)}</span>
+                  </div>
+                </React.Fragment>
+              ))}
+
+              {/* Arrow to Gate */}
+              <ChevronRight className="h-3 w-3 flex-shrink-0 text-primary" />
+
+              {/* Gate */}
+              <div className="flex flex-shrink-0 items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-2 py-1">
+                <Plane className="h-3 w-3 text-primary" />
+                <span className="text-xs font-medium text-gray-800">Gate</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Process Name */}

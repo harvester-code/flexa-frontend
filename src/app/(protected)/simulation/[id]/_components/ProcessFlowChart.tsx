@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeftRight, ChevronRight, Plane, Plus, Settings2, Trash2, Users } from 'lucide-react';
+import { ArrowLeftRight, ChevronRight, Plane, Play, Plus, Settings2, Trash2, Users } from 'lucide-react';
 import { Route } from 'lucide-react';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatProcessName } from '@/lib/utils';
+import { useSimulationStore } from '../_stores';
+import OperatingScheduleEditor from './OperatingScheduleEditor';
 
 interface ProcessFlowChartProps {
   // Data
@@ -44,24 +46,62 @@ export default function ProcessFlowChart({
   onOpenEditModal,
   onRemoveProcess,
 }: ProcessFlowChartProps) {
+  // 🆕 step3Completed 상태 가져오기
+  const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
+
+  // 🆕 Run simulation 핸들러 (일단 빈 함수)
+  const handleRunSimulation = () => {
+    console.log('Run simulation clicked');
+    // TODO: 시뮬레이션 실행 로직 추가 예정
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <Card className="border-gray-200">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Route className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Route className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold">Process Flow</CardTitle>
+                <p className="text-sm text-default-500">
+                  Configure passenger flow simulation path through airport facilities
+                </p>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg font-semibold">Process Flow</CardTitle>
-              <p className="text-sm text-default-500">
-                Configure passenger flow simulation path through airport facilities
-              </p>
-            </div>
+            {/* 🆕 Run Simulation Button */}
+            <Button
+              onClick={handleRunSimulation}
+              disabled={!step3Completed}
+              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90"
+            >
+              <Play size={16} />
+              Run Simulation
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Divider */}
+          <hr className="border-gray-200" />
+
+          {/* 🆕 Process Configuration Description */}
+          <div className="flex items-start justify-between border-l-4 border-primary pl-4">
+            <div>
+              <h3 className="text-lg font-semibold text-default-900">Process Configuration</h3>
+              <p className="text-sm text-default-500">Define the passenger flow sequence and facility requirements</p>
+            </div>
+            <Button
+              onClick={onOpenCreateModal}
+              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Add Process
+            </Button>
+          </div>
+
           {/* Horizontal Flow Container */}
           <div className="flex items-center gap-3 overflow-x-auto pb-4">
             {/* Entry (Fixed) */}
@@ -176,21 +216,25 @@ export default function ProcessFlowChart({
               );
             })}
 
-            {/* Arrow before Add Process Button */}
-            <ChevronRight className="h-5 w-5 flex-shrink-0 text-primary" />
+            {/* Process Placeholder - 프로세스가 없을 때만 표시 */}
+            {processFlow.length === 0 && (
+              <>
+                {/* Arrow before Placeholder */}
+                <ChevronRight className="h-5 w-5 flex-shrink-0 text-gray-300" />
 
-            {/* Add Process Button */}
-            <Button
-              variant="outline"
-              className="flex flex-shrink-0 items-center gap-1 border-2 border-dashed border-primary/30 px-3 py-2 text-sm text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
-              onClick={onOpenCreateModal}
-            >
-              <Plus className="h-3 w-3" />
-              Add Process
-            </Button>
+                {/* Process Placeholder - 곧 채워질 프로세스 */}
+                <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-400">
+                  <div className="h-3 w-3 rounded-full border border-dashed border-gray-300"></div>
+                  <span className="text-sm">Process will be added here</span>
+                </div>
 
-            {/* Add Process Button 뒤 화살표 */}
-            <ChevronRight className="h-5 w-5 flex-shrink-0 text-primary" />
+                {/* Placeholder 뒤 화살표 */}
+                <ChevronRight className="h-5 w-5 flex-shrink-0 text-gray-300" />
+              </>
+            )}
+
+            {/* 프로세스가 있을 때는 마지막 프로세스 뒤에만 화살표 */}
+            {processFlow.length > 0 && <ChevronRight className="h-5 w-5 flex-shrink-0 text-primary" />}
 
             {/* Gate (Fixed) */}
             <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 shadow-sm">
@@ -199,113 +243,16 @@ export default function ProcessFlowChart({
             </div>
           </div>
 
-          {/* Selected Process Details */}
-          {selectedProcessIndex !== null && processFlow[selectedProcessIndex] ? (
-            <div className="border-t border-gray-200 pt-6">
-              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    {formatProcessName(processFlow[selectedProcessIndex].name)} Details
-                  </h4>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onOpenEditModal(selectedProcessIndex)}
-                    className="text-primary hover:bg-primary/10"
-                  >
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Edit Process
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  {/* Basic Info */}
-                  <div className="space-y-3">
-                    <h5 className="text-sm font-semibold text-gray-900">Basic Information</h5>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Travel Time:</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          {processFlow[selectedProcessIndex].travel_time_minutes || 0} minutes
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Zones:</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          {Object.keys(processFlow[selectedProcessIndex].zones || {}).length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Zone Details */}
-                  {Object.keys(processFlow[selectedProcessIndex].zones || {}).length > 0 && (
-                    <div className="space-y-3">
-                      <h5 className="text-sm font-semibold text-gray-900">Zone Details</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.keys(processFlow[selectedProcessIndex].zones || {}).map((zoneName) => (
-                          <span
-                            key={zoneName}
-                            className="inline-flex items-center rounded-md bg-primary/20 px-3 py-1 text-sm font-medium text-primary"
-                          >
-                            {zoneName}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Configuration Status */}
-                  <div className="space-y-3">
-                    <h5 className="text-sm font-semibold text-gray-900">Configuration Status</h5>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`h-2 w-2 rounded-full ${
-                          Object.values(processFlow[selectedProcessIndex].zones || {}).every(
-                            (zone: any) => zone.facilities && zone.facilities.length > 0
-                          )
-                            ? 'bg-green-500'
-                            : 'bg-yellow-500'
-                        }`}
-                      />
-                      <span className="text-sm text-gray-700">
-                        {Object.values(processFlow[selectedProcessIndex].zones || {}).every(
-                          (zone: any) => zone.facilities && zone.facilities.length > 0
-                        )
-                          ? 'All facilities configured'
-                          : 'Requires facility setup in Operating Schedule'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          {/* 🆕 Operating Schedule Editor Section - 프로세스가 있을 때만 표시 */}
+          {processFlow.length > 0 && (
+            <div>
+              <div className="mb-6 border-l-4 border-primary pl-4">
+                <h3 className="text-lg font-semibold text-default-900">Operating Schedule Editor</h3>
+                <p className="text-sm text-default-500">Configure time-based facility operations</p>
               </div>
+
+              <OperatingScheduleEditor processFlow={processFlow} />
             </div>
-          ) : (
-            processFlow.length === 0 && (
-              <div className="border-t border-gray-200 pt-6">
-                <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-full bg-gray-100 p-3">
-                      <Plus className="h-6 w-6 text-gray-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900">No processes configured</h3>
-                      <p className="text-sm text-gray-500">
-                        Add your first process to start building the passenger flow
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={onOpenCreateModal}
-                      className="mt-2 text-primary hover:bg-primary/5"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Process
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )
           )}
         </CardContent>
       </Card>

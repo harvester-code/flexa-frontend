@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
-import OperatingScheduleEditor from './OperatingScheduleEditor';
 import ProcessConfigurationModal from './ProcessConfigurationModal';
 import ProcessFlowChart from './ProcessFlowChart';
 
@@ -359,10 +358,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         processData={editingProcessData}
         onSave={handleSaveProcess}
         mode={modalMode}
+        processFlow={processFlow} // 🆕 현재 프로세스 플로우 전달
       />
-
-      {/* Operating Schedule Editor - Zones가 설정되면 자동 표시 (zustand 기준) */}
-      {hasZonesConfigured && <OperatingScheduleEditor processFlow={processFlow} />}
 
       {/* Navigation */}
       <div className="mt-8">
@@ -402,63 +399,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           </Card>
         </div>
       )}
-
-      {/* Complete Setup Button - 가장 아래로 이동 */}
-      <div className="mt-6 space-y-3">
-        {/* 진행상황 표시 */}
-        <div className="rounded-lg border bg-muted/50 p-3">
-          <div className="mb-2 text-sm font-medium">Setup Progress</div>
-          <div className="space-y-2 text-xs">
-            <div
-              className={`flex items-center gap-2 ${processFlow.length > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
-              {processFlow.length > 0 ? (
-                <CheckSquare className="h-3 w-3" />
-              ) : (
-                <div className="h-3 w-3 rounded border" />
-              )}
-              Process Flow Configured ({processFlow.length} processes)
-            </div>
-            <div
-              className={`flex items-center gap-2 ${hasZonesConfigured ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
-              {hasZonesConfigured ? <CheckSquare className="h-3 w-3" /> : <div className="h-3 w-3 rounded border" />}
-              Zones Configured
-            </div>
-            <div
-              className={`flex items-center gap-2 ${
-                processFlow.every((p) => (p.travel_time_minutes ?? 0) >= 0) && processFlow.length > 0
-                  ? 'text-foreground'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {processFlow.every((p) => (p.travel_time_minutes ?? 0) >= 0) && processFlow.length > 0 ? (
-                <CheckSquare className="h-3 w-3" />
-              ) : (
-                <div className="h-3 w-3 rounded border" />
-              )}
-              Travel Times Set
-            </div>
-            <div className={`flex items-center gap-2 ${canComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {canComplete ? <CheckSquare className="h-3 w-3" /> : <div className="h-3 w-3 rounded border" />}
-              Operating Schedules Set
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={() => setIsCompleted(true)} disabled={!canComplete}>
-            {isCompleted ? (
-              <>
-                <CheckSquare className="mr-2 h-4 w-4" />
-                Completed
-              </>
-            ) : (
-              <>{canComplete ? 'Complete Setup' : 'Complete Operating Schedules to Continue'}</>
-            )}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
