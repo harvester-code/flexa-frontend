@@ -3,9 +3,12 @@
 import React from 'react';
 import {
   ArrowLeftRight,
+  Building2,
   ChevronDown,
   ChevronRight,
+  Clock,
   Edit2 as Edit,
+  MapPin,
   Plane,
   Play,
   Plus,
@@ -125,13 +128,13 @@ export default function ProcessFlowChart({
                     return (
                       <React.Fragment key={`${step.name}-${step.step}`}>
                         {/* Travel Time + Arrow */}
-                        <div className="relative flex flex-shrink-0 flex-col items-center">
+                        <div className="relative flex flex-shrink-0 justify-center">
                           {step.travel_time_minutes != null && step.travel_time_minutes > 0 && (
-                            <span className="mb-2 whitespace-nowrap rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
+                            <span className="absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
                               {step.travel_time_minutes}min
                             </span>
                           )}
-                          <ChevronDown className="h-5 w-5 text-primary" />
+                          <ChevronDown className="mt-2 h-5 w-5 flex-shrink-0 text-primary" />
                         </div>
 
                         {/* Process Card */}
@@ -273,35 +276,74 @@ export default function ProcessFlowChart({
                   </div>
 
                   {/* Process Info */}
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* Travel Time & Zones Cards */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Travel Time</label>
-                        <p className="text-sm text-gray-900">
-                          {processFlow[selectedProcessIndex].travel_time_minutes || 0} minutes
+                      {/* Travel Time Card */}
+                      <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10">
+                            <Clock className="h-3 w-3 text-blue-600" />
+                          </div>
+                          <label className="text-xs font-medium text-blue-800">Travel Time</label>
+                        </div>
+                        <p className="text-lg font-bold text-blue-900">
+                          {processFlow[selectedProcessIndex].travel_time_minutes || 0}
+                          <span className="ml-1 text-sm font-medium text-blue-600">minutes</span>
                         </p>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Zones</label>
-                        <p className="text-sm text-gray-900">
+
+                      {/* Zones Card */}
+                      <div className="rounded-lg border border-green-100 bg-green-50/50 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/10">
+                            <MapPin className="h-3 w-3 text-green-600" />
+                          </div>
+                          <label className="text-xs font-medium text-green-800">Zones</label>
+                        </div>
+                        <p className="text-lg font-bold text-green-900">
                           {Object.keys(processFlow[selectedProcessIndex].zones || {}).length}
+                          <span className="ml-1 text-sm font-medium text-green-600">zones</span>
                         </p>
                       </div>
                     </div>
 
-                    {/* Zone Details */}
+                    {/* Zone Configuration */}
                     {Object.keys(processFlow[selectedProcessIndex].zones || {}).length > 0 && (
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-gray-700">Zone Details</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {Object.keys(processFlow[selectedProcessIndex].zones || {}).map((zoneName) => (
-                            <div
-                              key={zoneName}
-                              className="flex items-center justify-center rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                            >
-                              {zoneName}
-                            </div>
-                          ))}
+                        <div className="mb-3 flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10">
+                            <Building2 className="h-3 w-3 text-purple-600" />
+                          </div>
+                          <label className="text-sm font-medium text-purple-800">Zone Configuration</label>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                          {Object.entries(processFlow[selectedProcessIndex].zones || {}).map(([zoneName, zoneData]) => {
+                            const facilityCount = zoneData.facilities?.length || 0;
+                            // Zone별 색상 배치 (A, B, C, D... 순서대로)
+                            const colors = [
+                              'from-blue-400 to-blue-500',
+                              'from-purple-400 to-purple-500',
+                              'from-green-400 to-green-500',
+                              'from-orange-400 to-orange-500',
+                              'from-pink-400 to-pink-500',
+                              'from-indigo-400 to-indigo-500',
+                            ];
+                            const colorIndex = zoneName.charCodeAt(0) - 65; // A=0, B=1, C=2...
+                            const colorClass = colors[colorIndex % colors.length];
+
+                            return (
+                              <div
+                                key={zoneName}
+                                className={`rounded-lg bg-gradient-to-br ${colorClass} p-3 text-white shadow-sm`}
+                              >
+                                <div className="text-center">
+                                  <div className="mb-1 text-sm font-bold">{zoneName}</div>
+                                  <div className="text-xs opacity-90">{facilityCount} facilities</div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
