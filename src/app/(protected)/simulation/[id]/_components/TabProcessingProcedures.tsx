@@ -40,7 +40,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
   // zustand의 process_flow를 직접 사용
 
-
   // Selected process for detail view (instead of accordion)
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
 
@@ -215,7 +214,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setProcessFlow(reorderedProcessFlow);
   };
 
-
   // 시뮬레이션 실행 함수
   const handleRunSimulation = async () => {
     if (!canComplete) {
@@ -290,14 +288,14 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   return (
     <div className="space-y-6 pt-8">
       {/* Process Flow Chart */}
-        <ProcessFlowChart
-          processFlow={processFlow as any}
-          selectedProcessIndex={selectedProcessIndex}
-          onProcessSelect={handleProcessSelect}
-          onOpenCreateModal={handleOpenCreateModal}
-          onOpenEditModal={handleOpenEditModal}
-          onRemoveProcess={removeProcedure}
-        />
+      <ProcessFlowChart
+        processFlow={processFlow as any}
+        selectedProcessIndex={selectedProcessIndex}
+        onProcessSelect={handleProcessSelect}
+        onOpenCreateModal={handleOpenCreateModal}
+        onOpenEditModal={handleOpenEditModal}
+        onRemoveProcess={removeProcedure}
+      />
 
       {/* Process Configuration Modal */}
       <ProcessConfigurationModal

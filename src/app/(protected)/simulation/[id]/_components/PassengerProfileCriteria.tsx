@@ -53,7 +53,18 @@ export default function PassengerProfileCriteria({
 
     if (editingRule) {
       // 편집 모드: 기존 분배값 설정
-      if (editingRule.distribution) {
+      if (configType === 'load_factor' && editingRule.loadFactor !== undefined) {
+        // 🆕 Load Factor 전용 초기값 설정
+        setPropertyValues({
+          'Load Factor': editingRule.loadFactor / 100, // 백분율 → 0.0-1.0 변환
+        });
+      } else if (configType === 'show_up_time' && editingRule.parameters) {
+        // 🆕 Show-up-Time 전용 초기값 설정
+        setPropertyValues({
+          mean: editingRule.parameters.Mean || 120,
+          std: editingRule.parameters.Std || 30,
+        });
+      } else if (editingRule.distribution) {
         const percentageValues: Record<string, number> = {};
         Object.keys(editingRule.distribution).forEach((key) => {
           // ✅ zustand 값 그대로 사용 - 변환하지 않음
@@ -276,33 +287,40 @@ export default function PassengerProfileCriteria({
         }
 
         // SimpleLoadFactorTab에 데이터 전달
-        console.log('🔄 Create - SimpleLoadFactorTab으로 전달할 데이터:', {
+        const loadFactorPercentage = loadFactorValue * 100; // 0.0-1.0 → 0-100% 변환
+        console.log('🔄 Load Factor - SimpleLoadFactorTab으로 전달할 데이터:', {
           conditions: conditionStrings,
           flightCount: flightCalculations.totalSelected,
-          distribution: { 'Load Factor': loadFactorValue * 100 }, // 0.0-1.0 → 0-100% 변환
+          loadFactor: loadFactorPercentage, // 🆕 올바른 필드명
         });
 
         if ((window as any).handleSimpleRuleSaved) {
           (window as any).handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
-            distribution: { 'Load Factor': loadFactorValue * 100 }, // 0.0-1.0 → 0-100% 변환
+            loadFactor: loadFactorPercentage, // 🆕 올바른 필드명
           });
           console.log('✅ SimpleLoadFactorTab으로 데이터 전달 완료');
         }
       } else if (configType === 'show_up_time') {
         // Show-up Time은 mean과 std 값으로 처리
-        const showUpTimeValue = {
-          mean: propertyValues.mean || 120,
-          std: propertyValues.std || 30,
+        const showUpTimeParameters = {
+          Mean: propertyValues.mean || 120, // 🆕 대문자 필드명
+          Std: propertyValues.std || 30, // 🆕 대문자 필드명
         };
+
+        console.log('🔄 Show-up-Time - SimpleShowUpTimeTab으로 전달할 데이터:', {
+          conditions: conditionStrings,
+          flightCount: flightCalculations.totalSelected,
+          parameters: showUpTimeParameters, // 🆕 올바른 필드명
+        });
 
         // SimpleShowUpTimeTab으로 데이터 전달
         if (typeof (window as any).handleSimpleRuleSaved === 'function') {
           (window as any).handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
-            distribution: showUpTimeValue,
+            parameters: showUpTimeParameters, // 🆕 올바른 필드명
           });
           console.log('✅ SimpleShowUpTimeTab으로 데이터 전달 완료');
         }

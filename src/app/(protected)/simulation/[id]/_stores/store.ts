@@ -312,7 +312,7 @@ const createInitialState = (scenarioId?: string) => ({
     pax_generation: {
       rules: [],
       default: {
-        load_factor: 0.85, // 🆕 Load Factor 초기값 85% (0.85)
+        load_factor: null, // 사용자가 설정하기 전까지 null
         flightCount: 0,
       },
     },
@@ -331,8 +331,8 @@ const createInitialState = (scenarioId?: string) => ({
     pax_arrival_patterns: {
       rules: [],
       default: {
-        mean: 120, // 기본값 120분
-        std: 30, // 기본값 30
+        mean: null, // 사용자가 설정하기 전까지 null
+        std: null, // 사용자가 설정하기 전까지 null
         flightCount: 0,
       },
     },
@@ -588,13 +588,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setNationalityValues: (values) =>
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         // 올바른 순서로 nationality 객체 재구성
         const currentRules = state.passenger.pax_demographics.nationality.rules || [];
         const currentDefault = state.passenger.pax_demographics.nationality.default || {};
 
-        // 🆕 Load Factor 패턴: 새로운 properties에 맞게 자동 균등분배
+        // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
         let newDefault = currentDefault;
-        if (values.length > 0) {
+        if (values.length > 0 && Object.keys(currentDefault).filter((key) => key !== 'flightCount').length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -605,10 +612,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
           });
 
-          // 기존 default가 있으면 균등분배로 업데이트, 없으면 빈 객체 유지
-          if (Object.keys(currentDefault).length > 0) {
-            newDefault = equalDistribution;
-          }
+          newDefault = equalDistribution;
         }
 
         // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트
@@ -639,13 +643,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setProfileValues: (values) =>
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         // 올바른 순서로 profile 객체 재구성
         const currentRules = state.passenger.pax_demographics.profile.rules || [];
         const currentDefault = state.passenger.pax_demographics.profile.default || {};
 
-        // 🆕 Load Factor 패턴: 새로운 properties에 맞게 자동 균등분배
+        // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
         let newDefault = currentDefault;
-        if (values.length > 0) {
+        if (values.length > 0 && Object.keys(currentDefault).filter((key) => key !== 'flightCount').length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -656,13 +667,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
             equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
           });
 
-          // 기존 default가 있으면 균등분배로 업데이트, 없으면 빈 객체 유지
-          if (Object.keys(currentDefault).length > 0) {
-            newDefault = equalDistribution;
-          }
+          newDefault = equalDistribution;
         }
 
-        // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트
+        // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트 (기존 rule이 있는 경우에만)
         const updatedRules = currentRules.map((rule) => ({
           ...rule,
           value:
@@ -736,6 +744,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setPaxGenerationDefault: (value) => {
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         state.passenger.pax_generation.default.load_factor = value;
       });
       // 자동 완료 제거 - Generate Pax 버튼으로만 완료
@@ -748,6 +763,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     addNationalityRule: (conditions, flightCount, value = {}) =>
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
         state.passenger.pax_demographics.nationality.rules.push({
           conditions,
@@ -758,6 +780,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     addProfileRule: (conditions, flightCount, value = {}) =>
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
         state.passenger.pax_demographics.profile.rules.push({
           conditions,
@@ -868,6 +897,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setPaxArrivalPatternDefault: (defaultValues) => {
       set((state) => {
+        // 🆕 변경 감지 시 여객 차트 결과 초기화
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
+
         state.passenger.pax_arrival_patterns.default = defaultValues;
       });
       // 자동 완료 제거 - Generate Pax 버튼으로만 완료
@@ -919,8 +955,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
           pax_arrival_patterns: {
             rules: [],
             default: {
-              mean: 120, // 기본값 120분
-              std: 30, // 기본값 30
+              mean: null, // 사용자가 설정하기 전까지 null
+              std: null, // 사용자가 설정하기 전까지 null
               flightCount: 0,
             },
           },
@@ -956,8 +992,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
           pax_arrival_patterns: {
             rules: [],
             default: {
-              mean: 120, // 기본값 120분
-              std: 30, // 기본값 30
+              mean: null, // 사용자가 설정하기 전까지 null
+              std: null, // 사용자가 설정하기 전까지 null
               flightCount: 0,
             },
           },
@@ -968,6 +1004,17 @@ export const useSimulationStore = create<SimulationStoreState>()(
     setPassengerChartResult: (chartData) =>
       set((state) => {
         state.passenger.chartResult = chartData;
+      }),
+
+    // 🆕 여객 차트 결과 초기화 및 Step 2 완료 상태 해제
+    clearPassengerChartResult: () =>
+      set((state) => {
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        // availableSteps 업데이트 - step 3 제거
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+        }
       }),
 
     // ==================== Processing Procedures Actions ====================

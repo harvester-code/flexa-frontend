@@ -96,7 +96,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   // 🆕 입력값 정규화 (1~100 정수로 제한)
   const normalizeLoadFactor = useCallback((value: number | null | undefined): number => {
     if (value === null || value === undefined || isNaN(value)) {
-      return FRONTEND_DEFAULT_LOAD_FACTOR; // 85
+      return 85; // 입력값 정규화 시에만 기본값 사용
     }
     return Math.max(1, Math.min(100, Math.round(value)));
   }, []);
@@ -113,7 +113,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   // 🆕 소수점을 백분율로 변환 (UI 표시용, 정수)
   const convertToPercentage = useCallback((value: number | null | undefined) => {
     if (value === null || value === undefined || isNaN(value)) {
-      return FRONTEND_DEFAULT_LOAD_FACTOR;
+      return 85; // 백분율 변환 시에만 기본값 사용
     }
     return value <= 1 ? Math.round(value * 100) : Math.round(value);
   }, []);
@@ -165,12 +165,18 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
   const hasDefaultRule = defaultLoadFactor !== null && defaultLoadFactor !== undefined;
 
-  // 🆕 컴포넌트에서 초기값 설정
+  // 🆕 탭이 처음 열릴 때만 초기값 설정 - 지연 실행으로 탭 활성화 확인
   useEffect(() => {
-    if (defaultLoadFactor === null || defaultLoadFactor === undefined) {
-      setPaxGenerationDefault(0.85); // 85% → 0.85로 직접 설정
-    }
-  }, []); // 한 번만 실행
+    const timer = setTimeout(() => {
+      // 탭이 실제로 보여지고 있고, defaultLoadFactor가 null인 경우에만 초기값 설정
+      if (defaultLoadFactor === null || defaultLoadFactor === undefined) {
+        console.log('🎯 Load Factor 탭 첫 방문: 초기값 85% 설정');
+        setPaxGenerationDefault(0.85); // 85% → 0.85로 직접 설정
+      }
+    }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행
+
+    return () => clearTimeout(timer);
+  }, []); // 컴포넌트 마운트 시 한 번만 실행
 
   // 액션 어댑터들
   const addLoadFactorRule = useCallback(
@@ -350,8 +356,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     [setPaxGenerationDefault, convertToDecimal]
   );
 
-  // 프론트엔드 기본값 (하드코딩)
-  const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
+  // ❌ 프론트엔드 기본값 제거 - null 상태로 유지
+  // const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
 
   // 로컬 UI 상태
   const [definedProperties] = useState<string[]>(['Load Factor']); // 고정값

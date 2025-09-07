@@ -170,19 +170,21 @@ export default function SimpleShowUpTimeTab({
   const defaultMean = arrivalPatternsDefault.mean;
   const defaultStd = arrivalPatternsDefault.std;
 
-  // 프론트엔드 기본값 (하드코딩)
-  const FRONTEND_DEFAULT_MEAN = 120;
-  const FRONTEND_DEFAULT_STD = 30;
-
-  // 🆕 컴포넌트에서 초기값 설정 (Step 1과 동일한 패턴)
+  // 🆕 탭이 처음 열릴 때만 초기값 설정 - 지연 실행으로 탭 활성화 확인
   useEffect(() => {
-    if (defaultMean === null || defaultStd === null) {
-      setPaxArrivalPatternDefault({
-        mean: FRONTEND_DEFAULT_MEAN,
-        std: FRONTEND_DEFAULT_STD,
-      });
-    }
-  }, []); // 한 번만 실행
+    const timer = setTimeout(() => {
+      // 탭이 실제로 보여지고 있고, 값이 null인 경우에만 초기값 설정
+      if (defaultMean === null || defaultStd === null) {
+        console.log('🎯 Show-up-Time 탭 첫 방문: 초기값 120/30 설정');
+        setPaxArrivalPatternDefault({
+          mean: 120,
+          std: 30,
+        });
+      }
+    }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행
+
+    return () => clearTimeout(timer);
+  }, []); // 컴포넌트 마운트 시 한 번만 실행
 
   // 액션 어댑터들
   const addShowUpTimeRule = useCallback(
@@ -210,8 +212,8 @@ export default function SimpleShowUpTimeTab({
       addPaxArrivalPatternRule({
         conditions: backendConditions,
         value: {
-          mean: rule.parameters?.['Mean'] || FRONTEND_DEFAULT_MEAN,
-          std: rule.parameters?.['Std'] || FRONTEND_DEFAULT_STD,
+          mean: rule.parameters?.['Mean'] || 120, // 룰 생성 시에만 기본값 사용
+          std: rule.parameters?.['Std'] || 30, // 룰 생성 시에만 기본값 사용
         },
       });
     },
@@ -252,8 +254,8 @@ export default function SimpleShowUpTimeTab({
         updatePaxArrivalPatternRule(ruleIndex, {
           conditions: backendConditions,
           value: {
-            mean: updatedRule.parameters?.Mean ?? currentRule.value?.mean ?? FRONTEND_DEFAULT_MEAN,
-            std: updatedRule.parameters?.Std ?? currentRule.value?.std ?? FRONTEND_DEFAULT_STD,
+            mean: updatedRule.parameters?.Mean ?? currentRule.value?.mean ?? 120,
+            std: updatedRule.parameters?.Std ?? currentRule.value?.std ?? 30,
           },
         });
       }
@@ -294,8 +296,8 @@ export default function SimpleShowUpTimeTab({
       return {
         conditions: backendConditions,
         value: {
-          mean: rule.parameters?.['Mean'] || FRONTEND_DEFAULT_MEAN,
-          std: rule.parameters?.['Std'] || FRONTEND_DEFAULT_STD,
+          mean: rule.parameters?.['Mean'] || 120,
+          std: rule.parameters?.['Std'] || 30,
         },
       };
     });
@@ -358,9 +360,9 @@ export default function SimpleShowUpTimeTab({
         pax_arrival_patterns: {
           rules: paxArrivalPatternRules || [],
           default: {
-            // 🆕 확실한 기본값 보장: null, undefined가 아닌 경우만 사용
-            mean: defaultMean !== null && defaultMean !== undefined ? defaultMean : FRONTEND_DEFAULT_MEAN,
-            std: defaultStd !== null && defaultStd !== undefined ? defaultStd : FRONTEND_DEFAULT_STD,
+            // 🆕 null 값이면 그대로 전송 - 백엔드에서 처리
+            mean: defaultMean,
+            std: defaultStd,
           },
         },
       };
@@ -704,8 +706,8 @@ export default function SimpleShowUpTimeTab({
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
           const parameters = savedRuleData.parameters || {
-            Mean: defaultMean || FRONTEND_DEFAULT_MEAN,
-            Std: defaultStd || FRONTEND_DEFAULT_STD,
+            Mean: defaultMean || 120, // 룰 생성 시에만 기본값 사용
+            Std: defaultStd || 30, // 룰 생성 시에만 기본값 사용
           };
 
           const newRule = {
@@ -739,15 +741,23 @@ export default function SimpleShowUpTimeTab({
     const traces: any[] = [];
     const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#EC4899'];
 
-    // 전체 범위 계산 (모든 분포를 포함)
-    const allMeans = [
-      defaultMean || FRONTEND_DEFAULT_MEAN,
-      ...createdRules.map((rule) => rule.parameters?.Mean || defaultMean || FRONTEND_DEFAULT_MEAN),
+    // 전체 범위 계산 (null이 아닌 분포들만 포함)
+    const validMeans = [
+      ...(defaultMean !== null ? [defaultMean] : []),
+      ...createdRules.map((rule) => rule.parameters?.Mean).filter((mean) => mean !== null && mean !== undefined),
     ];
-    const allStds = [
-      defaultStd || FRONTEND_DEFAULT_STD,
-      ...createdRules.map((rule) => rule.parameters?.Std || defaultStd || FRONTEND_DEFAULT_STD),
+    const validStds = [
+      ...(defaultStd !== null ? [defaultStd] : []),
+      ...createdRules.map((rule) => rule.parameters?.Std).filter((std) => std !== null && std !== undefined),
     ];
+
+    // 유효한 분포가 없으면 차트를 렌더링하지 않음
+    if (validMeans.length === 0 || validStds.length === 0) {
+      return { data: [], layout: null };
+    }
+
+    const allMeans = validMeans;
+    const allStds = validStds;
 
     const minMean = Math.min(...allMeans);
     const maxMean = Math.max(...allMeans);
@@ -757,10 +767,10 @@ export default function SimpleShowUpTimeTab({
     let rangeEnd: number;
 
     // 단일 분포인지 확인 (default만 있는 경우)
-    if (createdRules.length === 0) {
+    if (createdRules.length === 0 && defaultMean !== null && defaultStd !== null) {
       // 단일 분포: 해당 분포 중심으로 적절한 범위 설정
-      rangeStart = (defaultMean || FRONTEND_DEFAULT_MEAN) - 4 * (defaultStd || FRONTEND_DEFAULT_STD);
-      rangeEnd = (defaultMean || FRONTEND_DEFAULT_MEAN) + 4 * (defaultStd || FRONTEND_DEFAULT_STD);
+      rangeStart = defaultMean - 4 * defaultStd;
+      rangeEnd = defaultMean + 4 * defaultStd;
     } else {
       // 여러 분포: 모든 분포를 포함하는 범위
       rangeStart = minMean - 3 * maxStd;
@@ -784,10 +794,10 @@ export default function SimpleShowUpTimeTab({
       xValues.push(rangeStart + i * stepSize);
     }
 
-    // Default 분포 추가
-    const effectiveDefaultMean = defaultMean || FRONTEND_DEFAULT_MEAN;
-    const effectiveDefaultStd = defaultStd || FRONTEND_DEFAULT_STD;
-    if (!isNaN(effectiveDefaultMean) && !isNaN(effectiveDefaultStd) && effectiveDefaultStd > 0) {
+    // Default 분포 추가 (null이 아닌 경우에만)
+    if (defaultMean !== null && defaultStd !== null && !isNaN(defaultMean) && !isNaN(defaultStd) && defaultStd > 0) {
+      const effectiveDefaultMean = defaultMean;
+      const effectiveDefaultStd = defaultStd;
       const defaultY = xValues.map(
         (x) =>
           (1 / (effectiveDefaultStd * Math.sqrt(2 * Math.PI))) *
@@ -809,12 +819,20 @@ export default function SimpleShowUpTimeTab({
       });
     }
 
-    // Rule 분포들 추가
+    // Rule 분포들 추가 (유효한 값이 있는 경우에만)
     createdRules.forEach((rule, index) => {
-      const mean = rule.parameters?.Mean || defaultMean || FRONTEND_DEFAULT_MEAN;
-      const std = rule.parameters?.Std || defaultStd || FRONTEND_DEFAULT_STD;
+      const mean = rule.parameters?.Mean;
+      const std = rule.parameters?.Std;
 
-      if (!isNaN(mean) && !isNaN(std) && std > 0) {
+      if (
+        mean !== null &&
+        mean !== undefined &&
+        std !== null &&
+        std !== undefined &&
+        !isNaN(mean) &&
+        !isNaN(std) &&
+        std > 0
+      ) {
         const ruleY = xValues.map(
           (x) => (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2))
         );
@@ -873,7 +891,7 @@ export default function SimpleShowUpTimeTab({
     };
 
     return { data: traces, layout };
-  }, [defaultMean, defaultStd, createdRules, FRONTEND_DEFAULT_MEAN, FRONTEND_DEFAULT_STD]);
+  }, [defaultMean, defaultStd, createdRules]);
 
   return (
     <div className="space-y-6">
@@ -984,19 +1002,17 @@ export default function SimpleShowUpTimeTab({
                         <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
                         <IntegerNumberInput
                           value={
-                            rule.parameters.Mean !== undefined
-                              ? rule.parameters.Mean
-                              : defaultMean || FRONTEND_DEFAULT_MEAN
+                            rule.parameters.Mean !== undefined ? rule.parameters.Mean : defaultMean || 120 // 룰 수정 시에만 기본값 사용
                           }
                           onChange={(newMean) => {
                             updateShowUpTimeRule(rule.id, {
                               parameters: {
                                 Mean: newMean,
-                                Std: rule.parameters?.Std || FRONTEND_DEFAULT_STD,
+                                Std: rule.parameters?.Std || defaultStd || 30,
                               },
                             });
                           }}
-                          placeholder={`${defaultMean || FRONTEND_DEFAULT_MEAN} minutes`}
+                          placeholder={defaultMean ? `${defaultMean} minutes` : '120 minutes'}
                           unit="minutes"
                           min={0}
                           max={999}
@@ -1011,17 +1027,17 @@ export default function SimpleShowUpTimeTab({
                         <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
                         <IntegerNumberInput
                           value={
-                            rule.parameters.Std !== undefined ? rule.parameters.Std : defaultStd || FRONTEND_DEFAULT_STD
+                            rule.parameters.Std !== undefined ? rule.parameters.Std : defaultStd || 30 // 룰 수정 시에만 기본값 사용
                           }
                           onChange={(newStd) => {
                             updateShowUpTimeRule(rule.id, {
                               parameters: {
-                                Mean: rule.parameters?.Mean || FRONTEND_DEFAULT_MEAN,
+                                Mean: rule.parameters?.Mean || defaultMean || 120,
                                 Std: newStd,
                               },
                             });
                           }}
-                          placeholder={(defaultStd || FRONTEND_DEFAULT_STD).toString()}
+                          placeholder={defaultStd ? defaultStd.toString() : '30'}
                           min={1}
                           max={999}
                           className={
@@ -1073,28 +1089,28 @@ export default function SimpleShowUpTimeTab({
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
                     <IntegerNumberInput
-                      value={defaultMean || FRONTEND_DEFAULT_MEAN}
+                      value={defaultMean || 120} // 디폴트 입력값에서만 기본값 표시
                       onChange={(newMean) => {
-                        updateShowUpTimeDefault(newMean, defaultStd || FRONTEND_DEFAULT_STD);
+                        updateShowUpTimeDefault(newMean, defaultStd || 30);
                       }}
-                      placeholder={`${defaultMean || FRONTEND_DEFAULT_MEAN} minutes`}
+                      placeholder={defaultMean ? `${defaultMean} minutes` : '120 minutes'}
                       unit="minutes"
                       min={0}
                       max={999}
-                      className={(defaultMean || FRONTEND_DEFAULT_MEAN) < 0 ? 'border-red-500 bg-red-50' : ''}
+                      className={defaultMean !== null && defaultMean < 0 ? 'border-red-500 bg-red-50' : ''}
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
                     <IntegerNumberInput
-                      value={defaultStd || FRONTEND_DEFAULT_STD}
+                      value={defaultStd || 30} // 디폴트 입력값에서만 기본값 표시
                       onChange={(newStd) => {
-                        updateShowUpTimeDefault(defaultMean || FRONTEND_DEFAULT_MEAN, newStd);
+                        updateShowUpTimeDefault(defaultMean || 120, newStd);
                       }}
-                      placeholder={(defaultStd || FRONTEND_DEFAULT_STD).toString()}
+                      placeholder={defaultStd ? defaultStd.toString() : '30'}
                       min={1}
                       max={999}
-                      className={(defaultStd || FRONTEND_DEFAULT_STD) <= 0 ? 'border-red-500 bg-red-50' : ''}
+                      className={defaultStd !== null && defaultStd <= 0 ? 'border-red-500 bg-red-50' : ''}
                     />
                   </div>
                 </div>
@@ -1102,15 +1118,20 @@ export default function SimpleShowUpTimeTab({
 
               {/* Default Validation Status */}
               <div className="mt-2 flex items-center gap-2 text-sm">
-                {(defaultMean || FRONTEND_DEFAULT_MEAN) >= 0 && (defaultStd || FRONTEND_DEFAULT_STD) > 0 ? (
+                {defaultMean !== null && defaultStd !== null && defaultMean >= 0 && defaultStd > 0 ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle size={14} />
-                    Valid parameters (μ={defaultMean || FRONTEND_DEFAULT_MEAN}, σ={defaultStd || FRONTEND_DEFAULT_STD})
+                    Valid parameters (μ={defaultMean}, σ={defaultStd})
                   </span>
-                ) : (
+                ) : defaultMean !== null || defaultStd !== null ? (
                   <span className="flex items-center gap-1 text-red-600">
                     <XCircle size={14} />
                     Invalid parameters (mean must be ≥0, std must be &gt;0)
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-gray-500">
+                    <AlertTriangle size={14} />
+                    No parameters set - enter values to configure show-up time
                   </span>
                 )}
               </div>
@@ -1119,23 +1140,21 @@ export default function SimpleShowUpTimeTab({
         </div>
       </div>
 
-      {/* Combined Distribution Chart - 항상 표시 */}
-      {(defaultMean || FRONTEND_DEFAULT_MEAN) &&
-        (defaultStd || FRONTEND_DEFAULT_STD) &&
-        (defaultStd || FRONTEND_DEFAULT_STD) > 0 && (
-          <div className="mt-6 rounded-lg border bg-white p-4">
-            <h4 className="mb-4 text-lg font-medium text-gray-900">Show-up Time Distributions Comparison</h4>
-            {React.createElement(Plot as any, {
-              data: combinedChartConfig.data,
-              layout: combinedChartConfig.layout,
-              config: {
-                displayModeBar: false,
-                responsive: true,
-              },
-              style: { width: '100%', height: '400px' },
-            })}
-          </div>
-        )}
+      {/* Combined Distribution Chart - 유효한 데이터가 있을 때만 표시 */}
+      {combinedChartConfig.layout !== null && combinedChartConfig.data.length > 0 && (
+        <div className="mt-6 rounded-lg border bg-white p-4">
+          <h4 className="mb-4 text-lg font-medium text-gray-900">Show-up Time Distributions Comparison</h4>
+          {React.createElement(Plot as any, {
+            data: combinedChartConfig.data,
+            layout: combinedChartConfig.layout,
+            config: {
+              displayModeBar: false,
+              responsive: true,
+            },
+            style: { width: '100%', height: '400px' },
+          })}
+        </div>
+      )}
 
       {/* Generate Pax Button - 조건부 렌더링 */}
       {!hideGenerateButton && (
