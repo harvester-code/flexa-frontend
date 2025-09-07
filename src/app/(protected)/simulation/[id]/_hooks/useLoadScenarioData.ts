@@ -36,13 +36,18 @@ export function useLoadScenarioData(
           if (s3Data.metadata.tabs?.scenarioProfile) {
             loadScenarioProfileMetadata(s3Data.metadata.tabs.scenarioProfile);
           } else {
+            // 🎯 workflow의 availableSteps 마지막 값을 기본 탭으로 설정
+            const availableSteps = s3Data.metadata.workflow?.availableSteps || [1];
+            const lastAvailableStep = Math.max(...availableSteps);
+            const defaultTab = lastAvailableStep - 1; // 0-based 탭 인덱스로 변환
+            
             loadScenarioProfileMetadata({
               checkpoint: 'overview',
               scenarioName: `Scenario ${simulationId}`,
               scenarioTerminal: 'unknown',
               scenarioHistory: [],
-              availableScenarioTab: 2,
-              currentScenarioTab: 0,
+              availableScenarioTab: lastAvailableStep - 1,
+              currentScenarioTab: defaultTab,
             });
           }
         } else {
@@ -82,14 +87,15 @@ export function useLoadScenarioData(
         }
 
         // 인증 에러, 서버 에러, 또는 네트워크 오류 시 기본값으로 설정
-        // 🔧 에러 시에도 탭을 강제로 0으로 리셋하지 않음 (사용자가 선택한 탭 유지)
+        // 🔧 에러 시에는 첫 번째 탭으로 시작 (안전한 기본값)
+        
         loadScenarioProfileMetadata({
           checkpoint: 'overview',
           scenarioName: `Scenario ${simulationId}`,
           scenarioTerminal: 'unknown',
           scenarioHistory: [],
           availableScenarioTab: 2,
-          currentScenarioTab: 0,
+          currentScenarioTab: 0, // 에러 시 안전한 기본값
         });
       } finally {
         setIsInitialized(true);

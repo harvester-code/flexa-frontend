@@ -1,22 +1,22 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeftRight, ChevronRight, Plus, Trash2, Users, Plane, Settings2 } from 'lucide-react';
+import { ArrowLeftRight, ChevronRight, Plane, Plus, Settings2, Trash2, Users } from 'lucide-react';
+import { Route } from 'lucide-react';
+import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Route } from 'lucide-react';
 import { formatProcessName } from '@/lib/utils';
-import { ProcessStep } from '@/types/simulationTypes';
 
 interface ProcessFlowChartProps {
   // Data
   processFlow: ProcessStep[];
   selectedProcessIndex: number | null;
-  
+
   // Drag & Drop State
   draggedIndex: number | null;
   dragOverIndex: number | null;
-  
+
   // Event Handlers
   onProcessSelect: (index: number) => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
@@ -42,7 +42,7 @@ export default function ProcessFlowChart({
   onDragEnd,
   onOpenCreateModal,
   onOpenEditModal,
-  onRemoveProcess
+  onRemoveProcess,
 }: ProcessFlowChartProps) {
   return (
     <div className="space-y-6">
@@ -65,7 +65,7 @@ export default function ProcessFlowChart({
           {/* Horizontal Flow Container */}
           <div className="flex items-center gap-3 overflow-x-auto pb-4">
             {/* Entry (Fixed) */}
-            <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 shadow-sm">
               <Users className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-gray-900">Entry</span>
             </div>
@@ -73,16 +73,16 @@ export default function ProcessFlowChart({
             {/* Process Cards */}
             {processFlow.map((step, index) => {
               const isSelected = selectedProcessIndex === index;
-              const isConfigured = Object.values(step.zones || {}).every((zone: any) => 
-                zone.facilities && zone.facilities.length > 0
+              const isConfigured = Object.values(step.zones || {}).every(
+                (zone: any) => zone.facilities && zone.facilities.length > 0
               );
 
               return (
                 <React.Fragment key={`${step.name}-${step.step}`}>
                   {/* Travel Time + Arrow */}
-                  <div className="flex flex-col items-center flex-shrink-0 relative">
+                  <div className="relative flex flex-shrink-0 flex-col items-center">
                     {step.travel_time_minutes != null && step.travel_time_minutes > 0 && (
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap mb-1">
+                      <span className="mb-1 whitespace-nowrap rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
                         {step.travel_time_minutes}min
                       </span>
                     )}
@@ -97,17 +97,18 @@ export default function ProcessFlowChart({
                     onDragOver={(e) => onDragOver(e, index)}
                     onDragLeave={(e) => onDragLeave(e)}
                     onDrop={(e) => onDrop(e, index)}
-                    className={`group relative rounded-lg border cursor-move shadow-sm transition-all duration-200 ease-in-out min-w-fit flex-shrink-0 ${
-                      isSelected 
-                        ? 'bg-primary/15 border-primary/40 shadow-lg ring-2 ring-primary/20' 
-                        : 'bg-primary/5 border-primary/10'
+                    className={`group relative min-w-fit flex-shrink-0 cursor-move rounded-lg border shadow-sm transition-all duration-200 ease-in-out ${
+                      isSelected
+                        ? 'border-primary/40 bg-primary/15 shadow-lg ring-2 ring-primary/20'
+                        : 'border-primary/10 bg-primary/5'
+                    } ${draggedIndex === index ? 'rotate-2 scale-95 opacity-30' : ''} ${
+                      dragOverIndex === index && draggedIndex !== index && draggedIndex !== null
+                        ? 'scale-105 border-2 border-dashed border-primary bg-primary/20 shadow-lg'
+                        : ''
                     } ${
-                      draggedIndex === index ? 'opacity-30 scale-95 rotate-2' : ''
-                    } ${
-                      dragOverIndex === index && draggedIndex !== index && draggedIndex !== null 
-                        ? 'border-2 border-primary border-dashed bg-primary/20 shadow-lg scale-105' : ''
-                    } ${
-                      draggedIndex === null && !isSelected ? 'hover:border-primary/20 hover:shadow-md hover:bg-primary/10' : ''
+                      draggedIndex === null && !isSelected
+                        ? 'hover:border-primary/20 hover:bg-primary/10 hover:shadow-md'
+                        : ''
                     }`}
                     onClick={(e) => {
                       // 드래그 중이 아닐 때만 선택 가능
@@ -121,39 +122,39 @@ export default function ProcessFlowChart({
                     }}
                     onMouseDown={(e) => {
                       // 텍스트 선택 방지
-                      if (e.detail > 1) { // 더블클릭 이상일 때
+                      if (e.detail > 1) {
+                        // 더블클릭 이상일 때
                         e.preventDefault();
                       }
                     }}
-                    style={{ 
+                    style={{
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
                       MozUserSelect: 'none',
-                      msUserSelect: 'none'
+                      msUserSelect: 'none',
                     }} // 모든 브라우저에서 텍스트 선택 방지
                     title="Drag to reorder or click to select"
                   >
                     <div className="flex items-center gap-2 px-3 py-2">
                       {/* Drag Handle Visual */}
-                      <div
-                        className="text-primary/60"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <div className="text-primary/60" onClick={(e) => e.stopPropagation()}>
                         <ArrowLeftRight className="h-3 w-3" />
                       </div>
 
                       {/* Process Info */}
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                        <h3 className="whitespace-nowrap text-sm font-medium text-gray-900">
                           {formatProcessName(step.name)}
                         </h3>
-                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                          isConfigured ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} />
+                        <div
+                          className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                            isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                          }`}
+                        />
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-1 ml-auto">
+                      <div className="ml-auto flex items-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
@@ -176,12 +177,12 @@ export default function ProcessFlowChart({
             })}
 
             {/* Arrow before Add Process Button */}
-            <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
+            <ChevronRight className="h-5 w-5 flex-shrink-0 text-primary" />
 
             {/* Add Process Button */}
             <Button
               variant="outline"
-              className="flex items-center gap-1 border-2 border-dashed border-primary/30 px-3 py-2 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5 text-sm flex-shrink-0"
+              className="flex flex-shrink-0 items-center gap-1 border-2 border-dashed border-primary/30 px-3 py-2 text-sm text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
               onClick={onOpenCreateModal}
             >
               <Plus className="h-3 w-3" />
@@ -189,10 +190,10 @@ export default function ProcessFlowChart({
             </Button>
 
             {/* Add Process Button 뒤 화살표 */}
-            <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
+            <ChevronRight className="h-5 w-5 flex-shrink-0 text-primary" />
 
             {/* Gate (Fixed) */}
-            <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2 shadow-sm flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 shadow-sm">
               <Plane className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-gray-900">Gate</span>
             </div>
@@ -201,8 +202,8 @@ export default function ProcessFlowChart({
           {/* Selected Process Details */}
           {selectedProcessIndex !== null && processFlow[selectedProcessIndex] ? (
             <div className="border-t border-gray-200 pt-6">
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
                   <h4 className="text-lg font-semibold text-gray-900">
                     {formatProcessName(processFlow[selectedProcessIndex].name)} Details
                   </h4>
@@ -216,21 +217,21 @@ export default function ProcessFlowChart({
                     Edit Process
                   </Button>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   {/* Basic Info */}
                   <div className="space-y-3">
                     <h5 className="text-sm font-semibold text-gray-900">Basic Information</h5>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">Travel Time:</span>
-                        <span className="text-sm text-gray-900 font-medium">
+                        <span className="text-sm font-medium text-gray-900">
                           {processFlow[selectedProcessIndex].travel_time_minutes || 0} minutes
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">Zones:</span>
-                        <span className="text-sm text-gray-900 font-medium">
+                        <span className="text-sm font-medium text-gray-900">
                           {Object.keys(processFlow[selectedProcessIndex].zones || {}).length}
                         </span>
                       </div>
@@ -258,15 +259,21 @@ export default function ProcessFlowChart({
                   <div className="space-y-3">
                     <h5 className="text-sm font-semibold text-gray-900">Configuration Status</h5>
                     <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${
-                        Object.values(processFlow[selectedProcessIndex].zones || {}).every((zone: any) => 
-                          zone.facilities && zone.facilities.length > 0
-                        ) ? 'bg-green-500' : 'bg-yellow-500'
-                      }`} />
+                      <div
+                        className={`h-2 w-2 rounded-full ${
+                          Object.values(processFlow[selectedProcessIndex].zones || {}).every(
+                            (zone: any) => zone.facilities && zone.facilities.length > 0
+                          )
+                            ? 'bg-green-500'
+                            : 'bg-yellow-500'
+                        }`}
+                      />
                       <span className="text-sm text-gray-700">
-                        {Object.values(processFlow[selectedProcessIndex].zones || {}).every((zone: any) => 
-                          zone.facilities && zone.facilities.length > 0
-                        ) ? 'All facilities configured' : 'Requires facility setup in Operating Schedule'}
+                        {Object.values(processFlow[selectedProcessIndex].zones || {}).every(
+                          (zone: any) => zone.facilities && zone.facilities.length > 0
+                        )
+                          ? 'All facilities configured'
+                          : 'Requires facility setup in Operating Schedule'}
                       </span>
                     </div>
                   </div>

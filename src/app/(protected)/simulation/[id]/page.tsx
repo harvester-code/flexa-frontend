@@ -240,12 +240,31 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     }
   }, [currentDate, setDate]);
 
-  // 🔧 currentScenarioTab 변경 시 currentStep 동기화 (초기 로드 포함)
+  // 🔧 초기화 완료 후 workflow 기반 초기 탭 설정 (한 번만 실행)
   useEffect(() => {
     if (isInitialized) {
-      setCurrentStep(currentScenarioTab + 1);
+      const workflow = useSimulationStore.getState().workflow;
+      const availableSteps = workflow.availableSteps || [1];
+
+      // availableSteps의 마지막(최고) 단계로 초기 탭 설정
+      const lastAvailableStep = Math.max(...availableSteps);
+      const targetTab = lastAvailableStep - 1; // 0-based 탭 인덱스
+
+      // 현재 탭이 기본값(0)이고, 마지막 사용 가능한 탭이 다르면 업데이트
+      if (currentScenarioTab === 0 && targetTab !== 0 && targetTab <= 2) {
+        console.log(`🎯 F5 새로고침: availableSteps ${availableSteps} → 탭 ${targetTab}로 이동`);
+        useScenarioProfileStore.getState().setCurrentScenarioTab(targetTab);
+      }
     }
-  }, [currentScenarioTab, isInitialized, setCurrentStep]);
+  }, [isInitialized]); // 🔧 isInitialized만 dependency로 유지 (안정성 확보)
+
+  // 🔧 탭 변경 시 currentStep 동기화 (별도 useEffect)
+  useEffect(() => {
+    if (isInitialized) {
+      const newStep = currentScenarioTab + 1;
+      useSimulationStore.getState().setCurrentStep(newStep);
+    }
+  }, [currentScenarioTab, isInitialized]); // 🔧 함수 호출을 getState()로 안정화
 
   // 임시저장 함수
   const handleTempSave = async () => {
