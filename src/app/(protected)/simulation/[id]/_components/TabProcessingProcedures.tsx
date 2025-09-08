@@ -2,11 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckSquare, Plane, Settings2 } from 'lucide-react';
+import { EntryCondition } from '@/types/simulationTypes';
 import { runSimulation } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/hooks/useToast';
-import { EntryCondition } from '@/types/simulationTypes';
 import { useSimulationStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
@@ -57,6 +57,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     name: string;
     facilities: string[];
     travelTime: number;
+    entryConditions?: EntryCondition[];
   } | null>(null);
 
   // 시뮬레이션 실행 상태
@@ -109,6 +110,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       name: step.name,
       facilities: Object.keys(step.zones || {}),
       travelTime: step.travel_time_minutes || 0,
+      entryConditions: step.entry_conditions || [],
     });
     setShowProcessModal(true);
   };

@@ -1097,7 +1097,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
           // 지정된 개수만큼 facilities 생성
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
-            operating_schedule: {}, // 빈 객체로 초기화, today 키는 컴포넌트에서 동적으로 생성
+            operating_schedule: {
+              yesterday: {
+                time_blocks: [] // 🆕 백엔드용 (나중에 활용)
+              },
+              today: {
+                time_blocks: [] // 🆕 현재 OperatingScheduleEditor용
+              }
+            },
           }));
 
           state.process_flow[processIndex].zones[zoneName].facilities = facilities;

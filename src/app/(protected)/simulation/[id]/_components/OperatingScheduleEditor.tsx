@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapPin, Plane, Star, Trash2, Users } from 'lucide-react';
-import { ProcessStep } from '@/types/simulationTypes';
+import { AlertCircle, MapPin, Plane, Plus, Settings, Star, Trash2, Users } from 'lucide-react';
+import { EntryCondition, ProcessStep } from '@/types/simulationTypes';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Input } from '@/components/ui/Input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn, formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../_stores';
@@ -284,6 +286,279 @@ const generateColumnRange = (startCol: number, endCol: number, rowCount: number)
     }
   }
   return cellIds;
+};
+
+// 🕐 시간 범위 입력 컴포넌트 (00:00~23:59 형식)
+const TimeRangeInput: React.FC = () => {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [parsedRange, setParsedRange] = useState<{ start: string; end: string } | null>(null);
+
+  // 시간 형식 검증 함수
+  const validateTimeFormat = (time: string): boolean => {
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+  };
+
+  // 시간 범위 파싱 함수
+  const parseTimeRange = (input: string): { start: string; end: string } | null => {
+    // 다양한 구분자 지원: ~, -, to, ->, 공백
+    const separators = /\s*[~\-→>]\s*|\s+to\s+|\s+/i;
+    const parts = input.trim().split(separators).filter(Boolean);
+
+    if (parts.length !== 2) return null;
+
+    const [startTime, endTime] = parts;
+
+    // 시간 형식 검증
+    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime)) {
+      return null;
+    }
+
+    // 시작 시간이 종료 시간보다 늦은 경우 체크
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    if (startMinutes >= endMinutes) {
+      return null;
+    }
+
+    return { start: startTime, end: endTime };
+  };
+
+  // 입력값 변경 핸들러
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    setValue(inputValue);
+
+    if (!inputValue.trim()) {
+      setError(null);
+      setParsedRange(null);
+      return;
+    }
+
+    const parsed = parseTimeRange(inputValue);
+
+    if (parsed) {
+      setError(null);
+      setParsedRange(parsed);
+    } else {
+      setError('Invalid time range format. Use: HH:MM~HH:MM (e.g., 09:00~17:30)');
+      setParsedRange(null);
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <Input
+        type="text"
+        placeholder="00:00~23:59"
+        value={value}
+        onChange={handleChange}
+        className={`text-sm ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+      />
+
+      {error && (
+        <div className="flex items-center gap-1 text-xs text-red-600">
+          <AlertCircle className="h-3 w-3" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {parsedRange && !error && (
+        <div className="text-xs text-green-600">
+          ✓ Valid range: {parsedRange.start} to {parsedRange.end}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ⏱️ Process Time 입력 컴포넌트
+const ProcessTimeInput: React.FC = () => {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    setValue(inputValue);
+
+    if (!inputValue.trim()) {
+      setError(null);
+      return;
+    }
+
+    // 숫자 + 단위 검증 (예: "25 seconds", "30 sec", "1.5 minutes")
+    const timePattern = /^(\d+(?:\.\d+)?)\s*(second|seconds|sec|minute|minutes|min|s|m)$/i;
+
+    if (timePattern.test(inputValue.trim())) {
+      setError(null);
+    } else {
+      setError('Enter time with unit (e.g., "25 seconds", "1.5 minutes")');
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <Input
+        type="text"
+        placeholder="25 seconds"
+        value={value}
+        onChange={handleChange}
+        className={`text-sm ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+      />
+
+      {error && (
+        <div className="flex items-center gap-1 text-xs text-red-600">
+          <AlertCircle className="h-3 w-3" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 🎯 Passenger Conditions 선택 팝업 컴포넌트
+interface PassengerConditionsPopupProps {
+  parquetMetadata: ParquetMetadataItem[];
+  paxDemographics: Record<string, any>;
+}
+
+const PassengerConditionsPopup: React.FC<PassengerConditionsPopupProps> = ({ parquetMetadata, paxDemographics }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedConditions, setSelectedConditions] = useState<EntryCondition[]>([]);
+
+  // 🔍 디버그용: 강제로 팝업 열기
+  console.log('🔍 PassengerConditionsPopup rendered:', { isOpen, selectedConditions });
+
+  // SearchCriteriaSelector와 동일한 동적 카테고리 생성
+  const CONDITION_CATEGORIES = useMemo(() => {
+    return createDynamicConditionCategories(parquetMetadata, paxDemographics);
+  }, [parquetMetadata, paxDemographics]);
+
+  const handleConditionToggle = (field: string, value: string) => {
+    setSelectedConditions((prev) => {
+      const existingCondition = prev.find((c) => c.field === field);
+
+      if (existingCondition) {
+        if (existingCondition.values.includes(value)) {
+          // 값 제거
+          const updatedValues = existingCondition.values.filter((v) => v !== value);
+          if (updatedValues.length === 0) {
+            // 조건 전체 제거
+            return prev.filter((c) => c.field !== field);
+          } else {
+            // 값 업데이트
+            return prev.map((c) => (c.field === field ? { ...c, values: updatedValues } : c));
+          }
+        } else {
+          // 값 추가
+          return prev.map((c) => (c.field === field ? { ...c, values: [...c.values, value] } : c));
+        }
+      } else {
+        // 새 조건 추가
+        return [...prev, { field, values: [value] }];
+      }
+    });
+  };
+
+  const clearAll = () => {
+    setSelectedConditions([]);
+  };
+
+  const selectedCount = selectedConditions.reduce((acc, condition) => acc + condition.values.length, 0);
+
+  return (
+    <div className="relative">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🔍 Button clicked, current isOpen:', isOpen);
+          setIsOpen(!isOpen);
+        }}
+        className={`w-full justify-between text-sm ${selectedCount > 0 ? 'border-primary text-primary' : ''}`}
+      >
+        <div className="flex items-center gap-2">
+          <Settings className="h-3 w-3" />
+          <span>{selectedCount === 0 ? 'Select Conditions' : `${selectedCount} Selected`}</span>
+        </div>
+        <Plus className="h-3 w-3" />
+      </Button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-80 rounded-md border bg-white p-0 shadow-lg">
+          <div className="border-b px-3 py-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Passenger Conditions</h4>
+              {selectedCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAll}
+                  className="h-auto p-0 text-xs text-muted-foreground"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+            {selectedCount > 0 && <p className="text-xs text-muted-foreground">{selectedCount} conditions selected</p>}
+          </div>
+
+          <div className="max-h-96 overflow-y-auto">
+            {Object.entries(CONDITION_CATEGORIES).map(([key, category]) => (
+              <div key={key} className="border-b last:border-b-0">
+                <div className="bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <category.icon className="h-3 w-3" />
+                    <h5 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{key}</h5>
+                  </div>
+                </div>
+
+                <div className="space-y-2 px-3 py-2">
+                  {category.options.map((option: string) => {
+                    const condition = selectedConditions.find((c) => c.field === key);
+                    const isSelected = condition?.values.includes(option) || false;
+
+                    return (
+                      <div key={option} className="flex items-center gap-2">
+                        <Checkbox checked={isSelected} onCheckedChange={() => handleConditionToggle(key, option)} />
+                        <span className="text-xs">{option}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedCount > 0 && (
+            <div className="border-t px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                Selected conditions will be applied to this time block
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 바깥 클릭으로 닫기 */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
 };
 
 export default function OperatingScheduleEditor({
@@ -963,13 +1238,23 @@ export default function OperatingScheduleEditor({
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // 🚀 컨텍스트 메뉴가 열려있을 때는 ESC 키만 허용하고 나머지 키는 무시
+      // 🚀 컨텍스트 메뉴가 열려있을 때만 특정 키 차단
       if (contextMenu.show) {
+        // Input, Popover 등 다른 UI 요소가 타겟인 경우는 차단하지 않음
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === 'INPUT' ||
+          target.closest('[role="dialog"]') ||
+          target.closest('[data-radix-popper-content-wrapper]')
+        ) {
+          return; // Input이나 팝업 내부에서는 키보드 이벤트 허용
+        }
+
         if (e.code === 'Escape') {
           // ESC 키만 허용 - 메뉴를 닫기 위해
           return; // DropdownMenu의 onEscapeKeyDown이 처리하도록 함
         } else {
-          // 나머지 모든 키는 무시하여 메뉴가 안 꺼지도록 함
+          // 테이블 영역에서만 나머지 키는 무시
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -1103,7 +1388,25 @@ export default function OperatingScheduleEditor({
   return (
     <div>
       {/* 🎯 키보드 이벤트 스코프 제한을 위한 컨테이너 */}
-      <div ref={containerRef} tabIndex={-1} onKeyDown={handleKeyDown} className="outline-none">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className="outline-none"
+        onClick={(e) => {
+          // Popover나 Input 등 특정 요소 클릭은 차단하지 않음
+          const target = e.target as HTMLElement;
+          if (
+            target.closest('[data-radix-popper-content-wrapper]') ||
+            target.closest('button[data-radix-collection-item]') ||
+            target.tagName === 'INPUT' ||
+            target.closest('input')
+          ) {
+            e.stopPropagation();
+            return;
+          }
+        }}
+      >
         {/* 2중 탭 */}
         <div className="mb-2 space-y-0">
           <div className="flex items-center gap-4">
@@ -1272,6 +1575,36 @@ export default function OperatingScheduleEditor({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* 시간 범위 및 설정 영역 */}
+        {selectedZone && currentFacilities.length > 0 && (
+          <div className="mb-4 rounded-lg border bg-white p-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-medium text-default-900">Time Block Configuration</h4>
+              <p className="text-xs text-default-500">Configure operating schedule for selected facilities</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {/* 1. 시간 범위 입력 */}
+              <div>
+                <label className="text-default-700 mb-2 block text-xs font-medium">Time Range</label>
+                <TimeRangeInput />
+              </div>
+
+              {/* 2. 프로세스 시간 입력 */}
+              <div>
+                <label className="text-default-700 mb-2 block text-xs font-medium">Process Time</label>
+                <ProcessTimeInput />
+              </div>
+
+              {/* 3. Passenger Conditions */}
+              <div>
+                <label className="text-default-700 mb-2 block text-xs font-medium">Passenger Conditions</label>
+                <PassengerConditionsPopup parquetMetadata={parquetMetadata} paxDemographics={paxDemographics} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 엑셀 그리드 테이블 */}
         {selectedZone && currentFacilities.length > 0 ? (
