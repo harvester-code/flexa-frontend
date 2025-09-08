@@ -45,7 +45,7 @@ export default function LoginPage() {
 
       <div className="rounded-lg bg-background/40 px-10 pb-28 pt-14 shadow-md backdrop-blur-3xl xl:flex xl:min-h-svh xl:w-full xl:max-w-[30rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-background xl:px-10 xl:shadow-none">
         <div>
-          <h2 className="mb-2 text-lg font-bold leading-none text-primary">Log in</h2>
+          <h2 className="mb-2 text-2xl font-bold leading-none text-primary">Log in</h2>
 
           <p className="mb-10 whitespace-nowrap">Enter your login information to access the solution.</p>
 

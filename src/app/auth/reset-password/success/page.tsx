@@ -16,7 +16,7 @@ export default function ResetPasswordSuccess() {
       <p className="mt-15 font-medium">Click below to log in</p>
       <div className="w-360 mt-20">
         <div className="flex justify-center">
-          <CheckCircle2 className="h-24 w-24 text-green-500" />
+          <CheckCircle2 className="h-24 w-24 text-primary" />
         </div>
         <Button className="mt-55 w-full" variant="primary" onClick={() => router.push('/auth/login')}>
           Back to Login

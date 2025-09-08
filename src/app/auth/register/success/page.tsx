@@ -56,7 +56,7 @@ function RegisterSuccessContent() {
             </form>
           </div>
 
-          <Button asChild variant="outline">
+          <Button asChild variant="ghost">
             <Link href="/auth/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Login

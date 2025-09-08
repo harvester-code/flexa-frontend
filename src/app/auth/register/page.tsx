@@ -23,7 +23,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md rounded-lg bg-background/40 px-10 pb-28 pt-14 shadow-md backdrop-blur-3xl xl:flex xl:min-h-svh xl:max-w-[35rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-background xl:px-10 xl:shadow-none">
         <div>
           <div className="mb-6">
-            <Button asChild variant="outline">
+            <Button asChild variant="ghost">
               <Link href="/auth/login">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login

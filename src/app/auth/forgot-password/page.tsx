@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
         </video>
       </div>
 
-      <div className="mx-auto flex w-full max-w-md flex-col justify-center xl:mx-0 xl:mr-32">
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center xl:mx-0 xl:mr-[120px]">
         <div className="relative w-full rounded-xl bg-background/80 p-6 backdrop-blur-lg xl:p-8">
           <div className="mb-8 flex items-center justify-center">
             <Shield className="h-12 w-12 text-primary" />
