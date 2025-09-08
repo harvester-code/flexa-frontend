@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Briefcase, FileText, Mail, Save, User, X } from 'lucide-react';
 import { useUser } from '@/queries/userQueries';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/lib/auth/client';
 
@@ -70,11 +72,13 @@ export default function Profile() {
           <dt className="text-lg font-semibold text-default-900">Personal Information</dt>
           <dd className="text-sm">Update your detailed personal information.</dd>
         </dl>
-        <div className="flex items-center gap-10">
-          <Button variant="secondary" size="default" onClick={handleCancel}>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="default" onClick={handleCancel}>
+            <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
           <Button variant="primary" size="default" onClick={(e) => handleSubmit(e)}>
+            <Save className="mr-2 h-4 w-4" />
             Save
           </Button>
         </div>
@@ -89,25 +93,25 @@ export default function Profile() {
             </dl>
           </div>
           <div className="form-item-content">
-            <div className="grid grid-cols-2 items-center justify-between gap-10">
-              <div className="flex flex-col gap-1">
-                <p>First Name</p>
+            <div className="grid grid-cols-2 items-start justify-between gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
+                  id="firstName"
                   type="text"
                   placeholder="First Name"
                   value={firstName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
-                  className="mt-5 text-default-500"
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <p>Last Name</p>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
                 <Input
+                  id="lastName"
                   type="text"
                   placeholder="Last Name"
                   value={lastName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
-                  className="mt-5 text-default-500"
                 />
               </div>
             </div>
@@ -122,15 +126,20 @@ export default function Profile() {
               <dd>You cannot change your email address.</dd>
             </dl>
           </div>
-          <div className="form-item-content">
-            <Input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              className="input-mail text-default-500"
-              readOnly
-            />
+          <div className="form-item-content space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                className="pl-10"
+                readOnly
+              />
+            </div>
           </div>
         </div>
 
@@ -140,14 +149,19 @@ export default function Profile() {
               <dt>Position</dt>
             </dl>
           </div>
-          <div className="form-item-content">
-            <Input
-              type="text"
-              placeholder="Position"
-              value={position}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPosition(e.target.value)}
-              className="text-default-500"
-            />
+          <div className="form-item-content space-y-2">
+            <Label htmlFor="position">Position</Label>
+            <div className="relative">
+              <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="position"
+                type="text"
+                placeholder="Position"
+                value={position}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPosition(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
         <div className="form-item">
@@ -157,16 +171,21 @@ export default function Profile() {
               <dd>Write a brief summary of the purpose of using the solution and your responsibilities.</dd>
             </dl>
           </div>
-          <div className="form-item-content">
+          <div className="form-item-content space-y-2">
+            <Label htmlFor="introduction" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Introduction
+            </Label>
             <textarea
+              id="introduction"
               placeholder="Write a brief summary..."
               value={introduction}
               onChange={(e) => setIntroduction(e.target.value)}
-              className="w-full rounded-md border border-input p-3 text-sm"
               rows={4}
               maxLength={275}
+              className="flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <p className="mt-2 text-sm text-default-500">{275 - introduction.length} characters remaining</p>
+            <p className="text-xs text-muted-foreground">{275 - introduction.length} characters remaining</p>
           </div>
         </div>
       </div>

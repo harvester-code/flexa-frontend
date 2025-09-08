@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Monitor } from 'lucide-react';
+import { CheckCircle2, Circle, Eye, EyeOff, History, Monitor, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/lib/auth/client';
@@ -228,11 +229,13 @@ export default function Password() {
           <dt className="text-lg font-semibold text-default-900">Password</dt>
           <dd className="text-sm font-normal">Enter your current password to update it.</dd>
         </dl>
-        <div className="flex flex-shrink-0 items-center gap-4">
-          <Button variant="secondary" size="default" onClick={handleCancel}>
+        <div className="flex flex-shrink-0 items-center gap-3">
+          <Button variant="outline" size="default" onClick={handleCancel}>
+            <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
           <Button variant="primary" size="default" onClick={handleUpdatePassword} disabled={isLoading}>
+            <Save className="mr-2 h-4 w-4" />
             {isLoading ? 'Updating...' : 'Update Password'}
           </Button>
         </div>
@@ -247,14 +250,14 @@ export default function Password() {
                 </dt>
               </dl>
             </div>
-            <div className="form-item-content pr-500">
+            <div className="form-item-content">
               <Input
                 type="password"
                 placeholder="Current Password"
                 value={currentPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
               />
-              <p className="msg-error">The entered password does not match. Please check and confirm.</p>
+              {/* Error message는 상태에 따라 동적으로 표시하도록 개선 필요 */}
             </div>
           </div>
           <div className="form-item">
@@ -265,15 +268,15 @@ export default function Password() {
                 </dt>
               </dl>
             </div>
-            <div className="form-item-content pr-500">
+            <div className="form-item-content">
               <Input
                 type="password"
                 placeholder="New Password"
                 value={newPassword}
                 onChange={handleNewPasswordChange}
-                className={`${!isPasswordValid && newPassword.length > 0 ? 'border-red-500 focus:border-red-500' : ''}`}
+                className={`${!isPasswordValid && newPassword.length > 0 ? 'border-destructive focus:border-destructive' : ''}`}
               />
-              <ul className="password-Feedback">
+              <ul className="mt-2.5 flex flex-col gap-2.5">
                 <li
                   className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-primary' : 'text-muted-foreground'}`}
                 >
@@ -305,35 +308,38 @@ export default function Password() {
                 </dt>
               </dl>
             </div>
-            <div className="form-item-content pr-500">
+            <div className="form-item-content">
               <Input
                 type="password"
                 placeholder="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               />
-              <p className="msg-error">The entered password does not match. Please check and confirm.</p>
+              {/* Error message는 상태에 따라 동적으로 표시하도록 개선 필요 */}
             </div>
           </div>
         </div>
         <div className="mt-16 flex items-start justify-between">
           <dl className="flex flex-col gap-2">
-            <dt className="text-lg font-semibold text-default-900">로그인 기록</dt>
+            <dt className="flex items-center gap-2 text-lg font-semibold text-default-900">
+              <History className="h-5 w-5" />
+              로그인 기록
+            </dt>
             <dd className="text-sm font-normal">최근 로그인한 기기 목록입니다.</dd>
           </dl>
         </div>
       </form>
       <div className="profile-form mt-20">
         {loginHistory.map((history) => (
-          <div key={history.id} className="form-item pl-20">
-            <div className="flex items-center gap-20">
-              <Monitor className="h-7 w-7 text-gray-500" />
+          <div key={history.id} className="form-item pl-6">
+            <div className="flex items-center gap-6">
+              <Monitor className="h-7 w-7 text-muted-foreground" />
               <dl className="flex flex-col gap-2">
-                <dt className="flex items-center gap-8 text-lg font-semibold text-default-900">
+                <dt className="flex items-center gap-3 text-lg font-semibold text-default-900">
                   {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
                   {history.session_id === currentSession && (
-                    <span className="current-device">
-                      <Circle className="h-4 w-4 fill-green-500 text-green-500" />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-input bg-white px-2 text-xs font-medium text-default-900">
+                      <Circle className="h-4 w-4 fill-primary text-primary" />
                       <span>현재 기기</span>
                     </span>
                   )}

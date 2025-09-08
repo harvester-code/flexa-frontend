@@ -24,7 +24,7 @@ export default function TabDefault({
       {tabs.slice(0, tabCount).map((tab, index) => (
         <Button
           key={index}
-          variant="ghost"
+          variant="outline"
           size="default"
           className={cn(
             index === currentTab ? 'active' : '',

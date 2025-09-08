@@ -6,6 +6,7 @@ import { runSimulation } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/hooks/useToast';
+import { EntryCondition } from '@/types/simulationTypes';
 import { useSimulationStore } from '../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import NextButton from './NextButton';
@@ -136,6 +137,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     name: string;
     facilities: FacilityItem[];
     travelTime: number;
+    entryConditions: EntryCondition[];
     zoneFacilityCounts?: Record<string, number>;
   }) => {
     const activeFacilities = data.facilities.filter((f) => f.isActive).map((f) => f.name);
@@ -147,7 +149,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         step: processFlow.length,
         name: normalizedName, // 정규화된 이름 사용
         travel_time_minutes: data.travelTime,
-        entry_conditions: [],
+        entry_conditions: data.entryConditions,
         zones: {} as Record<string, any>,
       };
 
@@ -179,6 +181,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
           ...newProcessFlow[editingProcessData.index],
           name: normalizedName, // 정규화된 이름 사용
           travel_time_minutes: data.travelTime,
+          entry_conditions: data.entryConditions,
           zones: {} as Record<string, any>,
         };
 
