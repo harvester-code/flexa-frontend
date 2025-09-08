@@ -372,7 +372,7 @@ export default function SimulationGridTableNew({
                           type="text"
                           value={percentage}
                           onChange={(e) => {
-                            const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                            const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9.]/g, '');
                             const value = parseFloat(numericValue) || 0;
                             const clampedValue = Math.min(100, Math.max(0, value));
                             onUpdatePercentage(sourceInfo.connectionId, sourceInfo.node, destInfo.node, clampedValue);

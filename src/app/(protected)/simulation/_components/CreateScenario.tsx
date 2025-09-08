@@ -126,7 +126,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
                 type="text"
                 placeholder={field.placeholder}
                 value={formData[field.key]}
-                onChange={(e) => updateField(field.key, e.target.value)}
+                onChange={(e) => updateField(field.key, (e.target as HTMLInputElement).value)}
               />
             </div>
           ))}

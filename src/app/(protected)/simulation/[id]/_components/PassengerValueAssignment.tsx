@@ -111,7 +111,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                 type="text"
                 value={Math.round((values.load_factor || 0) * 100)}
                 onChange={(e) => {
-                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                   const percentage = parseInt(numericValue) || 0;
                   const clampedPercentage = Math.min(100, Math.max(0, percentage));
                   onChange('load_factor', clampedPercentage / 100);
@@ -137,7 +137,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                 type="text"
                 value={values.mean || 120}
                 onChange={(e) => {
-                  const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                  const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9.]/g, '');
                   onChange('mean', parseFloat(numericValue) || 120);
                 }}
                 onClick={(e) => (e.target as HTMLInputElement).select()}
@@ -150,7 +150,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                 type="text"
                 value={values.std || 30}
                 onChange={(e) => {
-                  const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                  const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9.]/g, '');
                   onChange('std', parseFloat(numericValue) || 30);
                 }}
                 onClick={(e) => (e.target as HTMLInputElement).select()}
@@ -192,7 +192,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                     type="text"
                     value={Math.round(value * 100)}
                     onChange={(e) => {
-                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                       const percentage = parseInt(numericValue) || 0;
                       const clampedPercentage = Math.min(100, Math.max(0, percentage));
                       onChange(property, clampedPercentage / 100);

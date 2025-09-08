@@ -653,7 +653,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
           type="text"
           placeholder={`Enter ${isNationality ? 'property name (e.g., domestic, international or a,b,c)' : 'profile name (e.g., business, leisure, premium or a,b,c)'}...`}
           value={newPropertyName}
-          onChange={(e) => setNewPropertyName(e.target.value)}
+          onChange={(e) => setNewPropertyName((e.target as HTMLInputElement).value)}
           onKeyPress={handleKeyPress}
           className="flex-1"
         />

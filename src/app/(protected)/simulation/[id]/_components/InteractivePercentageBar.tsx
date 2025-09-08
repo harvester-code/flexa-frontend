@@ -187,7 +187,7 @@ export default function InteractivePercentageBar({
                     value={editingValue}
                     onChange={(e) => {
                       // 숫자만 허용
-                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                       setEditingValue(numericValue);
                     }}
                     onBlur={handleEditComplete}

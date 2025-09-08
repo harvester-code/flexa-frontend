@@ -315,7 +315,7 @@ export default function ProcessConfigurationModal({
               type="text"
               placeholder="e.g., Check In, Security, Immigration"
               value={processName}
-              onChange={(e) => setProcessName(e.target.value)}
+              onChange={(e) => setProcessName((e.target as HTMLInputElement).value)}
               onKeyDown={handleKeyDown}
               required
             />
@@ -361,7 +361,7 @@ export default function ProcessConfigurationModal({
                 type="text"
                 placeholder="e.g., A~E, Gate1~5"
                 value={facilitiesInput}
-                onChange={(e) => handleFacilityInputChange(e.target.value)}
+                onChange={(e) => handleFacilityInputChange((e.target as HTMLInputElement).value)}
                 onKeyDown={handleKeyDown}
                 required
               />
@@ -378,7 +378,7 @@ export default function ProcessConfigurationModal({
                   type="text"
                   value={travelTime}
                   onChange={(e) => {
-                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                     if (numericValue === '') {
                       setTravelTime(0);
                     } else {
@@ -406,7 +406,7 @@ export default function ProcessConfigurationModal({
                   type="text"
                   value={defaultFacilityCount}
                   onChange={(e) => {
-                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                     let clampedCount = 0;
                     if (numericValue === '') {
                       clampedCount = 0;
@@ -468,7 +468,7 @@ export default function ProcessConfigurationModal({
                             type="text"
                             value={editingValue}
                             onChange={(e) => {
-                              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                              const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
                               if (
                                 numericValue === '' ||
                                 (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 50)

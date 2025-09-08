@@ -141,7 +141,7 @@ const Canvas = () => {
 
     if (!stage) return;
 
-    const clickedOnEmpty = e.target === stage || e.target.className === 'Image';
+    const clickedOnEmpty = e.target === stage || (e.target as HTMLElement).className === 'Image';
     if (clickedOnEmpty) {
       setSelectedId(null);
     }
@@ -227,8 +227,8 @@ const Canvas = () => {
     }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -365,7 +365,7 @@ const Canvas = () => {
                   }}
                   onDragEnd={(e) => {
                     const newRects = [...rectangles];
-                    newRects[index] = { ...newRects[index], x: e.target.x(), y: e.target.y() };
+                    newRects[index] = { ...newRects[index], x: (e.target as any).x(), y: (e.target as any).y() };
                     setRectangles(newRects);
                   }}
                   onTransformStart={() => {

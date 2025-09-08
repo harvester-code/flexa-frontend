@@ -34,7 +34,7 @@ function SettingOperationPage() {
           type="text"
           placeholder="Enter Name"
           value={airportName}
-          onChange={(e) => setAirportName(e.target.value)}
+          onChange={(e) => setAirportName((e.target as HTMLInputElement).value)}
           className="h-[40px] w-[150px] bg-transparent text-lg font-semibold text-default-900 !outline-none"
         />
         <Button variant="link">

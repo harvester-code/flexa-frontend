@@ -157,7 +157,7 @@ export const ShowUpTimeValueSetter: React.FC<ShowUpTimeValueSetterProps> = ({
                   (e.target as HTMLInputElement).select();
                 }}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  const value = (e.target as HTMLInputElement).value;
                   // 숫자와 소수점만 허용
                   if (value === '' || /^\d*\.?\d*$/.test(value)) {
                     const numValue = parseFloat(value) || 0;

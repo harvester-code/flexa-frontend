@@ -404,7 +404,7 @@ export default function SearchCriteriaSelector({
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
                         className="border-default-200/60 placeholder:text-default-400 w-full border-b bg-transparent py-1.5 pl-8 pr-3 text-xs focus:outline-none"
                       />
                     </div>

@@ -641,7 +641,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
               type="number"
               min={1}
               value={numFronts}
-              onChange={(e) => handleChangeFronts(node, Number(e.target.value))}
+              onChange={(e) => handleChangeFronts(node, Number((e.target as HTMLInputElement).value))}
               className="w-14 text-center"
             />
             <span>cols ×</span>
@@ -649,7 +649,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
               type="number"
               min={1}
               value={numRows}
-              onChange={(e) => handleChangeRows(node, Number(e.target.value))}
+              onChange={(e) => handleChangeRows(node, Number((e.target as HTMLInputElement).value))}
               className="w-14 text-center"
             />
             <span>rows</span>

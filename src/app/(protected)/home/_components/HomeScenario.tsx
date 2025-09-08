@@ -277,7 +277,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                       className="max-h-6 border-none shadow-none focus-visible:ring-transparent"
                       placeholder="Search"
                       value={searchKeyword}
-                      onChange={(e) => handleSearch(e.target.value)}
+                      onChange={(e) => handleSearch((e.target as HTMLInputElement).value)}
                     />
                     <Search className="ml-1 h-4 w-4" />
                   </div>

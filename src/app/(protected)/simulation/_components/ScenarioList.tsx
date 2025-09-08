@@ -356,7 +356,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
               className="max-h-6 border-none shadow-none focus-visible:ring-transparent"
               placeholder="Search"
               value={searchKeyword}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch((e.target as HTMLInputElement).value)}
             />
             <Search className="ml-1 h-4 w-4" />
           </div>
@@ -433,7 +433,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                         <input
                           type="text"
                           value={editingScenario?.name || ''}
-                          onChange={(e) => updateEditingField('name', e.target.value)}
+                          onChange={(e) => updateEditingField('name', (e.target as HTMLInputElement).value)}
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                           autoFocus
@@ -456,7 +456,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                         <input
                           type="text"
                           value={editingScenario?.airport || ''}
-                          onChange={(e) => updateEditingField('airport', e.target.value)}
+                          onChange={(e) => updateEditingField('airport', (e.target as HTMLInputElement).value)}
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
@@ -470,7 +470,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                         <input
                           type="text"
                           value={editingScenario?.terminal || ''}
-                          onChange={(e) => updateEditingField('terminal', e.target.value)}
+                          onChange={(e) => updateEditingField('terminal', (e.target as HTMLInputElement).value)}
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
@@ -488,7 +488,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                         <input
                           type="text"
                           value={editingScenario?.memo || ''}
-                          onChange={(e) => updateEditingField('memo', e.target.value)}
+                          onChange={(e) => updateEditingField('memo', (e.target as HTMLInputElement).value)}
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
