@@ -2,9 +2,16 @@ import React, { useState } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { createScenario } from '@/services/simulationService';
 import { useUser } from '@/queries/userQueries';
-
 import { Button } from '@/components/ui/Button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { useToast } from '@/hooks/useToast';
@@ -65,7 +72,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
       toast({
         title: 'Input Required',
         description: validationError,
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -90,15 +97,14 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
         toast({
           title: 'Creation Failed',
           description: 'Failed to create the scenario.',
-          variant: 'destructive'
+          variant: 'destructive',
         });
       }
     } catch (error) {
-      console.error(error);
       toast({
-        title: 'Creation Failed', 
+        title: 'Creation Failed',
         description: 'Failed to create the scenario.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
@@ -108,9 +114,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Scenario</DialogTitle>
-          <DialogDescription>
-            Please fill in the scenario details.
-          </DialogDescription>
+          <DialogDescription>Please fill in the scenario details.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -134,9 +138,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
               Cancel
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>
-            Create
-          </Button>
+          <Button onClick={handleSubmit}>Create</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

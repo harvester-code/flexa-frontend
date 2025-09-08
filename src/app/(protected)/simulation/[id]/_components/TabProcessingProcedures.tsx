@@ -272,7 +272,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         description: 'Your simulation is now running. You can check the results in the Home tab.',
       });
     } catch (error: any) {
-      console.error('Simulation failed:', error);
       toast({
         title: 'Simulation Failed',
         description: error.response?.data?.message || 'Failed to start simulation. Please try again.',

@@ -5,9 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { deleteScenario } from '@/services/simulationService';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
+import { useToast } from '@/hooks/useToast';
 import CreateScenario from './_components/CreateScenario';
 import ScenarioList from './_components/ScenarioList';
-import { useToast } from '@/hooks/useToast';
 
 const SimulationPage = () => {
   const queryClient = useQueryClient();
@@ -24,8 +24,6 @@ const SimulationPage = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
     } catch (error: any) {
-      console.error('Failed to delete scenarios:', error);
-      console.error('Error details:', error.response?.data);
       toast({
         title: 'Delete Failed',
         description: 'An error occurred while deleting the scenario(s).',
@@ -44,7 +42,7 @@ const SimulationPage = () => {
   };
 
   return (
-    <div className="max-w-page px-page-x pb-page-b mx-auto">
+    <div className="mx-auto max-w-page px-page-x pb-page-b">
       <TheContentHeader text="Simulation" />
 
       <div className="mt-8">

@@ -241,16 +241,13 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       // 🚧 setChartData 제거 - 통합 store 전환 중
 
       try {
-        console.log('🔄 Setting loading state to TRUE');
         setLoadingFlightSchedule(true);
         setLoadError(false);
 
         // 🆕 기존 flight 데이터 완전 초기화 (Filter Conditions가 로딩 상태로 전환됨)
         resetFlightData();
-        console.log('🗑️ Previous flight data cleared');
 
         // 🆕 airport/date는 이미 TabFlightScheduleLoadData에서 저장됨
-        console.log('📍 Loading data with airport/date:', { airport, date });
 
         // ✅ Load 버튼 API 요청 로그 저장 (시작)
         const timestamp = new Date().toISOString();
@@ -269,7 +266,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
         const { data } = await getFlightFilters(simulationId, airport, date);
 
-        console.log('🆕 Flight filters data received:', data);
 
         // ✅ Load 버튼 API 요청 로그 저장 (성공)
         setApiRequestLog({
@@ -293,20 +289,13 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             airlines: data.airlines,
             filters: data.filters,
           });
-          console.log('🆕 Flight filters saved to unified store:', {
-            total_flights: data.total_flights,
-            airlines: Object.keys(data.airlines || {}).length,
-            filters: Object.keys(data.filters || {}).length,
-          });
 
           setShowConditions(true);
 
           // 🚧 setIsCompleted 제거 - 통합 store 전환 중
 
-          console.log('✅ Flight filters loaded successfully');
         }
       } catch (error: any) {
-        console.error('❌ Failed to load flight filters:', error);
 
         // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = 'Failed to load flight data';
@@ -317,7 +306,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           errorMessage = 'Request timed out. Please check your connection and try again.';
         }
 
-        console.error('Error details:', errorMessage);
         setLoadError(true);
 
         // ✅ Load 버튼 API 요청 로그 저장 (에러)
@@ -333,7 +321,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           error: errorMessage,
         });
       } finally {
-        console.log('🔄 Setting loading state to FALSE');
         setLoadingFlightSchedule(false);
       }
     },
@@ -359,7 +346,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
       try {
         // 🆕 먼저 appliedFilterResult를 초기상태로 리셋
         setAppliedFilterResult(null);
-        console.log('🔄 Applied filter result reset to initial state');
 
         // ✅ Apply Filter 전용 로딩 상태 사용 (Filter Conditions는 변화 없음)
         setApplyFilterLoading(true);
@@ -391,7 +377,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
         // 🆕 Apply Filter 응답을 zustand에 저장
         setAppliedFilterResult(data);
-        console.log('💾 Apply Filter result saved to zustand:', data);
 
         // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음
         // 실제 결과는 appliedFilterResult에만 저장하여 차트에서 사용
@@ -401,7 +386,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
         return data;
       } catch (error: any) {
-        console.error('❌ Apply filter failed:', error);
 
         // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = 'Unknown error';

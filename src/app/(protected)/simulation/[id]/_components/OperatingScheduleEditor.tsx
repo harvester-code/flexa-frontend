@@ -431,7 +431,6 @@ const PassengerConditionsPopup: React.FC<PassengerConditionsPopupProps> = ({ par
   const [selectedConditions, setSelectedConditions] = useState<EntryCondition[]>([]);
 
   // 🔍 디버그용: 강제로 팝업 열기
-  console.log('🔍 PassengerConditionsPopup rendered:', { isOpen, selectedConditions });
 
   // SearchCriteriaSelector와 동일한 동적 카테고리 생성
   const CONDITION_CATEGORIES = useMemo(() => {
@@ -478,7 +477,6 @@ const PassengerConditionsPopup: React.FC<PassengerConditionsPopupProps> = ({ par
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('🔍 Button clicked, current isOpen:', isOpen);
           setIsOpen(!isOpen);
         }}
         className={`w-full justify-between text-sm ${selectedCount > 0 ? 'border-primary text-primary' : ''}`}

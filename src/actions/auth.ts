@@ -86,7 +86,6 @@ export const forgotPasswordAction = async (formData: FormData) => {
     redirectTo: `${origin}/auth/callback?redirect_to=/auth/reset-password`,
   });
   if (error) {
-    console.error(error.message);
     return redirect('/auth/forgot-password?error-message=Could not reset password');
   }
   if (callbackUrl) {

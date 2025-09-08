@@ -65,7 +65,6 @@ export default function ProcessFlowChart({
 
   // 🆕 Run simulation 핸들러 (일단 빈 함수)
   const handleRunSimulation = () => {
-    console.log('Run simulation clicked');
     // TODO: 시뮬레이션 실행 로직 추가 예정
   };
 

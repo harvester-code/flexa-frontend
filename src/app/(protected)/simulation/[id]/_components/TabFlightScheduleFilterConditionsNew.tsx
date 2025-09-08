@@ -116,20 +116,16 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   // 🎯 페이지 로드 시 한 번만 zustand에서 복원 (S3 복원용)
   useEffect(() => {
     if (selectedConditions && !hasRestoredFromZustand) {
-      console.log('🔄 Page load: Restoring from zustand once');
-
       let categories: Record<string, any> = {};
 
       // 🎯 원본 로컬 상태가 있으면 우선 사용 (정확한 복원)
       if (selectedConditions.originalLocalState) {
         categories = selectedConditions.originalLocalState;
-        console.log('✅ Using originalLocalState for exact restoration');
       } else {
         // 🎯 fallback: conditions에서 간단히 복원
         selectedConditions.conditions.forEach((condition) => {
           categories[condition.field] = condition.values;
         });
-        console.log('⚠️ Using fallback restoration from conditions');
       }
 
       if (Object.keys(categories).length > 0) {
@@ -510,7 +506,6 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
       return intersectionFlights.size.toString();
     } catch (error) {
-      console.error('❌ Error calculating intersection flights:', error);
       // 에러 시 기본값 반환
       return (modeFilters.total_flights || 0).toString();
     }
@@ -618,7 +613,6 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
       // 🔄 새로운 필터 적용 전에 기존 승객 및 프로세스 데이터 리셋
       resetPassenger();
       resetProcessFlow();
-      console.log('✅ Passenger and ProcessFlow data reset before applying filters');
 
       // 🎯 Expected Flights 계산
       const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
@@ -638,7 +632,6 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
 
       await onApplyFilter(selectedFilter.mode, conditions);
     } catch (error) {
-      console.error('❌ API request failed:', error);
     } finally {
       // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
       setIsApplying(false);

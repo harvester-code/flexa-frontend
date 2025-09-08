@@ -107,7 +107,6 @@ export default function TabPassengerScheduleParquetFilter({
         },
       };
 
-      console.log('🚀 Generate Pax API Request:', requestBody);
 
       // 🔍 API 요청 시작 로그
       setApiRequestLog?.({
@@ -119,10 +118,6 @@ export default function TabPassengerScheduleParquetFilter({
       // API 호출
       const response = await createPassengerShowUp(simulationId, requestBody);
 
-      console.log('✅ Generate Pax API Success:', response);
-      console.log('📊 Response.data keys:', Object.keys(response.data || {}));
-      console.log('📈 chart_x_data length:', response.data?.chart_x_data?.length);
-      console.log('📈 chart_y_data keys:', Object.keys(response.data?.chart_y_data || {}));
 
       // 🔧 Axios response.data를 저장 (response 객체가 아님!)
       setPassengerChartResult(response.data);
@@ -145,7 +140,6 @@ export default function TabPassengerScheduleParquetFilter({
       // 🎯 API 응답을 성공적으로 받았을 때만 Step 2 완료 처리
       setStepCompleted(2, true);
     } catch (error) {
-      console.error('❌ Generate Pax API Error:', error);
 
       // 🔍 API 에러 로그
       setApiRequestLog?.({

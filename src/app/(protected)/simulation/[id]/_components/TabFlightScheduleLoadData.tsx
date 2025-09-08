@@ -44,10 +44,6 @@ function TabFlightScheduleLoadData({
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
 
-  // 🔍 디버깅용 - loadingFlightSchedule 상태 변화 확인
-  useEffect(() => {
-    console.log('🔍 TabFlightScheduleLoadData: loadingFlightSchedule changed to:', loadingFlightSchedule);
-  }, [loadingFlightSchedule]);
 
   // 디바운싱된 검색어 (타이핑 중 과도한 필터링 방지) - 성능 최적화
   const [debouncedSearchAirport, setDebouncedSearchAirport] = useState('');
@@ -192,13 +188,9 @@ function TabFlightScheduleLoadData({
           {/* Load Button */}
           <Button
             onClick={() => {
-              console.log('🎯 Load button clicked, loadingFlightSchedule:', loadingFlightSchedule);
-              console.log('🎯 Saving to store - airport:', airport, 'date:', date);
-
               // 🔄 새로운 데이터 로드 전에 기존 데이터 리셋
               resetPassenger();
               resetProcessFlow();
-              console.log('✅ Passenger and ProcessFlow data reset before loading new data');
 
               // Load 버튼 클릭 시에만 store에 저장
               setStoreAirport(airport);

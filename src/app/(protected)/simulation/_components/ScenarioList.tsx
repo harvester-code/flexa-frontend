@@ -5,7 +5,18 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Edit3,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { modifyScenario } from '@/services/simulationService';
 import {
   AlertDialog,
@@ -22,10 +33,9 @@ import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { cn } from '@/lib/utils';
-
-import SimulationLoading from './SimulationLoading';
 import { useToast } from '@/hooks/useToast';
+import { cn } from '@/lib/utils';
+import SimulationLoading from './SimulationLoading';
 
 interface EditingScenario {
   id: string;
@@ -253,11 +263,10 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       setEditingScenario(null);
     } catch (error) {
-      console.error('Failed to update scenario:', error);
       toast({
         title: 'Update Failed',
         description: 'Failed to update scenario. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setShowUpdateDialog(false);
@@ -527,7 +536,6 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 if (currentPage > 1) setCurrentPage(1);
               }}
               type="button"
-
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -540,7 +548,6 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 }
               }}
               type="button"
-
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -559,7 +566,6 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 }
               }}
               type="button"
-
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -570,7 +576,6 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
                 if (currentPage < totalPages && totalPages > 1) setCurrentPage(totalPages);
               }}
               type="button"
-
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
@@ -592,11 +597,9 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              variant="destructive" 
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
               className="bg-red-600 hover:bg-red-700"
               onClick={handleDeleteConfirm}
             >
@@ -611,17 +614,11 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Update Scenario</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to update this scenario?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to update this scenario?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={executeUpdateScenario}>
-              Update
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeUpdateScenario}>Update</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

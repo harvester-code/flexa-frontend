@@ -175,7 +175,6 @@ export default function SimpleShowUpTimeTab({
     const timer = setTimeout(() => {
       // 탭이 실제로 보여지고 있고, 값이 null인 경우에만 초기값 설정
       if (defaultMean === null || defaultStd === null) {
-        console.log('🎯 Show-up-Time 탭 첫 방문: 초기값 120/30 설정');
         setPaxArrivalPatternDefault({
           mean: 120,
           std: 30,
@@ -366,46 +365,9 @@ export default function SimpleShowUpTimeTab({
         },
       };
 
-      // 🔍 디버깅: 초기 상태에서 기본값 확인
-      console.log('🔍 Context Data:', contextData);
-      console.log('🔍 SimulationStore Passenger Data:', passengerData);
-      console.log('🔍 SimulationStore Show-up Time:', {
-        defaultMean,
-        defaultStd,
-        rulesCount: paxArrivalPatternRules.length,
-      });
-      console.log('🔍 SimulationStore Load Factor:', {
-        defaultLoadFactor: loadFactorData?.default?.load_factor,
-        rulesCount: loadFactorData?.rules?.length || 0,
-      });
-      console.log('🔍 SimulationStore Nationality:', {
-        availableValues: nationalityData?.available_values?.length || 0,
-        rulesCount: nationalityData?.rules?.length || 0,
-        defaultKeys: Object.keys(nationalityData?.default || {}).length,
-      });
-      console.log('🔍 SimulationStore Profile:', {
-        availableValues: profileData?.available_values?.length || 0,
-        rulesCount: profileData?.rules?.length || 0,
-        defaultKeys: Object.keys(profileData?.default || {}).length,
-      });
-
-      // 🎯 최종 API 요청 Body의 기본값들 확인
-      console.log('🎯 Final API Request - Key Values:');
-      console.log('   date:', requestBody.settings.date);
-      console.log('   airport:', requestBody.settings.airport);
-      console.log(
-        '   load_factor:',
-        requestBody.pax_generation.default.load_factor,
-        `(${(loadFactorData?.default?.load_factor || 0.85) * 100}% 기준)`
-      );
-      console.log('   show_up_mean:', requestBody.pax_arrival_patterns.default.mean);
-      console.log('   show_up_std:', requestBody.pax_arrival_patterns.default.std);
-
-      console.log('🚀 Complete API Request Body:', requestBody);
 
       const { data: response } = await createPassengerShowUp(simulationId, requestBody);
 
-      console.log('✅ API Response:', response);
 
       toast({
         title: 'Success',
@@ -415,7 +377,6 @@ export default function SimpleShowUpTimeTab({
       // TODO: 응답 데이터 처리 (필요에 따라)
       // useSimulationStore.getState().setPassengerResults(response);
     } catch (error) {
-      console.error('❌ Generate Pax API Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to generate passenger data. Please try again.',

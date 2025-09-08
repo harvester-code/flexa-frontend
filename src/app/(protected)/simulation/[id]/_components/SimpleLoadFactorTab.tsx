@@ -157,7 +157,6 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     const timer = setTimeout(() => {
       // 탭이 실제로 보여지고 있고, defaultLoadFactor가 null인 경우에만 초기값 설정
       if (defaultLoadFactor === null || defaultLoadFactor === undefined) {
-        console.log('🎯 Load Factor 탭 첫 방문: 초기값 85% 설정');
         setPaxGenerationDefault(0.85); // 85% → 0.85로 직접 설정
       }
     }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행

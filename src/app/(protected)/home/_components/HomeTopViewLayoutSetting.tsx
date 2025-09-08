@@ -448,7 +448,6 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
       imgElement = document.querySelector('img[alt="Topview Preview"]') as HTMLImageElement;
     }
     if (!imgElement) {
-      console.error('Image element not found');
       return;
     }
 

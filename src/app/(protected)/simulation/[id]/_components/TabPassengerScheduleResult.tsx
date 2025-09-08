@@ -71,19 +71,6 @@ export default function TabPassengerScheduleResult() {
     return { plotlyData: traces, xAxisLabels: xLabels };
   }, [passengerChartResult, validSelectedCategory]);
 
-  // 🔍 디버그 로그 (데이터가 있을 때만 출력)
-  if (passengerChartResult) {
-    console.log('🎨 TabPassengerScheduleResult render check:', {
-      hasData: !!passengerChartResult,
-      dataKeys: Object.keys(passengerChartResult),
-      hasChartXData: !!passengerChartResult?.chart_x_data,
-      hasChartYData: !!passengerChartResult?.chart_y_data,
-      chartXDataLength: passengerChartResult?.chart_x_data?.length,
-      chartYDataKeys: passengerChartResult?.chart_y_data
-        ? Object.keys(passengerChartResult.chart_y_data)
-        : 'no chart_y_data',
-    });
-  }
 
   // ✅ 모든 Hook 호출 후 조건부 return (Rules of Hooks 준수)
   if (!passengerChartResult || !passengerChartResult.chart_y_data || !passengerChartResult.chart_x_data) {

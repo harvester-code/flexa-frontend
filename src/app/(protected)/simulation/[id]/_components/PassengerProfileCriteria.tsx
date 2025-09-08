@@ -140,9 +140,6 @@ export default function PassengerProfileCriteria({
           }
         });
 
-        console.log('🔄 배지로부터 복구된 체크박스 상태:', selectedItemsFromConditions);
-        console.log('🔄 첫 번째 컬럼 선택:', firstColumnToSelect);
-
         // 🎯 1단계: 먼저 컬럼 선택 (오른쪽 패널 렌더링 트리거)
         if (firstColumnToSelect) {
           setSelectedColumn(firstColumnToSelect);
@@ -192,14 +189,10 @@ export default function PassengerProfileCriteria({
       const conditions: Record<string, string[]> = {};
       const conditionStrings: string[] = [];
 
-      console.log('🔍 Create 버튼 클릭 - 선택된 조건들:', selectedItems);
-
       const selectedKeys = Object.keys(selectedItems).filter((key) => selectedItems[key]);
-      console.log('🔍 필터링된 선택 키들:', selectedKeys);
 
       selectedKeys.forEach((key) => {
         const [columnKey, value] = key.split(':');
-        console.log(`🔍 처리 중인 조건: ${columnKey} = ${value}`);
 
         // 선택된 값을 그대로 사용 (하드코딩 제거)
         let apiField = columnKey;
@@ -215,11 +208,8 @@ export default function PassengerProfileCriteria({
         // 표시용 조건 문자열 생성 (배지 형태로 저장)
         const displayField = getColumnLabel(apiField);
         const conditionString = `${displayField}: ${apiValue}`;
-        console.log(`🔍 생성된 조건 문자열: ${conditionString}`);
         conditionStrings.push(conditionString);
       });
-
-      console.log('🔍 최종 조건 문자열들:', conditionStrings);
 
       // 🎯 3. 규칙 추가 또는 수정
       const isEditMode = editingRuleIndex !== undefined && editingRuleIndex !== null;
@@ -235,11 +225,6 @@ export default function PassengerProfileCriteria({
         }
 
         // AddColumnTab (nationality)에 데이터 전달
-        console.log('🔄 Create - AddColumnTab (nationality)으로 전달할 데이터:', {
-          conditions: conditionStrings,
-          flightCount: flightCalculations.totalSelected,
-          distribution: propertyValues,
-        });
 
         if ((window as any).handleSimpleRuleSaved) {
           (window as any).handleSimpleRuleSaved({
@@ -247,9 +232,7 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues,
           });
-          console.log('✅ AddColumnTab (nationality)으로 데이터 전달 완료');
         } else {
-          console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
       } else if (configType === 'profile') {
         // 🎯 정수값 그대로 사용 - 변환하지 않음
@@ -260,11 +243,6 @@ export default function PassengerProfileCriteria({
         }
 
         // AddColumnTab (profile)으로 데이터 전달
-        console.log('🔄 Create - AddColumnTab (profile)으로 전달할 데이터:', {
-          conditions: conditionStrings,
-          flightCount: flightCalculations.totalSelected,
-          distribution: propertyValues,
-        });
 
         if (typeof (window as any).handleSimpleRuleSaved === 'function') {
           (window as any).handleSimpleRuleSaved({
@@ -272,9 +250,7 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues, // 0-100% 범위 그대로 전달
           });
-          console.log('✅ AddColumnTab (profile)으로 데이터 전달 완료');
         } else {
-          console.error('❌ handleSimpleRuleSaved 함수를 찾을 수 없습니다!');
         }
       } else if (configType === 'load_factor') {
         // Load Factor는 단일 값으로 처리 (이미 0.0-1.0 범위임)
@@ -288,11 +264,6 @@ export default function PassengerProfileCriteria({
 
         // SimpleLoadFactorTab에 데이터 전달
         const loadFactorPercentage = loadFactorValue * 100; // 0.0-1.0 → 0-100% 변환
-        console.log('🔄 Load Factor - SimpleLoadFactorTab으로 전달할 데이터:', {
-          conditions: conditionStrings,
-          flightCount: flightCalculations.totalSelected,
-          loadFactor: loadFactorPercentage, // 🆕 올바른 필드명
-        });
 
         if ((window as any).handleSimpleRuleSaved) {
           (window as any).handleSimpleRuleSaved({
@@ -300,7 +271,6 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             loadFactor: loadFactorPercentage, // 🆕 올바른 필드명
           });
-          console.log('✅ SimpleLoadFactorTab으로 데이터 전달 완료');
         }
       } else if (configType === 'show_up_time') {
         // Show-up Time은 mean과 std 값으로 처리
@@ -309,12 +279,6 @@ export default function PassengerProfileCriteria({
           Std: propertyValues.std || 30, // 🆕 대문자 필드명
         };
 
-        console.log('🔄 Show-up-Time - SimpleShowUpTimeTab으로 전달할 데이터:', {
-          conditions: conditionStrings,
-          flightCount: flightCalculations.totalSelected,
-          parameters: showUpTimeParameters, // 🆕 올바른 필드명
-        });
-
         // SimpleShowUpTimeTab으로 데이터 전달
         if (typeof (window as any).handleSimpleRuleSaved === 'function') {
           (window as any).handleSimpleRuleSaved({
@@ -322,7 +286,6 @@ export default function PassengerProfileCriteria({
             flightCount: flightCalculations.totalSelected,
             parameters: showUpTimeParameters, // 🆕 올바른 필드명
           });
-          console.log('✅ SimpleShowUpTimeTab으로 데이터 전달 완료');
         }
       } else if (configType === 'pax_arrival_patterns') {
         const newRule = {
@@ -338,9 +301,7 @@ export default function PassengerProfileCriteria({
       }
 
       // 🎯 4. 성공 처리 (window.handleSimpleRuleSaved로 처리됨)
-    } catch (error) {
-      console.error('❌ Failed to save configuration:', error);
-    }
+    } catch (error) {}
   };
 
   // 타입별 제목 생성

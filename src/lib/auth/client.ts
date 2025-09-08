@@ -56,12 +56,7 @@ function createClient(): SupabaseClient {
 
   // 개발 환경에서 디버깅을 위한 이벤트 리스너
   if (isDevelopment && typeof window !== 'undefined') {
-    client.auth.onAuthStateChange((event, session) => {
-      console.debug(`[Supabase Auth] ${event}`, {
-        userId: session?.user?.id,
-        expiresAt: session?.expires_at,
-      });
-    });
+    client.auth.onAuthStateChange((event, session) => {});
   }
 
   return client;

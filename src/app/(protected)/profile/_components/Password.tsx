@@ -46,7 +46,6 @@ export default function Password() {
           setCurrentSession(null);
         }
       } catch (error) {
-        console.error('세션 정보 조회 실패:', error);
         setCurrentSession(null);
       }
     };
@@ -62,7 +61,6 @@ export default function Password() {
       } = await supabase.auth.getUser();
 
       if (userError) {
-        console.error('사용자 정보 조회 실패:', userError.message);
         toast({
           variant: 'destructive',
           title: '로그인 기록 조회 실패',
@@ -72,7 +70,6 @@ export default function Password() {
       }
 
       if (!user) {
-        console.error('사용자 정보 없음');
         toast({
           variant: 'destructive',
           title: '로그인 기록 조회 실패',
@@ -89,7 +86,6 @@ export default function Password() {
         .limit(5);
 
       if (error) {
-        console.error('로그인 기록 조회 실패:', error.message);
         toast({
           variant: 'destructive',
           title: '로그인 기록 조회 실패',
@@ -100,7 +96,6 @@ export default function Password() {
 
       setLoginHistory(data || []);
     } catch (error: any) {
-      console.error('로그인 히스토리 조회 실패:', error.message);
       toast({
         variant: 'destructive',
         title: '로그인 기록 조회 실패',

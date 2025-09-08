@@ -58,20 +58,15 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
-    console.log('🔍 S3 metadata 로드 시작 - 전체 데이터:', data);
-    console.log('🔍 data.metadata:', data.metadata);
 
     try {
       // 🔧 새로운 통합 Store 구조에 맞게 수정
       const metadata = data.metadata || {};
       const tabs = metadata.tabs || {};
 
-      console.log('🔍 tabs 구조:', tabs);
-      console.log('🔍 metadata 직접 구조:', metadata);
 
       // 🎯 S3에서 받은 데이터를 Zustand에 통째로 갈아끼우기
       if (metadata.context || metadata.flight || metadata.passenger || metadata.process_flow || metadata.workflow) {
-        console.log('🚀 S3에서 데이터를 발견했습니다. Zustand에 갈아끼우기 시작:', metadata);
 
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
@@ -136,29 +131,22 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
         // 🚀 한 방에 갈아끼우기
         useSimulationStore.setState(newState);
-        console.log('✅ Zustand 통째로 교체 완료! 이제 모든 컴포넌트가 업데이트됩니다.');
       }
 
       // 🚧 Legacy tabs 구조 지원 (하위 호환성)
       else if (tabs.passengerSchedule || tabs.processingProcedures) {
-        console.log('🔧 Legacy tabs 구조 감지, 기존 방식으로 로드');
 
         if (tabs.passengerSchedule) {
-          console.log('Passenger Schedule 데이터 로드:', tabs.passengerSchedule);
           useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
         }
 
         if (tabs.processingProcedures) {
-          console.log('Processing Procedures 데이터 로드:', tabs.processingProcedures);
           useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
         }
 
-        console.log('✅ Legacy 메타데이터 로드 완료');
       } else {
-        console.log('⚠️ 로드할 메타데이터가 없습니다');
       }
     } catch (error) {
-      console.error('S3 메타데이터 로드 중 오류 발생:', error);
     }
   }, []);
 
@@ -188,10 +176,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         },
       };
 
-      console.log('🆕 통합 Store 메타데이터 수집 완료:', metadata);
       return metadata;
     } catch (error) {
-      console.error('🆕 통합 Store 메타데이터 수집 중 오류 발생:', error);
       const currentDate = new Date().toISOString().split('T')[0];
       return {
         context: {
@@ -252,7 +238,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       // 현재 탭이 기본값(0)이고, 마지막 사용 가능한 탭이 다르면 업데이트
       if (currentScenarioTab === 0 && targetTab !== 0 && targetTab <= 2) {
-        console.log(`🎯 F5 새로고침: availableSteps ${availableSteps} → 탭 ${targetTab}로 이동`);
         useScenarioProfileStore.getState().setCurrentScenarioTab(targetTab);
       }
     }
@@ -284,7 +269,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         description: `시나리오 메타데이터가 성공적으로 저장되었습니다.\n저장 위치: ${saveResult.s3_key}\n저장 시간: ${new Date().toLocaleString()}`,
       });
     } catch (error) {
-      console.error('임시저장 실패:', error);
       toast({
         title: '임시저장 실패',
         description: '메타데이터 저장 중 오류가 발생했습니다.',
@@ -307,7 +291,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         description: 'Scenario metadata has been successfully deleted.',
       });
     } catch (error) {
-      console.error('메타데이터 삭제 실패:', error);
       toast({
         title: 'Delete Failed',
         description: 'An error occurred while deleting the metadata.',
