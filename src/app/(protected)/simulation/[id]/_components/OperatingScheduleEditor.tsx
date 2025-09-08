@@ -20,8 +20,22 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn, formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../_stores';
 
+// Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
+interface ParquetMetadataItem {
+  column: string;
+  values: Record<
+    string,
+    {
+      flights: string[];
+      indices: number[];
+    }
+  >;
+}
+
 interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
+  parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
+  paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
 }
 
 // 뱃지 타입 정의
@@ -40,29 +54,119 @@ interface CategoryBadge {
   borderColor: string;
 }
 
-// 🎨 차트 스타일 색상으로 통일된 조건 카테고리 (영어)
-const CONDITION_CATEGORIES = {
-  Airline: {
-    icon: Plane,
-    options: ['KE', 'OZ'],
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200',
-  },
-  'Passenger Type': {
-    icon: Users,
-    options: ['Regular', 'Crew'],
-    bgColor: 'bg-emerald-50',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-200',
-  },
-  Nationality: {
-    icon: MapPin,
-    options: ['Domestic', 'International'],
-    bgColor: 'bg-amber-50',
-    textColor: 'text-amber-700',
-    borderColor: 'border-amber-200',
-  },
+// 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
+const createDynamicConditionCategories = (
+  parquetMetadata: ParquetMetadataItem[],
+  paxDemographics: Record<string, any>
+) => {
+  const categories: Record<
+    string,
+    {
+      icon: React.ComponentType<any>;
+      options: string[];
+      bgColor: string;
+      textColor: string;
+      borderColor: string;
+    }
+  > = {};
+
+  // 🎯 1단계: parquetMetadata 처리
+  parquetMetadata.forEach((item) => {
+    let categoryName = '';
+    let icon = Plane;
+    let colors = {
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-200',
+    };
+
+    switch (item.column) {
+      case 'operating_carrier_name':
+      case 'operating_carrier_iata':
+        categoryName = 'Airline';
+        icon = Plane;
+        colors = {
+          bgColor: 'bg-blue-50',
+          textColor: 'text-blue-700',
+          borderColor: 'border-blue-200',
+        };
+        break;
+      case 'nationality':
+        categoryName = 'Nationality';
+        icon = MapPin;
+        colors = {
+          bgColor: 'bg-amber-50',
+          textColor: 'text-amber-700',
+          borderColor: 'border-amber-200',
+        };
+        break;
+      case 'profile':
+        categoryName = 'Passenger Type';
+        icon = Users;
+        colors = {
+          bgColor: 'bg-emerald-50',
+          textColor: 'text-emerald-700',
+          borderColor: 'border-emerald-200',
+        };
+        break;
+      default:
+        // 기본 처리 (필요시 확장 가능)
+        return;
+    }
+
+    if (categoryName) {
+      const options = Object.keys(item.values);
+      if (options.length > 0) {
+        categories[categoryName] = {
+          icon,
+          options,
+          ...colors,
+        };
+      }
+    }
+  });
+
+  // 🎯 2단계: paxDemographics 처리 (additionalMetadata와 동일)
+  Object.entries(paxDemographics).forEach(([key, data]) => {
+    if (data && data.available_values && data.available_values.length > 0) {
+      let categoryName = '';
+      let icon = Users;
+      let colors = {
+        bgColor: 'bg-emerald-50',
+        textColor: 'text-emerald-700',
+        borderColor: 'border-emerald-200',
+      };
+
+      if (key === 'nationality') {
+        categoryName = 'Nationality';
+        icon = MapPin;
+        colors = {
+          bgColor: 'bg-amber-50',
+          textColor: 'text-amber-700',
+          borderColor: 'border-amber-200',
+        };
+      } else if (key === 'profile') {
+        categoryName = 'Passenger Type';
+        icon = Users;
+        colors = {
+          bgColor: 'bg-emerald-50',
+          textColor: 'text-emerald-700',
+          borderColor: 'border-emerald-200',
+        };
+      }
+
+      if (categoryName) {
+        // paxDemographics가 우선순위를 가지도록 덮어쓰기
+        categories[categoryName] = {
+          icon,
+          options: data.available_values,
+          ...colors,
+        };
+      }
+    }
+  });
+
+  return categories;
 };
 
 // 상수들
@@ -182,9 +286,18 @@ const generateColumnRange = (startCol: number, endCol: number, rowCount: number)
   return cellIds;
 };
 
-export default function OperatingScheduleEditor({ processFlow }: OperatingScheduleEditorProps) {
+export default function OperatingScheduleEditor({
+  processFlow,
+  parquetMetadata = [],
+  paxDemographics = {},
+}: OperatingScheduleEditorProps) {
   // 🔗 Zustand 연결 - Facility Detail 기능 통합
   const setFacilitiesForZone = useSimulationStore((s) => s.setFacilitiesForZone);
+
+  // 🚀 동적 카테고리 생성 (SearchCriteriaSelector와 동일한 데이터 기반)
+  const CONDITION_CATEGORIES = useMemo(() => {
+    return createDynamicConditionCategories(parquetMetadata, paxDemographics);
+  }, [parquetMetadata, paxDemographics]);
 
   // 기본 탭 상태
   const [selectedProcessIndex, setSelectedProcessIndex] = useState<number>(0);
@@ -850,6 +963,19 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // 🚀 컨텍스트 메뉴가 열려있을 때는 ESC 키만 허용하고 나머지 키는 무시
+      if (contextMenu.show) {
+        if (e.code === 'Escape') {
+          // ESC 키만 허용 - 메뉴를 닫기 위해
+          return; // DropdownMenu의 onEscapeKeyDown이 처리하도록 함
+        } else {
+          // 나머지 모든 키는 무시하여 메뉴가 안 꺼지도록 함
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
+
       // 🎯 포커스 확인 및 보장
       if (document.activeElement !== containerRef.current) {
         containerRef.current?.focus();
@@ -911,7 +1037,7 @@ export default function OperatingScheduleEditor({ processFlow }: OperatingSchedu
         }
       }
     },
-    [selectedCells]
+    [selectedCells, contextMenu.show] // contextMenu.show 의존성 추가
   );
 
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)

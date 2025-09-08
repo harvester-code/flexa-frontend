@@ -24,10 +24,24 @@ import { formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../_stores';
 import OperatingScheduleEditor from './OperatingScheduleEditor';
 
+// Parquet Metadata 타입 정의 (OperatingScheduleEditor와 동일)
+interface ParquetMetadataItem {
+  column: string;
+  values: Record<
+    string,
+    {
+      flights: string[];
+      indices: number[];
+    }
+  >;
+}
+
 interface ProcessFlowChartProps {
   // Data
   processFlow: ProcessStep[];
   selectedProcessIndex: number | null;
+  parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
+  paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
 
   // Event Handlers
   onProcessSelect: (index: number) => void;
@@ -39,6 +53,8 @@ interface ProcessFlowChartProps {
 export default function ProcessFlowChart({
   processFlow,
   selectedProcessIndex,
+  parquetMetadata = [],
+  paxDemographics = {},
   onProcessSelect,
   onOpenCreateModal,
   onOpenEditModal,
@@ -373,7 +389,11 @@ export default function ProcessFlowChart({
 
           {/* Operating Schedule Editor Content */}
           <div className="rounded-lg border bg-white p-6">
-            <OperatingScheduleEditor processFlow={processFlow} />
+            <OperatingScheduleEditor
+              processFlow={processFlow}
+              parquetMetadata={parquetMetadata}
+              paxDemographics={paxDemographics}
+            />
           </div>
         </CardContent>
       </Card>

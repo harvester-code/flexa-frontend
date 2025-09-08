@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import { useSimulationStore } from '../_stores';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
+import { convertToDecimal, convertToPercentage } from './PercentageInteractiveBar';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -101,22 +102,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
     return Math.max(1, Math.min(100, Math.round(value)));
   }, []);
 
-  // 🆕 스마트 변환 함수: 입력값에 따라 자동 변환 (정수 처리)
-  const convertToDecimal = useCallback(
-    (value: number | null | undefined) => {
-      const normalized = normalizeLoadFactor(value);
-      return normalized / 100; // 정수 백분율을 소수점으로
-    },
-    [normalizeLoadFactor]
-  );
-
-  // 🆕 소수점을 백분율로 변환 (UI 표시용, 정수)
-  const convertToPercentage = useCallback((value: number | null | undefined) => {
-    if (value === null || value === undefined || isNaN(value)) {
-      return 85; // 백분율 변환 시에만 기본값 사용
-    }
-    return value <= 1 ? Math.round(value * 100) : Math.round(value);
-  }, []);
+  // 🔄 통일된 변환 함수 import 사용 (중복 제거)
+  // convertToDecimal, convertToPercentage는 PercentageInteractiveBar에서 import
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
@@ -158,7 +145,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
         });
       }),
       flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
-      loadFactor: convertToPercentage(rule.value?.load_factor || 0.8), // 백분율 값
+      loadFactor: convertToPercentage(rule.value?.load_factor ?? 0.8), // 백분율 값 (기본값 80%)
       isExpanded: false,
     }));
   }, [paxGenerationRules, convertToPercentage]);
@@ -270,8 +257,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
           convertToDecimal(
             updatedRule.loadFactor ??
               (typeof currentRule.value === 'object' && currentRule.value?.load_factor
-                ? currentRule.value.load_factor * 100
-                : 85)
+                ? convertToPercentage(currentRule.value.load_factor) // 🎯 통일된 변환 사용
+                : 80) // 🎯 기본값 80% (정수)
           )
         );
       }
@@ -350,7 +337,8 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
   const updateLoadFactorDefault = useCallback(
     (value: number | null | undefined) => {
-      const safeValue = convertToDecimal(value); // 정규화 + 변환 적용
+      // 🎯 기본값 처리: null/undefined일 때는 80% (0.8)로 설정
+      const safeValue = value !== null && value !== undefined ? convertToDecimal(value) : 0.8;
       setPaxGenerationDefault(safeValue);
     },
     [setPaxGenerationDefault, convertToDecimal]

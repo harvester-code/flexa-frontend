@@ -27,10 +27,15 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
   const isCompleted = useSimulationStore((s) => s.workflow.step3Completed);
+  const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
   const setProcessFlow = useSimulationStore((s) => s.setProcessFlow);
   const setIsCompleted = useSimulationStore((s) => s.setProcessCompleted);
   const setFacilitiesForZone = useSimulationStore((s) => s.setFacilitiesForZone);
   const updateTravelTime = useSimulationStore((s) => s.updateTravelTime);
+
+  // 🆕 parquet metadata 및 pax_demographics 추출
+  const parquetMetadata = (appliedFilterResult as any)?.parquet_metadata || [];
+  const paxDemographics = useSimulationStore((s) => s.passenger.pax_demographics);
 
   const { toast } = useToast();
 
@@ -291,6 +296,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       <ProcessFlowChart
         processFlow={processFlow as any}
         selectedProcessIndex={selectedProcessIndex}
+        parquetMetadata={parquetMetadata}
+        paxDemographics={paxDemographics}
         onProcessSelect={handleProcessSelect}
         onOpenCreateModal={handleOpenCreateModal}
         onOpenEditModal={handleOpenEditModal}
@@ -305,6 +312,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         onSave={handleSaveProcess}
         mode={modalMode}
         processFlow={processFlow} // 🆕 현재 프로세스 플로우 전달
+        parquetMetadata={parquetMetadata} // 🆕 동적 조건 데이터 전달
       />
 
       {/* Navigation */}

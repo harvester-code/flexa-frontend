@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { formatProcessName } from '@/lib/utils';
+import { useSimulationStore } from '../_stores';
+import SearchCriteriaSelector from './SearchCriteriaSelector';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -21,14 +23,17 @@ type EntryCondition = {
   values: string[];
 };
 
-// 조건 필드 옵션들
-const CONDITION_FIELDS = [
-  { id: 'nationality', label: 'Nationality', values: ['domestic', 'international', 'schengen', 'non_schengen'] },
-  { id: 'operating_carrier_iata', label: 'Operating Carrier', values: ['KE', 'OZ', 'LJ', 'TW', '7C', 'BX'] },
-  { id: 'profile', label: 'Profile', values: ['general', 'business', 'wheelchair', 'crew', 'infant'] },
-  { id: 'aircraft_type', label: 'Aircraft Type', values: ['A380', 'B777', 'A330', 'B737', 'A320'] },
-  { id: 'flight_type', label: 'Flight Type', values: ['departure', 'arrival', 'domestic', 'international'] },
-];
+// Parquet Metadata 타입 정의
+interface ParquetMetadataItem {
+  column: string;
+  values: Record<
+    string,
+    {
+      flights: string[];
+      indices: number[];
+    }
+  >;
+}
 
 interface ProcessConfigurationModalProps {
   isOpen: boolean;
@@ -49,6 +54,7 @@ interface ProcessConfigurationModalProps {
   }) => void;
   mode: 'create' | 'edit';
   processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
+  parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터
 }
 
 export default function ProcessConfigurationModal({
@@ -58,7 +64,10 @@ export default function ProcessConfigurationModal({
   onSave,
   mode,
   processFlow = [], // 🆕 현재 프로세스 플로우
+  parquetMetadata = [], // 🆕 동적 데이터
 }: ProcessConfigurationModalProps) {
+  // 🎯 zustand에서 pax_demographics 가져오기
+  const paxDemographics = useSimulationStore((s) => s.passenger.pax_demographics);
   const [processName, setProcessName] = useState('');
   const [facilitiesInput, setFacilitiesInput] = useState('');
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
@@ -69,10 +78,9 @@ export default function ProcessConfigurationModal({
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
 
-  // 🆕 Entry Conditions 관리
+  // 🆕 Entry Conditions 관리 (SearchCriteriaSelector 연동)
   const [entryConditions, setEntryConditions] = useState<EntryCondition[]>([]);
-  const [selectedField, setSelectedField] = useState<string>('');
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedCriteriaItems, setSelectedCriteriaItems] = useState<Record<string, boolean>>({});
 
   // 시설명 확장 함수 (기존 로직과 동일)
   const expandFacilityNames = useCallback((input: string): FacilityItem[] => {
@@ -165,32 +173,34 @@ export default function ProcessConfigurationModal({
     [finishEditing, cancelEditing]
   );
 
-  // 🆕 Entry Condition 관련 핸들러들
-  const addEntryCondition = useCallback(() => {
-    if (selectedField && selectedValues.length > 0) {
-      // 기존 조건이 있으면 업데이트, 없으면 추가
-      const existingIndex = entryConditions.findIndex((cond) => cond.field === selectedField);
+  // 🆕 SearchCriteriaSelector 연동 핸들러
+  const handleCriteriaSelectionChange = useCallback((selectedItems: Record<string, boolean>) => {
+    setSelectedCriteriaItems(selectedItems);
 
-      if (existingIndex >= 0) {
-        const updated = [...entryConditions];
-        updated[existingIndex] = { field: selectedField, values: [...selectedValues] };
-        setEntryConditions(updated);
-      } else {
-        setEntryConditions((prev) => [...prev, { field: selectedField, values: [...selectedValues] }]);
+    // selectedItems를 EntryCondition[] 형태로 변환
+    const conditionsMap: Record<string, string[]> = {};
+
+    Object.entries(selectedItems).forEach(([itemKey, isSelected]) => {
+      if (isSelected) {
+        const [columnKey, value] = itemKey.split(':');
+        if (!conditionsMap[columnKey]) {
+          conditionsMap[columnKey] = [];
+        }
+        conditionsMap[columnKey].push(value);
       }
+    });
 
-      // 입력 초기화
-      setSelectedField('');
-      setSelectedValues([]);
-    }
-  }, [selectedField, selectedValues, entryConditions]);
+    const newEntryConditions: EntryCondition[] = Object.entries(conditionsMap).map(([field, values]) => ({
+      field,
+      values,
+    }));
 
-  const removeEntryCondition = useCallback((index: number) => {
-    setEntryConditions((prev) => prev.filter((_, i) => i !== index));
+    setEntryConditions(newEntryConditions);
   }, []);
 
-  const toggleValue = useCallback((value: string) => {
-    setSelectedValues((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  const handleCriteriaClearAll = useCallback(() => {
+    setSelectedCriteriaItems({});
+    setEntryConditions([]);
   }, []);
 
   // Modal 열릴 때 데이터 초기화
@@ -202,6 +212,19 @@ export default function ProcessConfigurationModal({
         setTravelTime(processData.travelTime);
         setFacilities(processData.facilities.map((name) => ({ name, isActive: true })));
         setEntryConditions(processData.entryConditions || []);
+
+        // 🆕 기존 entryConditions를 selectedCriteriaItems 형태로 변환
+        const initialSelectedItems: Record<string, boolean> = {};
+        if (processData.entryConditions) {
+          processData.entryConditions.forEach((condition) => {
+            condition.values.forEach((value) => {
+              const itemKey = `${condition.field}:${value}`;
+              initialSelectedItems[itemKey] = true;
+            });
+          });
+        }
+        setSelectedCriteriaItems(initialSelectedItems);
+
         // 🆕 편집 모드에서는 기본값 10개로 초기화
         const editZoneCounts: Record<string, number> = {};
         processData.facilities.forEach((name) => {
@@ -215,8 +238,7 @@ export default function ProcessConfigurationModal({
         setTravelTime(5);
         setFacilities([]);
         setEntryConditions([]);
-        setSelectedField('');
-        setSelectedValues([]);
+        setSelectedCriteriaItems({});
         setZoneFacilityCounts({});
         setDefaultFacilityCount(10); // 기본값으로 초기화
         setEditingZone(null);
@@ -301,105 +323,30 @@ export default function ProcessConfigurationModal({
 
           {/* Entry Conditions */}
           <div>
-            <label className="mb-3 block text-sm font-medium text-default-900">
-              <Filter className="mr-2 inline h-4 w-4" />
-              Entry Conditions
-            </label>
-            <div className="rounded-lg border bg-gray-50 p-4">
-              {/* Condition Builder */}
-              <div className="flex gap-6">
-                {/* Left: Field Selection */}
-                <div className="flex-1">
-                  <label className="mb-2 block text-xs font-medium text-gray-600">Search Criteria</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {CONDITION_FIELDS.map((field) => (
-                      <button
-                        key={field.id}
-                        type="button"
-                        onClick={() => setSelectedField(field.id)}
-                        className={`rounded border p-2 text-left text-sm transition-colors ${
-                          selectedField === field.id
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        {field.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Right: Value Selection */}
-                <div className="flex-1">
-                  <label className="mb-2 block text-xs font-medium text-gray-600">Values</label>
-                  {selectedField ? (
-                    <div className="space-y-2">
-                      <div className="min-h-[200px] space-y-1">
-                        {CONDITION_FIELDS.find((f) => f.id === selectedField)?.values.map((value) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => toggleValue(value)}
-                            className={`block w-full rounded border p-2 text-left text-sm transition-colors ${
-                              selectedValues.includes(value)
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}
-                          >
-                            {value}
-                          </button>
-                        ))}
-                      </div>
-
-                      {selectedValues.length > 0 && (
-                        <Button type="button" onClick={addEntryCondition} className="w-full" size="sm">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Condition
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex min-h-[200px] items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
-                      <p className="text-sm text-gray-500">Select a criteria to see values</p>
-                    </div>
-                  )}
+            {parquetMetadata.length > 0 ? (
+              <SearchCriteriaSelector
+                title="Entry Conditions"
+                icon={<Filter className="h-4 w-4" />}
+                parquetMetadata={parquetMetadata}
+                additionalMetadata={paxDemographics}
+                onSelectionChange={handleCriteriaSelectionChange}
+                onClearAll={handleCriteriaClearAll}
+                initialSelectedItems={selectedCriteriaItems}
+              />
+            ) : (
+              <div>
+                <label className="mb-3 block text-sm font-medium text-default-900">
+                  <Filter className="mr-2 inline h-4 w-4" />
+                  Entry Conditions
+                </label>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm text-amber-700">
+                    Parquet metadata is required to configure entry conditions. Please provide flight data to enable
+                    this feature.
+                  </p>
                 </div>
               </div>
-
-              {/* Added Conditions */}
-              {entryConditions.length > 0 && (
-                <div className="mt-4 border-t pt-4">
-                  <label className="mb-2 block text-xs font-medium text-gray-600">Added Conditions</label>
-                  <div className="space-y-2">
-                    {entryConditions.map((condition, index) => (
-                      <div key={index} className="flex items-center justify-between rounded border bg-white p-3">
-                        <div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {CONDITION_FIELDS.find((f) => f.id === condition.field)?.label}
-                          </span>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {condition.values.map((value) => (
-                              <Badge key={value} variant="secondary" className="text-xs">
-                                {value}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeEntryCondition(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Zone Configuration Setup */}
