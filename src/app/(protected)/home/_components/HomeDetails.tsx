@@ -8,7 +8,6 @@ import { ScenarioData } from '@/types/homeTypes';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatImageSize, formatNumberWithComma, formatPercent, formatTimeTaken, formatUnit } from './HomeFormat';
-import { badgeBtnSm } from './HomeKpiSelector';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -63,7 +62,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
         details?.map(({ category, components, overview }, i) => (
           <div className="detail-item" key={i}>
             <div
-              className="mb-2 flex w-max cursor-pointer select-none items-center text-default-500"
+              className="mb-2 flex w-max cursor-pointer select-none items-center text-muted-foreground"
               onClick={() => toggleOpen(i)}
             >
               <ChevronRight
@@ -116,7 +115,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                     <div className="relative flex items-center">
                       {formatImageSize(<WaitTime />, 30)}
                       {calculate_type && (
-                        <span className={badgeBtnSm(true) + ' absolute -top-3.5 left-1/2 z-10 -translate-x-1/2'}>
+                        <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
                           {calculate_type === 'mean' ? 'Mean' : 'Top'}
                         </span>
                       )}
@@ -138,7 +137,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                     <div className="relative flex items-center">
                       {formatImageSize(<PassengerQueue />, 30)}
                       {calculate_type && (
-                        <span className={badgeBtnSm(true) + ' absolute -top-3.5 left-1/2 z-10 -translate-x-1/2'}>
+                        <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
                           {calculate_type === 'mean' ? 'Mean' : 'Top'}
                         </span>
                       )}
@@ -246,10 +245,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <div className="relative inline-block">
                                 {formatImageSize(<PassengerQueue />, 24)}
                                 {calculate_type && (
-                                  <span
-                                    className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
-                                  >
+                                  <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}
                                   </span>
                                 )}
@@ -267,10 +263,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <div className="relative inline-block">
                                 {formatImageSize(<WaitTime />, 24)}
                                 {calculate_type && (
-                                  <span
-                                    className={badgeBtnSm(true) + ' absolute -top-3 left-1/2 z-10 -translate-x-1/2'}
-                                    style={{ height: '11px', minWidth: '14px', padding: '0 1px' }}
-                                  >
+                                  <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
                                     {calculate_type === 'mean' ? 'Mean' : 'Top'}
                                   </span>
                                 )}

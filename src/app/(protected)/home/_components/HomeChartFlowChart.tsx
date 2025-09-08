@@ -58,7 +58,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
             return (
               <span
                 key={i}
-                className="absolute text-sm font-medium text-default-500"
+                className="absolute text-sm font-medium text-muted-foreground"
                 style={{
                   left: !isLast
                     ? layerTitles.length === 1

@@ -39,13 +39,13 @@ interface HomeTopViewLayoutSettingProps {
 
 // Dot color array (different for each node)
 const dotColors = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-purple-500',
-  'bg-yellow-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-  'bg-orange-500',
+  'bg-primary',
+  'bg-muted-foreground',
+  'bg-accent-foreground',
+  'bg-primary/80',
+  'bg-muted-foreground/80',
+  'bg-accent-foreground/80',
+  'bg-primary/60',
 ];
 
 // Array of people emojis with various races, genders, hair, and ages
@@ -656,12 +656,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             <span>rows</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="link"
-                  type="button"
-                  className="ml-1 rounded-full p-1 hover:bg-gray-100 focus:outline-none"
-                  title="Show layout example"
-                >
+                <Button variant="outline" type="button" size="icon" title="Show layout example">
                   <span className="align-middle text-lg font-semibold">ⓘ</span>
                 </Button>
               </PopoverTrigger>
@@ -689,7 +684,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     {Array.from({ length: numRows }).map((_, rowIdx) => (
                       <div key={rowIdx} className="flex flex-row justify-center">
                         {Array.from({ length: numFronts }).map((_, colIdx) => (
-                          <span key={colIdx} className="text-xs font-normal" style={{ lineHeight: 1 }}>
+                          <span key={colIdx} className="text-xs font-normal leading-none">
                             {getSeededPersonEmoji(rowIdx, colIdx, node, emojiSeed)}
                           </span>
                         ))}
@@ -805,12 +800,12 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
 
           if (isStartPoint) {
             // Start: light red color
-            backgroundColor = 'rgba(239, 68, 68, 0.6)'; // light red color
+            backgroundColor = 'hsl(var(--destructive) / 0.6)'; // light red color
             opacity = '0.8';
             zIndex = 3;
           } else if (isEndPoint) {
             // End: gray color
-            backgroundColor = 'rgba(107, 114, 128, 0.8)'; // gray color
+            backgroundColor = 'hsl(var(--muted-foreground) / 0.8)'; // gray color
             opacity = '0.9';
             zIndex = 3;
           } else {
@@ -844,7 +839,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                 transform: 'translateZ(0)', // 하드웨어 가속
                 backfaceVisibility: 'hidden', // 렌더링 최적화
                 WebkitFontSmoothing: 'antialiased', // 안티에일리어싱
-                boxShadow: dotSizePx >= 4 ? '0 1px 3px rgba(0,0,0,0.2)' : 'none', // 작은 점은 그림자 제거
+                boxShadow: dotSizePx >= 4 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', // 작은 점은 그림자 제거
               }}
               title={`${node} ${isStartPoint ? '(START)' : isEndPoint ? '(END)' : ''} (${Math.round(pointX / scaleX)}, ${Math.round(pointY / scaleY)})`}
             />
@@ -948,8 +943,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
             {/* Top View Image 텍스트와 버튼 라인 삭제 */}
             {/* Error Display */}
             {imageError && (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
-                <p className="text-sm font-normal text-red-600">{imageError}</p>
+              <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                <p className="text-sm font-normal text-destructive">{imageError}</p>
               </div>
             )}
             {/* Controls, Map, etc. (기존 코드 유지) */}
@@ -980,8 +975,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                   selecting={selecting !== null}
                 />
                 {selecting && (
-                  <div className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                    <p className="text-sm font-medium text-yellow-800">
+                  <div className="mt-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-sm font-medium text-primary">
                       🎯 Coordinate selection mode: {selecting === 'front_start' ? 'start point' : 'end point'} in the
                       image.
                     </p>
@@ -1011,8 +1006,8 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                     {tempImageFileName || 'No file selected'}
                   </span>
                   {tempImageError && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-2">
-                      <p className="text-sm font-normal text-red-600">{tempImageError}</p>
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-2">
+                      <p className="text-sm font-normal text-destructive">{tempImageError}</p>
                     </div>
                   )}
                   {tempImage && (
@@ -1021,7 +1016,7 @@ const HomeTopViewLayoutSetting: React.FC<HomeTopViewLayoutSettingProps> = ({
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button type="button" variant="ghost" onClick={handleModalClose}>
+                    <Button type="button" variant="outline" onClick={handleModalClose}>
                       Cancel
                     </Button>
                   </DialogClose>

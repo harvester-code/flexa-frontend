@@ -18,55 +18,6 @@ function downloadExcel(data: any, filename: string) {
   writeFile(wb, filename);
 }
 
-// ✅ 공통 스타일
-const containerStyle = {
-  marginTop: '2rem',
-  border: '0.094rem solid #E5E7EB',
-  borderRadius: '1rem',
-  backgroundColor: '#F9FAFB',
-  boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.05)',
-  padding: '1.5rem',
-  width: '100%',
-};
-
-const cardStyle = {
-  border: '0.094rem solid #E5E7EB',
-  borderRadius: '1.125rem',
-  padding: '2.25rem',
-  marginBottom: '2.25rem',
-  background: '#fff',
-  boxShadow: '0 0.125rem 0.5rem rgba(124,58,237,0.04)',
-  display: 'flex',
-  flexWrap: 'wrap' as const,
-  gap: '2.5rem',
-  justifyContent: 'space-between',
-};
-
-const tableContainerStyle = {
-  marginTop: '1.125rem',
-  borderRadius: '1.125rem',
-  overflow: 'hidden',
-  boxShadow: '0 0.125rem 0.5rem rgba(124,58,237,0.04)',
-  border: '0.094rem solid #E5E7EB',
-  background: '#fff',
-};
-
-const buttonStyle = {
-  background: '#7C3AED',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '0.5rem',
-  padding: '0.625rem 1.375rem',
-  fontWeight: 500 /* font-medium - button text */,
-  fontSize: '14px' /* text-sm equivalent */,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  boxShadow: '0 0.125rem 0.5rem rgba(124,58,237,0.06)',
-  transition: 'background 0.18s',
-};
-
 function AemosTemplate({ scenario }: AemosTemplateProps) {
   const { data: aemos_dict, isLoading, isError } = useAemosTemplate({ scenarioId: scenario?.scenario_id });
 
@@ -86,44 +37,19 @@ function AemosTemplate({ scenario }: AemosTemplateProps) {
   }
 
   return (
-    <div
-      style={{
-        background: '#FFFFFF',
-        minHeight: '100vh',
-        fontFamily: 'Pretendard, sans-serif',
-        color: '#22223B',
-      }}
-    >
-      <div style={{ padding: '0rem', margin: '0 auto' }}>
-        <div style={containerStyle}>
-          <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
-            <p className="mb-5 text-default-500">
+    <div className="min-h-screen bg-white font-pretendard text-default-900">
+      <div className="mx-auto p-0">
+        <div className="mt-8 w-full rounded-xl border border-input bg-muted p-6 shadow-sm">
+          <div className="mx-auto max-w-page">
+            <p className="mb-5 text-muted-foreground">
               Preparation of a survey template by the Survey Agent for participation in ACI AEMOS program.
             </p>
 
-            <div style={cardStyle}>
+            <div className="mb-9 flex flex-wrap justify-between gap-10 rounded-2xl border border-input bg-white p-9 shadow-sm">
               {Object.entries(metric).map(([label, value]) => (
-                <div key={label} style={{ minWidth: '10.625rem', flex: '1 1 10.625rem' }}>
-                  <div
-                    style={{
-                      color: '#6B7280',
-                      fontSize: '14px' /* text-sm equivalent */,
-                      marginBottom: '0.438rem',
-                      fontWeight: 500 /* font-medium - label text */,
-                    }}
-                  >
-                    {label.replace(/_/g, ' ')}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: '16px' /* text-lg equivalent */,
-                      fontWeight: 600 /* font-semibold */,
-                      color: '#22223B',
-                    }}
-                  >
-                    {String(value)}
-                  </div>
+                <div key={label} className="min-w-44 flex-1 basis-44">
+                  <div className="mb-2 text-sm font-medium text-muted-foreground">{label.replace(/_/g, ' ')}</div>
+                  <div className="text-lg font-semibold text-default-900">{String(value)}</div>
                 </div>
               ))}
             </div>
@@ -146,46 +72,23 @@ function AemosTemplate({ scenario }: AemosTemplateProps) {
   );
 }
 
-// ✅ 공통 다운로드 섹션 컴포넌트
+// 공통 다운로드 섹션 컴포넌트
 const SectionWithDownload = ({ title, data, filename }: { title: string; data: any[]; filename: string }) => (
   <>
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '4.375rem',
-      }}
-    >
-      <h2
-        style={{
-          fontSize: '16px' /* text-lg equivalent */,
-          color: '#22223B',
-          fontWeight: 600 /* font-semibold */,
-        }}
-      >
-        {title}
-      </h2>
+    <div className="mt-18 flex items-center justify-between">
+      <h2 className="text-lg font-semibold text-default-900">{title}</h2>
 
       <Button
-        variant="brand"
-        style={buttonStyle}
+        variant="primary"
+        size="sm"
         onClick={() => downloadExcel(data, filename)}
-        onMouseOver={(e) => (e.currentTarget.style.background = '#6D28D9')}
-        onMouseOut={(e) => (e.currentTarget.style.background = '#7C3AED')}
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
       >
         Excel download
       </Button>
     </div>
 
-    <div
-      style={{
-        color: '#6B7280',
-        fontSize: '14px' /* text-sm equivalent */,
-        marginTop: '0.625rem',
-        fontWeight: 400,
-      }}
-    >
+    <div className="mt-2.5 text-sm font-normal text-muted-foreground">
       Please download the file, fill in the blanks, and upload it to Notion.
     </div>
 
@@ -195,36 +98,17 @@ const SectionWithDownload = ({ title, data, filename }: { title: string; data: a
 
 const Table = ({ data }: { data: any[] }) => (
   <div
-    style={{
-      ...tableContainerStyle,
-      maxHeight: data.length > 20 ? '37.5rem' : undefined, // ✅ 20개 이상이면 제한 높이
-      overflowY: data.length > 20 ? 'auto' : undefined, // ✅ 스크롤 추가
-    }}
+    className={`mt-5 overflow-hidden rounded-2xl border border-input bg-white shadow-sm ${
+      data.length > 20 ? 'max-h-96 overflow-y-auto' : ''
+    }`}
   >
-    <table
-      style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        background: '#fff',
-      }}
-    >
+    <table className="w-full border-collapse bg-white">
       <thead>
-        <tr style={{ background: '#F3F4F6' }}>
+        <tr className="bg-muted">
           {Object.keys(data[0]).map((col) => (
             <th
               key={col}
-              style={{
-                padding: '0.875rem 0.625rem',
-                fontWeight: 600 /* font-semibold */,
-                fontSize: '14px' /* text-sm equivalent */,
-                color: '#374151',
-                borderBottom: '0.125rem solid #E5E7EB',
-                textAlign: 'left',
-                background: '#F3F4F6',
-                position: 'sticky', // ✅ 헤더 고정
-                top: 0,
-                zIndex: 2,
-              }}
+              className="sticky top-0 z-10 border-b-2 border-input bg-muted p-3.5 text-left text-sm font-semibold text-default-900"
             >
               {col}
             </th>
@@ -235,22 +119,10 @@ const Table = ({ data }: { data: any[] }) => (
         {data.map((row, rowIdx) => (
           <tr
             key={rowIdx}
-            style={{
-              background: rowIdx % 2 === 0 ? '#F8FAFC' : '#fff',
-              transition: 'background 0.2s',
-            }}
+            className={`transition-colors ${rowIdx % 2 === 0 ? 'bg-muted/30' : 'bg-white'} hover:bg-muted/50`}
           >
             {Object.values(row).map((val, colIdx) => (
-              <td
-                key={colIdx}
-                style={{
-                  padding: '0.75rem 0.5rem',
-                  borderBottom: '0.063rem solid #E5E7EB',
-                  textAlign: 'left',
-                  fontSize: '14px' /* text-sm equivalent */,
-                  color: '#22223B',
-                }}
-              >
+              <td key={colIdx} className="border-b border-input p-3 text-left text-sm text-default-900">
                 {String(val)}
               </td>
             ))}

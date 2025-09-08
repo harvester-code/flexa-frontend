@@ -87,7 +87,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
         size="sm"
         onClick={() => onPageClick(page)}
         type="button"
-        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-gray-100'}
+        className={page === currentPage ? 'transition-colors' : 'transition-colors hover:bg-muted'}
       >
         {page}
       </Button>
@@ -174,19 +174,19 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
         <div className="flex gap-2">
           <div className="flex items-center gap-1">
             <span>Scenario Name:</span>
-            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
+            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
               {scenario?.name || 'None Selected'}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Airport Code:</span>
-            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
+            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
               {scenario?.airport || 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Terminal:</span>
-            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
+            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
               {scenario?.terminal || 'N/A'}
             </span>
           </div>
@@ -195,13 +195,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
         <div className="mt-2 flex gap-2">
           <div className="flex items-center gap-1">
             <span>Target Date:</span>
-            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
+            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
               {dayjs(scenario?.target_flight_schedule_date).format('YYYY-MM-DD')}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <span>Last Run:</span>
-            <span className="bg-accent-50 text-accent-700 flex items-center rounded-md px-2 font-medium">
+            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
               {dayjs(scenario?.simulation_end_at).format('YYYY-MM-DD HH:mm')}
             </span>
           </div>
@@ -228,7 +228,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             {/* 고정된 필터 섹션 */}
             <div className="flex-shrink-0" style={{ height: '80px' }}>
               <div className="flex h-full items-center justify-between">
-                <div className="text-sm font-normal text-default-500">
+                <div className="text-sm font-normal text-muted-foreground">
                   Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
                   {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length}{' '}
                   scenarios
@@ -289,7 +289,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
             <div className="flex-1 overflow-hidden" style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}>
               <table className="w-full table-fixed">
                 <thead
-                  className="sticky top-0 z-10 border-b border-[#9e77ed] bg-muted text-left text-sm font-medium"
+                  className="sticky top-0 z-10 border-b border-primary bg-muted text-left text-sm font-medium"
                   style={{ height: '50px' }}
                 >
                   <tr>
@@ -319,7 +319,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                       return (
                         <tr
                           key={item.scenario_id}
-                          className="hover:bg-accent-50 border-b border-gray-100"
+                          className="border-b border-gray-100 hover:bg-muted"
                           style={{ height: '60px' }}
                         >
                           <td className="px-3 py-3 text-sm font-normal">
@@ -337,17 +337,17 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                               }}
                             >
                               {item.status === 'done' ? (
-                                <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-500" />
+                                <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-primary" />
                               ) : item.status === 'running' ? (
-                                <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-yellow-500" />
+                                <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary/60" />
                               ) : (
-                                <XCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                                <XCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
                               )}
 
                               <span className="truncate">{item.name}</span>
 
                               {(item as any)?.isMaster && (
-                                <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                                <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                                   Master
                                 </span>
                               )}
@@ -378,7 +378,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     })
                   ) : (
                     <tr style={{ height: `${ITEMS_PER_PAGE * 60}px` }}>
-                      <td colSpan={6} className="px-3 py-3 text-center text-default-500">
+                      <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
                         <div
                           className="flex flex-col items-center justify-center"
                           style={{ height: `${ITEMS_PER_PAGE * 60}px` }}
@@ -404,7 +404,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     if (currentPage > 1) setCurrentPage(1);
                   }}
                   type="button"
-                  className="transition-colors hover:bg-gray-100"
+                  className="transition-colors hover:bg-muted"
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
@@ -418,7 +418,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     }
                   }}
                   type="button"
-                  className="transition-colors hover:bg-gray-100"
+                  className="transition-colors hover:bg-muted"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -437,7 +437,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     }
                   }}
                   type="button"
-                  className="transition-colors hover:bg-gray-100"
+                  className="transition-colors hover:bg-muted"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -451,7 +451,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                     }
                   }}
                   type="button"
-                  className="transition-colors hover:bg-gray-100"
+                  className="transition-colors hover:bg-muted"
                 >
                   <ChevronsRight className="h-4 w-4" />
                 </Button>

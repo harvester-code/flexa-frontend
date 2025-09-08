@@ -272,13 +272,13 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
 
   // 색상 매핑 통일: dot과 text를 함께 관리
   const servicePointColors = [
-    { dot: 'bg-blue-500', text: 'bg-blue-100 text-blue-800' },
-    { dot: 'bg-green-500', text: 'bg-green-100 text-green-800' },
-    { dot: 'bg-purple-500', text: 'bg-purple-100 text-purple-800' },
-    { dot: 'bg-yellow-500', text: 'bg-yellow-100 text-yellow-800' },
-    { dot: 'bg-pink-500', text: 'bg-pink-100 text-pink-800' },
-    { dot: 'bg-indigo-500', text: 'bg-indigo-100 text-indigo-800' },
-    { dot: 'bg-orange-500', text: 'bg-orange-100 text-orange-800' },
+    { dot: 'bg-primary', text: 'bg-primary/10 text-primary' },
+    { dot: 'bg-muted-foreground', text: 'bg-muted text-muted-foreground' },
+    { dot: 'bg-accent-foreground', text: 'bg-accent text-accent-foreground' },
+    { dot: 'bg-primary/80', text: 'bg-primary/10 text-primary' },
+    { dot: 'bg-muted-foreground/80', text: 'bg-muted text-muted-foreground' },
+    { dot: 'bg-accent-foreground/80', text: 'bg-accent text-accent-foreground' },
+    { dot: 'bg-primary/60', text: 'bg-primary/10 text-primary' },
   ];
 
   const renderServicePoints = () => {
@@ -354,7 +354,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               height: `${markerSize}px`,
               left: `${startX - markerSize / 2}px`,
               top: `${startY - markerSize / 2}px`,
-              backgroundColor: 'rgba(239, 68, 68, 0.6)', // 빨간색 투명
+              backgroundColor: 'hsl(var(--destructive) / 0.6)', // 빨간색 투명
               zIndex: 15,
               // 원 깨짐 방지를 위한 CSS 최적화
               borderRadius: '50%',
@@ -379,7 +379,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               height: `${markerSize}px`,
               left: `${endX - markerSize / 2}px`,
               top: `${endY - markerSize / 2}px`,
-              backgroundColor: 'rgba(107, 114, 128, 0.6)', // 회색 투명
+              backgroundColor: 'hsl(var(--muted-foreground) / 0.6)', // 회색 투명
               zIndex: 15,
               // 원 깨짐 방지를 위한 CSS 최적화
               borderRadius: '50%',
@@ -490,11 +490,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
           <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4">
             <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-4 py-5 text-center text-sm font-medium text-default-900">
               <span>To see the Top View, complete the Layout setting.</span>
-              <Button
-                variant="outline"
-                className="border-violet-600 text-violet-600 hover:bg-violet-50"
-                onClick={() => setViewMode('setting')}
-              >
+              <Button variant="outline" onClick={() => setViewMode('setting')}>
                 Go to Setting
               </Button>
             </div>
@@ -534,63 +530,12 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
   if (!imgInfo || !imageUrl || !layoutData) {
     return (
       <div className="space-y-6">
-        <div className="mt-[14px] rounded-lg border bg-gray-50 p-6">
+        <div className="mt-[14px] rounded-lg border bg-muted p-6">
           <p>No image information available</p>
         </div>
       </div>
     );
   }
-
-  // 슬라이더 스타일: primary color(#7C3AED) bar, 흰색 thumb
-  const sliderStyle = `
-  input[type=range].slider {
-    accent-color: #7C3AED;
-  }
-  input[type=range].slider::-webkit-slider-thumb {
-    background: #fff;
-    border: 2px solid #7C3AED;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  input[type=range].slider::-moz-range-thumb {
-    background: #fff;
-    border: 2px solid #7C3AED;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  input[type=range].slider::-ms-thumb {
-    background: #fff;
-    border: 2px solid #7C3AED;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  input[type=range].slider::-webkit-slider-runnable-track {
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(to right, #7C3AED 0%, #7C3AED VAR_PCT%, #E5E7EB VAR_PCT%, #E5E7EB 100%);
-  }
-  input[type=range].slider::-ms-fill-lower {
-    background: #7C3AED;
-  }
-  input[type=range].slider::-ms-fill-upper {
-    background: #E5E7EB;
-  }
-  input[type=range].slider:focus {
-    outline: none;
-  }
-`;
 
   // 렌더링 부분 리팩터링 시작
   return (
@@ -634,10 +579,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
         {/* 시간 선택 슬라이더 */}
         {availableTimes.length > 0 && (
           <div className="mb-4 space-y-3">
-            <div
-              className="mt-2 block w-full text-sm font-normal"
-              style={{ height: '40px', display: 'flex', alignItems: 'center', gap: '1rem' }}
-            >
+            <div className="mt-2 flex h-10 w-full items-center gap-4 text-sm font-normal">
               <span className="font-medium text-default-900">Current Queue:</span>
               {Object.entries(currentQueueData).length > 0 ? (
                 Object.entries(currentQueueData).map(([servicePoint, count]) => {
@@ -655,7 +597,9 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
               )}
             </div>
             <div className="relative flex w-full items-center gap-2">
-              <span className="min-w-[90px] text-left text-xs font-normal text-default-500">{availableTimes[0]}</span>
+              <span className="min-w-[90px] text-left text-xs font-normal text-muted-foreground">
+                {availableTimes[0]}
+              </span>
 
               <div className="relative flex-1">
                 <Slider
@@ -671,7 +615,7 @@ function HomeTopView({ scenario, data, isLoading, viewMode, setViewMode }: HomeT
                 />
               </div>
 
-              <span className="min-w-[90px] text-right text-xs font-normal text-default-500">
+              <span className="min-w-[90px] text-right text-xs font-normal text-muted-foreground">
                 {availableTimes[availableTimes.length - 1]}
               </span>
             </div>

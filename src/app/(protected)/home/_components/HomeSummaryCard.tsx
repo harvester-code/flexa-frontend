@@ -1,6 +1,5 @@
 import { ComponentType } from 'react';
 import { formatImageSize } from './HomeFormat';
-import { badgeBtn } from './HomeKpiSelector';
 
 interface HomeSummaryCardProps {
   icon: ComponentType<unknown>;
@@ -12,18 +11,18 @@ interface HomeSummaryCardProps {
 
 function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentile }: HomeSummaryCardProps) {
   return (
-    <div className="rounded border border-input px-4 py-3">
-      <p className="mb-4 flex items-center gap-2">
+    <div className="rounded border border-input bg-white px-4 py-3">
+      <p className="mb-4 flex items-center gap-2 text-sm font-medium text-default-900">
         {title}
         {kpiType && (
-          <span className={badgeBtn(true)}>
+          <span className="inline-flex h-5 items-center rounded border border-primary bg-primary px-2 text-xs font-medium text-primary-foreground">
             {kpiType === 'mean' ? 'Mean' : percentile ? `Top ${percentile}%` : 'Top N%'}
           </span>
         )}
       </p>
       <div className="flex items-center justify-between">
         {formatImageSize(<IconComponent />, 32)}
-        <div className="text-lg font-semibold">{value}</div>
+        <div className="text-lg font-semibold text-default-900">{value}</div>
       </div>
     </div>
   );

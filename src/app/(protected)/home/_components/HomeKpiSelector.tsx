@@ -12,14 +12,6 @@ interface HomeKpiSelectorProps {
   onChange: (val: KpiSelectorValue) => void;
 }
 
-export const badgeBtn = (active: boolean) =>
-  `h-6 px-2 py-0.5 rounded-md border font-semibold transition-colors duration-150 text-xs cursor-default select-none ` +
-  (active ? 'bg-[#7f56d9] text-white border-[#7f56d9] shadow' : 'bg-white text-[#7f56d9] border-[#7f56d9]');
-
-export const badgeBtnSm = (active: boolean) =>
-  `h-3.5 px-1 py-0 flex items-center justify-center rounded border font-normal transition-colors duration-150 text-xs cursor-default select-none leading-none ` +
-  (active ? 'bg-[#7f56d9] text-white border-[#7f56d9] shadow' : 'bg-white text-[#7f56d9] border-[#7f56d9]');
-
 const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) => {
   const [inputValue, setInputValue] = useState(value.percentile?.toString() ?? '5');
   const [errorMessage, setErrorMessage] = useState('');
@@ -64,17 +56,19 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
 
   return (
     <div className="flex items-center gap-2">
-      <span className="ml-2 text-sm font-medium text-default-900">Select a KPI Value:</span>
+      <span className="text-sm font-medium text-default-900">Select a KPI Value:</span>
       <Button
         type="button"
-        variant={value.type === 'mean' ? 'primary' : 'brand'}
+        variant={value.type === 'mean' ? 'primary' : 'outline'}
+        size="sm"
         onClick={() => handleTypeChange('mean')}
       >
         Mean
       </Button>
       <Button
         type="button"
-        variant={value.type === 'top' ? 'primary' : 'brand'}
+        variant={value.type === 'top' ? 'primary' : 'outline'}
+        size="sm"
         onClick={() => handleTypeChange('top')}
       >
         Top N%
@@ -89,7 +83,9 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
               onKeyDown={handleInputKeyDown}
               onBlur={handleInputBlur}
               placeholder="1-100"
-              className={`h-9 w-16 rounded-md border px-1 text-center text-sm font-normal ${errorMessage ? 'border-red-500' : 'border-[#7f56d9]'}`}
+              className={`h-9 w-16 rounded-md border px-1 text-center text-sm font-normal ${
+                errorMessage ? 'border-destructive' : 'border-primary'
+              }`}
               disabled={value.type !== 'top'}
             />
           </PopoverTrigger>
@@ -98,7 +94,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
               side="right"
               align="center"
               sideOffset={30}
-              className="flex w-auto min-w-0 max-w-xs items-center gap-2 rounded-md border-2 border-[#d92d20] bg-[#d92d20] px-3 py-2 text-xs font-normal text-white shadow"
+              className="flex w-auto min-w-0 max-w-xs items-center gap-2 rounded-md border-2 border-destructive bg-destructive px-3 py-2 text-xs font-normal text-destructive-foreground shadow"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -106,7 +102,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
                 viewBox="0 0 24 24"
                 strokeWidth={2}
                 stroke="currentColor"
-                className="h-4 w-4 text-white"
+                className="h-4 w-4"
               >
                 <path
                   strokeLinecap="round"
@@ -119,7 +115,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
           )}
         </Popover>
       )}
-      {value.type === 'top' && <span className="text-lg font-semibold">%</span>}
+      {value.type === 'top' && <span className="text-lg font-semibold text-default-900">%</span>}
     </div>
   );
 };

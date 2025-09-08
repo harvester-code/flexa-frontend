@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { MapPin, BarChart3, AlertTriangle, LineChart, FileText, FileDown } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -63,7 +64,7 @@ function HomePage() {
         <HomeKpiSelector value={kpi} onChange={setKpi} />
       </div>
 
-      <HomeAccordion title="Top View" className="mt-4" open={false}>
+      <HomeAccordion title="Top View" icon={<MapPin className="h-5 w-5 text-primary" />} className="mt-4" open={false}>
         <HomeTopView
           isLoading={isCommonLoading}
           scenario={scenario}
@@ -73,7 +74,7 @@ function HomePage() {
         />
       </HomeAccordion>
 
-      <HomeAccordion title="Summary" className="mt-4" open={true}>
+      <HomeAccordion title="Summary" icon={<BarChart3 className="h-5 w-5 text-primary" />} className="mt-4" open={true}>
         <HomeSummary
           scenario={scenario}
           calculate_type={kpi.type}
@@ -84,11 +85,11 @@ function HomePage() {
         />
       </HomeAccordion>
 
-      <HomeAccordion title="Alert & Issues" open={true}>
+      <HomeAccordion title="Alert & Issues" icon={<AlertTriangle className="h-5 w-5 text-primary" />} open={true}>
         <HomeWarning scenario={scenario} data={allHomeData?.alert_issues} isLoading={isCommonLoading} />
       </HomeAccordion>
 
-      <HomeAccordion title="Charts" open={true}>
+      <HomeAccordion title="Charts" icon={<LineChart className="h-5 w-5 text-primary" />} open={true}>
         <HomeCharts
           scenario={scenario}
           data={{
@@ -100,7 +101,7 @@ function HomePage() {
         />
       </HomeAccordion>
 
-      <HomeAccordion title="Details" open={true}>
+      <HomeAccordion title="Details" icon={<FileText className="h-5 w-5 text-primary" />} open={true}>
         <HomeDetails
           scenario={scenario}
           calculate_type={kpi.type}
@@ -110,7 +111,7 @@ function HomePage() {
         />
       </HomeAccordion>
 
-      <HomeAccordion title="AEMOS Template" open={true}>
+      <HomeAccordion title="AEMOS Template" icon={<FileDown className="h-5 w-5 text-primary" />} open={true}>
         <AemosTemplate scenario={scenario} />
       </HomeAccordion>
     </div>

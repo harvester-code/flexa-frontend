@@ -104,12 +104,12 @@ function HomeWarning({ scenario, data, isLoading: propIsLoading }: HomeWarningPr
                 <div className="bg-muted px-4 py-2">
                   <dl className="flex items-center justify-between">
                     <dt className="flex items-center gap-2">
-                      <span className="rounded px-3 py-1 text-sm font-medium text-primary-500">
+                      <span className="rounded px-3 py-1 text-sm font-medium text-primary">
                         {displayZone} {facility}
                       </span>
                     </dt>
                     <dd>
-                      <span className="rounded px-3 py-1 text-sm font-medium text-primary-500">
+                      <span className="rounded px-3 py-1 text-sm font-medium text-primary">
                         {dayjs(time, 'HH:mm:ss').format('hh:mm a')}
                       </span>
                     </dd>

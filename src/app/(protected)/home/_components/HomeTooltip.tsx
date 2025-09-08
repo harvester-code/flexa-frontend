@@ -31,11 +31,10 @@ export default function HomeTooltip({ content, children }: { content: ReactNode;
             top: coords.top,
             left: coords.left,
             transform: 'translateY(-50%)', // vertically centered
-            background: '#222',
-            color: '#fff',
+            background: 'hsl(var(--popover))',
+            color: 'hsl(var(--popover-foreground))',
             padding: '4px 8px',
             borderRadius: 4,
-            fontSize: 12,
             whiteSpace: 'nowrap',
             zIndex: 10000,
             pointerEvents: 'none',

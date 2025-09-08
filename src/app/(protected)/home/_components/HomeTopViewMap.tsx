@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Settings } from 'lucide-react';
+import { Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { Slider } from '@/components/ui/Slider';
@@ -91,8 +91,6 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
       return () => observer.disconnect();
     }
   }, []);
-
-
 
   // 이미지 크기 측정 로직 (파일 업로드 또는 URL)
   useEffect(() => {
@@ -303,7 +301,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
           height: frameHeight,
           cursor: selecting ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
-          background: '#f2f2f2',
+          background: 'hsl(var(--muted))',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -347,7 +345,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             opacity: isResizing ? 0.8 : 0.6,
           }}
         >
-          <div className="h-1 w-8 rounded-full bg-gray-500"></div>
+          <div className="h-1 w-8 rounded-full bg-muted-foreground"></div>
           {isResizing && (
             <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded bg-black bg-opacity-70 px-2 py-1 text-xs font-normal text-white">
               Height: {Math.round(frameHeight || 0)}px
@@ -364,8 +362,9 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
             </PopoverTrigger>
             <PopoverContent align="end" side="top">
               <Button
-                variant="link"
+                variant="outline"
                 type="button"
+                size="sm"
                 onClick={() => setShowDotSizePopover(false)}
                 aria-label="Close"
               >
@@ -381,7 +380,7 @@ const HomeTopViewMap: React.FC<HomeTopViewMapProps> = ({
                   onValueChange={([v]) => setDotSize(v)}
                   className="w-64"
                 />
-                <span className="text-sm font-normal text-default-500">{dotSize}</span>
+                <span className="text-sm font-normal text-muted-foreground">{dotSize}</span>
               </div>
             </PopoverContent>
           </Popover>
