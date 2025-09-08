@@ -387,7 +387,7 @@ export default function ProcessConfigurationModal({
                       setTravelTime(clampedTime);
                     }
                   }}
-                  onClick={(e) => e.target.select()}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
                   placeholder="5"
                   className="pr-8 text-center"
                 />
@@ -425,7 +425,7 @@ export default function ProcessConfigurationModal({
                       setZoneFacilityCounts(updatedCounts);
                     }
                   }}
-                  onClick={(e) => e.target.select()}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
                   className="pr-8 text-center"
                   placeholder="10"
                 />

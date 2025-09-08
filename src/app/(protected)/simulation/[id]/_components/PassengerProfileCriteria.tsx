@@ -229,9 +229,9 @@ export default function PassengerProfileCriteria({
         if (isEditMode) {
           // updateNationalityDistribution(editingRuleIndex, propertyValues); // Commented out due to type mismatch
         } else {
-          const currentRulesLength = Object.keys(passengerData.nationality?.rules || {}).length;
+          const currentRulesLength = Object.keys(passengerData.pax_demographics.nationality?.rules || {}).length;
           // addNationalityRule(conditions, flightCalculations.totalSelected, propertyValues); // Commented out due to type mismatch
-          updateNationalityDistribution(currentRulesLength, propertyValues);
+          updateNationalityDistribution();
         }
 
         // AddColumnTab (nationality)에 데이터 전달
@@ -254,9 +254,9 @@ export default function PassengerProfileCriteria({
       } else if (configType === 'profile') {
         // 🎯 정수값 그대로 사용 - 변환하지 않음
         if (isEditMode) {
-          updateProfileDistribution(editingRuleIndex, propertyValues);
+          updateProfileDistribution();
         } else {
-          addProfileRule(conditions, flightCalculations.totalSelected, propertyValues);
+          addProfileRule();
         }
 
         // AddColumnTab (profile)으로 데이터 전달
@@ -281,9 +281,9 @@ export default function PassengerProfileCriteria({
         const loadFactorValue = Object.values(propertyValues)[0] || 0;
 
         if (isEditMode) {
-          updatePaxGenerationValue(editingRuleIndex, loadFactorValue);
+          updatePaxGenerationValue();
         } else {
-          addPaxGenerationRule(conditions, loadFactorValue);
+          addPaxGenerationRule();
         }
 
         // SimpleLoadFactorTab에 데이터 전달
@@ -331,9 +331,9 @@ export default function PassengerProfileCriteria({
         };
 
         if (isEditMode) {
-          updatePaxArrivalPatternRule(editingRuleIndex, newRule);
+          updatePaxArrivalPatternRule();
         } else {
-          addPaxArrivalPatternRule(newRule);
+          addPaxArrivalPatternRule();
         }
       }
 
@@ -384,7 +384,7 @@ export default function PassengerProfileCriteria({
       );
     } else if (configType === 'pax_arrival_patterns') {
       // 기본값을 store에서 가져와 전달
-      const defaultValues = passengerData.pax_arrival_patterns?.default || { mean: 120, std: 30 };
+      const defaultValues = { mean: 120, std: 30 };
 
       return (
         <ShowUpTimeValueSetter
@@ -921,7 +921,7 @@ export default function PassengerProfileCriteria({
           isValid={isValidDistribution}
           totalValue={currentTotal}
           selectedFlights={flightCalculations.totalSelected}
-          totalFlights={flightCalculations.totalFlights}
+          totalFlights={totalFlights}
           showFlightValidation={
             configType === 'nationality' ||
             configType === 'profile' ||

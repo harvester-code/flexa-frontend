@@ -330,10 +330,9 @@ export default function SimpleShowUpTimeTab({
       // 🔧 SimulationStore에서 실제 데이터 수집하여 API 요청 body 구성
       const requestBody = {
         settings: {
-          ...passengerData.settings,
           airport: contextData.airport || 'ICN',
           date: contextData.date || new Date().toISOString().split('T')[0], // 빈 날짜면 오늘 날짜 사용
-          min_arrival_minutes: passengerData.settings?.min_arrival_minutes || 15,
+          min_arrival_minutes: 15,
         },
         pax_generation: {
           rules: loadFactorData.rules || [],
