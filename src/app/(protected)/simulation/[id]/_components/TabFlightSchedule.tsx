@@ -20,6 +20,32 @@ interface TabFlightScheduleProps {
   setApiRequestLog: (log: APIRequestLog | null) => void;
 }
 
+interface ApplyFilterData {
+  total: number;
+  chart_x_data: string[];
+  chart_y_data: {
+    airline: Array<{
+      name: string;
+      order: number;
+      y: number[];
+      acc_y: number[];
+    }>;
+    terminal: Array<{
+      name: string;
+      order: number;
+      y: number[];
+      acc_y: number[];
+    }>;
+  };
+  appliedAt: string;
+}
+
+interface FiltersData {
+  total_flights: number;
+  airlines: Record<string, string>;
+  filters: Record<string, unknown>;
+}
+
 function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabFlightScheduleProps) {
   // 표준화된 훅으로 데이터와 액션들 가져오기
   // 🆕 1원칙: 통합 store에서만 데이터 가져오기
@@ -50,12 +76,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
   // 🆕 Apply Filter 응답 상태 관리
   const [applyFilterLoading, setApplyFilterLoading] = useState(false);
-  const [applyFilterData, setApplyFilterData] = useState<any>(null);
+  const [applyFilterData, setApplyFilterData] = useState<ApplyFilterData | null>(null);
   const [applyFilterError, setApplyFilterError] = useState<string | null>(null);
   const [showConditions, setShowConditions] = useState(false);
 
   // 🆕 새로운 필터 시스템용 데이터 state
-  const [filtersData, setFiltersData] = useState<any>(null);
+  const [filtersData, setFiltersData] = useState<FiltersData | null>(null);
 
   // 터미널 표시 형태를 raw 값으로 변환하는 함수 (API 요청용)
   const getTerminalRawValue = useCallback((displayName: string) => {
@@ -266,7 +292,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
         const { data } = await getFlightFilters(simulationId, airport, date);
 
-
         // ✅ Load 버튼 API 요청 로그 저장 (성공)
         setApiRequestLog({
           timestamp,
@@ -293,10 +318,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           setShowConditions(true);
 
           // 🚧 setIsCompleted 제거 - 통합 store 전환 중
-
         }
       } catch (error: any) {
-
         // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = 'Failed to load flight data';
 
@@ -386,7 +409,6 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
         return data;
       } catch (error: any) {
-
         // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = 'Unknown error';
 

@@ -9,13 +9,21 @@ import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/lib/auth/client';
 
+interface LoginHistoryItem {
+  id: string;
+  created_at: string;
+  ip_address: string;
+  user_agent: string;
+  factor_type: string;
+}
+
 // TODO: 헤당 컴포넌트 다시 점검하기
 export default function Password() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [loginHistory, setLoginHistory] = useState<LoginHistoryItem[]>([]);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
   const { toast } = useToast();
   const supabase = createClient();

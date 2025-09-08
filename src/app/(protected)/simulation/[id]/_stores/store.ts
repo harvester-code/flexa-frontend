@@ -89,13 +89,39 @@ const normalizeProcessName = (name: string): string => {
     .replace(/^_|_$/g, ''); // 앞뒤 언더스코어 제거
 };
 
+interface LegacyProcedure {
+  process: string;
+  order: number;
+  facility_names: string[];
+}
+
+interface Facility {
+  id: string;
+  operating_schedule: {
+    yesterday?: {
+      time_blocks: Array<{
+        period: string;
+        facilityName: string;
+        value: number;
+      }>;
+    };
+    today?: {
+      time_blocks: Array<{
+        period: string;
+        facilityName: string;
+        value: number;
+      }>;
+    };
+  };
+}
+
 /**
  * Legacy procedures를 새로운 process_flow 형태로 변환하는 헬퍼 함수
  */
-const migrateProceduresToProcessFlow = (procedures: any[]): ProcessStep[] => {
+const migrateProceduresToProcessFlow = (procedures: LegacyProcedure[]): ProcessStep[] => {
   return procedures
-    .sort((a: any, b: any) => a.order - b.order)
-    .map((procedure: any, index: number) => {
+    .sort((a, b) => a.order - b.order)
+    .map((procedure, index: number) => {
       const processStep = {
         step: index,
         name: normalizeProcessName(procedure.process), // 정규화 적용
@@ -197,6 +223,7 @@ export interface SimulationStoreState {
       selected: number;
       total: number;
     };
+    originalLocalState?: Record<string, any>;
   }) => void;
 
   // 🆕 편의 액션들 - API 바디 형태 조작
@@ -207,7 +234,25 @@ export interface SimulationStoreState {
   toggleConditionValue: (field: string, value: string) => void;
   clearAllConditions: () => void;
 
-  setAppliedFilterResult: (result: any) => void;
+  setAppliedFilterResult: (result: {
+    total: number;
+    chart_x_data: string[];
+    chart_y_data: {
+      airline: Array<{
+        name: string;
+        order: number;
+        y: number[];
+        acc_y: number[];
+      }>;
+      terminal: Array<{
+        name: string;
+        order: number;
+        y: number[];
+        acc_y: number[];
+      }>;
+    };
+    appliedAt: string;
+  }) => void;
 
   // Workflow 관련 액션들
   setCurrentStep: (step: number) => void;
@@ -283,7 +328,15 @@ export interface SimulationStoreState {
   resetProcessFlow: () => void;
   loadProcessMetadata: (metadata: Record<string, unknown>) => void;
   setFacilitiesForZone: (processIndex: number, zoneName: string, count: number) => void;
-  updateOperatingSchedule: (processIndex: number, zoneName: string, timeBlocks: any[]) => void;
+  updateOperatingSchedule: (
+    processIndex: number,
+    zoneName: string,
+    timeBlocks: {
+      period: string;
+      facilityName: string;
+      value: number;
+    }[]
+  ) => void;
   toggleFacilityTimeBlock: (processIndex: number, zoneName: string, facilityId: string, period: string) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
 
@@ -1088,18 +1141,17 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setFacilitiesForZone: (processIndex, zoneName, count) =>
       set((state) => {
-
         if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
           // 지정된 개수만큼 facilities 생성
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
             operating_schedule: {
               yesterday: {
-                time_blocks: [] // 🆕 백엔드용 (나중에 활용)
+                time_blocks: [], // 🆕 백엔드용 (나중에 활용)
               },
               today: {
-                time_blocks: [] // 🆕 현재 OperatingScheduleEditor용
-              }
+                time_blocks: [], // 🆕 현재 OperatingScheduleEditor용
+              },
             },
           }));
 
@@ -1115,7 +1167,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
           if (zone.facilities) {
             // 모든 시설에 동일한 스케줄 적용
-            zone.facilities.forEach((facility: any) => {
+            zone.facilities.forEach((facility: Facility) => {
               facility.operating_schedule = {
                 today: {
                   time_blocks: timeBlocks.map((block) => ({
@@ -1135,7 +1187,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
           const zone = state.process_flow[processIndex].zones[zoneName];
-          const facility = zone.facilities?.find((f: any) => f.id === facilityId);
+          const facility = zone.facilities?.find((f: Facility) => f.id === facilityId);
 
           if (facility) {
             // 기존 스케줄 초기화
@@ -1158,7 +1210,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             const targetMinutes = timeToMinutes(startTime);
 
             // 해당 시간이 포함된 모든 기존 블록 찾기
-            const overlappingBlocks = timeBlocks.filter((block: any) => {
+            const overlappingBlocks = timeBlocks.filter((block) => {
               if (!block.period) return false;
               const [blockStart, blockEnd] = block.period.split('~');
               const blockStartMinutes = timeToMinutes(blockStart);
@@ -1170,7 +1222,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             if (overlappingBlocks.length > 0) {
               // 겹치는 블록들이 있으면 모두 제거 (체크 해제)
               overlappingBlocks.forEach((overlappingBlock) => {
-                const index = timeBlocks.findIndex((block: any) => block.period === overlappingBlock.period);
+                const index = timeBlocks.findIndex((block) => block.period === overlappingBlock.period);
                 if (index !== -1) {
                   timeBlocks.splice(index, 1);
                 }

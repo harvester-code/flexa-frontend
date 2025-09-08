@@ -9,6 +9,15 @@ import CanvasInputs from './CanvasInputs';
 
 const CURSOR_MAP = { view: 'auto', grab: 'grab', draw: 'crosshair' } as const;
 
+interface Rectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  id: string;
+  childs?: any[];
+}
+
 const Canvas = () => {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasStageRef = useRef<any>(null);
@@ -29,8 +38,8 @@ const Canvas = () => {
 
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const [rectangles, setRectangles] = useState<any[]>([]);
-  const [newRectangle, setNewRectangle] = useState<any | null>(null);
+  const [rectangles, setRectangles] = useState<Rectangle[]>([]);
+  const [newRectangle, setNewRectangle] = useState<Rectangle | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const [nodes, setNodes] = useState([
