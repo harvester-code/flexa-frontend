@@ -32,20 +32,15 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
 
   return (
     <div className="rounded-lg border border-input bg-muted/50 p-4">
-      <div className="border-b border-input pb-3 mb-3">
+      <div className="mb-3 border-b border-input pb-3">
         <div className="flex items-center space-x-3">
-          <Checkbox 
-            id="agreeToAll" 
-            checked={agreeToAll} 
-            onCheckedChange={handleAgreeToAll}
-            className="size-4"
-          />
-          <Label htmlFor="agreeToAll" className="text-sm font-semibold text-primary-900 cursor-pointer">
+          <Checkbox id="agreeToAll" checked={agreeToAll} onCheckedChange={handleAgreeToAll} className="size-4" />
+          <Label htmlFor="agreeToAll" className="cursor-pointer text-sm font-semibold text-default-900">
             Agree to All
           </Label>
         </div>
       </div>
-      
+
       <div className="space-y-3">
         <div className="flex items-center space-x-3">
           <Checkbox
@@ -54,11 +49,11 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
             onCheckedChange={(checked) => setTermsOfUse(checked as boolean)}
             className="size-4"
           />
-          <Label htmlFor="termsOfUse" className="text-sm text-primary-900 cursor-pointer">
-            Terms of Use <span className="text-primary font-medium">(Required)</span>
+          <Label htmlFor="termsOfUse" className="cursor-pointer text-sm text-default-900">
+            Terms of Use <span className="font-medium text-primary">(Required)</span>
           </Label>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Checkbox
             id="privacyPolicy"
@@ -66,8 +61,8 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
             onCheckedChange={(checked) => setPrivacyPolicy(checked as boolean)}
             className="size-4"
           />
-          <Label htmlFor="privacyPolicy" className="text-sm text-primary-900 cursor-pointer">
-            Privacy Policy <span className="text-primary font-medium">(Required)</span>
+          <Label htmlFor="privacyPolicy" className="cursor-pointer text-sm text-default-900">
+            Privacy Policy <span className="font-medium text-primary">(Required)</span>
           </Label>
         </div>
       </div>

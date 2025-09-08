@@ -14,12 +14,7 @@ function RegisterSuccessContent() {
   const email = searchParams.get('email');
 
   return (
-    <div
-      className="relative flex min-h-svh items-center justify-center xl:justify-between"
-      style={{
-        background: 'linear-gradient(180deg, rgba(175, 82, 222, 0.15) 0%, rgba(0, 122, 255, 0.15) 100%), #fff',
-      }}
-    >
+    <div className="relative flex min-h-svh items-center justify-center bg-gradient-to-b from-primary/15 via-background to-primary/10 xl:justify-between">
       <div className="hidden xl:block">
         <video autoPlay muted playsInline loop className="min-h-svh w-full object-cover">
           <source
@@ -34,45 +29,34 @@ function RegisterSuccessContent() {
         </video>
       </div>
 
-      <div
-        className="rounded-lg px-10 pb-28 pt-14 shadow-md xl:flex xl:min-h-svh xl:w-full xl:max-w-[30rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-white xl:px-10 xl:shadow-none"
-        style={{
-          background: 'rgba(255, 255, 255, 0.4)',
-          backdropFilter: 'blur(45px)',
-        }}
-      >
+      <div className="rounded-lg bg-background/40 px-10 pb-28 pt-14 shadow-md backdrop-blur-3xl xl:flex xl:min-h-svh xl:w-full xl:max-w-[30rem] xl:flex-col xl:justify-center xl:rounded-none xl:border-l-2 xl:border-background xl:px-10 xl:shadow-none">
         <div className="text-center">
           {/* Success Icon */}
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Mail className="h-8 w-8 text-primary" />
           </div>
 
-          <h2 className="mb-2 text-lg font-semibold text-primary-900" style={{ lineHeight: '100%' }}>
-            Check your email
-          </h2>
+          <h2 className="mb-2 text-lg font-semibold leading-none text-default-900">Check your email</h2>
 
           <div className="mb-8 space-y-2">
-            <p className="text-sm text-primary-900">A verification link has been sent to</p>
+            <p className="text-sm text-default-900">A verification link has been sent to</p>
             <p className="font-semibold text-primary">{email}</p>
-            <p className="text-sm text-primary-900">Please check your inbox and click the link to verify your account.</p>
+            <p className="text-sm text-default-900">
+              Please check your inbox and click the link to verify your account.
+            </p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm text-primary-900">Didn't receive the email?</p>
+            <p className="text-sm text-default-900">Didn't receive the email?</p>
             <form>
               <input type="hidden" name="email" value={email || ''} />
-              <SubmitButton 
-                variant="primary" 
-                formAction={signUpAction} 
-                className="w-full"
-                pendingText="Resending..."
-              >
+              <SubmitButton variant="primary" formAction={signUpAction} className="w-full" pendingText="Resending...">
                 Resend Verification Email
               </SubmitButton>
             </form>
           </div>
 
-          <Button asChild variant="ghost">
+          <Button asChild variant="outline">
             <Link href="/auth/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Login
@@ -80,7 +64,7 @@ function RegisterSuccessContent() {
           </Button>
         </div>
 
-        <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-secondary">
+        <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-muted-foreground">
           © Flexa all rights reserved
         </p>
       </div>
