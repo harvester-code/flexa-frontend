@@ -18,7 +18,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/Input';
 import { useSimulationStore } from '../_stores';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
-import PercentageInteractiveBar, { getDistributionTotal, isValidDistribution } from './PercentageInteractiveBar';
+import PercentageInteractiveBar, {
+  convertToDecimal,
+  getDistributionTotal,
+  isValidDistribution,
+} from './PercentageInteractiveBar';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -291,7 +295,12 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
         }
       });
 
-      addRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
+      // 🎯 distribution 값들을 decimal로 변환해서 저장 (50% → 0.5)
+      const convertedDistribution = Object.fromEntries(
+        Object.entries(rule.distribution || {}).map(([key, value]) => [key, convertToDecimal(value)])
+      );
+
+      addRule(backendConditions, rule.flightCount || 0, convertedDistribution);
     },
     [addRule]
   );
@@ -372,14 +381,16 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
     setIsRuleModalOpen(true);
   };
 
-  // 균등분배 계산 함수 (메모이제이션)
+  // 🔧 개선된 균등분배 계산 함수 - decimal로 변환 (메모이제이션)
   const calculateEqualDistribution = useCallback((properties: string[]) => {
     const equalPercentage = Math.floor(100 / properties.length);
     let remainder = 100 - equalPercentage * properties.length;
 
     const distribution: Record<string, number> = {};
     properties.forEach((prop, index) => {
-      distribution[prop] = equalPercentage + (index < remainder ? 1 : 0);
+      const percentageValue = equalPercentage + (index < remainder ? 1 : 0);
+      // 🎯 percentage를 decimal로 변환해서 저장 (50 → 0.5)
+      distribution[prop] = convertToDecimal(percentageValue);
     });
     return distribution;
   }, []);
