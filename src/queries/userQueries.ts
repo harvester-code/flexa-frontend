@@ -25,20 +25,22 @@ const fetchUser = async () => {
     throw new Error(error.message);
   }
 
+  const userData = data as any;
+
   const user = {
-    id: data?.user_id,
-    email: data?.email || '',
-    firstName: data?.first_name,
-    lastName: data?.last_name,
-    fullName: `${data?.first_name} ${data?.last_name}`.trim(),
-    initials: `${data?.last_name?.[0] || ''}${data?.first_name?.[0] || ''}` || '-',
-    profileImageUrl: data?.profile_image_url,
-    position: data?.position,
-    introduction: data?.bio,
-    groupId: data?.group_id || undefined,
-    roleId: data?.role_id,
-    createdAt: data?.created_at,
-    updatedAt: data?.updated_at,
+    id: userData?.user_id,
+    email: userData?.email || '',
+    firstName: userData?.first_name,
+    lastName: userData?.last_name,
+    fullName: `${userData?.first_name} ${userData?.last_name}`.trim(),
+    initials: `${userData?.last_name?.[0] || ''}${userData?.first_name?.[0] || ''}` || '-',
+    profileImageUrl: userData?.profile_image_url,
+    position: userData?.position,
+    introduction: userData?.bio,
+    groupId: userData?.group_id || undefined,
+    roleId: userData?.role_id,
+    createdAt: userData?.created_at,
+    updatedAt: userData?.updated_at,
   };
 
   return user;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { Save, Trash2 } from 'lucide-react';
@@ -37,10 +37,16 @@ const tabs: { text: string; number: number }[] = [
   { text: 'Processing Procedures', number: 2 },
 ];
 
-export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { toast } = useToast();
+// Component that uses useSearchParams for scenario name from URL
+function ScenarioNameDisplay({ simulationId, scenarioName }: { simulationId: string; scenarioName: string }) {
   const searchParams = useSearchParams();
   const urlScenarioName = searchParams.get('name');
+
+  return <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>;
+}
+
+export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { toast } = useToast();
 
   // ✅ simulationId를 맨 위로 이동 (다른 훅들보다 먼저)
   const simulationId = use(params).id;
@@ -58,16 +64,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
-
     try {
       // 🔧 새로운 통합 Store 구조에 맞게 수정
       const metadata = data.metadata || {};
       const tabs = metadata.tabs || {};
 
-
       // 🎯 S3에서 받은 데이터를 Zustand에 통째로 갈아끼우기
       if (metadata.context || metadata.flight || metadata.passenger || metadata.process_flow || metadata.workflow) {
-
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
 
@@ -135,7 +138,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       // 🚧 Legacy tabs 구조 지원 (하위 호환성)
       else if (tabs.passengerSchedule || tabs.processingProcedures) {
-
         if (tabs.passengerSchedule) {
           useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
         }
@@ -143,11 +145,9 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         if (tabs.processingProcedures) {
           useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
         }
-
       } else {
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }, []);
 
   // 탭 접근성 계산
@@ -332,7 +332,9 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       <div className="mt-[15px] flex justify-between">
         <div className="flex items-center gap-3">
           <dl className="sub-title">
-            <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>
+            <Suspense fallback={<dd>{scenarioName || `Scenario ${simulationId}`}</dd>}>
+              <ScenarioNameDisplay simulationId={simulationId} scenarioName={scenarioName} />
+            </Suspense>
           </dl>
           {latestHistory?.checkpoint && (
             <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-default-500">

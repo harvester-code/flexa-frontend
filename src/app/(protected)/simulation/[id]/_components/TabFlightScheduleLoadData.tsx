@@ -44,7 +44,6 @@ function TabFlightScheduleLoadData({
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
   const [searchAirport, setSearchAirport] = useState('');
 
-
   // 디바운싱된 검색어 (타이핑 중 과도한 필터링 방지) - 성능 최적화
   const [debouncedSearchAirport, setDebouncedSearchAirport] = useState('');
 
@@ -126,7 +125,7 @@ function TabFlightScheduleLoadData({
                     placeholder="Search airport..."
                     value={searchAirport}
                     onValueChange={setSearchAirport}
-                    inputMode="latin"
+                    inputMode="text"
                     lang="en"
                     autoCapitalize="characters"
                     spellCheck={false}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { Suspense, useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
@@ -10,11 +10,49 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
-export default function LoginPage() {
-  const [state, formAction] = useActionState(signInAction, { error: null });
-  const [savedEmail, setSavedEmail] = useState('');
+// Message display component that uses useSearchParams
+function MessageDisplay() {
   const searchParams = useSearchParams();
   const message = searchParams?.get('message');
+
+  if (message === 'email-verified') {
+    return (
+      <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+          <div>
+            <p className="text-sm font-medium text-primary">Email Verified Successfully</p>
+            <p className="text-sm text-primary/80">
+              Your email has been verified. You can now sign in to your account.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (message === 'already-verified') {
+    return (
+      <div className="mb-6 rounded-lg border border-muted bg-muted/50 p-4">
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium text-default-900">Email Already Verified</p>
+            <p className="text-sm text-muted-foreground">
+              Your email verification link has already been used. Please sign in with your credentials.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export default function LoginPage() {
+  const [state, formAction] = useActionState(signInAction, { error: { message: '' } });
+  const [savedEmail, setSavedEmail] = useState('');
 
   // 저장된 이메일 로드 (클라이언트 사이드)
   useEffect(() => {
@@ -50,34 +88,10 @@ export default function LoginPage() {
           <p className="mb-10 whitespace-nowrap">Enter your login information to access the solution.</p>
 
           <form action={formAction}>
-            {/* Success Message Display */}
-            {message === 'email-verified' && (
-              <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium text-primary">Email Verified Successfully</p>
-                    <p className="text-sm text-primary/80">
-                      Your email has been verified. You can now sign in to your account.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {message === 'already-verified' && (
-              <div className="mb-6 rounded-lg border border-muted bg-muted/50 p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-default-900">Email Already Verified</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your email verification link has already been used. Please sign in with your credentials.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Success Message Display with Suspense */}
+            <Suspense fallback={null}>
+              <MessageDisplay />
+            </Suspense>
 
             {/* Error Message Display */}
             {state?.error && (
@@ -87,8 +101,8 @@ export default function LoginPage() {
                   <div>
                     <p className="text-sm font-medium text-destructive">Authentication Error</p>
                     <p className="text-sm text-destructive/80">{state.error.message}</p>
-                    {state.error.details && process.env.NODE_ENV === 'development' && (
-                      <p className="mt-1 text-xs text-destructive/60">Debug: {state.error.details}</p>
+                    {(state.error as any)?.details && process.env.NODE_ENV === 'development' && (
+                      <p className="mt-1 text-xs text-destructive/60">Debug: {(state.error as any)?.details}</p>
                     )}
                   </div>
                 </div>

@@ -396,10 +396,38 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         // if (data?.chart_x_data && data?.chart_y_data) { ... }
 
         // ✅ Apply Filter 응답 상태에 저장
-        setApplyFilterData(data);
+        setApplyFilterData({
+          total: data.total,
+          chart_x_data: data.chart_x_data,
+          chart_y_data: {
+            airline: (data.chart_y_data?.airline || []).map((item) => ({
+              ...item,
+              acc_y: item.acc_y || [],
+            })),
+            terminal: (data.chart_y_data?.terminal || []).map((item) => ({
+              ...item,
+              acc_y: item.acc_y || [],
+            })),
+          },
+          appliedAt: new Date().toISOString(),
+        });
 
         // 🆕 Apply Filter 응답을 zustand에 저장
-        setAppliedFilterResult(data);
+        setAppliedFilterResult({
+          total: data.total,
+          chart_x_data: data.chart_x_data,
+          chart_y_data: {
+            airline: (data.chart_y_data?.airline || []).map((item) => ({
+              ...item,
+              acc_y: item.acc_y || [],
+            })),
+            terminal: (data.chart_y_data?.terminal || []).map((item) => ({
+              ...item,
+              acc_y: item.acc_y || [],
+            })),
+          },
+          appliedAt: new Date().toISOString(),
+        });
 
         // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음
         // 실제 결과는 appliedFilterResult에만 저장하여 차트에서 사용

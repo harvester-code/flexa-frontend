@@ -1,6 +1,6 @@
-import { type SupabaseClient, createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient } from '@supabase/ssr';
 
-let client: SupabaseClient | undefined;
+let client: ReturnType<typeof createBrowserClient> | undefined;
 
 /**
  * 개발 환경 장시간 사용 최적화된 Supabase 브라우저 클라이언트
@@ -10,7 +10,7 @@ let client: SupabaseClient | undefined;
  * - 개발 환경 최적화 설정
  * - 장시간 세션 유지 설정
  */
-function createClient(): SupabaseClient {
+function createClient() {
   if (client) {
     return client;
   }
@@ -24,8 +24,7 @@ function createClient(): SupabaseClient {
       // 자동 새로고침 활성화 (장시간 개발시 세션 유지)
       autoRefreshToken: true,
 
-      // 토큰 새로고침 시간 여유 (개발 환경에서 더 짧게)
-      refreshTokenMargin: isDevelopment ? 60 : 30, // 60초 vs 30초
+      // 토큰 새로고침 시간 여유는 auth 옵션에서 제거됨
 
       // 세션 지속성 (브라우저 재시작 시에도 세션 유지)
       persistSession: true,
@@ -55,11 +54,11 @@ function createClient(): SupabaseClient {
   });
 
   // 개발 환경에서 디버깅을 위한 이벤트 리스너
-  if (isDevelopment && typeof window !== 'undefined') {
+  if (isDevelopment && typeof window !== 'undefined' && client) {
     client.auth.onAuthStateChange((event, session) => {});
   }
 
-  return client;
+  return client!;
 }
 
 export { createClient };

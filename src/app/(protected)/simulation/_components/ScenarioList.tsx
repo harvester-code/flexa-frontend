@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -113,11 +113,30 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
   });
 };
 
-const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCreateScenario, onDeleteScenario }) => {
-  const queryClient = useQueryClient();
+// Custom hook for navigation that uses pathname and router
+function useScenarioNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+
+  const navigateToScenario = (scenarioId: string, scenarioName?: string) => {
+    const url = scenarioName
+      ? `${pathname}/${scenarioId}?name=${encodeURIComponent(scenarioName)}`
+      : `${pathname}/${scenarioId}`;
+    router.push(url);
+  };
+
+  return navigateToScenario;
+}
+
+const ScenarioListContent: React.FC<ScenarioListProps> = ({
+  scenarios,
+  isLoading,
+  onCreateScenario,
+  onDeleteScenario,
+}) => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigateToScenario = useScenarioNavigation();
 
   const [isScenarioSelected, setIsScenarioSelected] = useState<boolean[]>([]);
   const [editingScenario, setEditingScenario] = useState<EditingScenario | null>(null);
@@ -291,10 +310,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
 
   const handleScenarioClick = (scenarioId: string, scenarioName?: string) => {
     setNavigatingToId(scenarioId);
-    const url = scenarioName
-      ? `${pathname}/${scenarioId}?name=${encodeURIComponent(scenarioName)}`
-      : `${pathname}/${scenarioId}`;
-    router.push(url);
+    navigateToScenario(scenarioId, scenarioName);
   };
 
   return (
@@ -598,11 +614,7 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700"
-              onClick={handleDeleteConfirm}
-            >
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDeleteConfirm}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -623,6 +635,27 @@ const ScenarioList: React.FC<ScenarioListProps> = ({ scenarios, isLoading, onCre
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+};
+
+// Wrapper component with Suspense boundary
+const ScenarioList: React.FC<ScenarioListProps> = (props) => {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <h2 className="title-sm">Scenario List</h2>
+            <Button onClick={props.onCreateScenario}>Create Scenario</Button>
+          </div>
+          <div className="py-8 text-center">
+            <p className="text-default-500">Loading scenarios...</p>
+          </div>
+        </div>
+      }
+    >
+      <ScenarioListContent {...props} />
+    </Suspense>
   );
 };
 

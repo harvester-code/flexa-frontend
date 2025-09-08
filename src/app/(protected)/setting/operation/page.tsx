@@ -195,7 +195,7 @@ function SettingOperationPage() {
           </div>
         </div>
       </div>
-      <Canvas />;
+      <Canvas />
       <div className="mt-[50px] flex justify-end">
         <Button variant="primary" size="default" onClick={() => {}}>
           <RefreshCw className="mr-2 h-5 w-5" />

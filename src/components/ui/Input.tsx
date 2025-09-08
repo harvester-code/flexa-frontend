@@ -18,7 +18,9 @@ const inputVariants = cva(
   }
 );
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, VariantProps<typeof inputVariants> {
+export interface InputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+    VariantProps<typeof inputVariants> {
   // TheInput 호환성을 위한 추가 props
   onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
 }

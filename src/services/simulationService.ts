@@ -6,7 +6,6 @@ import {
   MetadataLoadResponse,
   MetadataSaveResponse,
   PassengerScheduleResponse,
-  PassengerSchedulesParams,
   PassengerShowUpResponse,
 } from '@/types/simulationTypes';
 import { createAPIService } from '@/lib/axios';
@@ -41,7 +40,7 @@ export const getFlightFilters = (scenario_id: string, airport: string, date: str
   return api.withScenario(scenario_id).get(`/flight-filters?airport=${airport}&date=${date}`);
 };
 
-export const getPassengerSchedules = (scenarioId: string, params: PassengerSchedulesParams) => {
+export const getPassengerSchedules = (scenarioId: string, params: any) => {
   return api.withScenario(scenarioId).post<PassengerScheduleResponse>('/show-up-passenger', params);
 };
 

@@ -9,12 +9,22 @@ import CanvasInputs from './CanvasInputs';
 
 const CURSOR_MAP = { view: 'auto', grab: 'grab', draw: 'crosshair' } as const;
 
+interface Node {
+  title: string;
+  passengerCount: number;
+  lineCount: number;
+  circleSize: number;
+}
+
 interface Rectangle {
   x: number;
   y: number;
   width: number;
   height: number;
-  id: string;
+  id?: string;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
   childs?: any[];
 }
 
@@ -42,7 +52,7 @@ const Canvas = () => {
   const [newRectangle, setNewRectangle] = useState<Rectangle | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const [nodes, setNodes] = useState([
+  const [nodes, setNodes] = useState<Node[]>([
     { title: 'Zone A', passengerCount: 350, lineCount: 10, circleSize: 1 },
     { title: 'Zone B', passengerCount: 350, lineCount: 10, circleSize: 1 },
     { title: 'Zone C', passengerCount: 350, lineCount: 10, circleSize: 1 },
@@ -98,7 +108,7 @@ const Canvas = () => {
     heightRef.current = height;
   }, [width, height]);
 
-  const handleWheel = (e) => {
+  const handleWheel = (e: any) => {
     const isZoomKeyPressed = e.evt.ctrlKey || e.evt.metaKey;
 
     if (!isZoomKeyPressed) return;
@@ -143,7 +153,7 @@ const Canvas = () => {
     stage.batchDraw();
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: any) => {
     e.evt.preventDefault();
 
     const stage = canvasStageRef.current;
@@ -183,7 +193,7 @@ const Canvas = () => {
     }
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: any) => {
     e.evt.preventDefault();
 
     if (mode === 'draw' || isDrawing) {
@@ -211,7 +221,7 @@ const Canvas = () => {
     }
   };
 
-  const handleMouseUp = (e) => {
+  const handleMouseUp = (e: any) => {
     e.evt.preventDefault();
 
     const stage = canvasStageRef.current;
@@ -221,7 +231,13 @@ const Canvas = () => {
       let finalizedRectangle = { ...newRectangle };
 
       if (newRectangle.width === 0 && newRectangle.height === 0) {
-        finalizedRectangle = { x: newRectangle.x - 50, y: newRectangle.y - 50, width: 100, height: 100 };
+        finalizedRectangle = {
+          ...newRectangle,
+          x: newRectangle.x - 50,
+          y: newRectangle.y - 50,
+          width: 100,
+          height: 100,
+        };
       }
 
       setRectangles((prevRectangles) => [...prevRectangles, finalizedRectangle]);
@@ -292,7 +308,7 @@ const Canvas = () => {
 
   const drawLines = (index: number) => {
     const { passengerCount, lineCount } = nodes[index];
-    const { x, y, width, height, rotation } = rectangles[index];
+    const { x, y, width, height, rotation = 0 } = rectangles[index];
 
     const passengersPerLine = Math.ceil(passengerCount / lineCount);
 
@@ -408,7 +424,8 @@ const Canvas = () => {
                     setRectangles(newRects);
                   }}
                 />
-                {rect.childs.length > 0 &&
+                {rect.childs &&
+                  rect.childs.length > 0 &&
                   rect.childs.map((child, idx) => {
                     return (
                       <Circle

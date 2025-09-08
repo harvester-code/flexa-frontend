@@ -70,43 +70,42 @@ export default function TabPassengerScheduleParquetFilter({
       return;
     }
 
+    // API 요청 바디 구성
+    const requestBody = {
+      settings: {
+        airport: contextData.airport || 'ICN',
+        date: contextData.date || new Date().toISOString().split('T')[0],
+        min_arrival_minutes: 15,
+      },
+      pax_generation: {
+        rules: passengerData.pax_generation.rules || [],
+        default: {
+          load_factor: passengerData.pax_generation.default.load_factor || 0.85,
+        },
+      },
+      pax_demographics: {
+        nationality: {
+          available_values: passengerData.pax_demographics.nationality.available_values || [],
+          rules: passengerData.pax_demographics.nationality.rules || [],
+          default: passengerData.pax_demographics.nationality.default || {},
+        },
+        profile: {
+          available_values: passengerData.pax_demographics.profile.available_values || [],
+          rules: passengerData.pax_demographics.profile.rules || [],
+          default: passengerData.pax_demographics.profile.default || {},
+        },
+      },
+      pax_arrival_patterns: {
+        rules: passengerData.pax_arrival_patterns.rules || [],
+        default: {
+          mean: passengerData.pax_arrival_patterns.default.mean || 120,
+          std: passengerData.pax_arrival_patterns.default.std || 30,
+        },
+      },
+    };
+
     try {
       setIsGenerating(true);
-
-      // API 요청 바디 구성
-      const requestBody = {
-        settings: {
-          airport: contextData.airport || 'ICN',
-          date: contextData.date || new Date().toISOString().split('T')[0],
-          min_arrival_minutes: 15,
-        },
-        pax_generation: {
-          rules: passengerData.pax_generation.rules || [],
-          default: {
-            load_factor: passengerData.pax_generation.default.load_factor || 0.85,
-          },
-        },
-        pax_demographics: {
-          nationality: {
-            available_values: passengerData.pax_demographics.nationality.available_values || [],
-            rules: passengerData.pax_demographics.nationality.rules || [],
-            default: passengerData.pax_demographics.nationality.default || {},
-          },
-          profile: {
-            available_values: passengerData.pax_demographics.profile.available_values || [],
-            rules: passengerData.pax_demographics.profile.rules || [],
-            default: passengerData.pax_demographics.profile.default || {},
-          },
-        },
-        pax_arrival_patterns: {
-          rules: passengerData.pax_arrival_patterns.rules || [],
-          default: {
-            mean: passengerData.pax_arrival_patterns.default.mean || 120,
-            std: passengerData.pax_arrival_patterns.default.std || 30,
-          },
-        },
-      };
-
 
       // 🔍 API 요청 시작 로그
       setApiRequestLog?.({
@@ -118,9 +117,26 @@ export default function TabPassengerScheduleParquetFilter({
       // API 호출
       const response = await createPassengerShowUp(simulationId, requestBody);
 
-
       // 🔧 Axios response.data를 저장 (response 객체가 아님!)
-      setPassengerChartResult(response.data);
+      setPassengerChartResult({
+        total: response.data.total || 0,
+        chart_x_data: response.data.bar_chart_x_data || [],
+        chart_y_data: response.data.bar_chart_y_data || {},
+        summary: {
+          flights: response.data.total_sub_obj?.find((item) => item.title === 'flights')?.value
+            ? parseInt(response.data.total_sub_obj?.find((item) => item.title === 'flights')?.value || '0')
+            : 0,
+          avg_seats: response.data.total_sub_obj?.find((item) => item.title === 'avg_seats')?.value
+            ? parseFloat(response.data.total_sub_obj?.find((item) => item.title === 'avg_seats')?.value || '0')
+            : 0,
+          load_factor: response.data.total_sub_obj?.find((item) => item.title === 'load_factor')?.value
+            ? parseFloat(response.data.total_sub_obj?.find((item) => item.title === 'load_factor')?.value || '0')
+            : 0,
+          min_arrival_minutes: response.data.total_sub_obj?.find((item) => item.title === 'min_arrival_minutes')?.value
+            ? parseInt(response.data.total_sub_obj?.find((item) => item.title === 'min_arrival_minutes')?.value || '15')
+            : 15,
+        },
+      });
 
       // 🔍 API 성공 로그
       setApiRequestLog?.({
@@ -140,7 +156,6 @@ export default function TabPassengerScheduleParquetFilter({
       // 🎯 API 응답을 성공적으로 받았을 때만 Step 2 완료 처리
       setStepCompleted(2, true);
     } catch (error) {
-
       // 🔍 API 에러 로그
       setApiRequestLog?.({
         timestamp: new Date().toISOString(),

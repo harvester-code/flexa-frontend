@@ -50,7 +50,7 @@ function RegisterSuccessContent() {
             <p className="text-sm text-default-900">Didn't receive the email?</p>
             <form>
               <input type="hidden" name="email" value={email || ''} />
-              <SubmitButton variant="primary" formAction={signUpAction} className="w-full" pendingText="Resending...">
+              <SubmitButton variant="primary" formAction={undefined} className="w-full" pendingText="Resending...">
                 Resend Verification Email
               </SubmitButton>
             </form>

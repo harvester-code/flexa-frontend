@@ -1,8 +1,16 @@
 import { Hand, LandPlot, MousePointer2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
+import { cn } from '@/lib/utils';
 
-function CanvasController({ prevModeRef, mode, setMode, nodes, rectangles }) {
+interface CanvasControllerProps {
+  prevModeRef: React.MutableRefObject<'view' | 'grab' | 'draw'>;
+  mode: 'view' | 'grab' | 'draw';
+  setMode: (mode: 'view' | 'grab' | 'draw') => void;
+  nodes: any[];
+  rectangles: any[];
+}
+
+function CanvasController({ prevModeRef, mode, setMode, nodes, rectangles }: CanvasControllerProps) {
   const { toast } = useToast();
   return (
     <>
@@ -31,9 +39,9 @@ function CanvasController({ prevModeRef, mode, setMode, nodes, rectangles }) {
             onClick={() => {
               if (nodes.length === rectangles.length) {
                 toast({
-                  title: "Warning",
-                  description: "더 이상 영역을 지정할 수 없습니다.",
-                  variant: "destructive"
+                  title: 'Warning',
+                  description: '더 이상 영역을 지정할 수 없습니다.',
+                  variant: 'destructive',
                 });
               } else {
                 setMode('draw');

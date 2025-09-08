@@ -1,11 +1,11 @@
-import { HTMLAttributes, forwardRef } from 'react';
+import { ElementType, HTMLAttributes, forwardRef } from 'react';
 import { VariantProps } from 'class-variance-authority';
 import { typographyVariants } from '@/lib/typography';
 import { cn } from '@/lib/utils';
 
 // Typography 컴포넌트 Props
 interface TypographyProps extends HTMLAttributes<HTMLElement>, VariantProps<typeof typographyVariants> {
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
 }
 
 /**
@@ -55,4 +55,3 @@ Heading.displayName = 'Heading';
 Label.displayName = 'Label';
 Body.displayName = 'Body';
 Caption.displayName = 'Caption';
-

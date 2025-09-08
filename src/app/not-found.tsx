@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-const ErrorPage: React.FC = () => {
+const ErrorPageContent: React.FC = () => {
   const router = useRouter();
 
   return (
@@ -23,16 +23,34 @@ const ErrorPage: React.FC = () => {
         </p>
 
         <div className="mx-auto mt-5 flex w-80 gap-2.5">
-          <Button variant="secondary" size="btn-lg" onClick={() => router.back()}>
+          <Button variant="secondary" size="default" onClick={() => router.back()}>
             <ChevronLeft className="size-4" />
             Go back
           </Button>
-          <Button variant="primary" size="btn-lg" onClick={() => router.push('/home')}>
+          <Button variant="primary" size="default" onClick={() => router.push('/home')}>
             Take me home
           </Button>
         </div>
       </div>
     </div>
+  );
+};
+
+// Wrapper with Suspense boundary
+const ErrorPage: React.FC = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh flex-col items-center justify-center bg-muted text-center">
+          <div>
+            <AlertCircle className="mx-auto h-20 w-20 text-red-500" />
+            <p className="mt-2 text-lg font-semibold text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <ErrorPageContent />
+    </Suspense>
   );
 };
 

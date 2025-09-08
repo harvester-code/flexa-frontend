@@ -1,7 +1,22 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines }) {
+interface Node {
+  title: string;
+  passengerCount: number;
+  lineCount: number;
+  circleSize: number;
+}
+
+interface CanvasInputsProps {
+  nodes: Node[];
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  rectangles: any[];
+  setRectangles: React.Dispatch<React.SetStateAction<any[]>>;
+  drawLines: (index: number) => void;
+}
+
+function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines }: CanvasInputsProps) {
   return (
     <div className="mx-auto mt-6 flex w-[1280px] flex-col gap-4 overflow-hidden bg-muted p-4">
       {nodes.map((node, idx) => (

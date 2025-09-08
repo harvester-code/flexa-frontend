@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -16,7 +17,6 @@ import {
   UserPen,
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
-import { useTransition } from 'react';
 import { useUser } from '@/queries/userQueries';
 import { Button } from '@/components/ui/Button';
 import {
@@ -57,8 +57,39 @@ const menuSections = [
   },
 ];
 
-function AppSidebar() {
+// Component for menu items that uses usePathname
+function MenuItems({ section, isCollapsed }: { section: (typeof menuSections)[0]; isCollapsed: boolean }) {
   const pathname = usePathname();
+
+  return (
+    <>
+      {section.items.map((item) => {
+        const Icon = item.icon;
+        const isActive = pathname === item.href;
+
+        return (
+          <Button
+            key={item.href}
+            variant="ghost"
+            asChild
+            className={cn(
+              'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
+              isActive && 'bg-primary-50 text-primary-900',
+              isCollapsed && 'justify-center px-2'
+            )}
+          >
+            <Link href={item.href}>
+              <Icon className="h-5 w-5" />
+              {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
+            </Link>
+          </Button>
+        );
+      })}
+    </>
+  );
+}
+
+function AppSidebar() {
   const { data: userInfo } = useUser();
   const [isPending, startTransition] = useTransition();
 
@@ -123,28 +154,29 @@ function AppSidebar() {
 
             {/* Section menu items */}
             <div className="space-y-1">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-
-                return (
-                  <Button
-                    key={item.href}
-                    variant="ghost"
-                    asChild
-                    className={cn(
-                      'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
-                      isActive && 'bg-primary-50 text-primary-900',
-                      isCollapsed && 'justify-center px-2'
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <Icon className="h-5 w-5" />
-                      {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
-                    </Link>
-                  </Button>
-                );
-              })}
+              <Suspense
+                fallback={section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Button
+                      key={item.href}
+                      variant="ghost"
+                      asChild
+                      className={cn(
+                        'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
+                        isCollapsed && 'justify-center px-2'
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <Icon className="h-5 w-5" />
+                        {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
+                      </Link>
+                    </Button>
+                  );
+                })}
+              >
+                <MenuItems section={section} isCollapsed={isCollapsed} />
+              </Suspense>
             </div>
           </div>
         ))}

@@ -234,25 +234,27 @@ export interface SimulationStoreState {
   toggleConditionValue: (field: string, value: string) => void;
   clearAllConditions: () => void;
 
-  setAppliedFilterResult: (result: {
-    total: number;
-    chart_x_data: string[];
-    chart_y_data: {
-      airline: Array<{
-        name: string;
-        order: number;
-        y: number[];
-        acc_y: number[];
-      }>;
-      terminal: Array<{
-        name: string;
-        order: number;
-        y: number[];
-        acc_y: number[];
-      }>;
-    };
-    appliedAt: string;
-  }) => void;
+  setAppliedFilterResult: (
+    result: {
+      total: number;
+      chart_x_data: string[];
+      chart_y_data: {
+        airline: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
+        terminal: Array<{
+          name: string;
+          order: number;
+          y: number[];
+          acc_y: number[];
+        }>;
+      };
+      appliedAt: string;
+    } | null
+  ) => void;
 
   // Workflow 관련 액션들
   setCurrentStep: (step: number) => void;
@@ -1170,10 +1172,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
             zone.facilities.forEach((facility: Facility) => {
               facility.operating_schedule = {
                 today: {
-                  time_blocks: timeBlocks.map((block) => ({
+                  time_blocks: timeBlocks.map((block: any) => ({
                     period: block.period,
-                    process_time_seconds: block.processTime,
-                    passenger_conditions: block.conditions,
+                    facilityName: block.facilityName || '',
+                    value: block.processTime || block.value || 0,
                   })),
                 },
               };

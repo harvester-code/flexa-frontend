@@ -9,7 +9,10 @@ import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
 export default function ForgotPasswordPage() {
-  const [state, formAction] = useActionState(forgotPasswordAction, { error: null });
+  const [state, formAction] = useActionState(
+    async (prevState: any, formData: FormData) => await forgotPasswordAction(formData),
+    { error: { message: '' } }
+  );
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-gradient-to-b from-primary/15 via-background to-primary/10 xl:justify-between">

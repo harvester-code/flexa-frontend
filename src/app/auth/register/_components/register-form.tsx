@@ -9,7 +9,7 @@ import { SubmitButton } from '@/components/ui/SubmitButton';
 import { AgreementForm } from './agreement-form';
 
 export function RegisterForm() {
-  const [state, formAction] = useActionState(signUpAction, { error: null });
+  const [state, formAction] = useActionState(signUpAction, { error: { message: '' } });
   const [isAgreed, setIsAgreed] = useState(false);
 
   return (
@@ -22,8 +22,8 @@ export function RegisterForm() {
             <div>
               <p className="text-sm font-medium text-destructive">Registration Error</p>
               <p className="text-sm text-destructive/80">{state.error.message}</p>
-              {state.error.details && process.env.NODE_ENV === 'development' && (
-                <p className="mt-1 text-xs text-destructive/60">Debug: {state.error.details}</p>
+              {(state.error as any)?.details && process.env.NODE_ENV === 'development' && (
+                <p className="mt-1 text-xs text-destructive/60">Debug: {(state.error as any)?.details}</p>
               )}
             </div>
           </div>
