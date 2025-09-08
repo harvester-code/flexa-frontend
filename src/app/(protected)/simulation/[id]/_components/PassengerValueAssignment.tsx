@@ -116,7 +116,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                   const clampedPercentage = Math.min(100, Math.max(0, percentage));
                   onChange('load_factor', clampedPercentage / 100);
                 }}
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
                 className="w-20"
               />
               <span className="text-sm text-default-500">{((values.load_factor || 0) * 100).toFixed(1)}%</span>
@@ -140,7 +140,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                   const numericValue = e.target.value.replace(/[^0-9.]/g, '');
                   onChange('mean', parseFloat(numericValue) || 120);
                 }}
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
                 placeholder="120"
               />
             </div>
@@ -153,7 +153,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                   const numericValue = e.target.value.replace(/[^0-9.]/g, '');
                   onChange('std', parseFloat(numericValue) || 30);
                 }}
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
                 placeholder="30"
               />
             </div>
@@ -197,7 +197,7 @@ export default function PassengerValueAssignment({ configType, definedProperties
                       const clampedPercentage = Math.min(100, Math.max(0, percentage));
                       onChange(property, clampedPercentage / 100);
                     }}
-                    onClick={(e) => e.target.select()}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
                     className="w-20"
                   />
                   <span className="w-12 text-sm text-default-500">{(value * 100).toFixed(1)}%</span>

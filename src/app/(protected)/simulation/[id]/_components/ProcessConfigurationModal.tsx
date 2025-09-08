@@ -478,7 +478,7 @@ export default function ProcessConfigurationModal({
                             }}
                             onKeyDown={handleEditKeyDown}
                             onBlur={finishEditing}
-                            onFocus={(e) => e.target.select()}
+                            onFocus={(e) => (e.target as HTMLInputElement).select()}
                             className="w-6 rounded border-2 border-white bg-white/90 text-center text-xs font-bold text-gray-800 outline-none"
                             autoFocus
                           />

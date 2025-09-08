@@ -377,7 +377,7 @@ export default function SimulationGridTableNew({
                             const clampedValue = Math.min(100, Math.max(0, value));
                             onUpdatePercentage(sourceInfo.connectionId, sourceInfo.node, destInfo.node, clampedValue);
                           }}
-                          onClick={(e) => e.target.select()}
+                          onClick={(e) => (e.target as HTMLInputElement).select()}
                           onMouseDown={(e) => e.stopPropagation()} // 드래그 이벤트와 충돌 방지
                           onFocus={(e) => e.stopPropagation()} // 포커스 시 드래그 방지
                           disabled={!isEnabled}
