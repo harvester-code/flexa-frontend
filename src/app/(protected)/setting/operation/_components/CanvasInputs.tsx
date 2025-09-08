@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/Input';
 
 function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines }) {
   return (
-    <div className="mx-auto mt-6 flex w-[1280px] flex-col gap-4 overflow-hidden bg-gray-200 p-4">
+    <div className="mx-auto mt-6 flex w-[1280px] flex-col gap-4 overflow-hidden bg-muted p-4">
       {nodes.map((node, idx) => (
         <div className="flex items-center gap-4" key={node.title}>
           <div>{node.title}</div>
@@ -12,7 +12,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
             <label htmlFor="lineCount">Circle Size:</label>
             <Input
               id="circleSize"
-              className="border border-green-600"
+              className="border border-primary"
               type="number"
               value={node.circleSize}
               onChange={(e) => {
@@ -29,7 +29,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
             <label htmlFor="passengerCount">Passenger Count:</label>
             <Input
               id="passengerCount"
-              className="border border-blue-600"
+              className="border border-primary/80"
               type="number"
               value={node.passengerCount}
               onChange={(e) => {
@@ -46,7 +46,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
             <label htmlFor="lineCount">Line Count:</label>
             <Input
               id="lineCount"
-              className="border border-green-600"
+              className="border border-primary"
               type="number"
               value={node.lineCount}
               onChange={(e) => {
@@ -62,7 +62,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           <Button
             variant="secondary"
             disabled={rectangles.length < idx + 1}
-            className="bg-slate-300 px-4 py-2"
+            className="px-4 py-2"
             onClick={() => drawLines(idx)}
           >
             Apply
@@ -71,7 +71,7 @@ function CanvasInputs({ nodes, setNodes, rectangles, setRectangles, drawLines })
           <Button
             variant="destructive"
             disabled={rectangles.length !== idx + 1}
-            className="bg-rose-300 px-4 py-2"
+            className="px-4 py-2"
             onClick={() => {
               setRectangles((prev) => {
                 const updatedRectangles = [...prev];

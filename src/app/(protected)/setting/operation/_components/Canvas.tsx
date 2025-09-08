@@ -320,7 +320,7 @@ const Canvas = () => {
 
   return (
     <>
-      <div ref={canvasContainerRef} className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-gray-200">
+      <div ref={canvasContainerRef} className="relative mx-auto mt-12 h-[480px] w-[1280px] overflow-hidden bg-muted">
         <Stage
           draggable={mode === 'grab'}
           ref={canvasStageRef}
@@ -401,7 +401,15 @@ const Canvas = () => {
                 />
                 {rect.childs.length > 0 &&
                   rect.childs.map((child, idx) => {
-                    return <Circle key={idx} x={child.x} y={child.y} radius={nodes[index].circleSize} fill="green" />;
+                    return (
+                      <Circle
+                        key={idx}
+                        x={child.x}
+                        y={child.y}
+                        radius={nodes[index].circleSize}
+                        fill="hsl(var(--primary))"
+                      />
+                    );
                   })}
               </React.Fragment>
             ))}
@@ -429,8 +437,8 @@ const Canvas = () => {
         />
       </div>
 
-      <div className="mx-auto mt-6 flex w-[1280px] justify-between overflow-hidden bg-gray-200 p-4">
-        <input className="border border-rose-500" type="file" accept="image/*" onChange={handleImageChange} />
+      <div className="mx-auto mt-6 flex w-[1280px] justify-between overflow-hidden bg-muted p-4">
+        <input className="border border-destructive" type="file" accept="image/*" onChange={handleImageChange} />
 
         <button
           className="pr-8"

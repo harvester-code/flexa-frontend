@@ -16,14 +16,14 @@ function SettingOperationPage() {
   const [processIndex, setProcessIndex] = useState(0);
   const [numOfFacilitiesInProcess, setNumOfFacilitiesInProcess] = useState<number[][]>([[0]]);
   return (
-    <div className="max-w-page px-page-x pb-page-b mx-auto">
+    <div className="mx-auto max-w-page px-page-x pb-page-b">
       <div className="location">
         <span>Settings</span>
         <span>Operation Settings</span>
       </div>
       <div className="mt-[30px] flex flex-col border-b border-input pb-[20px]">
         <h2 className="title-sm">Operation Settings</h2>
-        <p className="text-sm text-default-500">
+        <p className="text-sm text-muted-foreground">
           Enter the current facility information for the airport to set the default values that apply to all members.
         </p>
       </div>
