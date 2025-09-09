@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { loadScenarioMetadata } from '@/services/simulationService';
+import { useEffect } from "react";
+import { loadScenarioMetadata } from "@/services/simulationService";
 
 interface UseLoadScenarioDataProps {
   loadCompleteS3Metadata: (s3Response: any) => void;
@@ -20,29 +20,49 @@ export function useLoadScenarioData(
   useEffect(() => {
     const loadScenario = async () => {
       try {
+        // 🎯 스마트 초기화: 시나리오 ID가 다를 때만 초기화
+        const { useSimulationStore } = await import("../_stores/store");
+        const currentState = useSimulationStore.getState();
+        const currentScenarioId = currentState.context.scenarioId;
+
+        if (currentScenarioId !== simulationId) {
+          console.log(
+            `🔄 시나리오 변경: ${currentScenarioId} → ${simulationId} (Store 초기화)`
+          );
+          useSimulationStore.getState().resetStore();
+          useSimulationStore.getState().setScenarioId(simulationId);
+        } else {
+          console.log(`✅ 같은 시나리오 재방문: ${simulationId} (데이터 유지)`);
+        }
+
         const { data: s3Data } = await loadScenarioMetadata(simulationId);
 
         // 메타데이터가 있고 유효한 데이터가 있는 경우
         if (
           s3Data.metadata &&
-          (s3Data.metadata.tabs || (s3Data.metadata as any).context || (s3Data.metadata as any).flight)
+          (s3Data.metadata.tabs ||
+            (s3Data.metadata as any).context ||
+            (s3Data.metadata as any).flight)
         ) {
           // 기존 데이터가 있으면 zustand store에 복원
           loadCompleteS3Metadata(s3Data);
 
           // ScenarioProfile 데이터가 있으면 별도 처리, 없으면 기본값 설정
           if ((s3Data.metadata.tabs as any)?.scenarioProfile) {
-            loadScenarioProfileMetadata((s3Data.metadata.tabs as any).scenarioProfile);
+            loadScenarioProfileMetadata(
+              (s3Data.metadata.tabs as any).scenarioProfile
+            );
           } else {
             // 🎯 workflow의 availableSteps 마지막 값을 기본 탭으로 설정
-            const availableSteps = (s3Data.metadata as any).workflow?.availableSteps || [1];
+            const availableSteps = (s3Data.metadata as any).workflow
+              ?.availableSteps || [1];
             const lastAvailableStep = Math.max(...availableSteps);
             const defaultTab = lastAvailableStep - 1; // 0-based 탭 인덱스로 변환
 
             loadScenarioProfileMetadata({
-              checkpoint: 'overview',
+              checkpoint: "overview",
               scenarioName: `Scenario ${simulationId}`,
-              scenarioTerminal: 'unknown',
+              scenarioTerminal: "unknown",
               scenarioHistory: [],
               availableScenarioTab: lastAvailableStep - 1,
               currentScenarioTab: defaultTab,
@@ -50,9 +70,6 @@ export function useLoadScenarioData(
           }
         } else {
           // 메타데이터가 없는 경우 (새 시나리오 또는 빈 메타데이터)
-          if ((s3Data as any).is_new_scenario) {
-          } else {
-          }
 
           // 🔧 새 시나리오인 경우에만 탭을 0으로 초기화
           if ((s3Data as any).is_new_scenario) {
@@ -60,9 +77,9 @@ export function useLoadScenarioData(
           }
 
           loadScenarioProfileMetadata({
-            checkpoint: 'overview',
+            checkpoint: "overview",
             scenarioName: `Scenario ${simulationId}`,
-            scenarioTerminal: 'unknown',
+            scenarioTerminal: "unknown",
             scenarioHistory: [],
             availableScenarioTab: 2,
             currentScenarioTab: 0,
@@ -81,9 +98,9 @@ export function useLoadScenarioData(
         // 🔧 에러 시에는 첫 번째 탭으로 시작 (안전한 기본값)
 
         loadScenarioProfileMetadata({
-          checkpoint: 'overview',
+          checkpoint: "overview",
           scenarioName: `Scenario ${simulationId}`,
-          scenarioTerminal: 'unknown',
+          scenarioTerminal: "unknown",
           scenarioHistory: [],
           availableScenarioTab: 2,
           currentScenarioTab: 0, // 에러 시 안전한 기본값
@@ -94,5 +111,11 @@ export function useLoadScenarioData(
     };
 
     loadScenario();
-  }, [simulationId, loadCompleteS3Metadata, loadScenarioProfileMetadata, setCurrentScenarioTab, setIsInitialized]);
+  }, [
+    simulationId,
+    loadCompleteS3Metadata,
+    loadScenarioProfileMetadata,
+    setCurrentScenarioTab,
+    setIsInitialized,
+  ]);
 }

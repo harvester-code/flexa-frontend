@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { Suspense, useEffect, useState } from 'react';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
+import React, { Suspense, useEffect, useState } from "react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import {
   Calendar,
   ChevronLeft,
@@ -16,8 +16,8 @@ import {
   Plus,
   Search,
   Trash2,
-} from 'lucide-react';
-import { modifyScenario } from '@/services/simulationService';
+} from "lucide-react";
+import { modifyScenario } from "@/services/simulationService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,15 +27,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/AlertDialog';
-import { Button } from '@/components/ui/Button';
-import { Calendar as CalendarComponent } from '@/components/ui/Calendar';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Input } from '@/components/ui/Input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
-import { useToast } from '@/hooks/useToast';
-import { cn } from '@/lib/utils';
-import SimulationLoading from './SimulationLoading';
+} from "@/components/ui/AlertDialog";
+import { Button } from "@/components/ui/Button";
+import { Calendar as CalendarComponent } from "@/components/ui/Calendar";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/Popover";
+import { useToast } from "@/hooks/useToast";
+import { cn } from "@/lib/utils";
+import SimulationLoading from "./SimulationLoading";
 
 interface EditingScenario {
   id: string;
@@ -59,7 +63,8 @@ const ITEMS_PER_PAGE = 5;
 // 테이블의 최소 높이 계산 (헤더 + ITEMS_PER_PAGE 만큼의 행)
 const TABLE_HEADER_HEIGHT = 60; // 헤더 행 높이
 const TABLE_ROW_HEIGHT = 64; // 각 행의 높이 (p-3 패딩 포함)
-const TABLE_MIN_HEIGHT = TABLE_HEADER_HEIGHT + ITEMS_PER_PAGE * TABLE_ROW_HEIGHT;
+const TABLE_MIN_HEIGHT =
+  TABLE_HEADER_HEIGHT + ITEMS_PER_PAGE * TABLE_ROW_HEIGHT;
 
 /**
  * 페이지네이션 범위를 계산하는 함수
@@ -68,7 +73,11 @@ const TABLE_MIN_HEIGHT = TABLE_HEADER_HEIGHT + ITEMS_PER_PAGE * TABLE_ROW_HEIGHT
  * @param maxVisible 최대 표시할 페이지 수 (기본값: 5)
  * @returns { startPage, endPage } 표시할 페이지 범위
  */
-const getPaginationRange = (currentPage: number, totalPages: number, maxVisible: number = 5) => {
+const getPaginationRange = (
+  currentPage: number,
+  totalPages: number,
+  maxVisible: number = 5
+) => {
   // 총 페이지가 최대 표시 개수보다 적으면 모든 페이지 표시
   if (totalPages <= maxVisible) {
     return { startPage: 1, endPage: totalPages };
@@ -93,7 +102,11 @@ const getPaginationRange = (currentPage: number, totalPages: number, maxVisible:
  * @param onPageClick 페이지 클릭 핸들러
  * @returns JSX.Element[] 페이지 버튼 배열
  */
-const renderPaginationButtons = (currentPage: number, totalPages: number, onPageClick: (page: number) => void) => {
+const renderPaginationButtons = (
+  currentPage: number,
+  totalPages: number,
+  onPageClick: (page: number) => void
+) => {
   const { startPage, endPage } = getPaginationRange(currentPage, totalPages);
 
   return Array.from({ length: endPage - startPage + 1 }, (_, i) => {
@@ -101,7 +114,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
     return (
       <Button
         key={page}
-        variant={page === currentPage ? 'primary' : 'outline'}
+        variant={page === currentPage ? "primary" : "outline"}
         size="sm"
         onClick={() => onPageClick(page)}
         type="button"
@@ -139,13 +152,14 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const navigateToScenario = useScenarioNavigation();
 
   const [isScenarioSelected, setIsScenarioSelected] = useState<boolean[]>([]);
-  const [editingScenario, setEditingScenario] = useState<EditingScenario | null>(null);
+  const [editingScenario, setEditingScenario] =
+    useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   // 필터링된 시나리오 계산
@@ -156,8 +170,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
     // 날짜 필터링
     if (selectedDate) {
-      const selectedDateStr = dayjs(selectedDate).format('YYYY-MM-DD');
-      filtered = filtered.filter((s) => s.created_at && dayjs(s.created_at).format('YYYY-MM-DD') === selectedDateStr);
+      const selectedDateStr = dayjs(selectedDate).format("YYYY-MM-DD");
+      filtered = filtered.filter(
+        (s) =>
+          s.created_at &&
+          dayjs(s.created_at).format("YYYY-MM-DD") === selectedDateStr
+      );
     }
 
     // 검색 필터링
@@ -181,9 +199,14 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   }, [filteredScenarios]);
 
   // 페이지네이션 계산
-  const totalPages = Math.ceil((filteredScenarios?.length || 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    (filteredScenarios?.length || 0) / ITEMS_PER_PAGE
+  );
   const currentScenarios =
-    filteredScenarios?.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE) || [];
+    filteredScenarios?.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    ) || [];
 
   // 검색 핸들러
   const handleSearch = (value: string) => {
@@ -206,8 +229,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   // 현재 페이지의 선택 상태
   const currentPageStartIdx = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentPageEndIdx = currentPageStartIdx + currentScenarios.length;
-  const currentPageSelected = isScenarioSelected.slice(currentPageStartIdx, currentPageEndIdx);
-  const isCurrentPageAllSelected = currentPageSelected.length > 0 && currentPageSelected.every(Boolean);
+  const currentPageSelected = isScenarioSelected.slice(
+    currentPageStartIdx,
+    currentPageEndIdx
+  );
+  const isCurrentPageAllSelected =
+    currentPageSelected.length > 0 && currentPageSelected.every(Boolean);
 
   const onDeleteMulti = () => {
     setShowDeleteDialog(true);
@@ -230,7 +257,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       name: scenario.name,
       airport: scenario.airport,
       terminal: scenario.terminal,
-      memo: scenario.memo || '',
+      memo: scenario.memo || "",
     });
   };
 
@@ -242,21 +269,47 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     if (!editingScenario) return;
 
     // 원본 시나리오 찾기
-    const originalScenario = filteredScenarios.find((s) => s.scenario_id === editingScenario.id);
+    const originalScenario = filteredScenarios.find(
+      (s) => s.scenario_id === editingScenario.id
+    );
     if (!originalScenario) return;
 
-    // 변경사항 확인
+    // 🔧 변경사항 확인 - 안전한 비교 로직
+    const normalize = (value: string | null | undefined) =>
+      (value || "").trim();
+
     const hasChanges =
-      editingScenario.name !== originalScenario.name ||
-      editingScenario.airport !== originalScenario.airport ||
-      editingScenario.terminal !== originalScenario.terminal ||
-      editingScenario.memo !== (originalScenario.memo || '');
+      normalize(editingScenario.name) !== normalize(originalScenario.name) ||
+      normalize(editingScenario.airport) !==
+        normalize(originalScenario.airport) ||
+      normalize(editingScenario.terminal) !==
+        normalize(originalScenario.terminal) ||
+      normalize(editingScenario.memo) !== normalize(originalScenario.memo);
+
+    // 🔍 디버깅용 로그 (임시)
+    console.log("🔍 Update Debug:", {
+      hasChanges,
+      editing: {
+        name: normalize(editingScenario.name),
+        airport: normalize(editingScenario.airport),
+        terminal: normalize(editingScenario.terminal),
+        memo: normalize(editingScenario.memo),
+      },
+      original: {
+        name: normalize(originalScenario.name),
+        airport: normalize(originalScenario.airport),
+        terminal: normalize(originalScenario.terminal),
+        memo: normalize(originalScenario.memo),
+      },
+    });
 
     if (!hasChanges) {
+      console.log("❌ No changes detected - canceling edit");
       cancelEdit();
       return;
     }
 
+    console.log("✅ Changes detected - showing dialog");
     // 확인 다이얼로그 표시
     setShowUpdateDialog(true);
   };
@@ -276,16 +329,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       );
 
       toast({
-        title: 'Update Complete',
-        description: 'Scenario updated successfully.',
+        title: "Update Complete",
+        description: "Scenario updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+      queryClient.invalidateQueries({ queryKey: ["scenarios"] });
       setEditingScenario(null);
     } catch (error) {
       toast({
-        title: 'Update Failed',
-        description: 'Failed to update scenario. Please try again.',
-        variant: 'destructive',
+        title: "Update Failed",
+        description: "Failed to update scenario. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setShowUpdateDialog(false);
@@ -293,14 +346,21 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
       saveEdit();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
       cancelEdit();
     }
   };
 
-  const updateEditingField = (field: keyof Omit<EditingScenario, 'id'>, value: string) => {
+  const updateEditingField = (
+    field: keyof Omit<EditingScenario, "id">,
+    value: string
+  ) => {
     if (!editingScenario) return;
     setEditingScenario({
       ...editingScenario,
@@ -335,8 +395,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       {/* 필터 섹션 */}
       <div className="mt-4 flex h-20 items-center justify-between">
         <div className="text-sm text-default-500">
-          Showing {currentScenarios.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-          {Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of {filteredScenarios.length} scenarios
+          Showing{" "}
+          {currentScenarios.length > 0
+            ? (currentPage - 1) * ITEMS_PER_PAGE + 1
+            : 0}
+          -{Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of{" "}
+          {filteredScenarios.length} scenarios
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -344,7 +408,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             <PopoverTrigger asChild>
               <Button variant="outline">
                 <Calendar className="mr-2 h-4 w-4" />
-                Target Date {selectedDate && `(${dayjs(selectedDate).format('MMM-DD-YYYY')})`}
+                Target Date{" "}
+                {selectedDate &&
+                  `(${dayjs(selectedDate).format("MMM-DD-YYYY")})`}
               </Button>
             </PopoverTrigger>
             <PopoverContent
@@ -356,10 +422,19 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               avoidCollisions={false}
               sticky="always"
             >
-              <CalendarComponent mode="single" selected={selectedDate} onSelect={handleDateSelect} initialFocus />
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                initialFocus
+              />
               {selectedDate && (
                 <div className="border-t p-3">
-                  <Button variant="outline" size="sm" onClick={() => handleDateSelect(undefined)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDateSelect(undefined)}
+                  >
                     Clear Filter
                   </Button>
                 </div>
@@ -372,14 +447,19 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               className="max-h-6 border-none shadow-none focus-visible:ring-transparent"
               placeholder="Search"
               value={searchKeyword}
-              onChange={(e) => handleSearch((e.target as HTMLInputElement).value)}
+              onChange={(e) =>
+                handleSearch((e.target as HTMLInputElement).value)
+              }
             />
             <Search className="ml-1 h-4 w-4" />
           </div>
         </div>
       </div>
 
-      <div className="table-container mt-4" style={{ minHeight: `${TABLE_MIN_HEIGHT}px` }}>
+      <div
+        className="table-container mt-4"
+        style={{ minHeight: `${TABLE_MIN_HEIGHT}px` }}
+      >
         <table className="table-default">
           <thead>
             <tr className="border-b">
@@ -426,19 +506,30 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   <tr
                     key={scenario.scenario_id}
                     className={cn(
-                      'border-b text-sm hover:bg-muted',
-                      isScenarioSelected[(currentPage - 1) * ITEMS_PER_PAGE + idx] ? 'active' : ''
+                      "border-b text-sm hover:bg-muted",
+                      isScenarioSelected[
+                        (currentPage - 1) * ITEMS_PER_PAGE + idx
+                      ]
+                        ? "active"
+                        : ""
                     )}
                   >
                     <td className="text-center">
                       <Checkbox
                         id={`check-${idx}`}
                         className="checkbox text-sm"
-                        checked={isScenarioSelected[(currentPage - 1) * ITEMS_PER_PAGE + idx] || false}
+                        checked={
+                          isScenarioSelected[
+                            (currentPage - 1) * ITEMS_PER_PAGE + idx
+                          ] || false
+                        }
                         onCheckedChange={() => {
-                          const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + idx;
+                          const actualIndex =
+                            (currentPage - 1) * ITEMS_PER_PAGE + idx;
                           setIsScenarioSelected((prev) =>
-                            prev.map((selected, i) => (i === actualIndex ? !selected : selected))
+                            prev.map((selected, i) =>
+                              i === actualIndex ? !selected : selected
+                            )
                           );
                         }}
                       />
@@ -448,8 +539,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       {isEditing ? (
                         <input
                           type="text"
-                          value={editingScenario?.name || ''}
-                          onChange={(e) => updateEditingField('name', (e.target as HTMLInputElement).value)}
+                          value={editingScenario?.name || ""}
+                          onChange={(e) =>
+                            updateEditingField(
+                              "name",
+                              (e.target as HTMLInputElement).value
+                            )
+                          }
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                           autoFocus
@@ -457,7 +553,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       ) : (
                         <div
                           className="flex cursor-pointer items-center gap-2 hover:font-semibold"
-                          onClick={() => handleScenarioClick(scenario.scenario_id, scenario.name)}
+                          onClick={() =>
+                            handleScenarioClick(
+                              scenario.scenario_id,
+                              scenario.name
+                            )
+                          }
                         >
                           {navigatingToId === scenario.scenario_id && (
                             <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -471,8 +572,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       {isEditing ? (
                         <input
                           type="text"
-                          value={editingScenario?.airport || ''}
-                          onChange={(e) => updateEditingField('airport', (e.target as HTMLInputElement).value)}
+                          value={editingScenario?.airport || ""}
+                          onChange={(e) =>
+                            updateEditingField(
+                              "airport",
+                              (e.target as HTMLInputElement).value
+                            )
+                          }
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
@@ -485,8 +591,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       {isEditing ? (
                         <input
                           type="text"
-                          value={editingScenario?.terminal || ''}
-                          onChange={(e) => updateEditingField('terminal', (e.target as HTMLInputElement).value)}
+                          value={editingScenario?.terminal || ""}
+                          onChange={(e) =>
+                            updateEditingField(
+                              "terminal",
+                              (e.target as HTMLInputElement).value
+                            )
+                          }
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
@@ -496,20 +607,29 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     </td>
 
                     <td>{scenario.editor}</td>
-                    <td>{dayjs(scenario.created_at).format('MMM-DD-YYYY HH:mm')}</td>
-                    <td>{dayjs(scenario.updated_at).format('MMM-DD-YYYY HH:mm')}</td>
+                    <td>
+                      {dayjs(scenario.created_at).format("MMM-DD-YYYY HH:mm")}
+                    </td>
+                    <td>
+                      {dayjs(scenario.updated_at).format("MMM-DD-YYYY HH:mm")}
+                    </td>
 
                     <td>
                       {isEditing ? (
                         <input
                           type="text"
-                          value={editingScenario?.memo || ''}
-                          onChange={(e) => updateEditingField('memo', (e.target as HTMLInputElement).value)}
+                          value={editingScenario?.memo || ""}
+                          onChange={(e) =>
+                            updateEditingField(
+                              "memo",
+                              (e.target as HTMLInputElement).value
+                            )
+                          }
                           onKeyDown={handleKeyDown}
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       ) : (
-                        scenario.memo || '-'
+                        scenario.memo || "-"
                       )}
                     </td>
 
@@ -518,10 +638,17 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         <Button
                           variant="link"
                           className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
-                          title={isEditing ? 'Cancel' : 'Edit'}
-                          onClick={() => (isEditing ? cancelEdit() : startEdit(scenario))}
+                          title={isEditing ? "Cancel" : "Edit"}
+                          onClick={() =>
+                            isEditing ? cancelEdit() : startEdit(scenario)
+                          }
                         >
-                          <Edit3 className={cn('size-5', isEditing ? 'text-default-500' : 'text-primary')} />
+                          <Edit3
+                            className={cn(
+                              "size-5",
+                              isEditing ? "text-default-500" : "text-primary"
+                            )}
+                          />
                         </Button>
                       </div>
                     </td>
@@ -532,7 +659,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <tr>
                 <td colSpan={9}>
                   <div className="flex flex-1 flex-col items-center justify-center">
-                    <p className="text-sm text-default-500">No scenarios found.</p>
+                    <p className="text-sm text-default-500">
+                      No scenarios found.
+                    </p>
                   </div>
                 </td>
               </tr>
@@ -589,7 +718,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               variant="outline"
               size="sm"
               onClick={() => {
-                if (currentPage < totalPages && totalPages > 1) setCurrentPage(totalPages);
+                if (currentPage < totalPages && totalPages > 1)
+                  setCurrentPage(totalPages);
               }}
               type="button"
             >
@@ -605,16 +735,24 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Scenario{selRowCount > 1 ? 's' : ''}</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete Scenario{selRowCount > 1 ? "s" : ""}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selRowCount} scenario{selRowCount > 1 ? 's' : ''}?
+              Are you sure you want to delete {selRowCount} scenario
+              {selRowCount > 1 ? "s" : ""}?
               <br />
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDeleteConfirm}>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteConfirm}
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -626,11 +764,17 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Update Scenario</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to update this scenario?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to update this scenario?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeUpdateScenario}>Update</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={executeUpdateScenario}>
+              Update
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

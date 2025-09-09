@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle, Edit, Plus, Trash2, X, XCircle } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Edit,
+  Plus,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,29 +19,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/AlertDialog';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { useSimulationStore } from '../_stores';
-import PassengerProfileCriteria from './PassengerProfileCriteria';
+} from "@/components/ui/AlertDialog";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { useSimulationStore } from "../_stores";
+import PassengerProfileCriteria from "./PassengerProfileCriteria";
 import PercentageInteractiveBar, {
   convertToDecimal,
   getDistributionTotal,
   isValidDistribution,
-} from './PercentageInteractiveBar';
+} from "./PercentageInteractiveBar";
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
-  '#06B6D4', // Cyan
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5A2B', // Brown
-  '#6366F1', // Indigo
-  '#EC4899', // Pink
-  '#64748B', // Slate
+  "#06B6D4", // Cyan
+  "#10B981", // Emerald
+  "#F59E0B", // Amber
+  "#EF4444", // Red
+  "#8B5A2B", // Brown
+  "#6366F1", // Indigo
+  "#EC4899", // Pink
+  "#64748B", // Slate
 ];
 
 interface Rule {
@@ -58,75 +72,97 @@ interface ParquetMetadataItem {
 
 interface AddColumnTabProps {
   parquetMetadata?: ParquetMetadataItem[];
-  configType?: 'nationality' | 'profile';
+  configType?: "nationality" | "profile";
 }
 
-export default function AddColumnTab({ parquetMetadata = [], configType = 'nationality' }: AddColumnTabProps) {
+export default function AddColumnTab({
+  parquetMetadata = [],
+  configType = "nationality",
+}: AddColumnTabProps) {
   // 🆕 SimulationStore 연결 - configType에 따라 분기
-  const isNationality = configType === 'nationality';
+  const isNationality = configType === "nationality";
   const demographicsData = useSimulationStore((s) =>
-    isNationality ? s.passenger.pax_demographics.nationality : s.passenger.pax_demographics.profile
+    isNationality
+      ? s.passenger.pax_demographics.nationality
+      : s.passenger.pax_demographics.profile
   );
-  const setValues = useSimulationStore((s) => (isNationality ? s.setNationalityValues : s.setProfileValues));
-  const addRule = useSimulationStore((s) => (isNationality ? s.addNationalityRule : s.addProfileRule));
-  const removeRule = useSimulationStore((s) => (isNationality ? s.removeNationalityRule : s.removeProfileRule));
+  const setValues = useSimulationStore((s) =>
+    isNationality ? s.setNationalityValues : s.setProfileValues
+  );
+  const addRule = useSimulationStore((s) =>
+    isNationality ? s.addNationalityRule : s.addProfileRule
+  );
+  const removeRule = useSimulationStore((s) =>
+    isNationality ? s.removeNationalityRule : s.removeProfileRule
+  );
   const updateDistribution = useSimulationStore((s) =>
-    isNationality ? s.updateNationalityDistribution : s.updateProfileDistribution
+    isNationality
+      ? s.updateNationalityDistribution
+      : s.updateProfileDistribution
   );
-  const updateRuleStore = useSimulationStore((s) => (isNationality ? s.updateNationalityRule : s.updateProfileRule));
+  const updateRuleStore = useSimulationStore((s) =>
+    isNationality ? s.updateNationalityRule : s.updateProfileRule
+  );
   const reorderRulesStore = useSimulationStore((s) =>
     isNationality ? s.reorderNationalityRules : s.reorderProfileRules
   );
-  const setDefault = useSimulationStore((s) => (isNationality ? s.setNationalityDefault : s.setProfileDefault));
+  const setDefault = useSimulationStore((s) =>
+    isNationality ? s.setNationalityDefault : s.setProfileDefault
+  );
+
+  // 🔧 항공편 수를 zustand store에서 가져오기 (하드코딩된 186 대신)
+  const totalFlightsFromStore = useSimulationStore(
+    (s) => s.flight.total_flights
+  );
 
   // 🆕 조건 변환 로직 (Step 1, 2와 동일) - 함수들보다 앞에 위치
   const labelToColumnMap: Record<string, string> = {
-    Airline: 'operating_carrier_iata',
-    'Aircraft Type': 'aircraft_type_icao',
-    'Flight Type': 'flight_type',
-    'Total Seats': 'total_seats',
-    'Arrival Airport': 'arrival_airport_iata',
-    'Arrival Terminal': 'arrival_terminal',
-    'Arrival City': 'arrival_city',
-    'Arrival Country': 'arrival_country',
-    'Arrival Region': 'arrival_region',
-    'Departure Airport Iata': 'departure_airport_iata',
-    'Departure Terminal': 'departure_terminal',
-    'Departure City': 'departure_city',
-    'Departure Country': 'departure_country',
-    'Departure Region': 'departure_region',
+    Airline: "operating_carrier_iata",
+    "Aircraft Type": "aircraft_type_icao",
+    "Flight Type": "flight_type",
+    "Total Seats": "total_seats",
+    "Arrival Airport": "arrival_airport_iata",
+    "Arrival Terminal": "arrival_terminal",
+    "Arrival City": "arrival_city",
+    "Arrival Country": "arrival_country",
+    "Arrival Region": "arrival_region",
+    "Departure Airport Iata": "departure_airport_iata",
+    "Departure Terminal": "departure_terminal",
+    "Departure City": "departure_city",
+    "Departure Country": "departure_country",
+    "Departure Region": "departure_region",
   };
 
   const valueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
-      'Korean Air': 'KE',
-      'Asiana Airlines': 'OZ',
+      "Korean Air": "KE",
+      "Asiana Airlines": "OZ",
       // 필요에 따라 추가
     },
   };
 
   // 백엔드 → UI 역변환 맵핑
   const columnToLabelMap: Record<string, string> = {
-    operating_carrier_iata: 'Airline',
-    aircraft_type_icao: 'Aircraft Type',
-    flight_type: 'Flight Type',
-    total_seats: 'Total Seats',
-    arrival_airport_iata: 'Arrival Airport',
-    arrival_terminal: 'Arrival Terminal',
-    arrival_city: 'Arrival City',
-    arrival_country: 'Arrival Country',
-    arrival_region: 'Arrival Region',
-    departure_airport_iata: 'Departure Airport Iata',
-    departure_terminal: 'Departure Terminal',
-    departure_city: 'Departure City',
-    departure_country: 'Departure Country',
-    departure_region: 'Departure Region',
+    operating_carrier_iata: "Airline",
+    aircraft_type_icao: "Aircraft Type",
+    flight_type: "Flight Type",
+    total_seats: "Total Seats",
+    arrival_airport_iata: "Arrival Airport",
+    arrival_terminal: "Arrival Terminal",
+    arrival_city: "Arrival City",
+    arrival_country: "Arrival Country",
+    arrival_region: "Arrival Region",
+    departure_airport_iata: "Departure Airport Iata",
+    departure_terminal: "Departure Terminal",
+    departure_city: "Departure City",
+    departure_country: "Departure Country",
+    departure_region: "Departure Region",
   };
 
   const reverseValueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
-      KE: 'Korean Air',
-      OZ: 'Asiana Airlines',
+      KE: "Korean Air",
+      OZ: "Asiana Airlines",
       // 필요에 따라 추가
     },
   };
@@ -137,13 +173,16 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
     return (demographicsData?.rules || []).map((rule, index) => ({
       id: `rule-${index}`,
       name: `Rule ${index + 1}`,
-      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
-        const displayLabel = columnToLabelMap[columnKey] || columnKey;
-        return values.map((value) => {
-          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
-          return `${displayLabel}: ${displayValue}`;
-        });
-      }),
+      conditions: Object.entries(rule.conditions || {}).flatMap(
+        ([columnKey, values]) => {
+          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          return values.map((value) => {
+            const displayValue =
+              reverseValueMapping[columnKey]?.[value] || value;
+            return `${displayLabel}: ${displayValue}`;
+          });
+        }
+      ),
       flightCount: rule.flightCount || 0,
       distribution: rule.value || {},
       isExpanded: false,
@@ -152,7 +191,8 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
   const hasDefaultRule =
     demographicsData?.default &&
-    Object.keys(demographicsData.default).filter((key) => key !== 'flightCount').length > 0;
+    Object.keys(demographicsData.default).filter((key) => key !== "flightCount")
+      .length > 0;
   const defaultDistribution = demographicsData?.default || {};
 
   // Rules 존재 여부 확인
@@ -174,10 +214,14 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
   const updateRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
 
       // 전체 규칙 업데이트인경우 (조건 + 분배 + 플라이트카운트)
-      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.distribution) {
+      if (
+        updatedRule.conditions ||
+        updatedRule.flightCount !== undefined ||
+        updatedRule.distribution
+      ) {
         // 현재 규칙 가져오기
         const currentRule = demographicsData?.rules[ruleIndex];
         if (!currentRule) return;
@@ -187,11 +231,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
         if (updatedRule.conditions) {
           backendConditions = {};
           updatedRule.conditions.forEach((condition) => {
-            const parts = condition.split(': ');
+            const parts = condition.split(": ");
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const columnKey =
+                labelToColumnMap[displayLabel] ||
+                displayLabel.toLowerCase().replace(" ", "_");
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -216,7 +262,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
   const removeRuleById = useCallback(
     (ruleId: string) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
       removeRule(ruleIndex);
     },
     [removeRule]
@@ -246,11 +292,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
         const backendConditions: Record<string, string[]> = {};
 
         rule.conditions.forEach((condition) => {
-          const parts = condition.split(': ');
+          const parts = condition.split(": ");
           if (parts.length === 2) {
             const displayLabel = parts[0];
             const value = parts[1];
-            const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+            const columnKey =
+              labelToColumnMap[displayLabel] ||
+              displayLabel.toLowerCase().replace(" ", "_");
             const convertedValue = valueMapping[columnKey]?.[value] || value;
 
             if (!backendConditions[columnKey]) {
@@ -279,11 +327,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       const backendConditions: Record<string, string[]> = {};
 
       rule.conditions.forEach((condition) => {
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const columnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -297,7 +347,10 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
       // 🎯 distribution 값들을 decimal로 변환해서 저장 (50% → 0.5)
       const convertedDistribution = Object.fromEntries(
-        Object.entries(rule.distribution || {}).map(([key, value]) => [key, convertToDecimal(value)])
+        Object.entries(rule.distribution || {}).map(([key, value]) => [
+          key,
+          convertToDecimal(value),
+        ])
       );
 
       addRule(backendConditions, rule.flightCount || 0, convertedDistribution);
@@ -306,14 +359,14 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
   );
 
   // 로컬 UI 상태
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
+  const [newPropertyName, setNewPropertyName] = useState<string>("");
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
-    type: 'add' | 'remove';
+    type: "add" | "remove";
     payload: string[];
   } | null>(null);
 
@@ -334,7 +387,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
     // 콤마로 구분해서 여러 개 처리
     const newProperties = newPropertyName
-      .split(',')
+      .split(",")
       .map((prop) => capitalizeFirst(prop.trim()))
       .filter((prop) => prop.length > 0 && !definedProperties.includes(prop));
 
@@ -342,23 +395,25 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       const resultProperties = [...definedProperties, ...newProperties];
       if (createdRules.length > 0 || hasDefaultRule) {
         // 규칙이 있으면 확인창 표시 (추가 시에도)
-        setPendingAction({ type: 'add', payload: resultProperties });
+        setPendingAction({ type: "add", payload: resultProperties });
         setShowConfirmDialog(true);
       } else {
         // 규칙이 없으면 바로 추가
         setProperties(resultProperties);
       }
-      setNewPropertyName('');
+      setNewPropertyName("");
     }
   };
 
   // 속성 제거
   const handleRemoveProperty = (propertyToRemove: string) => {
-    const newProperties = definedProperties.filter((property) => property !== propertyToRemove);
+    const newProperties = definedProperties.filter(
+      (property) => property !== propertyToRemove
+    );
 
     if (createdRules.length > 0 || hasDefaultRule) {
       // 규칙이 있으면 확인창 표시
-      setPendingAction({ type: 'remove', payload: newProperties });
+      setPendingAction({ type: "remove", payload: newProperties });
       setShowConfirmDialog(true);
     } else {
       // 규칙이 없으면 바로 제거
@@ -368,7 +423,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
   // Enter 키 처리
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddProperty();
     }
@@ -395,8 +450,8 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
     return distribution;
   }, []);
 
-  // 전체 항공편 수 (상수)
-  const TOTAL_FLIGHTS = 186;
+  // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
+  const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
 
   // 조건 겹침을 고려한 순차적 항공편 수 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
@@ -418,7 +473,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
           const prevConditions = prevRule.conditions;
 
           // 겹치는 조건들 찾기
-          const intersection = currentConditions.filter((condition) => prevConditions.includes(condition));
+          const intersection = currentConditions.filter((condition) =>
+            prevConditions.includes(condition)
+          );
 
           if (intersection.length > 0) {
             // OR 조건을 고려한 정확한 겹침 계산
@@ -428,7 +485,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
             //     사용 가능한 부분: Asiana Airlines 조건은 여전히 사용 가능
 
             // 이전 규칙이 현재 규칙에 완전히 포함되는 경우만 제외
-            const isPrevCompletelyIncluded = prevConditions.every((condition) => currentConditions.includes(condition));
+            const isPrevCompletelyIncluded = prevConditions.every((condition) =>
+              currentConditions.includes(condition)
+            );
 
             if (isPrevCompletelyIncluded) {
               // 이전 규칙이 현재 규칙에 완전히 포함되는 경우에만 해당 부분 제외
@@ -447,7 +506,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
               } else {
                 // 일부만 겹치면 OR 조건을 고려해서 비례적으로 계산
                 // 더 관대하게 계산 (OR 조건에서는 대안이 있기 때문)
-                overlapRatio = overlappingConditions / Math.max(totalConditions * 2, prevConditions.length * 2);
+                overlapRatio =
+                  overlappingConditions /
+                  Math.max(totalConditions * 2, prevConditions.length * 2);
               }
 
               const reduction = Math.floor(prevActualCount * overlapRatio);
@@ -455,8 +516,12 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
             } else {
               // 이전 규칙이 현재 규칙에 부분적으로만 겹치는 경우
               // OR 조건을 고려해서 매우 관대하게 계산
-              const overlapRatio = intersection.length / (currentConditions.length + prevConditions.length);
-              const reduction = Math.floor(prevActualCount * overlapRatio * 0.5); // 50% 할인
+              const overlapRatio =
+                intersection.length /
+                (currentConditions.length + prevConditions.length);
+              const reduction = Math.floor(
+                prevActualCount * overlapRatio * 0.5
+              ); // 50% 할인
               availableCount = Math.max(0, availableCount - reduction);
             }
           }
@@ -484,13 +549,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ruleId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", ruleId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDragEnter = (e: React.DragEvent, ruleId: string) => {
@@ -514,8 +579,12 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       return;
     }
 
-    const dragIndex = createdRules.findIndex((rule) => rule.id === draggingRuleId);
-    const dropIndex = createdRules.findIndex((rule) => rule.id === targetRuleId);
+    const dragIndex = createdRules.findIndex(
+      (rule) => rule.id === draggingRuleId
+    );
+    const dropIndex = createdRules.findIndex(
+      (rule) => rule.id === targetRuleId
+    );
 
     if (dragIndex === -1 || dropIndex === -1) return;
 
@@ -558,7 +627,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
     const groups: Record<string, string[]> = {};
 
     conditions.forEach((condition) => {
-      const parts = condition.split(': ');
+      const parts = condition.split(": ");
       if (parts.length === 2) {
         const category = parts[0]; // "Airline", "Aircraft Type", etc.
         const value = parts[1]; // "Korean Air", "A21N", etc.
@@ -583,7 +652,11 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
 
   // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; distribution: Record<string, number> }) => {
+    (savedRuleData: {
+      conditions: string[];
+      flightCount: number;
+      distribution: Record<string, number>;
+    }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
@@ -598,7 +671,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const distribution = savedRuleData.distribution || calculateEqualDistribution(definedProperties);
+          const distribution =
+            savedRuleData.distribution ||
+            calculateEqualDistribution(definedProperties);
 
           const newRule = {
             id: `rule-${Date.now()}`,
@@ -640,10 +715,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       {/* Header */}
       <div className="border-l-4 border-primary pl-4">
         <h3 className="text-lg font-semibold text-default-900">
-          Define {isNationality ? 'Nationalities' : 'Passenger Profiles'}
+          Define {isNationality ? "Nationalities" : "Passenger Profiles"}
         </h3>
         <p className="text-sm text-default-500">
-          Define {isNationality ? 'what properties can be assigned' : 'passenger profile categories for classification'}
+          Define{" "}
+          {isNationality
+            ? "what properties can be assigned"
+            : "passenger profile categories for classification"}
         </p>
       </div>
 
@@ -651,15 +729,21 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
       <div className="flex gap-3">
         <Input
           type="text"
-          placeholder={`Enter ${isNationality ? 'property name (e.g., domestic, international or a,b,c)' : 'profile name (e.g., business, leisure, premium or a,b,c)'}...`}
+          placeholder={`Enter ${isNationality ? "property name (e.g., domestic, international or a,b,c)" : "profile name (e.g., business, leisure, premium or a,b,c)"}...`}
           value={newPropertyName}
-          onChange={(e) => setNewPropertyName((e.target as HTMLInputElement).value)}
+          onChange={(e) =>
+            setNewPropertyName((e.target as HTMLInputElement).value)
+          }
           onKeyPress={handleKeyPress}
           className="flex-1"
         />
-        <Button onClick={handleAddProperty} disabled={!newPropertyName.trim()} className="flex items-center gap-2">
+        <Button
+          onClick={handleAddProperty}
+          disabled={!newPropertyName.trim()}
+          className="flex items-center gap-2"
+        >
           <Plus size={16} />
-          Add {isNationality ? 'Property' : 'Profile'}
+          Add {isNationality ? "Property" : "Profile"}
         </Button>
       </div>
 
@@ -694,16 +778,18 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
             <h4 className="text-lg font-semibold text-default-900">
-              Assign {isNationality ? 'Distribution' : 'Profile Distribution'} Rules
+              Assign {isNationality ? "Distribution" : "Profile Distribution"}{" "}
+              Rules
             </h4>
             <p className="text-sm text-default-500">
-              Define how passengers will be distributed among the{' '}
-              {isNationality ? 'nationalities' : 'profile categories'} you created above
+              Define how passengers will be distributed among the{" "}
+              {isNationality ? "nationalities" : "profile categories"} you
+              created above
             </p>
           </div>
 
           <Button
-            variant={definedProperties.length > 0 ? 'primary' : 'outline'}
+            variant={definedProperties.length > 0 ? "primary" : "outline"}
             disabled={definedProperties.length === 0}
             onClick={handleOpenRuleModal}
             className="flex items-center gap-2"
@@ -726,7 +812,7 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, rule.id)}
                 onDragEnd={handleDragEnd}
-                className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
+                className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? "scale-95 opacity-50" : ""} ${dragOverRuleId === rule.id ? "border-purple-400 bg-purple-50" : ""} hover:shadow-md`}
               >
                 {/* Rule Header */}
                 <div className="pointer-events-none flex items-center justify-between">
@@ -744,15 +830,21 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-gray-700">
-                          {flightCalculations.sequentialCounts[rule.id] ?? rule.flightCount}
+                          {flightCalculations.sequentialCounts[rule.id] ??
+                            rule.flightCount}
                         </span>
-                        <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                        <span className="text-sm text-gray-500">
+                          / {flightCalculations.totalFlights}
+                        </span>
                         <span className="text-sm text-gray-500">flights</span>
                       </div>
                       {(() => {
-                        const actualCount = flightCalculations.sequentialCounts[rule.id];
+                        const actualCount =
+                          flightCalculations.sequentialCounts[rule.id];
                         const originalCount = rule.flightCount;
-                        const isLimited = actualCount !== undefined && actualCount < originalCount;
+                        const isLimited =
+                          actualCount !== undefined &&
+                          actualCount < originalCount;
                         return isLimited ? (
                           <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
                             -{originalCount - actualCount} limited
@@ -785,13 +877,15 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                 {rule.conditions.length > 0 && (
                   <div className="mt-2">
                     <div className="flex flex-wrap gap-2">
-                      {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
+                      {Object.entries(
+                        groupConditionsByCategory(rule.conditions)
+                      ).map(([category, values]) => (
                         <Badge
                           key={category}
                           variant="secondary"
                           className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
                         >
-                          {values.join(' | ')}
+                          {values.join(" | ")}
                         </Badge>
                       ))}
                     </div>
@@ -804,7 +898,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                     <PercentageInteractiveBar
                       properties={definedProperties}
                       values={rule.distribution || {}}
-                      onChange={(newValues) => updateRule(rule.id, { distribution: newValues })}
+                      onChange={(newValues) =>
+                        updateRule(rule.id, { distribution: newValues })
+                      }
                       showValues={true}
                     />
 
@@ -813,12 +909,20 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                       {isValidDistribution(rule.distribution || {}) ? (
                         <span className="flex items-center gap-1 text-green-600">
                           <CheckCircle size={14} />
-                          Valid distribution (Total: {getDistributionTotal(rule.distribution || {}).toFixed(1)}%)
+                          Valid distribution (Total:{" "}
+                          {getDistributionTotal(
+                            rule.distribution || {}
+                          ).toFixed(1)}
+                          %)
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-600">
                           <XCircle size={14} />
-                          Total must equal 100% (Current: {getDistributionTotal(rule.distribution || {}).toFixed(1)}%)
+                          Total must equal 100% (Current:{" "}
+                          {getDistributionTotal(
+                            rule.distribution || {}
+                          ).toFixed(1)}
+                          %)
                         </span>
                       )}
                     </div>
@@ -838,10 +942,16 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
               <div className="rounded-lg border bg-white px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge className="border-0 bg-green-100 text-green-700">Default</Badge>
+                    <Badge className="border-0 bg-green-100 text-green-700">
+                      Default
+                    </Badge>
                     <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
-                      <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                      <span className="font-medium text-gray-700">
+                        {flightCalculations.remainingFlights}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        / {flightCalculations.totalFlights}
+                      </span>
                       <span className="text-sm text-gray-500">flights</span>
                     </div>
                   </div>
@@ -871,12 +981,20 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                     {isValidDistribution(defaultDistribution || {}) ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid distribution (Total: {getDistributionTotal(defaultDistribution || {}).toFixed(1)}%)
+                        Valid distribution (Total:{" "}
+                        {getDistributionTotal(
+                          defaultDistribution || {}
+                        ).toFixed(1)}
+                        %)
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
-                        Total must equal 100% (Current: {getDistributionTotal(defaultDistribution || {}).toFixed(1)}%)
+                        Total must equal 100% (Current:{" "}
+                        {getDistributionTotal(
+                          defaultDistribution || {}
+                        ).toFixed(1)}
+                        %)
                       </span>
                     )}
                   </div>
@@ -887,19 +1005,27 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
+                    <AlertTriangle
+                      className="mt-0.5 text-amber-500"
+                      size={20}
+                    />
                     <div>
-                      <h4 className="font-medium text-gray-900">No distribution rules defined</h4>
+                      <h4 className="font-medium text-gray-900">
+                        No distribution rules defined
+                      </h4>
                       <p className="mt-1 text-sm text-gray-600">
-                        Would you like to apply a default {isNationality ? 'nationality' : 'profile'} distribution to
-                        all flights?
+                        Would you like to apply a default{" "}
+                        {isNationality ? "nationality" : "profile"} distribution
+                        to all flights?
                       </p>
                     </div>
                   </div>
                   <Button
                     onClick={() => {
                       setDefaultRule(true);
-                      updateDefaultDistribution(calculateEqualDistribution(definedProperties));
+                      updateDefaultDistribution(
+                        calculateEqualDistribution(definedProperties)
+                      );
                     }}
                     size="sm"
                     variant="outline"
@@ -915,21 +1041,28 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="mt-0.5 text-amber-500" size={20} />
+                      <AlertTriangle
+                        className="mt-0.5 text-amber-500"
+                        size={20}
+                      />
                       <div>
                         <h4 className="font-medium text-gray-900">
-                          {flightCalculations.remainingFlights} flights have no rules
+                          {flightCalculations.remainingFlights} flights have no
+                          rules
                         </h4>
                         <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default {isNationality ? 'nationality' : 'profile'} distribution to
-                          these remaining flights?
+                          Would you like to apply a default{" "}
+                          {isNationality ? "nationality" : "profile"}{" "}
+                          distribution to these remaining flights?
                         </p>
                       </div>
                     </div>
                     <Button
                       onClick={() => {
                         setDefaultRule(true);
-                        updateDefaultDistribution(calculateEqualDistribution(definedProperties));
+                        updateDefaultDistribution(
+                          calculateEqualDistribution(definedProperties)
+                        );
                       }}
                       size="sm"
                       variant="outline"
@@ -951,13 +1084,13 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
           <DialogHeader>
             <DialogTitle>
               {editingRuleId
-                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || 'Rule'}`
-                : 'Create New Rule'}
+                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || "Rule"}`
+                : "Create New Rule"}
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? `Modify the flight conditions and ${isNationality ? 'nationality' : 'profile'} distribution for this rule.`
-                : `Select flight conditions and assign ${isNationality ? 'nationality' : 'profile'} distribution values.`}
+                ? `Modify the flight conditions and ${isNationality ? "nationality" : "profile"} distribution for this rule.`
+                : `Select flight conditions and assign ${isNationality ? "nationality" : "profile"} distribution values.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -966,7 +1099,11 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="nationality"
-              editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
+              editingRule={
+                editingRuleId
+                  ? createdRules.find((rule) => rule.id === editingRuleId)
+                  : undefined
+              }
             />
           </div>
         </DialogContent>
@@ -978,12 +1115,12 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={20} />
-              Confirm {isNationality ? 'Property' : 'Profile'} Changes
+              Confirm {isNationality ? "Property" : "Profile"} Changes
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingAction?.type === 'add'
-                ? `Adding new ${isNationality ? 'properties' : 'profiles'} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`
-                : `Removing ${isNationality ? 'properties' : 'profiles'} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`}
+              {pendingAction?.type === "add"
+                ? `Adding new ${isNationality ? "properties" : "profiles"} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`
+                : `Removing ${isNationality ? "properties" : "profiles"} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -992,7 +1129,8 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
             <ul className="list-inside list-disc space-y-1 rounded bg-muted p-3 text-sm">
               {createdRules.length > 0 && (
                 <li>
-                  {createdRules.length} distribution rule{createdRules.length > 1 ? 's' : ''}
+                  {createdRules.length} distribution rule
+                  {createdRules.length > 1 ? "s" : ""}
                 </li>
               )}
               {hasDefaultRule && <li>Default distribution rule</li>}
@@ -1000,7 +1138,9 @@ export default function AddColumnTab({ parquetMetadata = [], configType = 'natio
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelChanges}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleCancelChanges}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmChanges}
               className="bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500"
