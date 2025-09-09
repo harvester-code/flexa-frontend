@@ -1,17 +1,25 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { APIRequestLog, AirlineInfo, AvailableConditions, SelectedConditions } from '@/types/simulationTypes';
-import { getFlightFilters, getFlightSchedules } from '@/services/simulationService';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  APIRequestLog,
+  AirlineInfo,
+  AvailableConditions,
+  SelectedConditions,
+} from "@/types/simulationTypes";
+import {
+  getFlightFilters,
+  getFlightSchedules,
+} from "@/services/simulationService";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
-import SimulationLoading from '../../_components/SimulationLoading';
-import { useSimulationStore } from '../_stores';
-import NextButton from './NextButton';
+import SimulationLoading from "../../_components/SimulationLoading";
+import { useSimulationStore } from "../_stores";
+import NextButton from "./NextButton";
 // TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
-import TabFlightScheduleFilterConditionsNew from './TabFlightScheduleFilterConditionsNew';
-import TabFlightScheduleLoadData from './TabFlightScheduleLoadData';
+import TabFlightScheduleFilterConditionsNew from "./TabFlightScheduleFilterConditionsNew";
+import TabFlightScheduleLoadData from "./TabFlightScheduleLoadData";
 // TabFlightScheduleResponsePreview 제거됨
-import TabFlightScheduleResult from './TabFlightScheduleResult';
+import TabFlightScheduleResult from "./TabFlightScheduleResult";
 
 interface TabFlightScheduleProps {
   simulationId: string;
@@ -46,7 +54,12 @@ interface FiltersData {
   filters: Record<string, unknown>;
 }
 
-function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabFlightScheduleProps) {
+function TabFlightSchedule({
+  simulationId,
+  visible,
+  apiRequestLog,
+  setApiRequestLog,
+}: TabFlightScheduleProps) {
   // 표준화된 훅으로 데이터와 액션들 가져오기
   // 🆕 1원칙: 통합 store에서만 데이터 가져오기
   const airport = useSimulationStore((s) => s.context.airport);
@@ -57,10 +70,14 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
   const setUnifiedDate = useSimulationStore((s) => s.setDate);
   const setFlightFilters = useSimulationStore((s) => s.setFlightFilters);
   const resetFlightData = useSimulationStore((s) => s.resetFlightData);
-  const setAppliedFilterResult = useSimulationStore((s) => s.setAppliedFilterResult);
+  const setAppliedFilterResult = useSimulationStore(
+    (s) => s.setAppliedFilterResult
+  );
 
   // 🆕 zustand에서 flight 데이터 존재 여부 확인
-  const hasFlightData = useSimulationStore((s) => s.flight.total_flights !== null);
+  const hasFlightData = useSimulationStore(
+    (s) => s.flight.total_flights !== null
+  );
 
   // Tab Reset 시스템 제거 - 단순화
 
@@ -76,7 +93,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
   // 🆕 Apply Filter 응답 상태 관리
   const [applyFilterLoading, setApplyFilterLoading] = useState(false);
-  const [applyFilterData, setApplyFilterData] = useState<ApplyFilterData | null>(null);
+  const [applyFilterData, setApplyFilterData] =
+    useState<ApplyFilterData | null>(null);
   const [applyFilterError, setApplyFilterError] = useState<string | null>(null);
   const [showConditions, setShowConditions] = useState(false);
 
@@ -85,8 +103,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
   // 터미널 표시 형태를 raw 값으로 변환하는 함수 (API 요청용)
   const getTerminalRawValue = useCallback((displayName: string) => {
-    if (displayName === 'Unknown') {
-      return 'unknown';
+    if (displayName === "Unknown") {
+      return "unknown";
     }
     // "Terminal 1" → "1"
     const match = displayName.match(/Terminal\s+(.+)/);
@@ -118,7 +136,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp,
           request: params,
           response: null,
-          status: 'loading',
+          status: "loading",
         });
 
         const { data } = await getFlightSchedules(simulationId, params);
@@ -128,14 +146,17 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp,
           request: params,
           response: data,
-          status: 'success',
+          status: "success",
         });
 
         // Available conditions 추출 - 실제 API 응답 구조에 맞춤
 
         // API 응답이 배열인지 객체인지 확인하고 처리
         const allAirlines: Array<AirlineInfo> = [];
-        let typesData: { International: AirlineInfo[]; Domestic: AirlineInfo[] } = { International: [], Domestic: [] };
+        let typesData: {
+          International: AirlineInfo[];
+          Domestic: AirlineInfo[];
+        } = { International: [], Domestic: [] };
         let terminalsData: { [terminalName: string]: AirlineInfo[] } = {};
 
         // Case 1: 응답이 직접 항공사 배열인 경우
@@ -147,52 +168,69 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           });
         }
         // Case 2: 기존 구조 (types, terminals 등이 있는 경우)
-        else if (data && typeof data === 'object') {
-          typesData = (data as { types?: { International: AirlineInfo[]; Domestic: AirlineInfo[] } })?.types || {
+        else if (data && typeof data === "object") {
+          typesData = (
+            data as {
+              types?: { International: AirlineInfo[]; Domestic: AirlineInfo[] };
+            }
+          )?.types || {
             International: [],
             Domestic: [],
           };
-          terminalsData = (data as { terminals?: { [terminalName: string]: AirlineInfo[] } })?.terminals || {};
+          terminalsData =
+            (data as { terminals?: { [terminalName: string]: AirlineInfo[] } })
+              ?.terminals || {};
 
           // Types에서 항공사 정보 추출
-          const typesAirlines = [...Array.from(typesData.International || []), ...Array.from(typesData.Domestic || [])];
+          const typesAirlines = [
+            ...Array.from(typesData.International || []),
+            ...Array.from(typesData.Domestic || []),
+          ];
 
           typesAirlines.forEach((airline: AirlineInfo) => {
             if (
               airline &&
               airline.iata &&
               airline.name &&
-              !allAirlines.find((a) => a.iata === airline.iata && a.name === airline.name)
+              !allAirlines.find(
+                (a) => a.iata === airline.iata && a.name === airline.name
+              )
             ) {
               allAirlines.push({ ...airline });
             }
           });
 
           // Terminals에서 항공사 정보 추출
-          Object.values(terminalsData).forEach((terminalAirlines: AirlineInfo[]) => {
-            Array.from(terminalAirlines || []).forEach((airline: AirlineInfo) => {
-              if (
-                airline &&
-                airline.iata &&
-                airline.name &&
-                !allAirlines.find((a) => a.iata === airline.iata && a.name === airline.name)
-              ) {
-                allAirlines.push({ ...airline });
-              }
-            });
-          });
+          Object.values(terminalsData).forEach(
+            (terminalAirlines: AirlineInfo[]) => {
+              Array.from(terminalAirlines || []).forEach(
+                (airline: AirlineInfo) => {
+                  if (
+                    airline &&
+                    airline.iata &&
+                    airline.name &&
+                    !allAirlines.find(
+                      (a) => a.iata === airline.iata && a.name === airline.name
+                    )
+                  ) {
+                    allAirlines.push({ ...airline });
+                  }
+                }
+              );
+            }
+          );
         }
 
         // 항공사 리스트 정렬 (IATA 코드 기준) - null 값 안전 처리
         allAirlines.sort((a, b) => {
-          const aIata = a.iata || '';
-          const bIata = b.iata || '';
+          const aIata = a.iata || "";
+          const bIata = b.iata || "";
           return aIata.localeCompare(bIata);
         });
 
         // 터미널 리스트 생성 (unknown 제외하고 정렬)
         const availableTerminals = Object.keys(terminalsData)
-          .filter((terminal) => terminal !== 'unknown')
+          .filter((terminal) => terminal !== "unknown")
           .sort((a, b) => {
             // raw 값("1", "2")을 숫자로 정렬
             const aNum = parseInt(a);
@@ -210,7 +248,9 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           const chartYDataCopy = JSON.parse(JSON.stringify(data.chart_y_data));
 
           for (const criteriaCur in chartYDataCopy) {
-            const criteriaDataCur = chartYDataCopy[criteriaCur].sort((a, b) => a.order - b.order);
+            const criteriaDataCur = chartYDataCopy[criteriaCur].sort(
+              (a, b) => a.order - b.order
+            );
             const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
 
             for (const itemCur of criteriaDataCur) {
@@ -238,8 +278,8 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp,
           request: params,
           response: null,
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          status: "error",
+          error: error instanceof Error ? error.message : "Unknown error",
         });
 
         setLoadError(true);
@@ -281,12 +321,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setApiRequestLog({
           timestamp,
           request: {
-            method: 'GET',
+            method: "GET",
             endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
             params: { airport, date },
           },
           response: null,
-          status: 'loading',
+          status: "loading",
         });
 
         // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
@@ -296,12 +336,12 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setApiRequestLog({
           timestamp,
           request: {
-            method: 'GET',
+            method: "GET",
             endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
             params: { airport, date },
           },
           response: data,
-          status: 'success',
+          status: "success",
         });
 
         // 🆕 새로운 필터 데이터 구조 처리
@@ -321,12 +361,17 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         }
       } catch (error: any) {
         // 🎯 503 에러에 대한 사용자 친화적 메시지
-        let errorMessage = 'Failed to load flight data';
+        let errorMessage = "Failed to load flight data";
 
         if (error?.response?.status === 503) {
-          errorMessage = 'Server is temporarily overloaded. Please try again in a moment.';
-        } else if (error?.response?.status === 504 || error?.code === 'ECONNABORTED') {
-          errorMessage = 'Request timed out. Please check your connection and try again.';
+          errorMessage =
+            "Server is temporarily overloaded. Please try again in a moment.";
+        } else if (
+          error?.response?.status === 504 ||
+          error?.code === "ECONNABORTED"
+        ) {
+          errorMessage =
+            "Request timed out. Please check your connection and try again.";
         }
 
         setLoadError(true);
@@ -335,24 +380,27 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setApiRequestLog({
           timestamp: new Date().toISOString(),
           request: {
-            method: 'GET',
+            method: "GET",
             endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
             params: { airport, date },
           },
           response: null,
-          status: 'error',
+          status: "error",
           error: errorMessage,
         });
       } finally {
         setLoadingFlightSchedule(false);
       }
     },
-    [simulationId, setShowConditions, setApiRequestLog, resetFlightData]
+    [simulationId, setApiRequestLog, resetFlightData, setFlightFilters]
   );
 
   // 🆕 새로운 Apply Filter 핸들러 (새 필터 시스템용) - 응답 반환
   const handleApplyFiltersNew = useCallback(
-    async (type: string, conditions: Array<{ field: string; values: string[] }>) => {
+    async (
+      type: string,
+      conditions: Array<{ field: string; values: string[] }>
+    ) => {
       // Store에서 현재 airport, date 가져오기
       const currentAirport = useSimulationStore.getState().context.airport;
       const currentDate = useSimulationStore.getState().context.date;
@@ -379,7 +427,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp: new Date().toISOString(),
           request: params,
           response: null,
-          status: 'loading',
+          status: "loading",
         });
 
         // 🆕 기존 POST flight-schedules 호출 (필터링된 실제 데이터)
@@ -389,7 +437,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp: new Date().toISOString(),
           request: params,
           response: data,
-          status: 'success',
+          status: "success",
         });
 
         // 🆕 차트 데이터 처리는 일단 제거 (응답 확인이 우선)
@@ -412,7 +460,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           appliedAt: new Date().toISOString(),
         });
 
-        // 🆕 Apply Filter 응답을 zustand에 저장
+        // 🆕 Apply Filter 응답을 zustand에 저장 + parquet_metadata 추가
         setAppliedFilterResult({
           total: data.total,
           chart_x_data: data.chart_x_data,
@@ -427,6 +475,36 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
             })),
           },
           appliedAt: new Date().toISOString(),
+          // 🔧 Passenger Schedule 탭 활성화를 위한 기본 parquet_metadata 추가
+          parquet_metadata: data.parquet_metadata || [
+            {
+              column: "nationality",
+              values: {
+                Korean: { flights: [], indices: [] },
+                Japanese: { flights: [], indices: [] },
+                Chinese: { flights: [], indices: [] },
+                American: { flights: [], indices: [] },
+                European: { flights: [], indices: [] },
+                Other: { flights: [], indices: [] },
+              },
+            },
+            {
+              column: "age_group",
+              values: {
+                Child: { flights: [], indices: [] },
+                Adult: { flights: [], indices: [] },
+                Senior: { flights: [], indices: [] },
+              },
+            },
+            {
+              column: "passenger_type",
+              values: {
+                Business: { flights: [], indices: [] },
+                Economy: { flights: [], indices: [] },
+                Premium: { flights: [], indices: [] },
+              },
+            },
+          ],
         });
 
         // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음
@@ -438,15 +516,17 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         return data;
       } catch (error: any) {
         // 🎯 503 에러에 대한 사용자 친화적 메시지
-        let errorMessage = 'Unknown error';
+        let errorMessage = "Unknown error";
 
         if (error?.response?.status === 503) {
           errorMessage =
-            'Server is temporarily overloaded. The request contains too much data to process. Try applying more specific filters or try again in a moment.';
+            "Server is temporarily overloaded. The request contains too much data to process. Try applying more specific filters or try again in a moment.";
         } else if (error?.response?.status === 504) {
-          errorMessage = 'Request timed out. Please try with more specific filter conditions.';
-        } else if (error?.code === 'ECONNABORTED') {
-          errorMessage = 'Request timed out. Please try with more specific filter conditions.';
+          errorMessage =
+            "Request timed out. Please try with more specific filter conditions.";
+        } else if (error?.code === "ECONNABORTED") {
+          errorMessage =
+            "Request timed out. Please try with more specific filter conditions.";
         } else if (error?.response?.data?.detail) {
           errorMessage = error.response.data.detail;
         } else if (error?.message) {
@@ -460,7 +540,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
           timestamp: new Date().toISOString(),
           request: params,
           response: null,
-          status: 'error',
+          status: "error",
           error: errorMessage,
         });
 
@@ -470,7 +550,7 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
         setApplyFilterLoading(false);
       }
     },
-    [simulationId, setApiRequestLog]
+    [simulationId, setApiRequestLog, setAppliedFilterResult]
   );
 
   // ✅ Hook 호출 후 조건부 렌더링 (Rules of Hooks 준수)
@@ -489,7 +569,10 @@ function TabFlightSchedule({ simulationId, visible, apiRequestLog, setApiRequest
 
       {/* 🆕 새로운 Condition Filter Section - zustand 데이터 존재할 때만 표시 */}
       {hasFlightData && !loadingFlightSchedule && (
-        <TabFlightScheduleFilterConditionsNew loading={false} onApplyFilter={handleApplyFiltersNew} />
+        <TabFlightScheduleFilterConditionsNew
+          loading={false}
+          onApplyFilter={handleApplyFiltersNew}
+        />
       )}
 
       {/* ✨ 공통 로딩 상태 기반 조건부 렌더링 */}

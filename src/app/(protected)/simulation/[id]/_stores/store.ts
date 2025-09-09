@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { ProcessStep } from '@/types/simulationTypes';
-import { convertToDecimal } from '../_components/PercentageInteractiveBar';
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+import { ProcessStep } from "@/types/simulationTypes";
+import { convertToDecimal } from "../_components/PercentageInteractiveBar";
 
 // ==================== Passenger Types ====================
 export interface PassengerData {
@@ -84,9 +84,9 @@ export interface PassengerData {
 const normalizeProcessName = (name: string): string => {
   return name
     .toLowerCase() // 소문자 변환
-    .replace(/[^a-z0-9]/g, '_') // 영문, 숫자 외 모든 문자를 언더스코어로
-    .replace(/_+/g, '_') // 연속된 언더스코어를 하나로
-    .replace(/^_|_$/g, ''); // 앞뒤 언더스코어 제거
+    .replace(/[^a-z0-9]/g, "_") // 영문, 숫자 외 모든 문자를 언더스코어로
+    .replace(/_+/g, "_") // 연속된 언더스코어를 하나로
+    .replace(/^_|_$/g, ""); // 앞뒤 언더스코어 제거
 };
 
 interface LegacyProcedure {
@@ -118,7 +118,9 @@ interface Facility {
 /**
  * Legacy procedures를 새로운 process_flow 형태로 변환하는 헬퍼 함수
  */
-const migrateProceduresToProcessFlow = (procedures: LegacyProcedure[]): ProcessStep[] => {
+const migrateProceduresToProcessFlow = (
+  procedures: LegacyProcedure[]
+): ProcessStep[] => {
   return procedures
     .sort((a, b) => a.order - b.order)
     .map((procedure, index: number) => {
@@ -152,7 +154,7 @@ export interface SimulationStoreState {
   };
   flight: {
     selectedConditions: {
-      type: 'departure' | 'arrival';
+      type: "departure" | "arrival";
       conditions: Array<{
         field: string; // "departure_terminal", "operating_carrier_iata", etc.
         values: string[]; // ["2"], ["KE", "LJ"], etc.
@@ -181,6 +183,17 @@ export interface SimulationStoreState {
         }>;
       };
       appliedAt: string;
+      // 🔧 Passenger Schedule 탭 활성화를 위한 parquet_metadata
+      parquet_metadata?: Array<{
+        column: string;
+        values: Record<
+          string,
+          {
+            flights: string[];
+            indices: number[];
+          }
+        >;
+      }>;
     } | null;
     total_flights: number | null;
     airlines: Record<string, string> | null;
@@ -214,7 +227,7 @@ export interface SimulationStoreState {
   }) => void;
   resetFlightData: () => void; // 🆕 flight 영역만 리셋
   setSelectedConditions: (selectedConditions: {
-    type: 'departure' | 'arrival';
+    type: "departure" | "arrival";
     conditions: Array<{
       field: string;
       values: string[];
@@ -227,7 +240,7 @@ export interface SimulationStoreState {
   }) => void;
 
   // 🆕 편의 액션들 - API 바디 형태 조작
-  setFlightType: (type: 'departure' | 'arrival') => void;
+  setFlightType: (type: "departure" | "arrival") => void;
   addCondition: (field: string, values: string[]) => void;
   removeCondition: (field: string) => void;
   updateConditionValues: (field: string, values: string[]) => void;
@@ -253,6 +266,17 @@ export interface SimulationStoreState {
         }>;
       };
       appliedAt: string;
+      // 🔧 Passenger Schedule 탭 활성화를 위한 parquet_metadata
+      parquet_metadata?: Array<{
+        column: string;
+        values: Record<
+          string,
+          {
+            flights: string[];
+            indices: number[];
+          }
+        >;
+      }>;
     } | null
   ) => void;
 
@@ -263,8 +287,8 @@ export interface SimulationStoreState {
   // checkStep2Completion 제거됨 - Generate Pax 버튼으로만 Step 2 완료
 
   // ==================== Passenger Actions ====================
-  setSettings: (settings: Partial<PassengerData['settings']>) => void;
-  setPaxDemographics: (demographics: PassengerData['pax_demographics']) => void;
+  setSettings: (settings: Partial<PassengerData["settings"]>) => void;
+  setPaxDemographics: (demographics: PassengerData["pax_demographics"]) => void;
   setPaxGenerationValues: (values: string[]) => void;
   setNationalityValues: (values: string[]) => void;
   setProfileValues: (values: string[]) => void;
@@ -278,12 +302,22 @@ export interface SimulationStoreState {
     flightCount?: number,
     value?: Record<string, number>
   ) => void;
-  addProfileRule: (conditions: Record<string, string[]>, flightCount?: number, value?: Record<string, number>) => void;
+  addProfileRule: (
+    conditions: Record<string, string[]>,
+    flightCount?: number,
+    value?: Record<string, number>
+  ) => void;
   removePaxGenerationRule: (ruleIndex: number) => void;
   removeNationalityRule: (ruleIndex: number) => void;
   removeProfileRule: (ruleIndex: number) => void;
-  updatePaxGenerationValue: (ruleIndex: number, value: number | Record<string, number>) => void;
-  updatePaxGenerationDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  updatePaxGenerationValue: (
+    ruleIndex: number,
+    value: number | Record<string, number>
+  ) => void;
+  updatePaxGenerationDistribution: (
+    ruleIndex: number,
+    distribution: Record<string, number>
+  ) => void;
   updatePaxGenerationRule: (
     ruleIndex: number,
     conditions: Record<string, string[]>,
@@ -291,45 +325,75 @@ export interface SimulationStoreState {
     flightCount?: number
   ) => void;
   setPaxGenerationDefault: (value: number | null) => void;
-  reorderPaxGenerationRules: (newOrder: PassengerData['pax_generation']['rules']) => void;
-  updateNationalityDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  reorderPaxGenerationRules: (
+    newOrder: PassengerData["pax_generation"]["rules"]
+  ) => void;
+  updateNationalityDistribution: (
+    ruleIndex: number,
+    distribution: Record<string, number>
+  ) => void;
   updateNationalityRule: (
     ruleIndex: number,
     conditions: Record<string, string[]>,
     flightCount: number,
     distribution: Record<string, number>
   ) => void;
-  reorderNationalityRules: (newOrder: PassengerData['pax_demographics']['nationality']['rules']) => void;
-  updateProfileDistribution: (ruleIndex: number, distribution: Record<string, number>) => void;
+  reorderNationalityRules: (
+    newOrder: PassengerData["pax_demographics"]["nationality"]["rules"]
+  ) => void;
+  updateProfileDistribution: (
+    ruleIndex: number,
+    distribution: Record<string, number>
+  ) => void;
   updateProfileRule: (
     ruleIndex: number,
     conditions: Record<string, string[]>,
     flightCount: number,
     distribution: Record<string, number>
   ) => void;
-  reorderProfileRules: (newOrder: PassengerData['pax_demographics']['profile']['rules']) => void;
+  reorderProfileRules: (
+    newOrder: PassengerData["pax_demographics"]["profile"]["rules"]
+  ) => void;
   setNationalityDefault: (defaultValues: Record<string, number>) => void;
   setProfileDefault: (defaultValues: Record<string, number>) => void;
   reorderPaxDemographics: () => void;
-  setPaxArrivalPatternRules: (rules: PassengerData['pax_arrival_patterns']['rules']) => void;
-  setPaxArrivalPatternDefault: (defaultValues: { mean: number; std: number }) => void;
-  addPaxArrivalPatternRule: (rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
-  updatePaxArrivalPatternRule: (index: number, rule: PassengerData['pax_arrival_patterns']['rules'][0]) => void;
+  setPaxArrivalPatternRules: (
+    rules: PassengerData["pax_arrival_patterns"]["rules"]
+  ) => void;
+  setPaxArrivalPatternDefault: (defaultValues: {
+    mean: number;
+    std: number;
+  }) => void;
+  addPaxArrivalPatternRule: (
+    rule: PassengerData["pax_arrival_patterns"]["rules"][0]
+  ) => void;
+  updatePaxArrivalPatternRule: (
+    index: number,
+    rule: PassengerData["pax_arrival_patterns"]["rules"][0]
+  ) => void;
   removePaxArrivalPatternRule: (index: number) => void;
   resetPassenger: () => void;
   loadPassengerMetadata: (metadata: Record<string, unknown>) => void;
-  setPassengerChartResult: (chartData: PassengerData['chartResult']) => void;
+  setPassengerChartResult: (chartData: PassengerData["chartResult"]) => void;
 
   // ==================== Processing Procedures Actions ====================
   setProcessFlow: (flow: ProcessStep[]) => void;
   convertFromProcedures: (
-    procedures: Array<{ order: number; process: string; facility_names: string[] }>,
+    procedures: Array<{
+      order: number;
+      process: string;
+      facility_names: string[];
+    }>,
     entryType?: string
   ) => void;
   setProcessCompleted: (completed: boolean) => void;
   resetProcessFlow: () => void;
   loadProcessMetadata: (metadata: Record<string, unknown>) => void;
-  setFacilitiesForZone: (processIndex: number, zoneName: string, count: number) => void;
+  setFacilitiesForZone: (
+    processIndex: number,
+    zoneName: string,
+    count: number
+  ) => void;
   updateOperatingSchedule: (
     processIndex: number,
     zoneName: string,
@@ -339,7 +403,12 @@ export interface SimulationStoreState {
       value: number;
     }[]
   ) => void;
-  toggleFacilityTimeBlock: (processIndex: number, zoneName: string, facilityId: string, period: string) => void;
+  toggleFacilityTimeBlock: (
+    processIndex: number,
+    zoneName: string,
+    facilityId: string,
+    period: string
+  ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
@@ -348,9 +417,9 @@ export interface SimulationStoreState {
 // ==================== Initial State ====================
 const createInitialState = (scenarioId?: string) => ({
   context: {
-    scenarioId: scenarioId || '',
-    airport: 'ICN', // ICN을 기본값으로 설정
-    date: new Date().toISOString().split('T')[0], // 🆕 오늘 날짜로 초기화
+    scenarioId: scenarioId || "",
+    airport: "ICN", // ICN을 기본값으로 설정
+    date: new Date().toISOString().split("T")[0], // 🆕 오늘 날짜로 초기화
     lastSavedAt: null,
   },
   flight: {
@@ -452,10 +521,48 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.flight.airlines = null;
         state.flight.filters = null;
 
-        // ✅ flight 데이터 리셋 시 관련된 passenger 데이터도 리셋
+        // ✅ flight 데이터 리셋 시 passenger 데이터도 완전 초기화
+        Object.assign(state.passenger, {
+          settings: {
+            min_arrival_minutes: null,
+          },
+          pax_generation: {
+            rules: [],
+            default: {
+              load_factor: null,
+              flightCount: 0,
+            },
+          },
+          pax_demographics: {
+            nationality: {
+              available_values: [],
+              rules: [],
+              default: { flightCount: 0 },
+            },
+            profile: {
+              available_values: [],
+              rules: [],
+              default: { flightCount: 0 },
+            },
+          },
+          pax_arrival_patterns: {
+            rules: [],
+            default: {
+              mean: null,
+              std: null,
+              flightCount: 0,
+            },
+          },
+          chartResult: undefined, // 차트 결과도 초기화
+        });
 
-        // ✅ flight 데이터 리셋 시 workflow도 리셋
+        // ✅ flight 데이터 리셋 시 process_flow도 완전 초기화
+        state.process_flow = [];
+
+        // ✅ flight 데이터 리셋 시 workflow도 완전 리셋 (step2, step3도 false로)
         state.workflow.step1Completed = false;
+        state.workflow.step2Completed = false;
+        state.workflow.step3Completed = false;
         state.workflow.availableSteps = [1]; // 첫 번째 단계만 접근 가능
       }),
 
@@ -481,14 +588,15 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (!state.flight.selectedConditions) {
           state.flight.selectedConditions = {
-            type: 'departure',
+            type: "departure",
             conditions: [{ field, values }],
           };
         } else {
           // 같은 field가 이미 있으면 제거하고 새로 추가
-          state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
-            (condition) => condition.field !== field
-          );
+          state.flight.selectedConditions.conditions =
+            state.flight.selectedConditions.conditions.filter(
+              (condition) => condition.field !== field
+            );
           if (values.length > 0) {
             state.flight.selectedConditions.conditions.push({ field, values });
           }
@@ -498,9 +606,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
     removeCondition: (field) =>
       set((state) => {
         if (state.flight.selectedConditions) {
-          state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
-            (condition) => condition.field !== field
-          );
+          state.flight.selectedConditions.conditions =
+            state.flight.selectedConditions.conditions.filter(
+              (condition) => condition.field !== field
+            );
         }
       }),
 
@@ -508,22 +617,24 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (!state.flight.selectedConditions) {
           state.flight.selectedConditions = {
-            type: 'departure',
+            type: "departure",
             conditions: values.length > 0 ? [{ field, values }] : [],
           };
         } else {
-          const existingCondition = state.flight.selectedConditions.conditions.find(
-            (condition) => condition.field === field
-          );
+          const existingCondition =
+            state.flight.selectedConditions.conditions.find(
+              (condition) => condition.field === field
+            );
 
           if (existingCondition) {
             if (values.length > 0) {
               existingCondition.values = values;
             } else {
               // values가 비어있으면 조건 제거
-              state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
-                (condition) => condition.field !== field
-              );
+              state.flight.selectedConditions.conditions =
+                state.flight.selectedConditions.conditions.filter(
+                  (condition) => condition.field !== field
+                );
             }
           } else if (values.length > 0) {
             // 새로운 조건 추가
@@ -536,13 +647,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (!state.flight.selectedConditions) {
           state.flight.selectedConditions = {
-            type: 'departure',
+            type: "departure",
             conditions: [{ field, values: [value] }],
           };
         } else {
-          const existingCondition = state.flight.selectedConditions.conditions.find(
-            (condition) => condition.field === field
-          );
+          const existingCondition =
+            state.flight.selectedConditions.conditions.find(
+              (condition) => condition.field === field
+            );
 
           if (existingCondition) {
             const valueIndex = existingCondition.values.indexOf(value);
@@ -555,14 +667,18 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
               // 값이 모두 없어지면 조건 제거
               if (existingCondition.values.length === 0) {
-                state.flight.selectedConditions.conditions = state.flight.selectedConditions.conditions.filter(
-                  (condition) => condition.field !== field
-                );
+                state.flight.selectedConditions.conditions =
+                  state.flight.selectedConditions.conditions.filter(
+                    (condition) => condition.field !== field
+                  );
               }
             }
           } else {
             // 새로운 조건 추가
-            state.flight.selectedConditions.conditions.push({ field, values: [value] });
+            state.flight.selectedConditions.conditions.push({
+              field,
+              values: [value],
+            });
           }
         }
       }),
@@ -584,6 +700,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.flight.appliedFilterResult = {
           ...result,
           appliedAt: result.appliedAt || new Date().toISOString(), // 결과에 이미 있으면 사용, 없으면 생성
+          parquet_metadata: result.parquet_metadata, // 🔧 parquet_metadata 포함
         };
 
         // ✅ appliedFilterResult가 설정되면 step1 완료 처리
@@ -647,16 +764,24 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         // 올바른 순서로 nationality 객체 재구성
-        const currentRules = state.passenger.pax_demographics.nationality.rules || [];
-        const currentDefault = state.passenger.pax_demographics.nationality.default || {};
+        const currentRules =
+          state.passenger.pax_demographics.nationality.rules || [];
+        const currentDefault =
+          state.passenger.pax_demographics.nationality.default || {};
 
         // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
         let newDefault = currentDefault;
-        if (values.length > 0 && Object.keys(currentDefault).filter((key) => key !== 'flightCount').length > 0) {
+        if (
+          values.length > 0 &&
+          Object.keys(currentDefault).filter((key) => key !== "flightCount")
+            .length > 0
+        ) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -681,7 +806,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
                   const equalDistribution: Record<string, number> = {};
                   values.forEach((prop, index) => {
-                    const percentage = equalPercentage + (index < remainder ? 1 : 0);
+                    const percentage =
+                      equalPercentage + (index < remainder ? 1 : 0);
                     equalDistribution[prop] = convertToDecimal(percentage);
                   });
                   return equalDistribution;
@@ -702,16 +828,24 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         // 올바른 순서로 profile 객체 재구성
-        const currentRules = state.passenger.pax_demographics.profile.rules || [];
-        const currentDefault = state.passenger.pax_demographics.profile.default || {};
+        const currentRules =
+          state.passenger.pax_demographics.profile.rules || [];
+        const currentDefault =
+          state.passenger.pax_demographics.profile.default || {};
 
         // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
         let newDefault = currentDefault;
-        if (values.length > 0 && Object.keys(currentDefault).filter((key) => key !== 'flightCount').length > 0) {
+        if (
+          values.length > 0 &&
+          Object.keys(currentDefault).filter((key) => key !== "flightCount")
+            .length > 0
+        ) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -736,7 +870,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
                   const equalDistribution: Record<string, number> = {};
                   values.forEach((prop, index) => {
-                    const percentage = equalPercentage + (index < remainder ? 1 : 0);
+                    const percentage =
+                      equalPercentage + (index < remainder ? 1 : 0);
                     equalDistribution[prop] = convertToDecimal(percentage);
                   });
                   return equalDistribution;
@@ -760,7 +895,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         state.passenger.pax_generation.rules.push({
           conditions,
-          value: typeof value === 'number' ? { load_factor: value } : value,
+          value: typeof value === "number" ? { load_factor: value } : value,
           flightCount,
         });
       }),
@@ -773,8 +908,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updatePaxGenerationValue: (ruleIndex, value) =>
       set((state) => {
         if (state.passenger.pax_generation.rules[ruleIndex]) {
-          if (typeof value === 'number') {
-            state.passenger.pax_generation.rules[ruleIndex].value.load_factor = value;
+          if (typeof value === "number") {
+            state.passenger.pax_generation.rules[ruleIndex].value.load_factor =
+              value;
           } else {
             state.passenger.pax_generation.rules[ruleIndex].value = value;
           }
@@ -791,9 +927,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updatePaxGenerationRule: (ruleIndex, conditions, loadFactor, flightCount) =>
       set((state) => {
         if (state.passenger.pax_generation.rules[ruleIndex]) {
-          state.passenger.pax_generation.rules[ruleIndex].conditions = conditions;
-          state.passenger.pax_generation.rules[ruleIndex].value = { load_factor: loadFactor };
-          state.passenger.pax_generation.rules[ruleIndex].flightCount = flightCount;
+          state.passenger.pax_generation.rules[ruleIndex].conditions =
+            conditions;
+          state.passenger.pax_generation.rules[ruleIndex].value = {
+            load_factor: loadFactor,
+          };
+          state.passenger.pax_generation.rules[ruleIndex].flightCount =
+            flightCount;
         }
       }),
 
@@ -803,7 +943,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         state.passenger.pax_generation.default.load_factor = value;
@@ -822,7 +964,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
@@ -839,7 +983,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
@@ -864,7 +1010,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
           // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
-          state.passenger.pax_demographics.nationality.rules[ruleIndex].value = distribution;
+          state.passenger.pax_demographics.nationality.rules[ruleIndex].value =
+            distribution;
         }
       }),
 
@@ -889,7 +1036,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
           // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
-          state.passenger.pax_demographics.profile.rules[ruleIndex].value = distribution;
+          state.passenger.pax_demographics.profile.rules[ruleIndex].value =
+            distribution;
         }
       }),
 
@@ -956,7 +1104,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = undefined;
         state.workflow.step2Completed = false;
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
 
         state.passenger.pax_arrival_patterns.default = defaultValues;
@@ -1015,7 +1165,16 @@ export const useSimulationStore = create<SimulationStoreState>()(
               flightCount: 0,
             },
           },
+          chartResult: undefined, // 차트 결과도 초기화
         });
+
+        // ✅ passenger 리셋 시 관련 workflow 상태도 초기화
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
+        }
       }),
 
     loadPassengerMetadata: (metadata) =>
@@ -1068,7 +1227,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.workflow.step2Completed = false;
         // availableSteps 업데이트 - step 3 제거
         if (state.workflow.availableSteps.includes(3)) {
-          state.workflow.availableSteps = state.workflow.availableSteps.filter((step) => step !== 3);
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
         }
       }),
 
@@ -1083,7 +1244,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }));
       }),
 
-    convertFromProcedures: (procedures, entryType = 'Entry') =>
+    convertFromProcedures: (procedures, entryType = "Entry") =>
       set((state) => {
         const convertedFlow = procedures
           .sort((a, b) => a.order - b.order) // order 기준 정렬
@@ -1118,32 +1279,49 @@ export const useSimulationStore = create<SimulationStoreState>()(
     resetProcessFlow: () =>
       set((state) => {
         state.process_flow = [];
+
+        // ✅ process_flow 리셋 시 관련 workflow 상태도 초기화
+        state.workflow.step3Completed = false;
       }),
 
     loadProcessMetadata: (metadata) =>
       set((state) => {
         // 기존 procedures 형태인 경우 자동 마이그레이션
-        if (metadata.procedures && Array.isArray(metadata.procedures) && !metadata.process_flow) {
-          const convertedFlow = migrateProceduresToProcessFlow(metadata.procedures);
+        if (
+          metadata.procedures &&
+          Array.isArray(metadata.procedures) &&
+          !metadata.process_flow
+        ) {
+          const convertedFlow = migrateProceduresToProcessFlow(
+            metadata.procedures
+          );
           state.process_flow = convertedFlow;
         } else {
           // 이미 새로운 형태인 경우 - 프로세스 이름 정규화 적용
           const normalizedMetadata = { ...metadata };
 
-          if (normalizedMetadata.process_flow && Array.isArray(normalizedMetadata.process_flow)) {
-            normalizedMetadata.process_flow = normalizedMetadata.process_flow.map((process: ProcessStep) => ({
-              ...process,
-              name: normalizeProcessName(process.name), // 기존 데이터도 정규화
-            }));
+          if (
+            normalizedMetadata.process_flow &&
+            Array.isArray(normalizedMetadata.process_flow)
+          ) {
+            normalizedMetadata.process_flow =
+              normalizedMetadata.process_flow.map((process: ProcessStep) => ({
+                ...process,
+                name: normalizeProcessName(process.name), // 기존 데이터도 정규화
+              }));
 
-            state.process_flow = normalizedMetadata.process_flow as ProcessStep[];
+            state.process_flow =
+              normalizedMetadata.process_flow as ProcessStep[];
           }
         }
       }),
 
     setFacilitiesForZone: (processIndex, zoneName, count) =>
       set((state) => {
-        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+        if (
+          state.process_flow[processIndex] &&
+          state.process_flow[processIndex].zones[zoneName]
+        ) {
           // 지정된 개수만큼 facilities 생성
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
@@ -1157,14 +1335,18 @@ export const useSimulationStore = create<SimulationStoreState>()(
             },
           }));
 
-          state.process_flow[processIndex].zones[zoneName].facilities = facilities;
+          state.process_flow[processIndex].zones[zoneName].facilities =
+            facilities;
         } else {
         }
       }),
 
     updateOperatingSchedule: (processIndex, zoneName, timeBlocks) =>
       set((state) => {
-        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+        if (
+          state.process_flow[processIndex] &&
+          state.process_flow[processIndex].zones[zoneName]
+        ) {
           const zone = state.process_flow[processIndex].zones[zoneName];
 
           if (zone.facilities) {
@@ -1174,7 +1356,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 today: {
                   time_blocks: timeBlocks.map((block: any) => ({
                     period: block.period,
-                    facilityName: block.facilityName || '',
+                    facilityName: block.facilityName || "",
                     value: block.processTime || block.value || 0,
                   })),
                 },
@@ -1187,9 +1369,14 @@ export const useSimulationStore = create<SimulationStoreState>()(
     // 개별 시설의 특정 시간 블록만 토글
     toggleFacilityTimeBlock: (processIndex, zoneName, facilityId, period) =>
       set((state) => {
-        if (state.process_flow[processIndex] && state.process_flow[processIndex].zones[zoneName]) {
+        if (
+          state.process_flow[processIndex] &&
+          state.process_flow[processIndex].zones[zoneName]
+        ) {
           const zone = state.process_flow[processIndex].zones[zoneName];
-          const facility = zone.facilities?.find((f: Facility) => f.id === facilityId);
+          const facility = zone.facilities?.find(
+            (f: Facility) => f.id === facilityId
+          );
 
           if (facility) {
             // 기존 스케줄 초기화
@@ -1200,12 +1387,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
               facility.operating_schedule.today = { time_blocks: [] };
             }
 
-            const timeBlocks = facility.operating_schedule.today.time_blocks || [];
-            const [startTime] = period.split('~');
+            const timeBlocks =
+              facility.operating_schedule.today.time_blocks || [];
+            const [startTime] = period.split("~");
 
             // 시간을 분 단위로 변환
             const timeToMinutes = (timeStr: string) => {
-              const [hours, minutes] = timeStr.split(':').map(Number);
+              const [hours, minutes] = timeStr.split(":").map(Number);
               return hours * 60 + minutes;
             };
 
@@ -1214,17 +1402,23 @@ export const useSimulationStore = create<SimulationStoreState>()(
             // 해당 시간이 포함된 모든 기존 블록 찾기
             const overlappingBlocks = timeBlocks.filter((block) => {
               if (!block.period) return false;
-              const [blockStart, blockEnd] = block.period.split('~');
+              const [blockStart, blockEnd] = block.period.split("~");
               const blockStartMinutes = timeToMinutes(blockStart);
-              const blockEndMinutes = blockEnd === '00:00' ? 24 * 60 : timeToMinutes(blockEnd);
+              const blockEndMinutes =
+                blockEnd === "00:00" ? 24 * 60 : timeToMinutes(blockEnd);
 
-              return targetMinutes >= blockStartMinutes && targetMinutes < blockEndMinutes;
+              return (
+                targetMinutes >= blockStartMinutes &&
+                targetMinutes < blockEndMinutes
+              );
             });
 
             if (overlappingBlocks.length > 0) {
               // 겹치는 블록들이 있으면 모두 제거 (체크 해제)
               overlappingBlocks.forEach((overlappingBlock) => {
-                const index = timeBlocks.findIndex((block) => block.period === overlappingBlock.period);
+                const index = timeBlocks.findIndex(
+                  (block) => block.period === overlappingBlock.period
+                );
                 if (index !== -1) {
                   timeBlocks.splice(index, 1);
                 }
@@ -1253,4 +1447,5 @@ export const useSimulationStore = create<SimulationStoreState>()(
 );
 
 // ==================== Helpers ====================
-export const getSimulationInitialState = (scenarioId?: string) => createInitialState(scenarioId);
+export const getSimulationInitialState = (scenarioId?: string) =>
+  createInitialState(scenarioId);
