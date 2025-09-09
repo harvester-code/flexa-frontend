@@ -66,10 +66,10 @@ export interface ConditionState {
 
 export interface CreateScenarioParams {
   name: string;
-  airport: string;
-  terminal: string;
+  airport: string | null;
+  terminal: string | null;
   editor: string;
-  memo: string;
+  memo: string | null;
 }
 
 export interface FlightSchedulesParams {

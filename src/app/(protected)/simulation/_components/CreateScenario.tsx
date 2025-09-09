@@ -43,9 +43,9 @@ const INPUT_FIELDS: InputField[] = [
     placeholder: "T2 Expansion",
     required: true,
   },
-  { key: "airport", label: "Airport", placeholder: "ICN", required: true },
-  { key: "terminal", label: "Terminal", placeholder: "T1", required: true },
-  { key: "memo", label: "Memo", placeholder: "Description", required: true },
+  { key: "airport", label: "Airport", placeholder: "ICN", required: false },
+  { key: "terminal", label: "Terminal", placeholder: "T1", required: false },
+  { key: "memo", label: "Memo", placeholder: "Description", required: false },
 ];
 
 const CreateScenario: React.FC<CreateScenarioProps> = ({
@@ -60,32 +60,57 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
     memo: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const { data: userInfo } = useUser();
   const { toast } = useToast();
 
   const updateField = (key: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+    // 값이 변경되면 해당 필드의 에러 제거
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
   };
 
-  const validateForm = (): string | null => {
-    for (const field of INPUT_FIELDS) {
-      if (field.required && !formData[field.key].trim()) {
-        return `Please enter the ${field.label.toLowerCase()}.`;
-      }
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
+    
+    // Scenario Name만 필수 검증
+    if (!formData.scenarioName.trim()) {
+      newErrors.scenarioName = "Scenario Name is required";
     }
-    return null;
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      scenarioName: "",
+      airport: "",
+      terminal: "",
+      memo: "",
+    });
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   const handleSubmit = async () => {
     if (isLoading) return;
 
-    const validationError = validateForm();
-    if (validationError) {
-      toast({
-        title: "Input Required",
-        description: validationError,
-        variant: "destructive",
-      });
+    const isValid = validateForm();
+    if (!isValid) {
       return;
     }
 
@@ -93,9 +118,9 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
     try {
       const { data } = await createScenario({
         name: formData.scenarioName,
-        airport: formData.airport,
-        terminal: formData.terminal,
-        memo: formData.memo,
+        airport: formData.airport.trim() || null,
+        terminal: formData.terminal.trim() || null,
+        memo: formData.memo.trim() || null,
         editor: userInfo?.fullName || "",
       });
 
@@ -105,6 +130,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
           description: "The scenario has been created successfully.",
         });
         onCreate(data.scenario_id);
+        resetForm();
         onClose?.();
       } else {
         toast({
@@ -125,7 +151,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Scenario</DialogTitle>
@@ -136,8 +162,11 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
 
         <div className="grid gap-4">
           {INPUT_FIELDS.map((field) => (
-            <div key={field.key} className="grid gap-3">
-              <Label htmlFor={field.key}>{field.label}</Label>
+            <div key={field.key} className="grid gap-2">
+              <Label htmlFor={field.key}>
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </Label>
               <Input
                 id={field.key}
                 type="text"
@@ -146,14 +175,19 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
                 onChange={(e) =>
                   updateField(field.key, (e.target as HTMLInputElement).value)
                 }
+                onKeyDown={handleKeyDown}
+                className={errors[field.key] ? "border-red-500 focus:border-red-500" : ""}
               />
+              {errors[field.key] && (
+                <p className="text-sm text-red-500">{errors[field.key]}</p>
+              )}
             </div>
           ))}
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
           </DialogClose>
