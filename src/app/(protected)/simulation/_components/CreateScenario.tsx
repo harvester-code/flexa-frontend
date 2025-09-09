@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
-import { createScenario } from '@/services/simulationService';
-import { useUser } from '@/queries/userQueries';
-import { Button } from '@/components/ui/Button';
+import React, { useState } from "react";
+import { createScenario } from "@/services/simulationService";
+import { useUser } from "@/queries/userQueries";
+import { Button } from "@/components/ui/Button";
+import { ClipLoader } from "react-spinners";
 import {
   Dialog,
   DialogClose,
@@ -11,10 +11,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { useToast } from '@/hooks/useToast';
+} from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { useToast } from "@/hooks/useToast";
 
 interface CreateScenarioProps {
   open: boolean;
@@ -37,19 +37,29 @@ interface InputField {
 }
 
 const INPUT_FIELDS: InputField[] = [
-  { key: 'scenarioName', label: 'Scenario Name', placeholder: 'T2 Expansion', required: true },
-  { key: 'airport', label: 'Airport', placeholder: 'ICN', required: true },
-  { key: 'terminal', label: 'Terminal', placeholder: 'T1', required: true },
-  { key: 'memo', label: 'Memo', placeholder: 'Description', required: true },
+  {
+    key: "scenarioName",
+    label: "Scenario Name",
+    placeholder: "T2 Expansion",
+    required: true,
+  },
+  { key: "airport", label: "Airport", placeholder: "ICN", required: true },
+  { key: "terminal", label: "Terminal", placeholder: "T1", required: true },
+  { key: "memo", label: "Memo", placeholder: "Description", required: true },
 ];
 
-const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate }) => {
+const CreateScenario: React.FC<CreateScenarioProps> = ({
+  open,
+  onClose,
+  onCreate,
+}) => {
   const [formData, setFormData] = useState<FormData>({
-    scenarioName: '',
-    airport: '',
-    terminal: '',
-    memo: '',
+    scenarioName: "",
+    airport: "",
+    terminal: "",
+    memo: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const { data: userInfo } = useUser();
   const { toast } = useToast();
 
@@ -67,45 +77,50 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
   };
 
   const handleSubmit = async () => {
+    if (isLoading) return;
+
     const validationError = validateForm();
     if (validationError) {
       toast({
-        title: 'Input Required',
+        title: "Input Required",
         description: validationError,
-        variant: 'destructive',
+        variant: "destructive",
       });
       return;
     }
 
+    setIsLoading(true);
     try {
       const { data } = await createScenario({
         name: formData.scenarioName,
         airport: formData.airport,
         terminal: formData.terminal,
         memo: formData.memo,
-        editor: userInfo?.fullName || '',
+        editor: userInfo?.fullName || "",
       });
 
       if (data?.scenario_id) {
         toast({
-          title: 'Creation Complete',
-          description: 'The scenario has been created successfully.',
+          title: "Creation Complete",
+          description: "The scenario has been created successfully.",
         });
         onCreate(data.scenario_id);
         onClose?.();
       } else {
         toast({
-          title: 'Creation Failed',
-          description: 'Failed to create the scenario.',
-          variant: 'destructive',
+          title: "Creation Failed",
+          description: "Failed to create the scenario.",
+          variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: 'Creation Failed',
-        description: 'Failed to create the scenario.',
-        variant: 'destructive',
+        title: "Creation Failed",
+        description: "Failed to create the scenario.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,7 +129,9 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Scenario</DialogTitle>
-          <DialogDescription>Please fill in the scenario details.</DialogDescription>
+          <DialogDescription>
+            Please fill in the scenario details.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -126,7 +143,9 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
                 type="text"
                 placeholder={field.placeholder}
                 value={formData[field.key]}
-                onChange={(e) => updateField(field.key, (e.target as HTMLInputElement).value)}
+                onChange={(e) =>
+                  updateField(field.key, (e.target as HTMLInputElement).value)
+                }
               />
             </div>
           ))}
@@ -138,7 +157,12 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({ open, onClose, onCreate
               Cancel
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>Create</Button>
+          <Button onClick={handleSubmit} disabled={isLoading}>
+            {isLoading && (
+              <ClipLoader size={16} color="white" className="mr-2" />
+            )}
+            Create
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
