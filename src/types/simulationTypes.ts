@@ -1,4 +1,4 @@
-import type { CellStyle } from '@silevis/reactgrid';
+import type { CellStyle } from "@silevis/reactgrid";
 
 // =======================================================================
 // Common Types
@@ -140,15 +140,18 @@ export interface PassengerScheduleResponse {
 }
 
 export interface PassengerShowUpResponse {
-  bar_chart_x_data: string[];
-  bar_chart_y_data: ChartData;
-  dst_chart: unknown;
+  airport: string;
+  date: string;
+  scenario_id: string;
   total: number;
-  total_sub_obj: Array<{
-    title: string;
-    value: string;
-    unit?: string;
-  }>;
+  chart_x_data: string[];
+  chart_y_data?: ChartData;
+  summary?: {
+    flights: number;
+    avg_seats: number;
+    load_factor: number;
+    min_arrival_minutes: number;
+  };
 }
 
 export interface ChartData {
@@ -174,7 +177,7 @@ export interface ScenarioOverview {
 export interface FlightSchedule {
   airport: string;
   date: string;
-  type: 'departure' | 'arrival';
+  type: "departure" | "arrival";
   availableConditions: AvailableConditions;
   selectedConditions: SelectedConditions;
   total: number;
@@ -295,8 +298,12 @@ export interface Filter {
 export interface FilterOptions {
   logicItems: Array<{ id: string; text: string; fullText?: string }>;
   criteriaItems: Array<{ id: string; text: string; fullText?: string }>;
-  operatorItems: { [key: string]: Array<{ id: string; text: string; multiSelect: boolean }> };
-  valueItems: { [key: string]: Array<{ id: string; text: string; fullText?: string }> };
+  operatorItems: {
+    [key: string]: Array<{ id: string; text: string; multiSelect: boolean }>;
+  };
+  valueItems: {
+    [key: string]: Array<{ id: string; text: string; fullText?: string }>;
+  };
 }
 
 // =======================================================================
@@ -328,7 +335,7 @@ export interface APIRequestLog {
   response?: any; // 응답 데이터
   requestBody?: any;
   responseData?: any;
-  status: 'loading' | 'success' | 'error';
+  status: "loading" | "success" | "error";
   duration?: number;
   error?: string; // 에러 메시지
   errorMessage?: string;

@@ -60,7 +60,7 @@ export interface PassengerData {
   chartResult?: {
     total: number;
     chart_x_data: string[];
-    chart_y_data: {
+    chart_y_data?: {
       [category: string]: Array<{
         name: string;
         order: number;
