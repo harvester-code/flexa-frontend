@@ -476,7 +476,7 @@ function TabFlightSchedule({
           },
           appliedAt: new Date().toISOString(),
           // 🔧 Passenger Schedule 탭 활성화를 위한 기본 parquet_metadata 추가
-          parquet_metadata: data.parquet_metadata || [
+          parquet_metadata: (data as any).parquet_metadata || [
             {
               column: "nationality",
               values: {
