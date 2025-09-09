@@ -423,12 +423,12 @@ input[type='checkbox'] {
   display: flex;
   @apply w-5;
   @apply h-5;
-  @apply border border-input bg-white rounded-sm;
+  @apply rounded-sm border border-input bg-white;
 }
 .checkbox input[type='checkbox']:checked + label:before {
-  @apply bg-primary border-primary;
+  @apply border-primary bg-primary;
   content: '✓';
-  @apply text-white flex items-center justify-center text-xs;
+  @apply flex items-center justify-center text-xs text-white;
 }
 
 .checkbox-toggle input[type='checkbox'] + label {
@@ -438,11 +438,11 @@ input[type='checkbox'] {
 .checkbox-toggle input[type='checkbox'] + label:before {
   content: '';
   display: flex;
-  @apply w-9 h-5 bg-gray-300 rounded-full relative transition-all;
+  @apply relative h-5 w-9 rounded-full bg-gray-300 transition-all;
 }
 .checkbox-toggle input[type='checkbox'] + label:after {
   content: '';
-  @apply absolute w-4 h-4 bg-white rounded-full top-0.5 left-0.5 transition-all;
+  @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-all;
 }
 .checkbox-toggle input[type='checkbox']:checked + label:before {
   @apply bg-primary;
@@ -484,7 +484,7 @@ textarea {
         top: 20px;
         width: 194px;
         @apply h-2;
-        @apply bg-gray-300 rounded-full;
+        @apply rounded-full bg-gray-300;
       }
     }
     li:last-child {
@@ -983,7 +983,7 @@ textarea {
     @apply inline-flex items-center gap-4 text-default-900;
     &::after {
       content: '→';
-      @apply w-4 h-4 flex items-center justify-center text-default-500 opacity-60 text-sm;
+      @apply flex h-4 w-4 items-center justify-center text-sm text-default-500 opacity-60;
     }
     &:last-child {
       @apply mr-0;
@@ -1026,35 +1026,6 @@ textarea {
   }
 }
 
-.tab-setting {
-  @apply flex flex-grow items-center;
-  .tab {
-    border-bottom: 2px solid var(--border);
-    @apply relative flex h-10 flex-grow items-center justify-center gap-2.5 font-semibold text-default-500;
-    .tab-btn {
-      @apply flex h-full flex-grow items-center justify-center;
-    }
-    .btn-more {
-      @apply absolute right-0;
-    }
-    &.active {
-      @apply text-primary;
-      border-bottom: 2px solid var(--primary-500);
-    }
-  }
-
-  &.tab-black {
-    .tab {
-      @apply text-default-500;
-
-      &.active {
-        @apply text-default-900;
-        border-bottom: 2px solid var(--default-900);
-      }
-    }
-  }
-}
-
 .process-list {
   @apply mt-1 flex flex-col;
   .process-item {
@@ -1070,22 +1041,6 @@ textarea {
     }
     .add-precess {
       @apply flex h-10 w-full items-center justify-center gap-1 rounded-md border border-input bg-muted text-sm font-semibold text-default-900;
-    }
-  }
-}
-
-.setting-process-list {
-  @apply mt-7 flex flex-col gap-2.5;
-  .process-item {
-    @apply flex flex-col;
-    .process-item-title {
-      @apply flex items-center justify-between rounded-md bg-muted px-4 py-2.5 text-sm font-medium text-default-900;
-      button {
-        @apply ml-auto flex h-5 w-5 items-center justify-center;
-      }
-    }
-    .process-item-content {
-      @apply my-[15px] flex flex-col rounded-md border border-input bg-muted p-[20px];
     }
   }
 }
