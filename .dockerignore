@@ -8,5 +8,6 @@ npm-debug.log
 README.md
 
 **/.env.*
+!.env.local
 **/.DS_Store
 **/videos

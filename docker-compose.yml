@@ -14,7 +14,8 @@ services:
       # NAS 공유 폴더를 컨테이너 내부에 마운트
       - /volume1/data:/app/data
     env_file:
-      - .env.local # 환경변수 파일
+      - .env.local # 환경변수 파일 (없으면 스킵됨)
     environment:
       - DATA_DIR=/app/data # 데이터 디렉토리 환경변수 설정
+    # Supabase 환경변수는 .env.local 파일에서 자동으로 로드됨
     restart: always # 컨테이너가 죽었을 때 자동 재시작

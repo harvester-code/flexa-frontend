@@ -12,6 +12,8 @@ RUN npm install --legacy-peer-deps
 # 소스 코드 복사
 COPY . .
 
+# .env.local 파일이 .dockerignore에서 예외처리되어 복사됨
+
 # Next.js 애플리케이션 빌드
 RUN npm run build
 
