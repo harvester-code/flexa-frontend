@@ -8,16 +8,8 @@ import React, {
   useState,
 } from "react";
 import { useCellSelection } from "./hooks/useCellSelection";
-import {
-  Expand,
-  Globe,
-  MapPin,
-  Navigation,
-  Plane,
-  Star,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { ScheduleContextMenu } from "./ScheduleContextMenu";
+import { Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import {
@@ -27,17 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
-import { Input } from "@/components/ui/Input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { useSimulationStore } from "../_stores";
@@ -286,8 +267,18 @@ interface TableHandlers {
     onRightClick: (e: React.MouseEvent, rowIndex: number) => void;
   };
   cell: {
-    onMouseDown: (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => void;
-    onMouseEnter: (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => void;
+    onMouseDown: (
+      cellId: string,
+      rowIndex: number,
+      colIndex: number,
+      e: React.MouseEvent
+    ) => void;
+    onMouseEnter: (
+      cellId: string,
+      rowIndex: number,
+      colIndex: number,
+      e: React.MouseEvent
+    ) => void;
     onMouseUp: () => void;
     onRightClick: (e: React.MouseEvent, cellId: string) => void;
   };
@@ -437,8 +428,12 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   <th
                     key={facility.id}
                     className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
-                    onMouseDown={(e) => handlers.column.onMouseDown(colIndex, e)}
-                    onMouseEnter={(e) => handlers.column.onMouseEnter(colIndex, e)}
+                    onMouseDown={(e) =>
+                      handlers.column.onMouseDown(colIndex, e)
+                    }
+                    onMouseEnter={(e) =>
+                      handlers.column.onMouseEnter(colIndex, e)
+                    }
                     onMouseUp={handlers.column.onMouseUp}
                     onContextMenu={(e) => {
                       // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
@@ -467,7 +462,9 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                     <td
                       className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
                       onMouseDown={(e) => handlers.row.onMouseDown(rowIndex, e)}
-                      onMouseEnter={(e) => handlers.row.onMouseEnter(rowIndex, e)}
+                      onMouseEnter={(e) =>
+                        handlers.row.onMouseEnter(rowIndex, e)
+                      }
                       onMouseUp={handlers.row.onMouseUp}
                       onContextMenu={(e) => {
                         // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
@@ -512,7 +509,12 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             }
                           }}
                           onMouseEnter={(e) =>
-                            handlers.cell.onMouseEnter(cellId, rowIndex, colIndex, e)
+                            handlers.cell.onMouseEnter(
+                              cellId,
+                              rowIndex,
+                              colIndex,
+                              e
+                            )
                           }
                           onMouseUp={handlers.cell.onMouseUp}
                           onContextMenu={(e) => {
@@ -604,9 +606,6 @@ export default function OperatingScheduleEditor({
     y: number;
   }>({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
 
-  // 🔍 카테고리별 검색어 관리
-  const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
-
   // 🚫 셀별 비활성화 상태 관리
   const [disabledCells, setDisabledCells] = useState<Set<string>>(new Set());
 
@@ -682,29 +681,6 @@ export default function OperatingScheduleEditor({
     const scrollTop = e.currentTarget.scrollTop;
     setScrollTop(scrollTop);
   }, []);
-
-  // 🔍 검색어 변경 핸들러
-  const handleSearchTermChange = useCallback(
-    (category: string, term: string) => {
-      setSearchTerms((prev) => ({
-        ...prev,
-        [category]: term,
-      }));
-    },
-    []
-  );
-
-  // 🔤 옵션 정렬 및 필터링 함수
-  const getFilteredAndSortedOptions = useCallback(
-    (category: string, options: string[]) => {
-      const searchTerm = searchTerms[category]?.toLowerCase() || "";
-
-      return options
-        .filter((option) => option.toLowerCase().includes(searchTerm))
-        .sort((a, b) => a.localeCompare(b));
-    },
-    [searchTerms]
-  );
 
   // 🗂️ 카테고리 그룹 정의
   const getCategoryGroups = useCallback(() => {
@@ -929,29 +905,13 @@ export default function OperatingScheduleEditor({
         return updated;
       });
     },
-    [contextMenu.targetCells, cellBadges, getProcessCategoryConfig, CONDITION_CATEGORIES, setCellBadges]
-  );
-
-  // 옵션 상태 확인 헬퍼 - 카테고리별 옵션 확인
-  const getOptionCheckState = useCallback(
-    (category: string, option: string) => {
-      const targetCells = contextMenu.targetCells || [];
-      if (targetCells.length === 0) return false;
-
-      // 🚀 매번 새로운 상태에서 확인 (경쟁 조건 방지)
-      const cellsWithOption = targetCells.filter((cellId) => {
-        const badges = cellBadges[cellId] || [];
-        return badges.some(
-          (badge) =>
-            badge.category === category && badge.options.includes(option)
-        );
-      });
-
-      if (cellsWithOption.length === 0) return false; // 없음
-      if (cellsWithOption.length === targetCells.length) return true; // 모두 있음
-      return "indeterminate"; // 일부만 있음
-    },
-    [contextMenu.targetCells, cellBadges]
+    [
+      contextMenu.targetCells,
+      cellBadges,
+      getProcessCategoryConfig,
+      CONDITION_CATEGORIES,
+      setCellBadges,
+    ]
   );
 
   // 카테고리별 뱃지 제거 핸들러 (전체 카테고리 제거)
@@ -1074,7 +1034,6 @@ export default function OperatingScheduleEditor({
     [generateColumnCells]
   );
 
-
   // Time 헤더 클릭 핸들러 (전체 선택)
   const handleTimeHeaderClick = useCallback(
     (e: React.MouseEvent) => {
@@ -1111,7 +1070,6 @@ export default function OperatingScheduleEditor({
     },
     [generateAllCells]
   );
-
 
   // 범위 선택 함수
   const selectCellRange = useCallback(
@@ -1174,7 +1132,13 @@ export default function OperatingScheduleEditor({
         setSelectedCells(new Set([cellId]));
       }
     },
-    [shiftSelectStart, selectCellRange, generateCellRange, setSelectedCells, setShiftSelectStart]
+    [
+      shiftSelectStart,
+      selectCellRange,
+      generateCellRange,
+      setSelectedCells,
+      setShiftSelectStart,
+    ]
   );
 
   // 드래그 이벤트 핸들러들
@@ -1252,7 +1216,6 @@ export default function OperatingScheduleEditor({
     finalizeDrag();
   }, [finalizeDrag]);
 
-
   // 열 전체 선택/해제 핸들러 (클릭용)
   const handleColumnClick = useCallback(
     (colIndex: number, e: React.MouseEvent) => {
@@ -1261,10 +1224,7 @@ export default function OperatingScheduleEditor({
 
       if (e.shiftKey && lastSelectedCol !== null) {
         // Shift + 클릭: 범위 선택 (이전 선택 열부터 현재 열까지)
-        const rangeCellIds = generateColumnRange(
-          lastSelectedCol,
-          colIndex
-        );
+        const rangeCellIds = generateColumnRange(lastSelectedCol, colIndex);
         setSelectedCells(rangeCellIds);
       } else {
         // 해당 열의 모든 셀 ID 생성
@@ -1280,7 +1240,15 @@ export default function OperatingScheduleEditor({
       // Shift 선택 시작점 설정
       setShiftSelectStart({ row: 0, col: colIndex });
     },
-    [generateColumnRange, generateColumnCells, toggleCellIds, setSelectedCells, setLastSelectedCol, setShiftSelectStart, lastSelectedCol]
+    [
+      generateColumnRange,
+      generateColumnCells,
+      toggleCellIds,
+      setSelectedCells,
+      setLastSelectedCol,
+      setShiftSelectStart,
+      lastSelectedCol,
+    ]
   );
 
   // 열 드래그 핸들러들
@@ -1317,7 +1285,14 @@ export default function OperatingScheduleEditor({
       });
       setLastSelectedCol(colIndex);
     },
-    [generateColumnCells, setSelectedCells, setDragState, createDragState, setLastSelectedCol, handleColumnClick]
+    [
+      generateColumnCells,
+      setSelectedCells,
+      setDragState,
+      createDragState,
+      setLastSelectedCol,
+      handleColumnClick,
+    ]
   );
 
   const handleColumnMouseEnter = useCallback(
@@ -1330,10 +1305,7 @@ export default function OperatingScheduleEditor({
         e.preventDefault();
 
         // 드래그 범위의 모든 열 선택
-        const rangeCellIds = generateColumnRange(
-          dragState.start.col,
-          colIndex
-        );
+        const rangeCellIds = generateColumnRange(dragState.start.col, colIndex);
 
         if (dragState.isAdditive && dragState.originalSelection) {
           // Cmd + 드래그: 기존 선택 + 새 드래그 영역
@@ -1363,10 +1335,7 @@ export default function OperatingScheduleEditor({
 
       if (e.shiftKey && lastSelectedRow !== null) {
         // Shift + 클릭: 범위 선택 (이전 선택 행부터 현재 행까지)
-        const rangeCellIds = generateRowRange(
-          lastSelectedRow,
-          rowIndex
-        );
+        const rangeCellIds = generateRowRange(lastSelectedRow, rowIndex);
         setSelectedCells(rangeCellIds);
       } else {
         // 해당 행의 모든 셀 ID 생성
@@ -1382,7 +1351,15 @@ export default function OperatingScheduleEditor({
       // Shift 선택 시작점 설정
       setShiftSelectStart({ row: rowIndex, col: 0 });
     },
-    [generateRowRange, generateRowCells, toggleCellIds, setSelectedCells, setLastSelectedRow, setShiftSelectStart, lastSelectedRow]
+    [
+      generateRowRange,
+      generateRowCells,
+      toggleCellIds,
+      setSelectedCells,
+      setLastSelectedRow,
+      setShiftSelectStart,
+      lastSelectedRow,
+    ]
   );
 
   // 행 드래그 핸들러들
@@ -1419,7 +1396,14 @@ export default function OperatingScheduleEditor({
       });
       setLastSelectedRow(rowIndex);
     },
-    [generateRowCells, setSelectedCells, setDragState, createDragState, setLastSelectedRow, handleRowClick]
+    [
+      generateRowCells,
+      setSelectedCells,
+      setDragState,
+      createDragState,
+      setLastSelectedRow,
+      handleRowClick,
+    ]
   );
 
   const handleRowMouseEnter = useCallback(
@@ -1428,10 +1412,7 @@ export default function OperatingScheduleEditor({
         e.preventDefault();
 
         // 드래그 범위의 모든 행 선택
-        const rangeCellIds = generateRowRange(
-          dragState.start.row,
-          rowIndex
-        );
+        const rangeCellIds = generateRowRange(dragState.start.row, rowIndex);
 
         if (dragState.isAdditive && dragState.originalSelection) {
           // Cmd + 드래그: 기존 선택 + 새 드래그 영역
@@ -1454,47 +1435,50 @@ export default function OperatingScheduleEditor({
   }, [finalizeDrag]);
 
   // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
-  const tableHandlers = useMemo(() => ({
-    timeHeader: {
-      onClick: handleTimeHeaderClick,
-      onRightClick: handleTimeHeaderRightClick,
-    },
-    column: {
-      onMouseDown: handleColumnMouseDown,
-      onMouseEnter: handleColumnMouseEnter,
-      onMouseUp: handleColumnMouseUp,
-      onRightClick: handleColumnRightClick,
-    },
-    row: {
-      onMouseDown: handleRowMouseDown,
-      onMouseEnter: handleRowMouseEnter,
-      onMouseUp: handleRowMouseUp,
-      onRightClick: handleRowRightClick,
-    },
-    cell: {
-      onMouseDown: handleCellMouseDown,
-      onMouseEnter: handleCellMouseEnter,
-      onMouseUp: handleCellMouseUp,
-      onRightClick: handleCellRightClick,
-    },
-    onRemoveCategoryBadge: handleRemoveCategoryBadge,
-  }), [
-    handleTimeHeaderClick,
-    handleTimeHeaderRightClick,
-    handleColumnMouseDown,
-    handleColumnMouseEnter,
-    handleColumnMouseUp,
-    handleColumnRightClick,
-    handleRowMouseDown,
-    handleRowMouseEnter,
-    handleRowMouseUp,
-    handleRowRightClick,
-    handleCellMouseDown,
-    handleCellMouseEnter,
-    handleCellMouseUp,
-    handleCellRightClick,
-    handleRemoveCategoryBadge,
-  ]);
+  const tableHandlers = useMemo(
+    () => ({
+      timeHeader: {
+        onClick: handleTimeHeaderClick,
+        onRightClick: handleTimeHeaderRightClick,
+      },
+      column: {
+        onMouseDown: handleColumnMouseDown,
+        onMouseEnter: handleColumnMouseEnter,
+        onMouseUp: handleColumnMouseUp,
+        onRightClick: handleColumnRightClick,
+      },
+      row: {
+        onMouseDown: handleRowMouseDown,
+        onMouseEnter: handleRowMouseEnter,
+        onMouseUp: handleRowMouseUp,
+        onRightClick: handleRowRightClick,
+      },
+      cell: {
+        onMouseDown: handleCellMouseDown,
+        onMouseEnter: handleCellMouseEnter,
+        onMouseUp: handleCellMouseUp,
+        onRightClick: handleCellRightClick,
+      },
+      onRemoveCategoryBadge: handleRemoveCategoryBadge,
+    }),
+    [
+      handleTimeHeaderClick,
+      handleTimeHeaderRightClick,
+      handleColumnMouseDown,
+      handleColumnMouseEnter,
+      handleColumnMouseUp,
+      handleColumnRightClick,
+      handleRowMouseDown,
+      handleRowMouseEnter,
+      handleRowMouseUp,
+      handleRowRightClick,
+      handleCellMouseDown,
+      handleCellMouseEnter,
+      handleCellMouseUp,
+      handleCellRightClick,
+      handleRemoveCategoryBadge,
+    ]
+  );
 
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
@@ -1578,7 +1562,13 @@ export default function OperatingScheduleEditor({
         }
       }
     },
-    [selectedCells, contextMenu.show, disabledCells, setDisabledCells, setCellBadges]
+    [
+      selectedCells,
+      contextMenu.show,
+      disabledCells,
+      setDisabledCells,
+      setCellBadges,
+    ]
   );
 
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
@@ -1615,7 +1605,6 @@ export default function OperatingScheduleEditor({
     clearSelection(); // 커스텀 훅의 clearSelection 사용
     setCellBadges({});
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
-    setSearchTerms({}); // 🔍 검색어도 초기화
     setDisabledCells(new Set()); // 🚫 비활성화 상태도 초기화
   }, [selectedProcessIndex, selectedZone, clearSelection]);
 
@@ -1732,8 +1721,8 @@ export default function OperatingScheduleEditor({
         </div>
 
         {/* 우클릭 컨텍스트 메뉴 */}
-        <DropdownMenu
-          open={contextMenu.show}
+        <ScheduleContextMenu
+          contextMenu={contextMenu}
           onOpenChange={(open) =>
             setContextMenu((prev) => ({
               ...prev,
@@ -1741,220 +1730,13 @@ export default function OperatingScheduleEditor({
               targetCells: open ? prev.targetCells || [] : [],
             }))
           }
-          modal={false}
-        >
-          {/* Invisible trigger positioned at mouse coordinates */}
-          <DropdownMenuTrigger
-            style={{
-              position: "fixed",
-              left: `${contextMenu.x}px`,
-              top: `${contextMenu.y}px`,
-              width: 1,
-              height: 1,
-              opacity: 0,
-              pointerEvents: "none",
-              zIndex: -1,
-            }}
-          />
-          <DropdownMenuContent
-            side="right"
-            align="start"
-            onCloseAutoFocus={(e) => e.preventDefault()}
-            onEscapeKeyDown={(e) => {
-              setContextMenu({
-                show: false,
-                cellId: "",
-                targetCells: [],
-                x: 0,
-                y: 0,
-              });
-            }}
-            onPointerDownOutside={(e) => {
-              setContextMenu({
-                show: false,
-                cellId: "",
-                targetCells: [],
-                x: 0,
-                y: 0,
-              });
-            }}
-          >
-            {/* Selected cells count info */}
-            {(contextMenu.targetCells?.length || 0) > 1 && (
-              <>
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  Apply to {contextMenu.targetCells?.length || 0} selected cells
-                </div>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {/* Select All option */}
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                handleSelectAllCategories();
-              }}
-              className="cursor-pointer"
-            >
-              <div className="flex w-full items-center gap-2">
-                <Star size={16} className="text-primary" />
-                <span className="font-medium">Select All</span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-
-            {getCategoryGroups().map((group, groupIndex) => (
-              <React.Fragment key={group.title}>
-                {/* 🏷️ 그룹 제목 */}
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
-                  {group.title}
-                </div>
-
-                {/* 📋 그룹 내 카테고리들 */}
-                {group.categories.map((category) => {
-                  // Process 그룹인 경우 categoryConfigs 사용, 아니면 CONDITION_CATEGORIES 사용
-                  const config =
-                    group.categoryConfigs?.[category] ||
-                    CONDITION_CATEGORIES[category];
-                  const filteredOptions = getFilteredAndSortedOptions(
-                    category,
-                    config.options
-                  );
-                  const searchTerm = searchTerms[category] || "";
-
-                  return (
-                    <DropdownMenuSub key={category}>
-                      <DropdownMenuSubTrigger>
-                        <span className="flex items-center gap-2">
-                          <config.icon size={16} className={config.textColor} />
-                          <span>{category}</span>
-                          {config.options.length > 10 && (
-                            <span className="text-xs opacity-60">
-                              ({config.options.length})
-                            </span>
-                          )}
-                        </span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="max-h-80 w-64 overflow-hidden">
-                        {/* 🔍 검색 입력창 */}
-                        <div className="p-2 border-b border-border">
-                          <Input
-                            placeholder={`Search ${category.toLowerCase()}...`}
-                            value={searchTerm}
-                            onChange={(e) =>
-                              handleSearchTermChange(category, e.target.value)
-                            }
-                            className="h-8 text-sm"
-                            autoFocus={false}
-                            onKeyDown={(e) => {
-                              // 검색창에서 Enter 키 등의 이벤트가 부모로 전파되지 않도록 방지
-                              e.stopPropagation();
-                            }}
-                          />
-                        </div>
-
-                        {/* 📝 결과 카운트 */}
-                        {searchTerm && (
-                          <div className="px-3 py-1 text-xs text-muted-foreground border-b border-border">
-                            {filteredOptions.length} of {config.options.length}{" "}
-                            results
-                          </div>
-                        )}
-
-                        {/* 📋 옵션 목록 */}
-                        <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                          {filteredOptions.length > 0 ? (
-                            <>
-                              {filteredOptions.map((option) => {
-                                const checkState = getOptionCheckState(
-                                  category,
-                                  option
-                                );
-                                return (
-                                  <DropdownMenuItem
-                                    key={option}
-                                    onSelect={(e) => {
-                                      e.preventDefault();
-                                      handleToggleBadgeOption(category, option);
-                                    }}
-                                    className="cursor-pointer"
-                                  >
-                                    <div className="flex w-full items-center gap-2">
-                                      <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-border">
-                                        {checkState === true && (
-                                          <svg
-                                            className="h-3 w-3 text-primary"
-                                            fill="currentColor"
-                                            viewBox="0 0 20 20"
-                                          >
-                                            <path
-                                              fillRule="evenodd"
-                                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                              clipRule="evenodd"
-                                            />
-                                          </svg>
-                                        )}
-                                        {checkState === "indeterminate" && (
-                                          <div className="h-2 w-2 rounded-sm bg-primary"></div>
-                                        )}
-                                      </div>
-                                      <span className="truncate">{option}</span>
-                                    </div>
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  // 현재 필터링된 옵션들에 대해서만 토글
-                                  filteredOptions.forEach((option) => {
-                                    handleToggleBadgeOption(category, option);
-                                  });
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <div className="flex w-full items-center gap-2">
-                                  <span>
-                                    Toggle All Visible ({filteredOptions.length}
-                                    )
-                                  </span>
-                                </div>
-                              </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              No results found
-                            </div>
-                          )}
-                        </div>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  );
-                })}
-
-                {/* 🔹 그룹 구분선 (마지막 그룹 제외) */}
-                {groupIndex < getCategoryGroups().length - 1 && (
-                  <DropdownMenuSeparator />
-                )}
-              </React.Fragment>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                handleClearAllBadges();
-              }}
-              className="cursor-pointer"
-            >
-              <div className="flex w-full items-center gap-2 text-red-600">
-                <Trash2 size={16} />
-                <span>Clear All Badges</span>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          categoryGroups={getCategoryGroups()}
+          conditionCategories={CONDITION_CATEGORIES}
+          cellBadges={cellBadges}
+          onToggleBadgeOption={handleToggleBadgeOption}
+          onSelectAllCategories={handleSelectAllCategories}
+          onClearAllBadges={handleClearAllBadges}
+        />
 
         {/* 제목과 전체화면 버튼 */}
         {selectedZone && currentFacilities.length > 0 && (
