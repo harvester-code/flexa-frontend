@@ -90,49 +90,58 @@ const createDynamicConditionCategories = (
         categoryName = "Airline";
         icon = Plane;
         colors = {
-          bgColor: "bg-blue-50",
-          textColor: "text-blue-700",
-          borderColor: "border-blue-200",
+          bgColor: "bg-sky-50",
+          textColor: "text-sky-700",
+          borderColor: "border-sky-200",
         };
         break;
       case "aircraft_type":
         categoryName = "Aircraft Type";
         icon = Plane;
         colors = {
-          bgColor: "bg-indigo-50",
-          textColor: "text-indigo-700",
-          borderColor: "border-indigo-200",
+          bgColor: "bg-violet-50",
+          textColor: "text-violet-700",
+          borderColor: "border-violet-200",
         };
         break;
       case "flight_type":
         categoryName = "Flight Type";
         icon = Navigation;
         colors = {
-          bgColor: "bg-cyan-50",
-          textColor: "text-cyan-700",
-          borderColor: "border-cyan-200",
+          bgColor: "bg-teal-50",
+          textColor: "text-teal-700",
+          borderColor: "border-teal-200",
         };
         break;
       case "arrival_airport_iata":
         categoryName = "Arrival Airport";
         icon = MapPin;
         colors = {
-          bgColor: "bg-green-50",
-          textColor: "text-green-700",
-          borderColor: "border-green-200",
+          bgColor: "bg-lime-50",
+          textColor: "text-lime-700",
+          borderColor: "border-lime-200",
         };
         break;
       case "arrival_city":
         categoryName = "Arrival City";
         icon = MapPin;
         colors = {
-          bgColor: "bg-purple-50",
-          textColor: "text-purple-700",
-          borderColor: "border-purple-200",
+          bgColor: "bg-fuchsia-50",
+          textColor: "text-fuchsia-700",
+          borderColor: "border-fuchsia-200",
         };
         break;
       case "arrival_country":
         categoryName = "Arrival Country";
+        icon = Globe;
+        colors = {
+          bgColor: "bg-red-50",
+          textColor: "text-red-700",
+          borderColor: "border-red-200",
+        };
+        break;
+      case "arrival_region":
+        categoryName = "Arrival Region";
         icon = Globe;
         colors = {
           bgColor: "bg-pink-50",
@@ -140,31 +149,22 @@ const createDynamicConditionCategories = (
           borderColor: "border-pink-200",
         };
         break;
-      case "arrival_region":
-        categoryName = "Arrival Region";
-        icon = Globe;
-        colors = {
-          bgColor: "bg-rose-50",
-          textColor: "text-rose-700",
-          borderColor: "border-rose-200",
-        };
-        break;
       case "nationality":
         categoryName = "Nationality";
         icon = MapPin;
         colors = {
-          bgColor: "bg-amber-50",
-          textColor: "text-amber-700",
-          borderColor: "border-amber-200",
+          bgColor: "bg-yellow-50",
+          textColor: "text-yellow-700",
+          borderColor: "border-yellow-200",
         };
         break;
       case "profile":
         categoryName = "Passenger Type";
         icon = Users;
         colors = {
-          bgColor: "bg-emerald-50",
-          textColor: "text-emerald-700",
-          borderColor: "border-emerald-200",
+          bgColor: "bg-green-50",
+          textColor: "text-green-700",
+          borderColor: "border-green-200",
         };
         break;
       default:
@@ -213,9 +213,9 @@ const createDynamicConditionCategories = (
         categoryName = "Nationality";
         icon = MapPin;
         colors = {
-          bgColor: "bg-amber-50",
-          textColor: "text-amber-700",
-          borderColor: "border-amber-200",
+          bgColor: "bg-orange-50",
+          textColor: "text-orange-700",
+          borderColor: "border-orange-200",
         };
       } else if (key === "profile") {
         categoryName = "Passenger Type";
@@ -761,9 +761,9 @@ export default function OperatingScheduleEditor({
             processCategories[processName] = {
               icon: Navigation,
               options: zoneNames,
-              bgColor: "bg-orange-50",
-              textColor: "text-orange-700",
-              borderColor: "border-orange-200",
+              bgColor: "bg-amber-50",
+              textColor: "text-amber-700",
+              borderColor: "border-amber-200",
             };
           }
         }
@@ -998,9 +998,9 @@ export default function OperatingScheduleEditor({
           {
             category: "All",
             options: ["All"],
-            bgColor: "bg-slate-50",
-            textColor: "text-slate-700",
-            borderColor: "border-slate-300",
+            bgColor: "bg-primary/10",
+            textColor: "text-primary",
+            borderColor: "border-primary/20",
           },
         ];
       });
@@ -1659,13 +1659,36 @@ export default function OperatingScheduleEditor({
     };
   }, []); // 🚀 한 번만 실행 (의존성 제거)
 
-  // 탭 변경 시 선택 상태들 초기화
+  // 탭 변경 시 선택 상태들 초기화 및 모든 셀을 "All"로 초기화
   React.useEffect(() => {
     clearSelection(); // 커스텀 훅의 clearSelection 사용
-    setCellBadges({});
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
     setDisabledCells(new Set()); // 🚫 비활성화 상태도 초기화
-  }, [selectedProcessIndex, selectedZone, clearSelection]);
+    
+    // 모든 셀을 "All" 뱃지로 초기화
+    if (currentFacilities.length > 0 && timeSlots.length > 0) {
+      const initialBadges: Record<string, CategoryBadge[]> = {};
+      
+      for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < currentFacilities.length; colIndex++) {
+          const cellId = `${rowIndex}-${colIndex}`;
+          initialBadges[cellId] = [
+            {
+              category: "All",
+              options: ["All"],
+              bgColor: "bg-primary/10",
+              textColor: "text-primary",
+              borderColor: "border-primary/20",
+            },
+          ];
+        }
+      }
+      
+      setCellBadges(initialBadges);
+    } else {
+      setCellBadges({});
+    }
+  }, [selectedProcessIndex, selectedZone, clearSelection, currentFacilities.length, timeSlots.length]);
 
   // 🛡️ 안전한 첫 번째 존 자동 선택
   React.useEffect(() => {
@@ -1831,8 +1854,26 @@ export default function OperatingScheduleEditor({
         />
 
         {/* 전체화면 Dialog */}
-        <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-          <DialogContent className="max-w-[95vw] h-[95vh] p-0 flex flex-col">
+        <Dialog 
+          open={isFullScreen} 
+          modal={true}
+          onOpenChange={(open) => {
+            // 컨텍스트 메뉴가 열려있을 때는 Dialog를 닫지 않음
+            if (!open && contextMenu.show) {
+              return; // Dialog 닫기 방지
+            }
+            setIsFullScreen(open);
+          }}
+        >
+          <DialogContent 
+            className="max-w-[95vw] h-[95vh] p-0 flex flex-col"
+            onInteractOutside={(e) => {
+              // 컨텍스트 메뉴가 열려있을 때는 외부 상호작용 차단
+              if (contextMenu.show) {
+                e.preventDefault();
+              }
+            }}
+          >
             <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
               <DialogTitle className="text-xl font-semibold">
                 Operating Schedule -{" "}
@@ -1845,7 +1886,15 @@ export default function OperatingScheduleEditor({
                 zone {selectedZone}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 min-h-0 px-6 pb-6 overflow-hidden">
+            <div 
+              className="flex-1 min-h-0 px-6 pb-6 overflow-hidden"
+              onClick={(e) => {
+                // 컨텍스트 메뉴가 열려있을 때는 클릭 이벤트 전파 방지
+                if (contextMenu.show) {
+                  e.stopPropagation();
+                }
+              }}
+            >
               <ExcelTable
                 selectedZone={selectedZone}
                 currentFacilities={currentFacilities}
