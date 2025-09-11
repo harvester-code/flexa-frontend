@@ -410,6 +410,7 @@ export interface SimulationStoreState {
     period: string
   ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
+  migratePercentageData: () => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
 }
@@ -969,7 +970,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           );
         }
 
-        // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+        // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
         state.passenger.pax_demographics.nationality.rules.push({
           conditions,
           value: value,
@@ -988,7 +989,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           );
         }
 
-        // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+        // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
         state.passenger.pax_demographics.profile.rules.push({
           conditions,
           value: value,
@@ -1009,7 +1010,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateNationalityDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
-          // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+          // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
           state.passenger.pax_demographics.nationality.rules[ruleIndex].value =
             distribution;
         }
@@ -1018,7 +1019,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateNationalityRule: (ruleIndex, conditions, flightCount, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.nationality.rules[ruleIndex]) {
-          // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+          // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
           state.passenger.pax_demographics.nationality.rules[ruleIndex] = {
             conditions,
             flightCount,
@@ -1035,7 +1036,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateProfileDistribution: (ruleIndex, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
-          // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+          // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
           state.passenger.pax_demographics.profile.rules[ruleIndex].value =
             distribution;
         }
@@ -1044,7 +1045,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateProfileRule: (ruleIndex, conditions, flightCount, distribution) =>
       set((state) => {
         if (state.passenger.pax_demographics.profile.rules[ruleIndex]) {
-          // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+          // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
           state.passenger.pax_demographics.profile.rules[ruleIndex] = {
             conditions,
             flightCount,
@@ -1060,13 +1061,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setNationalityDefault: (defaultValues) =>
       set((state) => {
-        // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+        // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
         state.passenger.pax_demographics.nationality.default = defaultValues;
       }),
 
     setProfileDefault: (defaultValues) =>
       set((state) => {
-        // ✅ PercentageInteractiveBar에서 이미 변환 완료된 값이므로 그대로 저장
+        // ✅ 정수 퍼센트 값 그대로 저장 (50% → 50)
         state.passenger.pax_demographics.profile.default = defaultValues;
       }),
 
@@ -1439,6 +1440,54 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (state.process_flow[processIndex]) {
           state.process_flow[processIndex].travel_time_minutes = minutes;
+        }
+      }),
+
+    // 🔧 백분율 데이터 마이그레이션 (소수 → 정수)
+    migratePercentageData: () =>
+      set((state) => {
+        const convertDecimalToInteger = (value: number): number => {
+          return value <= 1 ? Math.round(value * 100) : value;
+        };
+
+        const migrateDistribution = (dist: Record<string, number>) => {
+          const migrated: Record<string, number> = {};
+          Object.entries(dist).forEach(([key, value]) => {
+            migrated[key] = convertDecimalToInteger(value);
+          });
+          return migrated;
+        };
+
+        // Nationality 데이터 마이그레이션
+        if (state.passenger.pax_demographics.nationality) {
+          // Rules 마이그레이션
+          state.passenger.pax_demographics.nationality.rules = 
+            state.passenger.pax_demographics.nationality.rules.map(rule => ({
+              ...rule,
+              value: migrateDistribution(rule.value)
+            }));
+          
+          // Default 마이그레이션
+          if (state.passenger.pax_demographics.nationality.default) {
+            state.passenger.pax_demographics.nationality.default = 
+              migrateDistribution(state.passenger.pax_demographics.nationality.default);
+          }
+        }
+
+        // Profile 데이터 마이그레이션
+        if (state.passenger.pax_demographics.profile) {
+          // Rules 마이그레이션
+          state.passenger.pax_demographics.profile.rules = 
+            state.passenger.pax_demographics.profile.rules.map(rule => ({
+              ...rule,
+              value: migrateDistribution(rule.value)
+            }));
+          
+          // Default 마이그레이션
+          if (state.passenger.pax_demographics.profile.default) {
+            state.passenger.pax_demographics.profile.default = 
+              migrateDistribution(state.passenger.pax_demographics.profile.default);
+          }
         }
       }),
 

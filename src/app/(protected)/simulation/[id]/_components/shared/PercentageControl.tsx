@@ -29,12 +29,12 @@ export const convertToPercentage = (value: number | null | undefined): number =>
     return 0;
   }
 
-  // 🎯 명확한 경계값 처리: 소수점(≤1) vs 정수(>1) 구분
+  // 🎯 수정: 값의 범위에 따라 적절한 변환
+  // 0-1 사이: 소수 값 → 백분율로 변환 (0.5 → 50)
+  // 1 초과: 이미 백분율 → 그대로 반환 (50 → 50)
   if (value <= 1) {
-    // 소수점 값 → 백분율로 변환 (0.5 → 50)
     return Math.round(Math.max(0, Math.min(100, value * 100)));
   } else {
-    // 이미 정수 백분율 → 그대로 반환 (50 → 50)
     return Math.round(Math.max(0, Math.min(100, value)));
   }
 };
@@ -44,24 +44,22 @@ export const convertToPercentage = (value: number | null | undefined): number =>
  */
 export const isValidDistribution = (values: Record<string, number>) => {
   const total = Object.values(values || {}).reduce((sum, value) => {
-    // 🎯 통일된 변환 함수 사용
-    const convertedValue = convertToPercentage(value);
-    return sum + convertedValue;
+    // 🎯 수정: 값을 그대로 사용 - 변환하지 않음
+    return sum + (value || 0);
   }, 0);
   return Math.abs(total - 100) < 0.1; // 소수점 오차 고려
 };
 
 export const getDistributionTotal = (values: Record<string, number>) => {
   return Object.values(values || {}).reduce((sum, value) => {
-    // 🎯 통일된 변환 함수 사용
-    const convertedValue = convertToPercentage(value);
-    return sum + convertedValue;
+    // 🎯 수정: 값을 그대로 사용 - 변환하지 않음
+    return sum + (value || 0);
   }, 0);
 };
 
 /**
  * InteractivePercentageBar의 래퍼 컴포넌트
- * 🎯 Load Factor와 동일한 변환 패턴: zustand↔UI 자동 변환
+ * 🎯 수정: 프론트엔드에서는 항상 정수 퍼센트로 저장하고 표시
  */
 export default function PercentageInteractiveBar({
   values,
@@ -70,28 +68,15 @@ export default function PercentageInteractiveBar({
   onTotalChange,
   ...props
 }: PercentageInteractiveBarProps) {
-  // zustand 값을 UI 표시용으로 변환 (소수점 → 정수 백분율)
+  // 값을 그대로 사용 - 변환하지 않음
   const displayValues = useMemo(() => {
-    if (!values) return {};
-
-    return Object.fromEntries(
-      Object.entries(values).map(([key, value]) => [
-        key,
-        convertToPercentage(value), // 소수점이면 *100, 정수면 그대로
-      ])
-    );
+    return values || {};
   }, [values]);
 
-  // UI 입력을 zustand 저장용으로 변환 (정수 백분율 → 소수점)
+  // UI 입력을 그대로 전달 - 변환하지 않음
   const handleChange = useCallback(
     (newValues: Record<string, number>) => {
-      const convertedValues = Object.fromEntries(
-        Object.entries(newValues).map(([key, value]) => [
-          key,
-          convertToDecimal(value), // 정수 → 소수점
-        ])
-      );
-      onChange(convertedValues);
+      onChange(newValues);
     },
     [onChange]
   );

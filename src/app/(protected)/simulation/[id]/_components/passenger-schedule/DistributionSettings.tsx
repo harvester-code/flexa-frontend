@@ -33,7 +33,6 @@ import { Input } from "@/components/ui/Input";
 import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
 import PercentageControl, {
-  convertToDecimal,
   getDistributionTotal,
   isValidDistribution,
 } from "../shared/PercentageControl";
@@ -110,10 +109,11 @@ export default function DistributionSettings({
     isNationality ? s.setNationalityDefault : s.setProfileDefault
   );
 
-  // 🔧 항공편 수를 zustand store에서 가져오기 (하드코딩된 186 대신)
-  const totalFlightsFromStore = useSimulationStore(
-    (s) => s.flight.total_flights
+  // 🔧 필터링된 항공편 수를 zustand store에서 가져오기
+  const filteredFlightResult = useSimulationStore(
+    (s) => s.flight.appliedFilterResult
   );
+  const totalFlightsFromStore = filteredFlightResult?.total || 0;
 
   // 🆕 조건 변환 로직 (Step 1, 2와 동일) - 함수들보다 앞에 위치
   const labelToColumnMap: Record<string, string> = {
@@ -345,15 +345,8 @@ export default function DistributionSettings({
         }
       });
 
-      // 🎯 distribution 값들을 decimal로 변환해서 저장 (50% → 0.5)
-      const convertedDistribution = Object.fromEntries(
-        Object.entries(rule.distribution || {}).map(([key, value]) => [
-          key,
-          convertToDecimal(value),
-        ])
-      );
-
-      addRule(backendConditions, rule.flightCount || 0, convertedDistribution);
+      // 🎯 수정: 백엔드에서 처리하도록 정수 그대로 전달
+      addRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
     },
     [addRule]
   );
@@ -444,11 +437,12 @@ export default function DistributionSettings({
     const distribution: Record<string, number> = {};
     properties.forEach((prop, index) => {
       const percentageValue = equalPercentage + (index < remainder ? 1 : 0);
-      // 🎯 percentage를 decimal로 변환해서 저장 (50 → 0.5)
-      distribution[prop] = convertToDecimal(percentageValue);
+      // 🎯 수정: 정수 그대로 저장 (50 → 50)
+      distribution[prop] = percentageValue;
     });
     return distribution;
   }, []);
+
 
   // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
   const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
@@ -910,18 +904,18 @@ export default function DistributionSettings({
                         <span className="flex items-center gap-1 text-green-600">
                           <CheckCircle size={14} />
                           Valid distribution (Total:{" "}
-                          {getDistributionTotal(
+                          {Math.round(getDistributionTotal(
                             rule.distribution || {}
-                          ).toFixed(1)}
+                          ))}
                           %)
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-600">
                           <XCircle size={14} />
                           Total must equal 100% (Current:{" "}
-                          {getDistributionTotal(
+                          {Math.round(getDistributionTotal(
                             rule.distribution || {}
-                          ).toFixed(1)}
+                          ))}
                           %)
                         </span>
                       )}
@@ -982,18 +976,18 @@ export default function DistributionSettings({
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
                         Valid distribution (Total:{" "}
-                        {getDistributionTotal(
+                        {Math.round(getDistributionTotal(
                           defaultDistribution || {}
-                        ).toFixed(1)}
+                        ))}
                         %)
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
                         <XCircle size={14} />
                         Total must equal 100% (Current:{" "}
-                        {getDistributionTotal(
+                        {Math.round(getDistributionTotal(
                           defaultDistribution || {}
-                        ).toFixed(1)}
+                        ))}
                         %)
                       </span>
                     )}
