@@ -593,10 +593,10 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                   key={`${categoryBadge.category}-${badgeIndex}`}
                                   className={cn(
                                     isDisabled
-                                      ? "bg-gray-200 text-gray-500 border-gray-300"
+                                      ? "bg-gray-300 text-gray-600 border-gray-400"
                                       : `${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`,
                                     "select-none rounded border px-1 text-[9px] font-medium leading-tight",
-                                    isDisabled && "line-through"
+                                    isDisabled && "line-through decoration-2"
                                   )}
                                   title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
                                 >

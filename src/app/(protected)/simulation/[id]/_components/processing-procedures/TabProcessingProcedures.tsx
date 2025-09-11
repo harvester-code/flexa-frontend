@@ -1,11 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckSquare, Plane, Settings2 } from 'lucide-react';
 import { EntryCondition } from '@/types/simulationTypes';
-import { runSimulation } from '@/services/simulationService';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
@@ -60,35 +56,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     entryConditions?: EntryCondition[];
   } | null>(null);
 
-  // 시뮬레이션 실행 상태
-  const [isRunningSimulation, setIsRunningSimulation] = useState(false);
-
-  // Complete 조건 체크: 모든 시설에 operating_schedule이 설정되고 travel_time_minutes가 설정되어야 함
-  const canComplete = useMemo(() => {
-    if (processFlow.length === 0) return false;
-
-    // 모든 프로세스의 travel_time_minutes가 설정되고, 모든 시설이 operating_schedule을 가져야 함
-    return processFlow.every((process) => {
-      // travel_time_minutes 체크 (0 이상이어야 함)
-      const hasTravelTime = (process.travel_time_minutes ?? 0) >= 0;
-
-      // operating_schedule 체크
-      const hasOperatingSchedule = Object.values(process.zones).every(
-        (zone: any) =>
-          zone.facilities &&
-          zone.facilities.length > 0 &&
-          zone.facilities.every(
-            (facility: any) =>
-              facility.operating_schedule &&
-              facility.operating_schedule.today &&
-              facility.operating_schedule.today.time_blocks &&
-              facility.operating_schedule.today.time_blocks.length > 0
-          )
-      );
-
-      return hasTravelTime && hasOperatingSchedule;
-    });
-  }, [processFlow]);
 
   // Zones가 설정된 프로세스가 있는지 체크 (zustand 기준)
   const hasZonesConfigured = useMemo(() => {
@@ -224,63 +191,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setProcessFlow(reorderedProcessFlow);
   };
 
-  // 시뮬레이션 실행 함수
-  const handleRunSimulation = async () => {
-    if (!canComplete) {
-      // 구체적인 미완료 사항 확인
-      const missingTravelTimes = processFlow.some((p) => (p.travel_time_minutes ?? 0) < 0);
-      const missingSchedules = !processFlow.every((process) =>
-        Object.values(process.zones).every(
-          (zone: any) =>
-            zone.facilities &&
-            zone.facilities.length > 0 &&
-            zone.facilities.every(
-              (facility: any) =>
-                facility.operating_schedule &&
-                facility.operating_schedule.today &&
-                facility.operating_schedule.today.time_blocks &&
-                facility.operating_schedule.today.time_blocks.length > 0
-            )
-        )
-      );
-
-      let description = 'Please complete the following before running simulation:\n';
-      if (missingTravelTimes) description += '• Set travel times for all processes\n';
-      if (missingSchedules) description += '• Configure operating schedules for all facilities';
-
-      toast({
-        title: 'Setup Incomplete',
-        description: description.trim(),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsRunningSimulation(true);
-
-      // travel_time_minutes 값을 안전하게 처리 (최소 1분)
-      const sanitizedProcessFlow = processFlow.map((step) => ({
-        ...step,
-        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
-      }));
-
-      await runSimulation(simulationId, sanitizedProcessFlow);
-
-      toast({
-        title: 'Simulation Started',
-        description: 'Your simulation is now running. You can check the results in the Home tab.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Simulation Failed',
-        description: error.response?.data?.message || 'Failed to start simulation. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRunningSimulation(false);
-    }
-  };
 
   // 첫 번째 프로세스를 기본으로 선택
   useEffect(() => {
@@ -302,6 +212,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         selectedProcessIndex={selectedProcessIndex}
         parquetMetadata={parquetMetadata}
         paxDemographics={paxDemographics}
+        simulationId={simulationId}
         onProcessSelect={handleProcessSelect}
         onOpenCreateModal={handleOpenCreateModal}
         onOpenEditModal={handleOpenEditModal}
@@ -323,40 +234,6 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       <div className="mt-8">
         <NavigationButton showPrevious={true} disabled={!isCompleted} />
       </div>
-
-      {/* Run Simulation Button */}
-      {canComplete && (
-        <div className="mt-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <div className="mb-4">
-                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Plane className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-lg font-semibold">Ready to Run Simulation</h3>
-                  <p className="text-sm text-muted-foreground">
-                    All operating schedules are configured. Start your simulation now!
-                  </p>
-                </div>
-                <Button onClick={handleRunSimulation} disabled={isRunningSimulation}>
-                  {isRunningSimulation ? (
-                    <>
-                      <Settings2 className="mr-2 h-4 w-4 animate-spin" />
-                      Running Simulation...
-                    </>
-                  ) : (
-                    <>
-                      <Plane className="mr-2 h-4 w-4" />
-                      Run Simulation
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

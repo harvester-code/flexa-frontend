@@ -1331,7 +1331,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 time_blocks: [], // 🆕 백엔드용 (나중에 활용)
               },
               today: {
-                time_blocks: [], // 🆕 현재 OperatingScheduleEditor용
+                time_blocks: [
+                  {
+                    period: "00:00-24:00",
+                    process_time_seconds: 60,
+                    passenger_conditions: []
+                  }
+                ], // 🆕 초기값 설정: 00:00-24:00, 60초, 빈 조건
               },
             },
           }));

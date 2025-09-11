@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeftRight,
   Building2,
@@ -17,6 +17,8 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
+import { runSimulation } from '@/services/simulationService';
+import { useToast } from '@/hooks/useToast';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -42,6 +44,7 @@ interface ProcessFlowDesignerProps {
   selectedProcessIndex: number | null;
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
   paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
+  simulationId: string; // 🆕 시뮬레이션 ID 추가
 
   // Event Handlers
   onProcessSelect: (index: number) => void;
@@ -55,17 +58,101 @@ export default function ProcessFlowDesigner({
   selectedProcessIndex,
   parquetMetadata = [],
   paxDemographics = {},
+  simulationId,
   onProcessSelect,
   onOpenCreateModal,
   onOpenEditModal,
   onRemoveProcess,
 }: ProcessFlowDesignerProps) {
+  const { toast } = useToast();
+  const [isRunningSimulation, setIsRunningSimulation] = useState(false);
+  
   // 🆕 step3Completed 상태 가져오기
   const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
 
-  // 🆕 Run simulation 핸들러 (일단 빈 함수)
-  const handleRunSimulation = () => {
-    // TODO: 시뮬레이션 실행 로직 추가 예정
+  // Complete 조건 체크: 모든 시설에 operating_schedule이 설정되고 travel_time_minutes가 설정되어야 함
+  const canRunSimulation = useMemo(() => {
+    if (processFlow.length === 0) return false;
+
+    // 모든 프로세스의 travel_time_minutes가 설정되고, 모든 시설이 operating_schedule을 가져야 함
+    return processFlow.every((process) => {
+      // travel_time_minutes 체크 (0 이상이어야 함)
+      const hasTravelTime = (process.travel_time_minutes ?? 0) >= 0;
+
+      // operating_schedule 체크
+      const hasOperatingSchedule = Object.values(process.zones).every(
+        (zone: any) =>
+          zone.facilities &&
+          zone.facilities.length > 0 &&
+          zone.facilities.every(
+            (facility: any) =>
+              facility.operating_schedule &&
+              facility.operating_schedule.today &&
+              facility.operating_schedule.today.time_blocks &&
+              facility.operating_schedule.today.time_blocks.length > 0
+          )
+      );
+
+      return hasTravelTime && hasOperatingSchedule;
+    });
+  }, [processFlow]);
+
+  // 🆕 Run simulation 핸들러
+  const handleRunSimulation = async () => {
+    if (!canRunSimulation) {
+      // 구체적인 미완료 사항 확인
+      const missingTravelTimes = processFlow.some((p) => (p.travel_time_minutes ?? 0) < 0);
+      const missingSchedules = !processFlow.every((process) =>
+        Object.values(process.zones).every(
+          (zone: any) =>
+            zone.facilities &&
+            zone.facilities.length > 0 &&
+            zone.facilities.every(
+              (facility: any) =>
+                facility.operating_schedule &&
+                facility.operating_schedule.today &&
+                facility.operating_schedule.today.time_blocks &&
+                facility.operating_schedule.today.time_blocks.length > 0
+            )
+        )
+      );
+
+      let description = 'Please complete the following before running simulation:\n';
+      if (missingTravelTimes) description += '• Set travel times for all processes\n';
+      if (missingSchedules) description += '• Configure operating schedules for all facilities';
+
+      toast({
+        title: 'Setup Incomplete',
+        description: description.trim(),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsRunningSimulation(true);
+
+      // travel_time_minutes 값을 안전하게 처리 (최소 1분)
+      const sanitizedProcessFlow = processFlow.map((step) => ({
+        ...step,
+        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
+      }));
+
+      await runSimulation(simulationId, sanitizedProcessFlow);
+
+      toast({
+        title: 'Simulation Started',
+        description: 'Your simulation is now running. You can check the results in the Home tab.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Simulation Failed',
+        description: error.response?.data?.message || 'Failed to start simulation. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRunningSimulation(false);
+    }
   };
 
   return (
@@ -88,11 +175,20 @@ export default function ProcessFlowDesigner({
             {/* 🆕 Run Simulation Button */}
             <Button
               onClick={handleRunSimulation}
-              disabled={!step3Completed}
-              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90"
+              disabled={!canRunSimulation || isRunningSimulation}
+              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play size={16} />
-              Run Simulation
+              {isRunningSimulation ? (
+                <>
+                  <Settings2 className="h-4 w-4 animate-spin" />
+                  Running Simulation...
+                </>
+              ) : (
+                <>
+                  <Play size={16} />
+                  Run Simulation
+                </>
+              )}
             </Button>
           </div>
         </CardHeader>
