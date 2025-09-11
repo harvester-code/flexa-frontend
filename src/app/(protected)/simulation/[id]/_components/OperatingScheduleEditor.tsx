@@ -469,12 +469,24 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     handleRemoveCategoryBadge,
     cn,
   }) => {
+    // 🖼️ cellId 파싱 캐시 (성능 최적화)
+    const parseCellId = useMemo(() => {
+      const cache = new Map<string, [number, number]>();
+      return (cellId: string): [number, number] => {
+        if (!cache.has(cellId)) {
+          const [rowStr, colStr] = cellId.split("-");
+          cache.set(cellId, [parseInt(rowStr, 10), parseInt(colStr, 10)]);
+        }
+        return cache.get(cellId)!;
+      };
+    }, []);
+
     // 🖼️ 선택된 셀의 바깥쪽 테두리 계산 함수 (최적화)
     const getSelectionBorders = useMemo(() => {
       const borderMap = new Map<string, string>();
 
       selectedCells.forEach((cellId) => {
-        const [rowIndex, colIndex] = cellId.split("-").map(Number);
+        const [rowIndex, colIndex] = parseCellId(cellId);
         const borders: string[] = [];
 
         // 위쪽 테두리 (위쪽 셀이 선택되지 않음)
@@ -508,7 +520,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
         const cellId = `${rowIndex}-${colIndex}`;
         return borderMap.get(cellId) || "";
       };
-    }, [selectedCells]);
+    }, [selectedCells, parseCellId]);
     if (!selectedZone || currentFacilities.length === 0) {
       if (selectedZone) {
         return (
