@@ -409,6 +409,12 @@ export interface SimulationStoreState {
     facilityId: string,
     period: string
   ) => void;
+  updateFacilityTimeBlocks: (
+    processIndex: number,
+    zoneName: string,
+    facilityId: string,
+    timeBlocks: any[]
+  ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
   migratePercentageData: () => void;
 
@@ -1369,6 +1375,28 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 },
               };
             });
+          }
+        }
+      }),
+
+    // 개별 시설의 time_blocks 전체 업데이트 (스페이스바로 period 분할용)
+    updateFacilityTimeBlocks: (processIndex, zoneName, facilityId, timeBlocks) =>
+      set((state) => {
+        if (
+          state.process_flow[processIndex] &&
+          state.process_flow[processIndex].zones[zoneName]
+        ) {
+          const zone = state.process_flow[processIndex].zones[zoneName];
+          const facility = zone.facilities?.find(
+            (f: Facility) => f.id === facilityId
+          );
+
+          if (facility && facility.operating_schedule) {
+            // today의 time_blocks를 새로운 값으로 교체
+            facility.operating_schedule.today = {
+              ...facility.operating_schedule.today,
+              time_blocks: timeBlocks
+            };
           }
         }
       }),

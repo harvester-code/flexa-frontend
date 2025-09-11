@@ -248,6 +248,92 @@ const ROW_HEIGHT = 60; // 각 행의 높이 (픽셀)
 const VIEWPORT_HEIGHT = 500; // 보이는 영역 높이 (기본값)
 const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 스크롤)
 
+// 시간 문자열을 포맷팅하는 헬퍼 함수
+const formatTime = (hours: number, minutes: number): string => {
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+// 다음 시간 슬롯 계산 (10분 추가)
+const getNextTimeSlot = (timeStr: string): string => {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  let newMinutes = minutes + 10;
+  let newHours = hours;
+  
+  if (newMinutes >= 60) {
+    newMinutes = newMinutes % 60;
+    newHours = (newHours + 1) % 24;
+  }
+  
+  return formatTime(newHours, newMinutes);
+};
+
+// disabled cells를 기반으로 period를 계산하는 함수
+const calculatePeriodsFromDisabledCells = (
+  facilityIndex: number,
+  disabledCells: Set<string>,
+  timeSlots: string[],
+  existingTimeBlocks: any[]
+): any[] => {
+  // 기존 time_blocks에서 process_time_seconds와 passenger_conditions 가져오기
+  const existingBlock = existingTimeBlocks?.[0] || {};
+  const processTime = existingBlock.process_time_seconds || 60;
+  const conditions = existingBlock.passenger_conditions || [];
+  
+  const periods: any[] = [];
+  let currentStart: string | null = null;
+  let lastActiveTime: string | null = null;
+  
+  for (let i = 0; i < timeSlots.length; i++) {
+    const cellId = `${i}-${facilityIndex}`;
+    const isDisabled = disabledCells.has(cellId);
+    const currentTime = timeSlots[i];
+    
+    if (!isDisabled) {
+      // 활성화된 셀
+      if (currentStart === null) {
+        // 새로운 활성 구간 시작
+        currentStart = currentTime;
+      }
+      lastActiveTime = currentTime;
+    } else {
+      // 비활성화된 셀
+      if (currentStart !== null && lastActiveTime !== null) {
+        // 이전 활성 구간을 저장
+        const endTime = getNextTimeSlot(lastActiveTime);
+        periods.push({
+          period: `${currentStart}-${endTime}`,
+          process_time_seconds: processTime,
+          passenger_conditions: conditions
+        });
+        currentStart = null;
+        lastActiveTime = null;
+      }
+    }
+  }
+  
+  // 마지막 활성 구간 처리
+  if (currentStart !== null && lastActiveTime !== null) {
+    // 마지막 시간이 23:50인 경우 24:00으로 설정
+    const endTime = lastActiveTime === '23:50' ? '24:00' : getNextTimeSlot(lastActiveTime);
+    periods.push({
+      period: `${currentStart}-${endTime}`,
+      process_time_seconds: processTime,
+      passenger_conditions: conditions
+    });
+  }
+  
+  // period가 하나도 없으면 (모두 비활성화) 기본값 반환
+  if (periods.length === 0) {
+    periods.push({
+      period: "00:00-24:00",
+      process_time_seconds: processTime,
+      passenger_conditions: conditions
+    });
+  }
+  
+  return periods;
+};
+
 // 핸들러 그룹화
 interface TableHandlers {
   timeHeader: {
@@ -633,6 +719,10 @@ export default function OperatingScheduleEditor({
   const setFacilitiesForZone = useSimulationStore(
     (s) => s.setFacilitiesForZone
   );
+  // 🆕 시설별 time_blocks 업데이트 함수
+  const updateFacilityTimeBlocks = useSimulationStore(
+    (s) => s.updateFacilityTimeBlocks
+  );
   // ✈️ 항공사 매핑 데이터 가져오기
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
 
@@ -666,8 +756,23 @@ export default function OperatingScheduleEditor({
     y: number;
   }>({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
 
-  // 🚫 셀별 비활성화 상태 관리
-  const [disabledCells, setDisabledCells] = useState<Set<string>>(new Set());
+  // 🚫 Zone별 셀 비활성화 상태 관리 (탭 전환 시에도 유지)
+  const [disabledCellsByZone, setDisabledCellsByZone] = useState<Record<string, Set<string>>>({});
+  
+  // 현재 선택된 Zone의 disabledCells
+  const disabledCells = useMemo(() => {
+    const key = `${selectedProcessIndex}-${selectedZone}`;
+    return disabledCellsByZone[key] || new Set<string>();
+  }, [selectedProcessIndex, selectedZone, disabledCellsByZone]);
+  
+  // disabledCells 업데이트 헬퍼 함수
+  const setDisabledCells = useCallback((updater: (prev: Set<string>) => Set<string>) => {
+    const key = `${selectedProcessIndex}-${selectedZone}`;
+    setDisabledCellsByZone(prev => ({
+      ...prev,
+      [key]: updater(prev[key] || new Set<string>())
+    }));
+  }, [selectedProcessIndex, selectedZone]);
 
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
@@ -1659,11 +1764,11 @@ export default function OperatingScheduleEditor({
     };
   }, []); // 🚀 한 번만 실행 (의존성 제거)
 
-  // 탭 변경 시 선택 상태들 초기화 및 모든 셀을 "All"로 초기화
+  // 탭 변경 시 선택 상태만 초기화 (disabledCells는 유지)
   React.useEffect(() => {
     clearSelection(); // 커스텀 훅의 clearSelection 사용
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
-    setDisabledCells(new Set()); // 🚫 비활성화 상태도 초기화
+    // disabledCells는 초기화하지 않음 - Zone별로 유지됨
     
     // 모든 셀을 "All" 뱃지로 초기화
     if (currentFacilities.length > 0 && timeSlots.length > 0) {
@@ -1690,7 +1795,7 @@ export default function OperatingScheduleEditor({
     }
   }, [selectedProcessIndex, selectedZone, clearSelection, currentFacilities.length, timeSlots.length]);
 
-  // 🛡️ 안전한 첫 번째 존 자동 선택
+  // 🛡️ 안전한 첫 번째 존 자동 선택 (초기화되지 않았거나 프로세스가 변경될 때만)
   React.useEffect(() => {
     if (
       processFlow &&
@@ -1701,11 +1806,54 @@ export default function OperatingScheduleEditor({
       processFlow[selectedProcessIndex].zones
     ) {
       const zones = Object.keys(processFlow[selectedProcessIndex].zones);
+      
+      // 초기화되지 않았거나, selectedZone이 현재 zones에 없을 때만 설정
       if (zones.length > 0) {
-        setSelectedZone(zones[0]);
+        if (!selectedZone || !zones.includes(selectedZone)) {
+          setSelectedZone(zones[0]);
+        }
       }
     }
-  }, [selectedProcessIndex, processFlow]);
+  }, [selectedProcessIndex, selectedZone, processFlow]); // 모든 의존성 포함
+
+  // 🆕 disabledCells 변경 시 period 재계산 및 zustand 업데이트
+  useEffect(() => {
+    if (!currentFacilities || currentFacilities.length === 0) return;
+    if (!selectedZone || selectedProcessIndex === null) return;
+    
+    // debounce를 위한 timeout
+    const timeoutId = setTimeout(() => {
+      // 각 시설별로 period 재계산
+      currentFacilities.forEach((facility, facilityIndex) => {
+        if (facility && facility.id) {
+          const existingTimeBlocks = facility.operating_schedule?.today?.time_blocks || [];
+          
+          // 새로운 periods 계산
+          const newTimeBlocks = calculatePeriodsFromDisabledCells(
+            facilityIndex,
+            disabledCells,
+            timeSlots,
+            existingTimeBlocks
+          );
+          
+          // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트
+          const hasChanged = JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
+          
+          if (hasChanged) {
+            // zustand store 업데이트
+            updateFacilityTimeBlocks(
+              selectedProcessIndex,
+              selectedZone,
+              facility.id,
+              newTimeBlocks
+            );
+          }
+        }
+      });
+    }, 100); // 100ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [disabledCells]); // disabledCells 변경 시에만 실행
 
   // 🛡️ 안전성 검사 강화
   if (!processFlow || processFlow.length === 0) {
