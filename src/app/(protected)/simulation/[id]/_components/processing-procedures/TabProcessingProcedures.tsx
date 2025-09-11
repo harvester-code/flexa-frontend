@@ -7,9 +7,9 @@ import { runSimulation } from '@/services/simulationService';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
-import NextButton from './NextButton';
+import NextButton from '../shared/NextButton';
 import ProcessConfigurationModal from './ProcessConfigurationModal';
 import ProcessFlowChart from './ProcessFlowChart';
 

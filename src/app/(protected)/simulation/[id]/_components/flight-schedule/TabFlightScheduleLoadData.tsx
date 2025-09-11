@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/Command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { cn } from '@/lib/utils';
-import _jsonAirport from '../_json/airport_constants.json';
-import { useSimulationStore } from '../_stores';
+import _jsonAirport from '../../_json/airport_constants.json';
+import { useSimulationStore } from '../../_stores';
 
 const JSON_AIRPORTS = _jsonAirport.map((item) => ({
   iata: item.iata,

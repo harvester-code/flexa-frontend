@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 import {
   type TerminalAirlineCombo,
   convertTerminalAirlinesToApiCondition,

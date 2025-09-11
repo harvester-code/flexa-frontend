@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { ProcessStep } from "@/types/simulationTypes";
-import { convertToDecimal } from "../_components/PercentageInteractiveBar";
+import { convertToDecimal } from "../_components/shared/PercentageInteractiveBar";
 
 // ==================== Passenger Types ====================
 export interface PassengerData {

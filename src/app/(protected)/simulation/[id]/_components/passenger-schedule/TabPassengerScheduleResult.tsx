@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { useSimulationStore } from "../_stores";
+import { useSimulationStore } from "../../_stores";
 
 const BarChart = dynamic(() => import("@/components/charts/BarChart"), {
   ssr: false,

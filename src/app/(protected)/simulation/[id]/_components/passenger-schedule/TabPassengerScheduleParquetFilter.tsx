@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/hooks/useToast";
-import { useSimulationStore } from "../_stores";
+import { useSimulationStore } from "../../_stores";
 import AddColumnTab from "./AddColumnTab";
 import SimpleLoadFactorTab from "./SimpleLoadFactorTab";
 import SimpleShowUpTimeTab from "./SimpleShowUpTimeTab";

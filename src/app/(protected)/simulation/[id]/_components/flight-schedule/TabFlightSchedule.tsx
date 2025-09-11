@@ -12,9 +12,9 @@ import {
   getFlightSchedules,
 } from "@/services/simulationService";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
-import SimulationLoading from "../../_components/SimulationLoading";
-import { useSimulationStore } from "../_stores";
-import NextButton from "./NextButton";
+import SimulationLoading from "../../../_components/SimulationLoading";
+import { useSimulationStore } from "../../_stores";
+import NextButton from "../shared/NextButton";
 // TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
 import TabFlightScheduleFilterConditionsNew from "./TabFlightScheduleFilterConditionsNew";
 import TabFlightScheduleLoadData from "./TabFlightScheduleLoadData";

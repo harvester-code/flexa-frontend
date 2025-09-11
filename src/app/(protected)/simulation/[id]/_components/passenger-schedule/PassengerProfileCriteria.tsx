@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 // import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 import { SetDistributionDialog } from './SetDistributionDialog';
-import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from './ValueSetters';
+import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from '../shared/ValueSetters';
 
 interface ParquetMetadataItem {
   column: string;

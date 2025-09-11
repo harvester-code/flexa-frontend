@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 
 interface JSONDebugViewerProps {
   visible: boolean;

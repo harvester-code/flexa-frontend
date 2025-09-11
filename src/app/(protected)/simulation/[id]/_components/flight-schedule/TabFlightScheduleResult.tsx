@@ -7,7 +7,7 @@ import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 

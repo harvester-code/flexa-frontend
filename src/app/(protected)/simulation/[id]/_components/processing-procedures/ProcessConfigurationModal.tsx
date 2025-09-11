@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { formatProcessName } from '@/lib/utils';
-import { useSimulationStore } from '../_stores';
-import SearchCriteriaSelector from './SearchCriteriaSelector';
+import { useSimulationStore } from '../../_stores';
+import SearchCriteriaSelector from '../flight-schedule/SearchCriteriaSelector';
 
 // 시설 타입 정의
 type FacilityItem = {

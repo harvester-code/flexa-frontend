@@ -17,9 +17,9 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
-import { convertToDecimal, convertToPercentage } from './PercentageInteractiveBar';
+import { convertToDecimal, convertToPercentage } from '../shared/PercentageInteractiveBar';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [

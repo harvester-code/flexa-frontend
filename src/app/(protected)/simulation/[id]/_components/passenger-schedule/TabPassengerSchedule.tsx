@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
-import { useSimulationStore } from '../_stores';
-import NextButton from './NextButton';
+import { useSimulationStore } from '../../_stores';
+import NextButton from '../shared/NextButton';
 import TabPassengerScheduleParquetFilter from './TabPassengerScheduleParquetFilter';
 import TabPassengerScheduleResult from './TabPassengerScheduleResult';
 

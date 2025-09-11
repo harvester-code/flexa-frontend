@@ -23,11 +23,11 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
-import JSONDebugViewer from './_components/JSONDebugViewer';
-import TabDefault from './_components/TabDefault';
-import TabFlightSchedule from './_components/TabFlightSchedule';
-import TabPassengerSchedule from './_components/TabPassengerSchedule';
-import TabProcessingProcedures from './_components/TabProcessingProcedures';
+import JSONDebugViewer from './_components/shared/JSONDebugViewer';
+import TabDefault from './_components/shared/TabDefault';
+import TabFlightSchedule from './_components/flight-schedule/TabFlightSchedule';
+import TabPassengerSchedule from './_components/passenger-schedule/TabPassengerSchedule';
+import TabProcessingProcedures from './_components/processing-procedures/TabProcessingProcedures';
 import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
 import { useScenarioProfileStore, useSimulationStore } from './_stores';
 

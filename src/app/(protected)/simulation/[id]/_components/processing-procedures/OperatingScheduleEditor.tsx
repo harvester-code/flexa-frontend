@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/Dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
-import { useSimulationStore } from "../_stores";
+import { useSimulationStore } from "../../_stores";
 
 // Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
 interface ParquetMetadataItem {

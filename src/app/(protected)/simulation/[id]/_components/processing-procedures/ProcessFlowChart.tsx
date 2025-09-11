@@ -21,7 +21,7 @@ import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatProcessName } from '@/lib/utils';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 import OperatingScheduleEditor from './OperatingScheduleEditor';
 
 // Parquet Metadata 타입 정의 (OperatingScheduleEditor와 동일)

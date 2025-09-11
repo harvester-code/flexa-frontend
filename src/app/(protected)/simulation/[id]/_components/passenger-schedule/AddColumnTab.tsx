@@ -30,13 +30,13 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
-import { useSimulationStore } from "../_stores";
+import { useSimulationStore } from "../../_stores";
 import PassengerProfileCriteria from "./PassengerProfileCriteria";
 import PercentageInteractiveBar, {
   convertToDecimal,
   getDistributionTotal,
   isValidDistribution,
-} from "./PercentageInteractiveBar";
+} from "../shared/PercentageInteractiveBar";
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [

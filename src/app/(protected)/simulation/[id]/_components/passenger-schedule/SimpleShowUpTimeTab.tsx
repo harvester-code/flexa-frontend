@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../_stores';
+import { useSimulationStore } from '../../_stores';
 import PassengerProfileCriteria from './PassengerProfileCriteria';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
