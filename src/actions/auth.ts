@@ -1,18 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { handleAuthError, validateCredentials, validateSignUpData } from '@/lib/auth/error-handler';
 import { createClient } from '@/lib/auth/server';
-
-// 저장된 이메일 가져오기
-export async function getSavedEmail() {
-  const cookieStore = await cookies();
-  const savedEmail = cookieStore.get('savedEmail');
-  return savedEmail?.value || '';
-}
 
 export const signInAction = async (prevState: any, formData: FormData) => {
   const email = formData.get('email') as string;
@@ -68,7 +59,23 @@ export const signUpAction = async (prevState: any, formData: FormData) => {
 
 export const signOutAction = async () => {
   const supabase = await createClient();
+  
+  // 세션 완전히 제거
   await supabase.auth.signOut();
+  
+  // 모든 쿠키 제거를 위한 추가 처리
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+  
+  // Supabase 관련 쿠키 모두 제거
+  const allCookies = cookieStore.getAll();
+  allCookies.forEach(cookie => {
+    if (cookie.name.includes('supabase') || cookie.name.includes('sb-')) {
+      cookieStore.delete(cookie.name);
+    }
+  });
+  
+  revalidatePath('/', 'layout');
   return redirect('/auth/login');
 };
 

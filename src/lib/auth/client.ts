@@ -3,12 +3,11 @@ import { createBrowserClient } from '@supabase/ssr';
 let client: ReturnType<typeof createBrowserClient> | undefined;
 
 /**
- * 개발 환경 장시간 사용 최적화된 Supabase 브라우저 클라이언트
- *
- * 개선사항:
+ * Supabase 브라우저 클라이언트
+ * 
+ * 기능:
  * - 클라이언트 재사용 (싱글톤 패턴)
- * - 개발 환경 최적화 설정
- * - 장시간 세션 유지 설정
+ * - 세션 지속성 비활성화 (자동 로그인 방지)
  */
 function createClient() {
   if (client) {
@@ -19,27 +18,29 @@ function createClient() {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   client = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    // 개발 환경 최적화 설정
     auth: {
-      // 자동 새로고침 활성화 (장시간 개발시 세션 유지)
-      autoRefreshToken: true,
+      // 토큰 자동 새로고침 비활성화
+      autoRefreshToken: false,
 
-      // 토큰 새로고침 시간 여유는 auth 옵션에서 제거됨
+      // 세션 지속성 비활성화 (브라우저 재시작시 로그인 필요)
+      persistSession: false,
 
-      // 세션 지속성 (브라우저 재시작 시에도 세션 유지)
-      persistSession: true,
-
-      // 세션 검증 (개발 환경에서 더 자주)
+      // URL에서 세션 감지
       detectSessionInUrl: true,
+      
+      // 세션 저장소를 메모리로 설정 (브라우저 세션 저장소 사용 안함)
+      storage: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      },
     },
 
-    // 실시간 설정 최적화 (개발 환경)
+    // 실시간 설정
     realtime: isDevelopment
       ? {
-          // 개발 환경에서 실시간 연결 끊김 방지
-          heartbeatIntervalMs: 30000, // 30초마다 heartbeat
+          heartbeatIntervalMs: 30000,
           reconnectAfterMs: function (tries: number) {
-            // 개발 환경에서는 빠른 재연결
             return Math.min(tries * 1000, 5000);
           },
         }
@@ -53,10 +54,6 @@ function createClient() {
     },
   });
 
-  // 개발 환경에서 디버깅을 위한 이벤트 리스너
-  if (isDevelopment && typeof window !== 'undefined' && client) {
-    client.auth.onAuthStateChange((event, session) => {});
-  }
 
   return client!;
 }

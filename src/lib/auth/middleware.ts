@@ -32,15 +32,20 @@ export const updateSession = async (request: NextRequest) => {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const isPublicRoute = request.nextUrl.pathname.startsWith('/auth');
+    const isPublicRoute = request.nextUrl.pathname.startsWith('/auth') || request.nextUrl.pathname === '/';
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/home') || 
+                             request.nextUrl.pathname.startsWith('/profile') ||
+                             request.nextUrl.pathname.startsWith('/admin');
 
-    if (!isPublicRoute && !user) {
+    // 보호된 라우트에 비로그인 상태로 접근하는 경우만 리다이렉트
+    if (isProtectedRoute && !user) {
       return NextResponse.redirect(new URL('/auth/login', request.nextUrl));
     }
 
-    if (isPublicRoute && user) {
-      return NextResponse.redirect(new URL('/home', request.nextUrl));
-    }
+    // 자동 로그인 리다이렉션 제거 - 사용자가 명시적으로 로그인할 때만 리다이렉트
+    // if (isPublicRoute && user) {
+    //   return NextResponse.redirect(new URL('/home', request.nextUrl));
+    // }
 
     return response;
   } catch (e) {
