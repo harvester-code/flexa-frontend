@@ -715,6 +715,40 @@ export default function OperatingScheduleEditor({
 
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
 
+  // 🚀 드래그 최적화: 리렌더링 배칭을 위한 ref
+  const pendingUpdate = useRef<Set<string> | null>(null);
+  const updateTimeoutRef = useRef<number | null>(null);
+
+  // 🚀 배칭된 선택 상태 업데이트 함수
+  const batchedSetSelectedCells = useCallback((newCells: Set<string>) => {
+    pendingUpdate.current = newCells;
+
+    // 이전 타이머가 있으면 취소
+    if (updateTimeoutRef.current) {
+      cancelAnimationFrame(updateTimeoutRef.current);
+    }
+
+    // requestAnimationFrame으로 배칭
+    updateTimeoutRef.current = requestAnimationFrame(() => {
+      if (pendingUpdate.current) {
+        setSelectedCells(pendingUpdate.current);
+        pendingUpdate.current = null;
+      }
+      updateTimeoutRef.current = null;
+    });
+  }, []);
+
+  // 🚀 즉시 업데이트 함수 (클릭 등 즉시 반응이 필요한 경우)
+  const immediateSetSelectedCells = useCallback((newCells: Set<string>) => {
+    // 대기 중인 배칭 취소
+    if (updateTimeoutRef.current) {
+      cancelAnimationFrame(updateTimeoutRef.current);
+      updateTimeoutRef.current = null;
+    }
+    pendingUpdate.current = null;
+    setSelectedCells(newCells);
+  }, []);
+
   // Shift 클릭 선택 상태
   const [shiftSelectStart, setShiftSelectStart] = useState<{
     row: number;
@@ -1342,14 +1376,14 @@ export default function OperatingScheduleEditor({
             ...dragState.originalSelection,
             ...rangeCells,
           ]);
-          setSelectedCells(combinedCells);
+          batchedSetSelectedCells(combinedCells);
         } else {
           // 일반 드래그: 드래그 영역만 선택
-          setSelectedCells(rangeCells);
+          batchedSetSelectedCells(rangeCells);
         }
       }
     },
-    [dragState, generateRangeCellIds]
+    [dragState, generateRangeCellIds, batchedSetSelectedCells]
   );
 
   const handleCellMouseUp = useCallback(() => {
@@ -1459,14 +1493,14 @@ export default function OperatingScheduleEditor({
             ...dragState.originalSelection,
             ...rangeCellIds,
           ]);
-          setSelectedCells(combinedCells);
+          batchedSetSelectedCells(combinedCells);
         } else {
           // 일반 드래그: 드래그 영역만 선택
-          setSelectedCells(rangeCellIds);
+          batchedSetSelectedCells(rangeCellIds);
         }
       }
     },
-    [dragState, timeSlots.length]
+    [dragState, timeSlots.length, batchedSetSelectedCells]
   );
 
   const handleColumnMouseUp = useCallback(() => {
@@ -1559,14 +1593,14 @@ export default function OperatingScheduleEditor({
             ...dragState.originalSelection,
             ...rangeCellIds,
           ]);
-          setSelectedCells(combinedCells);
+          batchedSetSelectedCells(combinedCells);
         } else {
           // 일반 드래그: 드래그 영역만 선택
-          setSelectedCells(rangeCellIds);
+          batchedSetSelectedCells(rangeCellIds);
         }
       }
     },
-    [dragState, currentFacilities.length]
+    [dragState, currentFacilities.length, batchedSetSelectedCells]
   );
 
   const handleRowMouseUp = useCallback(() => {
@@ -1686,6 +1720,16 @@ export default function OperatingScheduleEditor({
       document.removeEventListener("click", handleDocumentClick);
     };
   }, []); // 🚀 한 번만 실행 (의존성 제거)
+
+  // 🚀 드래그 최적화 정리 함수
+  useEffect(() => {
+    return () => {
+      // 컴포넌트 언마운트 시 대기 중인 애니메이션 프레임 정리
+      if (updateTimeoutRef.current) {
+        cancelAnimationFrame(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
