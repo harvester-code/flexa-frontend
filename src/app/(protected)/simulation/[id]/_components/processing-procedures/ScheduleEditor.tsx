@@ -326,6 +326,40 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       offsetY = 0,
       onScroll,
     } = virtualScroll;
+
+    // 선택된 행과 열 계산
+    const selectedRowsAndCols = useMemo(() => {
+      const selectedRows = new Set<number>();
+      const selectedCols = new Set<number>();
+      
+      selectedCells.forEach(cellId => {
+        const [rowStr, colStr] = cellId.split('-');
+        const rowIndex = parseInt(rowStr, 10);
+        const colIndex = parseInt(colStr, 10);
+        
+        // 전체 행이 선택되었는지 확인
+        let isFullRowSelected = true;
+        for (let col = 0; col < currentFacilities.length; col++) {
+          if (!selectedCells.has(`${rowIndex}-${col}`)) {
+            isFullRowSelected = false;
+            break;
+          }
+        }
+        if (isFullRowSelected) selectedRows.add(rowIndex);
+        
+        // 전체 열이 선택되었는지 확인
+        let isFullColSelected = true;
+        for (let row = 0; row < timeSlots.length; row++) {
+          if (!selectedCells.has(`${row}-${colIndex}`)) {
+            isFullColSelected = false;
+            break;
+          }
+        }
+        if (isFullColSelected) selectedCols.add(colIndex);
+      });
+      
+      return { selectedRows, selectedCols };
+    }, [selectedCells, currentFacilities.length, timeSlots.length]);
     // 🖼️ cellId 파싱 캐시 (성능 최적화)
     const parseCellId = useMemo(() => {
       const cache = new Map<string, [number, number]>();
@@ -425,14 +459,29 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 {currentFacilities.map((facility, colIndex) => (
                   <th
                     key={facility.id}
-                    className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 bg-muted sticky top-0"
-                    onMouseDown={(e) =>
-                      handlers.column.onMouseDown(colIndex, e)
-                    }
-                    onMouseEnter={(e) =>
-                      handlers.column.onMouseEnter(colIndex, e)
-                    }
-                    onMouseUp={handlers.column.onMouseUp}
+                    className={`w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 sticky top-0 ${
+                      selectedRowsAndCols.selectedCols.has(colIndex) 
+                        ? 'bg-primary/20' 
+                        : 'bg-muted'
+                    }`}
+                    onMouseDown={(e) => {
+                      // 우클릭이 아닐 때만 드래그 처리
+                      if (e.button !== 2) {
+                        handlers.column.onMouseDown(colIndex, e)
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      // 우클릭 드래그가 아닐 때만 처리
+                      if (e.buttons !== 2) {
+                        handlers.column.onMouseEnter(colIndex, e)
+                      }
+                    }}
+                    onMouseUp={(e) => {
+                      // 우클릭이 아닐 때만 처리
+                      if (e.button !== 2) {
+                        handlers.column.onMouseUp()
+                      }
+                    }}
                     onContextMenu={(e) => {
                       // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                       if (e.ctrlKey || e.metaKey) {
@@ -454,12 +503,29 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 return (
                   <tr key={rowIndex} className="h-15">
                     <td
-                      className="w-24 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10 overflow-hidden whitespace-nowrap text-ellipsis"
-                      onMouseDown={(e) => handlers.row.onMouseDown(rowIndex, e)}
-                      onMouseEnter={(e) =>
-                        handlers.row.onMouseEnter(rowIndex, e)
-                      }
-                      onMouseUp={handlers.row.onMouseUp}
+                      className={`w-24 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10 overflow-hidden whitespace-nowrap text-ellipsis ${
+                        selectedRowsAndCols.selectedRows.has(rowIndex)
+                          ? 'bg-primary/20'
+                          : ''
+                      }`}
+                      onMouseDown={(e) => {
+                        // 우클릭이 아닐 때만 드래그 처리
+                        if (e.button !== 2) {
+                          handlers.row.onMouseDown(rowIndex, e)
+                        }
+                      }}
+                      onMouseEnter={(e) => {
+                        // 우클릭 드래그가 아닐 때만 처리
+                        if (e.buttons !== 2) {
+                          handlers.row.onMouseEnter(rowIndex, e)
+                        }
+                      }}
+                      onMouseUp={(e) => {
+                        // 우클릭이 아닐 때만 처리
+                        if (e.button !== 2) {
+                          handlers.row.onMouseUp()
+                        }
+                      }}
                       onContextMenu={(e) => {
                         // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                         if (e.ctrlKey || e.metaKey) {
@@ -948,15 +1014,13 @@ export default function OperatingScheduleEditor({
     (e: React.MouseEvent, cellId: string) => {
       e.preventDefault();
 
-      // 우클릭한 셀이 현재 선택에 포함되어 있는지 확인
-      const isCurrentlySelected = selectedCells.has(cellId);
-
       let targetCells: string[];
-      if (isCurrentlySelected && selectedCells.size > 1) {
-        // 선택된 셀들 중 하나를 우클릭한 경우 → 모든 선택된 셀에 적용
+      if (selectedCells.size > 0) {
+        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
         targetCells = Array.from(selectedCells);
       } else {
-        // 선택되지 않은 셀을 우클릭한 경우 → 해당 셀에만 적용
+        // 아무것도 선택되지 않은 경우 → 우클릭한 셀을 먼저 선택한 후 적용
+        setSelectedCells(new Set([cellId]));
         targetCells = [cellId];
       }
 
@@ -968,17 +1032,24 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [selectedCells]
+    [selectedCells, setSelectedCells]
   );
 
-  // 행 헤더 우클릭 핸들러 (해당 행의 모든 셀에 적용)
+  // 행 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 행에 적용)
   const handleRowRightClick = useCallback(
     (e: React.MouseEvent, rowIndex: number) => {
       e.preventDefault();
 
-      // 해당 행의 모든 셀 ID 생성
-      const rowCellIds = generateRowCells(rowIndex);
-      const targetCells = Array.from(rowCellIds);
+      let targetCells: string[];
+      if (selectedCells.size > 0) {
+        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
+        targetCells = Array.from(selectedCells);
+      } else {
+        // 아무것도 선택되지 않은 경우 → 해당 행을 먼저 선택한 후 적용
+        const rowCellIds = generateRowCells(rowIndex);
+        setSelectedCells(rowCellIds);
+        targetCells = Array.from(rowCellIds);
+      }
 
       setContextMenu({
         show: true,
@@ -988,17 +1059,24 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [generateRowCells]
+    [generateRowCells, selectedCells, setSelectedCells]
   );
 
-  // 열 헤더 우클릭 핸들러 (해당 열의 모든 셀에 적용)
+  // 열 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 열에 적용)
   const handleColumnRightClick = useCallback(
     (e: React.MouseEvent, colIndex: number) => {
       e.preventDefault();
 
-      // 해당 열의 모든 셀 ID 생성
-      const columnCellIds = generateColumnCells(colIndex);
-      const targetCells = Array.from(columnCellIds);
+      let targetCells: string[];
+      if (selectedCells.size > 0) {
+        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
+        targetCells = Array.from(selectedCells);
+      } else {
+        // 아무것도 선택되지 않은 경우 → 해당 열을 먼저 선택한 후 적용
+        const columnCellIds = generateColumnCells(colIndex);
+        setSelectedCells(columnCellIds);
+        targetCells = Array.from(columnCellIds);
+      }
 
       setContextMenu({
         show: true,
@@ -1008,7 +1086,7 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [generateColumnCells]
+    [generateColumnCells, selectedCells, setSelectedCells]
   );
 
   // Time 헤더 클릭 핸들러 (전체 선택)
@@ -1028,14 +1106,20 @@ export default function OperatingScheduleEditor({
     [generateAllCells]
   );
 
-  // Time 헤더 우클릭 핸들러 (전체 셀에 뱃지 적용)
+  // Time 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 전체 셀에 적용)
   const handleTimeHeaderRightClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
 
-      // 전체 셀 ID 생성
-      const allCellIds = generateAllCells();
-      const targetCells = Array.from(allCellIds);
+      let targetCells: string[];
+      if (selectedCells.size > 0) {
+        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용
+        targetCells = Array.from(selectedCells);
+      } else {
+        // 아무것도 선택되지 않은 경우 → 전체 셀에 적용
+        const allCellIds = generateAllCells();
+        targetCells = Array.from(allCellIds);
+      }
 
       setContextMenu({
         show: true,
@@ -1045,7 +1129,7 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [generateAllCells]
+    [generateAllCells, selectedCells]
   );
 
   // 범위 선택 함수
@@ -1242,29 +1326,27 @@ export default function OperatingScheduleEditor({
       const isAdditive = e.ctrlKey || e.metaKey;
       const columnCellIds = generateColumnCells(colIndex);
 
-      setSelectedCells((prev) => {
-        setDragState(
-          createDragState(
-            "column",
-            { row: 0, col: colIndex },
-            isAdditive,
-            isAdditive ? new Set(prev) : null
-          )
-        );
+      // 🚀 드래그 시작: 임시 선택 상태 사용
+      const newTempSelection = isAdditive
+        ? new Set([...selectedCells, ...columnCellIds])
+        : columnCellIds;
 
-        if (isAdditive) {
-          // Cmd + 드래그: 기존 선택 유지하면서 현재 열 추가
-          return new Set([...prev, ...columnCellIds]);
-        } else {
-          // 일반 드래그: 새로 선택
-          return columnCellIds;
-        }
-      });
+      setTempSelectedCells(newTempSelection);
+
+      setDragState(
+        createDragState(
+          "column",
+          { row: 0, col: colIndex },
+          isAdditive,
+          isAdditive ? new Set(selectedCells) : null
+        )
+      );
       setLastSelectedCol(colIndex);
     },
     [
       generateColumnCells,
-      setSelectedCells,
+      selectedCells,
+      setTempSelectedCells,
       setDragState,
       createDragState,
       setLastSelectedCol,
@@ -1284,20 +1366,21 @@ export default function OperatingScheduleEditor({
         // 드래그 범위의 모든 열 선택
         const rangeCellIds = generateColumnRange(dragState.start.col, colIndex);
 
+        // 🚀 드래그 중: 임시 선택 상태만 업데이트 (성능 최적화)
         if (dragState.isAdditive && dragState.originalSelection) {
           // Cmd + 드래그: 기존 선택 + 새 드래그 영역
           const combinedCells = new Set([
             ...dragState.originalSelection,
             ...rangeCellIds,
           ]);
-          setSelectedCells(combinedCells);
+          setTempSelectedCells(combinedCells);
         } else {
           // 일반 드래그: 드래그 영역만 선택
-          setSelectedCells(rangeCellIds);
+          setTempSelectedCells(rangeCellIds);
         }
       }
     },
-    [dragState, generateColumnRange, setSelectedCells]
+    [dragState, generateColumnRange, setTempSelectedCells]
   );
 
   const handleColumnMouseUp = useCallback(() => {
@@ -1353,29 +1436,27 @@ export default function OperatingScheduleEditor({
       const isAdditive = e.ctrlKey || e.metaKey;
       const rowCellIds = generateRowCells(rowIndex);
 
-      setSelectedCells((prev) => {
-        setDragState(
-          createDragState(
-            "row",
-            { row: rowIndex, col: 0 },
-            isAdditive,
-            isAdditive ? new Set(prev) : null
-          )
-        );
+      // 🚀 드래그 시작: 임시 선택 상태 사용
+      const newTempSelection = isAdditive
+        ? new Set([...selectedCells, ...rowCellIds])
+        : rowCellIds;
 
-        if (isAdditive) {
-          // Cmd + 드래그: 기존 선택 유지하면서 현재 행 추가
-          return new Set([...prev, ...rowCellIds]);
-        } else {
-          // 일반 드래그: 새로 선택
-          return rowCellIds;
-        }
-      });
+      setTempSelectedCells(newTempSelection);
+
+      setDragState(
+        createDragState(
+          "row",
+          { row: rowIndex, col: 0 },
+          isAdditive,
+          isAdditive ? new Set(selectedCells) : null
+        )
+      );
       setLastSelectedRow(rowIndex);
     },
     [
       generateRowCells,
-      setSelectedCells,
+      selectedCells,
+      setTempSelectedCells,
       setDragState,
       createDragState,
       setLastSelectedRow,
@@ -1391,20 +1472,21 @@ export default function OperatingScheduleEditor({
         // 드래그 범위의 모든 행 선택
         const rangeCellIds = generateRowRange(dragState.start.row, rowIndex);
 
+        // 🚀 드래그 중: 임시 선택 상태만 업데이트 (성능 최적화)
         if (dragState.isAdditive && dragState.originalSelection) {
           // Cmd + 드래그: 기존 선택 + 새 드래그 영역
           const combinedCells = new Set([
             ...dragState.originalSelection,
             ...rangeCellIds,
           ]);
-          setSelectedCells(combinedCells);
+          setTempSelectedCells(combinedCells);
         } else {
           // 일반 드래그: 드래그 영역만 선택
-          setSelectedCells(rangeCellIds);
+          setTempSelectedCells(rangeCellIds);
         }
       }
     },
-    [dragState, generateRowRange, setSelectedCells]
+    [dragState, generateRowRange, setTempSelectedCells]
   );
 
   const handleRowMouseUp = useCallback(() => {
