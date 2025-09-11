@@ -245,7 +245,7 @@ const createDynamicConditionCategories = (
 
 // ROW_HEIGHT와 VIEWPORT_HEIGHT 상수들
 const ROW_HEIGHT = 60; // 각 행의 높이 (픽셀)
-const VIEWPORT_HEIGHT = 500; // 보이는 영역 높이
+const VIEWPORT_HEIGHT = 500; // 보이는 영역 높이 (기본값)
 const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 스크롤)
 
 // 핸들러 그룹화
@@ -345,28 +345,28 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       // 선택된 영역의 경계를 찾아서 boxShadow로 표시
       selectedCells.forEach((cellId) => {
         const [rowIndex, colIndex] = parseCellId(cellId);
-        
+
         // 경계 확인
         const topCellId = `${rowIndex - 1}-${colIndex}`;
         const bottomCellId = `${rowIndex + 1}-${colIndex}`;
         const leftCellId = `${rowIndex}-${colIndex - 1}`;
         const rightCellId = `${rowIndex}-${colIndex + 1}`;
-        
+
         const isTopBorder = !selectedCells.has(topCellId);
         const isBottomBorder = !selectedCells.has(bottomCellId);
         const isLeftBorder = !selectedCells.has(leftCellId);
         const isRightBorder = !selectedCells.has(rightCellId);
-        
+
         // 각 방향별로 boxShadow 추가
         const shadows: string[] = [];
-        if (isTopBorder) shadows.push('inset 0 2px 0 0 #8b5cf6');
-        if (isBottomBorder) shadows.push('inset 0 -2px 0 0 #8b5cf6');
-        if (isLeftBorder) shadows.push('inset 2px 0 0 0 #8b5cf6');
-        if (isRightBorder) shadows.push('inset -2px 0 0 0 #8b5cf6');
-        
+        if (isTopBorder) shadows.push("inset 0 2px 0 0 #8b5cf6");
+        if (isBottomBorder) shadows.push("inset 0 -2px 0 0 #8b5cf6");
+        if (isLeftBorder) shadows.push("inset 2px 0 0 0 #8b5cf6");
+        if (isRightBorder) shadows.push("inset -2px 0 0 0 #8b5cf6");
+
         if (shadows.length > 0) {
           styleMap.set(cellId, {
-            boxShadow: shadows.join(', ')
+            boxShadow: shadows.join(", "),
           });
         }
       });
@@ -394,21 +394,21 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
 
     return (
       <div
-        className={`rounded-lg border ${
-          isFullScreen ? "overflow-auto" : "max-h-[70vh] overflow-auto"
-        }`}
+        className={`rounded-lg border overflow-auto`}
         onScroll={onScroll}
-        style={{
-          height: isFullScreen ? "100%" : 500,
-        }}
+        style={
+          isFullScreen
+            ? { height: "100%", minHeight: "100%" }
+            : { height: 500, maxHeight: "70vh" }
+        }
       >
         {/* 🚀 가상화 스크롤 컨테이너 */}
-        <div style={{ height: totalHeight }}>
-          <table className="w-full table-fixed text-xs">
-            <thead className="sticky top-0 bg-muted">
-              <tr>
+        <div className="relative" style={{ height: "auto" }}>
+          <table className="w-full table-fixed text-xs border-separate border-spacing-0">
+            <thead className="sticky top-0 bg-muted z-50">
+              <tr className="bg-muted">
                 <th
-                  className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
+                  className="w-24 cursor-pointer select-none border border-gray-200 p-2 text-left transition-colors hover:bg-primary/10 overflow-hidden bg-muted whitespace-nowrap text-ellipsis sticky top-0"
                   onClick={handlers.timeHeader.onClick}
                   onContextMenu={(e) => {
                     // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
@@ -425,7 +425,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 {currentFacilities.map((facility, colIndex) => (
                   <th
                     key={facility.id}
-                    className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
+                    className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 bg-muted sticky top-0"
                     onMouseDown={(e) =>
                       handlers.column.onMouseDown(colIndex, e)
                     }
@@ -448,17 +448,13 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 ))}
               </tr>
             </thead>
-            <tbody style={{ transform: `translateY(${offsetY}px)` }}>
+            <tbody>
               {visibleTimeSlots.map((timeSlot, visibleRowIndex) => {
                 const rowIndex = startIndex + visibleRowIndex;
                 return (
-                  <tr
-                    key={rowIndex}
-                    className="border-t"
-                    style={{ height: 60 }}
-                  >
+                  <tr key={rowIndex} className="h-15">
                     <td
-                      className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
+                      className="w-24 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10 overflow-hidden whitespace-nowrap text-ellipsis"
                       onMouseDown={(e) => handlers.row.onMouseDown(rowIndex, e)}
                       onMouseEnter={(e) =>
                         handlers.row.onMouseEnter(rowIndex, e)
@@ -490,7 +486,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         <td
                           key={`${rowIndex}-${colIndex}`}
                           className={cn(
-                            "cursor-pointer select-none p-1 border-r", // 모든 셀에 기본 회색 테두리 유지
+                            "w-20 cursor-pointer select-none p-1 border border-gray-200", // 모든 셀에 기본 회색 테두리 유지
                             isDisabled && "bg-gray-100"
                           )}
                           style={selectionStyles}
@@ -530,10 +526,11 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                 <span
                                   key={`${categoryBadge.category}-${badgeIndex}`}
                                   className={cn(
-                                    categoryBadge.bgColor,
-                                    categoryBadge.textColor,
-                                    categoryBadge.borderColor,
-                                    "select-none rounded border px-1 text-[9px] font-medium leading-tight"
+                                    isDisabled
+                                      ? "bg-gray-200 text-gray-500 border-gray-300"
+                                      : `${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`,
+                                    "select-none rounded border px-1 text-[9px] font-medium leading-tight",
+                                    isDisabled && "line-through"
                                   )}
                                   title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
                                 >
@@ -606,9 +603,6 @@ export default function OperatingScheduleEditor({
   // 🚫 셀별 비활성화 상태 관리
   const [disabledCells, setDisabledCells] = useState<Set<string>>(new Set());
 
-  // 🚀 가상화 상태 (Virtual Scrolling)
-  const [scrollTop, setScrollTop] = useState(0);
-
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
@@ -673,10 +667,9 @@ export default function OperatingScheduleEditor({
     clearSelection,
   } = cellSelection;
 
-  // 🚀 가상화 스크롤 핸들러 (Virtual Scrolling)
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    setScrollTop(scrollTop);
+  // 빈 스크롤 핸들러 (가상화 비활성화로 더 이상 필요 없음)
+  const handleScroll = useCallback(() => {
+    // 가상화가 비활성화되었으므로 아무것도 하지 않음
   }, []);
 
   // 🗂️ 카테고리 그룹 정의
@@ -757,33 +750,20 @@ export default function OperatingScheduleEditor({
   // 🎯 키보드 포커스 관리용 ref (이제 직접 상태 사용으로 성능 문제 해결)
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 🚀 가상화 계산 (Virtual Scrolling)
+  // 🚀 가상화 계산 (Virtual Scrolling) - 모든 모드에서 가상화 비활성화
   const virtualScrollConfig = useMemo(() => {
     const totalRows = timeSlots.length;
-    const visibleRows = Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT);
-
-    const startIdx = Math.max(
-      0,
-      Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE
-    );
-    const endIdx = Math.min(
-      totalRows,
-      startIdx + visibleRows + BUFFER_SIZE * 2
-    );
-
-    const visibleSlots = timeSlots.slice(startIdx, endIdx);
-    const totalH = totalRows * ROW_HEIGHT;
-    const offsetTop = startIdx * ROW_HEIGHT;
-
+    
+    // 모든 모드에서 가상화 비활성화하고 모든 시간 슬롯 표시 (헤더 고정을 위해)
     return {
-      startIndex: startIdx,
-      endIndex: endIdx,
-      visibleTimeSlots: visibleSlots,
-      totalHeight: totalH,
-      offsetY: offsetTop,
+      startIndex: 0,
+      endIndex: totalRows,
+      visibleTimeSlots: timeSlots,
+      totalHeight: totalRows * ROW_HEIGHT,
+      offsetY: 0,
       onScroll: handleScroll,
     };
-  }, [scrollTop, timeSlots, handleScroll]);
+  }, [timeSlots, handleScroll]);
 
   // 🔍 Process 카테고리 config 가져오기 헬퍼
   const getProcessCategoryConfig = useCallback(
@@ -1770,7 +1750,7 @@ export default function OperatingScheduleEditor({
 
         {/* 전체화면 Dialog */}
         <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 flex flex-col">
+          <DialogContent className="max-w-[95vw] h-[95vh] p-0 flex flex-col">
             <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
               <DialogTitle className="text-xl font-semibold">
                 Operating Schedule -{" "}
@@ -1783,7 +1763,7 @@ export default function OperatingScheduleEditor({
                 zone {selectedZone}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 min-h-0 px-6 pb-6 overflow-auto">
+            <div className="flex-1 min-h-0 px-6 pb-6 overflow-hidden">
               <ExcelTable
                 selectedZone={selectedZone}
                 currentFacilities={currentFacilities}
