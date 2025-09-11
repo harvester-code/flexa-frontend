@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useCellSelection } from "./hooks/useCellSelection";
 import {
   Building2,
   Expand,
@@ -269,142 +270,46 @@ const createDynamicConditionCategories = (
 
 // 상수들
 
-// 드래그 상태 타입 정의
-type DragState = {
-  type: "cell" | "row" | "column" | null;
-  isActive: boolean;
-  start: { row: number; col: number } | null;
-  isAdditive: boolean;
-  originalSelection: Set<string> | null;
-};
+// ROW_HEIGHT와 VIEWPORT_HEIGHT 상수들
+const ROW_HEIGHT = 60; // 각 행의 높이 (픽셀)
+const VIEWPORT_HEIGHT = 500; // 보이는 영역 높이
+const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 스크롤)
 
-const DEFAULT_DRAG_STATE: DragState = {
-  type: null,
-  isActive: false,
-  start: null,
-  isAdditive: false,
-  originalSelection: null,
-};
+// 핸들러 그룹화
+interface TableHandlers {
+  timeHeader: {
+    onClick: (e: React.MouseEvent) => void;
+    onRightClick: (e: React.MouseEvent) => void;
+  };
+  column: {
+    onMouseDown: (colIndex: number, e: React.MouseEvent) => void;
+    onMouseEnter: (colIndex: number, e: React.MouseEvent) => void;
+    onMouseUp: () => void;
+    onRightClick: (e: React.MouseEvent, colIndex: number) => void;
+  };
+  row: {
+    onMouseDown: (rowIndex: number, e: React.MouseEvent) => void;
+    onMouseEnter: (rowIndex: number, e: React.MouseEvent) => void;
+    onMouseUp: () => void;
+    onRightClick: (e: React.MouseEvent, rowIndex: number) => void;
+  };
+  cell: {
+    onMouseDown: (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => void;
+    onMouseEnter: (cellId: string, rowIndex: number, colIndex: number, e: React.MouseEvent) => void;
+    onMouseUp: () => void;
+    onRightClick: (e: React.MouseEvent, cellId: string) => void;
+  };
+  onRemoveCategoryBadge: (cellId: string, category: string) => void;
+}
 
-// 드래그 상태 헬퍼 함수들
-const resetDragState = () => ({ ...DEFAULT_DRAG_STATE });
-
-const createDragState = (
-  type: "cell" | "row" | "column",
-  start: { row: number; col: number },
-  isAdditive: boolean = false,
-  originalSelection: Set<string> | null = null
-) => ({
-  type,
-  isActive: true,
-  start,
-  isAdditive,
-  originalSelection,
-});
-
-// 🧠 스마트 토글 헬퍼 함수 (일부 선택됨 → 모두 선택됨 → 모두 해제됨)
-const toggleCellIds = (
-  cellIds: Set<string>,
-  currentSelection: Set<string>,
-  preserveExisting: boolean = false
-): Set<string> => {
-  const newSet = preserveExisting
-    ? new Set(currentSelection)
-    : new Set<string>();
-
-  // 토글할 셀들의 현재 상태 분석
-  const selectedCells = Array.from(cellIds).filter((cellId) =>
-    newSet.has(cellId)
-  );
-  const unselectedCells = Array.from(cellIds).filter(
-    (cellId) => !newSet.has(cellId)
-  );
-
-  if (unselectedCells.length > 0) {
-    // 하나라도 선택되지 않은 셀이 있으면 → 모든 셀을 선택 상태로
-    cellIds.forEach((cellId) => newSet.add(cellId));
-  } else {
-    // 모든 셀이 선택되어 있으면 → 모든 셀을 선택 해제
-    cellIds.forEach((cellId) => newSet.delete(cellId));
-  }
-
-  return newSet;
-};
-
-// 유틸리티 함수들
-const generateCellRange = (
-  startRow: number,
-  endRow: number,
-  startCol: number,
-  endCol: number
-): Set<string> => {
-  const cellIds = new Set<string>();
-  const minRow = Math.min(startRow, endRow);
-  const maxRow = Math.max(startRow, endRow);
-  const minCol = Math.min(startCol, endCol);
-  const maxCol = Math.max(startCol, endCol);
-
-  for (let row = minRow; row <= maxRow; row++) {
-    for (let col = minCol; col <= maxCol; col++) {
-      cellIds.add(`${row}-${col}`);
-    }
-  }
-
-  return cellIds;
-};
-
-const generateRowCells = (rowIndex: number, colCount: number): Set<string> => {
-  const cellIds = new Set<string>();
-  for (let col = 0; col < colCount; col++) {
-    cellIds.add(`${rowIndex}-${col}`);
-  }
-  return cellIds;
-};
-
-const generateColumnCells = (
-  colIndex: number,
-  rowCount: number
-): Set<string> => {
-  const cellIds = new Set<string>();
-  for (let row = 0; row < rowCount; row++) {
-    cellIds.add(`${row}-${colIndex}`);
-  }
-  return cellIds;
-};
-
-const generateRowRange = (
-  startRow: number,
-  endRow: number,
-  colCount: number
-): Set<string> => {
-  const cellIds = new Set<string>();
-  const minRow = Math.min(startRow, endRow);
-  const maxRow = Math.max(startRow, endRow);
-
-  for (let row = minRow; row <= maxRow; row++) {
-    for (let col = 0; col < colCount; col++) {
-      cellIds.add(`${row}-${col}`);
-    }
-  }
-  return cellIds;
-};
-
-const generateColumnRange = (
-  startCol: number,
-  endCol: number,
-  rowCount: number
-): Set<string> => {
-  const cellIds = new Set<string>();
-  const minCol = Math.min(startCol, endCol);
-  const maxCol = Math.max(startCol, endCol);
-
-  for (let col = minCol; col <= maxCol; col++) {
-    for (let row = 0; row < rowCount; row++) {
-      cellIds.add(`${row}-${col}`);
-    }
-  }
-  return cellIds;
-};
+// 가상화 설정
+interface VirtualScrollConfig {
+  visibleTimeSlots: string[];
+  startIndex: number;
+  totalHeight: number;
+  offsetY: number;
+  onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
+}
 
 // 엑셀 테이블 컴포넌트 분리
 interface ExcelTableProps {
@@ -413,40 +318,10 @@ interface ExcelTableProps {
   timeSlots: string[];
   selectedCells: Set<string>;
   cellBadges: Record<string, CategoryBadge[]>;
-  disabledCells: Set<string>; // 🚫 비활성화된 셀들 추가
+  disabledCells: Set<string>;
   isFullScreen?: boolean;
-  // 🚀 가상화 props (Virtual Scrolling)
-  visibleTimeSlots?: string[];
-  startIndex?: number;
-  totalHeight?: number;
-  offsetY?: number;
-  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
-  handleTimeHeaderClick: (e: React.MouseEvent) => void;
-  handleTimeHeaderRightClick: (e: React.MouseEvent) => void;
-  handleColumnMouseDown: (colIndex: number, e: React.MouseEvent) => void;
-  handleColumnMouseEnter: (colIndex: number, e: React.MouseEvent) => void;
-  handleColumnMouseUp: () => void;
-  handleColumnRightClick: (e: React.MouseEvent, colIndex: number) => void;
-  handleRowMouseDown: (rowIndex: number, e: React.MouseEvent) => void;
-  handleRowMouseEnter: (rowIndex: number, e: React.MouseEvent) => void;
-  handleRowMouseUp: () => void;
-  handleRowRightClick: (e: React.MouseEvent, rowIndex: number) => void;
-  handleCellMouseDown: (
-    cellId: string,
-    rowIndex: number,
-    colIndex: number,
-    e: React.MouseEvent
-  ) => void;
-  handleCellMouseEnter: (
-    cellId: string,
-    rowIndex: number,
-    colIndex: number,
-    e: React.MouseEvent
-  ) => void;
-  handleCellMouseUp: () => void;
-  handleCellRightClick: (e: React.MouseEvent, cellId: string) => void;
-  handleRemoveCategoryBadge: (cellId: string, category: string) => void;
-  cn: typeof cn;
+  virtualScroll: VirtualScrollConfig;
+  handlers: TableHandlers;
 }
 
 const ExcelTable: React.FC<ExcelTableProps> = React.memo(
@@ -456,31 +331,18 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     timeSlots,
     selectedCells,
     cellBadges,
-    disabledCells, // 🚫 비활성화된 셀들 props
+    disabledCells,
     isFullScreen = false,
-    // 🚀 가상화 props (Virtual Scrolling)
-    visibleTimeSlots = timeSlots,
-    startIndex = 0,
-    totalHeight = 0,
-    offsetY = 0,
-    onScroll,
-    handleTimeHeaderClick,
-    handleTimeHeaderRightClick,
-    handleColumnMouseDown,
-    handleColumnMouseEnter,
-    handleColumnMouseUp,
-    handleColumnRightClick,
-    handleRowMouseDown,
-    handleRowMouseEnter,
-    handleRowMouseUp,
-    handleRowRightClick,
-    handleCellMouseDown,
-    handleCellMouseEnter,
-    handleCellMouseUp,
-    handleCellRightClick,
-    handleRemoveCategoryBadge,
-    cn,
+    virtualScroll,
+    handlers,
   }) => {
+    const {
+      visibleTimeSlots = timeSlots,
+      startIndex = 0,
+      totalHeight = 0,
+      offsetY = 0,
+      onScroll,
+    } = virtualScroll;
     // 🖼️ cellId 파싱 캐시 (성능 최적화)
     const parseCellId = useMemo(() => {
       const cache = new Map<string, [number, number]>();
@@ -566,13 +428,13 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
               <tr>
                 <th
                   className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
-                  onClick={(e) => handleTimeHeaderClick(e)}
+                  onClick={handlers.timeHeader.onClick}
                   onContextMenu={(e) => {
                     // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                     if (e.ctrlKey || e.metaKey) {
                       e.preventDefault();
                     } else {
-                      handleTimeHeaderRightClick(e);
+                      handlers.timeHeader.onRightClick(e);
                     }
                   }}
                   title="Click to select all cells. Right-click to apply badges to all cells."
@@ -583,15 +445,15 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   <th
                     key={facility.id}
                     className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
-                    onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
-                    onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
-                    onMouseUp={handleColumnMouseUp}
+                    onMouseDown={(e) => handlers.column.onMouseDown(colIndex, e)}
+                    onMouseEnter={(e) => handlers.column.onMouseEnter(colIndex, e)}
+                    onMouseUp={handlers.column.onMouseUp}
                     onContextMenu={(e) => {
                       // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
                       } else {
-                        handleColumnRightClick(e, colIndex);
+                        handlers.column.onRightClick(e, colIndex);
                       }
                     }}
                     title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
@@ -612,15 +474,15 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   >
                     <td
                       className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
-                      onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
-                      onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
-                      onMouseUp={handleRowMouseUp}
+                      onMouseDown={(e) => handlers.row.onMouseDown(rowIndex, e)}
+                      onMouseEnter={(e) => handlers.row.onMouseEnter(rowIndex, e)}
+                      onMouseUp={handlers.row.onMouseUp}
                       onContextMenu={(e) => {
                         // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                         if (e.ctrlKey || e.metaKey) {
                           e.preventDefault();
                         } else {
-                          handleRowRightClick(e, rowIndex);
+                          handlers.row.onRightClick(e, rowIndex);
                         }
                       }}
                       title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
@@ -649,7 +511,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                           onMouseDown={(e) => {
                             // 우클릭이 아닐 때만 드래그 처리
                             if (e.button !== 2) {
-                              handleCellMouseDown(
+                              handlers.cell.onMouseDown(
                                 cellId,
                                 rowIndex,
                                 colIndex,
@@ -658,15 +520,15 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             }
                           }}
                           onMouseEnter={(e) =>
-                            handleCellMouseEnter(cellId, rowIndex, colIndex, e)
+                            handlers.cell.onMouseEnter(cellId, rowIndex, colIndex, e)
                           }
-                          onMouseUp={handleCellMouseUp}
+                          onMouseUp={handlers.cell.onMouseUp}
                           onContextMenu={(e) => {
                             // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                             if (e.ctrlKey || e.metaKey) {
                               e.preventDefault();
                             } else {
-                              handleCellRightClick(e, cellId);
+                              handlers.cell.onRightClick(e, cellId);
                             }
                           }}
                         >
@@ -741,27 +603,6 @@ export default function OperatingScheduleEditor({
     {}
   );
 
-  // 통합 드래그 상태
-  const [dragState, setDragState] = useState<DragState>(resetDragState);
-
-  const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
-
-  // 🚀 드래그 중 임시 선택 상태 (성능 최적화)
-  const [tempSelectedCells, setTempSelectedCells] =
-    useState<Set<string> | null>(null);
-
-  // Shift 클릭 선택 상태
-  const [shiftSelectStart, setShiftSelectStart] = useState<{
-    row: number;
-    col: number;
-  } | null>(null);
-
-  // 더블 스페이스 기능 제거됨
-
-  // Shift 범위 선택을 위한 마지막 선택 위치
-  const [lastSelectedRow, setLastSelectedRow] = useState<number | null>(null);
-  const [lastSelectedCol, setLastSelectedCol] = useState<number | null>(null);
-
   // 우클릭 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<{
     show: boolean;
@@ -777,14 +618,72 @@ export default function OperatingScheduleEditor({
   // 🚫 셀별 비활성화 상태 관리
   const [disabledCells, setDisabledCells] = useState<Set<string>>(new Set());
 
-  // 🎯 실제 표시할 선택된 셀들 (드래그 중에는 임시 상태 우선)
-  const displaySelectedCells = tempSelectedCells || selectedCells;
-
   // 🚀 가상화 상태 (Virtual Scrolling)
   const [scrollTop, setScrollTop] = useState(0);
-  const ROW_HEIGHT = 60; // 각 행의 높이 (픽셀)
-  const VIEWPORT_HEIGHT = 500; // 보이는 영역 높이
-  const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 스크롤)
+
+  // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) {
+        const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+        slots.push(timeStr);
+      }
+    }
+    return slots;
+  }, []);
+
+  // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
+  const currentFacilities = useMemo(() => {
+    // 배열 범위 검사 추가
+    if (
+      !processFlow ||
+      processFlow.length === 0 ||
+      selectedProcessIndex < 0 ||
+      selectedProcessIndex >= processFlow.length
+    ) {
+      return [];
+    }
+
+    const currentProcess = processFlow[selectedProcessIndex];
+    if (!currentProcess || !selectedZone || !currentProcess.zones) {
+      return [];
+    }
+
+    const zone = currentProcess.zones[selectedZone];
+    return zone?.facilities || [];
+  }, [processFlow, selectedProcessIndex, selectedZone]);
+
+  // 셀 선택 커스텀 훅 사용
+  const cellSelection = useCellSelection({
+    timeSlotCount: timeSlots.length,
+    facilityCount: currentFacilities.length,
+  });
+
+  const {
+    selectedCells,
+    displaySelectedCells,
+    dragState,
+    shiftSelectStart,
+    lastSelectedRow,
+    lastSelectedCol,
+    setSelectedCells,
+    setTempSelectedCells,
+    setDragState,
+    setShiftSelectStart,
+    setLastSelectedRow,
+    setLastSelectedCol,
+    generateCellRange,
+    generateRowCells,
+    generateColumnCells,
+    generateAllCells,
+    generateRowRange,
+    generateColumnRange,
+    toggleCellIds,
+    createDragState,
+    finalizeDrag,
+    clearSelection,
+  } = cellSelection;
 
   // 🚀 가상화 스크롤 핸들러 (Virtual Scrolling)
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -893,71 +792,33 @@ export default function OperatingScheduleEditor({
   // 🎯 키보드 포커스 관리용 ref (이제 직접 상태 사용으로 성능 문제 해결)
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
-  const timeSlots = useMemo(() => {
-    const slots: string[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 10) {
-        const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        slots.push(timeStr);
-      }
-    }
-    return slots;
-  }, []);
-
   // 🚀 가상화 계산 (Virtual Scrolling)
-  const { startIndex, endIndex, visibleTimeSlots, totalHeight, offsetY } =
-    useMemo(() => {
-      const totalRows = timeSlots.length;
-      const visibleRows = Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT);
+  const virtualScrollConfig = useMemo(() => {
+    const totalRows = timeSlots.length;
+    const visibleRows = Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT);
 
-      const startIdx = Math.max(
-        0,
-        Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE
-      );
-      const endIdx = Math.min(
-        totalRows,
-        startIdx + visibleRows + BUFFER_SIZE * 2
-      );
+    const startIdx = Math.max(
+      0,
+      Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE
+    );
+    const endIdx = Math.min(
+      totalRows,
+      startIdx + visibleRows + BUFFER_SIZE * 2
+    );
 
-      const visibleSlots = timeSlots.slice(startIdx, endIdx);
-      const totalH = totalRows * ROW_HEIGHT;
-      const offsetTop = startIdx * ROW_HEIGHT;
+    const visibleSlots = timeSlots.slice(startIdx, endIdx);
+    const totalH = totalRows * ROW_HEIGHT;
+    const offsetTop = startIdx * ROW_HEIGHT;
 
-      return {
-        startIndex: startIdx,
-        endIndex: endIdx,
-        visibleTimeSlots: visibleSlots,
-        totalHeight: totalH,
-        offsetY: offsetTop,
-      };
-    }, [scrollTop, timeSlots, ROW_HEIGHT, VIEWPORT_HEIGHT, BUFFER_SIZE]);
-
-  // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
-  const currentFacilities = useMemo(() => {
-    // 배열 범위 검사 추가
-    if (
-      !processFlow ||
-      processFlow.length === 0 ||
-      selectedProcessIndex < 0 ||
-      selectedProcessIndex >= processFlow.length
-    ) {
-      return [];
-    }
-
-    const currentProcess = processFlow[selectedProcessIndex];
-    if (!currentProcess || !selectedZone || !currentProcess.zones) {
-      return [];
-    }
-
-    const zone = currentProcess.zones[selectedZone];
-    return zone?.facilities || [];
-  }, [processFlow, selectedProcessIndex, selectedZone]);
-
-  // 🔢 현재 존의 시설 개수 가져오기
-  const currentFacilityCount = useMemo(() => {
-    return currentFacilities.length;
-  }, [currentFacilities]);
+    return {
+      startIndex: startIdx,
+      endIndex: endIdx,
+      visibleTimeSlots: visibleSlots,
+      totalHeight: totalH,
+      offsetY: offsetTop,
+      onScroll: handleScroll,
+    };
+  }, [scrollTop, timeSlots, handleScroll]);
 
   // 🔍 Process 카테고리 config 가져오기 헬퍼
   const getProcessCategoryConfig = useCallback(
@@ -1187,7 +1048,7 @@ export default function OperatingScheduleEditor({
       e.preventDefault();
 
       // 해당 행의 모든 셀 ID 생성
-      const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
+      const rowCellIds = generateRowCells(rowIndex);
       const targetCells = Array.from(rowCellIds);
 
       setContextMenu({
@@ -1207,7 +1068,7 @@ export default function OperatingScheduleEditor({
       e.preventDefault();
 
       // 해당 열의 모든 셀 ID 생성
-      const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
+      const columnCellIds = generateColumnCells(colIndex);
       const targetCells = Array.from(columnCellIds);
 
       setContextMenu({
@@ -1221,16 +1082,6 @@ export default function OperatingScheduleEditor({
     [timeSlots.length]
   );
 
-  // 전체 셀 생성 헬퍼 함수
-  const generateAllCells = useCallback(() => {
-    const allCellIds = new Set<string>();
-    for (let row = 0; row < timeSlots.length; row++) {
-      for (let col = 0; col < currentFacilities.length; col++) {
-        allCellIds.add(`${row}-${col}`);
-      }
-    }
-    return allCellIds;
-  }, [timeSlots.length, currentFacilities.length]);
 
   // Time 헤더 클릭 핸들러 (전체 선택)
   const handleTimeHeaderClick = useCallback(
@@ -1269,37 +1120,14 @@ export default function OperatingScheduleEditor({
     [generateAllCells]
   );
 
-  // 범위 셀 ID 생성 헬퍼 함수 (시설 검증 포함)
-  const generateRangeCellIds = useCallback(
-    (startRow: number, startCol: number, endRow: number, endCol: number) => {
-      const cellIds = generateCellRange(startRow, endRow, startCol, endCol);
-      // 유효한 시설만 필터링
-      const validCellIds = new Set<string>();
-      const facilityCount = currentFacilities.length;
-      cellIds.forEach((cellId) => {
-        const [, colStr] = cellId.split("-");
-        const col = parseInt(colStr);
-        if (col < facilityCount) {
-          validCellIds.add(cellId);
-        }
-      });
-      return validCellIds;
-    },
-    [currentFacilities.length]
-  );
 
   // 범위 선택 함수
   const selectCellRange = useCallback(
     (startRow: number, startCol: number, endRow: number, endCol: number) => {
-      const rangeCells = generateRangeCellIds(
-        startRow,
-        startCol,
-        endRow,
-        endCol
-      );
+      const rangeCells = generateCellRange(startRow, endRow, startCol, endCol);
       setSelectedCells(rangeCells);
     },
-    [generateRangeCellIds]
+    [generateCellRange, setSelectedCells]
   );
 
   // 셀 클릭 핸들러 (Shift, Ctrl 클릭 지원)
@@ -1316,10 +1144,10 @@ export default function OperatingScheduleEditor({
         // Ctrl + 클릭: 다중 선택
         if (e.shiftKey && shiftSelectStart) {
           // Ctrl + Shift + 클릭: 기존 선택 유지하면서 범위 추가
-          const rangeCells = generateRangeCellIds(
+          const rangeCells = generateCellRange(
             shiftSelectStart.row,
-            shiftSelectStart.col,
             rowIndex,
+            shiftSelectStart.col,
             colIndex
           );
           setSelectedCells((prev) => {
@@ -1354,7 +1182,7 @@ export default function OperatingScheduleEditor({
         setSelectedCells(new Set([cellId]));
       }
     },
-    [shiftSelectStart, selectCellRange, generateRangeCellIds]
+    [shiftSelectStart, selectCellRange, generateCellRange, setSelectedCells, setShiftSelectStart]
   );
 
   // 드래그 이벤트 핸들러들
@@ -1404,10 +1232,10 @@ export default function OperatingScheduleEditor({
     ) => {
       e.preventDefault();
       if (dragState.isActive && dragState.type === "cell" && dragState.start) {
-        const rangeCells = generateRangeCellIds(
+        const rangeCells = generateCellRange(
           dragState.start.row,
-          dragState.start.col,
           rowIndex,
+          dragState.start.col,
           colIndex
         );
 
@@ -1425,39 +1253,13 @@ export default function OperatingScheduleEditor({
         }
       }
     },
-    [dragState, generateRangeCellIds]
+    [dragState, generateCellRange, setTempSelectedCells]
   );
 
   const handleCellMouseUp = useCallback(() => {
-    // 🚀 드래그 완료: 임시 선택을 실제 선택에 반영 (성능 최적화)
-    if (tempSelectedCells) {
-      setSelectedCells(tempSelectedCells);
-      setTempSelectedCells(null);
-    }
-    setDragState(resetDragState);
-  }, [tempSelectedCells]);
+    finalizeDrag();
+  }, [finalizeDrag]);
 
-  // 🚀 최신 상태 참조 (성능 최적화)
-  const tempSelectedCellsRef = useRef<Set<string> | null>(null);
-  tempSelectedCellsRef.current = tempSelectedCells;
-
-  // 전역 마우스업 이벤트
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      // 🚀 전역 드래그 완료: 임시 선택을 실제 선택에 반영 (성능 최적화)
-      if (tempSelectedCellsRef.current) {
-        setSelectedCells(tempSelectedCellsRef.current);
-        setTempSelectedCells(null);
-      }
-      setDragState(resetDragState);
-    };
-
-    // 🛡️ 패시브 리스너로 성능 최적화
-    document.addEventListener("mouseup", handleGlobalMouseUp, {
-      passive: true,
-    });
-    return () => document.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, []);
 
   // 열 전체 선택/해제 핸들러 (클릭용)
   const handleColumnClick = useCallback(
@@ -1469,13 +1271,12 @@ export default function OperatingScheduleEditor({
         // Shift + 클릭: 범위 선택 (이전 선택 열부터 현재 열까지)
         const rangeCellIds = generateColumnRange(
           lastSelectedCol,
-          colIndex,
-          timeSlots.length
+          colIndex
         );
         setSelectedCells(rangeCellIds);
       } else {
         // 해당 열의 모든 셀 ID 생성
-        const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
+        const columnCellIds = generateColumnCells(colIndex);
 
         setSelectedCells((prev) =>
           toggleCellIds(columnCellIds, prev, e.ctrlKey || e.metaKey)
@@ -1487,7 +1288,7 @@ export default function OperatingScheduleEditor({
       // Shift 선택 시작점 설정
       setShiftSelectStart({ row: 0, col: colIndex });
     },
-    [timeSlots.length, lastSelectedCol]
+    [generateColumnRange, generateColumnCells, toggleCellIds, setSelectedCells, setLastSelectedCol, setShiftSelectStart, lastSelectedCol]
   );
 
   // 열 드래그 핸들러들
@@ -1502,7 +1303,7 @@ export default function OperatingScheduleEditor({
       e.preventDefault();
 
       const isAdditive = e.ctrlKey || e.metaKey;
-      const columnCellIds = generateColumnCells(colIndex, timeSlots.length);
+      const columnCellIds = generateColumnCells(colIndex);
 
       setSelectedCells((prev) => {
         setDragState(
@@ -1524,7 +1325,7 @@ export default function OperatingScheduleEditor({
       });
       setLastSelectedCol(colIndex);
     },
-    [timeSlots.length, handleColumnClick]
+    [generateColumnCells, setSelectedCells, setDragState, createDragState, setLastSelectedCol, handleColumnClick]
   );
 
   const handleColumnMouseEnter = useCallback(
@@ -1539,8 +1340,7 @@ export default function OperatingScheduleEditor({
         // 드래그 범위의 모든 열 선택
         const rangeCellIds = generateColumnRange(
           dragState.start.col,
-          colIndex,
-          timeSlots.length
+          colIndex
         );
 
         if (dragState.isAdditive && dragState.originalSelection) {
@@ -1556,12 +1356,12 @@ export default function OperatingScheduleEditor({
         }
       }
     },
-    [dragState, timeSlots.length]
+    [dragState, generateColumnRange, setSelectedCells]
   );
 
   const handleColumnMouseUp = useCallback(() => {
-    setDragState(resetDragState);
-  }, []);
+    finalizeDrag();
+  }, [finalizeDrag]);
 
   // 행 전체 선택/해제 핸들러 (클릭용)
   const handleRowClick = useCallback(
@@ -1573,13 +1373,12 @@ export default function OperatingScheduleEditor({
         // Shift + 클릭: 범위 선택 (이전 선택 행부터 현재 행까지)
         const rangeCellIds = generateRowRange(
           lastSelectedRow,
-          rowIndex,
-          currentFacilities.length
+          rowIndex
         );
         setSelectedCells(rangeCellIds);
       } else {
         // 해당 행의 모든 셀 ID 생성
-        const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
+        const rowCellIds = generateRowCells(rowIndex);
 
         setSelectedCells((prev) =>
           toggleCellIds(rowCellIds, prev, e.ctrlKey || e.metaKey)
@@ -1591,7 +1390,7 @@ export default function OperatingScheduleEditor({
       // Shift 선택 시작점 설정
       setShiftSelectStart({ row: rowIndex, col: 0 });
     },
-    [currentFacilities.length, lastSelectedRow]
+    [generateRowRange, generateRowCells, toggleCellIds, setSelectedCells, setLastSelectedRow, setShiftSelectStart, lastSelectedRow]
   );
 
   // 행 드래그 핸들러들
@@ -1606,7 +1405,7 @@ export default function OperatingScheduleEditor({
       e.preventDefault();
 
       const isAdditive = e.ctrlKey || e.metaKey;
-      const rowCellIds = generateRowCells(rowIndex, currentFacilities.length);
+      const rowCellIds = generateRowCells(rowIndex);
 
       setSelectedCells((prev) => {
         setDragState(
@@ -1628,7 +1427,7 @@ export default function OperatingScheduleEditor({
       });
       setLastSelectedRow(rowIndex);
     },
-    [currentFacilities.length, handleRowClick]
+    [generateRowCells, setSelectedCells, setDragState, createDragState, setLastSelectedRow, handleRowClick]
   );
 
   const handleRowMouseEnter = useCallback(
@@ -1639,8 +1438,7 @@ export default function OperatingScheduleEditor({
         // 드래그 범위의 모든 행 선택
         const rangeCellIds = generateRowRange(
           dragState.start.row,
-          rowIndex,
-          currentFacilities.length
+          rowIndex
         );
 
         if (dragState.isAdditive && dragState.originalSelection) {
@@ -1656,12 +1454,55 @@ export default function OperatingScheduleEditor({
         }
       }
     },
-    [dragState, currentFacilities.length]
+    [dragState, generateRowRange, setSelectedCells]
   );
 
   const handleRowMouseUp = useCallback(() => {
-    setDragState(resetDragState);
-  }, []);
+    finalizeDrag();
+  }, [finalizeDrag]);
+
+  // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
+  const tableHandlers = useMemo(() => ({
+    timeHeader: {
+      onClick: handleTimeHeaderClick,
+      onRightClick: handleTimeHeaderRightClick,
+    },
+    column: {
+      onMouseDown: handleColumnMouseDown,
+      onMouseEnter: handleColumnMouseEnter,
+      onMouseUp: handleColumnMouseUp,
+      onRightClick: handleColumnRightClick,
+    },
+    row: {
+      onMouseDown: handleRowMouseDown,
+      onMouseEnter: handleRowMouseEnter,
+      onMouseUp: handleRowMouseUp,
+      onRightClick: handleRowRightClick,
+    },
+    cell: {
+      onMouseDown: handleCellMouseDown,
+      onMouseEnter: handleCellMouseEnter,
+      onMouseUp: handleCellMouseUp,
+      onRightClick: handleCellRightClick,
+    },
+    onRemoveCategoryBadge: handleRemoveCategoryBadge,
+  }), [
+    handleTimeHeaderClick,
+    handleTimeHeaderRightClick,
+    handleColumnMouseDown,
+    handleColumnMouseEnter,
+    handleColumnMouseUp,
+    handleColumnRightClick,
+    handleRowMouseDown,
+    handleRowMouseEnter,
+    handleRowMouseUp,
+    handleRowRightClick,
+    handleCellMouseDown,
+    handleCellMouseEnter,
+    handleCellMouseUp,
+    handleCellRightClick,
+    handleRemoveCategoryBadge,
+  ]);
 
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
@@ -1779,16 +1620,12 @@ export default function OperatingScheduleEditor({
 
   // 탭 변경 시 선택 상태들 초기화
   React.useEffect(() => {
-    setSelectedCells(new Set());
+    clearSelection(); // 커스텀 훅의 clearSelection 사용
     setCellBadges({});
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
-    setShiftSelectStart(null);
-    setLastSelectedRow(null);
-    setLastSelectedCol(null);
-    setDragState(resetDragState);
     setSearchTerms({}); // 🔍 검색어도 초기화
     setDisabledCells(new Set()); // 🚫 비활성화 상태도 초기화
-  }, [selectedProcessIndex, selectedZone]);
+  }, [selectedProcessIndex, selectedZone, clearSelection]);
 
   // 🛡️ 안전한 첫 번째 존 자동 선택
   React.useEffect(() => {
@@ -2156,28 +1993,8 @@ export default function OperatingScheduleEditor({
           cellBadges={cellBadges}
           disabledCells={disabledCells}
           isFullScreen={false}
-          // 🚀 가상화 props
-          visibleTimeSlots={visibleTimeSlots}
-          startIndex={startIndex}
-          totalHeight={totalHeight}
-          offsetY={offsetY}
-          onScroll={handleScroll}
-          handleTimeHeaderClick={handleTimeHeaderClick}
-          handleTimeHeaderRightClick={handleTimeHeaderRightClick}
-          handleColumnMouseDown={handleColumnMouseDown}
-          handleColumnMouseEnter={handleColumnMouseEnter}
-          handleColumnMouseUp={handleColumnMouseUp}
-          handleColumnRightClick={handleColumnRightClick}
-          handleRowMouseDown={handleRowMouseDown}
-          handleRowMouseEnter={handleRowMouseEnter}
-          handleRowMouseUp={handleRowMouseUp}
-          handleRowRightClick={handleRowRightClick}
-          handleCellMouseDown={handleCellMouseDown}
-          handleCellMouseEnter={handleCellMouseEnter}
-          handleCellMouseUp={handleCellMouseUp}
-          handleCellRightClick={handleCellRightClick}
-          handleRemoveCategoryBadge={handleRemoveCategoryBadge}
-          cn={cn}
+          virtualScroll={virtualScrollConfig}
+          handlers={tableHandlers}
         />
 
         {/* 전체화면 Dialog */}
@@ -2204,28 +2021,8 @@ export default function OperatingScheduleEditor({
                 cellBadges={cellBadges}
                 disabledCells={disabledCells}
                 isFullScreen={true}
-                // 🚀 가상화 props
-                visibleTimeSlots={visibleTimeSlots}
-                startIndex={startIndex}
-                totalHeight={totalHeight}
-                offsetY={offsetY}
-                onScroll={handleScroll}
-                handleTimeHeaderClick={handleTimeHeaderClick}
-                handleTimeHeaderRightClick={handleTimeHeaderRightClick}
-                handleColumnMouseDown={handleColumnMouseDown}
-                handleColumnMouseEnter={handleColumnMouseEnter}
-                handleColumnMouseUp={handleColumnMouseUp}
-                handleColumnRightClick={handleColumnRightClick}
-                handleRowMouseDown={handleRowMouseDown}
-                handleRowMouseEnter={handleRowMouseEnter}
-                handleRowMouseUp={handleRowMouseUp}
-                handleRowRightClick={handleRowRightClick}
-                handleCellMouseDown={handleCellMouseDown}
-                handleCellMouseEnter={handleCellMouseEnter}
-                handleCellMouseUp={handleCellMouseUp}
-                handleCellRightClick={handleCellRightClick}
-                handleRemoveCategoryBadge={handleRemoveCategoryBadge}
-                cn={cn}
+                virtualScroll={virtualScrollConfig}
+                handlers={tableHandlers}
               />
             </div>
           </DialogContent>
