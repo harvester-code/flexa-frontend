@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { useCellSelection } from "./hooks/useCellSelection";
 import {
-  Building2,
   Expand,
   Globe,
   MapPin,
@@ -19,10 +18,8 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { EntryCondition, ProcessStep } from "@/types/simulationTypes";
-import { Badge } from "@/components/ui/Badge";
+import { ProcessStep } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import {
   Dialog,
   DialogContent,
@@ -41,11 +38,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Input } from "@/components/ui/Input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/Popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { useSimulationStore } from "../_stores";
@@ -937,7 +929,7 @@ export default function OperatingScheduleEditor({
         return updated;
       });
     },
-    [contextMenu.targetCells, cellBadges, getProcessCategoryConfig]
+    [contextMenu.targetCells, cellBadges, getProcessCategoryConfig, CONDITION_CATEGORIES, setCellBadges]
   );
 
   // 옵션 상태 확인 헬퍼 - 카테고리별 옵션 확인
@@ -1059,7 +1051,7 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [currentFacilities.length]
+    [generateRowCells]
   );
 
   // 열 헤더 우클릭 핸들러 (해당 열의 모든 셀에 적용)
@@ -1079,7 +1071,7 @@ export default function OperatingScheduleEditor({
         y: e.clientY,
       });
     },
-    [timeSlots.length]
+    [generateColumnCells]
   );
 
 
@@ -1586,7 +1578,7 @@ export default function OperatingScheduleEditor({
         }
       }
     },
-    [selectedCells, contextMenu.show, disabledCells] // contextMenu.show, disabledCells 의존성 추가
+    [selectedCells, contextMenu.show, disabledCells, setDisabledCells, setCellBadges]
   );
 
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
