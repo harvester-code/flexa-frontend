@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
@@ -442,219 +443,227 @@ interface ExcelTableProps {
   cn: typeof cn;
 }
 
-const ExcelTable: React.FC<ExcelTableProps> = ({
-  selectedZone,
-  currentFacilities,
-  timeSlots,
-  selectedCells,
-  cellBadges,
-  disabledCells, // 🚫 비활성화된 셀들 props
-  isFullScreen = false,
-  handleTimeHeaderClick,
-  handleTimeHeaderRightClick,
-  handleColumnMouseDown,
-  handleColumnMouseEnter,
-  handleColumnMouseUp,
-  handleColumnRightClick,
-  handleRowMouseDown,
-  handleRowMouseEnter,
-  handleRowMouseUp,
-  handleRowRightClick,
-  handleCellMouseDown,
-  handleCellMouseEnter,
-  handleCellMouseUp,
-  handleCellRightClick,
-  handleRemoveCategoryBadge,
-  cn,
-}) => {
-  // 🖼️ 선택된 셀의 바깥쪽 테두리 계산 함수
-  const getSelectionBorders = useCallback(
-    (rowIndex: number, colIndex: number) => {
-      const cellId = `${rowIndex}-${colIndex}`;
-      if (!selectedCells.has(cellId)) return "";
+const ExcelTable: React.FC<ExcelTableProps> = React.memo(
+  ({
+    selectedZone,
+    currentFacilities,
+    timeSlots,
+    selectedCells,
+    cellBadges,
+    disabledCells, // 🚫 비활성화된 셀들 props
+    isFullScreen = false,
+    handleTimeHeaderClick,
+    handleTimeHeaderRightClick,
+    handleColumnMouseDown,
+    handleColumnMouseEnter,
+    handleColumnMouseUp,
+    handleColumnRightClick,
+    handleRowMouseDown,
+    handleRowMouseEnter,
+    handleRowMouseUp,
+    handleRowRightClick,
+    handleCellMouseDown,
+    handleCellMouseEnter,
+    handleCellMouseUp,
+    handleCellRightClick,
+    handleRemoveCategoryBadge,
+    cn,
+  }) => {
+    // 🖼️ 선택된 셀의 바깥쪽 테두리 계산 함수 (최적화)
+    const getSelectionBorders = useMemo(() => {
+      const borderMap = new Map<string, string>();
 
-      const borders: string[] = [];
+      selectedCells.forEach((cellId) => {
+        const [rowIndex, colIndex] = cellId.split("-").map(Number);
+        const borders: string[] = [];
 
-      // 위쪽 테두리 (위쪽 셀이 선택되지 않음)
-      const topCellId = `${rowIndex - 1}-${colIndex}`;
-      if (!selectedCells.has(topCellId)) {
-        borders.push("border-t-2 border-dashed border-primary");
+        // 위쪽 테두리 (위쪽 셀이 선택되지 않음)
+        const topCellId = `${rowIndex - 1}-${colIndex}`;
+        if (!selectedCells.has(topCellId)) {
+          borders.push("border-t-2 border-dashed border-primary");
+        }
+
+        // 아래쪽 테두리 (아래쪽 셀이 선택되지 않음)
+        const bottomCellId = `${rowIndex + 1}-${colIndex}`;
+        if (!selectedCells.has(bottomCellId)) {
+          borders.push("border-b-2 border-dashed border-primary");
+        }
+
+        // 왼쪽 테두리 (왼쪽 셀이 선택되지 않음)
+        const leftCellId = `${rowIndex}-${colIndex - 1}`;
+        if (!selectedCells.has(leftCellId)) {
+          borders.push("border-l-2 border-dashed border-primary");
+        }
+
+        // 오른쪽 테두리 (오른쪽 셀이 선택되지 않음)
+        const rightCellId = `${rowIndex}-${colIndex + 1}`;
+        if (!selectedCells.has(rightCellId)) {
+          borders.push("border-r-2 border-dashed border-primary");
+        }
+
+        borderMap.set(cellId, borders.join(" "));
+      });
+
+      return (rowIndex: number, colIndex: number) => {
+        const cellId = `${rowIndex}-${colIndex}`;
+        return borderMap.get(cellId) || "";
+      };
+    }, [selectedCells]);
+    if (!selectedZone || currentFacilities.length === 0) {
+      if (selectedZone) {
+        return (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            No facilities configured for this zone
+          </div>
+        );
+      } else {
+        return (
+          <div className="rounded-lg border p-8 text-center text-muted-foreground">
+            Select a process and zone to configure operating schedule
+          </div>
+        );
       }
-
-      // 아래쪽 테두리 (아래쪽 셀이 선택되지 않음)
-      const bottomCellId = `${rowIndex + 1}-${colIndex}`;
-      if (!selectedCells.has(bottomCellId)) {
-        borders.push("border-b-2 border-dashed border-primary");
-      }
-
-      // 왼쪽 테두리 (왼쪽 셀이 선택되지 않음)
-      const leftCellId = `${rowIndex}-${colIndex - 1}`;
-      if (!selectedCells.has(leftCellId)) {
-        borders.push("border-l-2 border-dashed border-primary");
-      }
-
-      // 오른쪽 테두리 (오른쪽 셀이 선택되지 않음)
-      const rightCellId = `${rowIndex}-${colIndex + 1}`;
-      if (!selectedCells.has(rightCellId)) {
-        borders.push("border-r-2 border-dashed border-primary");
-      }
-
-      return borders.join(" ");
-    },
-    [selectedCells]
-  );
-  if (!selectedZone || currentFacilities.length === 0) {
-    if (selectedZone) {
-      return (
-        <div className="rounded-lg border p-8 text-center text-muted-foreground">
-          No facilities configured for this zone
-        </div>
-      );
-    } else {
-      return (
-        <div className="rounded-lg border p-8 text-center text-muted-foreground">
-          Select a process and zone to configure operating schedule
-        </div>
-      );
     }
-  }
 
-  return (
-    <div
-      className={`rounded-lg border ${
-        isFullScreen ? "h-full overflow-auto" : "max-h-96 overflow-auto"
-      }`}
-    >
-      <table className="w-full table-fixed text-xs">
-        <thead className="sticky top-0 bg-muted">
-          <tr>
-            <th
-              className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
-              onClick={(e) => handleTimeHeaderClick(e)}
-              onContextMenu={(e) => {
-                // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                if (e.ctrlKey || e.metaKey) {
-                  e.preventDefault();
-                } else {
-                  handleTimeHeaderRightClick(e);
-                }
-              }}
-              title="Click to select all cells. Right-click to apply badges to all cells."
-            >
-              Time
-            </th>
-            {currentFacilities.map((facility, colIndex) => (
+    return (
+      <div
+        className={`rounded-lg border ${
+          isFullScreen ? "overflow-auto" : "max-h-[70vh] overflow-auto"
+        }`}
+      >
+        <table className="w-full table-fixed text-xs">
+          <thead className="sticky top-0 bg-muted">
+            <tr>
               <th
-                key={facility.id}
-                className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
-                onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
-                onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
-                onMouseUp={handleColumnMouseUp}
+                className="w-16 cursor-pointer select-none border-r p-2 text-left transition-colors hover:bg-primary/10"
+                onClick={(e) => handleTimeHeaderClick(e)}
                 onContextMenu={(e) => {
                   // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                   if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
                   } else {
-                    handleColumnRightClick(e, colIndex);
+                    handleTimeHeaderRightClick(e);
                   }
                 }}
-                title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
+                title="Click to select all cells. Right-click to apply badges to all cells."
               >
-                {facility.id}
+                Time
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {timeSlots.map((timeSlot, rowIndex) => (
-            <tr key={rowIndex} className="border-t">
-              <td
-                className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
-                onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
-                onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
-                onMouseUp={handleRowMouseUp}
-                onContextMenu={(e) => {
-                  // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                  if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                  } else {
-                    handleRowRightClick(e, rowIndex);
-                  }
-                }}
-                title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
-              >
-                {timeSlot}
-              </td>
-              {currentFacilities.map((facility, colIndex) => {
-                const cellId = `${rowIndex}-${colIndex}`;
-                const isSelected = selectedCells.has(cellId);
-                const isDisabled = disabledCells.has(cellId);
-                const badges = cellBadges[cellId] || [];
-                const selectionBorders = getSelectionBorders(
-                  rowIndex,
-                  colIndex
-                );
-
-                return (
-                  <td
-                    key={`${rowIndex}-${colIndex}`}
-                    className={cn(
-                      "cursor-pointer select-none p-1",
-                      !isSelected && "border-r", // 선택되지 않은 셀만 기본 테두리
-                      isSelected && "bg-primary/10",
-                      isDisabled && "bg-gray-100",
-                      selectionBorders
-                    )}
-                    onMouseDown={(e) => {
-                      // 우클릭이 아닐 때만 드래그 처리
-                      if (e.button !== 2) {
-                        handleCellMouseDown(cellId, rowIndex, colIndex, e);
-                      }
-                    }}
-                    onMouseEnter={(e) =>
-                      handleCellMouseEnter(cellId, rowIndex, colIndex, e)
+              {currentFacilities.map((facility, colIndex) => (
+                <th
+                  key={facility.id}
+                  className="min-w-20 cursor-pointer select-none border-r p-2 text-center transition-colors hover:bg-primary/10"
+                  onMouseDown={(e) => handleColumnMouseDown(colIndex, e)}
+                  onMouseEnter={(e) => handleColumnMouseEnter(colIndex, e)}
+                  onMouseUp={handleColumnMouseUp}
+                  onContextMenu={(e) => {
+                    // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                    if (e.ctrlKey || e.metaKey) {
+                      e.preventDefault();
+                    } else {
+                      handleColumnRightClick(e, colIndex);
                     }
-                    onMouseUp={handleCellMouseUp}
-                    onContextMenu={(e) => {
-                      // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                      if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                      } else {
-                        handleCellRightClick(e, cellId);
-                      }
-                    }}
-                  >
-                    <div className="flex h-8 flex-col items-center justify-center space-y-1">
-                      <div className="flex items-center space-x-1">
-                        {/* 카테고리 뱃지들 */}
-                        {badges.map((categoryBadge, badgeIndex) => (
-                          <span
-                            key={`${categoryBadge.category}-${badgeIndex}`}
-                            className={cn(
-                              categoryBadge.bgColor,
-                              categoryBadge.textColor,
-                              categoryBadge.borderColor,
-                              "select-none rounded border px-1 text-[9px] font-medium leading-tight"
-                            )}
-                            title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
-                          >
-                            {categoryBadge.options
-                              .map((option) => option.slice(0, 3))
-                              .join("|")}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </td>
-                );
-              })}
+                  }}
+                  title={`Click or drag to select columns: ${facility.id}. Right-click to apply badges to entire column.`}
+                >
+                  {facility.id}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+          </thead>
+          <tbody>
+            {timeSlots.map((timeSlot, rowIndex) => (
+              <tr key={rowIndex} className="border-t">
+                <td
+                  className="cursor-pointer select-none border-r p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10"
+                  onMouseDown={(e) => handleRowMouseDown(rowIndex, e)}
+                  onMouseEnter={(e) => handleRowMouseEnter(rowIndex, e)}
+                  onMouseUp={handleRowMouseUp}
+                  onContextMenu={(e) => {
+                    // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                    if (e.ctrlKey || e.metaKey) {
+                      e.preventDefault();
+                    } else {
+                      handleRowRightClick(e, rowIndex);
+                    }
+                  }}
+                  title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
+                >
+                  {timeSlot}
+                </td>
+                {currentFacilities.map((facility, colIndex) => {
+                  const cellId = `${rowIndex}-${colIndex}`;
+                  const isSelected = selectedCells.has(cellId);
+                  const isDisabled = disabledCells.has(cellId);
+                  const badges = cellBadges[cellId] || [];
+                  const selectionBorders = getSelectionBorders(
+                    rowIndex,
+                    colIndex
+                  );
+
+                  return (
+                    <td
+                      key={`${rowIndex}-${colIndex}`}
+                      className={cn(
+                        "cursor-pointer select-none p-1",
+                        !isSelected && "border-r", // 선택되지 않은 셀만 기본 테두리
+                        isDisabled && "bg-gray-100",
+                        selectionBorders
+                      )}
+                      onMouseDown={(e) => {
+                        // 우클릭이 아닐 때만 드래그 처리
+                        if (e.button !== 2) {
+                          handleCellMouseDown(cellId, rowIndex, colIndex, e);
+                        }
+                      }}
+                      onMouseEnter={(e) =>
+                        handleCellMouseEnter(cellId, rowIndex, colIndex, e)
+                      }
+                      onMouseUp={handleCellMouseUp}
+                      onContextMenu={(e) => {
+                        // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
+                        if (e.ctrlKey || e.metaKey) {
+                          e.preventDefault();
+                        } else {
+                          handleCellRightClick(e, cellId);
+                        }
+                      }}
+                    >
+                      <div className="flex h-8 flex-col items-center justify-center space-y-1">
+                        <div className="flex items-center space-x-1">
+                          {/* 카테고리 뱃지들 */}
+                          {badges.map((categoryBadge, badgeIndex) => (
+                            <span
+                              key={`${categoryBadge.category}-${badgeIndex}`}
+                              className={cn(
+                                categoryBadge.bgColor,
+                                categoryBadge.textColor,
+                                categoryBadge.borderColor,
+                                "select-none rounded border px-1 text-[9px] font-medium leading-tight"
+                              )}
+                              title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                            >
+                              {categoryBadge.options
+                                .map((option) => option.slice(0, 3))
+                                .join("|")}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+);
+
+// React.memo displayName 설정
+ExcelTable.displayName = "ExcelTable";
 
 export default function OperatingScheduleEditor({
   processFlow,
@@ -2072,8 +2081,13 @@ export default function OperatingScheduleEditor({
                 {formatProcessName(processFlow[selectedProcessIndex]?.name)} /{" "}
                 {selectedZone}
               </DialogTitle>
+              <DialogDescription>
+                Configure time-based facility operations for{" "}
+                {formatProcessName(processFlow[selectedProcessIndex]?.name)} in
+                zone {selectedZone}
+              </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 px-6 pb-6 overflow-hidden">
+            <div className="flex-1 min-h-0 px-6 pb-6 overflow-auto">
               <ExcelTable
                 selectedZone={selectedZone}
                 currentFacilities={currentFacilities}
