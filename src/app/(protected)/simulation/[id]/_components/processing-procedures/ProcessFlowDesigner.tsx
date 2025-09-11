@@ -22,9 +22,9 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../../_stores';
-import OperatingScheduleEditor from './OperatingScheduleEditor';
+import ScheduleEditor from './ScheduleEditor';
 
-// Parquet Metadata 타입 정의 (OperatingScheduleEditor와 동일)
+// Parquet Metadata 타입 정의 (ScheduleEditor와 동일)
 interface ParquetMetadataItem {
   column: string;
   values: Record<
@@ -36,7 +36,7 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface ProcessFlowChartProps {
+interface ProcessFlowDesignerProps {
   // Data
   processFlow: ProcessStep[];
   selectedProcessIndex: number | null;
@@ -50,7 +50,7 @@ interface ProcessFlowChartProps {
   onRemoveProcess: (index: number) => void;
 }
 
-export default function ProcessFlowChart({
+export default function ProcessFlowDesigner({
   processFlow,
   selectedProcessIndex,
   parquetMetadata = [],
@@ -59,7 +59,7 @@ export default function ProcessFlowChart({
   onOpenCreateModal,
   onOpenEditModal,
   onRemoveProcess,
-}: ProcessFlowChartProps) {
+}: ProcessFlowDesignerProps) {
   // 🆕 step3Completed 상태 가져오기
   const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
 
@@ -388,7 +388,7 @@ export default function ProcessFlowChart({
 
           {/* Operating Schedule Editor Content */}
           <div className="rounded-lg border bg-white p-6">
-            <OperatingScheduleEditor
+            <ScheduleEditor
               processFlow={processFlow}
               parquetMetadata={parquetMetadata}
               paxDemographics={paxDemographics}

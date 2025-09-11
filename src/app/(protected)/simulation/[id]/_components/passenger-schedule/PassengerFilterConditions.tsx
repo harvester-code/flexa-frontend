@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/hooks/useToast";
 import { useSimulationStore } from "../../_stores";
-import AddColumnTab from "./AddColumnTab";
-import SimpleLoadFactorTab from "./SimpleLoadFactorTab";
-import SimpleShowUpTimeTab from "./SimpleShowUpTimeTab";
+import DistributionSettings from "./DistributionSettings";
+import LoadFactorSettings from "./LoadFactorSettings";
+import ShowUpTimeSettings from "./ShowUpTimeSettings";
 
 interface ParquetMetadataItem {
   column: string;
@@ -23,7 +23,7 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface TabPassengerScheduleParquetFilterProps {
+interface PassengerFilterConditionsProps {
   parquetMetadata: ParquetMetadataItem[];
   simulationId?: string;
   apiRequestLog?: {
@@ -36,12 +36,12 @@ interface TabPassengerScheduleParquetFilterProps {
   setApiRequestLog?: (log: any) => void;
 }
 
-export default function TabPassengerScheduleParquetFilter({
+export default function PassengerFilterConditions({
   parquetMetadata,
   simulationId,
   apiRequestLog,
   setApiRequestLog,
-}: TabPassengerScheduleParquetFilterProps) {
+}: PassengerFilterConditionsProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -212,25 +212,25 @@ export default function TabPassengerScheduleParquetFilter({
           </TabsList>
 
           <TabsContent value="nationality" className="mt-6">
-            <AddColumnTab
+            <DistributionSettings
               parquetMetadata={parquetMetadata}
               configType="nationality"
             />
           </TabsContent>
 
           <TabsContent value="profile" className="mt-6">
-            <AddColumnTab
+            <DistributionSettings
               parquetMetadata={parquetMetadata}
               configType="profile"
             />
           </TabsContent>
 
           <TabsContent value="loadfactor" className="mt-6">
-            <SimpleLoadFactorTab parquetMetadata={parquetMetadata} />
+            <LoadFactorSettings parquetMetadata={parquetMetadata} />
           </TabsContent>
 
           <TabsContent value="showuptime" className="mt-6">
-            <SimpleShowUpTimeTab
+            <ShowUpTimeSettings
               parquetMetadata={parquetMetadata}
               simulationId={simulationId}
               hideGenerateButton={true}

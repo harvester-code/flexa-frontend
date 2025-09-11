@@ -18,8 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import { useSimulationStore } from '../../_stores';
-import PassengerProfileCriteria from './PassengerProfileCriteria';
-import { convertToDecimal, convertToPercentage } from '../shared/PercentageInteractiveBar';
+import ProfileCriteriaSettings from './ProfileCriteriaSettings';
+import { convertToDecimal, convertToPercentage } from '../shared/PercentageControl';
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -53,11 +53,11 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleLoadFactorTabProps {
+interface LoadFactorSettingsProps {
   parquetMetadata?: ParquetMetadataItem[];
 }
 
-export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoadFactorTabProps) {
+export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorSettingsProps) {
   // 🆕 SimulationStore 연결
   const paxGenerationRules = useSimulationStore((s) => s.passenger.pax_generation.rules);
   const defaultLoadFactor = useSimulationStore((s) => s.passenger.pax_generation.default.load_factor);
@@ -103,7 +103,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
   }, []);
 
   // 🔄 통일된 변환 함수 import 사용 (중복 제거)
-  // convertToDecimal, convertToPercentage는 PercentageInteractiveBar에서 import
+  // convertToDecimal, convertToPercentage는 PercentageControl에서 import
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
@@ -632,7 +632,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; loadFactor: number }) => {
       if (editingRuleId) {
@@ -859,7 +859,7 @@ export default function SimpleLoadFactorTab({ parquetMetadata = [] }: SimpleLoad
           </DialogHeader>
 
           <div className="mt-4">
-            <PassengerProfileCriteria
+            <ProfileCriteriaSettings
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="load_factor"

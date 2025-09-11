@@ -14,12 +14,12 @@ import {
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from "../../../_components/SimulationLoading";
 import { useSimulationStore } from "../../_stores";
-import NextButton from "../shared/NextButton";
+import NavigationButton from "../shared/NavigationButton";
 // TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
-import TabFlightScheduleFilterConditionsNew from "./TabFlightScheduleFilterConditionsNew";
-import TabFlightScheduleLoadData from "./TabFlightScheduleLoadData";
+import FlightFilterConditions from "./FlightFilterConditions";
+import FlightDataLoader from "./FlightDataLoader";
 // TabFlightScheduleResponsePreview 제거됨
-import TabFlightScheduleResult from "./TabFlightScheduleResult";
+import FlightResultChart from "./FlightResultChart";
 
 interface TabFlightScheduleProps {
   simulationId: string;
@@ -313,7 +313,7 @@ function TabFlightSchedule({
         // 🆕 기존 flight 데이터 완전 초기화 (Filter Conditions가 로딩 상태로 전환됨)
         resetFlightData();
 
-        // 🆕 airport/date는 이미 TabFlightScheduleLoadData에서 저장됨
+        // 🆕 airport/date는 이미 FlightDataLoader에서 저장됨
 
         // ✅ Load 버튼 API 요청 로그 저장 (시작)
         const timestamp = new Date().toISOString();
@@ -561,7 +561,7 @@ function TabFlightSchedule({
   return (
     <div className="space-y-6 pt-8">
       {/* Load Flight Schedule Data Section */}
-      <TabFlightScheduleLoadData
+      <FlightDataLoader
         loadingFlightSchedule={loadingFlightSchedule}
         setIsSomethingChanged={setIsSomethingChanged}
         onLoadData={handleLoadData}
@@ -569,7 +569,7 @@ function TabFlightSchedule({
 
       {/* 🆕 새로운 Condition Filter Section - zustand 데이터 존재할 때만 표시 */}
       {hasFlightData && !loadingFlightSchedule && (
-        <TabFlightScheduleFilterConditionsNew
+        <FlightFilterConditions
           loading={false}
           onApplyFilter={handleApplyFiltersNew}
         />
@@ -584,7 +584,7 @@ function TabFlightSchedule({
         <>
           {/* Apply Filter 결과 표시 - 성공 시 차트, 에러 시 에러 메시지 */}
           {/* 🎯 Zustand에서 appliedFilterResult가 있으면 자동으로 차트 표시 */}
-          <TabFlightScheduleResult />
+          <FlightResultChart />
 
           {/* TabFlightScheduleResponsePreview 제거 - 불필요한 컴포넌트 */}
         </>
@@ -592,7 +592,7 @@ function TabFlightSchedule({
 
       {/* Navigation */}
       <div className="mt-8">
-        <NextButton showPrevious={true} />
+        <NavigationButton showPrevious={true} />
       </div>
     </div>
   );

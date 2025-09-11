@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
-import PassengerProfileCriteria from './PassengerProfileCriteria';
+import ProfileCriteriaSettings from './ProfileCriteriaSettings';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -61,17 +61,17 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface SimpleShowUpTimeTabProps {
+interface ShowUpTimeSettingsProps {
   parquetMetadata?: ParquetMetadataItem[];
   simulationId?: string;
   hideGenerateButton?: boolean;
 }
 
-export default function SimpleShowUpTimeTab({
+export default function ShowUpTimeSettings({
   parquetMetadata = [],
   simulationId,
   hideGenerateButton = false,
-}: SimpleShowUpTimeTabProps) {
+}: ShowUpTimeSettingsProps) {
   // 🆕 SimulationStore 연결
   const paxArrivalPatternRules = useSimulationStore((s) => s.passenger.pax_arrival_patterns.rules);
   const arrivalPatternsDefault = useSimulationStore((s) => s.passenger.pax_arrival_patterns.default);
@@ -648,7 +648,7 @@ export default function SimpleShowUpTimeTab({
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
     (savedRuleData: { conditions: string[]; flightCount: number; parameters: { Mean: number; Std: number } }) => {
       if (editingRuleId) {
@@ -1143,7 +1143,7 @@ export default function SimpleShowUpTimeTab({
           </DialogHeader>
 
           <div className="mt-4">
-            <PassengerProfileCriteria
+            <ProfileCriteriaSettings
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="show_up_time"

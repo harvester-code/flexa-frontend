@@ -3,9 +3,9 @@
 import React from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
 import { useSimulationStore } from '../../_stores';
-import NextButton from '../shared/NextButton';
-import TabPassengerScheduleParquetFilter from './TabPassengerScheduleParquetFilter';
-import TabPassengerScheduleResult from './TabPassengerScheduleResult';
+import NavigationButton from '../shared/NavigationButton';
+import PassengerFilterConditions from './PassengerFilterConditions';
+import PassengerResultChart from './PassengerResultChart';
 
 interface TabPassengerScheduleProps {
   simulationId: string;
@@ -38,7 +38,7 @@ export default function TabPassengerSchedule({
       <div className="space-y-6">
         {/* 🎯 Configure Passenger Data - 독립적인 첫 번째 컴포넌트 */}
         {(appliedFilterResult as any)?.parquet_metadata && (
-          <TabPassengerScheduleParquetFilter
+          <PassengerFilterConditions
             parquetMetadata={(appliedFilterResult as any).parquet_metadata}
             simulationId={simulationId}
             apiRequestLog={apiRequestLog}
@@ -47,12 +47,12 @@ export default function TabPassengerSchedule({
         )}
 
         {/* 🎯 Passenger Schedule Chart - 독립적인 두 번째 컴포넌트 */}
-        {passengerData.chartResult && <TabPassengerScheduleResult />}
+        {passengerData.chartResult && <PassengerResultChart />}
       </div>
 
       {/* Navigation */}
       <div className="mt-8">
-        <NextButton showPrevious={true} />
+        <NavigationButton showPrevious={true} />
       </div>
     </div>
   );

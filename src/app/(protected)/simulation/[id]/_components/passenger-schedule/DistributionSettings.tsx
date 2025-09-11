@@ -31,12 +31,12 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { useSimulationStore } from "../../_stores";
-import PassengerProfileCriteria from "./PassengerProfileCriteria";
-import PercentageInteractiveBar, {
+import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import PercentageControl, {
   convertToDecimal,
   getDistributionTotal,
   isValidDistribution,
-} from "../shared/PercentageInteractiveBar";
+} from "../shared/PercentageControl";
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 const COLORS = [
@@ -70,15 +70,15 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface AddColumnTabProps {
+interface DistributionSettingsProps {
   parquetMetadata?: ParquetMetadataItem[];
   configType?: "nationality" | "profile";
 }
 
-export default function AddColumnTab({
+export default function DistributionSettings({
   parquetMetadata = [],
   configType = "nationality",
-}: AddColumnTabProps) {
+}: DistributionSettingsProps) {
   // 🆕 SimulationStore 연결 - configType에 따라 분기
   const isNationality = configType === "nationality";
   const demographicsData = useSimulationStore((s) =>
@@ -650,7 +650,7 @@ export default function AddColumnTab({
 
   // Rule 편집 저장
 
-  // PassengerProfileCriteria와 통신하기 위한 최적화된 콜백
+  // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
     (savedRuleData: {
       conditions: string[];
@@ -708,7 +708,7 @@ export default function AddColumnTab({
     };
   }, [handleRuleSaved]);
 
-  // ✅ validation 함수들은 PercentageInteractiveBar에서 import
+  // ✅ validation 함수들은 PercentageControl에서 import
 
   return (
     <div className="space-y-6">
@@ -895,7 +895,7 @@ export default function AddColumnTab({
                 {/* Distribution Bar */}
                 {rule.distribution && (
                   <div className="mt-3">
-                    <PercentageInteractiveBar
+                    <PercentageControl
                       properties={definedProperties}
                       values={rule.distribution || {}}
                       onChange={(newValues) =>
@@ -969,7 +969,7 @@ export default function AddColumnTab({
 
                 {/* Default Distribution Bar */}
                 <div className="mt-3">
-                  <PercentageInteractiveBar
+                  <PercentageControl
                     properties={definedProperties}
                     values={defaultDistribution || {}}
                     onChange={updateDefaultDistribution}
@@ -1095,7 +1095,7 @@ export default function AddColumnTab({
           </DialogHeader>
 
           <div className="mt-4">
-            <PassengerProfileCriteria
+            <ProfileCriteriaSettings
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="nationality"

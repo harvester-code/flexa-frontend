@@ -25,7 +25,7 @@ interface FlightScheduleChartData {
 }
 
 // Props 제거 - Zustand에서 직접 데이터 가져오기
-export default function TabFlightScheduleResult() {
+export default function FlightResultChart() {
   const [selectedCategory, setSelectedCategory] = useState<string>('airline');
 
   // 🎯 Zustand에서 직접 데이터 가져오기

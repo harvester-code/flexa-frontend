@@ -9,9 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
-import NextButton from '../shared/NextButton';
-import ProcessConfigurationModal from './ProcessConfigurationModal';
-import ProcessFlowChart from './ProcessFlowChart';
+import NavigationButton from '../shared/NavigationButton';
+import ProcessConfigModal from './ProcessConfigModal';
+import ProcessFlowDesigner from './ProcessFlowDesigner';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -297,7 +297,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
   return (
     <div className="space-y-6 pt-8">
       {/* Process Flow Chart */}
-      <ProcessFlowChart
+      <ProcessFlowDesigner
         processFlow={processFlow as any}
         selectedProcessIndex={selectedProcessIndex}
         parquetMetadata={parquetMetadata}
@@ -309,7 +309,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
       />
 
       {/* Process Configuration Modal */}
-      <ProcessConfigurationModal
+      <ProcessConfigModal
         isOpen={showProcessModal}
         onClose={handleCloseModal}
         processData={editingProcessData}
@@ -321,7 +321,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
 
       {/* Navigation */}
       <div className="mt-8">
-        <NextButton showPrevious={true} disabled={!isCompleted} />
+        <NavigationButton showPrevious={true} disabled={!isCompleted} />
       </div>
 
       {/* Run Simulation Button */}

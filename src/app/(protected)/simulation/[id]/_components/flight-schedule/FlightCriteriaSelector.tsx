@@ -24,7 +24,7 @@ interface AdditionalMetadataItem {
   };
 }
 
-interface SearchCriteriaSelectorProps {
+interface FlightCriteriaSelectorProps {
   parquetMetadata: ParquetMetadataItem[];
   additionalMetadata?: AdditionalMetadataItem; // 🆕 pax_demographics 데이터
   onSelectionChange?: (selectedItems: Record<string, boolean>) => void;
@@ -35,7 +35,7 @@ interface SearchCriteriaSelectorProps {
   icon?: React.ReactNode; // 🆕 아이콘/이모지를 props로 받기
 }
 
-export default function SearchCriteriaSelector({
+export default function FlightCriteriaSelector({
   parquetMetadata,
   additionalMetadata = {}, // 🆕 pax_demographics 데이터
   onSelectionChange,
@@ -44,7 +44,7 @@ export default function SearchCriteriaSelector({
   initialSelectedColumn = null,
   title = 'Search Criteria', // 🆕 기본값 설정
   icon, // 🆕 아이콘 props 추가
-}: SearchCriteriaSelectorProps) {
+}: FlightCriteriaSelectorProps) {
   // UI 상태 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(initialSelectedItems);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(initialSelectedColumn);

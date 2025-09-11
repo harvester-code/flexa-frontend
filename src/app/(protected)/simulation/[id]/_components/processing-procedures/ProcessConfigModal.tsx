@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/Input';
 import { formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../../_stores';
-import SearchCriteriaSelector from '../flight-schedule/SearchCriteriaSelector';
+import FlightCriteriaSelector from '../flight-schedule/FlightCriteriaSelector';
 
 // 시설 타입 정의
 type FacilityItem = {
@@ -35,7 +35,7 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface ProcessConfigurationModalProps {
+interface ProcessConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   processData?: {
@@ -57,7 +57,7 @@ interface ProcessConfigurationModalProps {
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터
 }
 
-export default function ProcessConfigurationModal({
+export default function ProcessConfigModal({
   isOpen,
   onClose,
   processData,
@@ -65,7 +65,7 @@ export default function ProcessConfigurationModal({
   mode,
   processFlow = [], // 🆕 현재 프로세스 플로우
   parquetMetadata = [], // 🆕 동적 데이터
-}: ProcessConfigurationModalProps) {
+}: ProcessConfigModalProps) {
   // 🎯 zustand에서 pax_demographics 가져오기
   const paxDemographics = useSimulationStore((s) => s.passenger.pax_demographics);
   const [processName, setProcessName] = useState('');
@@ -324,7 +324,7 @@ export default function ProcessConfigurationModal({
           {/* Entry Conditions */}
           <div>
             {parquetMetadata.length > 0 ? (
-              <SearchCriteriaSelector
+              <FlightCriteriaSelector
                 title="Entry Conditions"
                 icon={<Filter className="h-4 w-4" />}
                 parquetMetadata={parquetMetadata}

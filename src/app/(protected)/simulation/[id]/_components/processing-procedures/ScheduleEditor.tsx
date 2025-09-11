@@ -338,44 +338,42 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       };
     }, []);
 
-    // 🖼️ 선택된 셀의 바깥쪽 테두리 계산 함수 (최적화)
-    const getSelectionBorders = useMemo(() => {
-      const borderMap = new Map<string, string>();
+    // 🖼️ 선택된 셀의 boxShadow 스타일 계산 (기본 border와 충돌하지 않음)
+    const getSelectionStyles = useMemo(() => {
+      const styleMap = new Map<string, { boxShadow?: string }>();
 
+      // 선택된 영역의 경계를 찾아서 boxShadow로 표시
       selectedCells.forEach((cellId) => {
         const [rowIndex, colIndex] = parseCellId(cellId);
-        const borders: string[] = [];
-
-        // 위쪽 테두리 (위쪽 셀이 선택되지 않음)
+        
+        // 경계 확인
         const topCellId = `${rowIndex - 1}-${colIndex}`;
-        if (!selectedCells.has(topCellId)) {
-          borders.push("border-t-2 border-dashed border-primary");
-        }
-
-        // 아래쪽 테두리 (아래쪽 셀이 선택되지 않음)
         const bottomCellId = `${rowIndex + 1}-${colIndex}`;
-        if (!selectedCells.has(bottomCellId)) {
-          borders.push("border-b-2 border-dashed border-primary");
-        }
-
-        // 왼쪽 테두리 (왼쪽 셀이 선택되지 않음)
         const leftCellId = `${rowIndex}-${colIndex - 1}`;
-        if (!selectedCells.has(leftCellId)) {
-          borders.push("border-l-2 border-dashed border-primary");
-        }
-
-        // 오른쪽 테두리 (오른쪽 셀이 선택되지 않음)
         const rightCellId = `${rowIndex}-${colIndex + 1}`;
-        if (!selectedCells.has(rightCellId)) {
-          borders.push("border-r-2 border-dashed border-primary");
+        
+        const isTopBorder = !selectedCells.has(topCellId);
+        const isBottomBorder = !selectedCells.has(bottomCellId);
+        const isLeftBorder = !selectedCells.has(leftCellId);
+        const isRightBorder = !selectedCells.has(rightCellId);
+        
+        // 각 방향별로 boxShadow 추가
+        const shadows: string[] = [];
+        if (isTopBorder) shadows.push('inset 0 2px 0 0 #8b5cf6');
+        if (isBottomBorder) shadows.push('inset 0 -2px 0 0 #8b5cf6');
+        if (isLeftBorder) shadows.push('inset 2px 0 0 0 #8b5cf6');
+        if (isRightBorder) shadows.push('inset -2px 0 0 0 #8b5cf6');
+        
+        if (shadows.length > 0) {
+          styleMap.set(cellId, {
+            boxShadow: shadows.join(', ')
+          });
         }
-
-        borderMap.set(cellId, borders.join(" "));
       });
 
       return (rowIndex: number, colIndex: number) => {
         const cellId = `${rowIndex}-${colIndex}`;
-        return borderMap.get(cellId) || "";
+        return styleMap.get(cellId) || {};
       };
     }, [selectedCells, parseCellId]);
     if (!selectedZone || currentFacilities.length === 0) {
@@ -483,7 +481,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const isSelected = selectedCells.has(cellId);
                       const isDisabled = disabledCells.has(cellId);
                       const badges = cellBadges[cellId] || [];
-                      const selectionBorders = getSelectionBorders(
+                      const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
                       );
@@ -492,11 +490,10 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         <td
                           key={`${rowIndex}-${colIndex}`}
                           className={cn(
-                            "cursor-pointer select-none p-1",
-                            !isSelected && "border-r", // 선택되지 않은 셀만 기본 테두리
-                            isDisabled && "bg-gray-100",
-                            selectionBorders
+                            "cursor-pointer select-none p-1 border-r", // 모든 셀에 기본 회색 테두리 유지
+                            isDisabled && "bg-gray-100"
                           )}
+                          style={selectionStyles}
                           onMouseDown={(e) => {
                             // 우클릭이 아닐 때만 드래그 처리
                             if (e.button !== 2) {

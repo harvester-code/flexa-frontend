@@ -37,7 +37,7 @@ interface PassengerScheduleChartData {
 }
 
 // Props 제거 - Zustand에서 직접 데이터 가져오기
-export default function TabPassengerScheduleResult() {
+export default function PassengerResultChart() {
   const [selectedCategory, setSelectedCategory] = useState<string>("airline");
 
   // 🎯 Zustand에서 직접 데이터 가져오기

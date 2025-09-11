@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
-import PercentageInteractiveBar from './PercentageInteractiveBar';
+import PercentageInteractiveBar from './PercentageControl';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import('react-plotly.js'), {

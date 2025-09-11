@@ -18,17 +18,17 @@ const JSON_AIRPORTS = _jsonAirport.map((item) => ({
   searchText: `${item.iata}/${item.name}`.toUpperCase(),
 }));
 
-interface TabFlightScheduleLoadDataProps {
+interface FlightDataLoaderProps {
   loadingFlightSchedule: boolean;
   setIsSomethingChanged: (changed: boolean) => void;
   onLoadData: (airport: string, date: string) => void;
 }
 
-function TabFlightScheduleLoadData({
+function FlightDataLoader({
   loadingFlightSchedule,
   setIsSomethingChanged,
   onLoadData,
-}: TabFlightScheduleLoadDataProps) {
+}: FlightDataLoaderProps) {
   // 🆕 초기값은 store에서 가져오되, 로컬 상태로 관리 (Load 버튼 클릭 시에만 저장)
   const storeAirport = useSimulationStore((s) => s.context.airport);
   const storeDate = useSimulationStore((s) => s.context.date);
@@ -220,4 +220,4 @@ function TabFlightScheduleLoadData({
   );
 }
 
-export default React.memo(TabFlightScheduleLoadData);
+export default React.memo(FlightDataLoader);

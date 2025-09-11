@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-interface SetDistributionDialogProps {
+interface DistributionDialogProps {
   title?: string;
   children: React.ReactNode; // 중간 값 설정 컴포넌트 부분
 
@@ -23,7 +23,7 @@ interface SetDistributionDialogProps {
   isCreateDisabled?: boolean;
 }
 
-export const SetDistributionDialog: React.FC<SetDistributionDialogProps> = ({
+export const DistributionDialog: React.FC<DistributionDialogProps> = ({
   title = 'Set Distribution',
   children,
   isValid,

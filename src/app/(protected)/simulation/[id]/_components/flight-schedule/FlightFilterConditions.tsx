@@ -20,7 +20,7 @@ import {
   parseTerminalAirlineCombo,
   removeCombo,
   removeCombosByTerminal,
-} from './terminal-airline-utils';
+} from './flight-utils';
 
 // ==================== Types ====================
 // 실제 API 응답 구조에 맞춰 수정 (flight-filter.json 기준)
@@ -75,14 +75,14 @@ interface SelectedFilter {
   };
 }
 
-interface TabFlightScheduleFilterConditionsNewProps {
+interface FlightFilterConditionsProps {
   loading: boolean; // 로딩 상태만 props로 (UI 상태)
   onApplyFilter: (type: string, conditions: Array<{ field: string; values: string[] }>) => Promise<any>;
   // filtersData props 제거 - zustand에서 직접 가져올 예정
 }
 
 // ==================== Component ====================
-function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFlightScheduleFilterConditionsNewProps) {
+function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditionsProps) {
   // 🆕 zustand에서 flight 데이터 구독
   const flightData = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
@@ -1102,4 +1102,4 @@ function TabFlightScheduleFilterConditionsNew({ loading, onApplyFilter }: TabFli
   );
 }
 
-export default React.memo(TabFlightScheduleFilterConditionsNew);
+export default React.memo(FlightFilterConditions);

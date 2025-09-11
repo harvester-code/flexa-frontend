@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { timeToRelativeTime } from '@/lib/utils';
 import SimulationLoading from '../_components/SimulationLoading';
-import JSONDebugViewer from './_components/shared/JSONDebugViewer';
+import JSONDebugViewer from './_components/shared/DebugViewer';
 import TabDefault from './_components/shared/TabDefault';
 import TabFlightSchedule from './_components/flight-schedule/TabFlightSchedule';
 import TabPassengerSchedule from './_components/passenger-schedule/TabPassengerSchedule';

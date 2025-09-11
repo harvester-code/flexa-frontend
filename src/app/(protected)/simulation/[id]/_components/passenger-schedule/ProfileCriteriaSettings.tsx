@@ -5,7 +5,7 @@ import { CheckCircle, ChevronDown, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 // import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
-import { SetDistributionDialog } from './SetDistributionDialog';
+import { DistributionDialog } from './DistributionDialog';
 import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from '../shared/ValueSetters';
 
 interface ParquetMetadataItem {
@@ -19,7 +19,7 @@ interface ParquetMetadataItem {
   >;
 }
 
-interface PassengerProfileCriteriaProps {
+interface ProfileCriteriaSettingsProps {
   parquetMetadata: ParquetMetadataItem[];
   definedProperties?: string[];
   configType?: string;
@@ -27,13 +27,13 @@ interface PassengerProfileCriteriaProps {
   editingRuleIndex?: number; // 편집할 rule의 인덱스
 }
 
-export default function PassengerProfileCriteria({
+export default function ProfileCriteriaSettings({
   parquetMetadata,
   definedProperties = [],
   configType,
   editingRule,
   editingRuleIndex,
-}: PassengerProfileCriteriaProps) {
+}: ProfileCriteriaSettingsProps) {
   // 🎯 단순한 UI 상태만 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
@@ -876,7 +876,7 @@ export default function PassengerProfileCriteria({
 
       {/* Property Value Assignment - always show */}
       {definedProperties.length > 0 && (
-        <SetDistributionDialog
+        <DistributionDialog
           title={getDialogTitle()}
           onCreate={handleCreate}
           isValid={isValidDistribution}
@@ -898,7 +898,7 @@ export default function PassengerProfileCriteria({
           }
         >
           {renderValueSetter()}
-        </SetDistributionDialog>
+        </DistributionDialog>
       )}
     </div>
   );
