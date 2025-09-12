@@ -9,6 +9,8 @@ import React, {
 } from "react";
 import { useCellSelection } from "./hooks/useCellSelection";
 import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
+import { useThrottle } from "./hooks/useThrottle";
+import { useDebounce } from "./hooks/useDebounce";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import { Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
@@ -674,24 +676,39 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         >
                           <div className="flex h-8 flex-col items-center justify-center space-y-1">
                             <div className="flex items-center space-x-1">
-                              {/* 카테고리 뱃지들 */}
-                              {badges.map((categoryBadge, badgeIndex) => (
+                              {/* 카테고리 뱃지들 - 뱃지가 없으면 자동으로 All 표시 */}
+                              {badges.length > 0 ? (
+                                badges.map((categoryBadge, badgeIndex) => (
+                                  <span
+                                    key={`${categoryBadge.category}-${badgeIndex}`}
+                                    className={cn(
+                                      isDisabled
+                                        ? "bg-gray-300 text-gray-600 border-gray-400"
+                                        : `${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`,
+                                      "select-none rounded border px-1 text-[9px] font-medium leading-tight",
+                                      isDisabled && "line-through decoration-2"
+                                    )}
+                                    title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                                  >
+                                    {categoryBadge.options
+                                      .map((option) => option.slice(0, 3))
+                                      .join("|")}
+                                  </span>
+                                ))
+                              ) : (
                                 <span
-                                  key={`${categoryBadge.category}-${badgeIndex}`}
                                   className={cn(
                                     isDisabled
                                       ? "bg-gray-300 text-gray-600 border-gray-400"
-                                      : `${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`,
+                                      : "bg-primary/10 text-primary border-primary/20",
                                     "select-none rounded border px-1 text-[9px] font-medium leading-tight",
                                     isDisabled && "line-through decoration-2"
                                   )}
-                                  title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                                  title="All"
                                 >
-                                  {categoryBadge.options
-                                    .map((option) => option.slice(0, 3))
-                                    .join("|")}
+                                  All
                                 </span>
-                              ))}
+                              )}
                             </div>
                           </div>
                         </td>
@@ -759,6 +776,9 @@ export default function OperatingScheduleEditor({
 
   // 🚫 Zone별 셀 비활성화 상태 관리 (탭 전환 시에도 유지)
   const [disabledCellsByZone, setDisabledCellsByZone] = useState<Record<string, Set<string>>>({});
+  
+  // 스페이스바 연타 방지를 위한 처리 중 상태
+  const [isProcessingSpace, setIsProcessingSpace] = useState(false);
   
   // 현재 선택된 Zone의 disabledCells
   const disabledCells = useMemo(() => {
@@ -1178,7 +1198,7 @@ export default function OperatingScheduleEditor({
     []
   );
 
-  // 모든 뱃지 제거 핸들러 (선택된 모든 셀에서)
+  // 모든 뱃지 제거 핸들러 (선택된 모든 셀에서) - 빈 배열로 설정
   const handleClearAllBadges = useCallback(() => {
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return;
@@ -1194,7 +1214,7 @@ export default function OperatingScheduleEditor({
       const newBadges = new Map<string, any[]>();
       
       targetCells.forEach((cellId) => {
-        updated[cellId] = [];
+        delete updated[cellId]; // 완전히 제거하여 메모리 최적화
         newBadges.set(cellId, []);
       });
 
@@ -1212,7 +1232,7 @@ export default function OperatingScheduleEditor({
     });
   }, [contextMenu.targetCells, cellBadges, undoHistory]);
 
-  // 모든 카테고리 선택 핸들러 - "All" 뱃지 하나만 표시
+  // 모든 카테고리 선택 핸들러 - 뱃지를 비워서 All로 표시
   const handleSelectAllCategories = useCallback(() => {
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return;
@@ -1228,18 +1248,9 @@ export default function OperatingScheduleEditor({
       const newBadges = new Map<string, any[]>();
 
       targetCells.forEach((cellId) => {
-        // ⭐ "All" 뱃지 하나만 추가 (기존 뱃지들은 모두 제거)
-        const allBadge = [
-          {
-            category: "All",
-            options: ["All"],
-            bgColor: "bg-primary/10",
-            textColor: "text-primary",
-            borderColor: "border-primary/20",
-          },
-        ];
-        updated[cellId] = allBadge;
-        newBadges.set(cellId, allBadge);
+        // 뱃지를 비워서 자동으로 All 표시되도록
+        delete updated[cellId];
+        newBadges.set(cellId, []);
       });
 
       // 히스토리에 추가
@@ -1487,7 +1498,8 @@ export default function OperatingScheduleEditor({
     [handleCellClick, selectedCells]
   );
 
-  const handleCellMouseEnter = useCallback(
+  // 드래그 성능 최적화를 위한 throttled 버전
+  const handleCellMouseEnterRaw = useCallback(
     (
       cellId: string,
       rowIndex: number,
@@ -1520,8 +1532,14 @@ export default function OperatingScheduleEditor({
     [dragState, generateCellRange, setTempSelectedCells]
   );
 
+  // Throttle the mouse enter handler for better performance
+  const handleCellMouseEnter = useThrottle(handleCellMouseEnterRaw, 16); // ~60fps
+
   const handleCellMouseUp = useCallback(() => {
-    finalizeDrag();
+    // 드래그 종료 시 즉시 최종 상태 확정
+    requestAnimationFrame(() => {
+      finalizeDrag();
+    });
   }, [finalizeDrag]);
 
   // 열 전체 선택/해제 핸들러 (클릭용)
@@ -1601,7 +1619,8 @@ export default function OperatingScheduleEditor({
     ]
   );
 
-  const handleColumnMouseEnter = useCallback(
+  // 열 드래그 성능 최적화를 위한 throttled 버전
+  const handleColumnMouseEnterRaw = useCallback(
     (colIndex: number, e: React.MouseEvent) => {
       if (
         dragState.isActive &&
@@ -1630,8 +1649,12 @@ export default function OperatingScheduleEditor({
     [dragState, generateColumnRange, setTempSelectedCells]
   );
 
+  const handleColumnMouseEnter = useThrottle(handleColumnMouseEnterRaw, 16);
+
   const handleColumnMouseUp = useCallback(() => {
-    finalizeDrag();
+    requestAnimationFrame(() => {
+      finalizeDrag();
+    });
   }, [finalizeDrag]);
 
   // 행 전체 선택/해제 핸들러 (클릭용)
@@ -1711,7 +1734,8 @@ export default function OperatingScheduleEditor({
     ]
   );
 
-  const handleRowMouseEnter = useCallback(
+  // 행 드래그 성능 최적화를 위한 throttled 버전
+  const handleRowMouseEnterRaw = useCallback(
     (rowIndex: number, e: React.MouseEvent) => {
       if (dragState.isActive && dragState.type === "row" && dragState.start) {
         e.preventDefault();
@@ -1736,8 +1760,12 @@ export default function OperatingScheduleEditor({
     [dragState, generateRowRange, setTempSelectedCells]
   );
 
+  const handleRowMouseEnter = useThrottle(handleRowMouseEnterRaw, 16);
+
   const handleRowMouseUp = useCallback(() => {
-    finalizeDrag();
+    requestAnimationFrame(() => {
+      finalizeDrag();
+    });
   }, [finalizeDrag]);
 
   // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
@@ -1834,46 +1862,60 @@ export default function OperatingScheduleEditor({
 
       if (e.code === "Space") {
         e.preventDefault();
+        
+        // 이미 처리 중이면 무시 (연타 방지)
+        if (isProcessingSpace) {
+          return;
+        }
+        
         // 🚫 스페이스바 로직: 배경색 활성화/비활성화 토글
         if (selectedCells.size > 0) {
-          const selectedCellIds = Array.from(selectedCells);
+          setIsProcessingSpace(true);
+          
+          // React 18의 자동 배칭으로 성능 최적화
+          React.startTransition(() => {
+            const selectedCellIds = Array.from(selectedCells);
 
-          // 히스토리를 위한 이전 상태 저장
-          const previousStates = new Map<string, boolean>();
-          selectedCellIds.forEach(cellId => {
-            previousStates.set(cellId, disabledCells.has(cellId));
-          });
+            // 히스토리를 위한 이전 상태 저장
+            const previousStates = new Map<string, boolean>();
+            selectedCellIds.forEach(cellId => {
+              previousStates.set(cellId, disabledCells.has(cellId));
+            });
 
-          // 스마트 토글: 일부라도 비활성화되어 있으면 모두 활성화, 모두 활성화면 모두 비활성화
-          const someDisabled = selectedCellIds.some((cellId) =>
-            disabledCells.has(cellId)
-          );
+            // 스마트 토글: 일부라도 비활성화되어 있으면 모두 활성화, 모두 활성화면 모두 비활성화
+            const someDisabled = selectedCellIds.some((cellId) =>
+              disabledCells.has(cellId)
+            );
 
-          const newStates = new Map<string, boolean>();
-          selectedCellIds.forEach(cellId => {
-            newStates.set(cellId, !someDisabled);
-          });
+            const newStates = new Map<string, boolean>();
+            selectedCellIds.forEach(cellId => {
+              newStates.set(cellId, !someDisabled);
+            });
 
-          setDisabledCells((prev) => {
-            const newSet = new Set(prev);
+            setDisabledCells((prev) => {
+              const newSet = new Set(prev);
 
-            if (someDisabled) {
-              // 일부가 비활성화 → 모두 활성화
-              selectedCellIds.forEach((cellId) => newSet.delete(cellId));
-            } else {
-              // 모두 활성화 → 모두 비활성화
-              selectedCellIds.forEach((cellId) => newSet.add(cellId));
-            }
+              if (someDisabled) {
+                // 일부가 비활성화 → 모두 활성화
+                selectedCellIds.forEach((cellId) => newSet.delete(cellId));
+              } else {
+                // 모두 활성화 → 모두 비활성화
+                selectedCellIds.forEach((cellId) => newSet.add(cellId));
+              }
 
-            return newSet;
-          });
+              return newSet;
+            });
 
-          // 히스토리에 추가
-          undoHistory.pushHistory({
-            type: 'toggleDisabled',
-            cellIds: selectedCellIds,
-            previousStates,
-            newStates,
+            // 히스토리에 추가 및 처리 완료 플래그 리셋
+            setTimeout(() => {
+              undoHistory.pushHistory({
+                type: 'toggleDisabled',
+                cellIds: selectedCellIds,
+                previousStates,
+                newStates,
+              });
+              setIsProcessingSpace(false);
+            }, 50); // 50ms 딜레이로 연타 방지
           });
         }
       } else if (e.code === "Escape") {
@@ -1882,7 +1924,7 @@ export default function OperatingScheduleEditor({
         setSelectedCells(new Set());
         setShiftSelectStart(null);
       } else if (e.code === "Delete" || e.code === "Backspace") {
-        // Delete/Backspace: 선택된 셀들의 뱃지 모두 제거
+        // Delete/Backspace: 선택된 셀들의 뱃지 제거 (빈 상태로 만들기)
         e.preventDefault();
 
         if (selectedCells.size > 0) {
@@ -1896,13 +1938,13 @@ export default function OperatingScheduleEditor({
 
           // 🚀 배치 업데이트로 경쟁 조건 방지 및 성능 향상
           React.startTransition(() => {
-            // 뱃지 제거
+            // 뱃지 제거 (빈 상태로)
             setCellBadges((prev) => {
               const updated = { ...prev };
               const newBadges = new Map<string, any[]>();
               
               targetCells.forEach((cellId) => {
-                delete updated[cellId]; // 빈 배열 대신 완전 제거로 메모리 최적화
+                delete updated[cellId]; // 완전히 제거
                 newBadges.set(cellId, []);
               });
 
@@ -1932,6 +1974,7 @@ export default function OperatingScheduleEditor({
       undoHistory,
       handleUndo,
       handleRedo,
+      isProcessingSpace,
     ]
   );
 
@@ -1966,35 +2009,31 @@ export default function OperatingScheduleEditor({
 
   // 탭 변경 시 선택 상태만 초기화 (disabledCells는 유지)
   React.useEffect(() => {
-    clearSelection(); // 커스텀 훅의 clearSelection 사용
-    setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
-    undoHistory.clearHistory(); // 탭 변경 시 히스토리 초기화
-    // disabledCells는 초기화하지 않음 - Zone별로 유지됨
+    // 선택 상태 초기화를 직접 수행
+    setSelectedCells(new Set());
+    setTempSelectedCells(null);
+    setShiftSelectStart(null);
+    setLastSelectedRow(null);
+    setLastSelectedCol(null);
+    setDragState({
+      isActive: false,
+      type: null,
+      start: null,
+      isAdditive: false,
+      originalSelection: null,
+    });
     
-    // 모든 셀을 "All" 뱃지로 초기화
-    if (currentFacilities.length > 0 && timeSlots.length > 0) {
-      const initialBadges: Record<string, CategoryBadge[]> = {};
-      
-      for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-        for (let colIndex = 0; colIndex < currentFacilities.length; colIndex++) {
-          const cellId = `${rowIndex}-${colIndex}`;
-          initialBadges[cellId] = [
-            {
-              category: "All",
-              options: ["All"],
-              bgColor: "bg-primary/10",
-              textColor: "text-primary",
-              borderColor: "border-primary/20",
-            },
-          ];
-        }
-      }
-      
-      setCellBadges(initialBadges);
-    } else {
-      setCellBadges({});
+    setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
+    
+    // undoHistory 메서드 직접 호출
+    if (undoHistory && undoHistory.clearHistory) {
+      undoHistory.clearHistory();
     }
-  }, [selectedProcessIndex, selectedZone, clearSelection, currentFacilities.length, timeSlots.length]);
+    
+    // 뱃지 초기화 - 빈 상태로 시작 (렌더링 시 자동으로 All 표시)
+    setCellBadges({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProcessIndex, selectedZone]); // 핵심 의존성만 포함
 
   // 🛡️ 안전한 첫 번째 존 자동 선택 (초기화되지 않았거나 프로세스가 변경될 때만)
   React.useEffect(() => {
