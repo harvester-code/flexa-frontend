@@ -254,9 +254,22 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                           <DropdownMenuItem
                             onSelect={(e) => {
                               e.preventDefault();
-                              filteredOptions.forEach((option) => {
-                                onToggleBadgeOption(category, option);
-                              });
+                              // 스마트 체크: 하나라도 체크 안 된 옵션이 있으면 모두 체크, 모두 체크되어 있으면 모두 해제
+                              const uncheckedOptions = filteredOptions.filter(
+                                option => !getOptionCheckState(category, option)
+                              );
+                              
+                              if (uncheckedOptions.length > 0) {
+                                // 체크 안 된 옵션들만 체크
+                                uncheckedOptions.forEach((option) => {
+                                  onToggleBadgeOption(category, option);
+                                });
+                              } else {
+                                // 모두 체크되어 있으면 모두 해제
+                                filteredOptions.forEach((option) => {
+                                  onToggleBadgeOption(category, option);
+                                });
+                              }
                             }}
                             className="cursor-pointer"
                           >
