@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { useCellSelection } from "./hooks/useCellSelection";
+import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import { Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
@@ -774,6 +775,17 @@ export default function OperatingScheduleEditor({
     }));
   }, [selectedProcessIndex, selectedZone]);
 
+  // 🔄 실행 취소/재실행 히스토리 관리
+  const undoHistory = useUndoHistory({
+    maxHistorySize: 100,
+    onUndo: (action: HistoryAction) => {
+      // Undo 액션 처리는 handleUndo에서 수행
+    },
+    onRedo: (action: HistoryAction) => {
+      // Redo 액션 처리는 handleRedo에서 수행
+    },
+  });
+
   // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
@@ -961,6 +973,78 @@ export default function OperatingScheduleEditor({
     [selectedProcessIndex, processFlow]
   );
 
+  // 실행 취소 처리
+  const handleUndo = useCallback(() => {
+    const action = undoHistory.undo();
+    if (!action) return;
+
+    if (action.type === 'toggleDisabled') {
+      // disabledCells 상태 복원
+      setDisabledCells(prev => {
+        const newSet = new Set(prev);
+        action.cellIds.forEach(cellId => {
+          const previousState = action.previousStates.get(cellId);
+          if (previousState) {
+            newSet.add(cellId);
+          } else {
+            newSet.delete(cellId);
+          }
+        });
+        return newSet;
+      });
+    } else if (action.type === 'setBadges') {
+      // cellBadges 상태 복원
+      setCellBadges(prev => {
+        const updated = { ...prev };
+        action.cellIds.forEach(cellId => {
+          const previousBadges = action.previousBadges.get(cellId);
+          if (previousBadges) {
+            updated[cellId] = previousBadges;
+          } else {
+            delete updated[cellId];
+          }
+        });
+        return updated;
+      });
+    }
+  }, [undoHistory, setDisabledCells, setCellBadges]);
+
+  // 재실행 처리
+  const handleRedo = useCallback(() => {
+    const action = undoHistory.redo();
+    if (!action) return;
+
+    if (action.type === 'toggleDisabled') {
+      // disabledCells 상태 재적용
+      setDisabledCells(prev => {
+        const newSet = new Set(prev);
+        action.cellIds.forEach(cellId => {
+          const newState = action.newStates.get(cellId);
+          if (newState) {
+            newSet.add(cellId);
+          } else {
+            newSet.delete(cellId);
+          }
+        });
+        return newSet;
+      });
+    } else if (action.type === 'setBadges') {
+      // cellBadges 상태 재적용
+      setCellBadges(prev => {
+        const updated = { ...prev };
+        action.cellIds.forEach(cellId => {
+          const newBadges = action.newBadges.get(cellId);
+          if (newBadges && newBadges.length > 0) {
+            updated[cellId] = newBadges;
+          } else {
+            delete updated[cellId];
+          }
+        });
+        return updated;
+      });
+    }
+  }, [undoHistory, setDisabledCells, setCellBadges]);
+
   // 카테고리별 뱃지 토글 핸들러
   const handleToggleBadgeOption = useCallback(
     (category: string, option: string) => {
@@ -984,8 +1068,15 @@ export default function OperatingScheduleEditor({
         return categoryBadge?.options.includes(option) || false;
       });
 
+      // 히스토리를 위한 이전 상태 저장
+      const previousBadges = new Map<string, any[]>();
+      targetCells.forEach(cellId => {
+        previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+      });
+
       setCellBadges((prev) => {
         const updated = { ...prev };
+        const newBadges = new Map<string, any[]>();
 
         targetCells.forEach((cellId) => {
           let existingBadges = updated[cellId] || [];
@@ -1048,7 +1139,18 @@ export default function OperatingScheduleEditor({
           }
 
           updated[cellId] = [...existingBadges];
+          newBadges.set(cellId, [...existingBadges]);
         });
+
+        // 히스토리에 추가
+        setTimeout(() => {
+          undoHistory.pushHistory({
+            type: 'setBadges',
+            cellIds: targetCells,
+            previousBadges,
+            newBadges,
+          });
+        }, 0);
 
         return updated;
       });
@@ -1059,6 +1161,7 @@ export default function OperatingScheduleEditor({
       getProcessCategoryConfig,
       CONDITION_CATEGORIES,
       setCellBadges,
+      undoHistory,
     ]
   );
 
@@ -1080,26 +1183,53 @@ export default function OperatingScheduleEditor({
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return;
 
+    // 히스토리를 위한 이전 상태 저장
+    const previousBadges = new Map<string, any[]>();
+    targetCells.forEach(cellId => {
+      previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+    });
+
     setCellBadges((prev) => {
       const updated = { ...prev };
+      const newBadges = new Map<string, any[]>();
+      
       targetCells.forEach((cellId) => {
         updated[cellId] = [];
+        newBadges.set(cellId, []);
       });
+
+      // 히스토리에 추가
+      setTimeout(() => {
+        undoHistory.pushHistory({
+          type: 'setBadges',
+          cellIds: targetCells,
+          previousBadges,
+          newBadges,
+        });
+      }, 0);
+
       return updated;
     });
-  }, [contextMenu.targetCells]);
+  }, [contextMenu.targetCells, cellBadges, undoHistory]);
 
   // 모든 카테고리 선택 핸들러 - "All" 뱃지 하나만 표시
   const handleSelectAllCategories = useCallback(() => {
     const targetCells = contextMenu.targetCells || [];
     if (targetCells.length === 0) return;
 
+    // 히스토리를 위한 이전 상태 저장
+    const previousBadges = new Map<string, any[]>();
+    targetCells.forEach(cellId => {
+      previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+    });
+
     setCellBadges((prev) => {
       const updated = { ...prev };
+      const newBadges = new Map<string, any[]>();
 
       targetCells.forEach((cellId) => {
         // ⭐ "All" 뱃지 하나만 추가 (기존 뱃지들은 모두 제거)
-        updated[cellId] = [
+        const allBadge = [
           {
             category: "All",
             options: ["All"],
@@ -1108,11 +1238,23 @@ export default function OperatingScheduleEditor({
             borderColor: "border-primary/20",
           },
         ];
+        updated[cellId] = allBadge;
+        newBadges.set(cellId, allBadge);
       });
+
+      // 히스토리에 추가
+      setTimeout(() => {
+        undoHistory.pushHistory({
+          type: 'setBadges',
+          cellIds: targetCells,
+          previousBadges,
+          newBadges,
+        });
+      }, 0);
 
       return updated;
     });
-  }, [contextMenu.targetCells]);
+  }, [contextMenu.targetCells, cellBadges, undoHistory]);
 
   // 우클릭 핸들러
   const handleCellRightClick = useCallback(
@@ -1675,16 +1817,42 @@ export default function OperatingScheduleEditor({
         containerRef.current?.focus();
       }
 
+      // Cmd/Ctrl + Z: 실행 취소
+      if ((e.metaKey || e.ctrlKey) && e.code === "KeyZ" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // 재실행: Mac은 Cmd+Shift+Z, Windows/Linux는 Ctrl+Y
+      if ((e.metaKey && e.shiftKey && e.code === "KeyZ") || // Mac
+          (e.ctrlKey && e.code === "KeyY")) { // Windows/Linux
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
       if (e.code === "Space") {
         e.preventDefault();
         // 🚫 스페이스바 로직: 배경색 활성화/비활성화 토글
         if (selectedCells.size > 0) {
           const selectedCellIds = Array.from(selectedCells);
 
+          // 히스토리를 위한 이전 상태 저장
+          const previousStates = new Map<string, boolean>();
+          selectedCellIds.forEach(cellId => {
+            previousStates.set(cellId, disabledCells.has(cellId));
+          });
+
           // 스마트 토글: 일부라도 비활성화되어 있으면 모두 활성화, 모두 활성화면 모두 비활성화
           const someDisabled = selectedCellIds.some((cellId) =>
             disabledCells.has(cellId)
           );
+
+          const newStates = new Map<string, boolean>();
+          selectedCellIds.forEach(cellId => {
+            newStates.set(cellId, !someDisabled);
+          });
 
           setDisabledCells((prev) => {
             const newSet = new Set(prev);
@@ -1699,6 +1867,14 @@ export default function OperatingScheduleEditor({
 
             return newSet;
           });
+
+          // 히스토리에 추가
+          undoHistory.pushHistory({
+            type: 'toggleDisabled',
+            cellIds: selectedCellIds,
+            previousStates,
+            newStates,
+          });
         }
       } else if (e.code === "Escape") {
         // ESC: 모든 선택 해제
@@ -1712,14 +1888,34 @@ export default function OperatingScheduleEditor({
         if (selectedCells.size > 0) {
           const targetCells = Array.from(selectedCells);
 
+          // 히스토리를 위한 이전 상태 저장
+          const previousBadges = new Map<string, any[]>();
+          targetCells.forEach(cellId => {
+            previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+          });
+
           // 🚀 배치 업데이트로 경쟁 조건 방지 및 성능 향상
           React.startTransition(() => {
             // 뱃지 제거
             setCellBadges((prev) => {
               const updated = { ...prev };
+              const newBadges = new Map<string, any[]>();
+              
               targetCells.forEach((cellId) => {
                 delete updated[cellId]; // 빈 배열 대신 완전 제거로 메모리 최적화
+                newBadges.set(cellId, []);
               });
+
+              // 히스토리에 추가
+              setTimeout(() => {
+                undoHistory.pushHistory({
+                  type: 'setBadges',
+                  cellIds: targetCells,
+                  previousBadges,
+                  newBadges,
+                });
+              }, 0);
+
               return updated;
             });
           });
@@ -1732,6 +1928,10 @@ export default function OperatingScheduleEditor({
       disabledCells,
       setDisabledCells,
       setCellBadges,
+      cellBadges,
+      undoHistory,
+      handleUndo,
+      handleRedo,
     ]
   );
 
@@ -1768,6 +1968,7 @@ export default function OperatingScheduleEditor({
   React.useEffect(() => {
     clearSelection(); // 커스텀 훅의 clearSelection 사용
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
+    undoHistory.clearHistory(); // 탭 변경 시 히스토리 초기화
     // disabledCells는 초기화하지 않음 - Zone별로 유지됨
     
     // 모든 셀을 "All" 뱃지로 초기화
