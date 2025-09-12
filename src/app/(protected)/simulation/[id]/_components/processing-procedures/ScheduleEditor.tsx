@@ -270,32 +270,105 @@ const getNextTimeSlot = (timeStr: string): string => {
   return formatTime(newHours, newMinutes);
 };
 
-// disabled cells를 기반으로 period를 계산하는 함수
+// 뱃지를 passenger_conditions 형식으로 변환하는 함수
+const convertBadgesToConditions = (badges: CategoryBadge[]): any[] => {
+  if (!badges || badges.length === 0) {
+    // 뱃지가 없으면 빈 배열 (All과 동일)
+    return [];
+  }
+  
+  const conditions: any[] = [];
+  
+  badges.forEach(badge => {
+    let fieldName = '';
+    
+    // 카테고리명을 field 이름으로 매핑
+    switch (badge.category) {
+      case 'Airline':
+        fieldName = 'operating_carrier_iata';
+        break;
+      case 'Aircraft Type':
+        fieldName = 'aircraft_type';
+        break;
+      case 'Flight Type':
+        fieldName = 'flight_type';
+        break;
+      case 'Arrival Airport':
+        fieldName = 'arrival_airport_iata';
+        break;
+      case 'Arrival City':
+        fieldName = 'arrival_city';
+        break;
+      case 'Arrival Country':
+        fieldName = 'arrival_country';
+        break;
+      case 'Arrival Region':
+        fieldName = 'arrival_region';
+        break;
+      case 'Nationality':
+        fieldName = 'nationality';
+        break;
+      case 'Passenger Type':
+        fieldName = 'profile';
+        break;
+      default:
+        // Process 카테고리나 기타는 무시
+        return;
+    }
+    
+    if (fieldName) {
+      conditions.push({
+        field: fieldName,
+        values: badge.options
+      });
+    }
+  });
+  
+  return conditions;
+};
+
+// disabled cells와 뱃지를 기반으로 period를 계산하는 함수
 const calculatePeriodsFromDisabledCells = (
   facilityIndex: number,
   disabledCells: Set<string>,
   timeSlots: string[],
-  existingTimeBlocks: any[]
+  existingTimeBlocks: any[],
+  cellBadges: Record<string, CategoryBadge[]>
 ): any[] => {
-  // 기존 time_blocks에서 process_time_seconds와 passenger_conditions 가져오기
+  // 기존 time_blocks에서 process_time_seconds 가져오기
   const existingBlock = existingTimeBlocks?.[0] || {};
   const processTime = existingBlock.process_time_seconds || 60;
-  const conditions = existingBlock.passenger_conditions || [];
   
   const periods: any[] = [];
   let currentStart: string | null = null;
   let lastActiveTime: string | null = null;
+  let currentConditions: any[] | null = null;
   
   for (let i = 0; i < timeSlots.length; i++) {
     const cellId = `${i}-${facilityIndex}`;
     const isDisabled = disabledCells.has(cellId);
     const currentTime = timeSlots[i];
+    const badges = cellBadges[cellId] || [];
+    const conditions = convertBadgesToConditions(badges);
     
     if (!isDisabled) {
       // 활성화된 셀
       if (currentStart === null) {
         // 새로운 활성 구간 시작
         currentStart = currentTime;
+        currentConditions = conditions;
+      } else if (JSON.stringify(currentConditions) !== JSON.stringify(conditions)) {
+        // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
+        if (lastActiveTime !== null) {
+          const endTime = getNextTimeSlot(lastActiveTime);
+          periods.push({
+            period: `${currentStart}-${endTime}`,
+            process_time_seconds: processTime,
+            passenger_conditions: currentConditions || []
+          });
+        }
+        currentStart = currentTime;
+        currentConditions = conditions;
       }
       lastActiveTime = currentTime;
     } else {
@@ -306,10 +379,11 @@ const calculatePeriodsFromDisabledCells = (
         periods.push({
           period: `${currentStart}-${endTime}`,
           process_time_seconds: processTime,
-          passenger_conditions: conditions
+          passenger_conditions: currentConditions || []
         });
         currentStart = null;
         lastActiveTime = null;
+        currentConditions = null;
       }
     }
   }
@@ -321,19 +395,12 @@ const calculatePeriodsFromDisabledCells = (
     periods.push({
       period: `${currentStart}-${endTime}`,
       process_time_seconds: processTime,
-      passenger_conditions: conditions
+      passenger_conditions: currentConditions || []
     });
   }
   
-  // period가 하나도 없으면 (모두 비활성화) 기본값 반환
-  if (periods.length === 0) {
-    periods.push({
-      period: "00:00-24:00",
-      process_time_seconds: processTime,
-      passenger_conditions: conditions
-    });
-  }
-  
+  // period가 하나도 없으면 (모두 비활성화) 빈 배열 반환 (운영 안함)
+  // 기존에는 기본값을 반환했지만, 전체 비활성화는 운영 안함을 의미
   return periods;
 };
 
@@ -2056,7 +2123,7 @@ export default function OperatingScheduleEditor({
     }
   }, [selectedProcessIndex, selectedZone, processFlow]); // 모든 의존성 포함
 
-  // 🆕 disabledCells 변경 시 period 재계산 및 zustand 업데이트
+  // 🆕 disabledCells 또는 cellBadges 변경 시 period 재계산 및 zustand 업데이트
   useEffect(() => {
     if (!currentFacilities || currentFacilities.length === 0) return;
     if (!selectedZone || selectedProcessIndex === null) return;
@@ -2068,12 +2135,13 @@ export default function OperatingScheduleEditor({
         if (facility && facility.id) {
           const existingTimeBlocks = facility.operating_schedule?.today?.time_blocks || [];
           
-          // 새로운 periods 계산
+          // 새로운 periods 계산 (뱃지 정보 포함)
           const newTimeBlocks = calculatePeriodsFromDisabledCells(
             facilityIndex,
             disabledCells,
             timeSlots,
-            existingTimeBlocks
+            existingTimeBlocks,
+            cellBadges
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트
@@ -2093,7 +2161,16 @@ export default function OperatingScheduleEditor({
     }, 100); // 100ms debounce
     
     return () => clearTimeout(timeoutId);
-  }, [disabledCells]); // disabledCells 변경 시에만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    disabledCells, 
+    cellBadges, 
+    currentFacilities, 
+    selectedZone, 
+    selectedProcessIndex, 
+    timeSlots,
+    updateFacilityTimeBlocks
+  ]); // 모든 필요한 의존성 포함
 
   // 🛡️ 안전성 검사 강화
   if (!processFlow || processFlow.length === 0) {
