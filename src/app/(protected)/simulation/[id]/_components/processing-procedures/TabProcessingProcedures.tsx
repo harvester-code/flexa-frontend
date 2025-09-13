@@ -201,6 +201,39 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setProcessFlow(newProcessFlow);
   };
 
+  // Handle reordering processes via drag and drop
+  const handleReorderProcesses = (newProcessFlow: any[]) => {
+    // Ensure step numbers are correct
+    const updatedFlow = newProcessFlow.map((process, index) => ({
+      ...process,
+      step: index, // 0-based indexing
+    }));
+    setProcessFlow(updatedFlow);
+  };
+
+  // Handle direct process creation (bypassing modal)
+  const handleDirectCreateProcess = (newProcess: any) => {
+    const normalizedName = normalizeProcessName(newProcess.name);
+    const processToAdd = {
+      ...newProcess,
+      name: normalizedName,
+      step: processFlow.length,
+    };
+
+    const updatedProcessFlow = [...processFlow, processToAdd];
+    setProcessFlow(updatedProcessFlow);
+
+    // Set facilities for each zone if they exist
+    if (newProcess.zones) {
+      const processIndex = processFlow.length;
+      Object.entries(newProcess.zones).forEach(([zoneName, zone]: [string, any]) => {
+        if (zone.facilities && zone.facilities.length > 0) {
+          setFacilitiesForZone(processIndex, zoneName, zone.facilities.length);
+        }
+      });
+    }
+  };
+
 
   // 첫 번째 프로세스를 기본으로 선택
   useEffect(() => {
@@ -228,6 +261,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         onOpenEditModal={handleOpenEditModal}
         onRemoveProcess={removeProcedure}
         onUpdateProcess={handleDirectUpdateProcess}
+        onReorderProcesses={handleReorderProcesses}
+        onCreateProcess={handleDirectCreateProcess}
       />
 
       {/* Process Configuration Modal */}
