@@ -958,10 +958,10 @@ export default function ProcessFlowDesigner({
                               <Clock className="h-4 w-4" />
                               Walking time
                               <div className={`h-2 w-2 rounded-full ${
-                                editedProcess.travel_time_minutes != null && editedProcess.travel_time_minutes >= 0 ? 'bg-green-500' : 'bg-yellow-500'
+                                editedProcess.travel_time_minutes != null && editedProcess.travel_time_minutes > 0 ? 'bg-green-500' : 'bg-yellow-500'
                               }`} />
                             </label>
-                            <div className="flex items-center gap-2">
+                            <div className="relative">
                               <Input
                                 type="text"
                                 value={editedProcess.travel_time_minutes || ''}
@@ -970,9 +970,9 @@ export default function ProcessFlowDesigner({
                                   travel_time_minutes: parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
                                 })}
                                 placeholder="5"
-                                className="w-full text-center"
+                                className="w-full pr-10 text-center"
                               />
-                              <span className="text-sm text-gray-500">min</span>
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">min</span>
                             </div>
                           </div>
 
@@ -985,7 +985,7 @@ export default function ProcessFlowDesigner({
                                 editedProcess.process_time_seconds != null && editedProcess.process_time_seconds > 0 ? 'bg-green-500' : 'bg-yellow-500'
                               }`} />
                             </label>
-                            <div className="flex items-center gap-2">
+                            <div className="relative">
                               <Input
                                 type="text"
                                 value={editedProcess.process_time_seconds || ''}
@@ -996,9 +996,9 @@ export default function ProcessFlowDesigner({
                                 }}
                                 onClick={(e) => (e.target as HTMLInputElement).select()}
                                 placeholder="12"
-                                className="w-full text-center"
+                                className="w-full pr-10 text-center"
                               />
-                              <span className="text-sm text-gray-500">sec</span>
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">sec</span>
                             </div>
                           </div>
                         </div>
@@ -1150,22 +1150,26 @@ export default function ProcessFlowDesigner({
             </div>
           </div>
 
-          {/* Operating Schedule Editor - Same level as Process Configuration */}
-          <div className="flex items-start justify-between border-l-4 border-primary pl-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-default-900">Operating Schedule Editor</h3>
-              <p className="text-sm text-default-500">Configure time-based facility operations</p>
-            </div>
-          </div>
+          {/* Operating Schedule Editor - Only show when there are processes */}
+          {processFlow.length > 0 && (
+            <>
+              <div className="flex items-start justify-between border-l-4 border-primary pl-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-default-900">Operating Schedule Editor</h3>
+                  <p className="text-sm text-default-500">Configure time-based facility operations</p>
+                </div>
+              </div>
 
-          {/* Operating Schedule Editor Content */}
-          <div className="rounded-lg border bg-white p-6">
-            <ScheduleEditor
-              processFlow={processFlow}
-              parquetMetadata={parquetMetadata}
-              paxDemographics={paxDemographics}
-            />
-          </div>
+              {/* Operating Schedule Editor Content */}
+              <div className="rounded-lg border bg-white p-6">
+                <ScheduleEditor
+                  processFlow={processFlow}
+                  parquetMetadata={parquetMetadata}
+                  paxDemographics={paxDemographics}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

@@ -9,25 +9,25 @@ export default {
     './src/lib/colors.ts', // colors.ts 파일의 클래스들도 포함
   ],
   safelist: [
-    // Badge colors (필요한 색상만 포함)
+    // Badge colors - 12 colors palette
     {
       pattern: /^(bg|text|border)-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(100|200|700)$/,
     },
     {
       pattern: /^hover:bg-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-200$/,
     },
-    // Zone gradient colors
+    // Zone gradient colors - same 12 colors as badges
     {
-      pattern: /^from-(blue|purple|green|orange|pink|indigo|cyan|emerald|amber|rose|lime|violet)-(500|600|700)$/,
+      pattern: /^from-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(500|600|700)$/,
     },
     {
-      pattern: /^to-(blue|purple|green|orange|pink|indigo|cyan|emerald|amber|rose|lime|violet)-(600|700)$/,
+      pattern: /^to-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(600|700)$/,
     },
     {
-      pattern: /^hover:from-(blue|purple|green|orange|pink|indigo|cyan|emerald|amber|rose|lime|violet)-(600|700)$/,
+      pattern: /^hover:from-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(600|700)$/,
     },
     {
-      pattern: /^hover:to-(blue|purple|green|orange|pink|indigo|cyan|emerald|amber|rose|lime|violet)-(700|800)$/,
+      pattern: /^hover:to-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(700|800)$/,
     },
   ],
   theme: {
