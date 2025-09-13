@@ -14,7 +14,8 @@ export default {
       pattern: /^(bg|text|border)-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(100|200|700)$/,
     },
     {
-      pattern: /^hover:bg-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-200$/,
+      pattern: /^(bg)-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-200$/,
+      variants: ['hover'],
     },
     // Zone gradient colors - same 12 colors as badges
     {
@@ -24,10 +25,12 @@ export default {
       pattern: /^to-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(600|700)$/,
     },
     {
-      pattern: /^hover:from-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(600|700)$/,
+      pattern: /^from-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(600|700)$/,
+      variants: ['hover'],
     },
     {
-      pattern: /^hover:to-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(700|800)$/,
+      pattern: /^to-(cyan|emerald|amber|rose|sky|purple|indigo|teal|orange|lime|pink|violet)-(700|800)$/,
+      variants: ['hover'],
     },
   ],
   theme: {
