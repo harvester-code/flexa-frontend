@@ -51,6 +51,7 @@ import ScheduleEditor from './ScheduleEditor';
 import FlightCriteriaSelector from '../flight-schedule/FlightCriteriaSelector';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
+import { getBadgeColor, getZoneGradient } from '@/lib/colors';
 
 // Parquet Metadata 타입 정의 (ScheduleEditor와 동일)
 interface ParquetMetadataItem {
@@ -115,6 +116,16 @@ function SortableProcessCard({
     (zone: any) => zone.facilities && zone.facilities.length > 0
   );
 
+  // Extract entry condition values
+  const entryConditionValues: string[] = [];
+  if (step.entry_conditions && step.entry_conditions.length > 0) {
+    step.entry_conditions.forEach((condition: any) => {
+      condition.values.forEach((value: string) => {
+        entryConditionValues.push(value);
+      });
+    });
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -126,38 +137,67 @@ function SortableProcessCard({
       } ${isDragging ? 'cursor-grabbing' : ''}`}
       onClick={onSelect}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
-        {/* Drag Handle */}
-        <div
-          className="text-primary/60 cursor-grab hover:text-primary"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </div>
-
-        {/* Process Info */}
-        <div className="flex items-center gap-2 flex-1">
-          <h3 className="whitespace-nowrap text-sm font-medium text-gray-900">
-            {formatProcessNameForDisplay(step.name)}
-          </h3>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            title="Remove this process"
+      <div className="flex flex-col gap-1.5 px-3 py-2">
+        {/* Top row with drag handle, process name, and action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Drag Handle */}
+          <div
+            className="text-primary/60 cursor-grab hover:text-primary"
+            {...attributes}
+            {...listeners}
           >
-            <Trash2 className="h-2.5 w-2.5" />
-          </Button>
+            <GripVertical className="h-4 w-4" />
+          </div>
+
+          {/* Process Info */}
+          <div className="flex items-center gap-2 flex-1">
+            <h3 className="whitespace-nowrap text-sm font-medium text-gray-900">
+              {formatProcessNameForDisplay(step.name)}
+            </h3>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 w-5 p-0 text-red-500 hover:bg-red-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              title="Remove this process"
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </Button>
+          </div>
         </div>
+
+        {/* Entry condition badges row - only show if there are conditions */}
+        {entryConditionValues.length > 0 && (
+          <div className="flex flex-wrap gap-1 pl-6">
+            {entryConditionValues.slice(0, 3).map((value, idx) => {
+              const color = getBadgeColor(idx);
+              return (
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className={`px-1.5 py-0 text-[10px] ${color.bgColor} ${color.textColor} border ${color.borderColor}`}
+                >
+                  {value}
+                </Badge>
+              );
+            })}
+            {entryConditionValues.length > 3 && (
+              <Badge
+                variant="outline"
+                className="px-1.5 py-0 text-[10px] bg-gray-100 text-gray-700 border border-gray-200"
+              >
+                +{entryConditionValues.length - 3}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -323,6 +363,15 @@ export default function ProcessFlowDesigner({
       setEditedProcess({ ...currentProcess });
       setZoneNamesInput(Object.keys(currentProcess.zones || {}).join(', '));
 
+      // Set defaultFacilityCount based on the first zone's facility count
+      const zoneKeys = Object.keys(currentProcess.zones || {});
+      if (zoneKeys.length > 0) {
+        const firstZone = currentProcess.zones[zoneKeys[0]];
+        if (firstZone && firstZone.facilities) {
+          setDefaultFacilityCount(firstZone.facilities.length);
+        }
+      }
+
       // Initialize entry conditions for the selected process
       const initialSelectedItems: Record<string, boolean> = {};
       if (currentProcess.entry_conditions) {
@@ -337,6 +386,7 @@ export default function ProcessFlowDesigner({
     } else if (!isCreatingNew) {
       setEditedProcess(null);
       setZoneNamesInput('');
+      setDefaultFacilityCount(null);
       setSelectedCriteriaItems({});
     }
   }, [selectedProcessIndex, processFlow, isCreatingNew]);
@@ -404,7 +454,7 @@ export default function ProcessFlowDesigner({
         }
 
         // Update selected index if needed
-        if (selectedProcessIndex !== null) {
+        if (selectedProcessIndex !== null && processFlow[selectedProcessIndex]) {
           const selectedProcess = processFlow[selectedProcessIndex];
           const newSelectedIndex = updatedFlow.findIndex(p => p.name === selectedProcess.name);
           if (newSelectedIndex !== -1) {
@@ -584,7 +634,7 @@ export default function ProcessFlowDesigner({
           </div>
 
           {/* Left-Right Split Layout */}
-          <div className="flex gap-6 items-stretch">
+          <div className="flex gap-6 h-[44rem]">
             {/* Left Panel: Vertical Flow - 4/10 ratio */}
             <div className="flex-[4] flex">
               <div className="rounded-lg border bg-white p-4 flex flex-col flex-1">
@@ -599,7 +649,7 @@ export default function ProcessFlowDesigner({
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="flex flex-1 flex-col items-center gap-3 overflow-y-auto px-3">
+                  <div className="flex flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-3">
                     {/* Entry (Fixed) */}
                     <div className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 shadow-sm">
                       <Users className="h-4 w-4 text-primary" />
@@ -623,7 +673,7 @@ export default function ProcessFlowDesigner({
                                   {step.travel_time_minutes}min
                                 </span>
                               )}
-                              <ChevronDown className="mt-2 h-5 w-5 flex-shrink-0 text-primary" />
+                              <ChevronDown className="h-5 w-5 flex-shrink-0 text-primary" />
                             </div>
 
                             {/* Sortable Process Card */}
@@ -643,7 +693,9 @@ export default function ProcessFlowDesigner({
                     {isCreatingNew && editedProcess && (
                       <>
                         {/* Arrow before new process */}
-                        <ChevronDown className="mt-2 h-5 w-5 flex-shrink-0 text-primary" />
+                        <div className="flex justify-center">
+                          <ChevronDown className="h-5 w-5 flex-shrink-0 text-primary" />
+                        </div>
 
                         {/* New Process Card Placeholder */}
                         <div className="group relative w-full flex-shrink-0 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 shadow-sm animate-pulse">
@@ -661,9 +713,10 @@ export default function ProcessFlowDesigner({
                       </>
                     )}
 
-
-                  {/* Arrow before Gate - Always show */}
-                  <ChevronDown className="mt-2 h-5 w-5 flex-shrink-0 text-primary" />
+                    {/* Arrow before Gate - Always show */}
+                    <div className="flex justify-center">
+                      <ChevronDown className="h-5 w-5 flex-shrink-0 text-primary" />
+                    </div>
 
                     {/* Gate (Fixed) */}
                     <div className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 shadow-sm">
@@ -704,29 +757,34 @@ export default function ProcessFlowDesigner({
             <div className="w-px bg-gray-200"></div>
 
             {/* Right Panel: Process Details - 6/10 ratio */}
-            <div className="min-w-0 flex-[6] flex">
+            <div className="min-w-0 flex-[6] flex h-full">
               {(isCreatingNew || (selectedProcessIndex !== null && processFlow[selectedProcessIndex])) && editedProcess ? (
-                <div className="rounded-lg border bg-white p-6 flex-1">
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-                      <Route className="h-4 w-4 text-gray-600" />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        value={editedProcess.name}
-                        onChange={(e) => setEditedProcess({ ...editedProcess, name: e.target.value })}
-                        placeholder="Enter process name"
-                        className="text-lg font-semibold border border-gray-300 bg-white px-3 py-1.5 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-gray-400 transition-colors"
-                        autoFocus={isCreatingNew}
-                      />
-                      <p className="text-sm text-gray-500 mt-1">
-                        {isCreatingNew ? 'Create New Process' : 'Process Details'}
-                      </p>
+                <div className="rounded-lg border bg-white flex-1 h-full flex flex-col">
+                  {/* Header - Fixed */}
+                  <div className="px-6 py-3 border-b">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                        <Route className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          value={editedProcess.name}
+                          onChange={(e) => setEditedProcess({ ...editedProcess, name: e.target.value })}
+                          placeholder="Enter process name"
+                          className="text-lg font-semibold border border-gray-300 bg-white px-3 py-1.5 rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-gray-400 transition-colors"
+                          autoFocus={isCreatingNew}
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          {isCreatingNew ? 'Create New Process' : 'Process Details'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Process Form - Always Editable */}
-                  <div className="space-y-6">
+                  {/* Scrollable Content Area */}
+                  <div className="flex-1 overflow-y-auto p-6">
+                    {/* Process Form - Always Editable */}
+                    <div className="space-y-6">
                     <>
                         {/* Zone Names and Facilities/Zone - One row */}
                         <div className="grid grid-cols-12 gap-3">
@@ -830,15 +888,7 @@ export default function ProcessFlowDesigner({
                               {Object.keys(editedProcess.zones || {}).map((zoneName, index) => {
                                 const zone = editedProcess.zones[zoneName];
                                 const facilityCount = zone?.facilities?.length || defaultFacilityCount;
-                                const colorClasses = [
-                                  'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-                                  'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-                                  'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-                                  'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
-                                  'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
-                                  'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
-                                ];
-                                const colorClass = colorClasses[index % colorClasses.length];
+                                const colorClass = getZoneGradient(index);
 
                                 const isEditing = editingZone === zoneName;
                                 // Truncate zone name to max 3 characters for display
@@ -966,95 +1016,100 @@ export default function ProcessFlowDesigner({
                             </Button>
                           </div>
 
-                          {/* Selected Entry Conditions Badges */}
-                          {Object.keys(selectedCriteriaItems).filter(key => selectedCriteriaItems[key]).length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(selectedCriteriaItems)
-                                .filter(([_, isSelected]) => isSelected)
-                                .map(([itemKey]) => {
-                                  const [field, value] = itemKey.split(':');
-                                  return (
-                                    <Badge
-                                      key={itemKey}
-                                      variant="secondary"
-                                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm"
-                                    >
-                                      <span className="font-medium">{field}:</span>
-                                      <span>{value}</span>
-                                      <button
-                                        onClick={() => {
-                                          const newItems = { ...selectedCriteriaItems };
-                                          delete newItems[itemKey];
-                                          handleCriteriaSelectionChange(newItems);
-                                        }}
-                                        className="ml-2 hover:text-red-500 transition-colors"
+                          {/* Selected Entry Conditions Container */}
+                          <div className="min-h-[80px] max-h-[120px] rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-3 overflow-y-auto">
+                            {Object.keys(selectedCriteriaItems).filter(key => selectedCriteriaItems[key]).length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(selectedCriteriaItems)
+                                  .filter(([_, isSelected]) => isSelected)
+                                  .map(([itemKey], index) => {
+                                    const [field, value] = itemKey.split(':');
+                                    const color = getBadgeColor(index);
+                                    return (
+                                      <Badge
+                                        key={itemKey}
+                                        variant="outline"
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm h-fit ${color.bgColor} ${color.textColor} border ${color.borderColor} ${color.hoverBgColor} transition-colors`}
                                       >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </Badge>
-                                  );
-                                })}
-                            </div>
-                          ) : (
-                            <div className="rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-4 text-center">
-                              <p className="text-sm text-gray-500">No entry conditions set. Click "Add Condition" to get started.</p>
-                            </div>
-                          )}
+                                        <span className="font-medium">{field}:</span>
+                                        <span>{value}</span>
+                                        <button
+                                          onClick={() => {
+                                            const newItems = { ...selectedCriteriaItems };
+                                            delete newItems[itemKey];
+                                            handleCriteriaSelectionChange(newItems);
+                                          }}
+                                          className="ml-2 hover:text-red-500 transition-colors"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </Badge>
+                                    );
+                                  })}
+                              </div>
+                            ) : (
+                              <div className="flex h-full min-h-[60px] items-center justify-center">
+                                <p className="text-sm text-gray-500">No entry conditions set. Click "Add Condition" to get started.</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex justify-end gap-2 pt-4">
-                          <Button
-                            variant="outline"
-                            onClick={handleCancel}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="primary"
-                            onClick={() => {
-                              if (isCreatingNew) {
-                                // Create new process directly
-                                if (editedProcess && editedProcess.name && Object.keys(editedProcess.zones).length > 0) {
-                                  if (onCreateProcess) {
-                                    // Format the process name for storage
-                                    const processToCreate = {
-                                      ...editedProcess,
-                                      name: formatProcessNameForStorage(editedProcess.name)
-                                    };
-                                    onCreateProcess(processToCreate);
-                                  }
-                                  setIsCreatingNew(false);
-                                  setEditedProcess(null);
-                                  setZoneNamesInput('');
-                                  setDefaultFacilityCount(null);
-                                  setSelectedCriteriaItems({});
-                                  toast({
-                                    title: 'Process Created',
-                                    description: 'New process has been added successfully.',
-                                  });
-                                }
-                              } else {
-                                // Update existing process
-                                handleUpdateProcess();
-                              }
-                            }}
-                            disabled={
-                              !editedProcess?.name ||
-                              Object.keys(editedProcess?.zones || {}).length === 0 ||
-                              !defaultFacilityCount || defaultFacilityCount <= 0 ||
-                              editedProcess?.travel_time_minutes == null ||
-                              editedProcess?.process_time_seconds == null || editedProcess?.process_time_seconds <= 0
-                            }
-                          >
-                            {isCreatingNew ? 'Create' : 'Update'}
-                          </Button>
-                        </div>
                       </>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Fixed at bottom */}
+                  <div className="border-t px-6 py-3 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleCancel}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        if (isCreatingNew) {
+                          // Create new process directly
+                          if (editedProcess && editedProcess.name && Object.keys(editedProcess.zones).length > 0) {
+                            if (onCreateProcess) {
+                              // Format the process name for storage
+                              const processToCreate = {
+                                ...editedProcess,
+                                name: formatProcessNameForStorage(editedProcess.name)
+                              };
+                              onCreateProcess(processToCreate);
+                            }
+                            setIsCreatingNew(false);
+                            setEditedProcess(null);
+                            setZoneNamesInput('');
+                            setDefaultFacilityCount(null);
+                            setSelectedCriteriaItems({});
+                            toast({
+                              title: 'Process Created',
+                              description: 'New process has been added successfully.',
+                            });
+                          }
+                        } else {
+                          // Update existing process
+                          handleUpdateProcess();
+                        }
+                      }}
+                      disabled={
+                        !editedProcess?.name ||
+                        Object.keys(editedProcess?.zones || {}).length === 0 ||
+                        !defaultFacilityCount || defaultFacilityCount <= 0 ||
+                        editedProcess?.travel_time_minutes == null ||
+                        editedProcess?.process_time_seconds == null || editedProcess?.process_time_seconds <= 0
+                      }
+                    >
+                      {isCreatingNew ? 'Create' : 'Update'}
+                    </Button>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50">
+                <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 h-full">
                   <div className="text-center p-8">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                       <Route className="h-8 w-8 text-primary/40" />
