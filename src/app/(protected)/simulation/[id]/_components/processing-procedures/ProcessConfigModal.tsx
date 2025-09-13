@@ -35,6 +35,7 @@ interface ProcessConfigModalProps {
   }) => void;
   mode: 'create' | 'edit';
   processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
+  parquetMetadata?: any; // 🆕 동적 조건 데이터
 }
 
 export default function ProcessConfigModal({

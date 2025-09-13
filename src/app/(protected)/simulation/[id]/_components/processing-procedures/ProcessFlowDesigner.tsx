@@ -290,14 +290,14 @@ export default function ProcessFlowDesigner({
   // Zone facility count editing functions
   const startEditingZone = useCallback((zoneName: string) => {
     const zone = editedProcess?.zones?.[zoneName];
-    const currentCount = zone?.facilities?.length || defaultFacilityCount;
+    const currentCount = zone?.facilities?.length || defaultFacilityCount || 1;
     setEditingZone(zoneName);
     setEditingValue(currentCount.toString());
   }, [editedProcess, defaultFacilityCount]);
 
   const finishEditingZone = useCallback(() => {
     if (editingZone && editedProcess) {
-      const newCount = editingValue === '' ? defaultFacilityCount : parseInt(editingValue);
+      const newCount = editingValue === '' ? (defaultFacilityCount || 1) : parseInt(editingValue);
       const count = Math.max(1, Math.min(50, newCount));
 
       // Update the specific zone's facility count
@@ -882,7 +882,7 @@ export default function ProcessFlowDesigner({
                                     } else {
                                       // Create new facilities
                                       const facilities: any[] = [];
-                                      for (let i = 1; i <= defaultFacilityCount; i++) {
+                                      for (let i = 1; i <= (defaultFacilityCount || 1); i++) {
                                         facilities.push({
                                           id: `${name}_${i}`,
                                           operating_schedule: {

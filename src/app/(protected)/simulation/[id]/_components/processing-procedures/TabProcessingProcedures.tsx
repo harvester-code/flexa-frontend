@@ -107,9 +107,8 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
   const handleSaveProcess = (data: {
     name: string;
     facilities: FacilityItem[];
-    travelTime: number;
-    entryConditions: EntryCondition[];
-    zoneFacilityCounts?: Record<string, number>;
+    defaultFacilityCount: number;
+    zoneFacilityCounts: Record<string, number>;
   }) => {
     const activeFacilities = data.facilities.filter((f) => f.isActive).map((f) => f.name);
     const normalizedName = normalizeProcessName(data.name);
@@ -119,8 +118,8 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
       const newStep = {
         step: processFlow.length,
         name: normalizedName, // 정규화된 이름 사용
-        travel_time_minutes: data.travelTime,
-        entry_conditions: data.entryConditions,
+        travel_time_minutes: 0,
+        entry_conditions: [],
         zones: {} as Record<string, any>,
       };
 
@@ -151,8 +150,8 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
         newProcessFlow[editingProcessData.index] = {
           ...newProcessFlow[editingProcessData.index],
           name: normalizedName, // 정규화된 이름 사용
-          travel_time_minutes: data.travelTime,
-          entry_conditions: data.entryConditions,
+          travel_time_minutes: newProcessFlow[editingProcessData.index].travel_time_minutes || 0,
+          entry_conditions: newProcessFlow[editingProcessData.index].entry_conditions || [],
           zones: {} as Record<string, any>,
         };
 

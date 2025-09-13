@@ -2180,7 +2180,7 @@ export default function OperatingScheduleEditor({
             timeSlots,
             existingTimeBlocks,
             cellBadges,
-            processTimeSeconds
+            processTimeSeconds ?? undefined
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트
