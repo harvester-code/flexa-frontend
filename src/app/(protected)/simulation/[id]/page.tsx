@@ -403,7 +403,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
             apiRequestLog={apiRequestLog}
             setApiRequestLog={setApiRequestLog}
           />
-          <TabProcessingProcedures visible={currentScenarioTab === 2} simulationId={simulationId} />
+          <TabProcessingProcedures
+            visible={currentScenarioTab === 2}
+            simulationId={simulationId}
+            apiRequestLog={apiRequestLog}
+            setApiRequestLog={setApiRequestLog}
+          />
         </React.Fragment>
       ) : (
         <SimulationLoading minHeight="min-h-[200px]" />

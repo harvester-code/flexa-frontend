@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { EntryCondition } from '@/types/simulationTypes';
+import { EntryCondition, APIRequestLog } from '@/types/simulationTypes';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
@@ -18,9 +18,11 @@ type FacilityItem = {
 interface TabProcessingProceduresProps {
   simulationId: string;
   visible: boolean;
+  apiRequestLog: APIRequestLog | null;
+  setApiRequestLog: (log: APIRequestLog | null) => void;
 }
 
-export default function TabProcessingProcedures({ simulationId, visible }: TabProcessingProceduresProps) {
+export default function TabProcessingProcedures({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabProcessingProceduresProps) {
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
   const isCompleted = useSimulationStore((s) => s.workflow.step3Completed);
@@ -256,6 +258,8 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         parquetMetadata={parquetMetadata}
         paxDemographics={paxDemographics}
         simulationId={simulationId}
+        apiRequestLog={apiRequestLog}
+        setApiRequestLog={setApiRequestLog}
         onProcessSelect={handleProcessSelect}
         onOpenCreateModal={handleOpenCreateModal}
         onOpenEditModal={handleOpenEditModal}

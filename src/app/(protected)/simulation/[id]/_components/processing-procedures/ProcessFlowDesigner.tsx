@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { runSimulation } from '@/services/simulationService';
 import { useToast } from '@/hooks/useToast';
-import { ProcessStep } from '@/types/simulationTypes';
+import { ProcessStep, APIRequestLog } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -72,6 +72,8 @@ interface ProcessFlowDesignerProps {
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
   paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
   simulationId: string; // 🆕 시뮬레이션 ID 추가
+  apiRequestLog: APIRequestLog | null;
+  setApiRequestLog: (log: APIRequestLog | null) => void;
 
   // Event Handlers
   onProcessSelect: (index: number) => void;
@@ -242,6 +244,8 @@ export default function ProcessFlowDesigner({
   parquetMetadata = [],
   paxDemographics = {},
   simulationId,
+  apiRequestLog,
+  setApiRequestLog,
   onProcessSelect,
   onOpenCreateModal,
   onOpenEditModal,
@@ -276,7 +280,8 @@ export default function ProcessFlowDesigner({
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
-  
+
+
   // Entry Conditions state
   const [selectedCriteriaItems, setSelectedCriteriaItems] = useState<Record<string, boolean>>({});
   const [isEntryConditionDialogOpen, setIsEntryConditionDialogOpen] = useState(false);
@@ -577,13 +582,45 @@ export default function ProcessFlowDesigner({
         travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
       }));
 
-      await runSimulation(simulationId, sanitizedProcessFlow);
+      // Set API request log
+      const requestData = {
+        process_flow: sanitizedProcessFlow
+      };
+
+      setApiRequestLog({
+        timestamp: new Date().toISOString(),
+        request: requestData,
+        status: 'loading'
+      });
+
+      const response = await runSimulation(simulationId, sanitizedProcessFlow);
+
+      // Update with success response
+      setApiRequestLog({
+        timestamp: new Date().toISOString(),
+        request: requestData,
+        response: response.data,
+        status: 'success'
+      });
 
       toast({
         title: 'Simulation Started',
         description: 'Your simulation is now running. You can check the results in the Home tab.',
       });
     } catch (error: any) {
+      // Update with error
+      setApiRequestLog({
+        timestamp: new Date().toISOString(),
+        request: {
+          process_flow: processFlow.map((step) => ({
+            ...step,
+            travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1),
+          }))
+        },
+        status: 'error',
+        error: error.response?.data?.message || error.message || 'Failed to start simulation'
+      });
+
       toast({
         title: 'Simulation Failed',
         description: error.response?.data?.message || 'Failed to start simulation. Please try again.',
@@ -1227,6 +1264,7 @@ export default function ProcessFlowDesigner({
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
