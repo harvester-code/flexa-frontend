@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   ArrowLeftRight,
   Building2,
@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Clock,
   Edit2 as Edit,
+  Filter,
   MapPin,
   Plane,
   Play,
@@ -21,10 +22,12 @@ import { runSimulation } from '@/services/simulationService';
 import { useToast } from '@/hooks/useToast';
 import { ProcessStep } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatProcessName } from '@/lib/utils';
 import { useSimulationStore } from '../../_stores';
 import ScheduleEditor from './ScheduleEditor';
+import FlightCriteriaSelector from '../flight-schedule/FlightCriteriaSelector';
 
 // Parquet Metadata 타입 정의 (ScheduleEditor와 동일)
 interface ParquetMetadataItem {
@@ -51,6 +54,7 @@ interface ProcessFlowDesignerProps {
   onOpenCreateModal: () => void;
   onOpenEditModal: (index: number) => void;
   onRemoveProcess: (index: number) => void;
+  onUpdateProcess?: (index: number, updatedProcess: ProcessStep) => void; // New prop for direct updates
 }
 
 export default function ProcessFlowDesigner({
@@ -63,12 +67,43 @@ export default function ProcessFlowDesigner({
   onOpenCreateModal,
   onOpenEditModal,
   onRemoveProcess,
+  onUpdateProcess,
 }: ProcessFlowDesignerProps) {
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
   
   // 🆕 step3Completed 상태 가져오기
   const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
+  const paxDemographicsFromStore = useSimulationStore((s) => s.passenger.pax_demographics);
+  
+  // Inline editing state - always keep a copy of the current process for editing
+  const [editedProcess, setEditedProcess] = useState<ProcessStep | null>(null);
+  
+  // Entry Conditions state
+  const [selectedCriteriaItems, setSelectedCriteriaItems] = useState<Record<string, boolean>>({});
+  
+  // Initialize edited process when selection changes
+  React.useEffect(() => {
+    if (selectedProcessIndex !== null && processFlow[selectedProcessIndex]) {
+      const currentProcess = processFlow[selectedProcessIndex];
+      setEditedProcess({ ...currentProcess });
+      
+      // Initialize entry conditions for the selected process
+      const initialSelectedItems: Record<string, boolean> = {};
+      if (currentProcess.entry_conditions) {
+        currentProcess.entry_conditions.forEach((condition: any) => {
+          condition.values.forEach((value: string) => {
+            const itemKey = `${condition.field}:${value}`;
+            initialSelectedItems[itemKey] = true;
+          });
+        });
+      }
+      setSelectedCriteriaItems(initialSelectedItems);
+    } else {
+      setEditedProcess(null);
+      setSelectedCriteriaItems({});
+    }
+  }, [selectedProcessIndex, processFlow]);
 
   // Complete 조건 체크: 모든 시설에 operating_schedule이 설정되고 travel_time_minutes가 설정되어야 함
   const canRunSimulation = useMemo(() => {
@@ -98,6 +133,64 @@ export default function ProcessFlowDesigner({
   }, [processFlow]);
 
   // 🆕 Run simulation 핸들러
+  // Handle cancel - reset to original values
+  const handleCancel = () => {
+    if (selectedProcessIndex !== null && processFlow[selectedProcessIndex]) {
+      setEditedProcess({ ...processFlow[selectedProcessIndex] });
+    }
+  };
+
+  // Handle Entry Conditions selection change
+  const handleCriteriaSelectionChange = useCallback((selectedItems: Record<string, boolean>) => {
+    setSelectedCriteriaItems(selectedItems);
+    
+    // Convert selectedItems to entry_conditions format
+    const conditionsMap: Record<string, string[]> = {};
+    
+    Object.entries(selectedItems).forEach(([itemKey, isSelected]) => {
+      if (isSelected) {
+        const [columnKey, value] = itemKey.split(':');
+        if (!conditionsMap[columnKey]) {
+          conditionsMap[columnKey] = [];
+        }
+        conditionsMap[columnKey].push(value);
+      }
+    });
+    
+    const newEntryConditions = Object.entries(conditionsMap).map(([field, values]) => ({
+      field,
+      values,
+    }));
+    
+    if (editedProcess) {
+      setEditedProcess({ ...editedProcess, entry_conditions: newEntryConditions });
+    }
+  }, [editedProcess]);
+
+  const handleCriteriaClearAll = useCallback(() => {
+    setSelectedCriteriaItems({});
+    if (editedProcess) {
+      setEditedProcess({ ...editedProcess, entry_conditions: [] });
+    }
+  }, [editedProcess]);
+
+  const handleUpdateProcess = () => {
+    if (editedProcess && selectedProcessIndex !== null) {
+      // If direct update handler is provided, use it
+      if (onUpdateProcess) {
+        onUpdateProcess(selectedProcessIndex, editedProcess);
+      } else {
+        // Fallback to opening edit modal with current data
+        onOpenEditModal(selectedProcessIndex);
+      }
+      
+      toast({
+        title: 'Process Updated',
+        description: 'Process has been updated successfully.',
+      });
+    }
+  };
+
   const handleRunSimulation = async () => {
     if (!canRunSimulation) {
       // 구체적인 미완료 사항 확인
@@ -350,114 +443,144 @@ export default function ProcessFlowDesigner({
 
             {/* Right Panel: Process Details - 7/10 ratio */}
             <div className="min-w-0 flex-[7]">
-              {selectedProcessIndex !== null && processFlow[selectedProcessIndex] ? (
+              {selectedProcessIndex !== null && processFlow[selectedProcessIndex] && editedProcess ? (
                 <div className="rounded-lg border bg-white p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                        <Route className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {processFlow[selectedProcessIndex].name}
-                        </h3>
-                        <p className="text-sm text-gray-500">Process Details</p>
-                      </div>
+                  <div className="mb-6 flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                      <Route className="h-4 w-4 text-gray-600" />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onOpenEditModal(selectedProcessIndex)}
-                        className="flex items-center gap-1"
-                      >
-                        <Edit className="h-3 w-3" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onRemoveProcess(selectedProcessIndex)}
-                        className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete
-                      </Button>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {editedProcess.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">Process Details</p>
                     </div>
                   </div>
 
-                  {/* Process Info */}
+                  {/* Process Form - Always Editable */}
                   <div className="space-y-6">
-                    {/* Travel Time & Zones Cards */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Travel Time Card */}
-                      <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10">
-                            <Clock className="h-3 w-3 text-blue-600" />
-                          </div>
-                          <label className="text-xs font-medium text-blue-800">Travel Time</label>
+                    <>
+                        {/* Process Name */}
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Process Name
+                          </label>
+                          <Input
+                            value={editedProcess.name}
+                            onChange={(e) => setEditedProcess({ ...editedProcess, name: e.target.value })}
+                            placeholder="Enter process name"
+                            className="w-full"
+                          />
                         </div>
-                        <p className="text-lg font-bold text-blue-900">
-                          {processFlow[selectedProcessIndex].travel_time_minutes || 0}
-                          <span className="ml-1 text-sm font-medium text-blue-600">minutes</span>
-                        </p>
-                      </div>
 
-                      {/* Zones Card */}
-                      <div className="rounded-lg border border-green-100 bg-green-50/50 p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/10">
-                            <MapPin className="h-3 w-3 text-green-600" />
-                          </div>
-                          <label className="text-xs font-medium text-green-800">Zones</label>
+                        {/* Zone Names */}
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Zone Names
+                          </label>
+                          <Input
+                            value={Object.keys(editedProcess.zones || {}).join(', ')}
+                            onChange={(e) => {
+                              // Parse zone names from comma-separated string
+                              const zoneNames = e.target.value.split(',').map(z => z.trim()).filter(z => z);
+                              const newZones: any = {};
+                              zoneNames.forEach(name => {
+                                newZones[name] = editedProcess.zones?.[name] || { facilities: [] };
+                              });
+                              setEditedProcess({ ...editedProcess, zones: newZones });
+                            }}
+                            placeholder="e.g., A~E, Gate1~5"
+                            className="w-full"
+                          />
                         </div>
-                        <p className="text-lg font-bold text-green-900">
-                          {Object.keys(processFlow[selectedProcessIndex].zones || {}).length}
-                          <span className="ml-1 text-sm font-medium text-green-600">zones</span>
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Zone Configuration */}
-                    {Object.keys(processFlow[selectedProcessIndex].zones || {}).length > 0 && (
-                      <div>
-                        <div className="mb-3 flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10">
-                            <Building2 className="h-3 w-3 text-purple-600" />
+                        {/* Walking Time */}
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Walking time
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editedProcess.travel_time_minutes || ''}
+                              onChange={(e) => setEditedProcess({ 
+                                ...editedProcess, 
+                                travel_time_minutes: parseInt(e.target.value) || 0 
+                              })}
+                              placeholder="5"
+                              className="w-24"
+                              min="0"
+                            />
+                            <span className="text-sm text-gray-500">min</span>
                           </div>
-                          <label className="text-sm font-medium text-purple-800">Zone Configuration</label>
                         </div>
-                        <div className="grid grid-cols-4 gap-3">
-                          {Object.entries(processFlow[selectedProcessIndex].zones || {}).map(([zoneName, zoneData]) => {
-                            const facilityCount = zoneData.facilities?.length || 0;
-                            // Zone별 색상 배치 (A, B, C, D... 순서대로)
-                            const colors = [
-                              'from-blue-400 to-blue-500',
-                              'from-purple-400 to-purple-500',
-                              'from-green-400 to-green-500',
-                              'from-orange-400 to-orange-500',
-                              'from-pink-400 to-pink-500',
-                              'from-indigo-400 to-indigo-500',
-                            ];
-                            const colorIndex = zoneName.charCodeAt(0) - 65; // A=0, B=1, C=2...
-                            const colorClass = colors[colorIndex % colors.length];
 
-                            return (
-                              <div
-                                key={zoneName}
-                                className={`rounded-lg bg-gradient-to-br ${colorClass} p-3 text-white shadow-sm`}
-                              >
-                                <div className="text-center">
-                                  <div className="mb-1 text-sm font-bold">{zoneName}</div>
-                                  <div className="text-xs opacity-90">{facilityCount} facilities</div>
-                                </div>
+                        {/* Processing Time */}
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Processing Time
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="text"
+                              value={editedProcess.process_time_seconds || 12}
+                              onChange={(e) => {
+                                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                const processTime = numericValue === '' ? 0 : Math.min(300, Math.max(0, parseInt(numericValue)));
+                                setEditedProcess({ ...editedProcess, process_time_seconds: processTime });
+                              }}
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
+                              placeholder="12"
+                              className="pr-12 text-center"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">sec</span>
+                          </div>
+                        </div>
+
+                        {/* Entry Conditions */}
+                        <div>
+                          {parquetMetadata && parquetMetadata.length > 0 ? (
+                            <FlightCriteriaSelector
+                              title="Entry Conditions"
+                              icon={<Filter className="h-4 w-4" />}
+                              parquetMetadata={parquetMetadata}
+                              additionalMetadata={paxDemographics || paxDemographicsFromStore}
+                              onSelectionChange={handleCriteriaSelectionChange}
+                              onClearAll={handleCriteriaClearAll}
+                              initialSelectedItems={selectedCriteriaItems}
+                            />
+                          ) : (
+                            <div>
+                              <label className="mb-3 block text-sm font-medium text-gray-700">
+                                <Filter className="mr-2 inline h-4 w-4" />
+                                Entry Conditions
+                              </label>
+                              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <p className="text-sm text-amber-700">
+                                  Parquet metadata is required to configure entry conditions. Please provide flight data to enable
+                                  this feature.
+                                </p>
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-2 pt-4">
+                          <Button
+                            variant="outline"
+                            onClick={handleCancel}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={handleUpdateProcess}
+                          >
+                            Update
+                          </Button>
+                        </div>
+                      </>
                   </div>
                 </div>
               ) : (

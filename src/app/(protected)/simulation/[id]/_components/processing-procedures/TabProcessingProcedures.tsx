@@ -191,6 +191,16 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
     setProcessFlow(reorderedProcessFlow);
   };
 
+  // Direct update handler for inline editing
+  const handleDirectUpdateProcess = (index: number, updatedProcess: any) => {
+    const newProcessFlow = [...processFlow];
+    newProcessFlow[index] = {
+      ...updatedProcess,
+      step: index, // Ensure step is correct
+    };
+    setProcessFlow(newProcessFlow);
+  };
+
 
   // 첫 번째 프로세스를 기본으로 선택
   useEffect(() => {
@@ -217,6 +227,7 @@ export default function TabProcessingProcedures({ simulationId, visible }: TabPr
         onOpenCreateModal={handleOpenCreateModal}
         onOpenEditModal={handleOpenEditModal}
         onRemoveProcess={removeProcedure}
+        onUpdateProcess={handleDirectUpdateProcess}
       />
 
       {/* Process Configuration Modal */}
