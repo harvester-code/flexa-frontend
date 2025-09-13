@@ -116,13 +116,14 @@ function SortableProcessCard({
     (zone: any) => zone.facilities && zone.facilities.length > 0
   );
 
-  // Extract entry condition values
-  const entryConditionValues: string[] = [];
+  // Group entry condition values by field
+  const entryConditionBadges: string[] = [];
   if (step.entry_conditions && step.entry_conditions.length > 0) {
     step.entry_conditions.forEach((condition: any) => {
-      condition.values.forEach((value: string) => {
-        entryConditionValues.push(value);
-      });
+      // Join multiple values from same field with |
+      if (condition.values && condition.values.length > 0) {
+        entryConditionBadges.push(condition.values.join(' | '));
+      }
     });
   }
 
@@ -173,31 +174,40 @@ function SortableProcessCard({
           </div>
         </div>
 
-        {/* Entry condition badges row - only show if there are conditions */}
-        {entryConditionValues.length > 0 && (
-          <div className="flex flex-wrap gap-1 pl-6">
-            {entryConditionValues.slice(0, 3).map((value, idx) => {
-              const color = getBadgeColor(idx);
-              return (
+        {/* Entry condition badges row */}
+        <div className="flex flex-wrap gap-1 pl-6">
+          {entryConditionBadges.length > 0 ? (
+            <>
+              {entryConditionBadges.slice(0, 3).map((badge, idx) => {
+                const color = getBadgeColor(idx);
+                return (
+                  <Badge
+                    key={idx}
+                    variant="outline"
+                    className={`px-1.5 py-0 text-[10px] ${color.bgColor} ${color.textColor} border ${color.borderColor}`}
+                  >
+                    {badge}
+                  </Badge>
+                );
+              })}
+              {entryConditionBadges.length > 3 && (
                 <Badge
-                  key={idx}
                   variant="outline"
-                  className={`px-1.5 py-0 text-[10px] ${color.bgColor} ${color.textColor} border ${color.borderColor}`}
+                  className="px-1.5 py-0 text-[10px] bg-gray-100 text-gray-700 border border-gray-200"
                 >
-                  {value}
+                  +{entryConditionBadges.length - 3}
                 </Badge>
-              );
-            })}
-            {entryConditionValues.length > 3 && (
-              <Badge
-                variant="outline"
-                className="px-1.5 py-0 text-[10px] bg-gray-100 text-gray-700 border border-gray-200"
-              >
-                +{entryConditionValues.length - 3}
-              </Badge>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          ) : (
+            <Badge
+              variant="outline"
+              className="px-1.5 py-0 text-[10px] bg-gray-100 text-gray-600 border border-gray-200"
+            >
+              All
+            </Badge>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -953,15 +963,14 @@ export default function ProcessFlowDesigner({
                             </label>
                             <div className="flex items-center gap-2">
                               <Input
-                                type="number"
+                                type="text"
                                 value={editedProcess.travel_time_minutes || ''}
                                 onChange={(e) => setEditedProcess({
                                   ...editedProcess,
-                                  travel_time_minutes: parseInt(e.target.value) || 0
+                                  travel_time_minutes: parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
                                 })}
                                 placeholder="5"
-                                className="w-full"
-                                min="0"
+                                className="w-full text-center"
                               />
                               <span className="text-sm text-gray-500">min</span>
                             </div>
@@ -1020,23 +1029,36 @@ export default function ProcessFlowDesigner({
                           <div className="min-h-[80px] max-h-[120px] rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-3 overflow-y-auto">
                             {Object.keys(selectedCriteriaItems).filter(key => selectedCriteriaItems[key]).length > 0 ? (
                               <div className="flex flex-wrap gap-2">
-                                {Object.entries(selectedCriteriaItems)
-                                  .filter(([_, isSelected]) => isSelected)
-                                  .map(([itemKey], index) => {
-                                    const [field, value] = itemKey.split(':');
+                                {(() => {
+                                  // Group selected items by field
+                                  const groupedByField: Record<string, string[]> = {};
+                                  Object.entries(selectedCriteriaItems)
+                                    .filter(([_, isSelected]) => isSelected)
+                                    .forEach(([itemKey]) => {
+                                      const [field, value] = itemKey.split(':');
+                                      if (!groupedByField[field]) {
+                                        groupedByField[field] = [];
+                                      }
+                                      groupedByField[field].push(value);
+                                    });
+
+                                  return Object.entries(groupedByField).map(([field, values], index) => {
                                     const color = getBadgeColor(index);
+                                    const displayValue = values.join(' | ');
                                     return (
                                       <Badge
-                                        key={itemKey}
+                                        key={field}
                                         variant="outline"
                                         className={`flex items-center gap-1.5 px-3 py-1.5 text-sm h-fit ${color.bgColor} ${color.textColor} border ${color.borderColor} ${color.hoverBgColor} transition-colors`}
                                       >
-                                        <span className="font-medium">{field}:</span>
-                                        <span>{value}</span>
+                                        <span>{displayValue}</span>
                                         <button
                                           onClick={() => {
                                             const newItems = { ...selectedCriteriaItems };
-                                            delete newItems[itemKey];
+                                            // Remove all items for this field
+                                            values.forEach(value => {
+                                              delete newItems[`${field}:${value}`];
+                                            });
                                             handleCriteriaSelectionChange(newItems);
                                           }}
                                           className="ml-2 hover:text-red-500 transition-colors"
@@ -1045,11 +1067,17 @@ export default function ProcessFlowDesigner({
                                         </button>
                                       </Badge>
                                     );
-                                  })}
+                                  });
+                                })()}
                               </div>
                             ) : (
-                              <div className="flex h-full min-h-[60px] items-center justify-center">
-                                <p className="text-sm text-gray-500">No entry conditions set. Click "Add Condition" to get started.</p>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className="px-3 py-1.5 text-sm h-fit bg-gray-100 text-gray-600 border border-gray-200"
+                                >
+                                  All
+                                </Badge>
                               </div>
                             )}
                           </div>

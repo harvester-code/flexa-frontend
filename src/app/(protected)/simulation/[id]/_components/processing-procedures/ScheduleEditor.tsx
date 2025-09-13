@@ -12,7 +12,7 @@ import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
 import { useThrottle } from "./hooks/useThrottle";
 import { useDebounce } from "./hooks/useDebounce";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
-import { Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
+import { Clock, Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import {
@@ -22,6 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/AlertDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { useSimulationStore } from "../../_stores";
@@ -594,11 +604,11 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       >
         {/* 🚀 가상화 스크롤 컨테이너 */}
         <div className="relative" style={{ height: "auto" }}>
-          <table className="w-full table-fixed text-xs border-separate border-spacing-0">
+          <table className="w-full table-auto text-xs border-separate border-spacing-0">
             <thead className="sticky top-0 bg-muted z-50">
               <tr className="bg-muted">
                 <th
-                  className="w-24 cursor-pointer select-none border border-gray-200 p-2 text-left transition-colors hover:bg-primary/10 overflow-hidden bg-muted whitespace-nowrap text-ellipsis sticky top-0"
+                  className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 overflow-hidden bg-purple-50 whitespace-nowrap text-ellipsis sticky top-0 font-semibold"
                   onClick={handlers.timeHeader.onClick}
                   onContextMenu={(e) => {
                     // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
@@ -615,7 +625,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 {currentFacilities.map((facility, colIndex) => (
                   <th
                     key={facility.id}
-                    className={`w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 sticky top-0 ${
+                    className={`cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 sticky top-0 ${
                       selectedRowsAndCols.selectedCols.has(colIndex) 
                         ? 'bg-primary/20' 
                         : 'bg-muted'
@@ -659,7 +669,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 return (
                   <tr key={rowIndex} className="h-15">
                     <td
-                      className={`w-24 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium text-default-500 transition-colors hover:bg-primary/10 overflow-hidden whitespace-nowrap text-ellipsis ${
+                      className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium bg-purple-50 text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis ${
                         selectedRowsAndCols.selectedRows.has(rowIndex)
                           ? 'bg-primary/20'
                           : ''
@@ -708,7 +718,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         <td
                           key={`${rowIndex}-${colIndex}`}
                           className={cn(
-                            "w-20 cursor-pointer select-none p-1 border border-gray-200", // 모든 셀에 기본 회색 테두리 유지
+                            "cursor-pointer select-none p-1 border border-gray-200", // 모든 셀에 기본 회색 테두리 유지
                             isDisabled && "bg-gray-100"
                           )}
                           style={selectionStyles}
@@ -827,6 +837,12 @@ export default function OperatingScheduleEditor({
   // 전체화면 상태
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  // Time Unit 상태 (기본값 30분)
+  const [timeUnitInput, setTimeUnitInput] = useState<string>('30');
+  const [appliedTimeUnit, setAppliedTimeUnit] = useState<number>(30);
+  const [pendingTimeUnit, setPendingTimeUnit] = useState<number | null>(null);
+  const [showTimeUnitConfirm, setShowTimeUnitConfirm] = useState(false);
+
   // 뱃지 상태 관리 (cellId -> CategoryBadge[]) - 카테고리별로 관리
   const [cellBadges, setCellBadges] = useState<Record<string, CategoryBadge[]>>(
     {}
@@ -873,17 +889,19 @@ export default function OperatingScheduleEditor({
     },
   });
 
-  // 시간 슬롯 생성 (00:00 ~ 23:50, 10분 단위, 144개)
+  // 시간 슬롯 생성 (appliedTimeUnit에 따라 생성)
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
+    const unitMinutes = Math.max(1, Math.min(60, appliedTimeUnit)); // 1분 ~ 60분 사이로 제한
+
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 10) {
+      for (let minute = 0; minute < 60; minute += unitMinutes) {
         const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
         slots.push(timeStr);
       }
     }
     return slots;
-  }, []);
+  }, [appliedTimeUnit]);
 
   // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
   const currentFacilities = useMemo(() => {
@@ -2048,9 +2066,19 @@ export default function OperatingScheduleEditor({
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
   useEffect(() => {
     const ensureFocus = () => {
+      // input, textarea, select 등 form 요소가 포커스를 가지고 있으면 containerRef로 포커스를 옮기지 않음
+      const activeElement = document.activeElement;
+      const isFormElement = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.getAttribute('contenteditable') === 'true'
+      );
+
       if (
         containerRef.current &&
-        document.activeElement !== containerRef.current
+        document.activeElement !== containerRef.current &&
+        !isFormElement
       ) {
         containerRef.current.focus();
       }
@@ -2061,6 +2089,12 @@ export default function OperatingScheduleEditor({
 
     // 🛡️ 클릭 이벤트 리스너는 한 번만 등록
     const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // input 요소를 클릭한 경우 포커스를 변경하지 않음
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+
       if (containerRef.current?.contains(e.target as Node)) {
         // RAF로 포커스 복원 최적화
         requestAnimationFrame(() => ensureFocus());
@@ -2293,15 +2327,65 @@ export default function OperatingScheduleEditor({
               {formatProcessName(processFlow[selectedProcessIndex]?.name)} /{" "}
               {selectedZone}
             </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsFullScreen(true)}
-              className="flex items-center gap-2"
-            >
-              <Expand className="h-4 w-4" />
-              Full Screen
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-md border border-gray-200">
+                <Clock className="h-3.5 w-3.5 text-gray-500" />
+                <input
+                  id="time-unit"
+                  type="text"
+                  value={timeUnitInput}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    setTimeUnitInput(numericValue);
+                  }}
+                  onKeyDown={(e) => {
+                    // 키보드 이벤트가 테이블 단축키와 충돌하지 않도록 전파 중단
+                    e.stopPropagation();
+
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const value = parseInt(timeUnitInput) || 30;
+                      const clampedValue = Math.max(1, Math.min(60, value));
+
+                      // 값이 변경되었을 때만 처리
+                      if (clampedValue !== appliedTimeUnit) {
+                        // 데이터가 있으면 확인 다이얼로그 표시
+                        if (Object.keys(cellBadges).length > 0 || disabledCells.size > 0) {
+                          setPendingTimeUnit(clampedValue);
+                          setShowTimeUnitConfirm(true);
+                        } else {
+                          // 데이터가 없으면 바로 변경
+                          setAppliedTimeUnit(clampedValue);
+                          setTimeUnitInput(clampedValue.toString());
+                        }
+                      }
+
+                      // 입력 필드에서 포커스 제거
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  onBlur={() => {
+                    // onBlur에서는 값만 정리하고 적용하지 않음
+                    const value = parseInt(timeUnitInput) || appliedTimeUnit;
+                    const clampedValue = Math.max(1, Math.min(60, value));
+                    setTimeUnitInput(clampedValue.toString());
+                  }}
+                  placeholder="30"
+                  title="Time interval in minutes (1-60). Press Enter to apply."
+                  className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-700 placeholder-gray-400"
+                />
+                <span className="text-xs text-gray-500">min</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullScreen(true)}
+                className="flex items-center gap-2"
+              >
+                <Expand className="h-4 w-4" />
+                Full Screen
+              </Button>
+            </div>
           </div>
         )}
 
@@ -2374,6 +2458,42 @@ export default function OperatingScheduleEditor({
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Time Unit Change Confirmation Dialog */}
+        <AlertDialog open={showTimeUnitConfirm} onOpenChange={setShowTimeUnitConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Change Time Interval?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {Object.keys(cellBadges).length > 0 || disabledCells.size > 0
+                  ? "Changing the time interval will clear all existing schedule data. Do you want to continue?"
+                  : `Change time interval to ${pendingTimeUnit} minutes?`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setTimeUnitInput(appliedTimeUnit.toString());
+                setPendingTimeUnit(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                if (pendingTimeUnit) {
+                  setAppliedTimeUnit(pendingTimeUnit);
+                  setTimeUnitInput(pendingTimeUnit.toString());
+                  // Clear data if exists
+                  if (Object.keys(cellBadges).length > 0 || disabledCells.size > 0) {
+                    setCellBadges({});
+                    setDisabledCellsByZone({});
+                  }
+                  setPendingTimeUnit(null);
+                }
+              }}>
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
