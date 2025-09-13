@@ -343,11 +343,11 @@ const calculatePeriodsFromDisabledCells = (
   disabledCells: Set<string>,
   timeSlots: string[],
   existingTimeBlocks: any[],
-  cellBadges: Record<string, CategoryBadge[]>
+  cellBadges: Record<string, CategoryBadge[]>,
+  processTimeSeconds?: number // 프로세스의 process_time_seconds 값
 ): any[] => {
-  // 기존 time_blocks에서 process_time_seconds 가져오기
-  const existingBlock = existingTimeBlocks?.[0] || {};
-  const processTime = existingBlock.process_time_seconds || 60;
+  // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
+  const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
   
   const periods: any[] = [];
   let currentStart: string | null = null;
@@ -2169,13 +2169,18 @@ export default function OperatingScheduleEditor({
         if (facility && facility.id) {
           const existingTimeBlocks = facility.operating_schedule?.today?.time_blocks || [];
           
+          // 현재 프로세스의 process_time_seconds 값 가져오기
+          const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
+          const processTimeSeconds = currentProcess?.process_time_seconds;
+
           // 새로운 periods 계산 (뱃지 정보 포함)
           const newTimeBlocks = calculatePeriodsFromDisabledCells(
             facilityIndex,
             disabledCells,
             timeSlots,
             existingTimeBlocks,
-            cellBadges
+            cellBadges,
+            processTimeSeconds
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트

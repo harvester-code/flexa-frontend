@@ -304,10 +304,17 @@ export default function ProcessFlowDesigner({
       const updatedZones = { ...editedProcess.zones };
       const facilities: any[] = [];
       for (let i = 1; i <= count; i++) {
+        const existingSchedule = editedProcess.zones[editingZone]?.facilities?.[i-1]?.operating_schedule;
         facilities.push({
-          id: `${editingZone}-${i}`,
-          name: `${editingZone}-${i}`,
-          operating_schedule: editedProcess.zones[editingZone]?.facilities?.[i-1]?.operating_schedule || null
+          id: `${editingZone}_${i}`,
+          operating_schedule: existingSchedule || {
+            yesterday: {
+              time_blocks: []
+            },
+            today: {
+              time_blocks: []
+            }
+          }
         });
       }
       updatedZones[editingZone] = { facilities };
@@ -576,11 +583,19 @@ export default function ProcessFlowDesigner({
     try {
       setIsRunningSimulation(true);
 
-      // travel_time_minutes 값을 안전하게 처리 (최소 1분)
-      const sanitizedProcessFlow = processFlow.map((step) => ({
-        ...step,
-        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
-      }));
+      // Reorder process flow keys to match backend format (raw_v24.json)
+      const sanitizedProcessFlow = processFlow.map((step) => {
+        // Create a new object with the specific key order that backend expects
+        const orderedStep = {
+          step: step.step,
+          name: step.name,
+          travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
+          entry_conditions: step.entry_conditions || [],
+          zones: step.zones || {}
+        };
+
+        return orderedStep;
+      });
 
       // Set API request log
       const requestData = {
@@ -608,13 +623,16 @@ export default function ProcessFlowDesigner({
         description: 'Your simulation is now running. You can check the results in the Home tab.',
       });
     } catch (error: any) {
-      // Update with error
+      // Update with error - using the same key ordering as raw_v24.json
       setApiRequestLog({
         timestamp: new Date().toISOString(),
         request: {
           process_flow: processFlow.map((step) => ({
-            ...step,
+            step: step.step,
+            name: step.name,
             travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1),
+            entry_conditions: step.entry_conditions || [],
+            zones: step.zones || {}
           }))
         },
         status: 'error',
@@ -866,9 +884,15 @@ export default function ProcessFlowDesigner({
                                       const facilities: any[] = [];
                                       for (let i = 1; i <= defaultFacilityCount; i++) {
                                         facilities.push({
-                                          id: `${name}-${i}`,
-                                          name: `${name}-${i}`,
-                                          operating_schedule: null
+                                          id: `${name}_${i}`,
+                                          operating_schedule: {
+                                            yesterday: {
+                                              time_blocks: []
+                                            },
+                                            today: {
+                                              time_blocks: []
+                                            }
+                                          }
                                         });
                                       }
                                       newZones[name] = { facilities };
@@ -908,10 +932,17 @@ export default function ProcessFlowDesigner({
                                     Object.keys(editedProcess.zones).forEach(zoneName => {
                                       const facilities: any[] = [];
                                       for (let i = 1; i <= count; i++) {
+                                        const existingSchedule = editedProcess.zones[zoneName]?.facilities?.[i-1]?.operating_schedule;
                                         facilities.push({
-                                          id: `${zoneName}-${i}`,
-                                          name: `${zoneName}-${i}`,
-                                          operating_schedule: editedProcess.zones[zoneName]?.facilities?.[i-1]?.operating_schedule || null
+                                          id: `${zoneName}_${i}`,
+                                          operating_schedule: existingSchedule || {
+                                            yesterday: {
+                                              time_blocks: []
+                                            },
+                                            today: {
+                                              time_blocks: []
+                                            }
+                                          }
                                         });
                                       }
                                       updatedZones[zoneName] = { facilities };
