@@ -274,7 +274,7 @@ export default function ProcessFlowDesigner({
   );
   
   // Inline editing state - always keep a copy of the current process for editing
-  const [editedProcess, setEditedProcess] = useState<ProcessStep | null>(null);
+  const [editedProcess, setEditedProcess] = useState<(ProcessStep & { process_time_seconds?: number }) | null>(null);
   const [defaultFacilityCount, setDefaultFacilityCount] = useState<number | null>(null);
   const [zoneNamesInput, setZoneNamesInput] = useState<string>('');
   const [editingZone, setEditingZone] = useState<string | null>(null);
@@ -384,14 +384,14 @@ export default function ProcessFlowDesigner({
       const currentProcess = processFlow[selectedProcessIndex];
 
       // Get process_time_seconds from the first facility's first time_block
-      let processTimeSeconds = undefined;
+      let processTimeSeconds: number | undefined = undefined;
       const zoneKeys = Object.keys(currentProcess.zones || {});
       if (zoneKeys.length > 0) {
         const firstZone = currentProcess.zones[zoneKeys[0]];
         if (firstZone && firstZone.facilities && firstZone.facilities.length > 0) {
           const firstFacility = firstZone.facilities[0];
           if (firstFacility.operating_schedule?.today?.time_blocks?.length > 0) {
-            processTimeSeconds = firstFacility.operating_schedule.today.time_blocks[0].process_time_seconds;
+            processTimeSeconds = firstFacility.operating_schedule.today.time_blocks[0].process_time_seconds || undefined;
           }
         }
       }

@@ -2205,7 +2205,7 @@ export default function OperatingScheduleEditor({
           
           // 현재 프로세스의 process_time_seconds 값 가져오기
           const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
-          const processTimeSeconds = currentProcess?.process_time_seconds;
+          const processTimeSeconds = (currentProcess as any)?.process_time_seconds;
 
           // 새로운 periods 계산 (뱃지 정보 포함)
           const newTimeBlocks = calculatePeriodsFromDisabledCells(
