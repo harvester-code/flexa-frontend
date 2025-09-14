@@ -266,17 +266,22 @@ const formatTime = (hours: number, minutes: number): string => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-// 다음 시간 슬롯 계산 (10분 추가)
-const getNextTimeSlot = (timeStr: string): string => {
+// 다음 시간 슬롯 계산 (timeUnit 추가)
+const getNextTimeSlot = (timeStr: string, timeUnit: number): string => {
   const [hours, minutes] = timeStr.split(':').map(Number);
-  let newMinutes = minutes + 10;
+  let newMinutes = minutes + timeUnit;
   let newHours = hours;
-  
+
   if (newMinutes >= 60) {
+    newHours = newHours + Math.floor(newMinutes / 60);
     newMinutes = newMinutes % 60;
-    newHours = (newHours + 1) % 24;
   }
-  
+
+  // 24:00을 넘어가면 24:00으로 제한
+  if (newHours >= 24) {
+    return '24:00';
+  }
+
   return formatTime(newHours, newMinutes);
 };
 
@@ -344,11 +349,40 @@ const calculatePeriodsFromDisabledCells = (
   timeSlots: string[],
   existingTimeBlocks: any[],
   cellBadges: Record<string, CategoryBadge[]>,
-  processTimeSeconds?: number // 프로세스의 process_time_seconds 값
+  processTimeSeconds?: number, // 프로세스의 process_time_seconds 값
+  timeUnit: number = 10 // time unit (기본값 10분)
 ): any[] => {
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
   const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
-  
+
+  // 모든 셀이 활성화되어 있는지 확인
+  const isAllActive = timeSlots.every((_, i) => !disabledCells.has(`${i}-${facilityIndex}`));
+
+  // 모든 셀이 같은 조건(또는 조건 없음)을 가지고 있는지 확인
+  let allSameConditions = true;
+  let firstConditions: any = null;
+  for (let i = 0; i < timeSlots.length; i++) {
+    const cellId = `${i}-${facilityIndex}`;
+    const badges = cellBadges[cellId] || [];
+    const conditions = convertBadgesToConditions(badges);
+
+    if (i === 0) {
+      firstConditions = conditions;
+    } else if (JSON.stringify(firstConditions) !== JSON.stringify(conditions)) {
+      allSameConditions = false;
+      break;
+    }
+  }
+
+  // 모든 셀이 활성화되어 있고 조건이 동일한 경우 00:00-24:00으로 반환
+  if (isAllActive && allSameConditions) {
+    return [{
+      period: "00:00-24:00",
+      process_time_seconds: processTime,
+      passenger_conditions: firstConditions || []
+    }];
+  }
+
   const periods: any[] = [];
   let currentStart: string | null = null;
   let lastActiveTime: string | null = null;
@@ -370,7 +404,7 @@ const calculatePeriodsFromDisabledCells = (
       } else if (JSON.stringify(currentConditions) !== JSON.stringify(conditions)) {
         // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
         if (lastActiveTime !== null) {
-          const endTime = getNextTimeSlot(lastActiveTime);
+          const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
           periods.push({
             period: `${currentStart}-${endTime}`,
             process_time_seconds: processTime,
@@ -385,7 +419,7 @@ const calculatePeriodsFromDisabledCells = (
       // 비활성화된 셀
       if (currentStart !== null && lastActiveTime !== null) {
         // 이전 활성 구간을 저장
-        const endTime = getNextTimeSlot(lastActiveTime);
+        const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
         periods.push({
           period: `${currentStart}-${endTime}`,
           process_time_seconds: processTime,
@@ -400,8 +434,8 @@ const calculatePeriodsFromDisabledCells = (
   
   // 마지막 활성 구간 처리
   if (currentStart !== null && lastActiveTime !== null) {
-    // 마지막 시간이 23:50인 경우 24:00으로 설정
-    const endTime = lastActiveTime === '23:50' ? '24:00' : getNextTimeSlot(lastActiveTime);
+    // 마지막 시간 슬롯의 끝 시간 계산
+    const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
     periods.push({
       period: `${currentStart}-${endTime}`,
       process_time_seconds: processTime,
@@ -2180,7 +2214,8 @@ export default function OperatingScheduleEditor({
             timeSlots,
             existingTimeBlocks,
             cellBadges,
-            processTimeSeconds ?? undefined
+            processTimeSeconds ?? undefined,
+            appliedTimeUnit
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트

@@ -31,6 +31,7 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
   const setIsCompleted = useSimulationStore((s) => s.setProcessCompleted);
   const setFacilitiesForZone = useSimulationStore((s) => s.setFacilitiesForZone);
   const updateTravelTime = useSimulationStore((s) => s.updateTravelTime);
+  const updateProcessTimeForAllZones = useSimulationStore((s) => s.updateProcessTimeForAllZones);
 
   // 🆕 parquet metadata 및 pax_demographics 추출
   const parquetMetadata = (appliedFilterResult as any)?.parquet_metadata || [];
@@ -114,7 +115,7 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
     const normalizedName = normalizeProcessName(data.name);
 
     if (modalMode === 'create') {
-      // 새로운 프로세스 생성
+      // 새로운 프로세스 생성 - 올바른 키 순서
       const newStep = {
         step: processFlow.length,
         name: normalizedName, // 정규화된 이름 사용
@@ -136,7 +137,7 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
       // 🆕 Zone별 시설 개수 자동 설정
       if (data.zoneFacilityCounts) {
         const processIndex = processFlow.length; // 새로 추가된 프로세스의 인덱스
-        // 시설 개수 즉시 설정
+        // 시설 개수 즉시 설정 - process_time_seconds는 undefined로 전달
         Object.entries(data.zoneFacilityCounts!).forEach(([zoneName, count]) => {
           if (activeFacilities.includes(zoneName)) {
             setFacilitiesForZone(processIndex, zoneName, count);
@@ -144,11 +145,11 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
         });
       }
     } else {
-      // 기존 프로세스 수정
+      // 기존 프로세스 수정 - 올바른 키 순서
       if (editingProcessData) {
         const newProcessFlow = [...processFlow];
         newProcessFlow[editingProcessData.index] = {
-          ...newProcessFlow[editingProcessData.index],
+          step: editingProcessData.index,
           name: normalizedName, // 정규화된 이름 사용
           travel_time_minutes: newProcessFlow[editingProcessData.index].travel_time_minutes || 0,
           entry_conditions: newProcessFlow[editingProcessData.index].entry_conditions || [],
@@ -200,6 +201,11 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
       step: index, // Ensure step is correct
     };
     setProcessFlow(newProcessFlow);
+
+    // process_time_seconds가 있으면 모든 zone의 facility에 업데이트
+    if (updatedProcess.process_time_seconds != null) {
+      updateProcessTimeForAllZones(index, updatedProcess.process_time_seconds);
+    }
   };
 
   // Handle reordering processes via drag and drop
@@ -227,9 +233,12 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
     // Set facilities for each zone if they exist
     if (newProcess.zones) {
       const processIndex = processFlow.length;
+      // Get process_time_seconds from newProcess
+      const processTimeSeconds = newProcess.process_time_seconds;
+
       Object.entries(newProcess.zones).forEach(([zoneName, zone]: [string, any]) => {
         if (zone.facilities && zone.facilities.length > 0) {
-          setFacilitiesForZone(processIndex, zoneName, zone.facilities.length);
+          setFacilitiesForZone(processIndex, zoneName, zone.facilities.length, processTimeSeconds);
         }
       });
     }

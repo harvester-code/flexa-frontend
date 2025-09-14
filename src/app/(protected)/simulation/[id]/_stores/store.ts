@@ -392,7 +392,8 @@ export interface SimulationStoreState {
   setFacilitiesForZone: (
     processIndex: number,
     zoneName: string,
-    count: number
+    count: number,
+    processTimeSeconds?: number
   ) => void;
   updateOperatingSchedule: (
     processIndex: number,
@@ -416,6 +417,7 @@ export interface SimulationStoreState {
     timeBlocks: any[]
   ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
+  updateProcessTimeForAllZones: (processIndex: number, processTimeSeconds: number) => void;
   migratePercentageData: () => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
@@ -1244,10 +1246,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setProcessFlow: (flow) =>
       set((state) => {
-        // 모든 프로세스 이름 정규화
+        // 모든 프로세스 이름 정규화 및 올바른 키 순서로 저장
         state.process_flow = flow.map((process) => ({
-          ...process,
+          step: process.step,
           name: normalizeProcessName(process.name),
+          travel_time_minutes: process.travel_time_minutes || 0,
+          entry_conditions: process.entry_conditions || [],
+          zones: process.zones || {},
         }));
       }),
 
@@ -1313,8 +1318,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
           ) {
             normalizedMetadata.process_flow =
               normalizedMetadata.process_flow.map((process: ProcessStep) => ({
-                ...process,
+                step: process.step,
                 name: normalizeProcessName(process.name), // 기존 데이터도 정규화
+                travel_time_minutes: process.travel_time_minutes || 0,
+                entry_conditions: process.entry_conditions || [],
+                zones: process.zones || {},
               }));
 
             state.process_flow =
@@ -1323,7 +1331,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
-    setFacilitiesForZone: (processIndex, zoneName, count) =>
+    setFacilitiesForZone: (processIndex, zoneName, count, processTimeSeconds) =>
       set((state) => {
         if (
           state.process_flow[processIndex] &&
@@ -1337,13 +1345,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 time_blocks: [], // 🆕 백엔드용 (나중에 활용)
               },
               today: {
-                time_blocks: [
+                time_blocks: processTimeSeconds != null ? [
                   {
                     period: "00:00-24:00",
-                    process_time_seconds: 60,
+                    process_time_seconds: processTimeSeconds,
                     passenger_conditions: []
                   }
-                ], // 🆕 초기값 설정: 00:00-24:00, 60초, 빈 조건
+                ] : [], // 초기값: 사용자 입력값이 있을 때만 time_blocks 생성
               },
             },
           }));
@@ -1474,6 +1482,26 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (state.process_flow[processIndex]) {
           state.process_flow[processIndex].travel_time_minutes = minutes;
+        }
+      }),
+
+    updateProcessTimeForAllZones: (processIndex, processTimeSeconds) =>
+      set((state) => {
+        if (state.process_flow[processIndex]) {
+          const process = state.process_flow[processIndex];
+          // 모든 zone의 모든 facility에 process_time_seconds 업데이트
+          Object.keys(process.zones).forEach((zoneName) => {
+            const zone = process.zones[zoneName];
+            if (zone.facilities) {
+              zone.facilities.forEach((facility: any) => {
+                if (facility.operating_schedule?.today?.time_blocks) {
+                  facility.operating_schedule.today.time_blocks.forEach((block: any) => {
+                    block.process_time_seconds = processTimeSeconds;
+                  });
+                }
+              });
+            }
+          });
         }
       }),
 

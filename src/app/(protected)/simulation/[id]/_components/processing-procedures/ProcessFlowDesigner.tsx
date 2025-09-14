@@ -382,11 +382,27 @@ export default function ProcessFlowDesigner({
   React.useEffect(() => {
     if (!isCreatingNew && selectedProcessIndex !== null && processFlow[selectedProcessIndex]) {
       const currentProcess = processFlow[selectedProcessIndex];
-      setEditedProcess({ ...currentProcess });
+
+      // Get process_time_seconds from the first facility's first time_block
+      let processTimeSeconds = undefined;
+      const zoneKeys = Object.keys(currentProcess.zones || {});
+      if (zoneKeys.length > 0) {
+        const firstZone = currentProcess.zones[zoneKeys[0]];
+        if (firstZone && firstZone.facilities && firstZone.facilities.length > 0) {
+          const firstFacility = firstZone.facilities[0];
+          if (firstFacility.operating_schedule?.today?.time_blocks?.length > 0) {
+            processTimeSeconds = firstFacility.operating_schedule.today.time_blocks[0].process_time_seconds;
+          }
+        }
+      }
+
+      setEditedProcess({
+        ...currentProcess,
+        process_time_seconds: processTimeSeconds
+      });
       setZoneNamesInput(Object.keys(currentProcess.zones || {}).join(', '));
 
       // Set defaultFacilityCount based on the first zone's facility count
-      const zoneKeys = Object.keys(currentProcess.zones || {});
       if (zoneKeys.length > 0) {
         const firstZone = currentProcess.zones[zoneKeys[0]];
         if (firstZone && firstZone.facilities) {
@@ -464,10 +480,13 @@ export default function ProcessFlowDesigner({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newFlow = arrayMove(processFlow, oldIndex, newIndex);
 
-        // Update step numbers
+        // Update step numbers (0-based) with correct key order
         const updatedFlow = newFlow.map((process, index) => ({
-          ...process,
-          step: index + 1,
+          step: index,
+          name: process.name,
+          travel_time_minutes: process.travel_time_minutes || 0,
+          entry_conditions: process.entry_conditions || [],
+          zones: process.zones || {},
         }));
 
         // Call the reorder handler if provided
@@ -1059,11 +1078,11 @@ export default function ProcessFlowDesigner({
                                 value={editedProcess.process_time_seconds || ''}
                                 onChange={(e) => {
                                   const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                                  const processTime = numericValue === '' ? 0 : Math.min(300, Math.max(0, parseInt(numericValue)));
+                                  const processTime = numericValue === '' ? undefined : Math.min(300, Math.max(0, parseInt(numericValue)));
                                   setEditedProcess({ ...editedProcess, process_time_seconds: processTime });
                                 }}
                                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                                placeholder="12"
+                                placeholder=""
                                 className="w-full pr-10 text-center"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">sec</span>
