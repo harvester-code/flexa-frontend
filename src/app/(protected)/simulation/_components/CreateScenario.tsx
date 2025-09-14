@@ -120,8 +120,8 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
         name: formData.scenarioName,
         airport: formData.airport.trim() || null,
         terminal: formData.terminal.trim() || null,
-        memo: formData.memo.trim() || null,
         editor: userInfo?.fullName || "",
+        memo: formData.memo.trim() || null,
       });
 
       if (data?.scenario_id) {
