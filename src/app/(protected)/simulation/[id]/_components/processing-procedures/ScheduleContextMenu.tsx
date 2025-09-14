@@ -24,9 +24,8 @@ import { Input } from "@/components/ui/Input";
 interface CategoryBadge {
   category: string;
   options: string[];
-  bgColor: string;
-  textColor: string;
-  borderColor: string;
+  colorIndex: number;  // 색상 인덱스 추가
+  style?: React.CSSProperties;  // 인라인 스타일 추가
 }
 
 interface ContextMenuState {

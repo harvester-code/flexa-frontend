@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
+import { getBadgeColor } from "@/styles/colors";
 import { useSimulationStore } from "../../_stores";
 
 // Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
@@ -65,9 +66,8 @@ interface BadgeCondition {
 interface CategoryBadge {
   category: string;
   options: string[];
-  bgColor: string;
-  textColor: string;
-  borderColor: string;
+  colorIndex: number;  // 색상 인덱스 추가
+  style?: React.CSSProperties;  // 인라인 스타일 추가
 }
 
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
@@ -81,104 +81,54 @@ const createDynamicConditionCategories = (
     {
       icon: React.ComponentType<any>;
       options: string[];
-      bgColor: string;
-      textColor: string;
-      borderColor: string;
+      colorIndex: number;  // 색상 인덱스 사용
     }
   > = {};
+
+  let colorIndexCounter = 0;  // 색상 인덱스 카운터
 
   // 🎯 1단계: parquetMetadata 처리
   parquetMetadata.forEach((item) => {
     let categoryName = "";
     let icon = Plane;
-    let colors = {
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
-      borderColor: "border-blue-200",
-    };
 
     switch (item.column) {
       case "operating_carrier_name":
       case "operating_carrier_iata":
         categoryName = "Airline";
         icon = Plane;
-        colors = {
-          bgColor: "bg-sky-50",
-          textColor: "text-sky-700",
-          borderColor: "border-sky-200",
-        };
         break;
       case "aircraft_type":
         categoryName = "Aircraft Type";
         icon = Plane;
-        colors = {
-          bgColor: "bg-violet-50",
-          textColor: "text-violet-700",
-          borderColor: "border-violet-200",
-        };
         break;
       case "flight_type":
         categoryName = "Flight Type";
         icon = Navigation;
-        colors = {
-          bgColor: "bg-teal-50",
-          textColor: "text-teal-700",
-          borderColor: "border-teal-200",
-        };
         break;
       case "arrival_airport_iata":
         categoryName = "Arrival Airport";
         icon = MapPin;
-        colors = {
-          bgColor: "bg-lime-50",
-          textColor: "text-lime-700",
-          borderColor: "border-lime-200",
-        };
         break;
       case "arrival_city":
         categoryName = "Arrival City";
         icon = MapPin;
-        colors = {
-          bgColor: "bg-fuchsia-50",
-          textColor: "text-fuchsia-700",
-          borderColor: "border-fuchsia-200",
-        };
         break;
       case "arrival_country":
         categoryName = "Arrival Country";
         icon = Globe;
-        colors = {
-          bgColor: "bg-red-50",
-          textColor: "text-red-700",
-          borderColor: "border-red-200",
-        };
         break;
       case "arrival_region":
         categoryName = "Arrival Region";
         icon = Globe;
-        colors = {
-          bgColor: "bg-pink-50",
-          textColor: "text-pink-700",
-          borderColor: "border-pink-200",
-        };
         break;
       case "nationality":
         categoryName = "Nationality";
         icon = MapPin;
-        colors = {
-          bgColor: "bg-yellow-50",
-          textColor: "text-yellow-700",
-          borderColor: "border-yellow-200",
-        };
         break;
       case "profile":
         categoryName = "Passenger Type";
         icon = Users;
-        colors = {
-          bgColor: "bg-green-50",
-          textColor: "text-green-700",
-          borderColor: "border-green-200",
-        };
         break;
       default:
         // 기본 처리 (필요시 확장 가능)
@@ -205,7 +155,7 @@ const createDynamicConditionCategories = (
         categories[categoryName] = {
           icon,
           options,
-          ...colors,
+          colorIndex: colorIndexCounter++,
         };
       }
     }
@@ -216,36 +166,23 @@ const createDynamicConditionCategories = (
     if (data && data.available_values && data.available_values.length > 0) {
       let categoryName = "";
       let icon = Users;
-      let colors = {
-        bgColor: "bg-emerald-50",
-        textColor: "text-emerald-700",
-        borderColor: "border-emerald-200",
-      };
 
       if (key === "nationality") {
         categoryName = "Nationality";
         icon = MapPin;
-        colors = {
-          bgColor: "bg-orange-50",
-          textColor: "text-orange-700",
-          borderColor: "border-orange-200",
-        };
       } else if (key === "profile") {
         categoryName = "Passenger Type";
         icon = Users;
-        colors = {
-          bgColor: "bg-emerald-50",
-          textColor: "text-emerald-700",
-          borderColor: "border-emerald-200",
-        };
       }
 
       if (categoryName) {
         // paxDemographics가 우선순위를 가지도록 덮어쓰기
+        // 기존 카테고리가 있으면 그 colorIndex를 유지, 없으면 새로 할당
+        const existingColorIndex = categories[categoryName]?.colorIndex;
         categories[categoryName] = {
           icon,
           options: data.available_values,
-          ...colors,
+          colorIndex: existingColorIndex !== undefined ? existingColorIndex : colorIndexCounter++,
         };
       }
     }
@@ -789,23 +726,28 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             <div className="flex items-center space-x-1">
                               {/* 카테고리 뱃지들 - 뱃지가 없으면 자동으로 All 표시 */}
                               {badges.length > 0 ? (
-                                badges.map((categoryBadge, badgeIndex) => (
-                                  <span
-                                    key={`${categoryBadge.category}-${badgeIndex}`}
-                                    className={cn(
-                                      isDisabled
-                                        ? "bg-gray-300 text-gray-600 border-gray-400"
-                                        : `${categoryBadge.bgColor} ${categoryBadge.textColor} ${categoryBadge.borderColor}`,
-                                      "select-none rounded border px-1 text-[9px] font-medium leading-tight",
-                                      isDisabled && "line-through decoration-2"
-                                    )}
-                                    title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
-                                  >
-                                    {categoryBadge.options
-                                      .map((option) => option.slice(0, 3))
-                                      .join("|")}
-                                  </span>
-                                ))
+                                badges.map((categoryBadge, badgeIndex) => {
+                                  const badgeStyle = categoryBadge.style || getBadgeColor(categoryBadge.colorIndex).style;
+                                  return (
+                                    <span
+                                      key={`${categoryBadge.category}-${badgeIndex}`}
+                                      className={cn(
+                                        "select-none rounded border px-1 text-[9px] font-medium leading-tight",
+                                        isDisabled && "line-through decoration-2"
+                                      )}
+                                      style={isDisabled ? {
+                                        backgroundColor: '#d1d5db',
+                                        color: '#4b5563',
+                                        borderColor: '#9ca3af'
+                                      } : badgeStyle}
+                                      title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                                    >
+                                      {categoryBadge.options
+                                        .map((option) => option.slice(0, 3))
+                                        .join("|")}
+                                    </span>
+                                  );
+                                })
                               ) : (
                                 <span
                                   className={cn(
@@ -1091,6 +1033,7 @@ export default function OperatingScheduleEditor({
   const getProcessCategoryConfig = useCallback(
     (category: string) => {
       if (selectedProcessIndex > 0 && processFlow && processFlow.length > 0) {
+        let processColorIndex = Object.keys(CONDITION_CATEGORIES).length; // Process는 다른 카테고리 뒤에 위치
         for (let i = 0; i < selectedProcessIndex; i++) {
           const process = processFlow[i];
           if (process && process.zones) {
@@ -1099,9 +1042,7 @@ export default function OperatingScheduleEditor({
               return {
                 icon: Navigation,
                 options: Object.keys(process.zones),
-                bgColor: "bg-orange-50",
-                textColor: "text-orange-700",
-                borderColor: "border-orange-200",
+                colorIndex: processColorIndex + i,  // Process에 따라 다른 색상 인덱스
               };
             }
           }
@@ -1109,7 +1050,7 @@ export default function OperatingScheduleEditor({
       }
       return null;
     },
-    [selectedProcessIndex, processFlow]
+    [selectedProcessIndex, processFlow, CONDITION_CATEGORIES]
   );
 
   // 실행 취소 처리
@@ -1267,12 +1208,12 @@ export default function OperatingScheduleEditor({
             }
           } else if (!hasOptionInAllCells) {
             // 새 카테고리 추가
+            const badgeColor = getBadgeColor(categoryConfig.colorIndex);
             const newCategoryBadge: CategoryBadge = {
               category,
               options: [option],
-              bgColor: categoryConfig.bgColor,
-              textColor: categoryConfig.textColor,
-              borderColor: categoryConfig.borderColor,
+              colorIndex: categoryConfig.colorIndex,
+              style: badgeColor.style,
             };
             existingBadges.push(newCategoryBadge);
           }

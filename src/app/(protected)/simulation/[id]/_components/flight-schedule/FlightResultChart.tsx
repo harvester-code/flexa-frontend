@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { BarChart3 } from 'lucide-react';
-import { CHART_COLOR_PALETTE } from '@/components/charts/colors';
+import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
@@ -68,7 +68,7 @@ export default function FlightResultChart() {
         // ETC는 회색으로, 나머지는 컬러 팔레트 사용
         color: series.name === 'ETC'
           ? '#9CA3AF' // gray-400 색상
-          : CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
+          : COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length],
       },
       hovertemplate: '<b>%{fullData.name}</b><br>' + 'Time: %{x}<br>' + 'Flights: %{y}<br>' + '<extra></extra>',
     }));

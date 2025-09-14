@@ -22,6 +22,7 @@ import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 import ProfileCriteriaSettings from './ProfileCriteriaSettings';
+import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -29,17 +30,8 @@ const Plot = dynamic(() => import('react-plotly.js'), {
   loading: () => <div className="flex h-48 items-center justify-center text-gray-500">Loading chart...</div>,
 });
 
-// 기존 InteractivePercentageBar와 동일한 색상 팔레트
-const COLORS = [
-  '#06B6D4', // Cyan
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5A2B', // Brown
-  '#6366F1', // Indigo
-  '#EC4899', // Pink
-  '#64748B', // Slate
-];
+// Use all colors from COMPONENT_TYPICAL_COLORS
+const COLORS = COMPONENT_TYPICAL_COLORS;
 
 interface Rule {
   id: string;

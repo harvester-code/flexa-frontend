@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart3 } from "lucide-react";
-import { CHART_COLOR_PALETTE } from "@/components/charts/colors";
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   Select,
@@ -93,7 +93,7 @@ export default function PassengerResultChart() {
       type: "bar" as const,
       showlegend: true, // ✅ 하나만 있어도 legend 표시
       marker: {
-        color: CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
+        color: COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length],
       },
       hovertemplate:
         "<b>%{fullData.name}</b><br>" +

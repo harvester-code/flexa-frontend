@@ -51,7 +51,7 @@ import ScheduleEditor from './ScheduleEditor';
 import FlightCriteriaSelector from '../flight-schedule/FlightCriteriaSelector';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
-import { getBadgeColor, getZoneGradient } from '@/lib/colors';
+import { getBadgeColor, getZoneGradient, getZoneGradientStyle } from '@/styles/colors';
 
 // Parquet Metadata 타입 정의 (ScheduleEditor와 동일)
 interface ParquetMetadataItem {
@@ -186,7 +186,8 @@ function SortableProcessCard({
                   <Badge
                     key={idx}
                     variant="outline"
-                    className={`px-1.5 py-0 text-[10px] ${color.bgColor} ${color.textColor} border ${color.borderColor}`}
+                    className="px-1.5 py-0 text-[10px]"
+                    style={color.style}
                   >
                     {badge}
                   </Badge>
@@ -985,7 +986,7 @@ export default function ProcessFlowDesigner({
                               {Object.keys(editedProcess.zones || {}).map((zoneName, index) => {
                                 const zone = editedProcess.zones[zoneName];
                                 const facilityCount = zone?.facilities?.length || defaultFacilityCount;
-                                const colorClass = getZoneGradient(index);
+                                const zoneStyle = getZoneGradientStyle(index);
 
                                 const isEditing = editingZone === zoneName;
                                 // Truncate zone name to max 3 characters for display
@@ -994,7 +995,8 @@ export default function ProcessFlowDesigner({
                                 return (
                                   <div
                                     key={zoneName}
-                                    className={`group relative flex h-11 w-11 flex-col items-center justify-center rounded-md bg-gradient-to-br ${colorClass} p-1.5 text-white shadow-sm transition-all duration-200 ${!isEditing && 'hover:scale-105 hover:shadow-md'} ${isEditing && 'ring-2 ring-white ring-offset-2'}`}
+                                    className={`group relative flex h-11 w-11 flex-col items-center justify-center rounded-md p-1.5 text-white shadow-sm transition-all duration-200 ${!isEditing && 'hover:scale-105 hover:shadow-md'} ${isEditing && 'ring-2 ring-white ring-offset-2'}`}
+                                    style={zoneStyle}
                                     onDoubleClick={() => !isEditing && startEditingZone(zoneName)}
                                     title={zoneName}
                                   >
@@ -1136,7 +1138,8 @@ export default function ProcessFlowDesigner({
                                       <Badge
                                         key={field}
                                         variant="outline"
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm h-fit ${color.bgColor} ${color.textColor} border ${color.borderColor} ${color.hoverBgColor} transition-colors`}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm h-fit transition-colors"
+                                        style={color.style}
                                       >
                                         <span>{displayValue}</span>
                                         <button

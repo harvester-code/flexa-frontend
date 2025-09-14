@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ScenarioData } from '@/types/homeTypes';
-import { SANKEY_COLOR_SCALES } from '@/components/charts/colors';
+import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 import { formatFlowChartLayout } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
@@ -32,7 +32,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
           pad: 15,
           thickness: 20,
           label: nodeLabels,
-          color: [...SANKEY_COLOR_SCALES],
+          color: [...COMPONENT_TYPICAL_COLORS],
         },
         link: sankey.link,
       },

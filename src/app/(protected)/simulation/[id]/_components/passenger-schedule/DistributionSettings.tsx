@@ -38,16 +38,10 @@ import PercentageControl, {
 } from "../shared/PercentageControl";
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
-const COLORS = [
-  "#06B6D4", // Cyan
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#EF4444", // Red
-  "#8B5A2B", // Brown
-  "#6366F1", // Indigo
-  "#EC4899", // Pink
-  "#64748B", // Slate
-];
+import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
+
+// Use all colors from COMPONENT_TYPICAL_COLORS
+const COLORS = COMPONENT_TYPICAL_COLORS;
 
 interface Rule {
   id: string;
@@ -1137,7 +1131,11 @@ export default function DistributionSettings({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmChanges}
-              className="bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500"
+              style={{
+                backgroundColor: COMPONENT_TYPICAL_COLORS[3], // amber color
+                color: 'white',
+              }}
+              className="hover:opacity-90"
             >
               Continue
             </AlertDialogAction>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 
 interface InteractivePercentageBarProps {
   properties: string[];
@@ -12,17 +13,8 @@ interface InteractivePercentageBarProps {
   showValues?: boolean; // 값 표시 여부 (true: 숫자, false: "-")
 }
 
-// 예쁜 색깔 팔레트 (primary 색상 제외)
-const COLORS = [
-  '#06B6D4', // Cyan
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5A2B', // Brown
-  '#6366F1', // Indigo
-  '#EC4899', // Pink
-  '#64748B', // Slate
-];
+// Use all colors from COMPONENT_TYPICAL_COLORS
+const COLORS = COMPONENT_TYPICAL_COLORS;
 
 export default function InteractivePercentageBar({
   properties,
