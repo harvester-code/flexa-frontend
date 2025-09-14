@@ -77,9 +77,9 @@ export default function FlightResultChart() {
   }, [appliedFilterResult, selectedCategory]);
 
   // Plotly 레이아웃 설정
-  const layout = {
+  const layout = useMemo(() => ({
     title: {
-      text: 'Flight Schedule Distribution',
+      text: `Flights by ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} and Time`,
       font: { size: 16, family: 'Pretendard, Arial, sans-serif' },
     },
     barmode: 'stack' as const,
@@ -89,7 +89,7 @@ export default function FlightResultChart() {
       font: { family: 'Pretendard, Arial, sans-serif' },
     },
     yaxis: {
-      title: { text: 'Number of Flights' },
+      title: { text: 'Flights' },
       font: { family: 'Pretendard, Arial, sans-serif' },
     },
     font: { family: 'Pretendard, Arial, sans-serif' },
@@ -108,7 +108,7 @@ export default function FlightResultChart() {
       bgcolor: 'white',
       bordercolor: 'hsl(var(--border))',
     },
-  };
+  }), [selectedCategory]);
 
   const config = {
     displayModeBar: true,
@@ -124,9 +124,9 @@ export default function FlightResultChart() {
           </div>
           <div>
             <CardTitle className="text-lg font-semibold text-default-900">
-              Flight Schedule Chart
+              Flight Schedule by {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
             </CardTitle>
-            <p className="text-sm text-default-500">Visual representation of flight schedule data</p>
+            <p className="text-sm text-default-500">Visual overview of flight schedules</p>
           </div>
         </div>
       </CardHeader>

@@ -201,7 +201,7 @@ function RegionCountriesDropdown({
                   htmlFor={`country-${regionName}-${countryName}`}
                   className="flex-1 cursor-pointer text-sm"
                 >
-                  {countryName} ({countryData.total_flights} flights)
+                  {countryName} | {countryData.total_flights.toLocaleString()} flights
                 </Label>
               </div>
             );
@@ -367,7 +367,7 @@ function TerminalAirlinesDropdown({
                   htmlFor={`airline-${terminalName}-${airlineCode}`}
                   className="flex-1 cursor-pointer text-sm"
                 >
-                  {airlineCode} - {airlineName} ({airlineData.count} flights)
+                  {airlineCode} - {airlineName} | {airlineData.count.toLocaleString()} flights
                 </Label>
               </div>
             );
@@ -911,11 +911,11 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
       resetPassenger();
       resetProcessFlow();
 
-      // 🎯 Expected Flights 계산
+      // 🎯 Selected Flights 계산
       const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
       const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
 
-      // 🎯 Search Flights 클릭 시 zustand에 저장 (S3 저장용)
+      // 🎯 Filter Flights 클릭 시 zustand에 저장 (S3 저장용)
       setSelectedConditions({
         type: selectedFilter.mode as 'departure' | 'arrival',
         conditions: conditions,
@@ -1028,11 +1028,11 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                                 className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
                               >
                                 <span className="cursor-pointer">
-                                  {regionName} (
-                                  {selectedFlights > 0 && selectedFlights < regionData.total_flights
-                                    ? `${selectedFlights} / ${regionData.total_flights} flights`
-                                    : `${regionData.total_flights} flights`}
-                                  )
+                                  {regionName} | {
+                                    selectedFlights > 0 && selectedFlights < regionData.total_flights
+                                      ? `${selectedFlights.toLocaleString()} / ${regionData.total_flights.toLocaleString()} flights`
+                                      : `${regionData.total_flights.toLocaleString()} flights`
+                                  }
                                 </span>
                                 <ChevronDown className="ml-2 h-3 w-3" />
                               </Button>
@@ -1113,11 +1113,11 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                                 className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
                               >
                                 <span className="cursor-pointer">
-                                  {getValueDisplayName(category, terminalName)} (
-                                  {selectedFlights > 0 && selectedFlights < terminalData.total_flights
-                                    ? `${selectedFlights} / ${terminalData.total_flights} flights`
-                                    : `${terminalData.total_flights} flights`}
-                                  )
+                                  {getValueDisplayName(category, terminalName)} | {
+                                    selectedFlights > 0 && selectedFlights < terminalData.total_flights
+                                      ? `${selectedFlights.toLocaleString()} / ${terminalData.total_flights.toLocaleString()} flights`
+                                      : `${terminalData.total_flights.toLocaleString()} flights`
+                                  }
                                 </span>
                                 <ChevronDown className="ml-2 h-3 w-3" />
                               </Button>
@@ -1169,7 +1169,7 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                           onCheckedChange={(checked) => handleCategoryValueChange(category, value, !!checked)}
                         />
                         <Label htmlFor={`${category}-${value}`} className="cursor-pointer text-sm font-normal">
-                          {getValueDisplayName(category, value)} ({option.total_flights} flights)
+                          {getValueDisplayName(category, value)} | {option.total_flights.toLocaleString()} flights
                         </Label>
                       </div>
                     );
@@ -1241,7 +1241,7 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                 <div>
                   <div className="text-lg font-semibold text-default-900">Filter Conditions</div>
                   <p className="text-sm font-normal text-default-500">
-                    Select flight mode and filtering criteria ({filtersData?.total_flights || 0} total flights)
+                    Select flight mode and filtering criteria | {(filtersData?.total_flights || 0).toLocaleString()} total flights
                   </p>
                 </div>
               </CardTitle>
@@ -1259,10 +1259,10 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="departure">
-                  Departure ({filtersData?.filters.departure?.total_flights || 0} flights)
+                  Departure | {(filtersData?.filters.departure?.total_flights || 0).toLocaleString()} flights
                 </TabsTrigger>
                 <TabsTrigger value="arrival">
-                  Arrival ({filtersData?.filters.arrival?.total_flights || 0} flights)
+                  Arrival | {(filtersData?.filters.arrival?.total_flights || 0).toLocaleString()} flights
                 </TabsTrigger>
               </TabsList>
 
@@ -1304,13 +1304,13 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
 
                 {/* 편수 통계 - 항상 표시 */}
                 <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Expected Flights</div>
+                  <div className="text-xs text-muted-foreground">Selected Flights</div>
                   <div className="text-lg font-bold text-primary">
                     {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
                     {(() => {
                       const totalFiltered = getEstimatedFilteredFlights();
                       const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                      return `${totalFiltered} / ${totalAvailable}`;
+                      return `${totalFiltered.toLocaleString()} / ${totalAvailable.toLocaleString()}`;
                     })()}
                   </div>
                 </div>
@@ -1338,14 +1338,14 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                   {isApplying ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">Searching...</span>
-                      <span className="sm:hidden">Search</span>
+                      <span className="hidden sm:inline">Filtering...</span>
+                      <span className="sm:hidden">Filter</span>
                     </>
                   ) : (
                     <>
                       <Search className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Search Flights</span>
-                      <span className="sm:hidden">Search</span>
+                      <span className="hidden sm:inline">Filter Flights</span>
+                      <span className="sm:hidden">Filter</span>
                     </>
                   )}
                 </Button>
