@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { Building2, ChevronDown, Filter, Flag, Loader2, MapPin, Plane, Search } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -79,6 +80,302 @@ interface FlightFilterConditionsProps {
   loading: boolean; // 로딩 상태만 props로 (UI 상태)
   onApplyFilter: (type: string, conditions: Array<{ field: string; values: string[] }>) => Promise<any>;
   // filtersData props 제거 - zustand에서 직접 가져올 예정
+}
+
+// ==================== Dropdown Component for Region Countries ====================
+interface RegionCountriesDropdownProps {
+  regionName: string;
+  regionData: any;
+  currentCountries: string[];
+  handleCountryToggle: (countryName: string, regionName: string, regionData: any, checked: boolean) => void;
+}
+
+function RegionCountriesDropdown({
+  regionName,
+  regionData,
+  currentCountries,
+  handleCountryToggle,
+}: RegionCountriesDropdownProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Sort countries: first by flight count (descending), then by name (ascending) when counts are equal
+  const sortedCountries = useMemo(() => {
+    return Object.entries(regionData.countries)
+      .sort(([nameA, a]: [string, any], [nameB, b]: [string, any]) => {
+        // First sort by count (descending)
+        if (b.total_flights !== a.total_flights) {
+          return b.total_flights - a.total_flights;
+        }
+        // If counts are equal, sort by country name (ascending)
+        return nameA.localeCompare(nameB);
+      });
+  }, [regionData.countries]);
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery) return sortedCountries;
+
+    return sortedCountries.filter(([countryName]) => {
+      return countryName.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [sortedCountries, searchQuery]);
+
+  // Check if all filtered countries are selected
+  const areAllFilteredSelected = useMemo(() => {
+    if (filteredCountries.length === 0) return false;
+    return filteredCountries.every(([countryName]) => currentCountries.includes(countryName));
+  }, [filteredCountries, currentCountries]);
+
+  // Handle select all for filtered countries
+  const handleSelectAll = (checked: boolean) => {
+    filteredCountries.forEach(([countryName]) => {
+      const isCurrentlySelected = currentCountries.includes(countryName);
+      if (checked && !isCurrentlySelected) {
+        handleCountryToggle(countryName, regionName, regionData, true);
+      } else if (!checked && isCurrentlySelected) {
+        handleCountryToggle(countryName, regionName, regionData, false);
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Header with Select All on the right */}
+      <div className="flex items-center justify-between border-b px-2 py-1">
+        <div className="text-xs font-medium text-muted-foreground truncate flex-1 mr-2">
+          Countries in {regionName}
+        </div>
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          <Checkbox
+            id={`select-all-${regionName}`}
+            checked={areAllFilteredSelected}
+            onCheckedChange={handleSelectAll}
+            className="h-3 w-3"
+          />
+          <Label
+            htmlFor={`select-all-${regionName}`}
+            className="cursor-pointer text-xs font-medium"
+          >
+            Select All
+          </Label>
+        </div>
+      </div>
+
+      {/* Search Input */}
+      <div className="px-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Countries List */}
+      <div className="max-h-48 overflow-y-auto space-y-1">
+        {filteredCountries.length === 0 ? (
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+            No countries found
+          </div>
+        ) : (
+          filteredCountries.map(([countryName, countryData]: [string, any]) => {
+            const isCountrySelected = currentCountries.includes(countryName);
+
+            return (
+              <div
+                key={countryName}
+                className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
+              >
+                <Checkbox
+                  id={`country-${regionName}-${countryName}`}
+                  checked={isCountrySelected}
+                  onCheckedChange={(checked) =>
+                    handleCountryToggle(countryName, regionName, regionData, !!checked)
+                  }
+                />
+                <Label
+                  htmlFor={`country-${regionName}-${countryName}`}
+                  className="flex-1 cursor-pointer text-sm"
+                >
+                  {countryName} ({countryData.total_flights} flights)
+                </Label>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================== Dropdown Component for Terminal Airlines ====================
+interface TerminalAirlinesDropdownProps {
+  terminalName: string;
+  terminalData: any;
+  currentTerminalAirlines: string[];
+  currentTerminals: string[];
+  airlinesMapping: Record<string, string> | null;
+  handleAirlineToggle: (terminalName: string, airlineCode: string, airlineData: any, checked: boolean) => void;
+  handleTerminalToggle: (terminalName: string, terminalData: any, checked: boolean) => void;
+  getValueDisplayName: (category: string, value: string) => string;
+  category: string;
+}
+
+function TerminalAirlinesDropdown({
+  terminalName,
+  terminalData,
+  currentTerminalAirlines,
+  currentTerminals,
+  airlinesMapping,
+  handleAirlineToggle,
+  handleTerminalToggle,
+  getValueDisplayName,
+  category,
+}: TerminalAirlinesDropdownProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Sort airlines: first by count (descending), then by name (ascending) when counts are equal
+  const sortedAirlines = useMemo(() => {
+    return Object.entries(terminalData.airlines)
+      .sort(([codeA, a]: [string, any], [codeB, b]: [string, any]) => {
+        // First sort by count (descending)
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+        // If counts are equal, sort by airline name (ascending)
+        const nameA = `${codeA} - ${airlinesMapping?.[codeA] || codeA}`.toLowerCase();
+        const nameB = `${codeB} - ${airlinesMapping?.[codeB] || codeB}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+  }, [terminalData.airlines, airlinesMapping]);
+
+  // Filter airlines based on search query
+  const filteredAirlines = useMemo(() => {
+    if (!searchQuery) return sortedAirlines;
+
+    return sortedAirlines.filter(([airlineCode]) => {
+      const airlineName = airlinesMapping?.[airlineCode] || airlineCode;
+      const fullName = `${airlineCode} - ${airlineName}`.toLowerCase();
+      return fullName.includes(searchQuery.toLowerCase());
+    });
+  }, [sortedAirlines, searchQuery, airlinesMapping]);
+
+  // Check if all filtered airlines are selected
+  const areAllFilteredSelected = useMemo(() => {
+    if (filteredAirlines.length === 0) return false;
+    return filteredAirlines.every(([airlineCode]) =>
+      currentTerminalAirlines.includes(createTerminalAirlineCombo(terminalName, airlineCode))
+    );
+  }, [filteredAirlines, currentTerminalAirlines, terminalName]);
+
+  // Handle select all for filtered airlines
+  const handleSelectAll = (checked: boolean) => {
+    // First toggle all airlines
+    filteredAirlines.forEach(([airlineCode, airlineData]) => {
+      const isCurrentlySelected = currentTerminalAirlines.includes(
+        createTerminalAirlineCombo(terminalName, airlineCode)
+      );
+      if (checked && !isCurrentlySelected) {
+        handleAirlineToggle(terminalName, airlineCode, airlineData, true);
+      } else if (!checked && isCurrentlySelected) {
+        handleAirlineToggle(terminalName, airlineCode, airlineData, false);
+      }
+    });
+
+    // If unchecking and all airlines in the terminal are now deselected, uncheck the terminal too
+    if (!checked) {
+      // Check if any airlines remain selected in this terminal after deselection
+      const allAirlinesInTerminal = Object.keys(terminalData.airlines);
+      const remainingSelectedAirlines = allAirlinesInTerminal.filter((airlineCode) =>
+        currentTerminalAirlines.includes(createTerminalAirlineCombo(terminalName, airlineCode))
+      );
+
+      // If no airlines are selected, uncheck the terminal
+      if (remainingSelectedAirlines.length === 0 && currentTerminals.includes(terminalName)) {
+        handleTerminalToggle(terminalName, terminalData, false);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Header with Select All on the right */}
+      <div className="flex items-center justify-between border-b px-2 py-1">
+        <div className="text-xs font-medium text-muted-foreground truncate flex-1 mr-2">
+          Airlines in {getValueDisplayName(category, terminalName)}
+        </div>
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          <Checkbox
+            id={`select-all-${terminalName}`}
+            checked={areAllFilteredSelected}
+            onCheckedChange={handleSelectAll}
+            className="h-3 w-3"
+          />
+          <Label
+            htmlFor={`select-all-${terminalName}`}
+            className="cursor-pointer text-xs font-medium"
+          >
+            Select All
+          </Label>
+        </div>
+      </div>
+
+      {/* Search Input */}
+      <div className="px-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Airlines List */}
+      <div className="max-h-48 overflow-y-auto space-y-1">
+        {filteredAirlines.length === 0 ? (
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+            No airlines found
+          </div>
+        ) : (
+          filteredAirlines.map(([airlineCode, airlineData]: [string, any]) => {
+            const isAirlineSelected = currentTerminalAirlines.includes(
+              createTerminalAirlineCombo(terminalName, airlineCode)
+            );
+            const airlineName = airlinesMapping?.[airlineCode] || airlineCode;
+
+            return (
+              <div
+                key={airlineCode}
+                className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
+              >
+                <Checkbox
+                  id={`airline-${terminalName}-${airlineCode}`}
+                  checked={isAirlineSelected}
+                  onCheckedChange={(checked) =>
+                    handleAirlineToggle(terminalName, airlineCode, airlineData, !!checked)
+                  }
+                />
+                <Label
+                  htmlFor={`airline-${terminalName}-${airlineCode}`}
+                  className="flex-1 cursor-pointer text-sm"
+                >
+                  {airlineCode} - {airlineName} ({airlineData.count} flights)
+                </Label>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ==================== Component ====================
@@ -742,41 +1039,16 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent
-                              className="max-h-60 w-80 overflow-y-auto p-2"
+                              className="max-h-96 w-80 p-2"
                               align="start"
                               side="bottom"
                             >
-                              <div className="space-y-1">
-                                <div className="mb-2 border-b px-2 py-1 text-xs font-medium text-muted-foreground">
-                                  Countries in {regionName}
-                                </div>
-                                {Object.entries(regionData.countries).map(
-                                  ([countryName, countryData]: [string, any]) => {
-                                    const isCountrySelected = currentCountries.includes(countryName);
-
-                                    return (
-                                      <div
-                                        key={countryName}
-                                        className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
-                                      >
-                                        <Checkbox
-                                          id={`country-${regionName}-${countryName}`}
-                                          checked={isCountrySelected}
-                                          onCheckedChange={(checked) =>
-                                            handleCountryToggle(countryName, regionName, regionData, !!checked)
-                                          }
-                                        />
-                                        <Label
-                                          htmlFor={`country-${regionName}-${countryName}`}
-                                          className="flex-1 cursor-pointer text-sm"
-                                        >
-                                          {countryName} ({countryData.total_flights} flights)
-                                        </Label>
-                                      </div>
-                                    );
-                                  }
-                                )}
-                              </div>
+                              <RegionCountriesDropdown
+                                regionName={regionName}
+                                regionData={regionData}
+                                currentCountries={currentCountries}
+                                handleCountryToggle={handleCountryToggle}
+                              />
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -852,44 +1124,21 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent
-                              className="max-h-60 w-80 overflow-y-auto p-2"
+                              className="max-h-96 w-80 p-2"
                               align="start"
                               side="bottom"
                             >
-                              <div className="space-y-1">
-                                <div className="mb-2 border-b px-2 py-1 text-xs font-medium text-muted-foreground">
-                                  Airlines in {getValueDisplayName(category, terminalName)}
-                                </div>
-                                {Object.entries(terminalData.airlines)
-                                  .sort(([, a]: [string, any], [, b]: [string, any]) => b.count - a.count)
-                                  .map(([airlineCode, airlineData]: [string, any]) => {
-                                    const isAirlineSelected = currentTerminalAirlines.includes(
-                                      createTerminalAirlineCombo(terminalName, airlineCode)
-                                    );
-                                    const airlineName = airlinesMapping?.[airlineCode] || airlineCode;
-
-                                    return (
-                                      <div
-                                        key={airlineCode}
-                                        className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50"
-                                      >
-                                        <Checkbox
-                                          id={`airline-${terminalName}-${airlineCode}`}
-                                          checked={isAirlineSelected}
-                                          onCheckedChange={(checked) =>
-                                            handleAirlineToggle(terminalName, airlineCode, airlineData, !!checked)
-                                          }
-                                        />
-                                        <Label
-                                          htmlFor={`airline-${terminalName}-${airlineCode}`}
-                                          className="flex-1 cursor-pointer text-sm"
-                                        >
-                                          {airlineCode} - {airlineName} ({airlineData.count} flights)
-                                        </Label>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
+                              <TerminalAirlinesDropdown
+                                terminalName={terminalName}
+                                terminalData={terminalData}
+                                currentTerminalAirlines={currentTerminalAirlines}
+                                currentTerminals={currentTerminals}
+                                airlinesMapping={airlinesMapping}
+                                handleAirlineToggle={handleAirlineToggle}
+                                handleTerminalToggle={handleTerminalToggle}
+                                getValueDisplayName={getValueDisplayName}
+                                category={category}
+                              />
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -900,6 +1149,7 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
               );
             }
 
+            // 기존 로직 (flight_type만) - Type 전용
             // 기존 로직 (flight_type만) - Type 전용
             return (
               <div key={category} className="space-y-3">
@@ -1030,36 +1280,42 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
             {/* ✅ Response Preview 제거 - 독립 컴포넌트로 분리 */}
 
             {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
-            {Object.entries(selectedFilter.categories).some(([_, value]) =>
-              Array.isArray(value) ? value.length > 0 : !!value
-            ) && (
-              <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
-                <div className="flex items-start gap-4">
-                  {/* 선택 요약 */}
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="rounded-full bg-primary/20 p-1">
-                        <Filter className="h-3 w-3 text-primary" />
-                      </div>
-                      <span className="text-sm font-semibold text-primary">Selection Summary</span>
+            <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+              <div className="flex items-start gap-4">
+                {/* 선택 요약 - 항상 표시 */}
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="rounded-full bg-primary/20 p-1">
+                      <Filter className="h-3 w-3 text-primary" />
                     </div>
+                    <span className="text-sm font-semibold text-primary">Selection Summary</span>
                   </div>
+                  {/* 선택된 항목이 있을 때만 상세 내용 표시, 없으면 안내 메시지 */}
+                  <div className="text-sm text-muted-foreground">
+                    {Object.entries(selectedFilter.categories).some(([_, value]) =>
+                      Array.isArray(value) ? value.length > 0 : !!value
+                    ) ? (
+                      <span>Filters applied</span>
+                    ) : (
+                      <span>No filters selected - showing all flights</span>
+                    )}
+                  </div>
+                </div>
 
-                  {/* 편수 통계 */}
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground">Expected Flights</div>
-                    <div className="text-lg font-bold text-primary">
-                      {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
-                      {(() => {
-                        const totalFiltered = getEstimatedFilteredFlights();
-                        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                        return `${totalFiltered} / ${totalAvailable}`;
-                      })()}
-                    </div>
+                {/* 편수 통계 - 항상 표시 */}
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Expected Flights</div>
+                  <div className="text-lg font-bold text-primary">
+                    {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
+                    {(() => {
+                      const totalFiltered = getEstimatedFilteredFlights();
+                      const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                      return `${totalFiltered} / ${totalAvailable}`;
+                    })()}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Selection Summary & Actions */}
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
