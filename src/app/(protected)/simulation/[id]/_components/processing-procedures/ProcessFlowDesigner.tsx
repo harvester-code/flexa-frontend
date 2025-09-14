@@ -733,7 +733,7 @@ export default function ProcessFlowDesigner({
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="flex flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-3">
+                  <div className="flex flex-1 flex-col gap-3 overflow-y-auto overflow-x-visible px-4">
                     {/* Entry (Fixed) */}
                     <div className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 shadow-sm">
                       <Users className="h-4 w-4 text-primary" />
@@ -752,12 +752,12 @@ export default function ProcessFlowDesigner({
                           <React.Fragment key={`${step.name}-${step.step}`}>
                             {/* Travel Time + Arrow */}
                             <div className="relative flex flex-shrink-0 justify-center">
+                              <ChevronDown className="h-5 w-5 flex-shrink-0 text-primary" />
                               {step.travel_time_minutes != null && step.travel_time_minutes > 0 && (
-                                <span className="absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
+                                <span className="absolute left-1/2 top-1/2 -translate-x-[calc(100%+1.5rem)] -translate-y-1/2 whitespace-nowrap rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
                                   {step.travel_time_minutes}min
                                 </span>
                               )}
-                              <ChevronDown className="h-5 w-5 flex-shrink-0 text-primary" />
                             </div>
 
                             {/* Sortable Process Card */}

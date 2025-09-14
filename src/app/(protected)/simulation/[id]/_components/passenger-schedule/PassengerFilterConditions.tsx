@@ -77,8 +77,8 @@ export default function PassengerFilterConditions({
     // API 요청 바디 구성
     const requestBody = {
       settings: {
-        airport: contextData.airport || "ICN",
-        date: contextData.date || new Date().toISOString().split("T")[0],
+        airport: contextData.airport,
+        date: contextData.date,
         min_arrival_minutes: 15,
       },
       pax_generation: {

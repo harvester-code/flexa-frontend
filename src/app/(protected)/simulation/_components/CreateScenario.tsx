@@ -43,7 +43,7 @@ const INPUT_FIELDS: InputField[] = [
     placeholder: "T2 Expansion",
     required: true,
   },
-  { key: "airport", label: "Airport", placeholder: "ICN", required: false },
+  { key: "airport", label: "Airport", placeholder: "Airport code", required: false },
   { key: "terminal", label: "Terminal", placeholder: "T1", required: false },
   { key: "memo", label: "Memo", placeholder: "Description", required: false },
 ];

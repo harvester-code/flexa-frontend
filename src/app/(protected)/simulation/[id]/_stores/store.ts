@@ -427,7 +427,7 @@ export interface SimulationStoreState {
 const createInitialState = (scenarioId?: string) => ({
   context: {
     scenarioId: scenarioId || "",
-    airport: "ICN", // ICN을 기본값으로 설정
+    airport: "", // 기본값 제거 - 사용자가 입력해야 함
     date: new Date().toISOString().split("T")[0], // 🆕 오늘 날짜로 초기화
     lastSavedAt: null,
   },
