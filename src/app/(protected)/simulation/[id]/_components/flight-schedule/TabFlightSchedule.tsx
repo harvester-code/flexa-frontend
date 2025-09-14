@@ -32,13 +32,7 @@ interface ApplyFilterData {
   total: number;
   chart_x_data: string[];
   chart_y_data: {
-    airline: Array<{
-      name: string;
-      order: number;
-      y: number[];
-      acc_y: number[];
-    }>;
-    terminal: Array<{
+    [category: string]: Array<{
       name: string;
       order: number;
       y: number[];
@@ -444,19 +438,21 @@ function TabFlightSchedule({
         // if (data?.chart_x_data && data?.chart_y_data) { ... }
 
         // ✅ Apply Filter 응답 상태에 저장
+        // 동적으로 모든 카테고리 처리
+        const processedChartData: Record<string, any[]> = {};
+        if (data.chart_y_data) {
+          Object.keys(data.chart_y_data).forEach(category => {
+            processedChartData[category] = (data.chart_y_data[category] || []).map((item: any) => ({
+              ...item,
+              acc_y: item.acc_y || [],
+            }));
+          });
+        }
+
         setApplyFilterData({
           total: data.total,
           chart_x_data: data.chart_x_data,
-          chart_y_data: {
-            airline: (data.chart_y_data?.airline || []).map((item) => ({
-              ...item,
-              acc_y: item.acc_y || [],
-            })),
-            terminal: (data.chart_y_data?.terminal || []).map((item) => ({
-              ...item,
-              acc_y: item.acc_y || [],
-            })),
-          },
+          chart_y_data: processedChartData,
           appliedAt: new Date().toISOString(),
         });
 
@@ -464,16 +460,7 @@ function TabFlightSchedule({
         setAppliedFilterResult({
           total: data.total,
           chart_x_data: data.chart_x_data,
-          chart_y_data: {
-            airline: (data.chart_y_data?.airline || []).map((item) => ({
-              ...item,
-              acc_y: item.acc_y || [],
-            })),
-            terminal: (data.chart_y_data?.terminal || []).map((item) => ({
-              ...item,
-              acc_y: item.acc_y || [],
-            })),
-          },
+          chart_y_data: processedChartData,
           appliedAt: new Date().toISOString(),
           // 🔧 Passenger Schedule 탭 활성화를 위한 기본 parquet_metadata 추가
           parquet_metadata: (data as any).parquet_metadata || [

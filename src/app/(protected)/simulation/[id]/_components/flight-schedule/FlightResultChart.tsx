@@ -46,8 +46,12 @@ export default function FlightResultChart() {
     const categoryData = appliedFilterResult.chart_y_data[selectedCategory];
     const xLabels = appliedFilterResult.chart_x_data;
 
-    // ✅ 항공사별 총 운항횟수 기준으로 내림차순 정렬
+    // ✅ 항공사별 총 운항횟수 기준으로 내림차순 정렬 (ETC는 항상 마지막)
     const sortedCategoryData = [...categoryData].sort((a, b) => {
+      // ETC는 항상 마지막에 위치
+      if (a.name === 'ETC') return 1;
+      if (b.name === 'ETC') return -1;
+
       const totalFlightsA = a.y.reduce((sum: number, flights: number) => sum + flights, 0);
       const totalFlightsB = b.y.reduce((sum: number, flights: number) => sum + flights, 0);
       return totalFlightsB - totalFlightsA; // 내림차순 (많은 것부터)
@@ -61,7 +65,10 @@ export default function FlightResultChart() {
       type: 'bar' as const,
       showlegend: true, // ✅ 하나만 있어도 legend 표시
       marker: {
-        color: CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
+        // ETC는 회색으로, 나머지는 컬러 팔레트 사용
+        color: series.name === 'ETC'
+          ? '#9CA3AF' // gray-400 색상
+          : CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length],
       },
       hovertemplate: '<b>%{fullData.name}</b><br>' + 'Time: %{x}<br>' + 'Flights: %{y}<br>' + '<extra></extra>',
     }));
