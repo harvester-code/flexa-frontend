@@ -12,7 +12,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Link2,
-  Loader2,
   Plus,
   Search,
   XCircle,
@@ -326,20 +325,18 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                             <div
                               className={cn(
                                 'flex cursor-pointer items-center gap-2.5',
-                                item.status === 'done'
+                                item.has_simulation_data
                                   ? 'cursor-pointer hover:font-semibold'
                                   : 'cursor-not-allowed line-through'
                               )}
                               onClick={() => {
-                                if (item.status === 'done') {
+                                if (item.has_simulation_data) {
                                   selectScenario(item);
                                 }
                               }}
                             >
-                              {item.status === 'done' ? (
+                              {item.has_simulation_data ? (
                                 <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-primary" />
-                              ) : item.status === 'running' ? (
-                                <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary/60" />
                               ) : (
                                 <XCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
                               )}

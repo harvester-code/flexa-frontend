@@ -58,8 +58,8 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
 
   return (
     <div className="detail-list">
-      {details &&
-        details?.map(({ category, components, overview }, i) => (
+      {details && Array.isArray(details) &&
+        details.map(({ category, components, overview }, i) => (
           <div className="detail-item" key={i}>
             <div
               className="mb-2 flex w-max cursor-pointer select-none items-center text-muted-foreground"
@@ -85,7 +85,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {overview.opened[0]} / {overview.opened[1]}
+                        {overview?.opened?.[0] || 0} / {overview?.opened?.[1] || 0}
                         {formatUnit('EA')}
                       </dd>
                     </dl>
@@ -103,7 +103,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {formatNumberWithComma(overview.throughput)}
+                        {formatNumberWithComma(overview?.throughput || 0)}
                         {formatUnit('pax')}
                       </dd>
                     </dl>
@@ -127,7 +127,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
-                      <dd className="text-lg font-semibold">{formatTimeTaken(overview.waitTime)}</dd>
+                      <dd className="text-lg font-semibold">{formatTimeTaken(overview?.waitTime || 0)}</dd>
                     </dl>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {formatNumberWithComma(overview.queuePax)}
+                        {formatNumberWithComma(overview?.queuePax || 0)}
                         {formatUnit('pax')}
                       </dd>
                     </dl>
@@ -168,7 +168,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {Math.round(Number(overview.ai_ratio))}
+                        {Math.round(Number(overview?.ai_ratio || 0))}
                         {formatUnit('%')}
                       </dd>
                     </dl>
@@ -186,7 +186,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {Math.round(Number(overview.pa_ratio))}
+                        {Math.round(Number(overview?.pa_ratio || 0))}
                         {formatUnit('%')}
                       </dd>
                     </dl>
@@ -194,22 +194,22 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                 </div>
               </div>
 
-              {openIndexes.includes(i) && (
+              {openIndexes.includes(i) && components && (
                 <div className="scroll-list">
                   {components.map((comp, j) => {
-                    const parts = comp.title.split('_');
+                    const parts = comp?.title?.split('_') || [];
                     // NOTE: 코드 순서가 중요
-                    const facility = parts.pop();
-                    const zone = parts.join('_');
+                    const facility = parts.pop() || '';
+                    const zone = parts.join('_') || '';
 
                     return (
-                      <div className={cn('scroll-item', comp.opened[0] === 0 && 'closed')} key={j}>
+                      <div className={cn('scroll-item', comp?.opened?.[0] === 0 && 'closed')} key={j}>
                         <div className="scroll-item-head">
                           <h5>
                             <em>
                               {pascalCase(zone)} {facility}
                             </em>
-                            {comp.opened[0] === 0 ? (
+                            {comp?.opened?.[0] === 0 ? (
                               <span className="stats-close">CLOSED</span>
                             ) : (
                               <span className="stats-open">OPEN</span>
@@ -224,7 +224,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <dl>
                                 <dt>Opened</dt>
                                 <dd className="!font-semibold">
-                                  {comp.opened[0]} / {comp.opened[1]}
+                                  {comp?.opened?.[0] || 0} / {comp?.opened?.[1] || 0}
                                   {formatUnit('EA')}
                                 </dd>
                               </dl>
@@ -235,7 +235,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <dl>
                                 <dt>Throughput</dt>
                                 <dd className="!font-semibold">
-                                  {formatNumberWithComma(comp.throughput)}
+                                  {formatNumberWithComma(comp?.throughput || 0)}
                                   {formatUnit('pax')}
                                 </dd>
                               </dl>
@@ -253,7 +253,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <dl>
                                 <dt>Queue Pax</dt>
                                 <dd className="!font-semibold">
-                                  {formatNumberWithComma(comp.queuePax)}
+                                  {formatNumberWithComma(comp?.queuePax || 0)}
                                   {formatUnit('pax')}
                                 </dd>
                               </dl>
@@ -270,7 +270,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               </div>
                               <dl>
                                 <dt>Wait Time</dt>
-                                <dd className="!font-semibold">{formatTimeTaken(comp.waitTime)}</dd>
+                                <dd className="!font-semibold">{formatTimeTaken(comp?.waitTime || 0)}</dd>
                               </dl>
                             </div>
 
@@ -279,7 +279,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <dl>
                                 <dt>A/I Ratio</dt>
                                 <dd className="!font-semibold">
-                                  {Math.round(Number(comp.ai_ratio))}
+                                  {Math.round(Number(comp?.ai_ratio || 0))}
                                   {formatUnit('%')}
                                 </dd>
                               </dl>
@@ -290,7 +290,7 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                               <dl>
                                 <dt>P/A Ratio</dt>
                                 <dd className="!font-semibold">
-                                  {Math.round(Number(comp.pa_ratio))}
+                                  {Math.round(Number(comp?.pa_ratio || 0))}
                                   {formatUnit('%')}
                                 </dd>
                               </dl>

@@ -16,10 +16,10 @@ const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: fa
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
 const CHART_OPTION_COLORS: Record<string, string> = {
-  inflow: 'hsl(var(--chart-1))',
-  outflow: 'hsl(var(--chart-2))',
-  queue_length: 'hsl(var(--chart-3))',
-  waiting_time: 'hsl(var(--chart-4))',
+  inflow: '#06b6d4',     // cyan-500
+  outflow: '#10b981',    // emerald-500
+  queue_length: '#f59e0b', // amber-500
+  waiting_time: '#f43f5e', // rose-500
 };
 
 const CHART_OPTIONS: Option[] = [
