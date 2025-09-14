@@ -72,7 +72,7 @@ export default function FlightResultChart() {
   // Plotly 레이아웃 설정
   const layout = {
     title: {
-      text: `Flight Schedule Distribution by ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`,
+      text: 'Flight Schedule Distribution',
       font: { size: 16, family: 'Pretendard, Arial, sans-serif' },
     },
     barmode: 'stack' as const,
@@ -117,7 +117,7 @@ export default function FlightResultChart() {
           </div>
           <div>
             <CardTitle className="text-lg font-semibold text-default-900">
-              Flight Schedule Chart - {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+              Flight Schedule Chart
             </CardTitle>
             <p className="text-sm text-default-500">Visual representation of flight schedule data</p>
           </div>

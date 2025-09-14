@@ -169,13 +169,7 @@ export interface SimulationStoreState {
       total: number;
       chart_x_data: string[]; // ["00:00", "01:00", ...]
       chart_y_data: {
-        airline: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-        terminal: Array<{
+        [category: string]: Array<{
           name: string;
           order: number;
           y: number[];
@@ -252,13 +246,7 @@ export interface SimulationStoreState {
       total: number;
       chart_x_data: string[];
       chart_y_data: {
-        airline: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-        terminal: Array<{
+        [category: string]: Array<{
           name: string;
           order: number;
           y: number[];
