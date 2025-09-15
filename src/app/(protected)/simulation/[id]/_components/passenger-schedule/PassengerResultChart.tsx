@@ -85,16 +85,27 @@ export default function PassengerResultChart() {
       return totalPassengersB - totalPassengersA; // 내림차순 (많은 것부터)
     });
 
+    // etc를 마지막으로 이동
+    const etcIndex = sortedCategoryData.findIndex(item => item.name.toLowerCase() === 'etc');
+    let reorderedData = [...sortedCategoryData];
+
+    if (etcIndex !== -1) {
+      const etcData = reorderedData.splice(etcIndex, 1)[0];
+      reorderedData.push(etcData);
+    }
+
     // Plotly traces 생성 (정렬된 순서로)
     // x축에 0부터 시작하는 인덱스 사용 (Plotly에서 array tickmode 사용 시 필요)
-    const traces = sortedCategoryData.map((series, index) => ({
-      name: series.name,
+    const traces = reorderedData.map((series, index) => ({
+      name: series.name === 'etc' ? 'ETC' : series.name, // etc를 대문자로
       x: xLabels.map((_, i) => i), // 인덱스 배열 사용
       y: series.y,
       type: "bar" as const,
       showlegend: true, // ✅ 하나만 있어도 legend 표시
       marker: {
-        color: COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length],
+        color: series.name.toLowerCase() === 'etc'
+          ? '#9CA3AF' // etc는 회색
+          : COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length],
       },
       hovertemplate:
         "<b>%{fullData.name}</b><br>" +
@@ -134,9 +145,7 @@ export default function PassengerResultChart() {
       if (showMinutes.includes(minutes)) {
         gridPos.push(index); // 레이블이 표시되는 위치 저장
         if (minutes === 0) {
-          if (hour === '00') {
-            return `<b>${date.substring(5)}</b><br><b>${hour}:${minute}</b>`;
-          }
+          // 자정(00:00)은 시간만 표시 (날짜는 annotation으로 별도 표시)
           return `<b>${hour}:${minute}</b>`;
         }
         return `${hour}:${minute}`;
@@ -145,6 +154,25 @@ export default function PassengerResultChart() {
     });
 
     return { xAxisLabels: labels, gridPositions: gridPos };
+  }, [passengerChartResult]);
+
+  // 날짜 변경 위치 찾기
+  const dateChangeIndices = useMemo(() => {
+    const xLabels = passengerChartResult?.chart_x_data || [];
+    const indices: number[] = [];
+
+    if (xLabels.length > 0) {
+      let prevDate = xLabels[0].split(' ')[0];
+      xLabels.forEach((label, index) => {
+        const currentDate = label.split(' ')[0];
+        if (currentDate !== prevDate) {
+          indices.push(index);
+          prevDate = currentDate;
+        }
+      });
+    }
+
+    return indices;
   }, [passengerChartResult]);
 
   // Plotly 레이아웃 설정
@@ -156,19 +184,6 @@ export default function PassengerResultChart() {
       const startDate = xLabels[0].split(' ')[0];
       const endDate = xLabels[xLabels.length - 1].split(' ')[0];
       dateRangeText = startDate === endDate ? startDate : `${startDate} ~ ${endDate}`;
-    }
-
-    // 날짜 변경 위치 찾기
-    const dateChangeIndices: number[] = [];
-    if (xLabels.length > 0) {
-      let prevDate = xLabels[0].split(' ')[0];
-      xLabels.forEach((label, index) => {
-        const currentDate = label.split(' ')[0];
-        if (currentDate !== prevDate) {
-          dateChangeIndices.push(index);
-          prevDate = currentDate;
-        }
-      });
     }
 
     return {
@@ -208,8 +223,62 @@ export default function PassengerResultChart() {
         bgcolor: "white",
         bordercolor: "hsl(var(--border))",
       },
+      // shapes를 사용해서 커스텀 그리드 추가
+      shapes: [
+        // 레이블이 표시되는 위치에만 그리드 표시
+        ...gridPositions.map(pos => ({
+          type: 'line' as const,
+          x0: pos,
+          x1: pos,
+          y0: 0,
+          y1: 1,
+          yref: 'paper' as const,
+          line: {
+            color: 'rgba(200, 200, 200, 0.3)',
+            width: 1,
+          },
+        })),
+        // 날짜 변경선은 다르게 표시
+        ...dateChangeIndices.map(pos => ({
+          type: 'line' as const,
+          x0: pos,
+          x1: pos,
+          y0: 0,
+          y1: 1,
+          yref: 'paper' as const,
+          line: {
+            color: 'rgba(255, 100, 100, 0.4)',
+            width: 2,
+            dash: 'dot' as const,
+          },
+        })),
+      ],
+      // 날짜 annotation 추가
+      annotations: [
+        ...dateChangeIndices.map(pos => {
+          const dateLabel = xLabels[pos] ? xLabels[pos].split(' ')[0] : '';
+          return {
+            x: pos,
+            y: 1.05,
+            yref: 'paper' as const,
+            text: `<b>${dateLabel.substring(5)}</b>`, // MM-DD 형식
+            showarrow: false,
+            font: {
+              size: 12,
+              color: 'rgba(255, 100, 100, 0.8)',
+              family: "Pretendard, Arial, sans-serif",
+            },
+            xanchor: 'center' as const,
+            yanchor: 'bottom' as const,
+            bgcolor: 'white',
+            bordercolor: 'rgba(255, 100, 100, 0.4)',
+            borderwidth: 1,
+            borderpad: 4,
+          };
+        }),
+      ],
     };
-  }, [xAxisLabels, gridPositions, validSelectedCategory, passengerChartResult]);
+  }, [xAxisLabels, gridPositions, dateChangeIndices, validSelectedCategory, passengerChartResult]);
 
   // ✅ 기본 데이터만 있어도 표시할 수 있도록 수정
   if (!passengerChartResult) {
