@@ -868,7 +868,7 @@ export default function ShowUpTimeSettings({
           xanchor: 'center',
         },
         {
-          x: -defaultMean || -120,
+          x: defaultMean ? -defaultMean : -120,
           y: 0.5,
           xref: 'x',
           yref: 'paper',

@@ -564,7 +564,6 @@ export default function ProcessFlowDesigner({
 
       // Reset to initial state
       setEditedProcess(null);
-      setSelectedProcessIndex(null);
       setZoneNamesInput('');
       setDefaultFacilityCount(null);
       setSelectedCriteriaItems({});
