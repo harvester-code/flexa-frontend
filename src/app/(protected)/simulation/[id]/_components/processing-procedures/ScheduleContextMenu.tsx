@@ -136,7 +136,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         {/* Selected cells count info */}
         {(contextMenu.targetCells?.length || 0) > 1 && (
           <>
-            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            <div className="px-2 py-1.5 text-xs font-medium text-black">
               Apply to {contextMenu.targetCells?.length || 0} selected cells
             </div>
             <DropdownMenuSeparator />
@@ -153,7 +153,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         >
           <div className="flex w-full items-center gap-2">
             <Star size={16} className="text-primary" />
-            <span className="font-medium">Select All</span>
+            <span className="font-medium text-black">Select All</span>
           </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -161,7 +161,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         {categoryGroups.map((group, groupIndex) => (
           <React.Fragment key={group.title}>
             {/* 🏷️ 그룹 제목 */}
-            <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+            <div className="px-3 py-2 text-xs font-medium text-black uppercase tracking-wide border-b border-border">
               {group.title}
             </div>
 
@@ -183,14 +183,17 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
               }
               categoryIndex += categoryIndexInGroup;
 
+              // Get icon color from COMPONENT_TYPICAL_COLORS
+              const iconColor = getColorByIndex(categoryIndex);
+
               return (
                 <DropdownMenuSub key={category}>
                   <DropdownMenuSubTrigger>
                     <span className="flex items-center gap-2">
-                      <config.icon size={16} className={config.textColor} />
-                      <span>{category}</span>
+                      <config.icon size={16} style={{ color: iconColor }} />
+                      <span className="text-black">{category}</span>
                       {config.options.length > 10 && (
-                        <span className="text-xs opacity-60">
+                        <span className="text-xs text-black opacity-60">
                           ({config.options.length})
                         </span>
                       )}
@@ -213,7 +216,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
 
                     {/* 📝 결과 카운트 */}
                     {searchTerm && (
-                      <div className="px-3 py-1 text-xs text-muted-foreground border-b border-border">
+                      <div className="px-3 py-1 text-xs text-black border-b border-border">
                         {filteredOptions.length} of {config.options.length} results
                       </div>
                     )}
@@ -248,12 +251,11 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                 }}
                               >
                                 <div className="flex w-full items-center gap-2">
-                                  <div className="flex h-4 w-4 items-center justify-center rounded border-2"
-                                       style={{ borderColor: optionColor }}>
+                                  <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-black">
                                     {checkState === true && (
                                       <svg
                                         className="h-3 w-3"
-                                        fill={optionColor}
+                                        fill="black"
                                         viewBox="0 0 20 20"
                                       >
                                         <path
@@ -264,10 +266,10 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                       </svg>
                                     )}
                                     {checkState === "indeterminate" && (
-                                      <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: optionColor }}></div>
+                                      <div className="h-2 w-2 rounded-sm bg-black"></div>
                                     )}
                                   </div>
-                                  <span className="truncate" style={{ color: optionColor }}>{option}</span>
+                                  <span className="truncate text-black">{option}</span>
                                 </div>
                               </DropdownMenuItem>
                             );
@@ -296,14 +298,14 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                             className="cursor-pointer"
                           >
                             <div className="flex w-full items-center gap-2">
-                              <span>
+                              <span className="text-black">
                                 Toggle All Visible ({filteredOptions.length})
                               </span>
                             </div>
                           </DropdownMenuItem>
                         </>
                       ) : (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                        <div className="px-3 py-2 text-sm text-black">
                           No results found
                         </div>
                       )}
@@ -327,7 +329,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         >
           <div className="flex w-full items-center gap-2 text-red-600">
             <Trash2 size={16} />
-            <span>Clear All Badges</span>
+            <span className="text-black">Clear All Badges</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
