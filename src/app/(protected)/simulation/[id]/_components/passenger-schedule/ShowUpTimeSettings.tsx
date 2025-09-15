@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, CheckCircle, Edit, Play, Plus, Trash2, X, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Edit, Play, Plus, Trash2, X, XCircle, Plane } from 'lucide-react';
 import { createPassengerShowUp } from '@/services/simulationService';
 import {
   AlertDialog,
@@ -711,49 +711,38 @@ export default function ShowUpTimeSettings({
     const allMeans = validMeans;
     const allStds = validStds;
 
-    const minMean = Math.min(...allMeans);
     const maxMean = Math.max(...allMeans);
     const maxStd = Math.max(...allStds);
 
+    // ✅ X축을 출발 시각 기준으로 변경 (왼쪽이 이른 도착, 오른쪽이 출발시각 0)
     let rangeStart: number;
     let rangeEnd: number;
 
-    // 단일 분포인지 확인 (default만 있는 경우)
-    if (createdRules.length === 0 && defaultMean !== null && defaultStd !== null) {
-      // 단일 분포: 해당 분포 중심으로 적절한 범위 설정
-      rangeStart = defaultMean - 4 * defaultStd;
-      rangeEnd = defaultMean + 4 * defaultStd;
-    } else {
-      // 여러 분포: 모든 분포를 포함하는 범위
-      rangeStart = minMean - 3 * maxStd;
-      rangeEnd = maxMean + 3 * maxStd;
-    }
+    // 범위 설정: 가장 이른 도착부터 출발시각(0)까지
+    rangeEnd = 0; // 출발 시각
+    rangeStart = -(maxMean + 3 * maxStd); // 가장 이른 도착 시간 (음수)
 
-    // 최소 범위 보장 (너무 좁은 범위 방지)
-    const minRange = 20; // 최소 20 단위 범위
-    if (rangeEnd - rangeStart < minRange) {
-      const center = (rangeStart + rangeEnd) / 2;
-      rangeStart = center - minRange / 2;
-      rangeEnd = center + minRange / 2;
+    // 최소 범위 보장
+    const minRange = 60; // 최소 60분 범위
+    if (Math.abs(rangeStart) < minRange) {
+      rangeStart = -minRange;
     }
 
     const steps = 200;
     const stepSize = (rangeEnd - rangeStart) / steps;
 
-    // X축 공통 값
+    // X축 값 생성 (음수에서 0까지)
     const xValues: number[] = [];
     for (let i = 0; i <= steps; i++) {
       xValues.push(rangeStart + i * stepSize);
     }
 
-    // Default 분포 추가 (null이 아닌 경우에만)
+    // Default 분포 추가 (x축 값을 음수로 변환)
     if (defaultMean !== null && defaultStd !== null && !isNaN(defaultMean) && !isNaN(defaultStd) && defaultStd > 0) {
-      const effectiveDefaultMean = defaultMean;
-      const effectiveDefaultStd = defaultStd;
       const defaultY = xValues.map(
         (x) =>
-          (1 / (effectiveDefaultStd * Math.sqrt(2 * Math.PI))) *
-          Math.exp(-0.5 * Math.pow((x - effectiveDefaultMean) / effectiveDefaultStd, 2))
+          (1 / (defaultStd * Math.sqrt(2 * Math.PI))) *
+          Math.exp(-0.5 * Math.pow((x + defaultMean) / defaultStd, 2)) // x를 -defaultMean 중심으로 이동
       );
 
       traces.push({
@@ -761,17 +750,18 @@ export default function ShowUpTimeSettings({
         y: defaultY,
         type: 'scatter',
         mode: 'lines',
-        name: 'Default',
+        name: `Default (μ=${defaultMean}min)`,
         line: {
           color: colors[0],
           width: 3,
         },
         fill: 'tonexty',
-        fillcolor: `${colors[0]}15`, // 더 투명하게
+        fillcolor: `${colors[0]}15`,
+        hovertemplate: 'Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>',
       });
     }
 
-    // Rule 분포들 추가 (유효한 값이 있는 경우에만)
+    // Rule 분포들 추가
     createdRules.forEach((rule, index) => {
       const mean = rule.parameters?.Mean;
       const std = rule.parameters?.Std;
@@ -786,7 +776,7 @@ export default function ShowUpTimeSettings({
         std > 0
       ) {
         const ruleY = xValues.map(
-          (x) => (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2))
+          (x) => (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x + mean) / std, 2))
         );
 
         traces.push({
@@ -794,13 +784,14 @@ export default function ShowUpTimeSettings({
           y: ruleY,
           type: 'scatter',
           mode: 'lines',
-          name: rule.name,
+          name: `${rule.name} (μ=${mean}min)`,
           line: {
             color: colors[(index + 1) % colors.length],
             width: 2,
           },
           fill: 'tonexty',
-          fillcolor: `${colors[(index + 1) % colors.length]}10`, // 더 투명하게
+          fillcolor: `${colors[(index + 1) % colors.length]}10`,
+          hovertemplate: 'Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>',
         });
       }
     });
@@ -808,38 +799,113 @@ export default function ShowUpTimeSettings({
     // 레이아웃 설정
     const layout = {
       title: {
-        text: createdRules.length === 0 ? 'Normal Distribution Preview' : 'Combined Normal Distributions',
+        text: 'Passenger Arrival Distribution<br><sub>Time before scheduled departure</sub>',
         font: { size: 16 },
       },
       xaxis: {
-        title: 'Time (minutes)',
+        title: '', // 축 제목 제거
         showgrid: true,
         zeroline: true,
-        range: [rangeStart, rangeEnd], // 명시적 범위 설정
+        range: [rangeStart - 10, rangeEnd + 10], // 양쪽에 여백 추가
         gridcolor: '#E5E7EB',
-        zerolinecolor: '#9CA3AF',
+        zerolinecolor: '#EF4444', // 출발시각 빨간색
+        zerolinewidth: 2,
+        tickmode: 'array' as const,
+        tickvals: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)].map((_, i) => -i * 30).reverse(),
+        ticktext: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)].map((_, i) =>
+          i === 0 ? '0' : `-${i * 30}min`
+        ).reverse(),
+        automargin: true,
+        tickangle: 0,
+        tickfont: {
+          size: 11,
+        },
+        ticksuffix: '  ', // 틱 레이블 뒤에 공백 추가
+        tickpadding: 8, // 틱과 그래프 사이 간격
       },
       yaxis: {
-        title: 'Probability Density',
+        title: '', // 축 제목 제거
         showgrid: true,
         zeroline: false,
         gridcolor: '#E5E7EB',
+        tickformat: '.3f',
+        tickfont: {
+          size: 11,
+        },
+        tickpadding: 8, // 틱과 그래프 사이 간격
       },
-      margin: { t: 60, r: 40, b: 60, l: 80 },
+      margin: { t: 80, r: 50, b: 60, l: 80 },
       height: 400,
-      showlegend: createdRules.length > 0, // 단일 분포일 때는 범례 숨김
+      showlegend: true,
       legend: {
-        x: 1,
-        xanchor: 'right',
-        y: 1,
+        x: 0.02,
+        xanchor: 'left',
+        y: 0.98,
         yanchor: 'top',
-        bgcolor: 'rgba(255, 255, 255, 0.8)',
+        bgcolor: 'rgba(255, 255, 255, 0.9)',
         bordercolor: '#E5E7EB',
         borderwidth: 1,
       },
       hovermode: 'x unified',
       plot_bgcolor: 'rgba(0,0,0,0)',
       paper_bgcolor: 'rgba(0,0,0,0)',
+      annotations: [
+        {
+          x: 0,
+          y: -0.08,
+          xref: 'x',
+          yref: 'paper',
+          text: '✈️ Departure',
+          showarrow: false, // 화살표 제거
+          bgcolor: '#FEE2E2',
+          bordercolor: '#EF4444',
+          borderwidth: 1,
+          borderpad: 4,
+          font: {
+            color: '#EF4444',
+            size: 11,
+          },
+          xanchor: 'center',
+        },
+        {
+          x: -defaultMean || -120,
+          y: 0.5,
+          xref: 'x',
+          yref: 'paper',
+          text: `Peak Arrival<br>${defaultMean || 120}min before`,
+          showarrow: true,
+          arrowhead: 2,
+          arrowsize: 1,
+          arrowwidth: 1,
+          arrowcolor: colors[0],
+          ax: 0,
+          ay: -40,
+          bgcolor: 'white',
+          bordercolor: colors[0],
+          borderwidth: 1,
+          borderpad: 4,
+          font: {
+            color: colors[0],
+            size: 11,
+          },
+        },
+      ],
+      shapes: [
+        // 출발 시각 수직선
+        {
+          type: 'line' as const,
+          x0: 0,
+          x1: 0,
+          y0: 0,
+          y1: 1,
+          yref: 'paper' as const,
+          line: {
+            color: '#EF4444',
+            width: 2,
+            dash: 'dashdot' as const,
+          },
+        },
+      ],
     };
 
     return { data: traces, layout };
