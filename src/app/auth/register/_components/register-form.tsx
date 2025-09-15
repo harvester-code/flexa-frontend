@@ -15,13 +15,15 @@ export function RegisterForm() {
   return (
     <form action={formAction} className="space-y-6">
       {/* Error Message Display */}
-      {state?.error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 text-destructive" />
-            <div>
-              <p className="text-sm font-medium text-destructive">Registration Error</p>
-              <p className="text-sm text-destructive/80">{state.error.message}</p>
+      {state?.error?.message && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 backdrop-blur-sm">
+          <div className="flex items-start space-x-3">
+            <div className="mt-0.5 rounded-full bg-destructive/10 p-1">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-destructive mb-1">Registration failed</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{state.error.message}</p>
               {(state.error as any)?.details && process.env.NODE_ENV === 'development' && (
                 <p className="mt-1 text-xs text-destructive/60">Debug: {(state.error as any)?.details}</p>
               )}

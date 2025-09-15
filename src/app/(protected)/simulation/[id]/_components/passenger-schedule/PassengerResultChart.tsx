@@ -58,14 +58,14 @@ export default function PassengerResultChart() {
       : "airline";
 
   // Plotly용 데이터 변환 (조건부 return 이전에 호출)
-  const { plotlyData, xAxisLabels } = useMemo(() => {
+  const plotlyData = useMemo(() => {
     if (
       !passengerChartResult?.chart_y_data ||
       !validSelectedCategory ||
       !passengerChartResult.chart_y_data[validSelectedCategory] ||
       !passengerChartResult?.chart_x_data
     ) {
-      return { plotlyData: [], xAxisLabels: [] };
+      return [];
     }
 
     const categoryData =
@@ -86,9 +86,10 @@ export default function PassengerResultChart() {
     });
 
     // Plotly traces 생성 (정렬된 순서로)
+    // x축에 0부터 시작하는 인덱스 사용 (Plotly에서 array tickmode 사용 시 필요)
     const traces = sortedCategoryData.map((series, index) => ({
       name: series.name,
-      x: xLabels,
+      x: xLabels.map((_, i) => i), // 인덱스 배열 사용
       y: series.y,
       type: "bar" as const,
       showlegend: true, // ✅ 하나만 있어도 legend 표시
@@ -97,13 +98,118 @@ export default function PassengerResultChart() {
       },
       hovertemplate:
         "<b>%{fullData.name}</b><br>" +
-        "Time: %{x}<br>" +
+        "Time: %{customdata}<br>" +
         "Passengers: %{y}<br>" +
         "<extra></extra>",
+      customdata: xLabels, // 호버 시 실제 시간 표시용
     }));
 
-    return { plotlyData: traces, xAxisLabels: xLabels };
+    return traces;
   }, [passengerChartResult, validSelectedCategory]);
+
+  // x축 레이블 처리 및 그리드 위치 계산
+  const { xAxisLabels, gridPositions } = useMemo(() => {
+    if (!passengerChartResult?.chart_x_data) return { xAxisLabels: [], gridPositions: [] };
+
+    const xLabels = passengerChartResult.chart_x_data;
+    const totalPoints = xLabels.length;
+    let showMinutes: number[];
+
+    if (totalPoints <= 30) {
+      showMinutes = [0, 10, 20, 30, 40, 50];
+    } else if (totalPoints <= 60) {
+      showMinutes = [0, 20, 40];
+    } else if (totalPoints <= 90) {
+      showMinutes = [0, 30];
+    } else {
+      showMinutes = [0];
+    }
+
+    const gridPos: number[] = [];
+    const labels = xLabels.map((label, index) => {
+      const [date, time] = label.split(' ');
+      const [hour, minute] = time.split(':');
+      const minutes = parseInt(minute);
+
+      if (showMinutes.includes(minutes)) {
+        gridPos.push(index); // 레이블이 표시되는 위치 저장
+        if (minutes === 0) {
+          if (hour === '00') {
+            return `<b>${date.substring(5)}</b><br><b>${hour}:${minute}</b>`;
+          }
+          return `<b>${hour}:${minute}</b>`;
+        }
+        return `${hour}:${minute}`;
+      }
+      return '';
+    });
+
+    return { xAxisLabels: labels, gridPositions: gridPos };
+  }, [passengerChartResult]);
+
+  // Plotly 레이아웃 설정
+  const layout = useMemo(() => {
+    const xLabels = passengerChartResult?.chart_x_data || [];
+    let dateRangeText = '';
+
+    if (xLabels.length > 0) {
+      const startDate = xLabels[0].split(' ')[0];
+      const endDate = xLabels[xLabels.length - 1].split(' ')[0];
+      dateRangeText = startDate === endDate ? startDate : `${startDate} ~ ${endDate}`;
+    }
+
+    // 날짜 변경 위치 찾기
+    const dateChangeIndices: number[] = [];
+    if (xLabels.length > 0) {
+      let prevDate = xLabels[0].split(' ')[0];
+      xLabels.forEach((label, index) => {
+        const currentDate = label.split(' ')[0];
+        if (currentDate !== prevDate) {
+          dateChangeIndices.push(index);
+          prevDate = currentDate;
+        }
+      });
+    }
+
+    return {
+      title: {
+        text: `Passenger Show-up Distribution by ${validSelectedCategory.charAt(0).toUpperCase() + validSelectedCategory.slice(1)}<br><sub>${dateRangeText}</sub>`,
+        font: { size: 16, family: "Pretendard, Arial, sans-serif" },
+      },
+      barmode: "stack" as const,
+      xaxis: {
+        title: { text: "Time" },
+        tickangle: -45,
+        font: { family: "Pretendard, Arial, sans-serif" },
+        tickmode: "array" as const,
+        ticktext: xAxisLabels,
+        tickvals: xAxisLabels.map((_, index) => index),
+        showgrid: false, // 기본 그리드 비활성화
+      },
+      yaxis: {
+        title: { text: "Number of Passengers" },
+        font: { family: "Pretendard, Arial, sans-serif" },
+        showgrid: true,
+        gridcolor: "rgba(200, 200, 200, 0.3)",
+      },
+      font: { family: "Pretendard, Arial, sans-serif" },
+      margin: { l: 60, r: 60, t: 100, b: 120 },
+      height: 500,
+      showlegend: true,
+      legend: {
+        orientation: "h" as const,
+        x: 0,
+        y: -0.25,  // 더 아래로 이동
+        font: { family: "Pretendard, Arial, sans-serif" },
+        traceorder: "normal" as const,
+      },
+      hoverlabel: {
+        font: { family: "Pretendard, Arial, sans-serif" },
+        bgcolor: "white",
+        bordercolor: "hsl(var(--border))",
+      },
+    };
+  }, [xAxisLabels, gridPositions, validSelectedCategory, passengerChartResult]);
 
   // ✅ 기본 데이터만 있어도 표시할 수 있도록 수정
   if (!passengerChartResult) {
@@ -113,40 +219,6 @@ export default function PassengerResultChart() {
   // chart_y_data가 없으면 차트는 숨기고 요약 정보만 표시
   const hasChartData =
     passengerChartResult?.chart_y_data && categories.length > 0;
-
-  // Plotly 레이아웃 설정
-  const layout = {
-    title: {
-      text: `Passenger Show-up Distribution by ${validSelectedCategory && validSelectedCategory.length > 0 ? validSelectedCategory.charAt(0).toUpperCase() + validSelectedCategory.slice(1) : "Category"}`,
-      font: { size: 16, family: "Pretendard, Arial, sans-serif" },
-    },
-    barmode: "stack" as const,
-    xaxis: {
-      title: { text: "Time" },
-      tickangle: -45,
-      font: { family: "Pretendard, Arial, sans-serif" },
-    },
-    yaxis: {
-      title: { text: "Number of Passengers" },
-      font: { family: "Pretendard, Arial, sans-serif" },
-    },
-    font: { family: "Pretendard, Arial, sans-serif" },
-    margin: { l: 60, r: 60, t: 80, b: 100 },
-    height: 500,
-    showlegend: true, // ✅ 하나만 있어도 legend 강제 표시
-    legend: {
-      orientation: "h" as const,
-      x: 0,
-      y: -0.15,
-      font: { family: "Pretendard, Arial, sans-serif" },
-      traceorder: "normal" as const, // ✅ traces 순서대로 범례 표시
-    },
-    hoverlabel: {
-      font: { family: "Pretendard, Arial, sans-serif" },
-      bgcolor: "white",
-      bordercolor: "hsl(var(--border))",
-    },
-  };
 
   const config = {
     displayModeBar: true,
@@ -230,7 +302,7 @@ export default function PassengerResultChart() {
         </div>
 
         {/* Chart - chart_y_data가 있을 때만 렌더링 */}
-        {hasChartData ? (
+        {hasChartData && plotlyData.length > 0 ? (
           <div className="w-full" style={{ height: "500px" }}>
             <BarChart
               chartData={plotlyData}

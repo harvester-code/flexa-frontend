@@ -4,24 +4,30 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/auth/server';
+import { getAuthErrorMessage } from '@/lib/auth/error-messages';
 
 export const signInAction = async (prevState: any, formData: FormData) => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    return { error: { message: error.message } };
+    if (error) {
+      return { error: { message: getAuthErrorMessage(error) } };
+    }
+
+    revalidatePath('/', 'layout');
+    redirect('/home');
+  } catch (err) {
+    // Catch any unexpected errors (network, parsing, etc.)
+    return { error: { message: getAuthErrorMessage(err) } };
   }
-
-  revalidatePath('/', 'layout');
-  redirect('/home');
 };
 
 export const signUpAction = async (prevState: any, formData: FormData) => {
@@ -30,31 +36,36 @@ export const signUpAction = async (prevState: any, formData: FormData) => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  const supabase = await createClient();
-  const origin = (await headers()).get('origin');
+  try {
+    const supabase = await createClient();
+    const origin = (await headers()).get('origin');
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/confirm?next=/home`,
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        full_name: `${firstName} ${lastName}`,
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/confirm?next=/home`,
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`,
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
-    return { error: { message: error.message } };
+    if (error) {
+      return { error: { message: getAuthErrorMessage(error) } };
+    }
+
+    // 이메일 확인이 필수이므로 즉시 로그아웃
+    await supabase.auth.signOut();
+
+    revalidatePath('/', 'layout');
+    redirect('/auth/register/success?email=' + encodeURIComponent(email));
+  } catch (err) {
+    // Catch any unexpected errors (network, parsing, etc.)
+    return { error: { message: getAuthErrorMessage(err) } };
   }
-
-  // 이메일 확인이 필수이므로 즉시 로그아웃
-  await supabase.auth.signOut();
-
-  revalidatePath('/', 'layout');
-  redirect('/auth/register/success?email=' + encodeURIComponent(email));
 };
 
 export const signOutAction = async () => {

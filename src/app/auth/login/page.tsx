@@ -72,12 +72,14 @@ function LoginForm() {
 
             {/* Error Message Display */}
             {state?.error?.message && (
-              <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 text-destructive" />
-                  <div>
-                    <p className="text-sm font-medium text-destructive">Authentication Error</p>
-                    <p className="text-sm text-destructive/80">{state.error.message}</p>
+              <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/5 p-4 backdrop-blur-sm">
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5 rounded-full bg-destructive/10 p-1">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-destructive mb-1">Unable to sign in</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{state.error.message}</p>
                   </div>
                 </div>
               </div>
