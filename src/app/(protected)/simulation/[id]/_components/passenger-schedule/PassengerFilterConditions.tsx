@@ -57,6 +57,11 @@ export default function PassengerFilterConditions({
     (state) => state.setPassengerChartResult
   );
 
+  // Process Flow 초기화 액션
+  const setProcessFlow = useSimulationStore(
+    (state) => state.setProcessFlow
+  );
+
   // 활성화 조건 확인: load_factor와 show-up-time default 값이 null이 아닌지
   const canGeneratePax =
     passengerData.pax_generation.default.load_factor !== null &&
@@ -112,6 +117,9 @@ export default function PassengerFilterConditions({
 
     try {
       setIsGenerating(true);
+
+      // Process Flow 초기화 (다음 탭의 zustand 값을 빈값으로)
+      setProcessFlow([]);
 
       // 🔍 API 요청 시작 로그
       setApiRequestLog?.({

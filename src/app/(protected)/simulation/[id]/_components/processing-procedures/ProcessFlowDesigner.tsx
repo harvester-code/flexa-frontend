@@ -847,9 +847,6 @@ export default function ProcessFlowDesigner({
               </div>
             </div>
 
-            {/* Vertical Divider */}
-            <div className="w-px bg-gray-200"></div>
-
             {/* Right Panel: Process Details - 6/10 ratio */}
             <div className="min-w-0 flex-[6] flex h-full">
               {(isCreatingNew || (selectedProcessIndex !== null && processFlow[selectedProcessIndex])) && editedProcess ? (
@@ -1004,9 +1001,9 @@ export default function ProcessFlowDesigner({
                                 return (
                                   <div
                                     key={zoneName}
-                                    className={`group relative flex h-11 w-11 flex-col items-center justify-center rounded-md p-1.5 text-white shadow-sm transition-all duration-200 ${!isEditing && 'hover:scale-105 hover:shadow-md'} ${isEditing && 'ring-2 ring-white ring-offset-2'}`}
+                                    className={`group relative flex h-11 w-11 flex-col items-center justify-center rounded-md p-1.5 text-white shadow-sm transition-all duration-200 ${!isEditing && 'hover:scale-105 hover:shadow-md cursor-pointer'} ${isEditing && 'ring-2 ring-white ring-offset-2'}`}
                                     style={zoneStyle}
-                                    onDoubleClick={() => !isEditing && startEditingZone(zoneName)}
+                                    onClick={() => !isEditing && startEditingZone(zoneName)}
                                     title={zoneName}
                                   >
                                     <div className="text-[10px] font-semibold leading-tight">{displayName}</div>

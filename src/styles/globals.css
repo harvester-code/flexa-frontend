@@ -384,6 +384,11 @@ input[type='password'],
 input[type='email'],
 input[type='tel'] {
   @apply border-input !important;
+  /* Force English input mode for all input fields */
+  ime-mode: disabled;
+  -webkit-ime-mode: disabled;
+  -moz-ime-mode: disabled;
+  -ms-ime-mode: disabled;
   + .msg-error {
     @apply hidden;
   }
@@ -453,6 +458,11 @@ input[type='checkbox'] {
 
 textarea {
   @apply w-full rounded-md border border-input bg-white p-4 text-sm font-normal text-default-900;
+  /* Force English input mode for textarea fields */
+  ime-mode: disabled;
+  -webkit-ime-mode: disabled;
+  -moz-ime-mode: disabled;
+  -ms-ime-mode: disabled;
   &:focus {
     outline: 1px solid var(--primary-500);
   }

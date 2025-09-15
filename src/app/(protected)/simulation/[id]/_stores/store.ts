@@ -1333,13 +1333,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 time_blocks: [], // 🆕 백엔드용 (나중에 활용)
               },
               today: {
-                time_blocks: processTimeSeconds != null ? [
+                time_blocks: [
                   {
                     period: "00:00-24:00",
-                    process_time_seconds: processTimeSeconds,
+                    process_time_seconds: processTimeSeconds || 0,
                     passenger_conditions: []
                   }
-                ] : [], // 초기값: 사용자 입력값이 있을 때만 time_blocks 생성
+                ], // 항상 기본 time_blocks 생성 (00:00-24:00)
               },
             },
           }));
