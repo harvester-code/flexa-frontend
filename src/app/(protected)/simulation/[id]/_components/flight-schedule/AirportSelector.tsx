@@ -76,17 +76,31 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     if (!debouncedSearchQuery) return [];
 
     const query = debouncedSearchQuery.toUpperCase();
-    const results: typeof airportFlat = [];
+    const iataMatches: typeof airportFlat = [];
+    const otherMatches: typeof airportFlat = [];
 
-    // Early exit optimization
+    // Search only in IATA code, city, and country
     for (let i = 0; i < airportFlat.length; i++) {
-      if (airportFlat[i].searchText.includes(query)) {
-        results.push(airportFlat[i]);
-        if (results.length >= 20) break; // Stop after finding 20 results
+      const airport = airportFlat[i];
+
+      // Check IATA code first (priority)
+      if (airport.iata.includes(query)) {
+        iataMatches.push(airport);
       }
+      // Check city or country (no priority between them)
+      else if (
+        airport.city.toUpperCase().includes(query) ||
+        airport.country.toUpperCase().includes(query)
+      ) {
+        otherMatches.push(airport);
+      }
+
+      // Stop if we have enough results
+      if (iataMatches.length + otherMatches.length >= 20) break;
     }
 
-    return results;
+    // Return IATA matches first, then other matches
+    return [...iataMatches, ...otherMatches].slice(0, 20);
   }, [debouncedSearchQuery]);
 
   const handleSelect = (iata: string) => {
