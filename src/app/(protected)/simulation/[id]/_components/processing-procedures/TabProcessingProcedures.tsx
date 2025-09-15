@@ -238,21 +238,13 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
 
       Object.entries(newProcess.zones).forEach(([zoneName, zone]: [string, any]) => {
         if (zone.facilities && zone.facilities.length > 0) {
-          setFacilitiesForZone(processIndex, zoneName, zone.facilities.length, processTimeSeconds);
+          // Always pass processTimeSeconds, defaulting to 0 if not provided
+          setFacilitiesForZone(processIndex, zoneName, zone.facilities.length, processTimeSeconds || 0);
         }
       });
     }
   };
 
-
-  // 첫 번째 프로세스를 기본으로 선택
-  useEffect(() => {
-    if (processFlow.length > 0 && selectedProcessIndex === null) {
-      setSelectedProcessIndex(0);
-    } else if (processFlow.length === 0) {
-      setSelectedProcessIndex(null);
-    }
-  }, [processFlow.length, selectedProcessIndex]);
 
   // visible이 false이면 null 반환 (모든 hooks 실행 후)
   if (!visible) return null;

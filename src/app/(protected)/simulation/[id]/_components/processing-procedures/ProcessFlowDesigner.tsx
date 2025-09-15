@@ -313,7 +313,13 @@ export default function ProcessFlowDesigner({
               time_blocks: []
             },
             today: {
-              time_blocks: []
+              time_blocks: [
+                {
+                  period: "00:00-24:00",
+                  process_time_seconds: editedProcess?.process_time_seconds || 0,
+                  passenger_conditions: []
+                }
+              ]
             }
           }
         });
@@ -916,7 +922,13 @@ export default function ProcessFlowDesigner({
                                               time_blocks: []
                                             },
                                             today: {
-                                              time_blocks: []
+                                              time_blocks: [
+                                                {
+                                                  period: "00:00-24:00",
+                                                  process_time_seconds: editedProcess?.process_time_seconds || 0,
+                                                  passenger_conditions: []
+                                                }
+                                              ]
                                             }
                                           }
                                         });
@@ -966,7 +978,13 @@ export default function ProcessFlowDesigner({
                                               time_blocks: []
                                             },
                                             today: {
-                                              time_blocks: []
+                                              time_blocks: [
+                                                {
+                                                  period: "00:00-24:00",
+                                                  process_time_seconds: editedProcess?.process_time_seconds || 0,
+                                                  passenger_conditions: []
+                                                }
+                                              ]
                                             }
                                           }
                                         });
@@ -1205,11 +1223,16 @@ export default function ProcessFlowDesigner({
                               };
                               onCreateProcess(processToCreate);
                             }
+                            // Reset to initial state after creating
                             setIsCreatingNew(false);
                             setEditedProcess(null);
                             setZoneNamesInput('');
                             setDefaultFacilityCount(null);
                             setSelectedCriteriaItems({});
+                            setEditingZone(null);
+                            setEditingValue('');
+                            onProcessSelect(-1); // Deselect to show "Select a Process"
+
                             toast({
                               title: 'Process Created',
                               description: 'New process has been added successfully.',
