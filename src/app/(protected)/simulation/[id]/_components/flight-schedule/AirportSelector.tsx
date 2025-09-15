@@ -25,6 +25,7 @@ interface AirportSelectorProps {
 export default function AirportSelector({ value, onChange }: AirportSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1); // -1 means search input is focused
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Find current selection info
@@ -84,10 +85,46 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     }
   }, [open]);
 
-  // Handle Enter key to select first search result
+  // Reset selected index when search changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchQuery]);
+
+  // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchResults.length > 0) {
-      handleSelect(searchResults[0].iata);
+    // Only handle navigation when there's a search query
+    if (!searchQuery) return;
+
+    const totalItems = searchResults.length;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (selectedIndex < totalItems - 1) {
+          setSelectedIndex(selectedIndex + 1);
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (selectedIndex > -1) {
+          setSelectedIndex(selectedIndex - 1);
+        }
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
+          handleSelect(searchResults[selectedIndex].iata);
+        } else if (selectedIndex === -1 && searchResults.length > 0) {
+          // If focus is on search input and there are results, select the first one
+          handleSelect(searchResults[0].iata);
+        }
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
+          handleSelect(searchResults[selectedIndex].iata);
+        }
+        break;
     }
   };
 
@@ -104,32 +141,34 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-96" align="start">
         {/* Search Input */}
-        <div className="p-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
+        <div className="p-2 pb-0">
+          <div className={`relative ${selectedIndex === -1 && searchQuery ? 'bg-accent/50 rounded px-2' : ''}`}>
+            <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+            <input
               ref={searchInputRef}
               placeholder="Search airport"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="pl-8 h-9"
+              className="w-full pl-8 py-2 bg-transparent outline-none border-0 border-b border-gray-200 focus:border-gray-400 transition-colors text-sm"
               autoFocus
+              onFocus={() => setSelectedIndex(-1)}
             />
           </div>
         </div>
-
-        <DropdownMenuSeparator />
 
         <div className="max-h-[400px] overflow-y-auto">
           {searchQuery ? (
             // Search Results
             searchResults.length > 0 ? (
-              searchResults.map((airport) => (
+              searchResults.map((airport, index) => (
                 <DropdownMenuItem
                   key={airport.iata}
                   onClick={() => handleSelect(airport.iata)}
-                  className="flex items-center gap-2"
+                  onMouseEnter={() => setSelectedIndex(index)}
+                  className={`flex items-center gap-2 ${
+                    index === selectedIndex ? 'bg-accent' : ''
+                  }`}
                 >
                   <Plane className="h-4 w-4 text-primary flex-shrink-0" />
                   <div className="flex items-baseline gap-1.5">
