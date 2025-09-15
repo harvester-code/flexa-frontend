@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Input } from "@/components/ui/Input";
+import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
 
 // 카테고리별 뱃지 타입 정의
 interface CategoryBadge {
@@ -165,7 +166,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
             </div>
 
             {/* 📋 그룹 내 카테고리들 */}
-            {group.categories.map((category) => {
+            {group.categories.map((category, categoryIndexInGroup) => {
               const config =
                 group.categoryConfigs?.[category] ||
                 conditionCategories[category];
@@ -174,6 +175,13 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                 config.options
               );
               const searchTerm = searchTerms[category] || "";
+
+              // Calculate global category index for color consistency
+              let categoryIndex = 0;
+              for (let i = 0; i < groupIndex; i++) {
+                categoryIndex += categoryGroups[i].categories.length;
+              }
+              categoryIndex += categoryIndexInGroup;
 
               return (
                 <DropdownMenuSub key={category}>
@@ -214,8 +222,12 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                     <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                       {filteredOptions.length > 0 ? (
                         <>
-                          {filteredOptions.map((option) => {
+                          {filteredOptions.map((option, optionIndex) => {
                             const checkState = getOptionCheckState(category, option);
+                            // Get color for this option based on category and option index
+                            const categoryColorIndex = categoryIndex * 3 + optionIndex;
+                            const optionColor = getColorByIndex(categoryColorIndex);
+
                             return (
                               <DropdownMenuItem
                                 key={option}
@@ -223,14 +235,25 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                   e.preventDefault();
                                   onToggleBadgeOption(category, option);
                                 }}
-                                className="cursor-pointer"
+                                className="cursor-pointer hover:bg-transparent"
+                                style={{
+                                  // Apply hover background color matching the badge color
+                                  '--hover-bg': `${optionColor}1A`,
+                                } as React.CSSProperties}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = `${optionColor}1A`;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                               >
                                 <div className="flex w-full items-center gap-2">
-                                  <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-border">
+                                  <div className="flex h-4 w-4 items-center justify-center rounded border-2"
+                                       style={{ borderColor: optionColor }}>
                                     {checkState === true && (
                                       <svg
-                                        className="h-3 w-3 text-primary"
-                                        fill="currentColor"
+                                        className="h-3 w-3"
+                                        fill={optionColor}
                                         viewBox="0 0 20 20"
                                       >
                                         <path
@@ -241,10 +264,10 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                       </svg>
                                     )}
                                     {checkState === "indeterminate" && (
-                                      <div className="h-2 w-2 rounded-sm bg-primary"></div>
+                                      <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: optionColor }}></div>
                                     )}
                                   </div>
-                                  <span className="truncate">{option}</span>
+                                  <span className="truncate" style={{ color: optionColor }}>{option}</span>
                                 </div>
                               </DropdownMenuItem>
                             );

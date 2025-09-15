@@ -60,15 +60,34 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     return { regionCounts, countryCounts };
   }, []);
 
-  // Search across all levels
-  const searchResults = useMemo(() => {
-    if (!searchQuery) return [];
+  // Search across all levels with debouncing
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-    const query = searchQuery.toUpperCase();
-    return airportFlat.filter((airport) =>
-      airport.searchText.includes(query)
-    ).slice(0, 20);
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150); // 150ms delay
+
+    return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const searchResults = useMemo(() => {
+    if (!debouncedSearchQuery) return [];
+
+    const query = debouncedSearchQuery.toUpperCase();
+    const results: typeof airportFlat = [];
+
+    // Early exit optimization
+    for (let i = 0; i < airportFlat.length; i++) {
+      if (airportFlat[i].searchText.includes(query)) {
+        results.push(airportFlat[i]);
+        if (results.length >= 20) break; // Stop after finding 20 results
+      }
+    }
+
+    return results;
+  }, [debouncedSearchQuery]);
 
   const handleSelect = (iata: string) => {
     onChange(iata);
@@ -159,8 +178,15 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
 
         <div className="max-h-[400px] overflow-y-auto">
           {searchQuery ? (
-            // Search Results
-            searchResults.length > 0 ? (
+            // Search Results with loading state
+            debouncedSearchQuery !== searchQuery ? (
+              <div className="p-2 text-center text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  Searching...
+                </div>
+              </div>
+            ) : searchResults.length > 0 ? (
               searchResults.map((airport, index) => (
                 <DropdownMenuItem
                   key={airport.iata}

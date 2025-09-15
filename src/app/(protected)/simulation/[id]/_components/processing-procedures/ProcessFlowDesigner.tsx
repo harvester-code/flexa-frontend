@@ -562,9 +562,19 @@ export default function ProcessFlowDesigner({
         onOpenEditModal(selectedProcessIndex);
       }
 
+      // Reset to initial state
+      setEditedProcess(null);
+      setSelectedProcessIndex(null);
+      setZoneNamesInput('');
+      setDefaultFacilityCount(null);
+      setSelectedCriteriaItems({});
+      setEditingZone(null);
+      setEditingValue('');
+      onProcessSelect(-1); // Deselect any selected process
+
       toast({
         title: 'Process Updated',
-        description: 'Process has been updated successfully.',
+        description: 'Process has been updated and reset to initial state.',
       });
     }
   };
