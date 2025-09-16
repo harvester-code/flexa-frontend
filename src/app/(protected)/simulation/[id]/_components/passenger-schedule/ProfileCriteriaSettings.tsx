@@ -56,7 +56,7 @@ export default function ProfileCriteriaSettings({
       if (configType === 'load_factor' && editingRule.loadFactor !== undefined) {
         // 🆕 Load Factor 전용 초기값 설정
         setPropertyValues({
-          'Load Factor': editingRule.loadFactor / 100, // 백분율 → 0.0-1.0 변환
+          'Load Factor': editingRule.loadFactor, // 값을 그대로 사용
         });
       } else if (configType === 'show_up_time' && editingRule.parameters) {
         // 🆕 Show-up-Time 전용 초기값 설정
@@ -364,8 +364,8 @@ export default function ProfileCriteriaSettings({
     if (editingRule) {
       // 1. propertyValues 복원
       if (configType === 'load_factor' && editingRule.distribution) {
-        // Load Factor 편집 모드: 퍼센트 값을 소수로 변환 (80 → 0.8)
-        setPropertyValues({ 'Load Factor': (editingRule.distribution['Load Factor'] || 80) / 100 });
+        // Load Factor 편집 모드: 값을 그대로 사용
+        setPropertyValues({ 'Load Factor': editingRule.distribution['Load Factor'] || 80 });
       } else if (configType === 'show_up_time' && editingRule.distribution) {
         // Show-up Time 편집 모드: mean과 std 값 복원
         setPropertyValues({
@@ -382,7 +382,7 @@ export default function ProfileCriteriaSettings({
           // nationality, profile
           const percentValues = Object.keys(editingRule.value).reduce(
             (acc, key) => {
-              acc[key] = (editingRule.value[key] || 0) * 100; // 0.5 → 50
+              acc[key] = editingRule.value[key] || 0; // 값을 그대로 사용
               return acc;
             },
             {} as Record<string, number>

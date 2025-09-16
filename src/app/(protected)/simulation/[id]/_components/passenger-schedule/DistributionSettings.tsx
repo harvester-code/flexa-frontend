@@ -696,6 +696,14 @@ export default function DistributionSettings({
     };
   }, [handleRuleSaved]);
 
+  // properties가 있고 default가 없으면 자동 생성
+  useEffect(() => {
+    if (definedProperties.length > 0 && !hasDefaultRule) {
+      const distribution = calculateEqualDistribution(definedProperties);
+      setDefault(distribution);
+    }
+  }, [definedProperties.length, hasDefaultRule, calculateEqualDistribution, setDefault]);
+
   // ✅ validation 함수들은 PercentageControl에서 import
 
   return (
@@ -921,147 +929,61 @@ export default function DistributionSettings({
           </div>
         )}
 
-        {/* 🆕 Default Rule 카드를 Rules 조건 블록 밖으로 이동 */}
+        {/* Default Rule 카드 - 항상 표시 */}
         {definedProperties.length > 0 && (
           <div className="mt-4">
-            {/* Default Rule 또는 Apply Default 카드 */}
-            {hasDefaultRule ? (
-              /* Default Section */
-              <div className="rounded-lg border bg-white px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge className="border-0 bg-green-100 text-green-700">
-                      Default
-                    </Badge>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-700">
-                        {flightCalculations.remainingFlights}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        / {flightCalculations.totalFlights}
-                      </span>
-                      <span className="text-sm text-gray-500">flights</span>
-                    </div>
-                  </div>
+            {/* Default Section - 항상 표시되고 삭제 불가 */}
+            <div className="rounded-lg border bg-white px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge className="border-0 bg-green-100 text-green-700">
+                    Default
+                  </Badge>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                      onClick={() => setDefaultRule(false)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Default Distribution Bar */}
-                <div className="mt-3">
-                  <PercentageControl
-                    properties={definedProperties}
-                    values={defaultDistribution || {}}
-                    onChange={updateDefaultDistribution}
-                    showValues={true}
-                  />
-
-                  {/* Default Validation Status */}
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    {isValidDistribution(defaultDistribution || {}) ? (
-                      <span className="flex items-center gap-1 text-green-600">
-                        <CheckCircle size={14} />
-                        Valid distribution (Total:{" "}
-                        {Math.round(getDistributionTotal(
-                          defaultDistribution || {}
-                        ))}
-                        %)
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-red-600">
-                        <XCircle size={14} />
-                        Total must equal 100% (Current:{" "}
-                        {Math.round(getDistributionTotal(
-                          defaultDistribution || {}
-                        ))}
-                        %)
-                      </span>
-                    )}
+                    <span className="font-medium text-gray-700">
+                      {flightCalculations.remainingFlights}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      / {flightCalculations.totalFlights}
+                    </span>
+                    <span className="text-sm text-gray-500">flights</span>
                   </div>
                 </div>
               </div>
-            ) : !hasRules ? (
-              /* Rules 없을 때: "No distribution rules defined" */
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle
-                      className="mt-0.5 text-amber-500"
-                      size={20}
-                    />
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        No distribution rules defined
-                      </h4>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Would you like to apply a default{" "}
-                        {isNationality ? "nationality" : "profile"} distribution
-                        to all flights?
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setDefaultRule(true);
-                      updateDefaultDistribution(
-                        calculateEqualDistribution(definedProperties)
-                      );
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
-                  >
-                    Apply Default Rule
-                  </Button>
+
+              {/* Default Distribution Bar */}
+              <div className="mt-3">
+                <PercentageControl
+                  properties={definedProperties}
+                  values={defaultDistribution || {}}
+                  onChange={updateDefaultDistribution}
+                  showValues={true}
+                />
+
+                {/* Default Validation Status */}
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  {isValidDistribution(defaultDistribution || {}) ? (
+                    <span className="flex items-center gap-1 text-green-600">
+                      <CheckCircle size={14} />
+                      Valid distribution (Total:{" "}
+                      {Math.round(getDistributionTotal(
+                        defaultDistribution || {}
+                      ))}
+                      %)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600">
+                      <XCircle size={14} />
+                      Total must equal 100% (Current:{" "}
+                      {Math.round(getDistributionTotal(
+                        defaultDistribution || {}
+                      ))}
+                      %)
+                    </span>
+                  )}
                 </div>
               </div>
-            ) : (
-              flightCalculations.remainingFlights > 0 && (
-                /* Rules 있을 때: "{남은 수} flights have no rules" */
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle
-                        className="mt-0.5 text-amber-500"
-                        size={20}
-                      />
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {flightCalculations.remainingFlights} flights have no
-                          rules
-                        </h4>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Would you like to apply a default{" "}
-                          {isNationality ? "nationality" : "profile"}{" "}
-                          distribution to these remaining flights?
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setDefaultRule(true);
-                        updateDefaultDistribution(
-                          calculateEqualDistribution(definedProperties)
-                        );
-                      }}
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-amber-300 bg-white text-amber-700 hover:bg-amber-100"
-                    >
-                      Apply Default Rule
-                    </Button>
-                  </div>
-                </div>
-              )
-            )}
+            </div>
           </div>
         )}
       </div>

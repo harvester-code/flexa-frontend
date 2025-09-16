@@ -13,34 +13,11 @@ interface PercentageInteractiveBarProps {
   showValues?: boolean;
 }
 
-/**
- * 🔧 개선된 변환 함수들 - 경계값 처리 및 중복 변환 방지
- */
-export const convertToDecimal = (value: number | null | undefined): number => {
-  if (value === null || value === undefined || isNaN(value)) {
-    return 0;
-  }
-  // 항상 정수 백분율(0-100)을 소수점(0-1)으로 변환
-  return Math.max(0, Math.min(1, value / 100));
-};
-
-export const convertToPercentage = (value: number | null | undefined): number => {
-  if (value === null || value === undefined || isNaN(value)) {
-    return 0;
-  }
-
-  // 🎯 수정: 값의 범위에 따라 적절한 변환
-  // 0-1 사이: 소수 값 → 백분율로 변환 (0.5 → 50)
-  // 1 초과: 이미 백분율 → 그대로 반환 (50 → 50)
-  if (value <= 1) {
-    return Math.round(Math.max(0, Math.min(100, value * 100)));
-  } else {
-    return Math.round(Math.max(0, Math.min(100, value)));
-  }
-};
+// 변환 함수 제거 - 더 이상 소수점 변환을 하지 않음
+// 모든 값은 정수 퍼센트(0-100)로 저장 및 표시
 
 /**
- * 🔧 개선된 validation 헬퍼 함수들 - 일관된 변환 로직 적용
+ * Validation 헬퍼 함수들 - 정수 퍼센트 값을 그대로 검증
  */
 export const isValidDistribution = (values: Record<string, number>) => {
   const total = Object.values(values || {}).reduce((sum, value) => {
@@ -59,7 +36,7 @@ export const getDistributionTotal = (values: Record<string, number>) => {
 
 /**
  * InteractivePercentageBar의 래퍼 컴포넌트
- * 🎯 수정: 프론트엔드에서는 항상 정수 퍼센트로 저장하고 표시
+ * 정수 퍼센트(0-100)를 그대로 저장하고 표시
  */
 export default function PercentageInteractiveBar({
   values,

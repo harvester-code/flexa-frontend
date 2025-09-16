@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
 import { useSimulationStore } from '../../_stores';
 import ProfileCriteriaSettings from './ProfileCriteriaSettings';
-import { convertToDecimal, convertToPercentage } from '../shared/PercentageControl';
+// Removed import for conversion functions - no longer needed
 import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
@@ -94,8 +94,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
     return Math.max(1, Math.min(100, Math.round(value)));
   }, []);
 
-  // 🔄 통일된 변환 함수 import 사용 (중복 제거)
-  // convertToDecimal, convertToPercentage는 PercentageControl에서 import
+  // 변환 함수 제거 - 모든 값은 정수 퍼센트로 처리
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
@@ -137,10 +136,10 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         });
       }),
       flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
-      loadFactor: convertToPercentage(rule.value?.load_factor ?? 0.8), // 백분율 값 (기본값 80%)
+      loadFactor: (rule.value?.load_factor ?? 80), // 백분율 값 (기본값 80%)
       isExpanded: false,
     }));
-  }, [paxGenerationRules, convertToPercentage]);
+  }, [paxGenerationRules]);
 
   const hasDefaultRule = defaultLoadFactor !== null && defaultLoadFactor !== undefined;
 
@@ -149,7 +148,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
     const timer = setTimeout(() => {
       // 탭이 실제로 보여지고 있고, defaultLoadFactor가 null인 경우에만 초기값 설정
       if (defaultLoadFactor === null || defaultLoadFactor === undefined) {
-        setPaxGenerationDefault(0.85); // 85% → 0.85로 직접 설정
+        setPaxGenerationDefault(85); // 85% 기본값 설정
       }
     }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행
 
@@ -206,9 +205,9 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         }
       });
 
-      addPaxGenerationRule(backendConditions, convertToDecimal(rule.loadFactor));
+      addPaxGenerationRule(backendConditions, rule.loadFactor);
     },
-    [addPaxGenerationRule, convertToDecimal]
+    [addPaxGenerationRule]
   );
 
   const updateLoadFactorRule = useCallback(
@@ -245,16 +244,14 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         updatePaxGenerationRuleStore(
           ruleIndex,
           backendConditions,
-          convertToDecimal(
-            updatedRule.loadFactor ??
-              (typeof currentRule.value === 'object' && currentRule.value?.load_factor
-                ? convertToPercentage(currentRule.value.load_factor) // 🎯 통일된 변환 사용
-                : 80) // 🎯 기본값 80% (정수)
-          )
+          updatedRule.loadFactor ??
+            (typeof currentRule.value === 'object' && currentRule.value?.load_factor
+              ? currentRule.value.load_factor // 값을 그대로 사용
+              : 80) // 기본값 80%
         );
       }
     },
-    [updatePaxGenerationRuleStore, paxGenerationRules, labelToColumnMap, valueMapping, convertToDecimal]
+    [updatePaxGenerationRuleStore, paxGenerationRules, labelToColumnMap, valueMapping]
   );
 
   const removeLoadFactorRule = useCallback(
@@ -317,22 +314,22 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
         return {
           conditions: backendConditions,
-          value: { load_factor: convertToDecimal(rule.loadFactor) },
+          value: { load_factor: rule.loadFactor },
         };
       });
 
       reorderPaxGenerationRules(convertedRules);
     },
-    [reorderPaxGenerationRules, convertToDecimal]
+    [reorderPaxGenerationRules]
   );
 
   const updateLoadFactorDefault = useCallback(
     (value: number | null | undefined) => {
-      // 🎯 기본값 처리: null/undefined일 때는 80% (0.8)로 설정
-      const safeValue = value !== null && value !== undefined ? convertToDecimal(value) : 0.8;
+      // 기본값 처리: null/undefined일 때는 80%로 설정
+      const safeValue = value !== null && value !== undefined ? value : 80;
       setPaxGenerationDefault(safeValue);
     },
-    [setPaxGenerationDefault, convertToDecimal]
+    [setPaxGenerationDefault]
   );
 
   // ❌ 프론트엔드 기본값 제거 - null 상태로 유지

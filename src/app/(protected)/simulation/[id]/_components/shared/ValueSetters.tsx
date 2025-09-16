@@ -23,11 +23,11 @@ export const LoadFactorValueSetter: React.FC<LoadFactorValueSetterProps> = ({ pr
         <div key={property} className="space-y-2">
           <div className="max-w-md">
             <LoadFactorSlider
-              value={Math.round((values[property] || 0) * 100)} // 0.0-1.0 → 0-100% 변환
+              value={values[property] || 0} // 값을 그대로 사용
               onChange={(value) => {
                 onChange({
                   ...values,
-                  [property]: value / 100, // 0-100% → 0.0-1.0 변환
+                  [property]: value, // 변환 없이 그대로 저장
                 });
               }}
               min={0}

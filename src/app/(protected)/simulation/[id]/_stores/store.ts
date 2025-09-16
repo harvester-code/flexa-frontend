@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { ProcessStep } from "@/types/simulationTypes";
-import { convertToDecimal } from "../_components/shared/PercentageControl";
+// Removed convertToDecimal import - no longer converting to decimals
 
 // ==================== Passenger Types ====================
 export interface PassengerData {
@@ -772,13 +772,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const currentDefault =
           state.passenger.pax_demographics.nationality.default || {};
 
-        // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
+        // 항목이 추가되면 무조건 default 생성 및 균등분배
         let newDefault = currentDefault;
-        if (
-          values.length > 0 &&
-          Object.keys(currentDefault).filter((key) => key !== "flightCount")
-            .length > 0
-        ) {
+        if (values.length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -786,10 +782,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
           const equalDistribution: Record<string, number> = {};
           values.forEach((prop, index) => {
             const percentage = equalPercentage + (index < remainder ? 1 : 0);
-            equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
+            equalDistribution[prop] = percentage; // 정수 그대로 저장 (50 → 50)
           });
 
           newDefault = equalDistribution;
+        } else {
+          // 항목이 모두 제거되면 default도 제거
+          newDefault = {};
         }
 
         // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트
@@ -805,7 +804,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
                   values.forEach((prop, index) => {
                     const percentage =
                       equalPercentage + (index < remainder ? 1 : 0);
-                    equalDistribution[prop] = convertToDecimal(percentage);
+                    equalDistribution[prop] = percentage; // 정수 그대로 저장
                   });
                   return equalDistribution;
                 })()
@@ -836,13 +835,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const currentDefault =
           state.passenger.pax_demographics.profile.default || {};
 
-        // 🆕 기존 default가 있는 경우에만 자동 균등분배 적용
+        // 항목이 추가되면 무조건 default 생성 및 균등분배
         let newDefault = currentDefault;
-        if (
-          values.length > 0 &&
-          Object.keys(currentDefault).filter((key) => key !== "flightCount")
-            .length > 0
-        ) {
+        if (values.length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
           let remainder = 100 - equalPercentage * values.length;
@@ -850,10 +845,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
           const equalDistribution: Record<string, number> = {};
           values.forEach((prop, index) => {
             const percentage = equalPercentage + (index < remainder ? 1 : 0);
-            equalDistribution[prop] = convertToDecimal(percentage); // 소수점으로 저장
+            equalDistribution[prop] = percentage; // 정수 그대로 저장 (50 → 50)
           });
 
           newDefault = equalDistribution;
+        } else {
+          // 항목이 모두 제거되면 default도 제거
+          newDefault = {};
         }
 
         // 🆕 기존 rules도 새로운 properties에 맞게 균등분배로 업데이트 (기존 rule이 있는 경우에만)
@@ -869,7 +867,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
                   values.forEach((prop, index) => {
                     const percentage =
                       equalPercentage + (index < remainder ? 1 : 0);
-                    equalDistribution[prop] = convertToDecimal(percentage);
+                    equalDistribution[prop] = percentage; // 정수 그대로 저장
                   });
                   return equalDistribution;
                 })()

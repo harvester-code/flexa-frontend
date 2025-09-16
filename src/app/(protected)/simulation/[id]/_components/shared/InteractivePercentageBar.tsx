@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
+import React, { useEffect, useRef, useState } from "react";
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 interface InteractivePercentageBarProps {
   properties: string[];
@@ -26,7 +26,7 @@ export default function InteractivePercentageBar({
   showValues = true, // 기본값은 true
 }: InteractivePercentageBarProps) {
   const [editingIndex, setEditingIndex] = useState(-1);
-  const [editingValue, setEditingValue] = useState('');
+  const [editingValue, setEditingValue] = useState("");
   const barRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +41,10 @@ export default function InteractivePercentageBar({
   );
 
   // 총합 계산
-  const totalPercentage = Object.values(percentages).reduce((sum, val) => sum + val, 0);
+  const totalPercentage = Object.values(percentages).reduce(
+    (sum, val) => sum + val,
+    0
+  );
 
   // 🔄 수정: 5% 이하 항목들이 실제 5% 폭을 차지한다고 가정한 정규화
   const normalizedPercentages = properties.reduce(
@@ -53,7 +56,9 @@ export default function InteractivePercentageBar({
         acc[prop] = 5;
       } else {
         // 6% 이상인 항목들만 비례배분 계산
-        const smallItemsCount = properties.filter((p) => (percentages[p] || 0) <= 5).length;
+        const smallItemsCount = properties.filter(
+          (p) => (percentages[p] || 0) <= 5
+        ).length;
         const reservedWidth = smallItemsCount * 5; // 5% 이하 항목들이 차지할 총 폭
         const availableWidth = Math.max(0, 100 - reservedWidth); // 나머지 사용 가능한 폭
 
@@ -63,7 +68,10 @@ export default function InteractivePercentageBar({
           .reduce((sum, p) => sum + (percentages[p] || 0), 0);
 
         // 사용 가능한 폭 내에서 비례배분
-        acc[prop] = largeItemsTotal > 0 ? (displayPercentage / largeItemsTotal) * availableWidth : 0;
+        acc[prop] =
+          largeItemsTotal > 0
+            ? (displayPercentage / largeItemsTotal) * availableWidth
+            : 0;
       }
 
       return acc;
@@ -86,8 +94,8 @@ export default function InteractivePercentageBar({
     }
   }, [totalPercentage, onTotalChange]);
 
-  // 더블클릭으로 편집 시작
-  const handleDoubleClick = (index: number, currentValue: number) => {
+  // 싱글 클릭으로 편집 시작
+  const handleClick = (index: number, currentValue: number) => {
     if (!showValues) return; // 값 표시 안 할 때는 편집 불가
     setEditingIndex(index);
     setEditingValue(Math.round(currentValue).toString());
@@ -123,13 +131,13 @@ export default function InteractivePercentageBar({
 
     onChange(newValues);
     setEditingIndex(-1);
-    setEditingValue('');
+    setEditingValue("");
   };
 
   // ESC 키로 편집 취소
   const handleEditCancel = () => {
     setEditingIndex(-1);
-    setEditingValue('');
+    setEditingValue("");
   };
 
   // 🆕 normalizedPercentages에서 이미 5% 이하는 5%로, 6% 이상은 비례배분으로 올바르게 계산됨
@@ -152,24 +160,33 @@ export default function InteractivePercentageBar({
             const actualWidth = normalizedPercentage;
 
             // leftPosition은 이전 항목들의 실제 너비를 고려해서 계산
-            const leftPosition = properties.slice(0, index).reduce((sum, prop) => {
-              const prevNormalizedPercentage = normalizedPercentages[prop] || 0;
-              return sum + prevNormalizedPercentage;
-            }, 0);
+            const leftPosition = properties
+              .slice(0, index)
+              .reduce((sum, prop) => {
+                const prevNormalizedPercentage =
+                  normalizedPercentages[prop] || 0;
+                return sum + prevNormalizedPercentage;
+              }, 0);
 
             return (
               <div
                 key={property}
                 className={`absolute top-0 flex h-full items-center justify-center transition-all duration-200 ease-out ${
-                  showValues ? 'cursor-pointer hover:brightness-110' : 'cursor-default'
+                  showValues
+                    ? "cursor-pointer hover:brightness-110"
+                    : "cursor-default"
                 }`}
                 style={{
                   left: `${leftPosition}%`,
                   width: `${actualWidth}%`,
                   backgroundColor: color,
                 }}
-                onDoubleClick={() => handleDoubleClick(index, displayPercentage)}
-                title={showValues ? 'Double-click to edit' : 'Values disabled - enable in toggle above'}
+                onClick={() => handleClick(index, displayPercentage)}
+                title={
+                  showValues
+                    ? "Click to edit"
+                    : "Values disabled - enable in toggle above"
+                }
               >
                 {/* 편집 중이면 input 필드, 아니면 라벨 */}
                 {editingIndex === index && showValues ? (
@@ -179,15 +196,17 @@ export default function InteractivePercentageBar({
                     value={editingValue}
                     onChange={(e) => {
                       // 숫자만 허용
-                      const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
+                      const numericValue = (
+                        e.target as HTMLInputElement
+                      ).value.replace(/[^0-9]/g, "");
                       setEditingValue(numericValue);
                     }}
                     onBlur={handleEditComplete}
                     onFocus={(e) => (e.target as HTMLInputElement).select()}
                     onClick={(e) => (e.target as HTMLInputElement).select()}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEditComplete();
-                      if (e.key === 'Escape') handleEditCancel();
+                      if (e.key === "Enter") handleEditComplete();
+                      if (e.key === "Escape") handleEditCancel();
                     }}
                     className="w-16 rounded border bg-white px-1 py-0.5 text-center text-xs font-medium text-gray-900"
                     autoFocus
@@ -198,9 +217,13 @@ export default function InteractivePercentageBar({
                 ) : (
                   /* 라벨 표시 - 최소폭이 있으면 항상 표시 (0%도 포함) */
                   actualWidth >= 3 && (
-                    <div className="flex flex-col items-center text-xs font-medium text-white">
-                      <div>{property}</div>
-                      <div>{showValues ? `${Math.round(displayPercentage)}%` : '−'}</div>
+                    <div className="flex flex-col items-center text-white">
+                      <div className="text-xs font-normal opacity-80 scale-90 leading-tight">
+                        {property}
+                      </div>
+                      <div className="font-bold leading-tight -mt-0.5">
+                        {showValues ? `${Math.round(displayPercentage)}%` : "−"}
+                      </div>
                     </div>
                   )
                 )}
