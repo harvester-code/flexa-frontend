@@ -33,6 +33,19 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     }));
   };
 
+  // JSON 다운로드 함수
+  const downloadJSON = (data: any, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const renderJSONTreeSection = (
     title: string,
     data: any,
@@ -72,9 +85,20 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
           <div className={`space-y-3 rounded border p-3 ${bgColor}`}>
             {/* 📝 Raw JSON String */}
             <div>
-              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-default-500">
-                <Download className="h-3 w-3" />
-                Raw JSON:
+              <div className="mb-1 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-medium text-default-500">
+                  <Download className="h-3 w-3" />
+                  Raw JSON:
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => downloadJSON(cleanData, title.replace(/\s+/g, '_'))}
+                >
+                  <Download className="mr-1 h-3 w-3" />
+                  Save JSON
+                </Button>
               </div>
               <div className="max-h-80 overflow-auto rounded border bg-white p-4">
                 <pre className="text-xs">{JSON.stringify(cleanData, null, 2)}</pre>
@@ -120,9 +144,20 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
             {!collapsed.apiRequestLog && (
               <div className="space-y-3 rounded border bg-red-50 p-3">
                 <div>
-                  <div className="mb-1 flex items-center gap-2 text-xs font-medium text-default-500">
-                    <Send className="h-3 w-3" />
-                    Request:
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-medium text-default-500">
+                      <Send className="h-3 w-3" />
+                      Request:
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => downloadJSON(apiRequestLog.request, 'api_request')}
+                    >
+                      <Download className="mr-1 h-3 w-3" />
+                      Save
+                    </Button>
                   </div>
                   <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                     {JSON.stringify(apiRequestLog.request, null, 2)}
@@ -131,9 +166,20 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
 
                 {apiRequestLog.status === 'success' && (
                   <div>
-                    <div className="mb-1 flex items-center gap-2 text-xs font-medium text-default-500">
-                      <Download className="h-3 w-3" />
-                      Response:
+                    <div className="mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-medium text-default-500">
+                        <Download className="h-3 w-3" />
+                        Response:
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => downloadJSON(apiRequestLog.response, 'api_response')}
+                      >
+                        <Download className="mr-1 h-3 w-3" />
+                        Save
+                      </Button>
                     </div>
                     <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
                       {JSON.stringify(apiRequestLog.response, null, 2)}
