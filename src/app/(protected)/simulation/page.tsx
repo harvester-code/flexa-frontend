@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteScenario } from '@/services/simulationService';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -10,10 +11,33 @@ import CreateScenario from './_components/CreateScenario';
 import ScenarioList from './_components/ScenarioList';
 
 const SimulationPage = () => {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { scenarios, isLoading: isScenariosLoading } = useScenarios();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  // Debug: Check session
+  React.useEffect(() => {
+    const checkSession = async () => {
+      const { createClient } = await import('@/lib/auth/client');
+      const supabase = createClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Session check error:', error);
+      }
+
+      if (session) {
+        console.log('Session exists:', session.user?.email);
+      } else {
+        console.warn('No session found - redirecting to login...');
+        router.push('/auth/login');
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   const handleDeleteScenario = async (selectedIds: string[]) => {
     try {
