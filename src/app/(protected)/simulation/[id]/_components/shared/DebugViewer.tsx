@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bug, ChevronRight, Download, Folder, Rocket, Send, X } from 'lucide-react';
+import { Bug, ChevronRight, Copy, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useSimulationStore } from '../../_stores';
 
@@ -33,17 +33,15 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
     }));
   };
 
-  // JSON 다운로드 함수
-  const downloadJSON = (data: any, filename: string) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // JSON 클립보드 복사 함수
+  const copyToClipboard = async (data: any) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      // 복사 성공 시 사용자에게 알림 (선택적)
+      // alert('클립보드에 복사되었습니다!');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   };
 
   const renderJSONTreeSection = (
@@ -94,10 +92,10 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
                   size="sm"
                   variant="outline"
                   className="h-6 px-2 text-xs"
-                  onClick={() => downloadJSON(cleanData, title.replace(/\s+/g, '_'))}
+                  onClick={() => copyToClipboard(cleanData)}
                 >
-                  <Download className="mr-1 h-3 w-3" />
-                  Save JSON
+                  <Copy className="mr-1 h-3 w-3" />
+                  Copy
                 </Button>
               </div>
               <div className="max-h-80 overflow-auto rounded border bg-white p-4">
@@ -153,10 +151,10 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
                       size="sm"
                       variant="outline"
                       className="h-6 px-2 text-xs"
-                      onClick={() => downloadJSON(apiRequestLog.request, 'api_request')}
+                      onClick={() => copyToClipboard(apiRequestLog.request)}
                     >
-                      <Download className="mr-1 h-3 w-3" />
-                      Save
+                      <Copy className="mr-1 h-3 w-3" />
+                      Copy
                     </Button>
                   </div>
                   <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">
@@ -175,10 +173,10 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
                         size="sm"
                         variant="outline"
                         className="h-6 px-2 text-xs"
-                        onClick={() => downloadJSON(apiRequestLog.response, 'api_response')}
+                        onClick={() => copyToClipboard(apiRequestLog.response)}
                       >
-                        <Download className="mr-1 h-3 w-3" />
-                        Save
+                        <Copy className="mr-1 h-3 w-3" />
+                        Copy
                       </Button>
                     </div>
                     <pre className="max-h-40 overflow-auto rounded border bg-white p-2 text-xs">

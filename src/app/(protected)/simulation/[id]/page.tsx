@@ -414,7 +414,10 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         <SimulationLoading minHeight="min-h-[200px]" />
       )}
 
-      <JSONDebugViewer visible={true} simulationId={simulationId} apiRequestLog={apiRequestLog} />
+      {/* 개발 환경에서만 Debug Viewer 표시 */}
+      {process.env.NODE_ENV === 'development' && (
+        <JSONDebugViewer visible={true} simulationId={simulationId} apiRequestLog={apiRequestLog} />
+      )}
     </div>
   );
 }
