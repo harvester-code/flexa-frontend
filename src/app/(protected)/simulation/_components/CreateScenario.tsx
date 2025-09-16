@@ -191,11 +191,15 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
               Cancel
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading && (
-              <ClipLoader size={16} color="white" className="mr-2" />
-            )}
-            Create
+          <Button onClick={handleSubmit} disabled={isLoading} className="min-w-24 overflow-hidden">
+            <span className="flex items-center justify-center">
+              {isLoading && (
+                <div className="mr-2 shrink-0" style={{ width: 16, height: 16 }}>
+                  <ClipLoader size={16} color="white" />
+                </div>
+              )}
+              <span className="truncate">Create</span>
+            </span>
           </Button>
         </DialogFooter>
       </DialogContent>

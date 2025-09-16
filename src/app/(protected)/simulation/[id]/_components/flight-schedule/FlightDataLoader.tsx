@@ -97,18 +97,21 @@ function FlightDataLoader({
                 onLoadData(airport, date);
               }}
               disabled={loadingFlightSchedule || !airport}
+              className="min-w-24 overflow-hidden"
             >
-              {loadingFlightSchedule ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <Database className="mr-2 h-4 w-4" />
-                  Load
-                </>
-              )}
+              <span className="flex items-center">
+                {loadingFlightSchedule ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                    <span className="truncate">Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">Load</span>
+                  </>
+                )}
+              </span>
             </Button>
           </div>
         </div>

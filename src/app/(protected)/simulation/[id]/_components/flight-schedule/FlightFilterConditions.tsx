@@ -1216,9 +1216,9 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
         </CardHeader>
         <CardContent>
           <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading available filters...</span>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              <span className="truncate">Loading available filters...</span>
             </div>
           </div>
         </CardContent>
@@ -1334,20 +1334,22 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                   Clear All
                 </Button>
 
-                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying}>
-                  {isApplying ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">Filtering...</span>
-                      <span className="sm:hidden">Filter</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Filter Flights</span>
-                      <span className="sm:hidden">Filter</span>
-                    </>
-                  )}
+                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying} className="overflow-hidden">
+                  <span className="flex items-center">
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                        <span className="hidden sm:inline truncate">Filtering...</span>
+                        <span className="sm:hidden truncate">Filter</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline truncate">Filter Flights</span>
+                        <span className="sm:hidden truncate">Filter</span>
+                      </>
+                    )}
+                  </span>
                 </Button>
               </div>
             </div>

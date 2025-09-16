@@ -26,8 +26,8 @@ export interface ScenarioData {
 }
 
 // Home 도메인에서 사용하는 시나리오 응답 타입 (단순화됨)
-export interface ScenariosDataResponse extends Array<ScenarioData & { 
+export type ScenariosDataResponse = Array<ScenarioData & {
   first_name?: string;
-  last_name?: string;  
+  last_name?: string;
   email?: string;
-}> {}
+}>;

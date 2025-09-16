@@ -560,10 +560,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                         >
-                          {navigatingToId === scenario.scenario_id && (
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          )}
-                          {scenario.name}
+                          <span className="flex items-center gap-2 overflow-hidden">
+                            {navigatingToId === scenario.scenario_id && (
+                              <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                            )}
+                            <span className="truncate">{scenario.name}</span>
+                          </span>
                         </div>
                       )}
                     </td>
