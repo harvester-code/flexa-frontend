@@ -205,7 +205,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         }
       });
 
-      addPaxGenerationRule(backendConditions, rule.loadFactor);
+      addPaxGenerationRule(backendConditions, rule.loadFactor ?? 80);
     },
     [addPaxGenerationRule]
   );
@@ -314,7 +314,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
         return {
           conditions: backendConditions,
-          value: { load_factor: rule.loadFactor },
+          value: { load_factor: rule.loadFactor ?? 80 },
         };
       });
 
