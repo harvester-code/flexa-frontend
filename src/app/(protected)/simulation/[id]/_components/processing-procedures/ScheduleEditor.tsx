@@ -819,10 +819,20 @@ export default function OperatingScheduleEditor({
   const [pendingTimeUnit, setPendingTimeUnit] = useState<number | null>(null);
   const [showTimeUnitConfirm, setShowTimeUnitConfirm] = useState(false);
 
-  // 뱃지 상태 관리 (cellId -> CategoryBadge[]) - 카테고리별로 관리
-  const [cellBadges, setCellBadges] = useState<Record<string, CategoryBadge[]>>(
-    {}
-  );
+  // 뱃지 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
+  const [allZoneBadges, setAllZoneBadges] = useState<Record<string, Record<string, CategoryBadge[]>>>({});
+
+  // 현재 Zone의 뱃지 가져오기
+  const zoneKey = `${selectedProcessIndex}-${selectedZone}`;
+  const cellBadges = allZoneBadges[zoneKey] || {};
+
+  // 현재 Zone의 뱃지 업데이트 함수
+  const setCellBadges = useCallback((updater: any) => {
+    setAllZoneBadges(prev => ({
+      ...prev,
+      [zoneKey]: typeof updater === 'function' ? updater(prev[zoneKey] || {}) : updater
+    }));
+  }, [zoneKey]);
 
   // 우클릭 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<{
@@ -2106,8 +2116,7 @@ export default function OperatingScheduleEditor({
       undoHistory.clearHistory();
     }
     
-    // 뱃지 초기화 - 빈 상태로 시작 (렌더링 시 자동으로 All 표시)
-    setCellBadges({});
+    // Zone 변경 시 뱃지 초기화하지 않음 - 기존 뱃지 유지
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProcessIndex, selectedZone]); // 핵심 의존성만 포함
 
