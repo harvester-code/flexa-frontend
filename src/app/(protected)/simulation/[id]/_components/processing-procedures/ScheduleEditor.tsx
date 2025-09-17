@@ -2253,8 +2253,8 @@ export default function OperatingScheduleEditor({
     setCellBadges(newBadges);
     setDisabledCells(() => newDisabledCells);
 
-    // Clear selection after paste
-    clearSelection();
+    // Don't clear selection - keep the target cells selected
+    // Only hide marching ants (handled in handleKeyDown)
 
     // Add to history
     undoHistory.pushHistory({
@@ -2271,7 +2271,7 @@ export default function OperatingScheduleEditor({
         ])
       )
     });
-  }, [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory, clearSelection]);
+  }, [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory]);
 
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
@@ -2315,7 +2315,7 @@ export default function OperatingScheduleEditor({
       if ((e.metaKey || e.ctrlKey) && e.code === "KeyV") {
         e.preventDefault();
         handlePaste();
-        // Hide marching ants after paste
+        // Hide marching ants after paste but keep selection
         setShowMarchingAnts(false);
         return;
       }
