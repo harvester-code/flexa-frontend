@@ -325,8 +325,8 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
   const updateLoadFactorDefault = useCallback(
     (value: number | null | undefined) => {
-      // 기본값 처리: null/undefined일 때는 80%로 설정
-      const safeValue = value !== null && value !== undefined ? value : 80;
+      // 기본값 처리: null/undefined일 때는 85%로 설정
+      const safeValue = value !== null && value !== undefined ? value : 85;
       setPaxGenerationDefault(safeValue);
     },
     [setPaxGenerationDefault]
@@ -638,9 +638,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const loadFactor = normalizeLoadFactor(
-            savedRuleData.loadFactor || (defaultLoadFactor ? defaultLoadFactor * 100 : undefined)
-          );
+          const loadFactor = savedRuleData.loadFactor ?? defaultLoadFactor ?? 85;
 
           const newRule = {
             id: `rule-${Date.now()}`,
@@ -785,10 +783,8 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
                   <label className="flex-shrink-0 text-sm font-medium text-gray-700">Load Factor:</label>
                   <div className="flex-1 px-4">
                     <LoadFactorSlider
-                      value={normalizeLoadFactor(
-                        rule.loadFactor || (defaultLoadFactor ? defaultLoadFactor * 100 : undefined)
-                      )}
-                      onChange={(value) => updateLoadFactorRule(rule.id, { loadFactor: normalizeLoadFactor(value) })}
+                      value={rule.loadFactor ?? defaultLoadFactor ?? 85}
+                      onChange={(value) => updateLoadFactorRule(rule.id, { loadFactor: value })}
                       min={1}
                       max={100}
                       step={1}
@@ -818,8 +814,8 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
                 <label className="flex-shrink-0 text-sm font-medium text-gray-700">Default Load Factor:</label>
                 <div className="flex-1 px-4">
                   <LoadFactorSlider
-                    value={normalizeLoadFactor(defaultLoadFactor ? defaultLoadFactor * 100 : undefined)}
-                    onChange={(value) => updateLoadFactorDefault(normalizeLoadFactor(value))}
+                    value={defaultLoadFactor ?? 85}
+                    onChange={(value) => updateLoadFactorDefault(value)}
                     min={1}
                     max={100}
                     step={1}

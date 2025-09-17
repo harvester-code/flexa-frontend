@@ -54,9 +54,9 @@ export default function ProfileCriteriaSettings({
     if (editingRule) {
       // 편집 모드: 기존 분배값 설정
       if (configType === 'load_factor' && editingRule.loadFactor !== undefined) {
-        // 🆕 Load Factor 전용 초기값 설정
+        // 🆕 Load Factor 전용 초기값 설정 (정수 그대로 사용)
         setPropertyValues({
-          'Load Factor': editingRule.loadFactor, // 값을 그대로 사용
+          'Load Factor': editingRule.loadFactor, // 값을 그대로 사용 (1-100)
         });
       } else if (configType === 'show_up_time' && editingRule.parameters) {
         // 🆕 Show-up-Time 전용 초기값 설정
@@ -162,7 +162,7 @@ export default function ProfileCriteriaSettings({
         });
         setPropertyValues(initialValues);
       } else if (configType === 'load_factor') {
-        setPropertyValues({ 'Load Factor': 0.8 }); // 80% 기본값 (0.0-1.0 범위)
+        setPropertyValues({ 'Load Factor': 85 }); // 85% 기본값 (1-100 범위)
       } else if (configType === 'show_up_time') {
         setPropertyValues({ mean: 120, std: 30 });
       } else if (configType === 'pax_arrival_patterns') {
@@ -253,8 +253,8 @@ export default function ProfileCriteriaSettings({
         } else {
         }
       } else if (configType === 'load_factor') {
-        // Load Factor는 단일 값으로 처리 (이미 0.0-1.0 범위임)
-        const loadFactorValue = Object.values(propertyValues)[0] || 0;
+        // Load Factor는 단일 값으로 처리 (이미 1-100 범위임)
+        const loadFactorValue = Object.values(propertyValues)[0] || 85;
 
         if (isEditMode) {
           updatePaxGenerationValue();
@@ -263,13 +263,12 @@ export default function ProfileCriteriaSettings({
         }
 
         // SimpleLoadFactorTab에 데이터 전달
-        const loadFactorPercentage = loadFactorValue * 100; // 0.0-1.0 → 0-100% 변환
-
+        // 값을 그대로 전달 (변환 없음)
         if ((window as any).handleSimpleRuleSaved) {
           (window as any).handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
-            loadFactor: loadFactorPercentage, // 🆕 올바른 필드명
+            loadFactor: loadFactorValue, // 🆕 그대로 전달
           });
         }
       } else if (configType === 'show_up_time') {
@@ -365,7 +364,7 @@ export default function ProfileCriteriaSettings({
       // 1. propertyValues 복원
       if (configType === 'load_factor' && editingRule.distribution) {
         // Load Factor 편집 모드: 값을 그대로 사용
-        setPropertyValues({ 'Load Factor': editingRule.distribution['Load Factor'] || 80 });
+        setPropertyValues({ 'Load Factor': editingRule.distribution['Load Factor'] || 85 });
       } else if (configType === 'show_up_time' && editingRule.distribution) {
         // Show-up Time 편집 모드: mean과 std 값 복원
         setPropertyValues({

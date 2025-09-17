@@ -131,7 +131,7 @@ export const LoadFactorSlider: React.FC<LoadFactorSliderProps> = ({
             {/* Progress Fill */}
             <div
               className="pointer-events-none h-full rounded-full bg-primary"
-              style={{ width: `${(value / max) * 100}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, (value / max) * 100))}%` }}
             />
 
             {/* Value Display on Track */}
