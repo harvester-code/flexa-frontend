@@ -37,6 +37,61 @@ import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
 import { useSimulationStore } from "../../_stores";
 
+// CSS for marching ants animation
+const marchingAntsStyle = `
+  @keyframes marching-ants {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 8px 0;
+    }
+  }
+
+  .copy-border-top {
+    border-top: 2px dashed #8b5cf6 !important;
+  }
+
+  .copy-border-bottom {
+    border-bottom: 2px dashed #8b5cf6 !important;
+  }
+
+  .copy-border-left {
+    border-left: 2px dashed #8b5cf6 !important;
+  }
+
+  .copy-border-right {
+    border-right: 2px dashed #8b5cf6 !important;
+  }
+
+  .copy-border-animated::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(90deg, #8b5cf6 50%, transparent 50%);
+    background-size: 8px 2px;
+    background-position: 0 0;
+    background-repeat: repeat-x;
+    animation: marching-ants 0.5s linear infinite;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.5;
+  }
+`;
+
+// Add styles to document head
+if (typeof document !== 'undefined') {
+  const styleElement = document.getElementById('marching-ants-style') || document.createElement('style');
+  styleElement.id = 'marching-ants-style';
+  styleElement.textContent = marchingAntsStyle;
+  if (!document.getElementById('marching-ants-style')) {
+    document.head.appendChild(styleElement);
+  }
+}
+
 // Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
 interface ParquetMetadataItem {
   column: string;
@@ -439,6 +494,7 @@ interface ExcelTableProps {
   selectedCells: Set<string>;
   cellBadges: Record<string, CategoryBadge[]>;
   disabledCells: Set<string>;
+  copiedCells?: Set<string>; // Cells that are currently copied
   isFullScreen?: boolean;
   virtualScroll: VirtualScrollConfig;
   handlers: TableHandlers;
@@ -452,6 +508,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     selectedCells,
     cellBadges,
     disabledCells,
+    copiedCells = new Set(),
     isFullScreen = false,
     virtualScroll,
     handlers,
@@ -528,8 +585,9 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
         const isLeftBorder = !selectedCells.has(leftCellId);
         const isRightBorder = !selectedCells.has(rightCellId);
 
-        // 각 방향별로 boxShadow 추가
+        // 각 방향별로 boxShadow 추가 - 복사한 셀이 있을 때는 선택 표시 숨김
         const shadows: string[] = [];
+        // Only show selection if no cells are being shown as copied
         if (isTopBorder) shadows.push("inset 0 2px 0 0 #8b5cf6");
         if (isBottomBorder) shadows.push("inset 0 -2px 0 0 #8b5cf6");
         if (isLeftBorder) shadows.push("inset 2px 0 0 0 #8b5cf6");
@@ -547,6 +605,36 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
         return styleMap.get(cellId) || {};
       };
     }, [selectedCells, parseCellId]);
+
+    // Get copy border styles for marching ants effect
+    const getCopyBorderStyles = useMemo(() => {
+      const borderMap = new Map<string, { top: boolean; bottom: boolean; left: boolean; right: boolean }>();
+
+      copiedCells.forEach((cellId) => {
+        const [rowIndex, colIndex] = parseCellId(cellId);
+
+        // Check boundaries
+        const topCellId = `${rowIndex - 1}-${colIndex}`;
+        const bottomCellId = `${rowIndex + 1}-${colIndex}`;
+        const leftCellId = `${rowIndex}-${colIndex - 1}`;
+        const rightCellId = `${rowIndex}-${colIndex + 1}`;
+
+        const borders = {
+          top: !copiedCells.has(topCellId),
+          bottom: !copiedCells.has(bottomCellId),
+          left: !copiedCells.has(leftCellId),
+          right: !copiedCells.has(rightCellId)
+        };
+
+        // Only add if at least one border exists
+        if (borders.top || borders.bottom || borders.left || borders.right) {
+          borderMap.set(cellId, borders);
+        }
+      });
+
+      return (cellId: string) => borderMap.get(cellId) || null;
+    }, [copiedCells, parseCellId]);
+
     if (!selectedZone || currentFacilities.length === 0) {
       if (selectedZone) {
         return (
@@ -679,20 +767,31 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const cellId = `${rowIndex}-${colIndex}`;
                       const isSelected = selectedCells.has(cellId);
                       const isDisabled = disabledCells.has(cellId);
+                      const isCopied = copiedCells.has(cellId);
+                      const copyBorders = isCopied ? getCopyBorderStyles(cellId) : null;
                       const badges = cellBadges[cellId] || [];
                       const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
                       );
 
+                      // Create marching ants style for copied cells - inline dashed border
+                      const cellStyles = copyBorders ? {
+                        ...(!isCopied ? {} : {}),
+                        borderTop: copyBorders.top ? '2px dashed #8b5cf6' : undefined,
+                        borderBottom: copyBorders.bottom ? '2px dashed #8b5cf6' : undefined,
+                        borderLeft: copyBorders.left ? '2px dashed #8b5cf6' : undefined,
+                        borderRight: copyBorders.right ? '2px dashed #8b5cf6' : undefined,
+                      } : (!isCopied ? selectionStyles : {});
+
                       return (
                         <td
                           key={`${rowIndex}-${colIndex}`}
                           className={cn(
-                            "cursor-pointer select-none p-1 border border-gray-200", // 모든 셀에 기본 회색 테두리 유지
+                            "cursor-pointer select-none p-1 border border-gray-200 relative",
                             isDisabled && "bg-gray-100"
                           )}
-                          style={selectionStyles}
+                          style={cellStyles}
                           onMouseDown={(e) => {
                             // 우클릭이 아닐 때만 드래그 처리
                             if (e.button !== 2) {
@@ -842,6 +941,29 @@ export default function OperatingScheduleEditor({
     x: number;
     y: number;
   }>({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
+
+  // Copy/Paste state management
+  const [copiedData, setCopiedData] = useState<{
+    cells: Array<{ row: number; col: number; badges: CategoryBadge[]; disabled: boolean }>;
+    shape: { rows: number; cols: number };
+    startCell: { row: number; col: number };
+  } | null>(null);
+
+  // State to control marching ants visibility
+  const [showMarchingAnts, setShowMarchingAnts] = useState(false);
+
+  // Computed set of copied cells for visualization
+  const copiedCells = useMemo(() => {
+    if (!copiedData || !showMarchingAnts) return new Set<string>();
+    return new Set(copiedData.cells.map(cell => `${cell.row}-${cell.col}`));
+  }, [copiedData, showMarchingAnts]);
+
+  // Warning dialog for size mismatch
+  const [showPasteWarning, setShowPasteWarning] = useState(false);
+  const [pendingPasteData, setPendingPasteData] = useState<{
+    targetCells: Set<string>;
+    copiedData: any;
+  } | null>(null);
 
   // 🚫 Zone별 셀 비활성화 상태 관리 (탭 전환 시에도 유지)
   const [disabledCellsByZone, setDisabledCellsByZone] = useState<Record<string, Set<string>>>({});
@@ -1096,6 +1218,32 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
+    } else if (action.type === 'paste') {
+      // Restore previous state for paste operation
+      setCellBadges(prev => {
+        const updated = { ...prev };
+        action.targetCells.forEach(cellId => {
+          const prevState = action.previousStates?.get(cellId);
+          if (prevState?.badges && prevState.badges.length > 0) {
+            updated[cellId] = prevState.badges;
+          } else {
+            delete updated[cellId];
+          }
+        });
+        return updated;
+      });
+      setDisabledCells(prev => {
+        const newSet = new Set(prev);
+        action.targetCells.forEach(cellId => {
+          const prevState = action.previousStates?.get(cellId);
+          if (prevState?.disabled) {
+            newSet.add(cellId);
+          } else {
+            newSet.delete(cellId);
+          }
+        });
+        return newSet;
+      });
     }
   }, [undoHistory, setDisabledCells, setCellBadges]);
 
@@ -1131,6 +1279,32 @@ export default function OperatingScheduleEditor({
           }
         });
         return updated;
+      });
+    } else if (action.type === 'paste') {
+      // Reapply paste operation
+      setCellBadges(prev => {
+        const updated = { ...prev };
+        action.targetCells.forEach(cellId => {
+          const newState = action.newStates?.get(cellId);
+          if (newState?.badges && newState.badges.length > 0) {
+            updated[cellId] = newState.badges;
+          } else {
+            delete updated[cellId];
+          }
+        });
+        return updated;
+      });
+      setDisabledCells(prev => {
+        const newSet = new Set(prev);
+        action.targetCells.forEach(cellId => {
+          const newState = action.newStates?.get(cellId);
+          if (newState?.disabled) {
+            newSet.add(cellId);
+          } else {
+            newSet.delete(cellId);
+          }
+        });
+        return newSet;
       });
     }
   }, [undoHistory, setDisabledCells, setCellBadges]);
@@ -1884,6 +2058,216 @@ export default function OperatingScheduleEditor({
     ]
   );
 
+  // Handle copy operation
+  const handleCopy = useCallback(() => {
+    if (selectedCells.size === 0) return;
+
+    const cellsArray = Array.from(selectedCells).map(cellId => {
+      const [row, col] = cellId.split('-').map(Number);
+      return {
+        row,
+        col,
+        badges: cellBadges[cellId] || [],
+        disabled: disabledCells.has(cellId)
+      };
+    });
+
+    // Calculate shape of copied area
+    const rows = cellsArray.map(c => c.row);
+    const cols = cellsArray.map(c => c.col);
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    setCopiedData({
+      cells: cellsArray,
+      shape: {
+        rows: maxRow - minRow + 1,
+        cols: maxCol - minCol + 1
+      },
+      startCell: { row: minRow, col: minCol }
+    });
+
+    // Show marching ants
+    setShowMarchingAnts(true);
+  }, [selectedCells, cellBadges, disabledCells]);
+
+  // Handle paste operation
+  const handlePaste = useCallback(() => {
+    if (!copiedData || selectedCells.size === 0) return;
+
+    const targetCellsArray = Array.from(selectedCells).map(cellId => {
+      const [row, col] = cellId.split('-').map(Number);
+      return { row, col, cellId };
+    });
+
+    // Calculate target shape
+    const targetRows = targetCellsArray.map(c => c.row);
+    const targetCols = targetCellsArray.map(c => c.col);
+    const targetMinRow = Math.min(...targetRows);
+    const targetMaxRow = Math.max(...targetRows);
+    const targetMinCol = Math.min(...targetCols);
+    const targetMaxCol = Math.max(...targetCols);
+    const targetShape = {
+      rows: targetMaxRow - targetMinRow + 1,
+      cols: targetMaxCol - targetMinCol + 1
+    };
+
+    // Pattern C: Multiple cells → Single cell
+    // When single cell is selected, paste the entire copied shape starting from that cell
+    if (selectedCells.size === 1 && (copiedData.shape.rows > 1 || copiedData.shape.cols > 1)) {
+      // Expand selection to match copied shape, trim at table boundaries
+      const expandedCells = new Set<string>();
+      for (let r = 0; r < copiedData.shape.rows; r++) {
+        for (let c = 0; c < copiedData.shape.cols; c++) {
+          const newRow = targetMinRow + r;
+          const newCol = targetMinCol + c;
+          // Check bounds - trim at table edges (Excel behavior)
+          if (newRow < timeSlots.length && newCol < currentFacilities.length) {
+            expandedCells.add(`${newRow}-${newCol}`);
+          }
+        }
+      }
+      executePaste(expandedCells, copiedData);
+      return;
+    }
+
+    // Pattern B: Single cell → Multiple cells
+    // When copying single cell to multiple cells, fill all selected cells
+    if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {
+      executePaste(selectedCells, copiedData);
+      return;
+    }
+
+    // Pattern D: Row/Column repeat
+    // Check if it's a single row or column being repeated
+    const isSingleRow = copiedData.shape.rows === 1 && copiedData.shape.cols > 1;
+    const isSingleCol = copiedData.shape.cols === 1 && copiedData.shape.rows > 1;
+
+    if (isSingleRow && targetShape.cols === copiedData.shape.cols) {
+      // Single row copied, repeat for all selected rows
+      executePaste(selectedCells, copiedData);
+      return;
+    }
+
+    if (isSingleCol && targetShape.rows === copiedData.shape.rows) {
+      // Single column copied, repeat for all selected columns
+      executePaste(selectedCells, copiedData);
+      return;
+    }
+
+    // Pattern A: 1:1 matching or exact multiples
+    const isExactMatch = (copiedData.shape.rows === targetShape.rows && copiedData.shape.cols === targetShape.cols);
+    const isExactMultiple = (targetShape.rows % copiedData.shape.rows === 0 && targetShape.cols % copiedData.shape.cols === 0);
+
+    if (isExactMatch || isExactMultiple) {
+      // Direct paste or pattern repeat
+      executePaste(selectedCells, copiedData);
+      return;
+    }
+
+    // Size mismatch - show warning
+    setPendingPasteData({ targetCells: selectedCells, copiedData });
+    setShowPasteWarning(true);
+  }, [copiedData, selectedCells, timeSlots, currentFacilities]);
+
+
+  // Execute the paste operation
+  const executePaste = useCallback((targetCells: Set<string>, copiedData: any) => {
+    const previousStates = new Map<string, { badges: CategoryBadge[]; disabled: boolean }>();
+    const targetCellsArray = Array.from(targetCells).map(cellId => {
+      const [row, col] = cellId.split('-').map(Number);
+      previousStates.set(cellId, {
+        badges: cellBadges[cellId] || [],
+        disabled: disabledCells.has(cellId)
+      });
+      return { row, col, cellId };
+    });
+
+    // Calculate offsets
+    const targetMinRow = Math.min(...targetCellsArray.map(c => c.row));
+    const targetMinCol = Math.min(...targetCellsArray.map(c => c.col));
+
+    // Apply paste
+    const newBadges = { ...cellBadges };
+    const newDisabledCells = new Set(disabledCells);
+
+    targetCellsArray.forEach(target => {
+      let sourceCellData = null;
+
+      // Pattern B: Single cell copy - use the same cell for all targets
+      if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {
+        sourceCellData = copiedData.cells[0];
+      }
+      // Pattern D: Single row repeat
+      else if (copiedData.shape.rows === 1) {
+        const relativeCol = (target.col - targetMinCol) % copiedData.shape.cols;
+        sourceCellData = copiedData.cells.find(
+          c => c.row === copiedData.startCell.row &&
+               c.col - copiedData.startCell.col === relativeCol
+        );
+      }
+      // Pattern D: Single column repeat
+      else if (copiedData.shape.cols === 1) {
+        const relativeRow = (target.row - targetMinRow) % copiedData.shape.rows;
+        sourceCellData = copiedData.cells.find(
+          c => c.col === copiedData.startCell.col &&
+               c.row - copiedData.startCell.row === relativeRow
+        );
+      }
+      // Pattern A & C: Normal grid paste with wrapping
+      else {
+        const relativeRow = (target.row - targetMinRow) % copiedData.shape.rows;
+        const relativeCol = (target.col - targetMinCol) % copiedData.shape.cols;
+
+        sourceCellData = copiedData.cells.find(
+          c => c.row - copiedData.startCell.row === relativeRow &&
+               c.col - copiedData.startCell.col === relativeCol
+        );
+      }
+
+      if (sourceCellData) {
+        // Apply badges
+        if (sourceCellData.badges.length > 0) {
+          newBadges[target.cellId] = [...sourceCellData.badges];
+        } else {
+          delete newBadges[target.cellId];
+        }
+
+        // Apply disabled state
+        if (sourceCellData.disabled) {
+          newDisabledCells.add(target.cellId);
+        } else {
+          newDisabledCells.delete(target.cellId);
+        }
+      }
+    });
+
+    // Update states
+    setCellBadges(newBadges);
+    setDisabledCells(() => newDisabledCells);
+
+    // Clear selection after paste
+    clearSelection();
+
+    // Add to history
+    undoHistory.pushHistory({
+      type: 'paste',
+      targetCells: Array.from(targetCells),
+      previousStates,
+      newStates: new Map(
+        Array.from(targetCells).map(cellId => [
+          cellId,
+          {
+            badges: newBadges[cellId] || [],
+            disabled: newDisabledCells.has(cellId)
+          }
+        ])
+      )
+    });
+  }, [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory, clearSelection]);
+
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1913,6 +2297,32 @@ export default function OperatingScheduleEditor({
       // 🎯 포커스 확인 및 보장
       if (document.activeElement !== containerRef.current) {
         containerRef.current?.focus();
+      }
+
+      // Cmd/Ctrl + C: Copy
+      if ((e.metaKey || e.ctrlKey) && e.code === "KeyC") {
+        e.preventDefault();
+        handleCopy();
+        return;
+      }
+
+      // Cmd/Ctrl + V: Paste
+      if ((e.metaKey || e.ctrlKey) && e.code === "KeyV") {
+        e.preventDefault();
+        handlePaste();
+        // Hide marching ants after paste
+        setShowMarchingAnts(false);
+        return;
+      }
+
+      // ESC: Clear copy selection and marching ants
+      if (e.code === "Escape") {
+        if (showMarchingAnts) {
+          setShowMarchingAnts(false);
+        } else if (copiedData) {
+          setCopiedData(null);
+        }
+        return;
       }
 
       // Cmd/Ctrl + Z: 실행 취소
@@ -2387,6 +2797,7 @@ export default function OperatingScheduleEditor({
           selectedCells={displaySelectedCells}
           cellBadges={cellBadges}
           disabledCells={disabledCells}
+          copiedCells={copiedCells}
           isFullScreen={false}
           virtualScroll={virtualScrollConfig}
           handlers={tableHandlers}
@@ -2441,6 +2852,7 @@ export default function OperatingScheduleEditor({
                 selectedCells={displaySelectedCells}
                 cellBadges={cellBadges}
                 disabledCells={disabledCells}
+                copiedCells={copiedCells}
                 isFullScreen={true}
                 virtualScroll={virtualScrollConfig}
                 handlers={tableHandlers}
@@ -2480,6 +2892,34 @@ export default function OperatingScheduleEditor({
                 }
               }}>
                 Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Paste Size Mismatch Warning Dialog */}
+        <AlertDialog open={showPasteWarning} onOpenChange={setShowPasteWarning}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Size Mismatch</AlertDialogTitle>
+              <AlertDialogDescription>
+                The copied area and paste area have different sizes and shapes.
+                Do you want to continue? The pattern will be repeated to fill the selection.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setPendingPasteData(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                if (pendingPasteData) {
+                  executePaste(pendingPasteData.targetCells, pendingPasteData.copiedData);
+                  setPendingPasteData(null);
+                }
+              }}>
+                Continue
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
