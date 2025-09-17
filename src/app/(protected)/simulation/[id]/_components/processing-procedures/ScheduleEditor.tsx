@@ -37,53 +37,6 @@ import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
 import { useSimulationStore } from "../../_stores";
 
-// CSS for marching ants animation
-const marchingAntsStyle = `
-  @keyframes marching-ants {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 8px 0;
-    }
-  }
-
-  .marching-ants-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .marching-ants-top {
-    border-top: 2px dashed #8b5cf6;
-  }
-
-  .marching-ants-bottom {
-    border-bottom: 2px dashed #8b5cf6;
-  }
-
-  .marching-ants-left {
-    border-left: 2px dashed #8b5cf6;
-  }
-
-  .marching-ants-right {
-    border-right: 2px dashed #8b5cf6;
-  }
-`;
-
-// Add styles to document head
-if (typeof document !== 'undefined') {
-  const styleElement = document.getElementById('marching-ants-style') || document.createElement('style');
-  styleElement.id = 'marching-ants-style';
-  styleElement.textContent = marchingAntsStyle;
-  if (!document.getElementById('marching-ants-style')) {
-    document.head.appendChild(styleElement);
-  }
-}
 
 // Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
 interface ParquetMetadataItem {
@@ -599,34 +552,33 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       };
     }, [selectedCells, parseCellId]);
 
-    // Get copy border styles for marching ants effect
-    const getCopyBorderStyles = useMemo(() => {
-      const borderMap = new Map<string, { top: boolean; bottom: boolean; left: boolean; right: boolean }>();
+    // Check if cell should show copy border overlay
+    const getCopyBorderInfo = useCallback((rowIndex: number, colIndex: number) => {
+      if (copiedCells.size === 0) return null;
 
-      copiedCells.forEach((cellId) => {
-        const [rowIndex, colIndex] = parseCellId(cellId);
+      const cellId = `${rowIndex}-${colIndex}`;
+      if (!copiedCells.has(cellId)) return null;
 
-        // Check boundaries
-        const topCellId = `${rowIndex - 1}-${colIndex}`;
-        const bottomCellId = `${rowIndex + 1}-${colIndex}`;
-        const leftCellId = `${rowIndex}-${colIndex - 1}`;
-        const rightCellId = `${rowIndex}-${colIndex + 1}`;
+      // Find bounds of copied region
+      let minRow = Infinity, maxRow = -Infinity;
+      let minCol = Infinity, maxCol = -Infinity;
 
-        const borders = {
-          top: !copiedCells.has(topCellId),
-          bottom: !copiedCells.has(bottomCellId),
-          left: !copiedCells.has(leftCellId),
-          right: !copiedCells.has(rightCellId)
-        };
-
-        // Only add if at least one border exists
-        if (borders.top || borders.bottom || borders.left || borders.right) {
-          borderMap.set(cellId, borders);
-        }
+      copiedCells.forEach((id) => {
+        const [r, c] = id.split('-').map(Number);
+        minRow = Math.min(minRow, r);
+        maxRow = Math.max(maxRow, r);
+        minCol = Math.min(minCol, c);
+        maxCol = Math.max(maxCol, c);
       });
 
-      return (cellId: string) => borderMap.get(cellId) || null;
-    }, [copiedCells, parseCellId]);
+      // Check if cell is on the edge
+      return {
+        hasTop: rowIndex === minRow,
+        hasBottom: rowIndex === maxRow,
+        hasLeft: colIndex === minCol,
+        hasRight: colIndex === maxCol
+      };
+    }, [copiedCells]);
 
     if (!selectedZone || currentFacilities.length === 0) {
       if (selectedZone) {
@@ -761,15 +713,12 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const isSelected = selectedCells.has(cellId);
                       const isDisabled = disabledCells.has(cellId);
                       const isCopied = copiedCells.has(cellId);
-                      const copyBorders = isCopied ? getCopyBorderStyles(cellId) : null;
                       const badges = cellBadges[cellId] || [];
                       const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
                       );
-
-                      // No border changes in cell styles to prevent movement
-                      const cellStyles = !isCopied ? selectionStyles : {};
+                      const copyBorderInfo = getCopyBorderInfo(rowIndex, colIndex);
 
                       return (
                         <td
@@ -778,7 +727,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             "cursor-pointer select-none p-1 border border-gray-200 relative",
                             isDisabled && "bg-gray-100"
                           )}
-                          style={cellStyles}
+                          style={selectionStyles}
                           onMouseDown={(e) => {
                             // 우클릭이 아닐 때만 드래그 처리
                             if (e.button !== 2) {
@@ -850,21 +799,20 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                               )}
                             </div>
                           </div>
-                          {/* Overlay for marching ants border without affecting cell size */}
-                          {copyBorders && (
+                          {/* Copy border overlay */}
+                          {copyBorderInfo && (
                             <div
+                              className="absolute pointer-events-none"
                               style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                pointerEvents: 'none',
-                                borderTop: copyBorders.top ? '2px dashed #8b5cf6' : 'none',
-                                borderBottom: copyBorders.bottom ? '2px dashed #8b5cf6' : 'none',
-                                borderLeft: copyBorders.left ? '2px dashed #8b5cf6' : 'none',
-                                borderRight: copyBorders.right ? '2px dashed #8b5cf6' : 'none',
-                                zIndex: 10
+                                top: '2px',
+                                left: '2px',
+                                right: '2px',
+                                bottom: '2px',
+                                borderTop: copyBorderInfo.hasTop ? '2px dashed #8b5cf6' : 'none',
+                                borderBottom: copyBorderInfo.hasBottom ? '2px dashed #8b5cf6' : 'none',
+                                borderLeft: copyBorderInfo.hasLeft ? '2px dashed #8b5cf6' : 'none',
+                                borderRight: copyBorderInfo.hasRight ? '2px dashed #8b5cf6' : 'none',
+                                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                               }}
                             />
                           )}
