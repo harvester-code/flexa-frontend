@@ -48,37 +48,30 @@ const marchingAntsStyle = `
     }
   }
 
-  .copy-border-top {
-    border-top: 2px dashed #8b5cf6 !important;
-  }
-
-  .copy-border-bottom {
-    border-bottom: 2px dashed #8b5cf6 !important;
-  }
-
-  .copy-border-left {
-    border-left: 2px dashed #8b5cf6 !important;
-  }
-
-  .copy-border-right {
-    border-right: 2px dashed #8b5cf6 !important;
-  }
-
-  .copy-border-animated::after {
-    content: '';
+  .marching-ants-overlay {
     position: absolute;
-    top: -1px;
-    left: -1px;
-    right: -1px;
-    bottom: -1px;
-    background: linear-gradient(90deg, #8b5cf6 50%, transparent 50%);
-    background-size: 8px 2px;
-    background-position: 0 0;
-    background-repeat: repeat-x;
-    animation: marching-ants 0.5s linear infinite;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     pointer-events: none;
-    z-index: 10;
-    opacity: 0.5;
+    z-index: 2;
+  }
+
+  .marching-ants-top {
+    border-top: 2px dashed #8b5cf6;
+  }
+
+  .marching-ants-bottom {
+    border-bottom: 2px dashed #8b5cf6;
+  }
+
+  .marching-ants-left {
+    border-left: 2px dashed #8b5cf6;
+  }
+
+  .marching-ants-right {
+    border-right: 2px dashed #8b5cf6;
   }
 `;
 
@@ -775,14 +768,8 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         colIndex
                       );
 
-                      // Create marching ants style for copied cells - inline dashed border
-                      const cellStyles = copyBorders ? {
-                        ...(!isCopied ? {} : {}),
-                        borderTop: copyBorders.top ? '2px dashed #8b5cf6' : undefined,
-                        borderBottom: copyBorders.bottom ? '2px dashed #8b5cf6' : undefined,
-                        borderLeft: copyBorders.left ? '2px dashed #8b5cf6' : undefined,
-                        borderRight: copyBorders.right ? '2px dashed #8b5cf6' : undefined,
-                      } : (!isCopied ? selectionStyles : {});
+                      // No border changes in cell styles to prevent movement
+                      const cellStyles = !isCopied ? selectionStyles : {};
 
                       return (
                         <td
@@ -863,6 +850,24 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                               )}
                             </div>
                           </div>
+                          {/* Overlay for marching ants border without affecting cell size */}
+                          {copyBorders && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                pointerEvents: 'none',
+                                borderTop: copyBorders.top ? '2px dashed #8b5cf6' : 'none',
+                                borderBottom: copyBorders.bottom ? '2px dashed #8b5cf6' : 'none',
+                                borderLeft: copyBorders.left ? '2px dashed #8b5cf6' : 'none',
+                                borderRight: copyBorders.right ? '2px dashed #8b5cf6' : 'none',
+                                zIndex: 10
+                              }}
+                            />
+                          )}
                         </td>
                       );
                     })}
