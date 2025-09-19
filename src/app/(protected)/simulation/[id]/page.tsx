@@ -344,11 +344,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleTempSave} disabled={isSaving}>
-            <Save size={16} />
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" disabled={isDeleting}>
