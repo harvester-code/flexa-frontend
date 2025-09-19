@@ -289,7 +289,8 @@ const calculatePeriodsFromDisabledCells = (
   cellBadges: Record<string, CategoryBadge[]>,
   processTimeSeconds?: number, // 프로세스의 process_time_seconds 값
   timeUnit: number = 10, // time unit (기본값 10분)
-  date?: string // 날짜 (YYYY-MM-DD 형식)
+  date?: string, // 날짜 (YYYY-MM-DD 형식)
+  isPreviousDay?: boolean // 전날부터 시작하는지 여부
 ): any[] => {
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
   const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
@@ -318,9 +319,30 @@ const calculatePeriodsFromDisabledCells = (
   const nextDay = new Date(currentDate);
   nextDay.setDate(nextDay.getDate() + 1);
   const nextDayStr = nextDay.toISOString().split('T')[0];
+  const prevDay = new Date(currentDate);
+  prevDay.setDate(prevDay.getDate() - 1);
+  const prevDayStr = prevDay.toISOString().split('T')[0];
 
-  // 모든 셀이 활성화되어 있고 조건이 동일한 경우 00:00-24:00으로 반환
+  // 모든 셀이 활성화되어 있고 조건이 동일한 경우
   if (isAllActive && allSameConditions) {
+    // passenger chart 데이터가 있으면 그에 맞춰 설정
+    const chartResult = useSimulationStore.getState().passenger.chartResult;
+    if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0 && isPreviousDay) {
+      // 전날부터 시작하는 경우 (D-1)
+      const firstTime = timeSlots[0]; // 예: "20:30"
+      const lastTime = timeSlots[timeSlots.length - 1];
+
+      // 전날 시작 시간 처리
+      const startDate = timeSlots.indexOf("00:00") > 0 ? prevDayStr : currentDate;
+
+      return [{
+        period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
+        process_time_seconds: processTime,
+        passenger_conditions: firstConditions || []
+      }];
+    }
+
+    // 기본값
     return [{
       period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
       process_time_seconds: processTime,
@@ -350,11 +372,20 @@ const calculatePeriodsFromDisabledCells = (
         // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
         if (lastActiveTime !== null) {
           const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+
+          // 시작 시간이 전날 시간인지 확인
+          const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+            ? prevDayStr
+            : currentDate;
+
           const endDateTime = endTime === "00:00"
             ? `${nextDayStr} 00:00:00`
-            : `${currentDate} ${endTime}:00`;
+            : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
+              ? `${prevDayStr} ${endTime}:00`
+              : `${currentDate} ${endTime}:00`;
+
           periods.push({
-            period: `${currentDate} ${currentStart}:00-${endDateTime}`,
+            period: `${startDate} ${currentStart}:00-${endDateTime}`,
             process_time_seconds: processTime,
             passenger_conditions: currentConditions || []
           });
@@ -368,11 +399,20 @@ const calculatePeriodsFromDisabledCells = (
       if (currentStart !== null && lastActiveTime !== null) {
         // 이전 활성 구간을 저장
         const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+
+        // 시작 시간이 전날 시간인지 확인
+        const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+          ? prevDayStr
+          : currentDate;
+
         const endDateTime = endTime === "00:00"
           ? `${nextDayStr} 00:00:00`
-          : `${currentDate} ${endTime}:00`;
+          : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
+            ? `${prevDayStr} ${endTime}:00`
+            : `${currentDate} ${endTime}:00`;
+
         periods.push({
-          period: `${currentDate} ${currentStart}:00-${endDateTime}`,
+          period: `${startDate} ${currentStart}:00-${endDateTime}`,
           process_time_seconds: processTime,
           passenger_conditions: currentConditions || []
         });
@@ -387,11 +427,20 @@ const calculatePeriodsFromDisabledCells = (
   if (currentStart !== null && lastActiveTime !== null) {
     // 마지막 시간 슬롯의 끝 시간 계산
     const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+
+    // 시작 시간이 전날 시간인지 확인
+    const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+      ? prevDayStr
+      : currentDate;
+
     const endDateTime = endTime === "00:00"
       ? `${nextDayStr} 00:00:00`
-      : `${currentDate} ${endTime}:00`;
+      : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
+        ? `${prevDayStr} ${endTime}:00`
+        : `${currentDate} ${endTime}:00`;
+
     periods.push({
-      period: `${currentDate} ${currentStart}:00-${endDateTime}`,
+      period: `${startDate} ${currentStart}:00-${endDateTime}`,
       process_time_seconds: processTime,
       passenger_conditions: currentConditions || []
     });
@@ -460,6 +509,7 @@ interface ExcelTableProps {
   isFullScreen?: boolean;
   virtualScroll: VirtualScrollConfig;
   handlers: TableHandlers;
+  isPreviousDay?: boolean;
 }
 
 const ExcelTable: React.FC<ExcelTableProps> = React.memo(
@@ -474,6 +524,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     isFullScreen = false,
     virtualScroll,
     handlers,
+    isPreviousDay = false,
   }) => {
     const {
       visibleTimeSlots = timeSlots,
@@ -722,7 +773,14 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       }}
                       title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
                     >
-                      {timeSlot}
+                      <div className="flex items-center justify-center gap-1">
+                        {isPreviousDay && rowIndex < timeSlots.findIndex(t => t === "00:00") && (
+                          <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
+                            D-1
+                          </span>
+                        )}
+                        <span>{timeSlot}</span>
+                      </div>
                     </td>
                     {currentFacilities.map((facility, colIndex) => {
                       const cellId = `${rowIndex}-${colIndex}`;
@@ -936,10 +994,13 @@ export default function OperatingScheduleEditor({
 
   // 🚫 Zone별 셀 비활성화 상태 관리 (탭 전환 시에도 유지)
   const [disabledCellsByZone, setDisabledCellsByZone] = useState<Record<string, Set<string>>>({});
-  
+
   // 스페이스바 연타 방지를 위한 처리 중 상태
   const [isProcessingSpace, setIsProcessingSpace] = useState(false);
-  
+
+  // 초기 로드 상태 추적
+  const [isInitialized, setIsInitialized] = useState(false);
+
   // 현재 선택된 Zone의 disabledCells
   const disabledCells = useMemo(() => {
     const key = `${selectedProcessIndex}-${selectedZone}`;
@@ -966,19 +1027,93 @@ export default function OperatingScheduleEditor({
     },
   });
 
-  // 시간 슬롯 생성 (appliedTimeUnit에 따라 생성)
-  const timeSlots = useMemo(() => {
+  // passenger chartResult 가져오기
+  const chartResult = useSimulationStore((s) => s.passenger.chartResult);
+  const contextDate = useSimulationStore((s) => s.context.date);
+
+  // 시간 슬롯 생성 (chartResult가 있으면 그 범위로, 없으면 기본값)
+  const { timeSlots, isPreviousDay } = useMemo(() => {
     const slots: string[] = [];
     const unitMinutes = Math.max(1, Math.min(60, appliedTimeUnit)); // 1분 ~ 60분 사이로 제한
+    let isPrev = false;
 
+    // chartResult가 있고 chart_x_data가 있으면 그 범위로 생성
+    if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
+      // 최초 여객이 있는 시간 찾기
+      const chartData = chartResult.chart_y_data;
+      let totalPassengersByTime: number[] = new Array(chartResult.chart_x_data.length).fill(0);
+
+      if (chartData) {
+        Object.values(chartData).forEach((airlines: any[]) => {
+          airlines.forEach((airline) => {
+            if (airline.y && Array.isArray(airline.y)) {
+              airline.y.forEach((count: number, idx: number) => {
+                totalPassengersByTime[idx] += count;
+              });
+            }
+          });
+        });
+      }
+
+      // 최초/최종 여객 시간 찾기
+      const firstPassengerIndex = totalPassengersByTime.findIndex(count => count > 0);
+      const lastPassengerIndex = totalPassengersByTime.findLastIndex(count => count > 0);
+
+      if (firstPassengerIndex !== -1 && lastPassengerIndex !== -1) {
+        // 시작 시간 30분 단위 내림
+        const startDateTime = chartResult.chart_x_data[firstPassengerIndex];
+        const [startDate, startTime] = startDateTime.split(' ');
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const roundedStartMinute = Math.floor(startMinute / 30) * 30;
+        const roundedStartHour = startHour;
+
+        // 종료 시간 처리
+        const endDateTime = chartResult.chart_x_data[Math.min(lastPassengerIndex + 1, chartResult.chart_x_data.length - 1)];
+        const [endDate, endTime] = endDateTime.split(' ');
+        const [endHour] = endTime.split(':').map(Number);
+
+        // 시작이 전날인지 확인
+        const currentDate = contextDate || new Date().toISOString().split('T')[0];
+        isPrev = startDate < currentDate;
+
+        // 전날 시간부터 시작하는 경우
+        if (isPrev) {
+          // 전날 시간 추가
+          for (let hour = roundedStartHour; hour < 24; hour++) {
+            const minuteStart = hour === roundedStartHour ? roundedStartMinute : 0;
+            for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
+              const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+              slots.push(timeStr);
+            }
+          }
+        }
+
+        // 당일 시간 추가
+        const maxHour = Math.min(24, endHour + 1);
+        const startHourForToday = isPrev ? 0 : roundedStartHour;
+        const startMinuteForToday = isPrev ? 0 : roundedStartMinute;
+
+        for (let hour = startHourForToday; hour < maxHour; hour++) {
+          const minuteStart = hour === startHourForToday && !isPrev ? startMinuteForToday : 0;
+          for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
+            const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+            slots.push(timeStr);
+          }
+        }
+
+        return { timeSlots: slots, isPreviousDay: isPrev };
+      }
+    }
+
+    // 기본값: 00:00부터 24:00까지
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += unitMinutes) {
         const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
         slots.push(timeStr);
       }
     }
-    return slots;
-  }, [appliedTimeUnit]);
+    return { timeSlots: slots, isPreviousDay: false };
+  }, [appliedTimeUnit, chartResult, contextDate]);
 
   // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
   const currentFacilities = useMemo(() => {
@@ -2524,7 +2659,26 @@ export default function OperatingScheduleEditor({
   useEffect(() => {
     if (!currentFacilities || currentFacilities.length === 0) return;
     if (!selectedZone || selectedProcessIndex === null) return;
-    
+
+    // Skip update if not initialized yet
+    if (!isInitialized) {
+      // Check if we need to initialize from existing schedule
+      const needsInit = currentFacilities.some(f =>
+        f.operating_schedule?.time_blocks?.length > 0 &&
+        f.operating_schedule.time_blocks[0].period !== `${useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0]} 00:00:00-${(() => {
+          const nextDay = new Date(useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0]);
+          nextDay.setDate(nextDay.getDate() + 1);
+          return nextDay.toISOString().split('T')[0];
+        })()} 00:00:00`
+      );
+
+      if (needsInit) {
+        // Don't update store, wait for proper initialization
+        return;
+      }
+      setIsInitialized(true);
+    }
+
     // debounce를 위한 timeout
     const timeoutId = setTimeout(() => {
       // 각 시설별로 period 재계산
@@ -2546,7 +2700,8 @@ export default function OperatingScheduleEditor({
             cellBadges,
             processTimeSeconds ?? undefined,
             appliedTimeUnit,
-            date
+            date,
+            isPreviousDay
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트
@@ -2568,13 +2723,16 @@ export default function OperatingScheduleEditor({
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    disabledCells, 
-    cellBadges, 
-    currentFacilities, 
-    selectedZone, 
-    selectedProcessIndex, 
+    disabledCells,
+    cellBadges,
+    currentFacilities,
+    selectedZone,
+    selectedProcessIndex,
+    isInitialized,
     timeSlots,
-    updateFacilityTimeBlocks
+    updateFacilityTimeBlocks,
+    appliedTimeUnit,
+    isPreviousDay
   ]); // 모든 필요한 의존성 포함
 
   // 🛡️ 안전성 검사 강화
@@ -2772,6 +2930,7 @@ export default function OperatingScheduleEditor({
           isFullScreen={false}
           virtualScroll={virtualScrollConfig}
           handlers={tableHandlers}
+          isPreviousDay={isPreviousDay}
         />
 
         {/* 전체화면 Dialog */}
@@ -2827,6 +2986,7 @@ export default function OperatingScheduleEditor({
                 isFullScreen={true}
                 virtualScroll={virtualScrollConfig}
                 handlers={tableHandlers}
+                isPreviousDay={isPreviousDay}
               />
             </div>
           </DialogContent>
