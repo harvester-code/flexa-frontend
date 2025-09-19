@@ -115,14 +115,16 @@ const calculateOperatingPeriodFromPassengers = (
   let totalPassengersByTime: number[] = new Array(times.length).fill(0);
 
   if (chartData) {
-    Object.values(chartData).forEach((airlines: any[]) => {
-      airlines.forEach((airline) => {
-        if (airline.y && Array.isArray(airline.y)) {
-          airline.y.forEach((count: number, idx: number) => {
-            totalPassengersByTime[idx] += count;
-          });
-        }
-      });
+    Object.values(chartData).forEach((airlines) => {
+      if (Array.isArray(airlines)) {
+        airlines.forEach((airline) => {
+          if (airline.y && Array.isArray(airline.y)) {
+            airline.y.forEach((count: number, idx: number) => {
+              totalPassengersByTime[idx] += count;
+            });
+          }
+        });
+      }
     });
   }
 

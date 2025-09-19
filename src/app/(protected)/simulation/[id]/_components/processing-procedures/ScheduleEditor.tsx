@@ -630,8 +630,8 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       let minRow = Infinity, maxRow = -Infinity;
       let minCol = Infinity, maxCol = -Infinity;
 
-      copiedCells.forEach((id) => {
-        const [r, c] = id.split('-').map(Number);
+      Array.from(copiedCells).forEach((id) => {
+        const [r, c] = (id as string).split('-').map(Number);
         minRow = Math.min(minRow, r);
         maxRow = Math.max(maxRow, r);
         minCol = Math.min(minCol, c);
@@ -2298,7 +2298,7 @@ export default function OperatingScheduleEditor({
     const newDisabledCells = new Set(disabledCells);
 
     targetCellsArray.forEach(target => {
-      let sourceCellData = null;
+      let sourceCellData: { row: number; col: number; badges: CategoryBadge[]; disabled: boolean } | undefined = undefined;
 
       // Pattern B: Single cell copy - use the same cell for all targets
       if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {

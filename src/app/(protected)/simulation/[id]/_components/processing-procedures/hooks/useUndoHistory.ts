@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 
-export type HistoryAction = 
+export type HistoryAction =
   | {
       type: 'toggleDisabled';
       cellIds: string[];
@@ -12,6 +12,12 @@ export type HistoryAction =
       cellIds: string[];
       previousBadges: Map<string, any[]>;
       newBadges: Map<string, any[]>;
+    }
+  | {
+      type: 'paste';
+      targetCells: string[];
+      previousStates: Map<string, { badges: any[]; disabled: boolean }>;
+      newStates: Map<string, { badges: any[]; disabled: boolean }>;
     };
 
 interface UseUndoHistoryProps {
