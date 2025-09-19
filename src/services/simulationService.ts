@@ -79,8 +79,17 @@ export const deleteScenarioMetadata = (scenario_id: string) => {
   return api.withScenario(scenario_id).delete("/metadata");
 };
 
-export const runSimulation = (scenario_id: string, processFlow: any[]) => {
+export const runSimulation = (
+  scenario_id: string,
+  processFlow: any[],
+  airport: string,
+  date: string
+) => {
   return api.withScenario(scenario_id).post("/run-simulation", {
+    setting: {
+      airport,
+      date,
+    },
     process_flow: processFlow,
   });
 };

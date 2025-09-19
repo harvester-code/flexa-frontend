@@ -397,8 +397,8 @@ export default function ProcessFlowDesigner({
         const firstZone = currentProcess.zones[zoneKeys[0]];
         if (firstZone && firstZone.facilities && firstZone.facilities.length > 0) {
           const firstFacility = firstZone.facilities[0];
-          if (firstFacility.operating_schedule?.today?.time_blocks?.length > 0) {
-            processTimeSeconds = firstFacility.operating_schedule.today.time_blocks[0].process_time_seconds || undefined;
+          if (firstFacility.operating_schedule?.time_blocks?.length > 0) {
+            processTimeSeconds = firstFacility.operating_schedule.time_blocks[0].process_time_seconds || undefined;
           }
         }
       }
@@ -453,9 +453,8 @@ export default function ProcessFlowDesigner({
           zone.facilities.every(
             (facility: any) =>
               facility.operating_schedule &&
-              facility.operating_schedule.today &&
-              facility.operating_schedule.today.time_blocks &&
-              facility.operating_schedule.today.time_blocks.length > 0
+              facility.operating_schedule.time_blocks &&
+              facility.operating_schedule.time_blocks.length > 0
           )
       );
 
@@ -596,9 +595,8 @@ export default function ProcessFlowDesigner({
             zone.facilities.every(
               (facility: any) =>
                 facility.operating_schedule &&
-                facility.operating_schedule.today &&
-                facility.operating_schedule.today.time_blocks &&
-                facility.operating_schedule.today.time_blocks.length > 0
+                facility.operating_schedule.time_blocks &&
+                facility.operating_schedule.time_blocks.length > 0
             )
         )
       );
@@ -618,22 +616,25 @@ export default function ProcessFlowDesigner({
     try {
       setIsRunningSimulation(true);
 
-      // Reorder process flow keys to match backend format (raw_v24.json)
-      const sanitizedProcessFlow = processFlow.map((step) => {
-        // Create a new object with the specific key order that backend expects
-        const orderedStep = {
-          step: step.step,
-          name: step.name,
-          travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1), // 최소 1분 보장
-          entry_conditions: step.entry_conditions || [],
-          zones: step.zones || {}
-        };
+      // Get airport and date from store
+      const airport = useSimulationStore.getState().context.airport;
+      const date = useSimulationStore.getState().context.date;
 
-        return orderedStep;
-      });
+      // Process flow is already in the correct format since store saves in API format
+      const sanitizedProcessFlow = processFlow.map((step) => ({
+        step: step.step,
+        name: step.name,
+        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1),
+        entry_conditions: step.entry_conditions || [],
+        zones: step.zones || {}
+      }));
 
-      // Set API request log
+      // Set API request log with new format
       const requestData = {
+        setting: {
+          airport,
+          date
+        },
         process_flow: sanitizedProcessFlow
       };
 
@@ -643,7 +644,7 @@ export default function ProcessFlowDesigner({
         status: 'loading'
       });
 
-      const response = await runSimulation(simulationId, sanitizedProcessFlow);
+      const response = await runSimulation(simulationId, sanitizedProcessFlow, airport, date);
 
       // Update with success response
       setApiRequestLog({
@@ -658,10 +659,17 @@ export default function ProcessFlowDesigner({
         description: 'Your simulation is now running. You can check the results in the Home tab.',
       });
     } catch (error: any) {
-      // Update with error - using the same key ordering as raw_v24.json
+      // Update with error
+      const airport = useSimulationStore.getState().context.airport;
+      const date = useSimulationStore.getState().context.date;
+
       setApiRequestLog({
         timestamp: new Date().toISOString(),
         request: {
+          setting: {
+            airport,
+            date
+          },
           process_flow: processFlow.map((step) => ({
             step: step.step,
             name: step.name,

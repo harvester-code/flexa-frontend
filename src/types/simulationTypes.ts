@@ -248,16 +248,13 @@ export interface Zone {
 
 export interface Facility {
   id: string;
-  operating_schedule: Record<
-    string,
-    {
-      time_blocks: TimeBlock[];
-    }
-  >;
+  operating_schedule: {
+    time_blocks: TimeBlock[];
+  };
 }
 
 export interface TimeBlock {
-  period: string;
+  period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
   process_time_seconds: number;
   passenger_conditions: PassengerCondition[];
 }
@@ -339,4 +336,36 @@ export interface APIRequestLog {
   duration?: number;
   error?: string; // 에러 메시지
   errorMessage?: string;
+}
+
+// =======================================================================
+// Simulation Run Types
+// =======================================================================
+
+export interface SimulationRunRequest {
+  setting: {
+    airport: string;
+    date: string;
+  };
+  process_flow: Array<{
+    step: number;
+    name: string;
+    travel_time_minutes: number;
+    entry_conditions: EntryCondition[];
+    zones: Record<string, {
+      facilities: Array<{
+        id: string;
+        operating_schedule: {
+          time_blocks: Array<{
+            period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
+            process_time_seconds: number;
+            passenger_conditions: Array<{
+              field: string;
+              values: string[];
+            }>;
+          }>;
+        };
+      }>;
+    }>;
+  }>;
 }

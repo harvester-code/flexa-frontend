@@ -15,6 +15,7 @@ import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import { Clock, Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
+import { useSimulationStore } from "../../_stores";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,6 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
-import { useSimulationStore } from "../../_stores";
 
 
 // Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
@@ -288,7 +288,8 @@ const calculatePeriodsFromDisabledCells = (
   existingTimeBlocks: any[],
   cellBadges: Record<string, CategoryBadge[]>,
   processTimeSeconds?: number, // 프로세스의 process_time_seconds 값
-  timeUnit: number = 10 // time unit (기본값 10분)
+  timeUnit: number = 10, // time unit (기본값 10분)
+  date?: string // 날짜 (YYYY-MM-DD 형식)
 ): any[] => {
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
   const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
@@ -312,10 +313,16 @@ const calculatePeriodsFromDisabledCells = (
     }
   }
 
+  // 날짜 가져오기 (전달되지 않으면 store에서 가져옴)
+  const currentDate = date || useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+  const nextDay = new Date(currentDate);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const nextDayStr = nextDay.toISOString().split('T')[0];
+
   // 모든 셀이 활성화되어 있고 조건이 동일한 경우 00:00-24:00으로 반환
   if (isAllActive && allSameConditions) {
     return [{
-      period: "00:00-24:00",
+      period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
       process_time_seconds: processTime,
       passenger_conditions: firstConditions || []
     }];
@@ -343,8 +350,11 @@ const calculatePeriodsFromDisabledCells = (
         // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
         if (lastActiveTime !== null) {
           const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+          const endDateTime = endTime === "00:00"
+            ? `${nextDayStr} 00:00:00`
+            : `${currentDate} ${endTime}:00`;
           periods.push({
-            period: `${currentStart}-${endTime}`,
+            period: `${currentDate} ${currentStart}:00-${endDateTime}`,
             process_time_seconds: processTime,
             passenger_conditions: currentConditions || []
           });
@@ -358,8 +368,11 @@ const calculatePeriodsFromDisabledCells = (
       if (currentStart !== null && lastActiveTime !== null) {
         // 이전 활성 구간을 저장
         const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+        const endDateTime = endTime === "00:00"
+          ? `${nextDayStr} 00:00:00`
+          : `${currentDate} ${endTime}:00`;
         periods.push({
-          period: `${currentStart}-${endTime}`,
+          period: `${currentDate} ${currentStart}:00-${endDateTime}`,
           process_time_seconds: processTime,
           passenger_conditions: currentConditions || []
         });
@@ -374,8 +387,11 @@ const calculatePeriodsFromDisabledCells = (
   if (currentStart !== null && lastActiveTime !== null) {
     // 마지막 시간 슬롯의 끝 시간 계산
     const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+    const endDateTime = endTime === "00:00"
+      ? `${nextDayStr} 00:00:00`
+      : `${currentDate} ${endTime}:00`;
     periods.push({
-      period: `${currentStart}-${endTime}`,
+      period: `${currentDate} ${currentStart}:00-${endDateTime}`,
       process_time_seconds: processTime,
       passenger_conditions: currentConditions || []
     });
@@ -2514,13 +2530,14 @@ export default function OperatingScheduleEditor({
       // 각 시설별로 period 재계산
       currentFacilities.forEach((facility, facilityIndex) => {
         if (facility && facility.id) {
-          const existingTimeBlocks = facility.operating_schedule?.today?.time_blocks || [];
+          const existingTimeBlocks = facility.operating_schedule?.time_blocks || [];
           
           // 현재 프로세스의 process_time_seconds 값 가져오기
           const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
           const processTimeSeconds = (currentProcess as any)?.process_time_seconds;
 
-          // 새로운 periods 계산 (뱃지 정보 포함)
+          // 새로운 periods 계산 (뱃지 정보 포함, date 전달)
+          const date = useSimulationStore.getState().context.date;
           const newTimeBlocks = calculatePeriodsFromDisabledCells(
             facilityIndex,
             disabledCells,
@@ -2528,7 +2545,8 @@ export default function OperatingScheduleEditor({
             existingTimeBlocks,
             cellBadges,
             processTimeSeconds ?? undefined,
-            appliedTimeUnit
+            appliedTimeUnit,
+            date
           );
           
           // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트

@@ -98,20 +98,14 @@ interface LegacyProcedure {
 interface Facility {
   id: string;
   operating_schedule: {
-    yesterday?: {
-      time_blocks: Array<{
-        period: string;
-        facilityName: string;
-        value: number;
+    time_blocks: Array<{
+      period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format for API
+      process_time_seconds: number;
+      passenger_conditions: Array<{
+        field: string;
+        values: string[];
       }>;
-    };
-    today?: {
-      time_blocks: Array<{
-        period: string;
-        facilityName: string;
-        value: number;
-      }>;
-    };
+    }>;
   };
 }
 
@@ -1324,21 +1318,21 @@ export const useSimulationStore = create<SimulationStoreState>()(
           state.process_flow[processIndex].zones[zoneName]
         ) {
           // 지정된 개수만큼 facilities 생성
+          const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+          const nextDay = new Date(date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayStr = nextDay.toISOString().split('T')[0];
+
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
             operating_schedule: {
-              yesterday: {
-                time_blocks: [], // 🆕 백엔드용 (나중에 활용)
-              },
-              today: {
-                time_blocks: [
-                  {
-                    period: "00:00-24:00",
-                    process_time_seconds: processTimeSeconds || 0,
-                    passenger_conditions: []
-                  }
-                ], // 항상 기본 time_blocks 생성 (00:00-24:00)
-              },
+              time_blocks: [
+                {
+                  period: `${date} 00:00:00-${nextDayStr} 00:00:00`,
+                  process_time_seconds: processTimeSeconds || 6,
+                  passenger_conditions: []
+                }
+              ],
             },
           }));
 
@@ -1360,13 +1354,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
             // 모든 시설에 동일한 스케줄 적용
             zone.facilities.forEach((facility: Facility) => {
               facility.operating_schedule = {
-                today: {
-                  time_blocks: timeBlocks.map((block: any) => ({
-                    period: block.period,
-                    facilityName: block.facilityName || "",
-                    value: block.processTime || block.value || 0,
-                  })),
-                },
+                time_blocks: timeBlocks.map((block: any) => ({
+                  period: block.period,
+                  process_time_seconds: block.process_time_seconds || block.processTime || block.value || 6,
+                  passenger_conditions: block.passenger_conditions || []
+                })),
               };
             });
           }
@@ -1386,11 +1378,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
           );
 
           if (facility && facility.operating_schedule) {
-            // today의 time_blocks를 새로운 값으로 교체
-            facility.operating_schedule.today = {
-              ...facility.operating_schedule.today,
-              time_blocks: timeBlocks
-            };
+            // time_blocks를 새로운 값으로 교체
+            facility.operating_schedule.time_blocks = timeBlocks;
           }
         }
       }),
@@ -1410,14 +1399,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
           if (facility) {
             // 기존 스케줄 초기화
             if (!facility.operating_schedule) {
-              facility.operating_schedule = {};
-            }
-            if (!facility.operating_schedule.today) {
-              facility.operating_schedule.today = { time_blocks: [] };
+              facility.operating_schedule = { time_blocks: [] };
             }
 
             const timeBlocks =
-              facility.operating_schedule.today.time_blocks || [];
+              facility.operating_schedule.time_blocks || [];
             const [startTime] = period.split("~");
 
             // 시간을 분 단위로 변환
@@ -1454,8 +1440,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
               });
             } else {
               // 겹치는 블록이 없으면 새로운 10분 블록 추가 (체크)
+              // period를 API 형식으로 변환
+              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+              const [startTime, endTime] = period.split("~");
+              const nextDay = new Date(date);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const nextDayStr = nextDay.toISOString().split('T')[0];
+
+              const startDateTime = `${date} ${startTime}:00`;
+              const endDateTime = endTime === "00:00"
+                ? `${nextDayStr} 00:00:00`
+                : `${date} ${endTime}:00`;
+
               timeBlocks.push({
-                period,
+                period: `${startDateTime}-${endDateTime}`,
                 process_time_seconds: 30, // 기본값 - 추후 설정 가능하도록 개선 필요
                 passenger_conditions: [],
               });
@@ -1480,8 +1478,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
             const zone = process.zones[zoneName];
             if (zone.facilities) {
               zone.facilities.forEach((facility: any) => {
-                if (facility.operating_schedule?.today?.time_blocks) {
-                  facility.operating_schedule.today.time_blocks.forEach((block: any) => {
+                if (facility.operating_schedule?.time_blocks) {
+                  facility.operating_schedule.time_blocks.forEach((block: any) => {
                     block.process_time_seconds = processTimeSeconds;
                   });
                 }
