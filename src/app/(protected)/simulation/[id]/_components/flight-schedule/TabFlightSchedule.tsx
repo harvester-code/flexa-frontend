@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useToast } from "@/hooks/useToast";
 import {
   APIRequestLog,
   AirlineInfo,
@@ -10,11 +11,11 @@ import {
 import {
   getFlightFilters,
   getFlightSchedules,
+  saveScenarioMetadata,
 } from "@/services/simulationService";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from "../../../_components/SimulationLoading";
 import { useSimulationStore } from "../../_stores";
-import NavigationButton from "../shared/NavigationButton";
 // TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
 import FlightFilterConditions from "./FlightFilterConditions";
 import FlightDataLoader from "./FlightDataLoader";
@@ -54,6 +55,8 @@ function TabFlightSchedule({
   apiRequestLog,
   setApiRequestLog,
 }: TabFlightScheduleProps) {
+  const { toast } = useToast();
+
   // 표준화된 훅으로 데이터와 액션들 가져오기
   // 🆕 1원칙: 통합 store에서만 데이터 가져오기
   const airport = useSimulationStore((s) => s.context.airport);
@@ -389,7 +392,7 @@ function TabFlightSchedule({
     [simulationId, setApiRequestLog, resetFlightData, setFlightFilters]
   );
 
-  // 🆕 새로운 Apply Filter 핸들러 (새 필터 시스템용) - 응답 반환
+  // 🆕 새로운 Apply Filter 핸들러 (새 필터 시스템용) - 응답 반환 + 자동 저장
   const handleApplyFiltersNew = useCallback(
     async (
       type: string,
@@ -500,6 +503,35 @@ function TabFlightSchedule({
 
         // 🆕 parquet_metadata는 하드코딩된 컬럼으로 대체됨 (제거됨)
 
+        // 🚀 Auto-save: Filter Flights 응답 후 자동 저장
+        try {
+          // 전체 메타데이터 수집
+          const completeMetadata = {
+            ...useSimulationStore.getState(),
+            savedAt: new Date().toISOString(),
+          };
+
+          // 자동 저장 실행
+          const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+
+          // 저장 성공 시 lastSavedAt 업데이트
+          const savedTimestamp = new Date().toISOString();
+          useSimulationStore.getState().setLastSavedAt(savedTimestamp);
+
+          toast({
+            title: '✅ Auto-save completed',
+            description: `Flight schedule data has been automatically saved after filtering.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
+          });
+        } catch (saveError) {
+          console.error('Auto-save failed:', saveError);
+          // Auto-save 실패는 조용히 처리 (사용자 작업을 방해하지 않음)
+          toast({
+            title: '⚠️ Auto-save failed',
+            description: 'Data was processed successfully but auto-save failed. You can manually save later.',
+            variant: 'default',
+          });
+        }
+
         return data;
       } catch (error: any) {
         // 🎯 503 에러에 대한 사용자 친화적 메시지
@@ -537,7 +569,7 @@ function TabFlightSchedule({
         setApplyFilterLoading(false);
       }
     },
-    [simulationId, setApiRequestLog, setAppliedFilterResult]
+    [simulationId, setApiRequestLog, setAppliedFilterResult, toast]
   );
 
   // ✅ Hook 호출 후 조건부 렌더링 (Rules of Hooks 준수)
@@ -577,10 +609,6 @@ function TabFlightSchedule({
         </>
       )}
 
-      {/* Navigation */}
-      <div className="mt-8">
-        <NavigationButton showPrevious={true} />
-      </div>
     </div>
   );
 }

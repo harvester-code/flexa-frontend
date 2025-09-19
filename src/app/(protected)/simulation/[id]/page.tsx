@@ -60,7 +60,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   const flightScheduleCompleted = useSimulationStore((s) => s.workflow.step1Completed);
   const passengerScheduleCompleted = useSimulationStore((s) => s.workflow.step2Completed);
-  const processingProceduresCompleted = useSimulationStore((s) => s.workflow.step3Completed);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -152,11 +151,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   // 탭 접근성 계산
   const getAvailableTabs = () => {
-    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted, processingProceduresCompleted];
+    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted];
 
     // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
     const lastCompletedIndex = completedStates.lastIndexOf(true);
-    return Math.max(0, Math.min(lastCompletedIndex + 1, tabs.length - 1));
+    // 최소 0, 최대 tabs.length - 1 (모든 탭 접근 가능)
+    // 완료된 탭이 없으면 첫 번째 탭(0)만, 모두 완료되면 모든 탭 접근 가능
+    return Math.max(0, Math.min(lastCompletedIndex + 2, tabs.length - 1));
   };
 
   // 🆕 통합 Store에서 메타데이터 수집용 함수
@@ -199,7 +200,6 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           currentStep: 1,
           step1Completed: false,
           step2Completed: false,
-          step3Completed: false,
           availableSteps: [1],
         },
         savedAt: new Date().toISOString(),

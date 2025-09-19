@@ -3,7 +3,6 @@
 import React from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
 import { useSimulationStore } from '../../_stores';
-import NavigationButton from '../shared/NavigationButton';
 import PassengerFilterConditions from './PassengerFilterConditions';
 import PassengerResultChart from './PassengerResultChart';
 
@@ -48,11 +47,6 @@ export default function TabPassengerSchedule({
 
         {/* 🎯 Passenger Schedule Chart - 독립적인 두 번째 컴포넌트 */}
         {passengerData.chartResult && <PassengerResultChart />}
-      </div>
-
-      {/* Navigation */}
-      <div className="mt-8">
-        <NavigationButton showPrevious={true} />
       </div>
     </div>
   );

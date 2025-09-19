@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Play, Users } from "lucide-react";
-import { createPassengerShowUp } from "@/services/simulationService";
+import { createPassengerShowUp, saveScenarioMetadata } from "@/services/simulationService";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
@@ -155,15 +155,39 @@ export default function PassengerFilterConditions({
         status: "success",
       });
 
-      // 저장 완료
-
-      toast({
-        title: "Success",
-        description: "Passenger data generated successfully!",
-      });
-
       // 🎯 API 응답을 성공적으로 받았을 때만 Step 2 완료 처리
       setStepCompleted(2, true);
+
+      // 🚀 Auto-save: Step 2 완료 처리 후 자동 저장 (workflow 상태 포함)
+      // setTimeout으로 상태 업데이트가 완료된 후 저장 실행
+      setTimeout(async () => {
+        try {
+          // 전체 메타데이터 수집 (Step 2 완료 상태 포함)
+          const completeMetadata = {
+            ...useSimulationStore.getState(),
+            savedAt: new Date().toISOString(),
+          };
+
+          // 자동 저장 실행
+          const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+
+          // 저장 성공 시 lastSavedAt 업데이트
+          const savedTimestamp = new Date().toISOString();
+          useSimulationStore.getState().setLastSavedAt(savedTimestamp);
+
+          toast({
+            title: "✅ Success & Auto-saved",
+            description: `Passenger data generated and automatically saved.\nStep 3 is now available.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
+          });
+        } catch (saveError) {
+          console.error('Auto-save failed:', saveError);
+          // Auto-save 실패 시에도 Generate Pax는 성공했으므로 성공 메시지 표시
+          toast({
+            title: "Success",
+            description: "Passenger data generated successfully! (Auto-save failed - you can manually save later)",
+          });
+        }
+      }, 100); // 100ms 딜레이로 상태 업데이트 보장
     } catch (error) {
       // 🔍 API 에러 로그
       setApiRequestLog?.({

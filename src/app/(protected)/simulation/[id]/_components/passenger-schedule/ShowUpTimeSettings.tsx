@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AlertTriangle, CheckCircle, Edit, Play, Plus, Trash2, X, XCircle, Plane } from 'lucide-react';
-import { createPassengerShowUp } from '@/services/simulationService';
+import { createPassengerShowUp, saveScenarioMetadata } from '@/services/simulationService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -361,10 +361,33 @@ export default function ShowUpTimeSettings({
       const { data: response } = await createPassengerShowUp(simulationId, requestBody);
 
 
-      toast({
-        title: 'Success',
-        description: 'Passenger data has been generated successfully!',
-      });
+      // 🚀 Auto-save: Generate Pax 응답 후 자동 저장
+      try {
+        // 전체 메타데이터 수집
+        const completeMetadata = {
+          ...useSimulationStore.getState(),
+          savedAt: new Date().toISOString(),
+        };
+
+        // 자동 저장 실행
+        const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+
+        // 저장 성공 시 lastSavedAt 업데이트
+        const savedTimestamp = new Date().toISOString();
+        useSimulationStore.getState().setLastSavedAt(savedTimestamp);
+
+        toast({
+          title: '✅ Success & Auto-saved',
+          description: `Passenger data generated and automatically saved.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
+        });
+      } catch (saveError) {
+        console.error('Auto-save failed:', saveError);
+        // Auto-save 실패 시에도 Generate Pax는 성공했으므로 성공 메시지 표시
+        toast({
+          title: 'Success',
+          description: 'Passenger data generated successfully! (Auto-save failed - you can manually save later)',
+        });
+      }
 
       // TODO: 응답 데이터 처리 (필요에 따라)
       // useSimulationStore.getState().setPassengerResults(response);

@@ -276,7 +276,6 @@ export interface SimulationStoreState {
     currentStep: number;
     step1Completed: boolean;
     step2Completed: boolean;
-    step3Completed: boolean;
     availableSteps: number[];
   };
   savedAt: string | null;
@@ -540,7 +539,6 @@ const createInitialState = (scenarioId?: string) => ({
     currentStep: 1,
     step1Completed: false,
     step2Completed: false,
-    step3Completed: false,
     availableSteps: [1],
   },
   savedAt: null,
@@ -636,7 +634,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
         // ✅ flight 데이터 리셋 시 workflow도 완전 리셋 (step2, step3도 false로)
         state.workflow.step1Completed = false;
         state.workflow.step2Completed = false;
-        state.workflow.step3Completed = false;
         state.workflow.availableSteps = [1]; // 첫 번째 단계만 접근 가능
       }),
 
@@ -797,7 +794,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         if (step === 1) state.workflow.step1Completed = completed;
         else if (step === 2) state.workflow.step2Completed = completed;
-        else if (step === 3) state.workflow.step3Completed = completed;
       });
       // 단계 완료 후 availableSteps 업데이트
       useSimulationStore.getState().updateAvailableSteps();
@@ -1348,7 +1344,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setProcessCompleted: (completed) =>
       set((state) => {
-        state.workflow.step3Completed = completed;
+        // Process completed state removed as it's no longer needed
       }),
 
     resetProcessFlow: () =>
@@ -1356,7 +1352,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.process_flow = [];
 
         // ✅ process_flow 리셋 시 관련 workflow 상태도 초기화
-        state.workflow.step3Completed = false;
       }),
 
     loadProcessMetadata: (metadata) =>

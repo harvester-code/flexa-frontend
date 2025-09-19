@@ -5,7 +5,6 @@ import { EntryCondition, APIRequestLog } from '@/types/simulationTypes';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
-import NavigationButton from '../shared/NavigationButton';
 import ProcessConfigModal from './ProcessConfigModal';
 import ProcessFlowDesigner from './ProcessFlowDesigner';
 
@@ -25,7 +24,8 @@ interface TabProcessingProceduresProps {
 export default function TabProcessingProcedures({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabProcessingProceduresProps) {
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
-  const isCompleted = useSimulationStore((s) => s.workflow.step3Completed);
+  // Process completed state removed as it's no longer needed
+  const isCompleted = false; // Always false as step3Completed is removed
   const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
   const setProcessFlow = useSimulationStore((s) => s.setProcessFlow);
   const setIsCompleted = useSimulationStore((s) => s.setProcessCompleted);
@@ -280,10 +280,6 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
         parquetMetadata={parquetMetadata} // 🆕 동적 조건 데이터 전달
       />
 
-      {/* Navigation */}
-      <div className="mt-8">
-        <NavigationButton showPrevious={true} disabled={!isCompleted} />
-      </div>
     </div>
   );
 }

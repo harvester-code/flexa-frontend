@@ -39,7 +39,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { runSimulation } from '@/services/simulationService';
+import { runSimulation, saveScenarioMetadata } from '@/services/simulationService';
 import { useToast } from '@/hooks/useToast';
 import { ProcessStep, APIRequestLog } from '@/types/simulationTypes';
 import { Button } from '@/components/ui/Button';
@@ -258,8 +258,6 @@ export default function ProcessFlowDesigner({
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
 
-  // 🆕 step3Completed 상태 가져오기
-  const step3Completed = useSimulationStore((s) => s.workflow.step3Completed);
   const paxDemographicsFromStore = useSimulationStore((s) => s.passenger.pax_demographics);
 
   // Drag and drop sensors
@@ -654,10 +652,33 @@ export default function ProcessFlowDesigner({
         status: 'success'
       });
 
-      toast({
-        title: 'Simulation Started',
-        description: 'Your simulation is now running. You can check the results in the Home tab.',
-      });
+      // Auto-save metadata after successful simulation
+      try {
+        // Collect complete metadata from store
+        const completeMetadata = {
+          ...useSimulationStore.getState(),
+          savedAt: new Date().toISOString(),
+        };
+
+        // Execute auto-save
+        const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+
+        // Update lastSavedAt timestamp
+        const savedTimestamp = new Date().toISOString();
+        useSimulationStore.getState().setLastSavedAt(savedTimestamp);
+
+        toast({
+          title: '✅ Simulation Started & Auto-saved',
+          description: `Your simulation is now running and settings have been automatically saved.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
+        });
+      } catch (saveError) {
+        console.error('Auto-save failed:', saveError);
+        // Auto-save failed but simulation started successfully
+        toast({
+          title: 'Simulation Started',
+          description: 'Your simulation is now running. (Auto-save failed - you can manually save later)',
+        });
+      }
     } catch (error: any) {
       // Update with error
       const airport = useSimulationStore.getState().context.airport;
