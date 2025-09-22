@@ -265,13 +265,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       setLastSavedAt(savedTimestamp);
 
       toast({
-        title: '🆕 통합 Store 저장 완료',
-        description: `시나리오 메타데이터가 성공적으로 저장되었습니다.\n저장 위치: ${saveResult.s3_key}\n저장 시간: ${new Date().toLocaleString()}`,
+        title: 'Saved Successfully',
+        description: `Scenario metadata has been saved.\nSaved at: ${new Date().toLocaleString()}`,
       });
     } catch (error) {
       toast({
-        title: '임시저장 실패',
-        description: '메타데이터 저장 중 오류가 발생했습니다.',
+        title: 'Save Failed',
+        description: 'An error occurred while saving the metadata.',
         variant: 'destructive',
       });
     } finally {
@@ -344,6 +344,10 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="flex gap-2">
+          <Button onClick={handleTempSave} disabled={isSaving}>
+            <Save size={16} />
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" disabled={isDeleting}>
