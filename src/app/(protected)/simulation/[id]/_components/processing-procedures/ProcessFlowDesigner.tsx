@@ -19,12 +19,10 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowLeftRight,
   Building2,
   ChevronDown,
   ChevronRight,
   Clock,
-  Edit2 as Edit,
   Filter,
   GripVertical,
   Loader2,
@@ -75,7 +73,6 @@ interface ParquetMetadataItem {
 interface ProcessFlowDesignerProps {
   // Data
   processFlow: ProcessStep[];
-  selectedProcessIndex: number | null;
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
   paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
   simulationId: string; // 🆕 시뮬레이션 ID 추가
@@ -83,11 +80,8 @@ interface ProcessFlowDesignerProps {
   setApiRequestLog: (log: APIRequestLog | null) => void;
 
   // Event Handlers
-  onProcessSelect: (index: number) => void;
   onOpenCreateModal: () => void;
-  onOpenEditModal: (index: number) => void;
   onRemoveProcess: (index: number) => void;
-  onUpdateProcess?: (index: number, updatedProcess: ProcessStep) => void; // New prop for direct updates
   onReorderProcesses?: (newProcessFlow: ProcessStep[]) => void; // New prop for reordering
   onCreateProcess?: (newProcess: ProcessStep) => void; // New prop for creating process
 }
@@ -249,16 +243,14 @@ function formatProcessNameForDisplay(name: string): string {
 export default function ProcessFlowDesigner({
   processFlow,
   selectedProcessIndex,
+  onProcessSelect,
   parquetMetadata = [],
   paxDemographics = {},
   simulationId,
   apiRequestLog,
   setApiRequestLog,
-  onProcessSelect,
   onOpenCreateModal,
-  onOpenEditModal,
   onRemoveProcess,
-  onUpdateProcess,
   onReorderProcesses,
   onCreateProcess,
 }: ProcessFlowDesignerProps) {
@@ -324,7 +316,11 @@ export default function ProcessFlowDesigner({
       const count = Math.max(1, Math.min(50, newCount));
 
       // Get current process from processFlow for reference
-      const currentProcess = processFlow[selectedProcessIndex];
+      // Just get any existing facility data for period reference
+      const existingFacility = processFlow
+        .flatMap(p => Object.values(p.zones || {}))
+        .flatMap((z: any) => z.facilities || [])
+        .find((f: any) => f?.operating_schedule?.time_blocks?.[0]?.period);
       const processFlowFacilities = currentProcess?.zones?.[editingZone]?.facilities || [];
       const editedFacilities = editedProcess.zones[editingZone]?.facilities || [];
 
@@ -346,22 +342,23 @@ export default function ProcessFlowDesigner({
           });
         } else {
           // Add new facility with default schedule
+          const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+          const startDate = new Date(date);
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 2);
+          const period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+
           facilities.push({
             id: `${editingZone}_${i}`,
             operating_schedule: {
-              yesterday: {
-                time_blocks: [],
-              },
-              today: {
-                time_blocks: [
-                  {
-                    period: "00:00-24:00",
-                    process_time_seconds:
-                      editedProcess?.process_time_seconds || 0,
-                    passenger_conditions: [],
-                  },
-                ],
-              },
+              time_blocks: [
+                {
+                  period: period,
+                  process_time_seconds:
+                    editedProcess?.process_time_seconds || 0,
+                  passenger_conditions: [],
+                },
+              ],
             },
           });
         }
@@ -512,7 +509,6 @@ export default function ProcessFlowDesigner({
     setDefaultFacilityCount(null);
     setSelectedCriteriaItems({});
     setEditingZone(null);
-    onProcessSelect(-1); // Deselect any selected process
   };
 
   // Handle drag end
@@ -549,9 +545,6 @@ export default function ProcessFlowDesigner({
           const newSelectedIndex = updatedFlow.findIndex(
             (p) => p.name === selectedProcess.name
           );
-          if (newSelectedIndex !== -1) {
-            onProcessSelect(newSelectedIndex);
-          }
         }
 
         toast({
@@ -603,97 +596,6 @@ export default function ProcessFlowDesigner({
       setEditedProcess({ ...editedProcess, entry_conditions: [] });
     }
   }, [editedProcess]);
-
-  const handleUpdateProcess = () => {
-    if (editedProcess && selectedProcessIndex !== null) {
-      // Get the current process from processFlow to preserve existing schedule data
-      const currentProcess = processFlow[selectedProcessIndex];
-
-      // Get old zone names and new zone names
-      const oldZoneNames = Object.keys(currentProcess.zones || {});
-      const newZoneNames = Object.keys(editedProcess.zones || {});
-
-      // Preserve existing operating schedules while updating zones
-      const updatedZones: any = {};
-
-      // Create a mapping of old facilities to reuse their data
-      const existingFacilitiesPool: any[] = [];
-      oldZoneNames.forEach(oldZoneName => {
-        const oldZone = currentProcess.zones[oldZoneName];
-        if (oldZone && oldZone.facilities) {
-          existingFacilitiesPool.push(...oldZone.facilities);
-        }
-      });
-
-      // Distribute existing facilities to new zones
-      let facilityIndex = 0;
-      newZoneNames.forEach((zoneName) => {
-        const newZone = editedProcess.zones[zoneName];
-        const newFacilityCount = newZone.facilities.length;
-        const facilities: any[] = [];
-
-        for (let i = 0; i < newFacilityCount; i++) {
-          if (facilityIndex < existingFacilitiesPool.length) {
-            // Reuse existing facility data (preserving schedule)
-            facilities.push({
-              ...existingFacilitiesPool[facilityIndex],
-              id: `${zoneName}_${i + 1}`, // Update ID to match new zone
-            });
-            facilityIndex++;
-          } else {
-            // Create new facility only if we've used all existing ones
-            facilities.push({
-              id: `${zoneName}_${i + 1}`,
-              operating_schedule: {
-                yesterday: {
-                  time_blocks: [],
-                },
-                today: {
-                  time_blocks: [
-                    {
-                      period: "00:00-24:00",
-                      process_time_seconds: editedProcess?.process_time_seconds || 0,
-                      passenger_conditions: [],
-                    },
-                  ],
-                },
-              },
-            });
-          }
-        }
-        updatedZones[zoneName] = { facilities };
-      });
-
-      // Format the process name for storage
-      const processToUpdate = {
-        ...editedProcess,
-        name: formatProcessNameForStorage(editedProcess.name),
-        zones: updatedZones,
-      };
-
-      // If direct update handler is provided, use it
-      if (onUpdateProcess) {
-        onUpdateProcess(selectedProcessIndex, processToUpdate);
-      } else {
-        // Fallback to opening edit modal with current data
-        onOpenEditModal(selectedProcessIndex);
-      }
-
-      // Reset to initial state
-      setEditedProcess(null);
-      setZoneNamesInput("");
-      setDefaultFacilityCount(null);
-      setSelectedCriteriaItems({});
-      setEditingZone(null);
-      setEditingValue("");
-      onProcessSelect(-1); // Deselect any selected process
-
-      toast({
-        title: "Process Updated",
-        description: "Process has been updated and schedule data preserved.",
-      });
-    }
-  };
 
   const handleRunSimulation = async () => {
     if (!canRunSimulation) {
@@ -906,7 +808,10 @@ export default function ProcessFlowDesigner({
                               step={step}
                               index={index}
                               isSelected={isSelected}
-                              onSelect={() => onProcessSelect(index)}
+                              onSelect={() => {
+                                onProcessSelect(index);
+                                setIsCreatingNew(false);
+                              }}
                               onRemove={() => onRemoveProcess(index)}
                             />
                           </React.Fragment>
@@ -973,8 +878,7 @@ export default function ProcessFlowDesigner({
                       setZoneNamesInput("");
                       setDefaultFacilityCount(null);
                       setSelectedCriteriaItems({});
-                      onProcessSelect(-1); // Deselect any selected process
-                    }}
+                                      }}
                     className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90"
                   >
                     <Plus className="h-4 w-4" />
@@ -1069,23 +973,24 @@ export default function ProcessFlowDesigner({
                                     } else {
                                       // Only create new zone if it doesn't exist at all
                                       const facilities: any[] = [];
+                                      const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+                                      const startDate = new Date(date);
+                                      const endDate = new Date(startDate);
+                                      endDate.setDate(endDate.getDate() + 2);
+                                      const period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+
                                       for (let i = 1; i <= (defaultFacilityCount || 1); i++) {
                                         facilities.push({
                                           id: `${name}_${i}`,
                                           operating_schedule: {
-                                            yesterday: {
-                                              time_blocks: [],
-                                            },
-                                            today: {
-                                              time_blocks: [
-                                                {
-                                                  period: "00:00-24:00",
-                                                  process_time_seconds:
-                                                    editedProcess?.process_time_seconds || 0,
-                                                  passenger_conditions: [],
-                                                },
-                                              ],
-                                            },
+                                            time_blocks: [
+                                              {
+                                                period: period,
+                                                process_time_seconds:
+                                                  editedProcess?.process_time_seconds || 0,
+                                                passenger_conditions: [],
+                                              },
+                                            ],
                                           },
                                         });
                                       }
@@ -1167,23 +1072,78 @@ export default function ProcessFlowDesigner({
                                           // Use data from edited process
                                           facilities.push({ ...existingFromEdited });
                                         } else {
-                                          // Create new facility
+                                          // Create new facility with same period as existing ones
+                                          // Get period from first existing facility in this zone
+                                          let existingPeriod: string | null = null;
+
+                                          if (processFlowZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period) {
+                                            existingPeriod = processFlowZone.facilities[0].operating_schedule.time_blocks[0].period;
+                                          } else if (editedZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period) {
+                                            existingPeriod = editedZone.facilities[0].operating_schedule.time_blocks[0].period;
+                                          }
+
+                                          // If no existing period, calculate based on passenger data
+                                          if (!existingPeriod) {
+                                            const chartResult = useSimulationStore.getState().passenger.chartResult;
+                                            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+
+                                            if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
+                                              const times = chartResult.chart_x_data;
+                                              let firstPassengerTime = null;
+                                              let lastPassengerTime = null;
+
+                                              const chartData = chartResult.chart_y_data;
+                                              if (chartData) {
+                                                let totalPassengersByTime = new Array(times.length).fill(0);
+                                                Object.values(chartData).forEach((airlines: any) => {
+                                                  if (Array.isArray(airlines)) {
+                                                    airlines.forEach((airline) => {
+                                                      if (airline.y) {
+                                                        airline.y.forEach((value: number, index: number) => {
+                                                          totalPassengersByTime[index] += value;
+                                                        });
+                                                      }
+                                                    });
+                                                  }
+                                                });
+
+                                                for (let j = 0; j < totalPassengersByTime.length; j++) {
+                                                  if (totalPassengersByTime[j] > 0) {
+                                                    if (!firstPassengerTime) firstPassengerTime = times[j];
+                                                    lastPassengerTime = times[j];
+                                                  }
+                                                }
+                                              }
+
+                                              if (firstPassengerTime && lastPassengerTime) {
+                                                const startDate = new Date(firstPassengerTime);
+                                                startDate.setHours(startDate.getHours() - 4);
+                                                const endDate = new Date(lastPassengerTime);
+                                                endDate.setHours(endDate.getHours() + 4);
+                                                existingPeriod = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+                                              }
+                                            }
+
+                                            // Fallback to default period
+                                            if (!existingPeriod) {
+                                              const startDate = new Date(date);
+                                              const endDate = new Date(startDate);
+                                              endDate.setDate(endDate.getDate() + 2);
+                                              existingPeriod = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+                                            }
+                                          }
+
                                           facilities.push({
                                             id: `${zoneName}_${i}`,
                                             operating_schedule: {
-                                              yesterday: {
-                                                time_blocks: [],
-                                              },
-                                              today: {
-                                                time_blocks: [
-                                                  {
-                                                    period: "00:00-24:00",
-                                                    process_time_seconds:
-                                                      editedProcess?.process_time_seconds || 0,
-                                                    passenger_conditions: [],
-                                                  },
-                                                ],
-                                              },
+                                              time_blocks: [
+                                                {
+                                                  period: existingPeriod,
+                                                  process_time_seconds:
+                                                    editedProcess?.process_time_seconds || 0,
+                                                  passenger_conditions: [],
+                                                },
+                                              ],
                                             },
                                           });
                                         }
@@ -1516,7 +1476,6 @@ export default function ProcessFlowDesigner({
                             setSelectedCriteriaItems({});
                             setEditingZone(null);
                             setEditingValue("");
-                            onProcessSelect(-1); // Deselect to show "Select a Process"
 
                             toast({
                               title: "Process Created",
@@ -1524,12 +1483,10 @@ export default function ProcessFlowDesigner({
                                 "New process has been added successfully.",
                             });
                           }
-                        } else {
-                          // Update existing process
-                          handleUpdateProcess();
                         }
                       }}
                       disabled={
+                        !isCreatingNew ||
                         !editedProcess?.name ||
                         Object.keys(editedProcess?.zones || {}).length === 0 ||
                         !defaultFacilityCount ||
@@ -1539,7 +1496,7 @@ export default function ProcessFlowDesigner({
                         editedProcess?.process_time_seconds <= 0
                       }
                     >
-                      {isCreatingNew ? "Create" : "Update"}
+                      Create
                     </Button>
                   </div>
                 </div>

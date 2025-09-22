@@ -223,62 +223,6 @@ const getNextTimeSlot = (timeStr: string, timeUnit: number): string => {
   return formatTime(newHours, newMinutes);
 };
 
-// 뱃지를 passenger_conditions 형식으로 변환하는 함수
-const convertBadgesToConditions = (badges: CategoryBadge[]): any[] => {
-  if (!badges || badges.length === 0) {
-    // 뱃지가 없으면 빈 배열 (All과 동일)
-    return [];
-  }
-  
-  const conditions: any[] = [];
-  
-  badges.forEach(badge => {
-    let fieldName = '';
-    
-    // 카테고리명을 field 이름으로 매핑
-    switch (badge.category) {
-      case 'Airline':
-        fieldName = 'operating_carrier_iata';
-        break;
-      case 'Aircraft Type':
-        fieldName = 'aircraft_type';
-        break;
-      case 'Flight Type':
-        fieldName = 'flight_type';
-        break;
-      case 'Arrival Airport':
-        fieldName = 'arrival_airport_iata';
-        break;
-      case 'Arrival City':
-        fieldName = 'arrival_city';
-        break;
-      case 'Arrival Country':
-        fieldName = 'arrival_country';
-        break;
-      case 'Arrival Region':
-        fieldName = 'arrival_region';
-        break;
-      case 'Nationality':
-        fieldName = 'nationality';
-        break;
-      case 'Passenger Type':
-        fieldName = 'profile';
-        break;
-      default:
-        // Process 카테고리나 기타는 무시
-        return;
-    }
-    
-    if (fieldName) {
-      conditions.push({
-        field: fieldName,
-        values: badge.options
-      });
-    }
-  });
-  
-  return conditions;
-};
 
 // disabled cells와 뱃지를 기반으로 period를 계산하는 함수
 const calculatePeriodsFromDisabledCells = (
@@ -303,12 +247,10 @@ const calculatePeriodsFromDisabledCells = (
   let firstConditions: any = null;
   for (let i = 0; i < timeSlots.length; i++) {
     const cellId = `${i}-${facilityIndex}`;
-    const badges = cellBadges[cellId] || [];
-    const conditions = convertBadgesToConditions(badges);
 
     if (i === 0) {
-      firstConditions = conditions;
-    } else if (JSON.stringify(firstConditions) !== JSON.stringify(conditions)) {
+      firstConditions = [];
+    } else {
       allSameConditions = false;
       break;
     }
@@ -338,7 +280,7 @@ const calculatePeriodsFromDisabledCells = (
       return [{
         period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
         process_time_seconds: processTime,
-        passenger_conditions: firstConditions || []
+        passenger_conditions: []
       }];
     }
 
@@ -359,16 +301,14 @@ const calculatePeriodsFromDisabledCells = (
     const cellId = `${i}-${facilityIndex}`;
     const isDisabled = disabledCells.has(cellId);
     const currentTime = timeSlots[i];
-    const badges = cellBadges[cellId] || [];
-    const conditions = convertBadgesToConditions(badges);
-    
+
     if (!isDisabled) {
       // 활성화된 셀
       if (currentStart === null) {
         // 새로운 활성 구간 시작
         currentStart = currentTime;
-        currentConditions = conditions;
-      } else if (JSON.stringify(currentConditions) !== JSON.stringify(conditions)) {
+        currentConditions = [];
+      } else {
         // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
         if (lastActiveTime !== null) {
           const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
@@ -387,11 +327,11 @@ const calculatePeriodsFromDisabledCells = (
           periods.push({
             period: `${startDate} ${currentStart}:00-${endDateTime}`,
             process_time_seconds: processTime,
-            passenger_conditions: currentConditions || []
+            passenger_conditions: []
           });
         }
         currentStart = currentTime;
-        currentConditions = conditions;
+        currentConditions = [];
       }
       lastActiveTime = currentTime;
     } else {
@@ -912,14 +852,6 @@ export default function OperatingScheduleEditor({
   parquetMetadata = [],
   paxDemographics = {},
 }: OperatingScheduleEditorProps) {
-  // 🔗 Zustand 연결 - Facility Detail 기능 통합
-  const setFacilitiesForZone = useSimulationStore(
-    (s) => s.setFacilitiesForZone
-  );
-  // 🆕 시설별 time_blocks 업데이트 함수
-  const updateFacilityTimeBlocks = useSimulationStore(
-    (s) => s.updateFacilityTimeBlocks
-  );
   // ✈️ 항공사 매핑 데이터 가져오기
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
 
@@ -992,29 +924,11 @@ export default function OperatingScheduleEditor({
     copiedData: any;
   } | null>(null);
 
-  // 🚫 Zone별 셀 비활성화 상태 관리 (탭 전환 시에도 유지)
-  const [disabledCellsByZone, setDisabledCellsByZone] = useState<Record<string, Set<string>>>({});
 
-  // 스페이스바 연타 방지를 위한 처리 중 상태
-  const [isProcessingSpace, setIsProcessingSpace] = useState(false);
 
   // 초기 로드 상태 추적
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 현재 선택된 Zone의 disabledCells
-  const disabledCells = useMemo(() => {
-    const key = `${selectedProcessIndex}-${selectedZone}`;
-    return disabledCellsByZone[key] || new Set<string>();
-  }, [selectedProcessIndex, selectedZone, disabledCellsByZone]);
-  
-  // disabledCells 업데이트 헬퍼 함수
-  const setDisabledCells = useCallback((updater: (prev: Set<string>) => Set<string>) => {
-    const key = `${selectedProcessIndex}-${selectedZone}`;
-    setDisabledCellsByZone(prev => ({
-      ...prev,
-      [key]: updater(prev[key] || new Set<string>())
-    }));
-  }, [selectedProcessIndex, selectedZone]);
 
   // 🔄 실행 취소/재실행 히스토리 관리
   const undoHistory = useUndoHistory({
@@ -2444,65 +2358,7 @@ export default function OperatingScheduleEditor({
         return;
       }
 
-      if (e.code === "Space") {
-        e.preventDefault();
-        
-        // 이미 처리 중이면 무시 (연타 방지)
-        if (isProcessingSpace) {
-          return;
-        }
-        
-        // 🚫 스페이스바 로직: 배경색 활성화/비활성화 토글
-        if (selectedCells.size > 0) {
-          setIsProcessingSpace(true);
-          
-          // React 18의 자동 배칭으로 성능 최적화
-          React.startTransition(() => {
-            const selectedCellIds = Array.from(selectedCells);
-
-            // 히스토리를 위한 이전 상태 저장
-            const previousStates = new Map<string, boolean>();
-            selectedCellIds.forEach(cellId => {
-              previousStates.set(cellId, disabledCells.has(cellId));
-            });
-
-            // 스마트 토글: 일부라도 비활성화되어 있으면 모두 활성화, 모두 활성화면 모두 비활성화
-            const someDisabled = selectedCellIds.some((cellId) =>
-              disabledCells.has(cellId)
-            );
-
-            const newStates = new Map<string, boolean>();
-            selectedCellIds.forEach(cellId => {
-              newStates.set(cellId, !someDisabled);
-            });
-
-            setDisabledCells((prev) => {
-              const newSet = new Set(prev);
-
-              if (someDisabled) {
-                // 일부가 비활성화 → 모두 활성화
-                selectedCellIds.forEach((cellId) => newSet.delete(cellId));
-              } else {
-                // 모두 활성화 → 모두 비활성화
-                selectedCellIds.forEach((cellId) => newSet.add(cellId));
-              }
-
-              return newSet;
-            });
-
-            // 히스토리에 추가 및 처리 완료 플래그 리셋
-            setTimeout(() => {
-              undoHistory.pushHistory({
-                type: 'toggleDisabled',
-                cellIds: selectedCellIds,
-                previousStates,
-                newStates,
-              });
-              setIsProcessingSpace(false);
-            }, 50); // 50ms 딜레이로 연타 방지
-          });
-        }
-      } else if (e.code === "Escape") {
+      if (e.code === "Escape") {
         // ESC: 모든 선택 해제
         e.preventDefault();
         setSelectedCells(new Set());
@@ -2558,7 +2414,6 @@ export default function OperatingScheduleEditor({
       undoHistory,
       handleUndo,
       handleRedo,
-      isProcessingSpace,
     ]
   );
 
@@ -2708,13 +2563,8 @@ export default function OperatingScheduleEditor({
           const hasChanged = JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
           
           if (hasChanged) {
-            // zustand store 업데이트
-            updateFacilityTimeBlocks(
-              selectedProcessIndex,
-              selectedZone,
-              facility.id,
-              newTimeBlocks
-            );
+            // TODO: 새로운 로직 구현 필요
+            console.log('Time blocks changed:', newTimeBlocks);
           }
         }
       });
@@ -2730,7 +2580,6 @@ export default function OperatingScheduleEditor({
     selectedProcessIndex,
     isInitialized,
     timeSlots,
-    updateFacilityTimeBlocks,
     appliedTimeUnit,
     isPreviousDay
   ]); // 모든 필요한 의존성 포함

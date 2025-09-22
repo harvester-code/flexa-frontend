@@ -220,7 +220,7 @@ export default function ProcessConfigModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" />
-            {mode === 'create' ? 'Create New Process' : 'Edit Process'}
+            Create New Process
           </DialogTitle>
         </DialogHeader>
 
@@ -373,7 +373,7 @@ export default function ProcessConfigModal({
           </Button>
           <Button onClick={handleSave} disabled={!processName.trim() || !facilitiesInput.trim()}>
             <Save className="mr-2 h-4 w-4" />
-            {mode === 'create' ? 'Create Process' : 'Save Changes'}
+            Create Process
           </Button>
         </div>
       </DialogContent>

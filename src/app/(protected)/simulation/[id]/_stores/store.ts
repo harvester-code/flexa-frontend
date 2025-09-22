@@ -459,26 +459,11 @@ export interface SimulationStoreState {
     count: number,
     processTimeSeconds?: number
   ) => void;
-  updateOperatingSchedule: (
-    processIndex: number,
-    zoneName: string,
-    timeBlocks: {
-      period: string;
-      facilityName: string;
-      value: number;
-    }[]
-  ) => void;
   toggleFacilityTimeBlock: (
     processIndex: number,
     zoneName: string,
     facilityId: string,
     period: string
-  ) => void;
-  updateFacilityTimeBlocks: (
-    processIndex: number,
-    zoneName: string,
-    facilityId: string,
-    timeBlocks: any[]
   ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
   updateProcessTimeForAllZones: (processIndex: number, processTimeSeconds: number) => void;
@@ -1425,47 +1410,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
-    updateOperatingSchedule: (processIndex, zoneName, timeBlocks) =>
-      set((state) => {
-        if (
-          state.process_flow[processIndex] &&
-          state.process_flow[processIndex].zones[zoneName]
-        ) {
-          const zone = state.process_flow[processIndex].zones[zoneName];
 
-          if (zone.facilities) {
-            // 모든 시설에 동일한 스케줄 적용
-            zone.facilities.forEach((facility: Facility) => {
-              facility.operating_schedule = {
-                time_blocks: timeBlocks.map((block: any) => ({
-                  period: block.period,
-                  process_time_seconds: block.process_time_seconds || block.processTime || block.value || 6,
-                  passenger_conditions: block.passenger_conditions || []
-                })),
-              };
-            });
-          }
-        }
-      }),
-
-    // 개별 시설의 time_blocks 전체 업데이트 (스페이스바로 period 분할용)
-    updateFacilityTimeBlocks: (processIndex, zoneName, facilityId, timeBlocks) =>
-      set((state) => {
-        if (
-          state.process_flow[processIndex] &&
-          state.process_flow[processIndex].zones[zoneName]
-        ) {
-          const zone = state.process_flow[processIndex].zones[zoneName];
-          const facility = zone.facilities?.find(
-            (f: Facility) => f.id === facilityId
-          );
-
-          if (facility && facility.operating_schedule) {
-            // time_blocks를 새로운 값으로 교체
-            facility.operating_schedule.time_blocks = timeBlocks;
-          }
-        }
-      }),
 
     // 개별 시설의 특정 시간 블록만 토글
     toggleFacilityTimeBlock: (processIndex, zoneName, facilityId, period) =>

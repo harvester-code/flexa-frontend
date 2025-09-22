@@ -22,6 +22,8 @@ interface TabProcessingProceduresProps {
 }
 
 export default function TabProcessingProcedures({ simulationId, visible, apiRequestLog, setApiRequestLog }: TabProcessingProceduresProps) {
+  // Selected process for detail view
+  const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
   // Process completed state removed as it's no longer needed
@@ -45,8 +47,6 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
 
   // zustand의 process_flow를 직접 사용
 
-  // Selected process for detail view (instead of accordion)
-  const [selectedProcessIndex, setSelectedProcessIndex] = useState<number | null>(null);
 
   // Modal state
   const [showProcessModal, setShowProcessModal] = useState(false);
@@ -72,28 +72,12 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
     setShowProcessModal(true);
   };
 
-  const handleOpenEditModal = (index: number) => {
-    const step = processFlow[index];
-    setModalMode('edit');
-    setEditingProcessData({
-      index,
-      name: step.name,
-      facilities: Object.keys(step.zones || {}),
-      travelTime: step.travel_time_minutes || 0,
-      entryConditions: step.entry_conditions || [],
-    });
-    setShowProcessModal(true);
-  };
 
   const handleCloseModal = () => {
     setShowProcessModal(false);
     setEditingProcessData(null);
   };
 
-  // Select process for detail view
-  const handleProcessSelect = (index: number) => {
-    setSelectedProcessIndex((prev) => (prev === index ? null : index));
-  };
 
   // Name 정규화 함수 (특수문자 → 언더스코어, 소문자 변환)
   const normalizeProcessName = (name: string): string => {
@@ -193,20 +177,6 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
     setProcessFlow(reorderedProcessFlow);
   };
 
-  // Direct update handler for inline editing
-  const handleDirectUpdateProcess = (index: number, updatedProcess: any) => {
-    const newProcessFlow = [...processFlow];
-    newProcessFlow[index] = {
-      ...updatedProcess,
-      step: index, // Ensure step is correct
-    };
-    setProcessFlow(newProcessFlow);
-
-    // process_time_seconds가 있으면 모든 zone의 facility에 업데이트
-    if (updatedProcess.process_time_seconds != null) {
-      updateProcessTimeForAllZones(index, updatedProcess.process_time_seconds);
-    }
-  };
 
   // Handle reordering processes via drag and drop
   const handleReorderProcesses = (newProcessFlow: any[]) => {
@@ -255,16 +225,14 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
       <ProcessFlowDesigner
         processFlow={processFlow as any}
         selectedProcessIndex={selectedProcessIndex}
+        onProcessSelect={setSelectedProcessIndex}
         parquetMetadata={parquetMetadata}
         paxDemographics={paxDemographics}
         simulationId={simulationId}
         apiRequestLog={apiRequestLog}
         setApiRequestLog={setApiRequestLog}
-        onProcessSelect={handleProcessSelect}
         onOpenCreateModal={handleOpenCreateModal}
-        onOpenEditModal={handleOpenEditModal}
         onRemoveProcess={removeProcedure}
-        onUpdateProcess={handleDirectUpdateProcess}
         onReorderProcesses={handleReorderProcesses}
         onCreateProcess={handleDirectCreateProcess}
       />
