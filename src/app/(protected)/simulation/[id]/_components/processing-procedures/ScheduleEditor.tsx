@@ -880,15 +880,31 @@ export default function OperatingScheduleEditor({
   // 뱃지 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
   const [allZoneBadges, setAllZoneBadges] = useState<Record<string, Record<string, CategoryBadge[]>>>({});
 
-  // 현재 Zone의 뱃지 가져오기
+  // 비활성화된 셀 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
+  const [allZoneDisabledCells, setAllZoneDisabledCells] = useState<Record<string, Set<string>>>({});
+
+  // 현재 Zone의 키
   const zoneKey = `${selectedProcessIndex}-${selectedZone}`;
+
+  // 현재 Zone의 뱃지 가져오기
   const cellBadges = allZoneBadges[zoneKey] || {};
+
+  // 현재 Zone의 비활성화된 셀 가져오기
+  const disabledCells = allZoneDisabledCells[zoneKey] || new Set<string>();
 
   // 현재 Zone의 뱃지 업데이트 함수
   const setCellBadges = useCallback((updater: any) => {
     setAllZoneBadges(prev => ({
       ...prev,
       [zoneKey]: typeof updater === 'function' ? updater(prev[zoneKey] || {}) : updater
+    }));
+  }, [zoneKey]);
+
+  // 현재 Zone의 비활성화된 셀 업데이트 함수
+  const setDisabledCells = useCallback((updater: any) => {
+    setAllZoneDisabledCells(prev => ({
+      ...prev,
+      [zoneKey]: typeof updater === 'function' ? updater(prev[zoneKey] || new Set<string>()) : updater
     }));
   }, [zoneKey]);
 
@@ -2343,6 +2359,53 @@ export default function OperatingScheduleEditor({
         return;
       }
 
+      // Space: Toggle disabled state for selected cells
+      if (e.code === "Space") {
+        e.preventDefault();
+        const selectedCellsArray = Array.from(displaySelectedCells);
+        if (selectedCellsArray.length === 0) return;
+
+        // Check if all selected cells are currently disabled
+        const allDisabled = selectedCellsArray.every(cellId => disabledCells.has(cellId));
+
+        // Save previous states for undo
+        const previousStates = new Map<string, boolean>();
+        selectedCellsArray.forEach(cellId => {
+          previousStates.set(cellId, disabledCells.has(cellId));
+        });
+
+        // Toggle disabled state
+        setDisabledCells((prev: Set<string>) => {
+          const newSet = new Set(prev);
+          selectedCellsArray.forEach(cellId => {
+            if (allDisabled) {
+              // If all are disabled, enable them
+              newSet.delete(cellId);
+            } else {
+              // If any are enabled, disable all
+              newSet.add(cellId);
+            }
+          });
+          return newSet;
+        });
+
+        // Save new states for undo
+        const newStates = new Map<string, boolean>();
+        selectedCellsArray.forEach(cellId => {
+          newStates.set(cellId, !allDisabled);
+        });
+
+        // Add to undo history
+        undoHistory.pushHistory({
+          type: 'toggleDisabled',
+          cellIds: selectedCellsArray,
+          previousStates,
+          newStates
+        });
+
+        return;
+      }
+
       // Cmd/Ctrl + Z: 실행 취소
       if ((e.metaKey || e.ctrlKey) && e.code === "KeyZ" && !e.shiftKey) {
         e.preventDefault();
@@ -2406,6 +2469,7 @@ export default function OperatingScheduleEditor({
     },
     [
       selectedCells,
+      displaySelectedCells,
       contextMenu.show,
       disabledCells,
       setDisabledCells,
@@ -2414,6 +2478,14 @@ export default function OperatingScheduleEditor({
       undoHistory,
       handleUndo,
       handleRedo,
+      handleCopy,
+      handlePaste,
+      copiedData,
+      showMarchingAnts,
+      setShowMarchingAnts,
+      setCopiedData,
+      setSelectedCells,
+      setShiftSelectStart,
     ]
   );
 
@@ -2866,7 +2938,7 @@ export default function OperatingScheduleEditor({
                   // Clear data if exists
                   if (Object.keys(cellBadges).length > 0 || disabledCells.size > 0) {
                     setCellBadges({});
-                    setDisabledCellsByZone({});
+                    setDisabledCells(new Set<string>());
                   }
                   setPendingTimeUnit(null);
                 }
