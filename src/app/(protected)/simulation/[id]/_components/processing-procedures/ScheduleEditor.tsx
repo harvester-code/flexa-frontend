@@ -982,8 +982,8 @@ export default function OperatingScheduleEditor({
 
 
 
-  // 초기 로드 상태 추적
-  const [isInitialized, setIsInitialized] = useState(false);
+  // 초기 로드 상태 추적 - processIndex와 zone별로 추적
+  const [initializedKeys, setInitializedKeys] = useState<Set<string>>(new Set());
 
   // period 문자열을 disabled cells로 변환하는 함수 (최적화)
   const initializeDisabledCellsFromPeriods = useCallback((
@@ -994,6 +994,15 @@ export default function OperatingScheduleEditor({
     currentDate: string,
     prevDayStr: string
   ) => {
+    console.log('initializeDisabledCellsFromPeriods called with:', {
+      facilitiesCount: facilities.length,
+      timeSlotsCount: timeSlots.length,
+      isPreviousDay,
+      currentDate,
+      prevDayStr,
+      firstFacility: facilities[0]
+    });
+
     const newDisabledCells = new Set<string>();
     const newBadges: Record<string, CategoryBadge[]> = {};
     const date = currentDate;
@@ -1008,8 +1017,11 @@ export default function OperatingScheduleEditor({
         });
 
         // 각 time_block에 대해 활성화
-        timeBlocks.forEach((block: any) => {
+        timeBlocks.forEach((block: any, blockIndex: number) => {
           if (block.period) {
+            console.log('Processing time_block', blockIndex, 'for facility:', facility.id,
+                       'period:', block.period,
+                       'has conditions:', block.passenger_conditions?.length > 0);
             // period 파싱: "2025-09-20 20:30:00-2025-09-21 01:30:00"
             // 정규식으로 더 정확하게 파싱
             const periodMatch = block.period.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
@@ -1025,72 +1037,90 @@ export default function OperatingScheduleEditor({
             const startTime = startTimeWithSec ? startTimeWithSec.substring(0, 5) : "00:00"; // "HH:MM"
             const endTime = endTimeWithSec ? endTimeWithSec.substring(0, 5) : "00:00";
 
+            console.log('Parsed period:', {
+              startDate,
+              startTime,
+              endDate,
+              endTime,
+              currentDate: date,
+              isPreviousDay
+            });
+
             // 여러 날에 걸친 period 처리
             const nextDayStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
 
-            // 시작일과 종료일이 포함하는 전체 날짜 범위 확인
-            if (isPreviousDay) {
-              // D-1 표시가 있을 때
-              if (startDate === prevDayStr) {
-                // 전날부터 시작
-                const startIdx = timeSlots.indexOf(startTime);
-                if (startIdx !== -1) {
-                  // 전날 시작 시간부터 00:00까지
-                  for (let i = startIdx; i < timeSlots.length; i++) {
-                    if (timeSlots[i] === "00:00") break;
-                    const cellId = `${i}-${colIndex}`;
-                    newDisabledCells.delete(cellId);
-                  }
-                }
-              }
+            // Period가 현재 표시 날짜 범위에 포함되는지 확인
+            const periodStartDate = new Date(startDate);
+            const periodEndDate = new Date(endDate);
+            const currentDateObj = new Date(date);
+            const prevDateObj = new Date(prevDayStr);
 
-              // 당일(22일) 처리
-              if (endDate >= date) {
-                // 00:00부터 처리
-                const zeroIdx = timeSlots.indexOf("00:00");
-                if (zeroIdx !== -1) {
-                  let endIdx = timeSlots.length; // 기본값: 끝까지
+            console.log('Date range check:', {
+              periodStart: periodStartDate,
+              periodEnd: periodEndDate,
+              currentDate: currentDateObj,
+              prevDate: prevDateObj,
+              isPreviousDay
+            });
 
-                  // 종료일이 당일인 경우 종료 시간까지만
-                  if (endDate === date) {
-                    const endTimeIdx = timeSlots.indexOf(endTime);
-                    if (endTimeIdx !== -1) endIdx = endTimeIdx;
-                  } else if (endDate === nextDayStr && endTime === "00:00") {
-                    // 다음날 00:00까지 (즉, 당일 전체)
-                    endIdx = timeSlots.length;
-                  }
+            // Period가 전체 시간대를 포함하는지 확인 (2일 이상 걸쳐진 period)
+            const isFullPeriod = periodStartDate <= prevDateObj && periodEndDate >= currentDateObj;
 
-                  // 당일 00:00부터 종료 시간까지 활성화
-                  for (let i = zeroIdx; i < endIdx; i++) {
-                    const cellId = `${i}-${colIndex}`;
-                    newDisabledCells.delete(cellId);
-                  }
-                }
+            if (isFullPeriod) {
+              // 전체 시간대 활성화
+              console.log('Full period detected - activating all cells for facility:', facility.id);
+              for (let i = 0; i < timeSlots.length; i++) {
+                const cellId = `${i}-${colIndex}`;
+                newDisabledCells.delete(cellId);
               }
             } else {
-              // D-1 표시가 없을 때 (일반적인 경우)
-              if (startDate === date) {
-                const startIdx = timeSlots.indexOf(startTime);
-                let endIdx = timeSlots.length;
+              // 부분적인 period 처리
+              if (isPreviousDay) {
+                // D-1 표시가 있을 때
+                if (startDate <= prevDayStr && endDate >= prevDayStr) {
+                  // 전날 포함
+                  const startIdx = startDate === prevDayStr ? timeSlots.indexOf(startTime) : 0;
+                  const endIdx = endDate === prevDayStr ? timeSlots.indexOf(endTime) : timeSlots.indexOf("00:00");
 
-                if (endDate === date) {
-                  const endTimeIdx = timeSlots.indexOf(endTime);
-                  if (endTimeIdx !== -1) endIdx = endTimeIdx;
-                } else if (endDate > date) {
-                  // 다음날까지 이어지는 경우 당일 끝까지
-                  endIdx = timeSlots.length;
+                  if (startIdx !== -1) {
+                    for (let i = startIdx; i < timeSlots.length && (endIdx === -1 || i < endIdx); i++) {
+                      if (timeSlots[i] === "00:00") break;
+                      const cellId = `${i}-${colIndex}`;
+                      newDisabledCells.delete(cellId);
+                    }
+                  }
                 }
 
-                if (startIdx !== -1) {
-                  for (let i = startIdx; i < endIdx; i++) {
-                    const cellId = `${i}-${colIndex}`;
-                    newDisabledCells.delete(cellId);
+                // 당일 처리
+                if (startDate <= date && endDate >= date) {
+                  const zeroIdx = timeSlots.indexOf("00:00");
+                  if (zeroIdx !== -1) {
+                    const startIdx = startDate === date ? timeSlots.indexOf(startTime) : zeroIdx;
+                    const endIdx = endDate === date ? timeSlots.indexOf(endTime) : timeSlots.length;
+
+                    for (let i = startIdx; i < endIdx; i++) {
+                      const cellId = `${i}-${colIndex}`;
+                      newDisabledCells.delete(cellId);
+                    }
+                  }
+                }
+              } else {
+                // D-1 표시가 없을 때
+                if (startDate <= date && endDate >= date) {
+                  const startIdx = startDate === date ? timeSlots.indexOf(startTime) : 0;
+                  const endIdx = endDate === date ? timeSlots.indexOf(endTime) : timeSlots.length;
+
+                  if (startIdx !== -1) {
+                    for (let i = startIdx; i < endIdx; i++) {
+                      const cellId = `${i}-${colIndex}`;
+                      newDisabledCells.delete(cellId);
+                    }
                   }
                 }
               }
             }
 
-            // passenger_conditions가 있으면 뱃지 설정 (활성화된 모든 셀에 적용)
+            // passenger_conditions가 있으면 해당 period의 모든 활성 셀에 뱃지 설정
             if (block.passenger_conditions && block.passenger_conditions.length > 0) {
               const badges: CategoryBadge[] = [];
               block.passenger_conditions.forEach((condition: any) => {
@@ -1107,20 +1137,33 @@ export default function OperatingScheduleEditor({
                 }
               });
 
-              // 이 period에 해당하는 모든 활성 셀에 뱃지 적용
               if (badges.length > 0) {
-                // 활성화된 셀들을 다시 찾아서 뱃지 적용
-                facilities.forEach((_, colIdx) => {
-                  if (colIdx === colIndex) {
-                    timeSlots.forEach((_, rowIdx) => {
-                      const cellId = `${rowIdx}-${colIdx}`;
-                      if (!newDisabledCells.has(cellId)) {
-                        // 활성 셀이면 뱃지 추가
-                        newBadges[cellId] = badges;
-                      }
-                    });
+                console.log('Applying badges for period:', block.period, 'from', startTime, 'to', endTime);
+
+                // 해당 period에 속하는 모든 셀에 뱃지 적용
+                const startIdx = timeSlots.indexOf(startTime);
+                let endIdx = timeSlots.indexOf(endTime);
+
+                // endTime이 정확히 일치하지 않으면 직전 인덱스 사용
+                if (endIdx === -1 || endIdx <= startIdx) {
+                  // endTime에서 30분을 뺀 시간 찾기 (21:30 -> 21:00)
+                  const [endHour, endMin] = endTime.split(':').map(Number);
+                  const prevEndTime = `${String(endMin === 0 ? endHour - 1 : endHour).padStart(2, '0')}:${endMin === 0 ? '30' : '00'}`;
+                  endIdx = timeSlots.indexOf(prevEndTime) + 1;
+                }
+
+                console.log('Badge application range:', startIdx, 'to', endIdx, 'for facility column:', colIndex);
+
+                if (startIdx !== -1 && endIdx > startIdx) {
+                  for (let i = startIdx; i < endIdx; i++) {
+                    const cellId = `${i}-${colIndex}`;
+                    if (!newDisabledCells.has(cellId)) {
+                      // 해당 period 내의 모든 활성 셀에 뱃지 추가
+                      newBadges[cellId] = badges;
+                      console.log('Added badge to cell:', cellId);
+                    }
                   }
-                });
+                }
               }
             }
           }
@@ -2806,34 +2849,51 @@ export default function OperatingScheduleEditor({
     if (!currentFacilities || currentFacilities.length === 0) return;
     if (!selectedZone || selectedProcessIndex === null) return;
 
-    // Skip update if not initialized yet
-    if (!isInitialized) {
-      // Check if we need to initialize from existing schedule
-      const needsInit = currentFacilities.some(f =>
-        f.operating_schedule?.time_blocks?.length > 0 &&
-        f.operating_schedule.time_blocks[0].period !== `${useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0]} 00:00:00-${(() => {
-          const nextDay = new Date(useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0]);
-          nextDay.setDate(nextDay.getDate() + 1);
-          return nextDay.toISOString().split('T')[0];
-        })()} 00:00:00`
+    // Create unique key for this process-zone combination
+    const initKey = `${selectedProcessIndex}-${selectedZone}`;
+
+    // Skip update if not initialized yet for this specific process-zone
+    if (!initializedKeys.has(initKey)) {
+      // Always try to initialize from existing schedule data
+      const hasExistingSchedule = currentFacilities.some(f =>
+        f.operating_schedule?.time_blocks?.length > 0
       );
 
-      if (needsInit) {
+      console.log('ScheduleEditor initialization check:', {
+        processIndex: selectedProcessIndex,
+        zone: selectedZone,
+        hasExistingSchedule,
+        facilities: currentFacilities.length,
+        firstFacility: currentFacilities[0]
+      });
+
+      if (hasExistingSchedule) {
         // 기존 schedule로부터 초기화 - 날짜 미리 계산
         const currentDate = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
         const prevDay = new Date(currentDate);
         prevDay.setDate(prevDay.getDate() - 1);
         const prevDayStr = prevDay.toISOString().split('T')[0];
 
+        console.log('Initializing from existing schedule data');
         const { disabledCells: initDisabledCells, badges: initBadges } =
           initializeDisabledCellsFromPeriods(currentFacilities, timeSlots, isPreviousDay, CONDITION_CATEGORIES, currentDate, prevDayStr);
 
+        console.log('Initialized cells:', {
+          disabledCount: initDisabledCells.size,
+          badgeCount: Object.keys(initBadges).length
+        });
+
         setDisabledCells(initDisabledCells);
         setCellBadges(initBadges);
-        setIsInitialized(true);
+        setInitializedKeys(prev => new Set([...prev, initKey]));
         return;
       }
-      setIsInitialized(true);
+      setInitializedKeys(prev => new Set([...prev, initKey]));
+    }
+
+    // 초기화가 완료된 후에만 업데이트 진행
+    if (!initializedKeys.has(initKey)) {
+      return; // 초기화 전에는 zustand 업데이트 하지 않음
     }
 
     // debounce를 위한 timeout
@@ -2889,7 +2949,7 @@ export default function OperatingScheduleEditor({
     currentFacilities,
     selectedZone,
     selectedProcessIndex,
-    isInitialized,
+    initializedKeys,
     timeSlots,
     appliedTimeUnit,
     isPreviousDay,
