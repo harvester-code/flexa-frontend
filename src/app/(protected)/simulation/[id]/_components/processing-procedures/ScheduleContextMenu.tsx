@@ -53,6 +53,7 @@ interface ScheduleContextMenuProps {
   onToggleBadgeOption: (category: string, option: string) => void;
   onSelectAllCategories: () => void;
   onClearAllBadges: () => void;
+  flightAirlines?: Record<string, string> | null;
 }
 
 export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
@@ -64,6 +65,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
   onToggleBadgeOption,
   onSelectAllCategories,
   onClearAllBadges,
+  flightAirlines,
 }) => {
   // 🔍 카테고리별 검색어 관리
   const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
@@ -249,7 +251,11 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                     onCheckedChange={() => {}}
                                     className="pointer-events-none data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <span className="truncate text-black">{option}</span>
+                                  <span className="truncate text-black">
+                                    {category === "Airline" && flightAirlines?.[option]
+                                      ? `(${option}) ${flightAirlines[option]}`
+                                      : option}
+                                  </span>
                                 </div>
                               </DropdownMenuItem>
                             );

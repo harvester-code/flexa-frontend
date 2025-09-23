@@ -16,6 +16,9 @@ import { useKeyboardHandlers } from "./hooks/useKeyboardHandlers";
 import { useUndoRedoHandlers } from "./hooks/useUndoRedoHandlers";
 import { useContextMenuHandlers } from "./hooks/useContextMenuHandlers";
 import { useSelectionHandlers } from "./hooks/useSelectionHandlers";
+import { useScheduleInitialization } from "./hooks/useScheduleInitialization";
+import { useTimeSlotGeneration } from "./hooks/useTimeSlotGeneration";
+import { useFacilityScheduleSync } from "./hooks/useFacilityScheduleSync";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import {
   Clock,
@@ -205,341 +208,13 @@ export default function OperatingScheduleEditor({
     new Set()
   );
 
-  // period 문자열을 disabled cells로 변환하는 함수 (타입 안전성 향상)
-  const initializeDisabledCellsFromPeriods = useCallback(
-    (
-      facilities: FacilityWithSchedule[],
-      timeSlots: string[],
-      isPreviousDay: boolean,
-      categories: Record<string, any>,
-      currentDate: string,
-      prevDayStr: string
-    ): {
-      disabledCells: Set<string>;
-      badges: Record<string, CategoryBadge[]>;
-    } => {
-      console.log("initializeDisabledCellsFromPeriods called with:", {
-        facilitiesCount: facilities.length,
-        timeSlotsCount: timeSlots.length,
-        isPreviousDay,
-        currentDate,
-        prevDayStr,
-        firstFacility: facilities[0],
-      });
-
-      const newDisabledCells = new Set<string>();
-      const newBadges: Record<string, CategoryBadge[]> = {};
-      const date = currentDate;
-
-      facilities.forEach((facility, colIndex) => {
-        if (facility?.operating_schedule?.time_blocks) {
-          const timeBlocks = facility.operating_schedule.time_blocks;
-
-          // time_blocks가 없으면 모든 셀 활성화 (기본값)
-          if (timeBlocks.length === 0) {
-            // 아무것도 하지 않음 - 모든 셀이 활성화된 상태
-            return;
-          }
-
-          // 활성화된 시간대를 추적
-          const activatedSlots = new Set<number>();
-
-          // 각 time_block에 대해 활성화된 슬롯 마킹
-          timeBlocks.forEach((block: any, blockIndex: number) => {
-            if (block.period) {
-              console.log(
-                "Processing time_block",
-                blockIndex,
-                "for facility:",
-                facility.id,
-                "period:",
-                block.period,
-                "has conditions:",
-                block.passenger_conditions?.length > 0
-              );
-
-              // 안전한 period 파싱 사용
-              const parsedPeriod = parsePeriodSafe(block.period);
-
-              if (!parsedPeriod.valid) {
-                console.error("Failed to parse period:", block.period);
-                // 파싱 실패 시에도 데이터를 보존하기 위해 전체 활성화로 폴백
-                for (let i = 0; i < timeSlots.length; i++) {
-                  activatedSlots.add(i);
-                }
-                return;
-              }
-
-              const { startDate, startTime, endDate, endTime } = parsedPeriod;
-
-              console.log("Parsed period:", {
-                startDate,
-                startTime,
-                endDate,
-                endTime,
-                currentDate: date,
-                isPreviousDay,
-              });
-
-              // 여러 날에 걸친 period 처리
-              const nextDayStr = new Date(new Date(date).getTime() + 86400000)
-                .toISOString()
-                .split("T")[0];
-
-              // Period가 현재 표시 날짜 범위에 포함되는지 확인
-              const periodStartDate = new Date(startDate);
-              const periodEndDate = new Date(endDate);
-              const currentDateObj = new Date(date);
-              const prevDateObj = new Date(prevDayStr);
-
-              console.log("Date range check:", {
-                periodStart: periodStartDate,
-                periodEnd: periodEndDate,
-                currentDate: currentDateObj,
-                prevDate: prevDateObj,
-                isPreviousDay,
-              });
-
-              // Period가 전체 시간대를 포함하는지 확인 (2일 이상 걸쳐진 period)
-              const isFullPeriod =
-                periodStartDate <= prevDateObj &&
-                periodEndDate >= currentDateObj;
-
-              if (isFullPeriod) {
-                // 전체 시간대 활성화
-                console.log(
-                  "Full period detected - activating all cells for facility:",
-                  facility.id
-                );
-                for (let i = 0; i < timeSlots.length; i++) {
-                  activatedSlots.add(i);
-                }
-              } else {
-                // 부분적인 period 처리
-                if (isPreviousDay) {
-                  // D-1 표시가 있을 때
-                  if (startDate <= prevDayStr && endDate >= prevDayStr) {
-                    // 전날 포함
-                    const startIdx =
-                      startDate === prevDayStr
-                        ? timeSlots.indexOf(startTime)
-                        : 0;
-                    const endIdx =
-                      endDate === prevDayStr
-                        ? timeSlots.indexOf(endTime)
-                        : timeSlots.indexOf("00:00");
-
-                    if (startIdx !== -1) {
-                      for (
-                        let i = startIdx;
-                        i < timeSlots.length && (endIdx === -1 || i < endIdx);
-                        i++
-                      ) {
-                        if (timeSlots[i] === "00:00") break;
-                        activatedSlots.add(i);
-                      }
-                    }
-                  }
-
-                  // 당일 처리
-                  if (startDate <= date && endDate >= date) {
-                    const zeroIdx = timeSlots.indexOf("00:00");
-                    if (zeroIdx !== -1) {
-                      const startIdx =
-                        startDate === date
-                          ? timeSlots.indexOf(startTime)
-                          : zeroIdx;
-                      const endIdx =
-                        endDate === date
-                          ? timeSlots.indexOf(endTime)
-                          : timeSlots.length;
-
-                      for (let i = startIdx; i < endIdx; i++) {
-                        activatedSlots.add(i);
-                      }
-                    }
-                  }
-                } else {
-                  // D-1 표시가 없을 때
-                  if (startDate <= date && endDate >= date) {
-                    const startIdx =
-                      startDate === date ? timeSlots.indexOf(startTime) : 0;
-                    const endIdx =
-                      endDate === date
-                        ? timeSlots.indexOf(endTime)
-                        : timeSlots.length;
-
-                    if (startIdx !== -1) {
-                      for (let i = startIdx; i < endIdx; i++) {
-                        activatedSlots.add(i);
-                      }
-                    }
-                  }
-                }
-              }
-
-              // passenger_conditions가 있으면 해당 period의 모든 활성 셀에 뱃지 설정
-              if (
-                block.passenger_conditions &&
-                block.passenger_conditions.length > 0
-              ) {
-                const badges: CategoryBadge[] = [];
-                block.passenger_conditions.forEach((condition: any) => {
-                  const categoryName = getCategoryNameFromField(
-                    condition.field
-                  );
-                  if (categoryName && categories[categoryName]) {
-                    const categoryConfig = categories[categoryName];
-                    const badgeColor = getBadgeColor(categoryConfig.colorIndex);
-                    badges.push({
-                      category: categoryName,
-                      options: condition.values || [],
-                      colorIndex: categoryConfig.colorIndex,
-                      style: badgeColor.style,
-                    });
-                  }
-                });
-
-                if (badges.length > 0) {
-                  console.log(
-                    "Applying badges for period:",
-                    block.period,
-                    "from",
-                    startTime,
-                    "to",
-                    endTime
-                  );
-
-                  // 해당 period에 속하는 모든 셀에 뱃지 적용
-                  const startIdx = timeSlots.indexOf(startTime);
-                  let endIdx = timeSlots.indexOf(endTime);
-
-                  // endTime이 정확히 일치하지 않으면 timeUnit 기반으로 계산
-                  if (endIdx === -1 || endIdx <= startIdx) {
-                    // timeUnit을 고려한 정확한 인덱스 계산
-                    const [endHour, endMin] = endTime.split(":").map(Number);
-                    const timeUnit = timeSlots[1]
-                      ? (parseInt(timeSlots[1].split(":")[1]) -
-                          parseInt(timeSlots[0].split(":")[1]) +
-                          60) %
-                          60 || 30
-                      : 30;
-
-                    // 이전 시간 슬롯 계산
-                    let prevMin = endMin - timeUnit;
-                    let prevHour = endHour;
-                    if (prevMin < 0) {
-                      prevMin += 60;
-                      prevHour -= 1;
-                    }
-
-                    const prevEndTime = `${String(prevHour).padStart(2, "0")}:${String(prevMin).padStart(2, "0")}`;
-                    endIdx = timeSlots.indexOf(prevEndTime) + 1;
-
-                    // 그래도 못 찾으면 가장 가까운 인덱스 찾기
-                    if (endIdx === 0) {
-                      for (let i = timeSlots.length - 1; i >= startIdx; i--) {
-                        const slotTime = timeSlots[i];
-                        if (slotTime <= endTime) {
-                          endIdx = i + 1;
-                          break;
-                        }
-                      }
-                    }
-                  }
-
-                  console.log(
-                    "Badge application range:",
-                    startIdx,
-                    "to",
-                    endIdx,
-                    "for facility column:",
-                    colIndex
-                  );
-
-                  if (startIdx !== -1 && endIdx > startIdx) {
-                    for (let i = startIdx; i < endIdx; i++) {
-                      const cellId = `${i}-${colIndex}`;
-                      // activatedSlots에 포함된 셀에만 뱃지 추가 (비활성화된 셀 제외)
-                      if (
-                        activatedSlots.has(i) &&
-                        !newDisabledCells.has(cellId)
-                      ) {
-                        // 기존 뱃지가 있으면 병합, 없으면 새로 추가
-                        if (newBadges[cellId]) {
-                          // 중복 제거하며 병합
-                          const existingCategories = new Set(
-                            newBadges[cellId].map((b) => b.category)
-                          );
-                          badges.forEach((badge) => {
-                            if (!existingCategories.has(badge.category)) {
-                              newBadges[cellId].push(badge);
-                            }
-                          });
-                        } else {
-                          newBadges[cellId] = [...badges];
-                        }
-                        console.log(
-                          "Added/updated badge for cell:",
-                          cellId,
-                          "badges:",
-                          newBadges[cellId]
-                        );
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-          // time_blocks 처리가 끝난 후, 활성화되지 않은 슬롯만 비활성화
-          for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-            if (!activatedSlots.has(rowIndex)) {
-              const cellId = `${rowIndex}-${colIndex}`;
-              newDisabledCells.add(cellId);
-            }
-          }
-        }
-      });
-
-      return { disabledCells: newDisabledCells, badges: newBadges };
-    },
-    []
-  );
-
-  // field name을 category name으로 변환하는 헬퍼 함수
-  const getCategoryNameFromField = (field: string): string => {
-    const fieldToCategoryMap: Record<string, string> = {
-      operating_carrier_name: "Airline",
-      operating_carrier_iata: "Airline",
-      aircraft_type: "Aircraft Type",
-      flight_type: "Flight Type",
-      arrival_airport_iata: "Arrival Airport",
-      arrival_city: "Arrival City",
-      arrival_country: "Arrival Country",
-      arrival_region: "Arrival Region",
-      nationality: "Nationality",
-      profile: "Passenger Type",
-    };
-    return fieldToCategoryMap[field] || "";
-  };
-
-  // category name을 field name으로 변환하는 헬퍼 함수
-  const getCategoryFieldName = (category: string): string => {
-    const categoryToFieldMap: Record<string, string> = {
-      Airline: "operating_carrier_iata",
-      "Aircraft Type": "aircraft_type",
-      "Flight Type": "flight_type",
-      "Arrival Airport": "arrival_airport_iata",
-      "Arrival City": "arrival_city",
-      "Arrival Country": "arrival_country",
-      "Arrival Region": "arrival_region",
-      Nationality: "nationality",
-      "Passenger Type": "profile",
-    };
-    return categoryToFieldMap[category] || "";
-  };
+  // Get initialization functions from hook
+  const {
+    initializeDisabledCellsFromPeriods,
+    getCategoryNameFromField,
+    getCategoryFieldName,
+    getBadgeColor
+  } = useScheduleInitialization();
 
   // 🔄 실행 취소/재실행 히스토리 관리
   const undoHistory = useUndoHistory({
@@ -556,104 +231,12 @@ export default function OperatingScheduleEditor({
   const chartResult = useSimulationStore((s) => s.passenger.chartResult);
   const contextDate = useSimulationStore((s) => s.context.date);
 
-  // 시간 슬롯 생성 (chartResult가 있으면 그 범위로, 없으면 기본값)
-  const { timeSlots, isPreviousDay } = useMemo(() => {
-    const slots: string[] = [];
-    const unitMinutes = Math.max(1, Math.min(60, appliedTimeUnit)); // 1분 ~ 60분 사이로 제한
-    let isPrev = false;
-
-    // chartResult가 있고 chart_x_data가 있으면 그 범위로 생성
-    if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
-      // 최초 여객이 있는 시간 찾기
-      const chartData = chartResult.chart_y_data;
-      let totalPassengersByTime: number[] = new Array(
-        chartResult.chart_x_data.length
-      ).fill(0);
-
-      if (chartData) {
-        Object.values(chartData).forEach((airlines: any[]) => {
-          airlines.forEach((airline) => {
-            if (airline.y && Array.isArray(airline.y)) {
-              airline.y.forEach((count: number, idx: number) => {
-                totalPassengersByTime[idx] += count;
-              });
-            }
-          });
-        });
-      }
-
-      // 최초/최종 여객 시간 찾기
-      const firstPassengerIndex = totalPassengersByTime.findIndex(
-        (count) => count > 0
-      );
-      const lastPassengerIndex = totalPassengersByTime.findLastIndex(
-        (count) => count > 0
-      );
-
-      if (firstPassengerIndex !== -1 && lastPassengerIndex !== -1) {
-        // 시작 시간 30분 단위 내림
-        const startDateTime = chartResult.chart_x_data[firstPassengerIndex];
-        const [startDate, startTime] = startDateTime.split(" ");
-        const [startHour, startMinute] = startTime.split(":").map(Number);
-        const roundedStartMinute = Math.floor(startMinute / 30) * 30;
-        const roundedStartHour = startHour;
-
-        // 종료 시간 처리
-        const endDateTime =
-          chartResult.chart_x_data[
-            Math.min(
-              lastPassengerIndex + 1,
-              chartResult.chart_x_data.length - 1
-            )
-          ];
-        const [endDate, endTime] = endDateTime.split(" ");
-        const [endHour] = endTime.split(":").map(Number);
-
-        // 시작이 전날인지 확인
-        const currentDate =
-          contextDate || new Date().toISOString().split("T")[0];
-        isPrev = startDate < currentDate;
-
-        // 전날 시간부터 시작하는 경우
-        if (isPrev) {
-          // 전날 시간 추가
-          for (let hour = roundedStartHour; hour < 24; hour++) {
-            const minuteStart =
-              hour === roundedStartHour ? roundedStartMinute : 0;
-            for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
-              const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-              slots.push(timeStr);
-            }
-          }
-        }
-
-        // 당일 시간 추가
-        const maxHour = Math.min(24, endHour + 1);
-        const startHourForToday = isPrev ? 0 : roundedStartHour;
-        const startMinuteForToday = isPrev ? 0 : roundedStartMinute;
-
-        for (let hour = startHourForToday; hour < maxHour; hour++) {
-          const minuteStart =
-            hour === startHourForToday && !isPrev ? startMinuteForToday : 0;
-          for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
-            const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-            slots.push(timeStr);
-          }
-        }
-
-        return { timeSlots: slots, isPreviousDay: isPrev };
-      }
-    }
-
-    // 기본값: 00:00부터 24:00까지
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += unitMinutes) {
-        const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        slots.push(timeStr);
-      }
-    }
-    return { timeSlots: slots, isPreviousDay: false };
-  }, [appliedTimeUnit, chartResult, contextDate]);
+  // Generate time slots using custom hook
+  const { timeSlots, isPreviousDay } = useTimeSlotGeneration({
+    appliedTimeUnit,
+    chartResult,
+    contextDate,
+  });
 
   // 🛡️ 안전성 강화: 현재 선택된 존의 시설들
   const currentFacilities = useMemo(() => {
@@ -1079,128 +662,24 @@ export default function OperatingScheduleEditor({
     }
   }, [selectedProcessIndex, selectedZone, processFlow]); // 모든 의존성 포함
 
-  // 🆕 disabledCells 또는 cellBadges 변경 시 period 재계산 및 zustand 업데이트
-  useEffect(() => {
-    if (!currentFacilities || currentFacilities.length === 0) return;
-    if (!selectedZone || selectedProcessIndex === null) return;
-
-    // Create unique key for this process-zone combination
-    const initKey = `${selectedProcessIndex}-${selectedZone}`;
-
-    // Skip update if not initialized yet for this specific process-zone
-    if (!initializedKeys.has(initKey)) {
-      // Always try to initialize from existing schedule data
-      const hasExistingSchedule = currentFacilities.some(
-        (f) => f.operating_schedule?.time_blocks?.length > 0
-      );
-
-      console.log("ScheduleEditor initialization check:", {
-        processIndex: selectedProcessIndex,
-        zone: selectedZone,
-        hasExistingSchedule,
-        facilities: currentFacilities.length,
-        firstFacility: currentFacilities[0],
-      });
-
-      if (hasExistingSchedule) {
-        // 기존 schedule로부터 초기화 - 날짜 미리 계산
-        const currentDate =
-          useSimulationStore.getState().context.date ||
-          new Date().toISOString().split("T")[0];
-        const prevDay = new Date(currentDate);
-        prevDay.setDate(prevDay.getDate() - 1);
-        const prevDayStr = prevDay.toISOString().split("T")[0];
-
-        console.log("Initializing from existing schedule data");
-        const { disabledCells: initDisabledCells, badges: initBadges } =
-          initializeDisabledCellsFromPeriods(
-            currentFacilities,
-            timeSlots,
-            isPreviousDay,
-            CONDITION_CATEGORIES,
-            currentDate,
-            prevDayStr
-          );
-
-        console.log("Initialized cells:", {
-          disabledCount: initDisabledCells.size,
-          badgeCount: Object.keys(initBadges).length,
-        });
-
-        setDisabledCells(initDisabledCells);
-        setCellBadges(initBadges);
-        setInitializedKeys((prev) => new Set([...prev, initKey]));
-        return;
-      }
-      setInitializedKeys((prev) => new Set([...prev, initKey]));
-    }
-
-    // 초기화가 완료된 후에만 업데이트 진행
-    if (!initializedKeys.has(initKey)) {
-      return; // 초기화 전에는 zustand 업데이트 하지 않음
-    }
-
-    // 즉시 업데이트 (debounce 제거로 데이터 무결성 보장)
-    // 각 시설별로 period 재계산
-    currentFacilities.forEach((facility, facilityIndex) => {
-      if (facility && facility.id) {
-        const existingTimeBlocks =
-          facility.operating_schedule?.time_blocks || [];
-
-        // 현재 프로세스의 process_time_seconds 값 가져오기
-        const currentProcess =
-          selectedProcessIndex !== null
-            ? processFlow[selectedProcessIndex]
-            : null;
-        const processTimeSeconds = (currentProcess as any)
-          ?.process_time_seconds;
-
-        // 새로운 periods 계산 (뱃지 정보 포함, date 전달)
-        const date = useSimulationStore.getState().context.date;
-        const newTimeBlocks = calculatePeriodsFromDisabledCells(
-          facilityIndex,
-          disabledCells,
-          timeSlots,
-          existingTimeBlocks,
-          cellBadges,
-          processTimeSeconds ?? undefined,
-          appliedTimeUnit,
-          date,
-          isPreviousDay
-        );
-
-        // Deep equality 체크로 정확한 변경 감지
-        const hasChanged = !deepEqual(existingTimeBlocks, newTimeBlocks);
-
-        if (hasChanged) {
-          // Zustand store 즉시 업데이트
-          const { updateFacilitySchedule } =
-            useSimulationStore.getState() as any;
-          if (updateFacilitySchedule) {
-            updateFacilitySchedule(
-              selectedProcessIndex,
-              selectedZone,
-              facility.id,
-              newTimeBlocks
-            );
-          }
-        }
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    disabledCells,
-    cellBadges,
+  // Use custom hook for facility schedule synchronization
+  useFacilityScheduleSync({
     currentFacilities,
     selectedZone,
     selectedProcessIndex,
     initializedKeys,
+    setInitializedKeys,
     timeSlots,
-    appliedTimeUnit,
     isPreviousDay,
     CONDITION_CATEGORIES,
     initializeDisabledCellsFromPeriods,
-  ]); // 모든 필요한 의존성 포함
+    disabledCells,
+    setDisabledCells,
+    cellBadges,
+    setCellBadges,
+    appliedTimeUnit,
+    processFlow,
+  });
 
   // 🛡️ 안전성 검사 강화
   if (!processFlow || processFlow.length === 0) {
@@ -1313,6 +792,7 @@ export default function OperatingScheduleEditor({
           onToggleBadgeOption={handleToggleBadgeOption}
           onSelectAllCategories={handleSelectAllCategories}
           onClearAllBadges={handleClearAllBadges}
+          flightAirlines={flightAirlines}
         />
 
         {/* 제목과 전체화면 버튼 */}
