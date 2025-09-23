@@ -239,6 +239,22 @@ const calculatePeriodsFromDisabledCells = (
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
   const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
 
+  // category name을 field name으로 변환하는 헬퍼 함수 (내부 정의)
+  const getCategoryFieldName = (category: string): string => {
+    const categoryToFieldMap: Record<string, string> = {
+      'Airline': 'operating_carrier_iata',
+      'Aircraft Type': 'aircraft_type',
+      'Flight Type': 'flight_type',
+      'Arrival Airport': 'arrival_airport_iata',
+      'Arrival City': 'arrival_city',
+      'Arrival Country': 'arrival_country',
+      'Arrival Region': 'arrival_region',
+      'Nationality': 'nationality',
+      'Passenger Type': 'profile'
+    };
+    return categoryToFieldMap[category] || '';
+  };
+
   // 모든 셀이 활성화되어 있는지 확인
   const isAllActive = timeSlots.every((_, i) => !disabledCells.has(`${i}-${facilityIndex}`));
 
