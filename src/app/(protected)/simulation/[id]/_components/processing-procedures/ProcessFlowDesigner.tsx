@@ -680,12 +680,18 @@ export default function ProcessFlowDesigner({
                   }
                 }
 
+                // Get process_time_seconds from edited process or existing facilities
+                let processTimeSeconds = editedProcess.process_time_seconds;
+                if (!processTimeSeconds && originalFacilities.length > 0) {
+                  processTimeSeconds = originalFacilities[0]?.operating_schedule?.time_blocks?.[0]?.process_time_seconds;
+                }
+
                 updatedFacilities.push({
                   id: `${newZoneName}_${i + 1}`,
                   operating_schedule: {
                     time_blocks: [{
                       period: period,
-                      process_time_seconds: editedProcess.process_time_seconds || currentProcess.process_time_seconds || 60,
+                      process_time_seconds: processTimeSeconds || 60,
                       passenger_conditions: []
                     }]
                   }

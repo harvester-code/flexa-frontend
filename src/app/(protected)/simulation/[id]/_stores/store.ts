@@ -435,6 +435,19 @@ export interface SimulationStoreState {
   ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
   updateProcessTimeForAllZones: (processIndex: number, processTimeSeconds: number) => void;
+  updateFacilitySchedule: (
+    processIndex: number,
+    zoneName: string,
+    facilityId: string,
+    timeBlocks: Array<{
+      period: string;
+      process_time_seconds: number;
+      passenger_conditions: Array<{
+        field: string;
+        values: string[];
+      }>;
+    }>
+  ) => void;
   migratePercentageData: () => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정

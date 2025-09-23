@@ -126,7 +126,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           resetProcessFlow: currentStore.resetProcessFlow,
           loadProcessMetadata: currentStore.loadProcessMetadata,
           setFacilitiesForZone: currentStore.setFacilitiesForZone,
-          updateOperatingSchedule: currentStore.updateOperatingSchedule,
+          updateFacilitySchedule: currentStore.updateFacilitySchedule,
           toggleFacilityTimeBlock: currentStore.toggleFacilityTimeBlock,
           updateTravelTime: currentStore.updateTravelTime,
         };
