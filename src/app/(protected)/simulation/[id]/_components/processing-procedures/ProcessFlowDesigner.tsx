@@ -338,6 +338,7 @@ export default function ProcessFlowDesigner({
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
+  const [isAddProcessDisabled, setIsAddProcessDisabled] = useState<boolean>(false);
 
   // Entry Conditions state
   const [selectedCriteriaItems, setSelectedCriteriaItems] = useState<
@@ -571,6 +572,7 @@ export default function ProcessFlowDesigner({
   const handleCancel = () => {
     // Clear selection and reset all states
     setIsCreatingNew(false);
+    setIsAddProcessDisabled(false);
     setEditedProcess(null);
     setZoneNamesInput("");
     setDefaultFacilityCount(null);
@@ -1010,7 +1012,7 @@ export default function ProcessFlowDesigner({
             >
               {isRunningSimulation ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Running...
                 </>
               ) : (
@@ -1152,6 +1154,7 @@ export default function ProcessFlowDesigner({
                   <Button
                     onClick={() => {
                       setIsCreatingNew(true);
+                      setIsAddProcessDisabled(true);
                       setEditedProcess({
                         name: "",
                         step: processFlow.length + 1,
@@ -1163,8 +1166,9 @@ export default function ProcessFlowDesigner({
                       setZoneNamesInput("");
                       setDefaultFacilityCount(null);
                       setSelectedCriteriaItems({});
-                                      }}
-                    className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90"
+                    }}
+                    disabled={isAddProcessDisabled}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="h-4 w-4" />
                     Add Process
@@ -1708,6 +1712,7 @@ export default function ProcessFlowDesigner({
                             }
                             // Reset to initial state after creating
                             setIsCreatingNew(false);
+                            setIsAddProcessDisabled(false);
                             setEditedProcess(null);
                             setZoneNamesInput("");
                             setDefaultFacilityCount(null);

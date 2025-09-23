@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Play, Users } from "lucide-react";
+import { Check, CheckCircle, Loader2, Play, Users, X, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -44,6 +44,7 @@ export default function PassengerFilterConditions({
 }: PassengerFilterConditionsProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set());
 
   // zustand store에서 데이터 가져오기
   const passengerData = useSimulationStore((state) => state.passenger);
@@ -195,18 +196,53 @@ export default function PassengerFilterConditions({
             disabled={!canGeneratePax || isGenerating}
             className="ml-4"
           >
-            <Play size={16} />
-            {isGenerating ? "Generating..." : "Generate Pax"}
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Play size={16} />
+                Generate Pax
+              </>
+            )}
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="nationality" className="w-full">
+        <Tabs
+          defaultValue="nationality"
+          className="w-full"
+          onValueChange={(value) => {
+            setVisitedTabs(prev => new Set([...prev, value]));
+          }}
+        >
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="nationality">Nationality</TabsTrigger>
-            <TabsTrigger value="profile">Pax Profile</TabsTrigger>
-            <TabsTrigger value="loadfactor">Load Factor</TabsTrigger>
-            <TabsTrigger value="showuptime">Show-up-Time</TabsTrigger>
+            <TabsTrigger value="nationality" className="flex items-center gap-1.5">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              Nationality
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-1.5">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              Pax Profile
+            </TabsTrigger>
+            <TabsTrigger value="loadfactor" className="flex items-center gap-1.5">
+              {visitedTabs.has("loadfactor") ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-600" />
+              )}
+              Load Factor
+            </TabsTrigger>
+            <TabsTrigger value="showuptime" className="flex items-center gap-1.5">
+              {visitedTabs.has("showuptime") ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-600" />
+              )}
+              Show-up-Time
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="nationality" className="mt-6">

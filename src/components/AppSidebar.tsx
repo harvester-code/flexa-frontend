@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -93,8 +93,27 @@ function AppSidebar() {
   const { data: userInfo } = useUser();
   const [isPending, startTransition] = useTransition();
 
-  // 🎯 shadcn 기반 상태 관리
+  // 🎯 shadcn 기반 상태 관리 - 초기값은 false로 설정 (hydration 문제 방지)
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // 클라이언트 사이드에서만 localStorage 읽기
+  useEffect(() => {
+    if (!isInitialized) {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved === 'true') {
+        setIsCollapsed(true);
+      }
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
+
+  // localStorage에 상태 저장 (초기 로드 이후에만)
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
+    }
+  }, [isCollapsed, isInitialized]);
 
   const handleSignOut = () => {
     startTransition(() => {

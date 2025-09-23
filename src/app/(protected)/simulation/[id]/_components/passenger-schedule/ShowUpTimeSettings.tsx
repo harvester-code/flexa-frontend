@@ -1063,7 +1063,7 @@ export default function ShowUpTimeSettings({
           </div>
 
           <Button
-            variant="primary"
+            variant="outline"
             onClick={handleOpenRuleModal}
             className="flex items-center gap-2"
           >

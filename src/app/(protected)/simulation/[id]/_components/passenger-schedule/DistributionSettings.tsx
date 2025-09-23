@@ -384,12 +384,13 @@ export default function DistributionSettings({
 
     if (newProperties.length > 0) {
       const resultProperties = [...definedProperties, ...newProperties];
-      if (createdRules.length > 0 || hasDefaultRule) {
+      // Only show confirmation if there are created rules (not just default rule)
+      if (createdRules.length > 0) {
         // 규칙이 있으면 확인창 표시 (추가 시에도)
         setPendingAction({ type: "add", payload: resultProperties });
         setShowConfirmDialog(true);
       } else {
-        // 규칙이 없으면 바로 추가
+        // Default rule만 있거나 규칙이 없으면 바로 추가
         setProperties(resultProperties);
       }
       setNewPropertyName("");
@@ -402,12 +403,13 @@ export default function DistributionSettings({
       (property) => property !== propertyToRemove
     );
 
-    if (createdRules.length > 0 || hasDefaultRule) {
+    // Only show confirmation if there are created rules (not just default rule)
+    if (createdRules.length > 0) {
       // 규칙이 있으면 확인창 표시
       setPendingAction({ type: "remove", payload: newProperties });
       setShowConfirmDialog(true);
     } else {
-      // 규칙이 없으면 바로 제거
+      // Default rule만 있거나 규칙이 없으면 바로 제거
       setProperties(newProperties);
     }
   };
@@ -717,39 +719,20 @@ export default function DistributionSettings({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="border-l-4 border-primary pl-4">
-          <h3 className="text-lg font-semibold text-default-900">
-            Define {isNationality ? "Nationalities" : "Passenger Profiles"}
-          </h3>
-          <p className="text-sm text-default-500">
-            Define{" "}
-            {isNationality
-              ? "what properties can be assigned"
-              : "passenger profile categories for classification"}
-          </p>
-        </div>
-        {/* Clear button in header - always visible */}
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (createdRules.length > 0 || hasDefaultRule) {
-              setPendingAction({ type: "remove", payload: [] });
-              setShowConfirmDialog(true);
-            } else {
-              setProperties([]);
-            }
-          }}
-          disabled={definedProperties.length === 0}
-          className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
-        >
-          <X size={16} />
-          Clear
-        </Button>
+      <div className="border-l-4 border-primary pl-4">
+        <h3 className="text-lg font-semibold text-default-900">
+          Define {isNationality ? "Nationalities" : "Passenger Profiles"}
+        </h3>
+        <p className="text-sm text-default-500">
+          Define{" "}
+          {isNationality
+            ? "what properties can be assigned"
+            : "passenger profile categories for classification"}
+        </p>
       </div>
 
       {/* Property Input */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Input
           type="text"
           placeholder={`Enter ${isNationality ? "property name (e.g., domestic, international or a,b,c)" : "profile name (e.g., business, leisure, premium or a,b,c)"}...`}
@@ -760,6 +743,26 @@ export default function DistributionSettings({
           onKeyPress={handleKeyPress}
           className="flex-1"
         />
+        {/* Clear button - moved here */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            // Only show confirmation if there are created rules (not just default rule)
+            if (createdRules.length > 0) {
+              setPendingAction({ type: "remove", payload: [] });
+              setShowConfirmDialog(true);
+            } else {
+              // Default rule만 있거나 규칙이 없으면 바로 Clear
+              setProperties([]);
+            }
+          }}
+          disabled={definedProperties.length === 0}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+          title="Clear all properties"
+        >
+          <Trash2 size={16} />
+        </Button>
         <Button
           onClick={handleAddProperty}
           disabled={!newPropertyName.trim()}
@@ -826,7 +829,7 @@ export default function DistributionSettings({
             </Button>
 
             <Button
-              variant={definedProperties.length > 0 ? "primary" : "outline"}
+              variant="outline"
               disabled={definedProperties.length === 0}
               onClick={handleOpenRuleModal}
               className="flex items-center gap-2"
