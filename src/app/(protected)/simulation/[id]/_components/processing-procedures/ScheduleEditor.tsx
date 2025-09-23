@@ -12,9 +12,28 @@ import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
 import { useThrottle } from "./hooks/useThrottle";
 import { useDebounce } from "./hooks/useDebounce";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
-import { Clock, Expand, Globe, MapPin, Navigation, Plane, Users } from "lucide-react";
+import {
+  Clock,
+  Expand,
+  Globe,
+  MapPin,
+  Navigation,
+  Plane,
+  Users,
+} from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
+import {
+  ParquetMetadataItem,
+  OperatingScheduleEditorProps,
+  BadgeCondition,
+  CategoryBadge,
+  TimeBlock,
+  FacilityWithSchedule,
+  TableHandlers,
+  VirtualScrollConfig,
+  ExcelTableProps,
+} from "./schedule-editor/types";
 import { useSimulationStore } from "../../_stores";
 import {
   Dialog,
@@ -37,58 +56,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
 
-
-// Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
-
-interface OperatingScheduleEditorProps {
-  processFlow: ProcessStep[];
-  parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
-  paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
-}
-
-// 뱃지 타입 정의
-interface BadgeCondition {
-  id: string;
-  label: string;
-  variant: "default" | "secondary" | "destructive" | "outline";
-}
-
-// 카테고리별 뱃지 타입 정의
-interface CategoryBadge {
-  category: string;
-  options: string[];
-  colorIndex: number;  // 색상 인덱스 추가
-  style?: React.CSSProperties;  // 인라인 스타일 추가
-}
-
-// TimeBlock 타입 정의 (타입 안전성 향상)
-interface TimeBlock {
-  period: string;
-  process_time_seconds: number;
-  passenger_conditions: Array<{
-    field: string;
-    values: string[];
-  }>;
-}
-
-// Facility 타입 정의 (타입 안전성 향상)
-interface FacilityWithSchedule {
-  id: string;
-  operating_schedule?: {
-    time_blocks: TimeBlock[];
-  };
-}
-
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 const createDynamicConditionCategories = (
   parquetMetadata: ParquetMetadataItem[],
@@ -100,11 +67,11 @@ const createDynamicConditionCategories = (
     {
       icon: React.ComponentType<any>;
       options: string[];
-      colorIndex: number;  // 색상 인덱스 사용
+      colorIndex: number; // 색상 인덱스 사용
     }
   > = {};
 
-  let colorIndexCounter = 0;  // 색상 인덱스 카운터
+  let colorIndexCounter = 0; // 색상 인덱스 카운터
 
   // 🎯 1단계: parquetMetadata 처리
   parquetMetadata.forEach((item) => {
@@ -201,7 +168,10 @@ const createDynamicConditionCategories = (
         categories[categoryName] = {
           icon,
           options: data.available_values,
-          colorIndex: existingColorIndex !== undefined ? existingColorIndex : colorIndexCounter++,
+          colorIndex:
+            existingColorIndex !== undefined
+              ? existingColorIndex
+              : colorIndexCounter++,
         };
       }
     }
@@ -215,7 +185,7 @@ const deepEqual = (obj1: any, obj2: any): boolean => {
   if (obj1 === obj2) return true;
 
   if (obj1 == null || obj2 == null) return false;
-  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  if (typeof obj1 !== "object" || typeof obj2 !== "object") return false;
 
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
@@ -239,12 +209,12 @@ const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 �
 
 // 시간 문자열을 포맷팅하는 헬퍼 함수
 const formatTime = (hours: number, minutes: number): string => {
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 };
 
 // 다음 시간 슬롯 계산 (timeUnit 추가)
 const getNextTimeSlot = (timeStr: string, timeUnit: number): string => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  const [hours, minutes] = timeStr.split(":").map(Number);
   let newMinutes = minutes + timeUnit;
   let newHours = hours;
 
@@ -255,38 +225,42 @@ const getNextTimeSlot = (timeStr: string, timeUnit: number): string => {
 
   // 24:00을 넘어가면 24:00으로 제한
   if (newHours >= 24) {
-    return '24:00';
+    return "24:00";
   }
 
   return formatTime(newHours, newMinutes);
 };
 
-
 // Period 파싱을 위한 안전한 헬퍼 함수
-const parsePeriodSafe = (period: string): {
-  startDateTime: Date | null,
-  endDateTime: Date | null,
-  startTime: string,
-  endTime: string,
-  startDate: string,
-  endDate: string,
-  valid: boolean
+const parsePeriodSafe = (
+  period: string
+): {
+  startDateTime: Date | null;
+  endDateTime: Date | null;
+  startTime: string;
+  endTime: string;
+  startDate: string;
+  endDate: string;
+  valid: boolean;
 } => {
   try {
-    const periodMatch = period.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+    const periodMatch = period.match(
+      /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/
+    );
     if (!periodMatch) {
       return {
         startDateTime: null,
         endDateTime: null,
-        startTime: '',
-        endTime: '',
-        startDate: '',
-        endDate: '',
-        valid: false
+        startTime: "",
+        endTime: "",
+        startDate: "",
+        endDate: "",
+        valid: false,
       };
     }
 
-    const [, startDate, startTimeWithSec, endDate, endTimeWithSec] = periodMatch;
+    const [, startDate, startTimeWithSec, endDate, endTimeWithSec] =
+      periodMatch;
     const startTime = startTimeWithSec.substring(0, 5);
     const endTime = endTimeWithSec.substring(0, 5);
 
@@ -297,18 +271,18 @@ const parsePeriodSafe = (period: string): {
       endTime,
       startDate,
       endDate,
-      valid: true
+      valid: true,
     };
   } catch (error) {
-    console.error('Period parsing error:', error, 'for period:', period);
+    console.error("Period parsing error:", error, "for period:", period);
     return {
       startDateTime: null,
       endDateTime: null,
-      startTime: '',
-      endTime: '',
-      startDate: '',
-      endDate: '',
-      valid: false
+      startTime: "",
+      endTime: "",
+      startDate: "",
+      endDate: "",
+      valid: false,
     };
   }
 };
@@ -326,26 +300,29 @@ const calculatePeriodsFromDisabledCells = (
   isPreviousDay?: boolean // 전날부터 시작하는지 여부
 ): TimeBlock[] => {
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
-  const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
+  const processTime =
+    processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
 
   // category name을 field name으로 변환하는 헬퍼 함수 (내부 정의)
   const getCategoryFieldName = (category: string): string => {
     const categoryToFieldMap: Record<string, string> = {
-      'Airline': 'operating_carrier_iata',
-      'Aircraft Type': 'aircraft_type',
-      'Flight Type': 'flight_type',
-      'Arrival Airport': 'arrival_airport_iata',
-      'Arrival City': 'arrival_city',
-      'Arrival Country': 'arrival_country',
-      'Arrival Region': 'arrival_region',
-      'Nationality': 'nationality',
-      'Passenger Type': 'profile'
+      Airline: "operating_carrier_iata",
+      "Aircraft Type": "aircraft_type",
+      "Flight Type": "flight_type",
+      "Arrival Airport": "arrival_airport_iata",
+      "Arrival City": "arrival_city",
+      "Arrival Country": "arrival_country",
+      "Arrival Region": "arrival_region",
+      Nationality: "nationality",
+      "Passenger Type": "profile",
     };
-    return categoryToFieldMap[category] || '';
+    return categoryToFieldMap[category] || "";
   };
 
   // 모든 셀이 활성화되어 있는지 확인
-  const isAllActive = timeSlots.every((_, i) => !disabledCells.has(`${i}-${facilityIndex}`));
+  const isAllActive = timeSlots.every(
+    (_, i) => !disabledCells.has(`${i}-${facilityIndex}`)
+  );
 
   // 모든 셀이 같은 조건(또는 조건 없음)을 가지고 있는지 확인
   let allSameConditions = true;
@@ -362,39 +339,51 @@ const calculatePeriodsFromDisabledCells = (
   }
 
   // 날짜 가져오기 (전달되지 않으면 store에서 가져옴)
-  const currentDate = date || useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+  const currentDate =
+    date ||
+    useSimulationStore.getState().context.date ||
+    new Date().toISOString().split("T")[0];
   const nextDay = new Date(currentDate);
   nextDay.setDate(nextDay.getDate() + 1);
-  const nextDayStr = nextDay.toISOString().split('T')[0];
+  const nextDayStr = nextDay.toISOString().split("T")[0];
   const prevDay = new Date(currentDate);
   prevDay.setDate(prevDay.getDate() - 1);
-  const prevDayStr = prevDay.toISOString().split('T')[0];
+  const prevDayStr = prevDay.toISOString().split("T")[0];
 
   // 모든 셀이 활성화되어 있고 조건이 동일한 경우
   if (isAllActive && allSameConditions) {
     // passenger chart 데이터가 있으면 그에 맞춰 설정
     const chartResult = useSimulationStore.getState().passenger.chartResult;
-    if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0 && isPreviousDay) {
+    if (
+      chartResult?.chart_x_data &&
+      chartResult.chart_x_data.length > 0 &&
+      isPreviousDay
+    ) {
       // 전날부터 시작하는 경우 (D-1)
       const firstTime = timeSlots[0]; // 예: "20:30"
       const lastTime = timeSlots[timeSlots.length - 1];
 
       // 전날 시작 시간 처리
-      const startDate = timeSlots.indexOf("00:00") > 0 ? prevDayStr : currentDate;
+      const startDate =
+        timeSlots.indexOf("00:00") > 0 ? prevDayStr : currentDate;
 
-      return [{
-        period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
-        process_time_seconds: processTime,
-        passenger_conditions: []
-      }];
+      return [
+        {
+          period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
+          process_time_seconds: processTime,
+          passenger_conditions: [],
+        },
+      ];
     }
 
     // 기본값
-    return [{
-      period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
-      process_time_seconds: processTime,
-      passenger_conditions: firstConditions || []
-    }];
+    return [
+      {
+        period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
+        process_time_seconds: processTime,
+        passenger_conditions: firstConditions || [],
+      },
+    ];
   }
 
   const periods: any[] = [];
@@ -408,10 +397,12 @@ const calculatePeriodsFromDisabledCells = (
     const badges = cellBadges[cellId] || [];
 
     // 뱃지를 passenger_conditions 형식으로 변환
-    const conditions = badges.map(badge => ({
-      field: getCategoryFieldName(badge.category),
-      values: badge.options
-    })).filter(c => c.field);
+    const conditions = badges
+      .map((badge) => ({
+        field: getCategoryFieldName(badge.category),
+        values: badge.options,
+      }))
+      .filter((c) => c.field);
 
     if (!isDisabled) {
       // 활성화된 셀
@@ -421,32 +412,36 @@ const calculatePeriodsFromDisabledCells = (
         currentConditions = conditions;
       } else {
         // 조건이 다르면 이전 구간을 종료하고 새 구간 시작 (최적화: 길이 먼저 비교)
-        const conditionsChanged = currentConditions?.length !== conditions.length ||
+        const conditionsChanged =
+          currentConditions?.length !== conditions.length ||
           JSON.stringify(currentConditions) !== JSON.stringify(conditions);
         if (conditionsChanged) {
           // 이전 구간 저장
           const prevIndex = i - 1;
           const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
 
-          const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-            ? prevDayStr
-            : currentDate;
+          const startDate =
+            isPreviousDay &&
+            timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+              ? prevDayStr
+              : currentDate;
 
           // 24:00은 다음날 00:00으로 처리
           let endDateTime;
           if (endTime === "24:00" || endTime === "00:00") {
             endDateTime = `${nextDayStr} 00:00:00`;
           } else {
-            const endDate = isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
-              ? prevDayStr
-              : currentDate;
+            const endDate =
+              isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
+                ? prevDayStr
+                : currentDate;
             endDateTime = `${endDate} ${endTime}:00`;
           }
 
           periods.push({
             period: `${startDate} ${currentStart}:00-${endDateTime}`,
             process_time_seconds: processTime,
-            passenger_conditions: currentConditions || []
+            passenger_conditions: currentConditions || [],
           });
 
           // 새 구간 시작
@@ -462,124 +457,76 @@ const calculatePeriodsFromDisabledCells = (
         const prevIndex = i - 1;
         const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
 
-        const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-          ? prevDayStr
-          : currentDate;
+        const startDate =
+          isPreviousDay &&
+          timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+            ? prevDayStr
+            : currentDate;
 
         // 24:00은 다음날 00:00으로 처리
         let endDateTime;
-        if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
+        if (
+          endTime === "24:00" ||
+          (endTime === "00:00" && prevIndex === timeSlots.length - 1)
+        ) {
           endDateTime = `${nextDayStr} 00:00:00`;
         } else {
-          const endDate = isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
-            ? prevDayStr
-            : currentDate;
+          const endDate =
+            isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
+              ? prevDayStr
+              : currentDate;
           endDateTime = `${endDate} ${endTime}:00`;
         }
 
         periods.push({
           period: `${startDate} ${currentStart}:00-${endDateTime}`,
           process_time_seconds: processTime,
-          passenger_conditions: currentConditions || []
+          passenger_conditions: currentConditions || [],
         });
         currentStart = null;
         currentConditions = null;
       }
     }
   }
-  
+
   // 마지막 활성 구간 처리
   if (currentStart !== null) {
     const lastIndex = timeSlots.length - 1;
     const endTime = getNextTimeSlot(timeSlots[lastIndex], timeUnit);
 
-    const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-      ? prevDayStr
-      : currentDate;
+    const startDate =
+      isPreviousDay &&
+      timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+        ? prevDayStr
+        : currentDate;
 
     // 마지막 시간이 23:30 등이면 다음날 00:00으로
     let endDateTime;
-    if (endTime === "24:00" || endTime === "00:00" || lastIndex === timeSlots.length - 1) {
+    if (
+      endTime === "24:00" ||
+      endTime === "00:00" ||
+      lastIndex === timeSlots.length - 1
+    ) {
       endDateTime = `${nextDayStr} 00:00:00`;
     } else {
-      const endDate = isPreviousDay && lastIndex < timeSlots.indexOf("00:00")
-        ? prevDayStr
-        : currentDate;
+      const endDate =
+        isPreviousDay && lastIndex < timeSlots.indexOf("00:00")
+          ? prevDayStr
+          : currentDate;
       endDateTime = `${endDate} ${endTime}:00`;
     }
 
     periods.push({
       period: `${startDate} ${currentStart}:00-${endDateTime}`,
       process_time_seconds: processTime,
-      passenger_conditions: currentConditions || []
+      passenger_conditions: currentConditions || [],
     });
   }
-  
+
   // period가 하나도 없으면 (모두 비활성화) 빈 배열 반환 (운영 안함)
   // 기존에는 기본값을 반환했지만, 전체 비활성화는 운영 안함을 의미
   return periods;
 };
-
-// 핸들러 그룹화
-interface TableHandlers {
-  timeHeader: {
-    onClick: (e: React.MouseEvent) => void;
-    onRightClick: (e: React.MouseEvent) => void;
-  };
-  column: {
-    onMouseDown: (colIndex: number, e: React.MouseEvent) => void;
-    onMouseEnter: (colIndex: number, e: React.MouseEvent) => void;
-    onMouseUp: () => void;
-    onRightClick: (e: React.MouseEvent, colIndex: number) => void;
-  };
-  row: {
-    onMouseDown: (rowIndex: number, e: React.MouseEvent) => void;
-    onMouseEnter: (rowIndex: number, e: React.MouseEvent) => void;
-    onMouseUp: () => void;
-    onRightClick: (e: React.MouseEvent, rowIndex: number) => void;
-  };
-  cell: {
-    onMouseDown: (
-      cellId: string,
-      rowIndex: number,
-      colIndex: number,
-      e: React.MouseEvent
-    ) => void;
-    onMouseEnter: (
-      cellId: string,
-      rowIndex: number,
-      colIndex: number,
-      e: React.MouseEvent
-    ) => void;
-    onMouseUp: () => void;
-    onRightClick: (e: React.MouseEvent, cellId: string) => void;
-  };
-  onRemoveCategoryBadge: (cellId: string, category: string) => void;
-}
-
-// 가상화 설정
-interface VirtualScrollConfig {
-  visibleTimeSlots: string[];
-  startIndex: number;
-  totalHeight: number;
-  offsetY: number;
-  onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
-}
-
-// 엑셀 테이블 컴포넌트 분리
-interface ExcelTableProps {
-  selectedZone: string;
-  currentFacilities: any[];
-  timeSlots: string[];
-  selectedCells: Set<string>;
-  cellBadges: Record<string, CategoryBadge[]>;
-  disabledCells: Set<string>;
-  copiedCells?: Set<string>; // Cells that are currently copied
-  isFullScreen?: boolean;
-  virtualScroll: VirtualScrollConfig;
-  handlers: TableHandlers;
-  isPreviousDay?: boolean;
-}
 
 const ExcelTable: React.FC<ExcelTableProps> = React.memo(
   ({
@@ -607,12 +554,12 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     const selectedRowsAndCols = useMemo(() => {
       const selectedRows = new Set<number>();
       const selectedCols = new Set<number>();
-      
-      selectedCells.forEach(cellId => {
-        const [rowStr, colStr] = cellId.split('-');
+
+      selectedCells.forEach((cellId) => {
+        const [rowStr, colStr] = cellId.split("-");
         const rowIndex = parseInt(rowStr, 10);
         const colIndex = parseInt(colStr, 10);
-        
+
         // 전체 행이 선택되었는지 확인
         let isFullRowSelected = true;
         for (let col = 0; col < currentFacilities.length; col++) {
@@ -622,7 +569,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
           }
         }
         if (isFullRowSelected) selectedRows.add(rowIndex);
-        
+
         // 전체 열이 선택되었는지 확인
         let isFullColSelected = true;
         for (let row = 0; row < timeSlots.length; row++) {
@@ -633,7 +580,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
         }
         if (isFullColSelected) selectedCols.add(colIndex);
       });
-      
+
       return { selectedRows, selectedCols };
     }, [selectedCells, currentFacilities.length, timeSlots.length]);
     // 🖼️ cellId 파싱 캐시 (성능 최적화)
@@ -689,32 +636,37 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     }, [selectedCells, parseCellId]);
 
     // Check if cell should show copy border overlay
-    const getCopyBorderInfo = useCallback((rowIndex: number, colIndex: number) => {
-      if (copiedCells.size === 0) return null;
+    const getCopyBorderInfo = useCallback(
+      (rowIndex: number, colIndex: number) => {
+        if (copiedCells.size === 0) return null;
 
-      const cellId = `${rowIndex}-${colIndex}`;
-      if (!copiedCells.has(cellId)) return null;
+        const cellId = `${rowIndex}-${colIndex}`;
+        if (!copiedCells.has(cellId)) return null;
 
-      // Find bounds of copied region
-      let minRow = Infinity, maxRow = -Infinity;
-      let minCol = Infinity, maxCol = -Infinity;
+        // Find bounds of copied region
+        let minRow = Infinity,
+          maxRow = -Infinity;
+        let minCol = Infinity,
+          maxCol = -Infinity;
 
-      Array.from(copiedCells).forEach((id) => {
-        const [r, c] = (id as string).split('-').map(Number);
-        minRow = Math.min(minRow, r);
-        maxRow = Math.max(maxRow, r);
-        minCol = Math.min(minCol, c);
-        maxCol = Math.max(maxCol, c);
-      });
+        Array.from(copiedCells).forEach((id) => {
+          const [r, c] = (id as string).split("-").map(Number);
+          minRow = Math.min(minRow, r);
+          maxRow = Math.max(maxRow, r);
+          minCol = Math.min(minCol, c);
+          maxCol = Math.max(maxCol, c);
+        });
 
-      // Check if cell is on the edge
-      return {
-        hasTop: rowIndex === minRow,
-        hasBottom: rowIndex === maxRow,
-        hasLeft: colIndex === minCol,
-        hasRight: colIndex === maxCol
-      };
-    }, [copiedCells]);
+        // Check if cell is on the edge
+        return {
+          hasTop: rowIndex === minRow,
+          hasBottom: rowIndex === maxRow,
+          hasLeft: colIndex === minCol,
+          hasRight: colIndex === maxCol,
+        };
+      },
+      [copiedCells]
+    );
 
     if (!selectedZone || currentFacilities.length === 0) {
       if (selectedZone) {
@@ -766,26 +718,26 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   <th
                     key={facility.id}
                     className={`cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 sticky top-0 ${
-                      selectedRowsAndCols.selectedCols.has(colIndex) 
-                        ? 'bg-primary/20' 
-                        : 'bg-muted'
+                      selectedRowsAndCols.selectedCols.has(colIndex)
+                        ? "bg-primary/20"
+                        : "bg-muted"
                     }`}
                     onMouseDown={(e) => {
                       // 우클릭이 아닐 때만 드래그 처리
                       if (e.button !== 2) {
-                        handlers.column.onMouseDown(colIndex, e)
+                        handlers.column.onMouseDown(colIndex, e);
                       }
                     }}
                     onMouseEnter={(e) => {
                       // 우클릭 드래그가 아닐 때만 처리
                       if (e.buttons !== 2) {
-                        handlers.column.onMouseEnter(colIndex, e)
+                        handlers.column.onMouseEnter(colIndex, e);
                       }
                     }}
                     onMouseUp={(e) => {
                       // 우클릭이 아닐 때만 처리
                       if (e.button !== 2) {
-                        handlers.column.onMouseUp()
+                        handlers.column.onMouseUp();
                       }
                     }}
                     onContextMenu={(e) => {
@@ -811,25 +763,25 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                     <td
                       className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium bg-purple-50 text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis ${
                         selectedRowsAndCols.selectedRows.has(rowIndex)
-                          ? 'bg-primary/20'
-                          : ''
+                          ? "bg-primary/20"
+                          : ""
                       }`}
                       onMouseDown={(e) => {
                         // 우클릭이 아닐 때만 드래그 처리
                         if (e.button !== 2) {
-                          handlers.row.onMouseDown(rowIndex, e)
+                          handlers.row.onMouseDown(rowIndex, e);
                         }
                       }}
                       onMouseEnter={(e) => {
                         // 우클릭 드래그가 아닐 때만 처리
                         if (e.buttons !== 2) {
-                          handlers.row.onMouseEnter(rowIndex, e)
+                          handlers.row.onMouseEnter(rowIndex, e);
                         }
                       }}
                       onMouseUp={(e) => {
                         // 우클릭이 아닐 때만 처리
                         if (e.button !== 2) {
-                          handlers.row.onMouseUp()
+                          handlers.row.onMouseUp();
                         }
                       }}
                       onContextMenu={(e) => {
@@ -843,11 +795,13 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       title={`Click or drag to select rows: ${timeSlot}. Right-click to apply badges to entire row.`}
                     >
                       <div className="flex items-center justify-center gap-1">
-                        {isPreviousDay && rowIndex < timeSlots.findIndex(t => t === "00:00") && (
-                          <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
-                            D-1
-                          </span>
-                        )}
+                        {isPreviousDay &&
+                          rowIndex <
+                            timeSlots.findIndex((t) => t === "00:00") && (
+                            <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
+                              D-1
+                            </span>
+                          )}
                         <span>{timeSlot}</span>
                       </div>
                     </td>
@@ -861,7 +815,10 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                         rowIndex,
                         colIndex
                       );
-                      const copyBorderInfo = getCopyBorderInfo(rowIndex, colIndex);
+                      const copyBorderInfo = getCopyBorderInfo(
+                        rowIndex,
+                        colIndex
+                      );
 
                       return (
                         <td
@@ -905,19 +862,27 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                               {/* 카테고리 뱃지들 - 뱃지가 없으면 자동으로 All 표시 */}
                               {badges.length > 0 ? (
                                 badges.map((categoryBadge, badgeIndex) => {
-                                  const badgeStyle = categoryBadge.style || getBadgeColor(categoryBadge.colorIndex).style;
+                                  const badgeStyle =
+                                    categoryBadge.style ||
+                                    getBadgeColor(categoryBadge.colorIndex)
+                                      .style;
                                   return (
                                     <span
                                       key={`${categoryBadge.category}-${badgeIndex}`}
                                       className={cn(
                                         "select-none rounded border px-1 text-[9px] font-medium leading-tight",
-                                        isDisabled && "line-through decoration-2"
+                                        isDisabled &&
+                                          "line-through decoration-2"
                                       )}
-                                      style={isDisabled ? {
-                                        backgroundColor: '#d1d5db',
-                                        color: '#4b5563',
-                                        borderColor: '#9ca3af'
-                                      } : badgeStyle}
+                                      style={
+                                        isDisabled
+                                          ? {
+                                              backgroundColor: "#d1d5db",
+                                              color: "#4b5563",
+                                              borderColor: "#9ca3af",
+                                            }
+                                          : badgeStyle
+                                      }
                                       title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
                                     >
                                       {categoryBadge.options
@@ -947,15 +912,24 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             <div
                               className="absolute pointer-events-none"
                               style={{
-                                top: '2px',
-                                left: '2px',
-                                right: '2px',
-                                bottom: '2px',
-                                borderTop: copyBorderInfo.hasTop ? '2px dashed #8b5cf6' : 'none',
-                                borderBottom: copyBorderInfo.hasBottom ? '2px dashed #8b5cf6' : 'none',
-                                borderLeft: copyBorderInfo.hasLeft ? '2px dashed #8b5cf6' : 'none',
-                                borderRight: copyBorderInfo.hasRight ? '2px dashed #8b5cf6' : 'none',
-                                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                                top: "2px",
+                                left: "2px",
+                                right: "2px",
+                                bottom: "2px",
+                                borderTop: copyBorderInfo.hasTop
+                                  ? "2px dashed #8b5cf6"
+                                  : "none",
+                                borderBottom: copyBorderInfo.hasBottom
+                                  ? "2px dashed #8b5cf6"
+                                  : "none",
+                                borderLeft: copyBorderInfo.hasLeft
+                                  ? "2px dashed #8b5cf6"
+                                  : "none",
+                                borderRight: copyBorderInfo.hasRight
+                                  ? "2px dashed #8b5cf6"
+                                  : "none",
+                                animation:
+                                  "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                               }}
                             />
                           )}
@@ -1001,69 +975,92 @@ export default function OperatingScheduleEditor({
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Time Unit 상태 (기본값 30분)
-  const [timeUnitInput, setTimeUnitInput] = useState<string>('30');
+  const [timeUnitInput, setTimeUnitInput] = useState<string>("30");
   const [appliedTimeUnit, setAppliedTimeUnit] = useState<number>(30);
   const [pendingTimeUnit, setPendingTimeUnit] = useState<number | null>(null);
   const [showTimeUnitConfirm, setShowTimeUnitConfirm] = useState(false);
 
   // 뱃지 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
-  const [allZoneBadges, setAllZoneBadges] = useState<Record<string, Record<string, CategoryBadge[]>>>({});
+  const [allZoneBadges, setAllZoneBadges] = useState<
+    Record<string, Record<string, CategoryBadge[]>>
+  >({});
 
   // 비활성화된 셀 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
-  const [allZoneDisabledCells, setAllZoneDisabledCells] = useState<Record<string, Set<string>>>({});
+  const [allZoneDisabledCells, setAllZoneDisabledCells] = useState<
+    Record<string, Set<string>>
+  >({});
 
   // 마지막으로 저장된 시설 데이터의 해시값 (변경 감지용)
-  const [lastFacilitiesHash, setLastFacilitiesHash] = useState<string>('');
+  const [lastFacilitiesHash, setLastFacilitiesHash] = useState<string>("");
 
   // 현재 Zone의 키
-  const zoneKey = useMemo(() => `${selectedProcessIndex}-${selectedZone}`, [selectedProcessIndex, selectedZone]);
+  const zoneKey = useMemo(
+    () => `${selectedProcessIndex}-${selectedZone}`,
+    [selectedProcessIndex, selectedZone]
+  );
 
   // 현재 Zone의 뱃지 가져오기 (메모이제이션으로 최적화)
-  const cellBadges = useMemo(() => allZoneBadges[zoneKey] || {}, [allZoneBadges, zoneKey]);
+  const cellBadges = useMemo(
+    () => allZoneBadges[zoneKey] || {},
+    [allZoneBadges, zoneKey]
+  );
 
   // 현재 Zone의 비활성화된 셀 가져오기 (메모이제이션으로 최적화)
-  const disabledCells = useMemo(() => allZoneDisabledCells[zoneKey] || new Set<string>(), [allZoneDisabledCells, zoneKey]);
+  const disabledCells = useMemo(
+    () => allZoneDisabledCells[zoneKey] || new Set<string>(),
+    [allZoneDisabledCells, zoneKey]
+  );
 
   // 현재 Zone의 뱃지 업데이트 함수 (안전한 업데이트)
-  const setCellBadges = useCallback((updater: any) => {
-    setAllZoneBadges(prev => {
-      const newBadges = typeof updater === 'function' ? updater(prev[zoneKey] || {}) : updater;
-      // 변경사항이 있을 때만 업데이트
-      if (!deepEqual(prev[zoneKey], newBadges)) {
-        return {
-          ...prev,
-          [zoneKey]: newBadges
-        };
-      }
-      return prev;
-    });
-  }, [zoneKey]);
+  const setCellBadges = useCallback(
+    (updater: any) => {
+      setAllZoneBadges((prev) => {
+        const newBadges =
+          typeof updater === "function"
+            ? updater(prev[zoneKey] || {})
+            : updater;
+        // 변경사항이 있을 때만 업데이트
+        if (!deepEqual(prev[zoneKey], newBadges)) {
+          return {
+            ...prev,
+            [zoneKey]: newBadges,
+          };
+        }
+        return prev;
+      });
+    },
+    [zoneKey]
+  );
 
   // 현재 Zone의 비활성화된 셀 업데이트 함수 (안전한 업데이트)
-  const setDisabledCells = useCallback((updater: any) => {
-    setAllZoneDisabledCells(prev => {
-      const currentSet = prev[zoneKey] || new Set<string>();
-      const newSet = typeof updater === 'function' ? updater(currentSet) : updater;
+  const setDisabledCells = useCallback(
+    (updater: any) => {
+      setAllZoneDisabledCells((prev) => {
+        const currentSet = prev[zoneKey] || new Set<string>();
+        const newSet =
+          typeof updater === "function" ? updater(currentSet) : updater;
 
-      // Set 비교를 위한 헬퍼
-      const areSetsEqual = (a: Set<string>, b: Set<string>) => {
-        if (a.size !== b.size) return false;
-        for (const item of a) {
-          if (!b.has(item)) return false;
-        }
-        return true;
-      };
-
-      // 변경사항이 있을 때만 업데이트
-      if (!areSetsEqual(currentSet, newSet)) {
-        return {
-          ...prev,
-          [zoneKey]: newSet
+        // Set 비교를 위한 헬퍼
+        const areSetsEqual = (a: Set<string>, b: Set<string>) => {
+          if (a.size !== b.size) return false;
+          for (const item of a) {
+            if (!b.has(item)) return false;
+          }
+          return true;
         };
-      }
-      return prev;
-    });
-  }, [zoneKey]);
+
+        // 변경사항이 있을 때만 업데이트
+        if (!areSetsEqual(currentSet, newSet)) {
+          return {
+            ...prev,
+            [zoneKey]: newSet,
+          };
+        }
+        return prev;
+      });
+    },
+    [zoneKey]
+  );
 
   // 우클릭 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<{
@@ -1076,7 +1073,12 @@ export default function OperatingScheduleEditor({
 
   // Copy/Paste state management
   const [copiedData, setCopiedData] = useState<{
-    cells: Array<{ row: number; col: number; badges: CategoryBadge[]; disabled: boolean }>;
+    cells: Array<{
+      row: number;
+      col: number;
+      badges: CategoryBadge[];
+      disabled: boolean;
+    }>;
     shape: { rows: number; cols: number };
     startCell: { row: number; col: number };
   } | null>(null);
@@ -1087,7 +1089,7 @@ export default function OperatingScheduleEditor({
   // Computed set of copied cells for visualization
   const copiedCells = useMemo(() => {
     if (!copiedData || !showMarchingAnts) return new Set<string>();
-    return new Set(copiedData.cells.map(cell => `${cell.row}-${cell.col}`));
+    return new Set(copiedData.cells.map((cell) => `${cell.row}-${cell.col}`));
   }, [copiedData, showMarchingAnts]);
 
   // Warning dialog for size mismatch
@@ -1097,275 +1099,346 @@ export default function OperatingScheduleEditor({
     copiedData: any;
   } | null>(null);
 
-
-
   // 초기 로드 상태 추적 - processIndex와 zone별로 추적
-  const [initializedKeys, setInitializedKeys] = useState<Set<string>>(new Set());
+  const [initializedKeys, setInitializedKeys] = useState<Set<string>>(
+    new Set()
+  );
 
   // period 문자열을 disabled cells로 변환하는 함수 (타입 안전성 향상)
-  const initializeDisabledCellsFromPeriods = useCallback((
-    facilities: FacilityWithSchedule[],
-    timeSlots: string[],
-    isPreviousDay: boolean,
-    categories: Record<string, any>,
-    currentDate: string,
-    prevDayStr: string
-  ): { disabledCells: Set<string>; badges: Record<string, CategoryBadge[]> } => {
-    console.log('initializeDisabledCellsFromPeriods called with:', {
-      facilitiesCount: facilities.length,
-      timeSlotsCount: timeSlots.length,
-      isPreviousDay,
-      currentDate,
-      prevDayStr,
-      firstFacility: facilities[0]
-    });
+  const initializeDisabledCellsFromPeriods = useCallback(
+    (
+      facilities: FacilityWithSchedule[],
+      timeSlots: string[],
+      isPreviousDay: boolean,
+      categories: Record<string, any>,
+      currentDate: string,
+      prevDayStr: string
+    ): {
+      disabledCells: Set<string>;
+      badges: Record<string, CategoryBadge[]>;
+    } => {
+      console.log("initializeDisabledCellsFromPeriods called with:", {
+        facilitiesCount: facilities.length,
+        timeSlotsCount: timeSlots.length,
+        isPreviousDay,
+        currentDate,
+        prevDayStr,
+        firstFacility: facilities[0],
+      });
 
-    const newDisabledCells = new Set<string>();
-    const newBadges: Record<string, CategoryBadge[]> = {};
-    const date = currentDate;
+      const newDisabledCells = new Set<string>();
+      const newBadges: Record<string, CategoryBadge[]> = {};
+      const date = currentDate;
 
-    facilities.forEach((facility, colIndex) => {
-      if (facility?.operating_schedule?.time_blocks) {
-        const timeBlocks = facility.operating_schedule.time_blocks;
+      facilities.forEach((facility, colIndex) => {
+        if (facility?.operating_schedule?.time_blocks) {
+          const timeBlocks = facility.operating_schedule.time_blocks;
 
-        // time_blocks가 없으면 모든 셀 활성화 (기본값)
-        if (timeBlocks.length === 0) {
-          // 아무것도 하지 않음 - 모든 셀이 활성화된 상태
-          return;
-        }
+          // time_blocks가 없으면 모든 셀 활성화 (기본값)
+          if (timeBlocks.length === 0) {
+            // 아무것도 하지 않음 - 모든 셀이 활성화된 상태
+            return;
+          }
 
-        // 활성화된 시간대를 추적
-        const activatedSlots = new Set<number>();
+          // 활성화된 시간대를 추적
+          const activatedSlots = new Set<number>();
 
-        // 각 time_block에 대해 활성화된 슬롯 마킹
-        timeBlocks.forEach((block: any, blockIndex: number) => {
-          if (block.period) {
-            console.log('Processing time_block', blockIndex, 'for facility:', facility.id,
-                       'period:', block.period,
-                       'has conditions:', block.passenger_conditions?.length > 0);
+          // 각 time_block에 대해 활성화된 슬롯 마킹
+          timeBlocks.forEach((block: any, blockIndex: number) => {
+            if (block.period) {
+              console.log(
+                "Processing time_block",
+                blockIndex,
+                "for facility:",
+                facility.id,
+                "period:",
+                block.period,
+                "has conditions:",
+                block.passenger_conditions?.length > 0
+              );
 
-            // 안전한 period 파싱 사용
-            const parsedPeriod = parsePeriodSafe(block.period);
+              // 안전한 period 파싱 사용
+              const parsedPeriod = parsePeriodSafe(block.period);
 
-            if (!parsedPeriod.valid) {
-              console.error('Failed to parse period:', block.period);
-              // 파싱 실패 시에도 데이터를 보존하기 위해 전체 활성화로 폴백
-              for (let i = 0; i < timeSlots.length; i++) {
-                activatedSlots.add(i);
+              if (!parsedPeriod.valid) {
+                console.error("Failed to parse period:", block.period);
+                // 파싱 실패 시에도 데이터를 보존하기 위해 전체 활성화로 폴백
+                for (let i = 0; i < timeSlots.length; i++) {
+                  activatedSlots.add(i);
+                }
+                return;
               }
-              return;
-            }
 
-            const { startDate, startTime, endDate, endTime } = parsedPeriod;
+              const { startDate, startTime, endDate, endTime } = parsedPeriod;
 
-            console.log('Parsed period:', {
-              startDate,
-              startTime,
-              endDate,
-              endTime,
-              currentDate: date,
-              isPreviousDay
-            });
-
-            // 여러 날에 걸친 period 처리
-            const nextDayStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
-
-            // Period가 현재 표시 날짜 범위에 포함되는지 확인
-            const periodStartDate = new Date(startDate);
-            const periodEndDate = new Date(endDate);
-            const currentDateObj = new Date(date);
-            const prevDateObj = new Date(prevDayStr);
-
-            console.log('Date range check:', {
-              periodStart: periodStartDate,
-              periodEnd: periodEndDate,
-              currentDate: currentDateObj,
-              prevDate: prevDateObj,
-              isPreviousDay
-            });
-
-            // Period가 전체 시간대를 포함하는지 확인 (2일 이상 걸쳐진 period)
-            const isFullPeriod = periodStartDate <= prevDateObj && periodEndDate >= currentDateObj;
-
-            if (isFullPeriod) {
-              // 전체 시간대 활성화
-              console.log('Full period detected - activating all cells for facility:', facility.id);
-              for (let i = 0; i < timeSlots.length; i++) {
-                activatedSlots.add(i);
-              }
-            } else {
-              // 부분적인 period 처리
-              if (isPreviousDay) {
-                // D-1 표시가 있을 때
-                if (startDate <= prevDayStr && endDate >= prevDayStr) {
-                  // 전날 포함
-                  const startIdx = startDate === prevDayStr ? timeSlots.indexOf(startTime) : 0;
-                  const endIdx = endDate === prevDayStr ? timeSlots.indexOf(endTime) : timeSlots.indexOf("00:00");
-
-                  if (startIdx !== -1) {
-                    for (let i = startIdx; i < timeSlots.length && (endIdx === -1 || i < endIdx); i++) {
-                      if (timeSlots[i] === "00:00") break;
-                      activatedSlots.add(i);
-                    }
-                  }
-                }
-
-                // 당일 처리
-                if (startDate <= date && endDate >= date) {
-                  const zeroIdx = timeSlots.indexOf("00:00");
-                  if (zeroIdx !== -1) {
-                    const startIdx = startDate === date ? timeSlots.indexOf(startTime) : zeroIdx;
-                    const endIdx = endDate === date ? timeSlots.indexOf(endTime) : timeSlots.length;
-
-                    for (let i = startIdx; i < endIdx; i++) {
-                      activatedSlots.add(i);
-                    }
-                  }
-                }
-              } else {
-                // D-1 표시가 없을 때
-                if (startDate <= date && endDate >= date) {
-                  const startIdx = startDate === date ? timeSlots.indexOf(startTime) : 0;
-                  const endIdx = endDate === date ? timeSlots.indexOf(endTime) : timeSlots.length;
-
-                  if (startIdx !== -1) {
-                    for (let i = startIdx; i < endIdx; i++) {
-                      activatedSlots.add(i);
-                    }
-                  }
-                }
-              }
-            }
-
-            // passenger_conditions가 있으면 해당 period의 모든 활성 셀에 뱃지 설정
-            if (block.passenger_conditions && block.passenger_conditions.length > 0) {
-              const badges: CategoryBadge[] = [];
-              block.passenger_conditions.forEach((condition: any) => {
-                const categoryName = getCategoryNameFromField(condition.field);
-                if (categoryName && categories[categoryName]) {
-                  const categoryConfig = categories[categoryName];
-                  const badgeColor = getBadgeColor(categoryConfig.colorIndex);
-                  badges.push({
-                    category: categoryName,
-                    options: condition.values || [],
-                    colorIndex: categoryConfig.colorIndex,
-                    style: badgeColor.style
-                  });
-                }
+              console.log("Parsed period:", {
+                startDate,
+                startTime,
+                endDate,
+                endTime,
+                currentDate: date,
+                isPreviousDay,
               });
 
-              if (badges.length > 0) {
-                console.log('Applying badges for period:', block.period, 'from', startTime, 'to', endTime);
+              // 여러 날에 걸친 period 처리
+              const nextDayStr = new Date(new Date(date).getTime() + 86400000)
+                .toISOString()
+                .split("T")[0];
 
-                // 해당 period에 속하는 모든 셀에 뱃지 적용
-                const startIdx = timeSlots.indexOf(startTime);
-                let endIdx = timeSlots.indexOf(endTime);
+              // Period가 현재 표시 날짜 범위에 포함되는지 확인
+              const periodStartDate = new Date(startDate);
+              const periodEndDate = new Date(endDate);
+              const currentDateObj = new Date(date);
+              const prevDateObj = new Date(prevDayStr);
 
-                // endTime이 정확히 일치하지 않으면 timeUnit 기반으로 계산
-                if (endIdx === -1 || endIdx <= startIdx) {
-                  // timeUnit을 고려한 정확한 인덱스 계산
-                  const [endHour, endMin] = endTime.split(':').map(Number);
-                  const timeUnit = timeSlots[1] ?
-                    (parseInt(timeSlots[1].split(':')[1]) - parseInt(timeSlots[0].split(':')[1]) + 60) % 60 || 30 :
-                    30;
+              console.log("Date range check:", {
+                periodStart: periodStartDate,
+                periodEnd: periodEndDate,
+                currentDate: currentDateObj,
+                prevDate: prevDateObj,
+                isPreviousDay,
+              });
 
-                  // 이전 시간 슬롯 계산
-                  let prevMin = endMin - timeUnit;
-                  let prevHour = endHour;
-                  if (prevMin < 0) {
-                    prevMin += 60;
-                    prevHour -= 1;
+              // Period가 전체 시간대를 포함하는지 확인 (2일 이상 걸쳐진 period)
+              const isFullPeriod =
+                periodStartDate <= prevDateObj &&
+                periodEndDate >= currentDateObj;
+
+              if (isFullPeriod) {
+                // 전체 시간대 활성화
+                console.log(
+                  "Full period detected - activating all cells for facility:",
+                  facility.id
+                );
+                for (let i = 0; i < timeSlots.length; i++) {
+                  activatedSlots.add(i);
+                }
+              } else {
+                // 부분적인 period 처리
+                if (isPreviousDay) {
+                  // D-1 표시가 있을 때
+                  if (startDate <= prevDayStr && endDate >= prevDayStr) {
+                    // 전날 포함
+                    const startIdx =
+                      startDate === prevDayStr
+                        ? timeSlots.indexOf(startTime)
+                        : 0;
+                    const endIdx =
+                      endDate === prevDayStr
+                        ? timeSlots.indexOf(endTime)
+                        : timeSlots.indexOf("00:00");
+
+                    if (startIdx !== -1) {
+                      for (
+                        let i = startIdx;
+                        i < timeSlots.length && (endIdx === -1 || i < endIdx);
+                        i++
+                      ) {
+                        if (timeSlots[i] === "00:00") break;
+                        activatedSlots.add(i);
+                      }
+                    }
                   }
 
-                  const prevEndTime = `${String(prevHour).padStart(2, '0')}:${String(prevMin).padStart(2, '0')}`;
-                  endIdx = timeSlots.indexOf(prevEndTime) + 1;
+                  // 당일 처리
+                  if (startDate <= date && endDate >= date) {
+                    const zeroIdx = timeSlots.indexOf("00:00");
+                    if (zeroIdx !== -1) {
+                      const startIdx =
+                        startDate === date
+                          ? timeSlots.indexOf(startTime)
+                          : zeroIdx;
+                      const endIdx =
+                        endDate === date
+                          ? timeSlots.indexOf(endTime)
+                          : timeSlots.length;
 
-                  // 그래도 못 찾으면 가장 가까운 인덱스 찾기
-                  if (endIdx === 0) {
-                    for (let i = timeSlots.length - 1; i >= startIdx; i--) {
-                      const slotTime = timeSlots[i];
-                      if (slotTime <= endTime) {
-                        endIdx = i + 1;
-                        break;
+                      for (let i = startIdx; i < endIdx; i++) {
+                        activatedSlots.add(i);
+                      }
+                    }
+                  }
+                } else {
+                  // D-1 표시가 없을 때
+                  if (startDate <= date && endDate >= date) {
+                    const startIdx =
+                      startDate === date ? timeSlots.indexOf(startTime) : 0;
+                    const endIdx =
+                      endDate === date
+                        ? timeSlots.indexOf(endTime)
+                        : timeSlots.length;
+
+                    if (startIdx !== -1) {
+                      for (let i = startIdx; i < endIdx; i++) {
+                        activatedSlots.add(i);
                       }
                     }
                   }
                 }
+              }
 
-                console.log('Badge application range:', startIdx, 'to', endIdx, 'for facility column:', colIndex);
+              // passenger_conditions가 있으면 해당 period의 모든 활성 셀에 뱃지 설정
+              if (
+                block.passenger_conditions &&
+                block.passenger_conditions.length > 0
+              ) {
+                const badges: CategoryBadge[] = [];
+                block.passenger_conditions.forEach((condition: any) => {
+                  const categoryName = getCategoryNameFromField(
+                    condition.field
+                  );
+                  if (categoryName && categories[categoryName]) {
+                    const categoryConfig = categories[categoryName];
+                    const badgeColor = getBadgeColor(categoryConfig.colorIndex);
+                    badges.push({
+                      category: categoryName,
+                      options: condition.values || [],
+                      colorIndex: categoryConfig.colorIndex,
+                      style: badgeColor.style,
+                    });
+                  }
+                });
 
-                if (startIdx !== -1 && endIdx > startIdx) {
-                  for (let i = startIdx; i < endIdx; i++) {
-                    const cellId = `${i}-${colIndex}`;
-                    // activatedSlots에 포함된 셀에만 뱃지 추가 (비활성화된 셀 제외)
-                    if (activatedSlots.has(i) && !newDisabledCells.has(cellId)) {
-                      // 기존 뱃지가 있으면 병합, 없으면 새로 추가
-                      if (newBadges[cellId]) {
-                        // 중복 제거하며 병합
-                        const existingCategories = new Set(newBadges[cellId].map(b => b.category));
-                        badges.forEach(badge => {
-                          if (!existingCategories.has(badge.category)) {
-                            newBadges[cellId].push(badge);
-                          }
-                        });
-                      } else {
-                        newBadges[cellId] = [...badges];
+                if (badges.length > 0) {
+                  console.log(
+                    "Applying badges for period:",
+                    block.period,
+                    "from",
+                    startTime,
+                    "to",
+                    endTime
+                  );
+
+                  // 해당 period에 속하는 모든 셀에 뱃지 적용
+                  const startIdx = timeSlots.indexOf(startTime);
+                  let endIdx = timeSlots.indexOf(endTime);
+
+                  // endTime이 정확히 일치하지 않으면 timeUnit 기반으로 계산
+                  if (endIdx === -1 || endIdx <= startIdx) {
+                    // timeUnit을 고려한 정확한 인덱스 계산
+                    const [endHour, endMin] = endTime.split(":").map(Number);
+                    const timeUnit = timeSlots[1]
+                      ? (parseInt(timeSlots[1].split(":")[1]) -
+                          parseInt(timeSlots[0].split(":")[1]) +
+                          60) %
+                          60 || 30
+                      : 30;
+
+                    // 이전 시간 슬롯 계산
+                    let prevMin = endMin - timeUnit;
+                    let prevHour = endHour;
+                    if (prevMin < 0) {
+                      prevMin += 60;
+                      prevHour -= 1;
+                    }
+
+                    const prevEndTime = `${String(prevHour).padStart(2, "0")}:${String(prevMin).padStart(2, "0")}`;
+                    endIdx = timeSlots.indexOf(prevEndTime) + 1;
+
+                    // 그래도 못 찾으면 가장 가까운 인덱스 찾기
+                    if (endIdx === 0) {
+                      for (let i = timeSlots.length - 1; i >= startIdx; i--) {
+                        const slotTime = timeSlots[i];
+                        if (slotTime <= endTime) {
+                          endIdx = i + 1;
+                          break;
+                        }
                       }
-                      console.log('Added/updated badge for cell:', cellId, 'badges:', newBadges[cellId]);
+                    }
+                  }
+
+                  console.log(
+                    "Badge application range:",
+                    startIdx,
+                    "to",
+                    endIdx,
+                    "for facility column:",
+                    colIndex
+                  );
+
+                  if (startIdx !== -1 && endIdx > startIdx) {
+                    for (let i = startIdx; i < endIdx; i++) {
+                      const cellId = `${i}-${colIndex}`;
+                      // activatedSlots에 포함된 셀에만 뱃지 추가 (비활성화된 셀 제외)
+                      if (
+                        activatedSlots.has(i) &&
+                        !newDisabledCells.has(cellId)
+                      ) {
+                        // 기존 뱃지가 있으면 병합, 없으면 새로 추가
+                        if (newBadges[cellId]) {
+                          // 중복 제거하며 병합
+                          const existingCategories = new Set(
+                            newBadges[cellId].map((b) => b.category)
+                          );
+                          badges.forEach((badge) => {
+                            if (!existingCategories.has(badge.category)) {
+                              newBadges[cellId].push(badge);
+                            }
+                          });
+                        } else {
+                          newBadges[cellId] = [...badges];
+                        }
+                        console.log(
+                          "Added/updated badge for cell:",
+                          cellId,
+                          "badges:",
+                          newBadges[cellId]
+                        );
+                      }
                     }
                   }
                 }
               }
             }
-          }
-        });
+          });
 
-        // time_blocks 처리가 끝난 후, 활성화되지 않은 슬롯만 비활성화
-        for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-          if (!activatedSlots.has(rowIndex)) {
-            const cellId = `${rowIndex}-${colIndex}`;
-            newDisabledCells.add(cellId);
+          // time_blocks 처리가 끝난 후, 활성화되지 않은 슬롯만 비활성화
+          for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+            if (!activatedSlots.has(rowIndex)) {
+              const cellId = `${rowIndex}-${colIndex}`;
+              newDisabledCells.add(cellId);
+            }
           }
         }
-      }
-    });
+      });
 
-    return { disabledCells: newDisabledCells, badges: newBadges };
-  }, []);
+      return { disabledCells: newDisabledCells, badges: newBadges };
+    },
+    []
+  );
 
   // field name을 category name으로 변환하는 헬퍼 함수
   const getCategoryNameFromField = (field: string): string => {
     const fieldToCategoryMap: Record<string, string> = {
-      'operating_carrier_name': 'Airline',
-      'operating_carrier_iata': 'Airline',
-      'aircraft_type': 'Aircraft Type',
-      'flight_type': 'Flight Type',
-      'arrival_airport_iata': 'Arrival Airport',
-      'arrival_city': 'Arrival City',
-      'arrival_country': 'Arrival Country',
-      'arrival_region': 'Arrival Region',
-      'nationality': 'Nationality',
-      'profile': 'Passenger Type'
+      operating_carrier_name: "Airline",
+      operating_carrier_iata: "Airline",
+      aircraft_type: "Aircraft Type",
+      flight_type: "Flight Type",
+      arrival_airport_iata: "Arrival Airport",
+      arrival_city: "Arrival City",
+      arrival_country: "Arrival Country",
+      arrival_region: "Arrival Region",
+      nationality: "Nationality",
+      profile: "Passenger Type",
     };
-    return fieldToCategoryMap[field] || '';
+    return fieldToCategoryMap[field] || "";
   };
 
   // category name을 field name으로 변환하는 헬퍼 함수
   const getCategoryFieldName = (category: string): string => {
     const categoryToFieldMap: Record<string, string> = {
-      'Airline': 'operating_carrier_iata',
-      'Aircraft Type': 'aircraft_type',
-      'Flight Type': 'flight_type',
-      'Arrival Airport': 'arrival_airport_iata',
-      'Arrival City': 'arrival_city',
-      'Arrival Country': 'arrival_country',
-      'Arrival Region': 'arrival_region',
-      'Nationality': 'nationality',
-      'Passenger Type': 'profile'
+      Airline: "operating_carrier_iata",
+      "Aircraft Type": "aircraft_type",
+      "Flight Type": "flight_type",
+      "Arrival Airport": "arrival_airport_iata",
+      "Arrival City": "arrival_city",
+      "Arrival Country": "arrival_country",
+      "Arrival Region": "arrival_region",
+      Nationality: "nationality",
+      "Passenger Type": "profile",
     };
-    return categoryToFieldMap[category] || '';
+    return categoryToFieldMap[category] || "";
   };
-
 
   // 🔄 실행 취소/재실행 히스토리 관리
   const undoHistory = useUndoHistory({
@@ -1392,7 +1465,9 @@ export default function OperatingScheduleEditor({
     if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
       // 최초 여객이 있는 시간 찾기
       const chartData = chartResult.chart_y_data;
-      let totalPassengersByTime: number[] = new Array(chartResult.chart_x_data.length).fill(0);
+      let totalPassengersByTime: number[] = new Array(
+        chartResult.chart_x_data.length
+      ).fill(0);
 
       if (chartData) {
         Object.values(chartData).forEach((airlines: any[]) => {
@@ -1407,31 +1482,43 @@ export default function OperatingScheduleEditor({
       }
 
       // 최초/최종 여객 시간 찾기
-      const firstPassengerIndex = totalPassengersByTime.findIndex(count => count > 0);
-      const lastPassengerIndex = totalPassengersByTime.findLastIndex(count => count > 0);
+      const firstPassengerIndex = totalPassengersByTime.findIndex(
+        (count) => count > 0
+      );
+      const lastPassengerIndex = totalPassengersByTime.findLastIndex(
+        (count) => count > 0
+      );
 
       if (firstPassengerIndex !== -1 && lastPassengerIndex !== -1) {
         // 시작 시간 30분 단위 내림
         const startDateTime = chartResult.chart_x_data[firstPassengerIndex];
-        const [startDate, startTime] = startDateTime.split(' ');
-        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const [startDate, startTime] = startDateTime.split(" ");
+        const [startHour, startMinute] = startTime.split(":").map(Number);
         const roundedStartMinute = Math.floor(startMinute / 30) * 30;
         const roundedStartHour = startHour;
 
         // 종료 시간 처리
-        const endDateTime = chartResult.chart_x_data[Math.min(lastPassengerIndex + 1, chartResult.chart_x_data.length - 1)];
-        const [endDate, endTime] = endDateTime.split(' ');
-        const [endHour] = endTime.split(':').map(Number);
+        const endDateTime =
+          chartResult.chart_x_data[
+            Math.min(
+              lastPassengerIndex + 1,
+              chartResult.chart_x_data.length - 1
+            )
+          ];
+        const [endDate, endTime] = endDateTime.split(" ");
+        const [endHour] = endTime.split(":").map(Number);
 
         // 시작이 전날인지 확인
-        const currentDate = contextDate || new Date().toISOString().split('T')[0];
+        const currentDate =
+          contextDate || new Date().toISOString().split("T")[0];
         isPrev = startDate < currentDate;
 
         // 전날 시간부터 시작하는 경우
         if (isPrev) {
           // 전날 시간 추가
           for (let hour = roundedStartHour; hour < 24; hour++) {
-            const minuteStart = hour === roundedStartHour ? roundedStartMinute : 0;
+            const minuteStart =
+              hour === roundedStartHour ? roundedStartMinute : 0;
             for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
               const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
               slots.push(timeStr);
@@ -1445,7 +1532,8 @@ export default function OperatingScheduleEditor({
         const startMinuteForToday = isPrev ? 0 : roundedStartMinute;
 
         for (let hour = startHourForToday; hour < maxHour; hour++) {
-          const minuteStart = hour === startHourForToday && !isPrev ? startMinuteForToday : 0;
+          const minuteStart =
+            hour === startHourForToday && !isPrev ? startMinuteForToday : 0;
           for (let minute = minuteStart; minute < 60; minute += unitMinutes) {
             const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
             slots.push(timeStr);
@@ -1604,7 +1692,7 @@ export default function OperatingScheduleEditor({
   // 🚀 가상화 계산 (Virtual Scrolling) - 모든 모드에서 가상화 비활성화
   const virtualScrollConfig = useMemo(() => {
     const totalRows = timeSlots.length;
-    
+
     // 모든 모드에서 가상화 비활성화하고 모든 시간 슬롯 표시 (헤더 고정을 위해)
     return {
       startIndex: 0,
@@ -1629,7 +1717,7 @@ export default function OperatingScheduleEditor({
               return {
                 icon: Navigation,
                 options: Object.keys(process.zones),
-                colorIndex: processColorIndex + i,  // Process에 따라 다른 색상 인덱스
+                colorIndex: processColorIndex + i, // Process에 따라 다른 색상 인덱스
               };
             }
           }
@@ -1645,11 +1733,11 @@ export default function OperatingScheduleEditor({
     const action = undoHistory.undo();
     if (!action) return;
 
-    if (action.type === 'toggleDisabled') {
+    if (action.type === "toggleDisabled") {
       // disabledCells 상태 복원
-      setDisabledCells(prev => {
+      setDisabledCells((prev) => {
         const newSet = new Set(prev);
-        action.cellIds.forEach(cellId => {
+        action.cellIds.forEach((cellId) => {
           const previousState = action.previousStates.get(cellId);
           if (previousState) {
             newSet.add(cellId);
@@ -1659,11 +1747,11 @@ export default function OperatingScheduleEditor({
         });
         return newSet;
       });
-    } else if (action.type === 'setBadges') {
+    } else if (action.type === "setBadges") {
       // cellBadges 상태 복원
-      setCellBadges(prev => {
+      setCellBadges((prev) => {
         const updated = { ...prev };
-        action.cellIds.forEach(cellId => {
+        action.cellIds.forEach((cellId) => {
           const previousBadges = action.previousBadges.get(cellId);
           if (previousBadges) {
             updated[cellId] = previousBadges;
@@ -1673,11 +1761,11 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
-    } else if (action.type === 'paste') {
+    } else if (action.type === "paste") {
       // Restore previous state for paste operation
-      setCellBadges(prev => {
+      setCellBadges((prev) => {
         const updated = { ...prev };
-        action.targetCells.forEach(cellId => {
+        action.targetCells.forEach((cellId) => {
           const prevState = action.previousStates?.get(cellId);
           if (prevState?.badges && prevState.badges.length > 0) {
             updated[cellId] = prevState.badges;
@@ -1687,9 +1775,9 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
-      setDisabledCells(prev => {
+      setDisabledCells((prev) => {
         const newSet = new Set(prev);
-        action.targetCells.forEach(cellId => {
+        action.targetCells.forEach((cellId) => {
           const prevState = action.previousStates?.get(cellId);
           if (prevState?.disabled) {
             newSet.add(cellId);
@@ -1707,11 +1795,11 @@ export default function OperatingScheduleEditor({
     const action = undoHistory.redo();
     if (!action) return;
 
-    if (action.type === 'toggleDisabled') {
+    if (action.type === "toggleDisabled") {
       // disabledCells 상태 재적용
-      setDisabledCells(prev => {
+      setDisabledCells((prev) => {
         const newSet = new Set(prev);
-        action.cellIds.forEach(cellId => {
+        action.cellIds.forEach((cellId) => {
           const newState = action.newStates.get(cellId);
           if (newState) {
             newSet.add(cellId);
@@ -1721,11 +1809,11 @@ export default function OperatingScheduleEditor({
         });
         return newSet;
       });
-    } else if (action.type === 'setBadges') {
+    } else if (action.type === "setBadges") {
       // cellBadges 상태 재적용
-      setCellBadges(prev => {
+      setCellBadges((prev) => {
         const updated = { ...prev };
-        action.cellIds.forEach(cellId => {
+        action.cellIds.forEach((cellId) => {
           const newBadges = action.newBadges.get(cellId);
           if (newBadges && newBadges.length > 0) {
             updated[cellId] = newBadges;
@@ -1735,11 +1823,11 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
-    } else if (action.type === 'paste') {
+    } else if (action.type === "paste") {
       // Reapply paste operation
-      setCellBadges(prev => {
+      setCellBadges((prev) => {
         const updated = { ...prev };
-        action.targetCells.forEach(cellId => {
+        action.targetCells.forEach((cellId) => {
           const newState = action.newStates?.get(cellId);
           if (newState?.badges && newState.badges.length > 0) {
             updated[cellId] = newState.badges;
@@ -1749,9 +1837,9 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
-      setDisabledCells(prev => {
+      setDisabledCells((prev) => {
         const newSet = new Set(prev);
-        action.targetCells.forEach(cellId => {
+        action.targetCells.forEach((cellId) => {
           const newState = action.newStates?.get(cellId);
           if (newState?.disabled) {
             newSet.add(cellId);
@@ -1789,8 +1877,11 @@ export default function OperatingScheduleEditor({
 
       // 히스토리를 위한 이전 상태 저장
       const previousBadges = new Map<string, any[]>();
-      targetCells.forEach(cellId => {
-        previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+      targetCells.forEach((cellId) => {
+        previousBadges.set(
+          cellId,
+          cellBadges[cellId] ? [...cellBadges[cellId]] : []
+        );
       });
 
       setCellBadges((prev) => {
@@ -1864,7 +1955,7 @@ export default function OperatingScheduleEditor({
         // 히스토리에 추가
         setTimeout(() => {
           undoHistory.pushHistory({
-            type: 'setBadges',
+            type: "setBadges",
             cellIds: targetCells,
             previousBadges,
             newBadges,
@@ -1904,14 +1995,17 @@ export default function OperatingScheduleEditor({
 
     // 히스토리를 위한 이전 상태 저장
     const previousBadges = new Map<string, any[]>();
-    targetCells.forEach(cellId => {
-      previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+    targetCells.forEach((cellId) => {
+      previousBadges.set(
+        cellId,
+        cellBadges[cellId] ? [...cellBadges[cellId]] : []
+      );
     });
 
     setCellBadges((prev) => {
       const updated = { ...prev };
       const newBadges = new Map<string, any[]>();
-      
+
       targetCells.forEach((cellId) => {
         delete updated[cellId]; // 완전히 제거하여 메모리 최적화
         newBadges.set(cellId, []);
@@ -1920,7 +2014,7 @@ export default function OperatingScheduleEditor({
       // 히스토리에 추가
       setTimeout(() => {
         undoHistory.pushHistory({
-          type: 'setBadges',
+          type: "setBadges",
           cellIds: targetCells,
           previousBadges,
           newBadges,
@@ -1938,8 +2032,11 @@ export default function OperatingScheduleEditor({
 
     // 히스토리를 위한 이전 상태 저장
     const previousBadges = new Map<string, any[]>();
-    targetCells.forEach(cellId => {
-      previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+    targetCells.forEach((cellId) => {
+      previousBadges.set(
+        cellId,
+        cellBadges[cellId] ? [...cellBadges[cellId]] : []
+      );
     });
 
     setCellBadges((prev) => {
@@ -1955,7 +2052,7 @@ export default function OperatingScheduleEditor({
       // 히스토리에 추가
       setTimeout(() => {
         undoHistory.pushHistory({
-          type: 'setBadges',
+          type: "setBadges",
           cellIds: targetCells,
           previousBadges,
           newBadges,
@@ -2517,19 +2614,19 @@ export default function OperatingScheduleEditor({
   const handleCopy = useCallback(() => {
     if (selectedCells.size === 0) return;
 
-    const cellsArray = Array.from(selectedCells).map(cellId => {
-      const [row, col] = cellId.split('-').map(Number);
+    const cellsArray = Array.from(selectedCells).map((cellId) => {
+      const [row, col] = cellId.split("-").map(Number);
       return {
         row,
         col,
         badges: cellBadges[cellId] || [],
-        disabled: disabledCells.has(cellId)
+        disabled: disabledCells.has(cellId),
       };
     });
 
     // Calculate shape of copied area
-    const rows = cellsArray.map(c => c.row);
-    const cols = cellsArray.map(c => c.col);
+    const rows = cellsArray.map((c) => c.row);
+    const cols = cellsArray.map((c) => c.col);
     const minRow = Math.min(...rows);
     const maxRow = Math.max(...rows);
     const minCol = Math.min(...cols);
@@ -2539,9 +2636,9 @@ export default function OperatingScheduleEditor({
       cells: cellsArray,
       shape: {
         rows: maxRow - minRow + 1,
-        cols: maxCol - minCol + 1
+        cols: maxCol - minCol + 1,
       },
-      startCell: { row: minRow, col: minCol }
+      startCell: { row: minRow, col: minCol },
     });
 
     // Show marching ants
@@ -2552,26 +2649,29 @@ export default function OperatingScheduleEditor({
   const handlePaste = useCallback(() => {
     if (!copiedData || selectedCells.size === 0) return;
 
-    const targetCellsArray = Array.from(selectedCells).map(cellId => {
-      const [row, col] = cellId.split('-').map(Number);
+    const targetCellsArray = Array.from(selectedCells).map((cellId) => {
+      const [row, col] = cellId.split("-").map(Number);
       return { row, col, cellId };
     });
 
     // Calculate target shape
-    const targetRows = targetCellsArray.map(c => c.row);
-    const targetCols = targetCellsArray.map(c => c.col);
+    const targetRows = targetCellsArray.map((c) => c.row);
+    const targetCols = targetCellsArray.map((c) => c.col);
     const targetMinRow = Math.min(...targetRows);
     const targetMaxRow = Math.max(...targetRows);
     const targetMinCol = Math.min(...targetCols);
     const targetMaxCol = Math.max(...targetCols);
     const targetShape = {
       rows: targetMaxRow - targetMinRow + 1,
-      cols: targetMaxCol - targetMinCol + 1
+      cols: targetMaxCol - targetMinCol + 1,
     };
 
     // Pattern C: Multiple cells → Single cell
     // When single cell is selected, paste the entire copied shape starting from that cell
-    if (selectedCells.size === 1 && (copiedData.shape.rows > 1 || copiedData.shape.cols > 1)) {
+    if (
+      selectedCells.size === 1 &&
+      (copiedData.shape.rows > 1 || copiedData.shape.cols > 1)
+    ) {
       // Expand selection to match copied shape, trim at table boundaries
       const expandedCells = new Set<string>();
       for (let r = 0; r < copiedData.shape.rows; r++) {
@@ -2597,8 +2697,10 @@ export default function OperatingScheduleEditor({
 
     // Pattern D: Row/Column repeat
     // Check if it's a single row or column being repeated
-    const isSingleRow = copiedData.shape.rows === 1 && copiedData.shape.cols > 1;
-    const isSingleCol = copiedData.shape.cols === 1 && copiedData.shape.rows > 1;
+    const isSingleRow =
+      copiedData.shape.rows === 1 && copiedData.shape.cols > 1;
+    const isSingleCol =
+      copiedData.shape.cols === 1 && copiedData.shape.rows > 1;
 
     if (isSingleRow && targetShape.cols === copiedData.shape.cols) {
       // Single row copied, repeat for all selected rows
@@ -2613,8 +2715,12 @@ export default function OperatingScheduleEditor({
     }
 
     // Pattern A: 1:1 matching or exact multiples
-    const isExactMatch = (copiedData.shape.rows === targetShape.rows && copiedData.shape.cols === targetShape.cols);
-    const isExactMultiple = (targetShape.rows % copiedData.shape.rows === 0 && targetShape.cols % copiedData.shape.cols === 0);
+    const isExactMatch =
+      copiedData.shape.rows === targetShape.rows &&
+      copiedData.shape.cols === targetShape.cols;
+    const isExactMultiple =
+      targetShape.rows % copiedData.shape.rows === 0 &&
+      targetShape.cols % copiedData.shape.cols === 0;
 
     if (isExactMatch || isExactMultiple) {
       // Direct paste or pattern repeat
@@ -2627,101 +2733,120 @@ export default function OperatingScheduleEditor({
     setShowPasteWarning(true);
   }, [copiedData, selectedCells, timeSlots, currentFacilities]);
 
-
   // Execute the paste operation
-  const executePaste = useCallback((targetCells: Set<string>, copiedData: any) => {
-    const previousStates = new Map<string, { badges: CategoryBadge[]; disabled: boolean }>();
-    const targetCellsArray = Array.from(targetCells).map(cellId => {
-      const [row, col] = cellId.split('-').map(Number);
-      previousStates.set(cellId, {
-        badges: cellBadges[cellId] || [],
-        disabled: disabledCells.has(cellId)
+  const executePaste = useCallback(
+    (targetCells: Set<string>, copiedData: any) => {
+      const previousStates = new Map<
+        string,
+        { badges: CategoryBadge[]; disabled: boolean }
+      >();
+      const targetCellsArray = Array.from(targetCells).map((cellId) => {
+        const [row, col] = cellId.split("-").map(Number);
+        previousStates.set(cellId, {
+          badges: cellBadges[cellId] || [],
+          disabled: disabledCells.has(cellId),
+        });
+        return { row, col, cellId };
       });
-      return { row, col, cellId };
-    });
 
-    // Calculate offsets
-    const targetMinRow = Math.min(...targetCellsArray.map(c => c.row));
-    const targetMinCol = Math.min(...targetCellsArray.map(c => c.col));
+      // Calculate offsets
+      const targetMinRow = Math.min(...targetCellsArray.map((c) => c.row));
+      const targetMinCol = Math.min(...targetCellsArray.map((c) => c.col));
 
-    // Apply paste
-    const newBadges = { ...cellBadges };
-    const newDisabledCells = new Set(disabledCells);
+      // Apply paste
+      const newBadges = { ...cellBadges };
+      const newDisabledCells = new Set(disabledCells);
 
-    targetCellsArray.forEach(target => {
-      let sourceCellData: { row: number; col: number; badges: CategoryBadge[]; disabled: boolean } | undefined = undefined;
+      targetCellsArray.forEach((target) => {
+        let sourceCellData:
+          | {
+              row: number;
+              col: number;
+              badges: CategoryBadge[];
+              disabled: boolean;
+            }
+          | undefined = undefined;
 
-      // Pattern B: Single cell copy - use the same cell for all targets
-      if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {
-        sourceCellData = copiedData.cells[0];
-      }
-      // Pattern D: Single row repeat
-      else if (copiedData.shape.rows === 1) {
-        const relativeCol = (target.col - targetMinCol) % copiedData.shape.cols;
-        sourceCellData = copiedData.cells.find(
-          c => c.row === copiedData.startCell.row &&
-               c.col - copiedData.startCell.col === relativeCol
-        );
-      }
-      // Pattern D: Single column repeat
-      else if (copiedData.shape.cols === 1) {
-        const relativeRow = (target.row - targetMinRow) % copiedData.shape.rows;
-        sourceCellData = copiedData.cells.find(
-          c => c.col === copiedData.startCell.col &&
-               c.row - copiedData.startCell.row === relativeRow
-        );
-      }
-      // Pattern A & C: Normal grid paste with wrapping
-      else {
-        const relativeRow = (target.row - targetMinRow) % copiedData.shape.rows;
-        const relativeCol = (target.col - targetMinCol) % copiedData.shape.cols;
+        // Pattern B: Single cell copy - use the same cell for all targets
+        if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {
+          sourceCellData = copiedData.cells[0];
+        }
+        // Pattern D: Single row repeat
+        else if (copiedData.shape.rows === 1) {
+          const relativeCol =
+            (target.col - targetMinCol) % copiedData.shape.cols;
+          sourceCellData = copiedData.cells.find(
+            (c) =>
+              c.row === copiedData.startCell.row &&
+              c.col - copiedData.startCell.col === relativeCol
+          );
+        }
+        // Pattern D: Single column repeat
+        else if (copiedData.shape.cols === 1) {
+          const relativeRow =
+            (target.row - targetMinRow) % copiedData.shape.rows;
+          sourceCellData = copiedData.cells.find(
+            (c) =>
+              c.col === copiedData.startCell.col &&
+              c.row - copiedData.startCell.row === relativeRow
+          );
+        }
+        // Pattern A & C: Normal grid paste with wrapping
+        else {
+          const relativeRow =
+            (target.row - targetMinRow) % copiedData.shape.rows;
+          const relativeCol =
+            (target.col - targetMinCol) % copiedData.shape.cols;
 
-        sourceCellData = copiedData.cells.find(
-          c => c.row - copiedData.startCell.row === relativeRow &&
-               c.col - copiedData.startCell.col === relativeCol
-        );
-      }
-
-      if (sourceCellData) {
-        // Apply badges
-        if (sourceCellData.badges.length > 0) {
-          newBadges[target.cellId] = [...sourceCellData.badges];
-        } else {
-          delete newBadges[target.cellId];
+          sourceCellData = copiedData.cells.find(
+            (c) =>
+              c.row - copiedData.startCell.row === relativeRow &&
+              c.col - copiedData.startCell.col === relativeCol
+          );
         }
 
-        // Apply disabled state
-        if (sourceCellData.disabled) {
-          newDisabledCells.add(target.cellId);
-        } else {
-          newDisabledCells.delete(target.cellId);
-        }
-      }
-    });
-
-    // Update states
-    setCellBadges(newBadges);
-    setDisabledCells(() => newDisabledCells);
-
-    // Don't clear selection - keep the target cells selected
-    // Only hide marching ants (handled in handleKeyDown)
-
-    // Add to history
-    undoHistory.pushHistory({
-      type: 'paste',
-      targetCells: Array.from(targetCells),
-      previousStates,
-      newStates: new Map(
-        Array.from(targetCells).map(cellId => [
-          cellId,
-          {
-            badges: newBadges[cellId] || [],
-            disabled: newDisabledCells.has(cellId)
+        if (sourceCellData) {
+          // Apply badges
+          if (sourceCellData.badges.length > 0) {
+            newBadges[target.cellId] = [...sourceCellData.badges];
+          } else {
+            delete newBadges[target.cellId];
           }
-        ])
-      )
-    });
-  }, [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory]);
+
+          // Apply disabled state
+          if (sourceCellData.disabled) {
+            newDisabledCells.add(target.cellId);
+          } else {
+            newDisabledCells.delete(target.cellId);
+          }
+        }
+      });
+
+      // Update states
+      setCellBadges(newBadges);
+      setDisabledCells(() => newDisabledCells);
+
+      // Don't clear selection - keep the target cells selected
+      // Only hide marching ants (handled in handleKeyDown)
+
+      // Add to history
+      undoHistory.pushHistory({
+        type: "paste",
+        targetCells: Array.from(targetCells),
+        previousStates,
+        newStates: new Map(
+          Array.from(targetCells).map((cellId) => [
+            cellId,
+            {
+              badges: newBadges[cellId] || [],
+              disabled: newDisabledCells.has(cellId),
+            },
+          ])
+        ),
+      });
+    },
+    [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory]
+  );
 
   // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
   const handleKeyDown = useCallback(
@@ -2787,18 +2912,20 @@ export default function OperatingScheduleEditor({
         if (selectedCellsArray.length === 0) return;
 
         // Check if all selected cells are currently disabled
-        const allDisabled = selectedCellsArray.every(cellId => disabledCells.has(cellId));
+        const allDisabled = selectedCellsArray.every((cellId) =>
+          disabledCells.has(cellId)
+        );
 
         // Save previous states for undo
         const previousStates = new Map<string, boolean>();
-        selectedCellsArray.forEach(cellId => {
+        selectedCellsArray.forEach((cellId) => {
           previousStates.set(cellId, disabledCells.has(cellId));
         });
 
         // Toggle disabled state
         setDisabledCells((prev: Set<string>) => {
           const newSet = new Set(prev);
-          selectedCellsArray.forEach(cellId => {
+          selectedCellsArray.forEach((cellId) => {
             if (allDisabled) {
               // If all are disabled, enable them
               newSet.delete(cellId);
@@ -2812,16 +2939,16 @@ export default function OperatingScheduleEditor({
 
         // Save new states for undo
         const newStates = new Map<string, boolean>();
-        selectedCellsArray.forEach(cellId => {
+        selectedCellsArray.forEach((cellId) => {
           newStates.set(cellId, !allDisabled);
         });
 
         // Add to undo history
         undoHistory.pushHistory({
-          type: 'toggleDisabled',
+          type: "toggleDisabled",
           cellIds: selectedCellsArray,
           previousStates,
-          newStates
+          newStates,
         });
 
         return;
@@ -2835,8 +2962,11 @@ export default function OperatingScheduleEditor({
       }
 
       // 재실행: Mac은 Cmd+Shift+Z, Windows/Linux는 Ctrl+Y
-      if ((e.metaKey && e.shiftKey && e.code === "KeyZ") || // Mac
-          (e.ctrlKey && e.code === "KeyY")) { // Windows/Linux
+      if (
+        (e.metaKey && e.shiftKey && e.code === "KeyZ") || // Mac
+        (e.ctrlKey && e.code === "KeyY")
+      ) {
+        // Windows/Linux
         e.preventDefault();
         handleRedo();
         return;
@@ -2856,8 +2986,11 @@ export default function OperatingScheduleEditor({
 
           // 히스토리를 위한 이전 상태 저장
           const previousBadges = new Map<string, any[]>();
-          targetCells.forEach(cellId => {
-            previousBadges.set(cellId, cellBadges[cellId] ? [...cellBadges[cellId]] : []);
+          targetCells.forEach((cellId) => {
+            previousBadges.set(
+              cellId,
+              cellBadges[cellId] ? [...cellBadges[cellId]] : []
+            );
           });
 
           // 🚀 배치 업데이트로 경쟁 조건 방지 및 성능 향상
@@ -2866,7 +2999,7 @@ export default function OperatingScheduleEditor({
             setCellBadges((prev) => {
               const updated = { ...prev };
               const newBadges = new Map<string, any[]>();
-              
+
               targetCells.forEach((cellId) => {
                 delete updated[cellId]; // 완전히 제거
                 newBadges.set(cellId, []);
@@ -2875,7 +3008,7 @@ export default function OperatingScheduleEditor({
               // 히스토리에 추가
               setTimeout(() => {
                 undoHistory.pushHistory({
-                  type: 'setBadges',
+                  type: "setBadges",
                   cellIds: targetCells,
                   previousBadges,
                   newBadges,
@@ -2915,12 +3048,12 @@ export default function OperatingScheduleEditor({
     const ensureFocus = () => {
       // input, textarea, select 등 form 요소가 포커스를 가지고 있으면 containerRef로 포커스를 옮기지 않음
       const activeElement = document.activeElement;
-      const isFormElement = activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.tagName === 'SELECT' ||
-        activeElement.getAttribute('contenteditable') === 'true'
-      );
+      const isFormElement =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.tagName === "SELECT" ||
+          activeElement.getAttribute("contenteditable") === "true");
 
       if (
         containerRef.current &&
@@ -2938,7 +3071,11 @@ export default function OperatingScheduleEditor({
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       // input 요소를 클릭한 경우 포커스를 변경하지 않음
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      ) {
         return;
       }
 
@@ -2970,14 +3107,14 @@ export default function OperatingScheduleEditor({
       isAdditive: false,
       originalSelection: null,
     });
-    
+
     setContextMenu({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
-    
+
     // undoHistory 메서드 직접 호출
     if (undoHistory && undoHistory.clearHistory) {
       undoHistory.clearHistory();
     }
-    
+
     // Zone 변경 시 뱃지 초기화하지 않음 - 기존 뱃지 유지
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProcessIndex, selectedZone]); // 핵심 의존성만 포함
@@ -2993,7 +3130,7 @@ export default function OperatingScheduleEditor({
       processFlow[selectedProcessIndex].zones
     ) {
       const zones = Object.keys(processFlow[selectedProcessIndex].zones);
-      
+
       // 초기화되지 않았거나, selectedZone이 현재 zones에 없을 때만 설정
       if (zones.length > 0) {
         if (!selectedZone || !zones.includes(selectedZone)) {
@@ -3014,40 +3151,49 @@ export default function OperatingScheduleEditor({
     // Skip update if not initialized yet for this specific process-zone
     if (!initializedKeys.has(initKey)) {
       // Always try to initialize from existing schedule data
-      const hasExistingSchedule = currentFacilities.some(f =>
-        f.operating_schedule?.time_blocks?.length > 0
+      const hasExistingSchedule = currentFacilities.some(
+        (f) => f.operating_schedule?.time_blocks?.length > 0
       );
 
-      console.log('ScheduleEditor initialization check:', {
+      console.log("ScheduleEditor initialization check:", {
         processIndex: selectedProcessIndex,
         zone: selectedZone,
         hasExistingSchedule,
         facilities: currentFacilities.length,
-        firstFacility: currentFacilities[0]
+        firstFacility: currentFacilities[0],
       });
 
       if (hasExistingSchedule) {
         // 기존 schedule로부터 초기화 - 날짜 미리 계산
-        const currentDate = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+        const currentDate =
+          useSimulationStore.getState().context.date ||
+          new Date().toISOString().split("T")[0];
         const prevDay = new Date(currentDate);
         prevDay.setDate(prevDay.getDate() - 1);
-        const prevDayStr = prevDay.toISOString().split('T')[0];
+        const prevDayStr = prevDay.toISOString().split("T")[0];
 
-        console.log('Initializing from existing schedule data');
+        console.log("Initializing from existing schedule data");
         const { disabledCells: initDisabledCells, badges: initBadges } =
-          initializeDisabledCellsFromPeriods(currentFacilities, timeSlots, isPreviousDay, CONDITION_CATEGORIES, currentDate, prevDayStr);
+          initializeDisabledCellsFromPeriods(
+            currentFacilities,
+            timeSlots,
+            isPreviousDay,
+            CONDITION_CATEGORIES,
+            currentDate,
+            prevDayStr
+          );
 
-        console.log('Initialized cells:', {
+        console.log("Initialized cells:", {
           disabledCount: initDisabledCells.size,
-          badgeCount: Object.keys(initBadges).length
+          badgeCount: Object.keys(initBadges).length,
         });
 
         setDisabledCells(initDisabledCells);
         setCellBadges(initBadges);
-        setInitializedKeys(prev => new Set([...prev, initKey]));
+        setInitializedKeys((prev) => new Set([...prev, initKey]));
         return;
       }
-      setInitializedKeys(prev => new Set([...prev, initKey]));
+      setInitializedKeys((prev) => new Set([...prev, initKey]));
     }
 
     // 초기화가 완료된 후에만 업데이트 진행
@@ -3059,11 +3205,16 @@ export default function OperatingScheduleEditor({
     // 각 시설별로 period 재계산
     currentFacilities.forEach((facility, facilityIndex) => {
       if (facility && facility.id) {
-        const existingTimeBlocks = facility.operating_schedule?.time_blocks || [];
+        const existingTimeBlocks =
+          facility.operating_schedule?.time_blocks || [];
 
         // 현재 프로세스의 process_time_seconds 값 가져오기
-        const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
-        const processTimeSeconds = (currentProcess as any)?.process_time_seconds;
+        const currentProcess =
+          selectedProcessIndex !== null
+            ? processFlow[selectedProcessIndex]
+            : null;
+        const processTimeSeconds = (currentProcess as any)
+          ?.process_time_seconds;
 
         // 새로운 periods 계산 (뱃지 정보 포함, date 전달)
         const date = useSimulationStore.getState().context.date;
@@ -3084,7 +3235,8 @@ export default function OperatingScheduleEditor({
 
         if (hasChanged) {
           // Zustand store 즉시 업데이트
-          const { updateFacilitySchedule } = useSimulationStore.getState() as any;
+          const { updateFacilitySchedule } =
+            useSimulationStore.getState() as any;
           if (updateFacilitySchedule) {
             updateFacilitySchedule(
               selectedProcessIndex,
@@ -3108,7 +3260,7 @@ export default function OperatingScheduleEditor({
     appliedTimeUnit,
     isPreviousDay,
     CONDITION_CATEGORIES,
-    initializeDisabledCellsFromPeriods
+    initializeDisabledCellsFromPeriods,
   ]); // 모든 필요한 의존성 포함
 
   // 🛡️ 안전성 검사 강화
@@ -3240,14 +3392,14 @@ export default function OperatingScheduleEditor({
                   type="text"
                   value={timeUnitInput}
                   onChange={(e) => {
-                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
                     setTimeUnitInput(numericValue);
                   }}
                   onKeyDown={(e) => {
                     // 키보드 이벤트가 테이블 단축키와 충돌하지 않도록 전파 중단
                     e.stopPropagation();
 
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       const value = parseInt(timeUnitInput) || 30;
                       const clampedValue = Math.max(1, Math.min(60, value));
@@ -3255,7 +3407,10 @@ export default function OperatingScheduleEditor({
                       // 값이 변경되었을 때만 처리
                       if (clampedValue !== appliedTimeUnit) {
                         // 데이터가 있으면 확인 다이얼로그 표시
-                        if (Object.keys(cellBadges).length > 0 || disabledCells.size > 0) {
+                        if (
+                          Object.keys(cellBadges).length > 0 ||
+                          disabledCells.size > 0
+                        ) {
                           setPendingTimeUnit(clampedValue);
                           setShowTimeUnitConfirm(true);
                         } else {
@@ -3310,8 +3465,8 @@ export default function OperatingScheduleEditor({
         />
 
         {/* 전체화면 Dialog */}
-        <Dialog 
-          open={isFullScreen} 
+        <Dialog
+          open={isFullScreen}
           modal={true}
           onOpenChange={(open) => {
             // 컨텍스트 메뉴가 열려있을 때는 Dialog를 닫지 않음
@@ -3321,7 +3476,7 @@ export default function OperatingScheduleEditor({
             setIsFullScreen(open);
           }}
         >
-          <DialogContent 
+          <DialogContent
             className="max-w-[95vw] h-[95vh] p-0 flex flex-col"
             onInteractOutside={(e) => {
               // 컨텍스트 메뉴가 열려있을 때는 외부 상호작용 차단
@@ -3342,7 +3497,7 @@ export default function OperatingScheduleEditor({
                 zone {selectedZone}
               </DialogDescription>
             </DialogHeader>
-            <div 
+            <div
               className="flex-1 min-h-0 px-6 pb-6 overflow-hidden"
               onClick={(e) => {
                 // 컨텍스트 메뉴가 열려있을 때는 클릭 이벤트 전파 방지
@@ -3369,7 +3524,10 @@ export default function OperatingScheduleEditor({
         </Dialog>
 
         {/* Time Unit Change Confirmation Dialog */}
-        <AlertDialog open={showTimeUnitConfirm} onOpenChange={setShowTimeUnitConfirm}>
+        <AlertDialog
+          open={showTimeUnitConfirm}
+          onOpenChange={setShowTimeUnitConfirm}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Change Time Interval?</AlertDialogTitle>
@@ -3380,24 +3538,31 @@ export default function OperatingScheduleEditor({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => {
-                setTimeUnitInput(appliedTimeUnit.toString());
-                setPendingTimeUnit(null);
-              }}>
+              <AlertDialogCancel
+                onClick={() => {
+                  setTimeUnitInput(appliedTimeUnit.toString());
+                  setPendingTimeUnit(null);
+                }}
+              >
                 Cancel
               </AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
-                if (pendingTimeUnit) {
-                  setAppliedTimeUnit(pendingTimeUnit);
-                  setTimeUnitInput(pendingTimeUnit.toString());
-                  // Clear data if exists
-                  if (Object.keys(cellBadges).length > 0 || disabledCells.size > 0) {
-                    setCellBadges({});
-                    setDisabledCells(new Set<string>());
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingTimeUnit) {
+                    setAppliedTimeUnit(pendingTimeUnit);
+                    setTimeUnitInput(pendingTimeUnit.toString());
+                    // Clear data if exists
+                    if (
+                      Object.keys(cellBadges).length > 0 ||
+                      disabledCells.size > 0
+                    ) {
+                      setCellBadges({});
+                      setDisabledCells(new Set<string>());
+                    }
+                    setPendingTimeUnit(null);
                   }
-                  setPendingTimeUnit(null);
-                }
-              }}>
+                }}
+              >
                 Confirm
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -3411,21 +3576,29 @@ export default function OperatingScheduleEditor({
               <AlertDialogTitle>Size Mismatch</AlertDialogTitle>
               <AlertDialogDescription>
                 The copied area and paste area have different sizes and shapes.
-                Do you want to continue? The pattern will be repeated to fill the selection.
+                Do you want to continue? The pattern will be repeated to fill
+                the selection.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => {
-                setPendingPasteData(null);
-              }}>
+              <AlertDialogCancel
+                onClick={() => {
+                  setPendingPasteData(null);
+                }}
+              >
                 Cancel
               </AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
-                if (pendingPasteData) {
-                  executePaste(pendingPasteData.targetCells, pendingPasteData.copiedData);
-                  setPendingPasteData(null);
-                }
-              }}>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingPasteData) {
+                    executePaste(
+                      pendingPasteData.targetCells,
+                      pendingPasteData.copiedData
+                    );
+                    setPendingPasteData(null);
+                  }
+                }}
+              >
                 Continue
               </AlertDialogAction>
             </AlertDialogFooter>
