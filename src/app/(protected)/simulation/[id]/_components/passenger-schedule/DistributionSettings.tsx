@@ -717,16 +717,35 @@ export default function DistributionSettings({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-l-4 border-primary pl-4">
-        <h3 className="text-lg font-semibold text-default-900">
-          Define {isNationality ? "Nationalities" : "Passenger Profiles"}
-        </h3>
-        <p className="text-sm text-default-500">
-          Define{" "}
-          {isNationality
-            ? "what properties can be assigned"
-            : "passenger profile categories for classification"}
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="border-l-4 border-primary pl-4">
+          <h3 className="text-lg font-semibold text-default-900">
+            Define {isNationality ? "Nationalities" : "Passenger Profiles"}
+          </h3>
+          <p className="text-sm text-default-500">
+            Define{" "}
+            {isNationality
+              ? "what properties can be assigned"
+              : "passenger profile categories for classification"}
+          </p>
+        </div>
+        {/* Clear button in header - always visible */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (createdRules.length > 0 || hasDefaultRule) {
+              setPendingAction({ type: "remove", payload: [] });
+              setShowConfirmDialog(true);
+            } else {
+              setProperties([]);
+            }
+          }}
+          disabled={definedProperties.length === 0}
+          className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+        >
+          <X size={16} />
+          Clear
+        </Button>
       </div>
 
       {/* Property Input */}
@@ -792,15 +811,30 @@ export default function DistributionSettings({
             </p>
           </div>
 
-          <Button
-            variant={definedProperties.length > 0 ? "primary" : "outline"}
-            disabled={definedProperties.length === 0}
-            onClick={handleOpenRuleModal}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Rule
-          </Button>
+          <div className="flex gap-2">
+            {/* Clear button for rules - always visible */}
+            <Button
+              variant="outline"
+              onClick={() => {
+                reorderRulesStore([]);
+              }}
+              disabled={createdRules.length === 0}
+              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+            >
+              <X size={16} />
+              Clear
+            </Button>
+
+            <Button
+              variant={definedProperties.length > 0 ? "primary" : "outline"}
+              disabled={definedProperties.length === 0}
+              onClick={handleOpenRuleModal}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Rule
+            </Button>
+          </div>
         </div>
 
         {/* Created Rules */}
@@ -1038,6 +1072,8 @@ export default function DistributionSettings({
             <AlertDialogDescription>
               {pendingAction?.type === "add"
                 ? `Adding new ${isNationality ? "properties" : "profiles"} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`
+                : pendingAction?.payload.length === 0
+                ? `Clearing all ${isNationality ? "properties" : "profiles"} will remove all existing rules and distributions. Do you want to continue?`
                 : `Removing ${isNationality ? "properties" : "profiles"} will automatically adjust all existing rule distributions to equal percentages. Do you want to continue?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
