@@ -265,8 +265,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       setLastSavedAt(savedTimestamp);
 
       toast({
-        title: 'Saved Successfully',
-        description: `Scenario metadata has been saved.\nSaved at: ${new Date().toLocaleString()}`,
+        title: 'Saved',
+        description: 'Scenario has been saved.',
       });
     } catch (error) {
       toast({

@@ -503,7 +503,7 @@ function TabFlightSchedule({
 
         // 🆕 parquet_metadata는 하드코딩된 컬럼으로 대체됨 (제거됨)
 
-        // 🚀 Auto-save: Filter Flights 응답 후 자동 저장
+        // S3 저장 처리
         try {
           // 전체 메타데이터 수집
           const completeMetadata = {
@@ -511,25 +511,14 @@ function TabFlightSchedule({
             savedAt: new Date().toISOString(),
           };
 
-          // 자동 저장 실행
+          // S3 저장 실행
           const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
 
           // 저장 성공 시 lastSavedAt 업데이트
           const savedTimestamp = new Date().toISOString();
           useSimulationStore.getState().setLastSavedAt(savedTimestamp);
-
-          toast({
-            title: '✅ Auto-save completed',
-            description: `Flight schedule data has been automatically saved after filtering.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
-          });
         } catch (saveError) {
-          console.error('Auto-save failed:', saveError);
-          // Auto-save 실패는 조용히 처리 (사용자 작업을 방해하지 않음)
-          toast({
-            title: '⚠️ Auto-save failed',
-            description: 'Data was processed successfully but auto-save failed. You can manually save later.',
-            variant: 'default',
-          });
+          // 저장 실패는 조용히 처리
         }
 
         return data;

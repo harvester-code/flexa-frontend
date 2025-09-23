@@ -151,8 +151,8 @@ export default function PassengerFilterConditions({
       setStepCompleted(2, true);
 
       toast({
-        title: "Success",
-        description: "Passenger data generated successfully! Step 3 is now available.",
+        title: "Passenger Schedule Generated",
+        description: "Passenger data has been generated successfully.",
       });
     } catch (error) {
       // 🔍 API 에러 로그

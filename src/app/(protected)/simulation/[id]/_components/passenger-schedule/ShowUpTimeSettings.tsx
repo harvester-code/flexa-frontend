@@ -361,7 +361,7 @@ export default function ShowUpTimeSettings({
       const { data: response } = await createPassengerShowUp(simulationId, requestBody);
 
 
-      // 🚀 Auto-save: Generate Pax 응답 후 자동 저장
+      // S3 저장 처리
       try {
         // 전체 메타데이터 수집
         const completeMetadata = {
@@ -369,25 +369,20 @@ export default function ShowUpTimeSettings({
           savedAt: new Date().toISOString(),
         };
 
-        // 자동 저장 실행
+        // S3 저장 실행
         const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
 
         // 저장 성공 시 lastSavedAt 업데이트
         const savedTimestamp = new Date().toISOString();
         useSimulationStore.getState().setLastSavedAt(savedTimestamp);
-
-        toast({
-          title: '✅ Success & Auto-saved',
-          description: `Passenger data generated and automatically saved.\nSaved at: ${new Date(savedTimestamp).toLocaleString()}`,
-        });
       } catch (saveError) {
-        console.error('Auto-save failed:', saveError);
-        // Auto-save 실패 시에도 Generate Pax는 성공했으므로 성공 메시지 표시
-        toast({
-          title: 'Success',
-          description: 'Passenger data generated successfully! (Auto-save failed - you can manually save later)',
-        });
+        // 저장 실패는 조용히 처리
       }
+
+      toast({
+        title: 'Passenger Schedule Generated',
+        description: 'Passenger data has been generated successfully.',
+      });
 
       // TODO: 응답 데이터 처리 (필요에 따라)
       // useSimulationStore.getState().setPassengerResults(response);

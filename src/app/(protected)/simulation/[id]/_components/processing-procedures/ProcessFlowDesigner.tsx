@@ -566,7 +566,7 @@ export default function ProcessFlowDesigner({
 
         toast({
           title: "Process Order Updated",
-          description: "The process flow has been reordered successfully.",
+          description: "The process flow has been reordered.",
         });
       }
     }
@@ -828,7 +828,7 @@ export default function ProcessFlowDesigner({
 
     toast({
       title: "Process Updated",
-      description: "Process has been updated successfully.",
+      description: "Process has been updated.",
     });
   }, [selectedProcessIndex, editedProcess, processFlow, setProcessFlow]);
 
@@ -891,7 +891,7 @@ export default function ProcessFlowDesigner({
 
       toast({
         title: "Simulation Started",
-        description: "Your simulation is now running.",
+        description: "Simulation has been started.",
       });
     } catch (error: any) {
       // Update with error
@@ -1667,8 +1667,7 @@ export default function ProcessFlowDesigner({
 
                             toast({
                               title: "Process Created",
-                              description:
-                                "New process has been added successfully.",
+                              description: "Process has been created.",
                             });
                           }
                         } else if (selectedProcessIndex !== null && editedProcess) {
