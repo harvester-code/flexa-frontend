@@ -269,9 +269,9 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                   />
                                   <span className="truncate text-black">
                                     {category === "Airline" && flightAirlines?.[option]
-                                      ? `(${option}) ${flightAirlines[option]}`
+                                      ? `${option} | ${flightAirlines[option]}`
                                       : (category === "Arrival Airport" || category === "Departure Airport") && airportCityMapping?.[option]
-                                      ? `(${option}) ${airportCityMapping[option]}`
+                                      ? `${option} | ${airportCityMapping[option]}`
                                       : option}
                                   </span>
                                 </div>

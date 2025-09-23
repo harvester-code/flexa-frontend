@@ -456,9 +456,9 @@ export default function FlightCriteriaSelector({
                                 />
                                 <label htmlFor={itemKey} className="text-default-700 flex-1 cursor-pointer truncate">
                                   {selectedColumn === 'operating_carrier_iata' && flightAirlines?.[value]
-                                    ? `(${value}) ${flightAirlines[value]}`
+                                    ? `${value} | ${flightAirlines[value]}`
                                     : (selectedColumn === 'arrival_airport_iata' || selectedColumn === 'departure_airport_iata') && airportCityMapping?.[value]
-                                    ? `(${value}) ${airportCityMapping[value]}`
+                                    ? `${value} | ${airportCityMapping[value]}`
                                     : value}
                                 </label>
                                 {flightInfo && (
