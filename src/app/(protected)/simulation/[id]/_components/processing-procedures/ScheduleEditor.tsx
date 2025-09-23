@@ -294,62 +294,82 @@ const calculatePeriodsFromDisabledCells = (
 
   const periods: any[] = [];
   let currentStart: string | null = null;
-  let lastActiveTime: string | null = null;
   let currentConditions: any[] | null = null;
-  
+
   for (let i = 0; i < timeSlots.length; i++) {
     const cellId = `${i}-${facilityIndex}`;
     const isDisabled = disabledCells.has(cellId);
     const currentTime = timeSlots[i];
+    const badges = cellBadges[cellId] || [];
+
+    // 뱃지를 passenger_conditions 형식으로 변환
+    const conditions = badges.map(badge => ({
+      field: getCategoryFieldName(badge.category),
+      values: badge.options
+    })).filter(c => c.field);
 
     if (!isDisabled) {
       // 활성화된 셀
       if (currentStart === null) {
         // 새로운 활성 구간 시작
         currentStart = currentTime;
-        currentConditions = [];
+        currentConditions = conditions;
       } else {
-        // 조건이 변경되었으면 이전 구간 저장하고 새 구간 시작
-        if (lastActiveTime !== null) {
-          const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+        // 조건이 다르면 이전 구간을 종료하고 새 구간 시작
+        const conditionsChanged = JSON.stringify(currentConditions) !== JSON.stringify(conditions);
+        if (conditionsChanged) {
+          // 이전 구간 저장
+          const prevIndex = i - 1;
+          const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
 
-          // 시작 시간이 전날 시간인지 확인
           const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
             ? prevDayStr
             : currentDate;
 
-          const endDateTime = endTime === "00:00"
-            ? `${nextDayStr} 00:00:00`
-            : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
-              ? `${prevDayStr} ${endTime}:00`
-              : `${currentDate} ${endTime}:00`;
+          // 24:00은 다음날 00:00으로 처리
+          let endDateTime;
+          if (endTime === "24:00" || endTime === "00:00") {
+            endDateTime = `${nextDayStr} 00:00:00`;
+          } else {
+            const endDate = isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
+              ? prevDayStr
+              : currentDate;
+            endDateTime = `${endDate} ${endTime}:00`;
+          }
 
           periods.push({
             period: `${startDate} ${currentStart}:00-${endDateTime}`,
             process_time_seconds: processTime,
-            passenger_conditions: []
+            passenger_conditions: currentConditions || []
           });
+
+          // 새 구간 시작
+          currentStart = currentTime;
+          currentConditions = conditions;
         }
-        currentStart = currentTime;
-        currentConditions = [];
       }
-      lastActiveTime = currentTime;
+      // 연속된 활성 셀이면 계속 진행
     } else {
       // 비활성화된 셀
-      if (currentStart !== null && lastActiveTime !== null) {
+      if (currentStart !== null) {
         // 이전 활성 구간을 저장
-        const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+        const prevIndex = i - 1;
+        const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
 
-        // 시작 시간이 전날 시간인지 확인
         const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
           ? prevDayStr
           : currentDate;
 
-        const endDateTime = endTime === "00:00"
-          ? `${nextDayStr} 00:00:00`
-          : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
-            ? `${prevDayStr} ${endTime}:00`
-            : `${currentDate} ${endTime}:00`;
+        // 24:00은 다음날 00:00으로 처리
+        let endDateTime;
+        if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
+          endDateTime = `${nextDayStr} 00:00:00`;
+        } else {
+          const endDate = isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
+            ? prevDayStr
+            : currentDate;
+          endDateTime = `${endDate} ${endTime}:00`;
+        }
 
         periods.push({
           period: `${startDate} ${currentStart}:00-${endDateTime}`,
@@ -357,27 +377,30 @@ const calculatePeriodsFromDisabledCells = (
           passenger_conditions: currentConditions || []
         });
         currentStart = null;
-        lastActiveTime = null;
         currentConditions = null;
       }
     }
   }
   
   // 마지막 활성 구간 처리
-  if (currentStart !== null && lastActiveTime !== null) {
-    // 마지막 시간 슬롯의 끝 시간 계산
-    const endTime = getNextTimeSlot(lastActiveTime, timeUnit);
+  if (currentStart !== null) {
+    const lastIndex = timeSlots.length - 1;
+    const endTime = getNextTimeSlot(timeSlots[lastIndex], timeUnit);
 
-    // 시작 시간이 전날 시간인지 확인
     const startDate = isPreviousDay && timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
       ? prevDayStr
       : currentDate;
 
-    const endDateTime = endTime === "00:00"
-      ? `${nextDayStr} 00:00:00`
-      : (isPreviousDay && timeSlots.indexOf(lastActiveTime) < timeSlots.indexOf("00:00"))
-        ? `${prevDayStr} ${endTime}:00`
-        : `${currentDate} ${endTime}:00`;
+    // 마지막 시간이 23:30 등이면 다음날 00:00으로
+    let endDateTime;
+    if (endTime === "24:00" || endTime === "00:00" || lastIndex === timeSlots.length - 1) {
+      endDateTime = `${nextDayStr} 00:00:00`;
+    } else {
+      const endDate = isPreviousDay && lastIndex < timeSlots.indexOf("00:00")
+        ? prevDayStr
+        : currentDate;
+      endDateTime = `${endDate} ${endTime}:00`;
+    }
 
     periods.push({
       period: `${startDate} ${currentStart}:00-${endDateTime}`,
@@ -944,6 +967,137 @@ export default function OperatingScheduleEditor({
 
   // 초기 로드 상태 추적
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // period 문자열을 disabled cells로 변환하는 함수
+  const initializeDisabledCellsFromPeriods = useCallback((facilities: any[], timeSlots: string[], isPreviousDay: boolean, categories: any) => {
+    const newDisabledCells = new Set<string>();
+    const newBadges: Record<string, CategoryBadge[]> = {};
+    const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+    const prevDay = new Date(date);
+    prevDay.setDate(prevDay.getDate() - 1);
+    const prevDayStr = prevDay.toISOString().split('T')[0];
+
+    facilities.forEach((facility, colIndex) => {
+      if (facility?.operating_schedule?.time_blocks) {
+        const timeBlocks = facility.operating_schedule.time_blocks;
+
+        // 모든 셀을 먼저 비활성화로 설정
+        timeSlots.forEach((_, rowIndex) => {
+          newDisabledCells.add(`${rowIndex}-${colIndex}`);
+        });
+
+        // 각 time_block에 대해 활성화
+        timeBlocks.forEach((block: any) => {
+          if (block.period) {
+            // period 파싱: "2025-09-20 20:30:00-2025-09-21 01:30:00"
+            // 정규식으로 더 정확하게 파싱
+            const periodMatch = block.period.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+
+            if (!periodMatch) {
+              console.warn('Invalid period format:', block.period);
+              return;
+            }
+
+            const [, startDate, startTimeWithSec, endDate, endTimeWithSec] = periodMatch;
+
+            // 시간 부분 추출 (안전하게)
+            const startTime = startTimeWithSec ? startTimeWithSec.substring(0, 5) : "00:00"; // "HH:MM"
+            const endTime = endTimeWithSec ? endTimeWithSec.substring(0, 5) : "00:00";
+
+            // 시작/종료 시간이 어느 시간 슬롯에 해당하는지 찾기
+            let startIndex = -1;
+            let endIndex = -1;
+
+            // isPreviousDay일 때와 아닐 때 처리
+            if (isPreviousDay && startDate === prevDayStr) {
+              // 전날 시간대 처리
+              startIndex = timeSlots.findIndex(slot => slot === startTime);
+              // 끝이 다음날인 경우
+              if (endDate === date) {
+                endIndex = timeSlots.findIndex(slot => slot === endTime);
+                if (endIndex === -1 && endTime === "00:00") {
+                  // 자정까지
+                  endIndex = timeSlots.findIndex(slot => slot === "00:00");
+                }
+              } else {
+                // 같은 날 종료
+                endIndex = timeSlots.findIndex(slot => slot === endTime);
+              }
+            } else if (startDate === date) {
+              // 당일 시간대
+              startIndex = timeSlots.findIndex(slot => slot === startTime);
+              endIndex = timeSlots.findIndex(slot => slot === endTime);
+            }
+
+            // 해당 범위의 셀들을 활성화
+            if (startIndex !== -1) {
+              const actualEndIndex = endIndex === -1 ? timeSlots.length : endIndex;
+              for (let i = startIndex; i < actualEndIndex; i++) {
+                const cellId = `${i}-${colIndex}`;
+                newDisabledCells.delete(cellId);
+
+                // passenger_conditions가 있으면 뱃지 설정
+                if (block.passenger_conditions && block.passenger_conditions.length > 0) {
+                  const badges: CategoryBadge[] = [];
+                  block.passenger_conditions.forEach((condition: any) => {
+                    const categoryName = getCategoryNameFromField(condition.field);
+                    if (categoryName && categories[categoryName]) {
+                      const categoryConfig = categories[categoryName];
+                      const badgeColor = getBadgeColor(categoryConfig.colorIndex);
+                      badges.push({
+                        category: categoryName,
+                        options: condition.values || [],
+                        colorIndex: categoryConfig.colorIndex,
+                        style: badgeColor.style
+                      });
+                    }
+                  });
+                  if (badges.length > 0) {
+                    newBadges[cellId] = badges;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+
+    return { disabledCells: newDisabledCells, badges: newBadges };
+  }, []);
+
+  // field name을 category name으로 변환하는 헬퍼 함수
+  const getCategoryNameFromField = (field: string): string => {
+    const fieldToCategoryMap: Record<string, string> = {
+      'operating_carrier_name': 'Airline',
+      'operating_carrier_iata': 'Airline',
+      'aircraft_type': 'Aircraft Type',
+      'flight_type': 'Flight Type',
+      'arrival_airport_iata': 'Arrival Airport',
+      'arrival_city': 'Arrival City',
+      'arrival_country': 'Arrival Country',
+      'arrival_region': 'Arrival Region',
+      'nationality': 'Nationality',
+      'profile': 'Passenger Type'
+    };
+    return fieldToCategoryMap[field] || '';
+  };
+
+  // category name을 field name으로 변환하는 헬퍼 함수
+  const getCategoryFieldName = (category: string): string => {
+    const categoryToFieldMap: Record<string, string> = {
+      'Airline': 'operating_carrier_iata',
+      'Aircraft Type': 'aircraft_type',
+      'Flight Type': 'flight_type',
+      'Arrival Airport': 'arrival_airport_iata',
+      'Arrival City': 'arrival_city',
+      'Arrival Country': 'arrival_country',
+      'Arrival Region': 'arrival_region',
+      'Nationality': 'nationality',
+      'Passenger Type': 'profile'
+    };
+    return categoryToFieldMap[category] || '';
+  };
 
 
   // 🔄 실행 취소/재실행 히스토리 관리
@@ -2600,7 +2754,13 @@ export default function OperatingScheduleEditor({
       );
 
       if (needsInit) {
-        // Don't update store, wait for proper initialization
+        // 기존 schedule로부터 초기화
+        const { disabledCells: initDisabledCells, badges: initBadges } =
+          initializeDisabledCellsFromPeriods(currentFacilities, timeSlots, isPreviousDay, CONDITION_CATEGORIES);
+
+        setDisabledCells(initDisabledCells);
+        setCellBadges(initBadges);
+        setIsInitialized(true);
         return;
       }
       setIsInitialized(true);
@@ -2635,8 +2795,16 @@ export default function OperatingScheduleEditor({
           const hasChanged = JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
           
           if (hasChanged) {
-            // TODO: 새로운 로직 구현 필요
-            console.log('Time blocks changed:', newTimeBlocks);
+            // Zustand store 업데이트
+            const updateFacilitySchedule = useSimulationStore.getState().updateFacilitySchedule;
+            if (updateFacilitySchedule) {
+              updateFacilitySchedule(
+                selectedProcessIndex,
+                selectedZone,
+                facility.id,
+                newTimeBlocks
+              );
+            }
           }
         }
       });
@@ -2653,7 +2821,9 @@ export default function OperatingScheduleEditor({
     isInitialized,
     timeSlots,
     appliedTimeUnit,
-    isPreviousDay
+    isPreviousDay,
+    CONDITION_CATEGORIES,
+    initializeDisabledCellsFromPeriods
   ]); // 모든 필요한 의존성 포함
 
   // 🛡️ 안전성 검사 강화

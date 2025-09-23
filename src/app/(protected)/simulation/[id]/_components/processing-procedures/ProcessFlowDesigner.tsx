@@ -342,11 +342,23 @@ export default function ProcessFlowDesigner({
           });
         } else {
           // Add new facility with default schedule
-          const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
-          const startDate = new Date(date);
-          const endDate = new Date(startDate);
-          endDate.setDate(endDate.getDate() + 2);
-          const period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+          const chartResult = useSimulationStore.getState().passenger.chartResult;
+          let period: string;
+
+          if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
+            // chart_x_data에서 첫번째와 마지막 시간 가져오기
+            const firstTime = chartResult.chart_x_data[0]; // "2025-09-21 20:30"
+            const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
+            // 초 추가
+            period = `${firstTime}:00-${lastTime}:00`;
+          } else {
+            // fallback: 기본값 사용
+            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+            const startDate = new Date(date);
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 2);
+            period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+          }
 
           facilities.push({
             id: `${editingZone}_${i}`,
@@ -1082,50 +1094,18 @@ export default function ProcessFlowDesigner({
                                             existingPeriod = editedZone.facilities[0].operating_schedule.time_blocks[0].period;
                                           }
 
-                                          // If no existing period, calculate based on passenger data
+                                          // If no existing period, use chart_x_data
                                           if (!existingPeriod) {
                                             const chartResult = useSimulationStore.getState().passenger.chartResult;
-                                            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
 
                                             if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
-                                              const times = chartResult.chart_x_data;
-                                              let firstPassengerTime = null;
-                                              let lastPassengerTime = null;
-
-                                              const chartData = chartResult.chart_y_data;
-                                              if (chartData) {
-                                                let totalPassengersByTime = new Array(times.length).fill(0);
-                                                Object.values(chartData).forEach((airlines: any) => {
-                                                  if (Array.isArray(airlines)) {
-                                                    airlines.forEach((airline) => {
-                                                      if (airline.y) {
-                                                        airline.y.forEach((value: number, index: number) => {
-                                                          totalPassengersByTime[index] += value;
-                                                        });
-                                                      }
-                                                    });
-                                                  }
-                                                });
-
-                                                for (let j = 0; j < totalPassengersByTime.length; j++) {
-                                                  if (totalPassengersByTime[j] > 0) {
-                                                    if (!firstPassengerTime) firstPassengerTime = times[j];
-                                                    lastPassengerTime = times[j];
-                                                  }
-                                                }
-                                              }
-
-                                              if (firstPassengerTime && lastPassengerTime) {
-                                                const startDate = new Date(firstPassengerTime);
-                                                startDate.setHours(startDate.getHours() - 4);
-                                                const endDate = new Date(lastPassengerTime);
-                                                endDate.setHours(endDate.getHours() + 4);
-                                                existingPeriod = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
-                                              }
-                                            }
-
-                                            // Fallback to default period
-                                            if (!existingPeriod) {
+                                              // chart_x_data의 첫번째와 마지막 값 사용
+                                              const firstTime = chartResult.chart_x_data[0];
+                                              const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
+                                              existingPeriod = `${firstTime}:00-${lastTime}:00`;
+                                            } else {
+                                              // Fallback to default period
+                                              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
                                               const startDate = new Date(date);
                                               const endDate = new Date(startDate);
                                               endDate.setDate(endDate.getDate() + 2);

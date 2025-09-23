@@ -108,67 +108,35 @@ const calculateOperatingPeriodFromPassengers = (
     return `${date} 00:00:00-${nextDayStr} 00:00:00`;
   }
 
-  const times = chartResult.chart_x_data; // ["2025-09-18 20:30", "2025-09-18 20:40", ...]
-  const chartData = chartResult.chart_y_data;
+  // chart_x_data의 첫번째와 마지막 값 직접 사용
+  const firstTime = chartResult.chart_x_data[0]; // "2025-09-21 20:30"
+  const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
 
-  // 모든 항공사의 여객 데이터를 합쳐서 총 여객 수 배열 생성
-  let totalPassengersByTime: number[] = new Array(times.length).fill(0);
+  console.log('Using chart_x_data directly - First time:', firstTime);
+  console.log('Using chart_x_data directly - Last time:', lastTime);
 
-  if (chartData) {
-    Object.values(chartData).forEach((airlines) => {
-      if (Array.isArray(airlines)) {
-        airlines.forEach((airline) => {
-          if (airline.y && Array.isArray(airline.y)) {
-            airline.y.forEach((count: number, idx: number) => {
-              totalPassengersByTime[idx] += count;
-            });
-          }
-        });
-      }
-    });
+  // 첫번째 시간에 초 추가
+  const startDateTime = `${firstTime}:00`;
+
+  // 마지막 시간 처리
+  let endDateTime: string;
+  const [lastDate, lastTimeOnly] = lastTime.split(' ');
+
+  if (lastTimeOnly === '00:00') {
+    // 이미 00:00이면 그대로 사용
+    endDateTime = `${lastTime}:00`;
+  } else {
+    // 00:00이 아니면 다음날 00:00:00으로 설정
+    const lastDateObj = new Date(lastDate);
+    lastDateObj.setDate(lastDateObj.getDate() + 1);
+    const nextDayStr = lastDateObj.toISOString().split('T')[0];
+    endDateTime = `${nextDayStr} 00:00:00`;
   }
 
-  // 최초로 여객이 있는 시간 찾기
-  let firstPassengerIndex = totalPassengersByTime.findIndex(count => count > 0);
-  let lastPassengerIndex = -1;
-  for (let i = totalPassengersByTime.length - 1; i >= 0; i--) {
-    if (totalPassengersByTime[i] > 0) {
-      lastPassengerIndex = i;
-      break;
-    }
-  }
-
-  if (firstPassengerIndex === -1) {
-    // 여객이 없으면 기본값
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const nextDayStr = nextDay.toISOString().split('T')[0];
-    return `${date} 00:00:00-${nextDayStr} 00:00:00`;
-  }
-
-  // chart_x_data에서 직접 시작/종료 시간 가져오기
-  const startDateTime = times[firstPassengerIndex]; // "2025-09-18 20:30"
-  const endDateTime = times[Math.min(lastPassengerIndex + 1, times.length - 1)];
-
-  console.log('First passenger time:', startDateTime);
-  console.log('Last passenger time:', endDateTime);
-
-  // 시작 시간을 30분 단위로 내림
-  const [startDate, startTime] = startDateTime.split(' ');
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const roundedStartMinute = Math.floor(startMinute / 30) * 30;
-  const roundedStartTime = `${String(startHour).padStart(2, '0')}:${String(roundedStartMinute).padStart(2, '0')}`;
-
-  // 종료 시간을 다음날 00:00으로 설정 (여유 시간 포함)
-  const [endDate, endTime] = endDateTime.split(' ');
-  const endDateObj = new Date(endDate);
-  endDateObj.setDate(endDateObj.getDate() + 1);
-  const finalEndDate = endDateObj.toISOString().split('T')[0];
-
-  const result = `${startDate} ${roundedStartTime}:00-${finalEndDate} 00:00:00`;
+  const result = `${startDateTime}-${endDateTime}`;
   console.log('Final period result:', result);
 
-  // 예: "2025-09-18 21:30:00-2025-09-20 00:00:00"
+  // 예: "2025-09-21 20:30:00-2025-09-22 00:00:00"
   return result;
 };
 
@@ -1514,6 +1482,28 @@ export const useSimulationStore = create<SimulationStoreState>()(
               });
             }
           });
+        }
+      }),
+
+    updateFacilitySchedule: (processIndex, zoneName, facilityId, timeBlocks) =>
+      set((state) => {
+        if (
+          state.process_flow[processIndex] &&
+          state.process_flow[processIndex].zones[zoneName]
+        ) {
+          const zone = state.process_flow[processIndex].zones[zoneName];
+          const facility = zone.facilities?.find(
+            (f: Facility) => f.id === facilityId
+          );
+
+          if (facility) {
+            // operating_schedule이 없으면 초기화
+            if (!facility.operating_schedule) {
+              facility.operating_schedule = { time_blocks: [] };
+            }
+            // timeBlocks 직접 교체
+            facility.operating_schedule.time_blocks = timeBlocks;
+          }
         }
       }),
 
