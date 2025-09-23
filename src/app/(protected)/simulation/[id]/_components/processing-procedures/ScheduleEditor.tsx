@@ -315,8 +315,9 @@ const calculatePeriodsFromDisabledCells = (
         currentStart = currentTime;
         currentConditions = conditions;
       } else {
-        // 조건이 다르면 이전 구간을 종료하고 새 구간 시작
-        const conditionsChanged = JSON.stringify(currentConditions) !== JSON.stringify(conditions);
+        // 조건이 다르면 이전 구간을 종료하고 새 구간 시작 (최적화: 길이 먼저 비교)
+        const conditionsChanged = currentConditions?.length !== conditions.length ||
+          JSON.stringify(currentConditions) !== JSON.stringify(conditions);
         if (conditionsChanged) {
           // 이전 구간 저장
           const prevIndex = i - 1;
@@ -968,14 +969,18 @@ export default function OperatingScheduleEditor({
   // 초기 로드 상태 추적
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // period 문자열을 disabled cells로 변환하는 함수
-  const initializeDisabledCellsFromPeriods = useCallback((facilities: any[], timeSlots: string[], isPreviousDay: boolean, categories: any) => {
+  // period 문자열을 disabled cells로 변환하는 함수 (최적화)
+  const initializeDisabledCellsFromPeriods = useCallback((
+    facilities: any[],
+    timeSlots: string[],
+    isPreviousDay: boolean,
+    categories: any,
+    currentDate: string,
+    prevDayStr: string
+  ) => {
     const newDisabledCells = new Set<string>();
     const newBadges: Record<string, CategoryBadge[]> = {};
-    const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
-    const prevDay = new Date(date);
-    prevDay.setDate(prevDay.getDate() - 1);
-    const prevDayStr = prevDay.toISOString().split('T')[0];
+    const date = currentDate;
 
     facilities.forEach((facility, colIndex) => {
       if (facility?.operating_schedule?.time_blocks) {
@@ -1004,58 +1009,102 @@ export default function OperatingScheduleEditor({
             const startTime = startTimeWithSec ? startTimeWithSec.substring(0, 5) : "00:00"; // "HH:MM"
             const endTime = endTimeWithSec ? endTimeWithSec.substring(0, 5) : "00:00";
 
-            // 시작/종료 시간이 어느 시간 슬롯에 해당하는지 찾기
-            let startIndex = -1;
-            let endIndex = -1;
+            // 여러 날에 걸친 period 처리
+            const nextDayStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
 
-            // isPreviousDay일 때와 아닐 때 처리
-            if (isPreviousDay && startDate === prevDayStr) {
-              // 전날 시간대 처리
-              startIndex = timeSlots.findIndex(slot => slot === startTime);
-              // 끝이 다음날인 경우
-              if (endDate === date) {
-                endIndex = timeSlots.findIndex(slot => slot === endTime);
-                if (endIndex === -1 && endTime === "00:00") {
-                  // 자정까지
-                  endIndex = timeSlots.findIndex(slot => slot === "00:00");
-                }
-              } else {
-                // 같은 날 종료
-                endIndex = timeSlots.findIndex(slot => slot === endTime);
-              }
-            } else if (startDate === date) {
-              // 당일 시간대
-              startIndex = timeSlots.findIndex(slot => slot === startTime);
-              endIndex = timeSlots.findIndex(slot => slot === endTime);
-            }
-
-            // 해당 범위의 셀들을 활성화
-            if (startIndex !== -1) {
-              const actualEndIndex = endIndex === -1 ? timeSlots.length : endIndex;
-              for (let i = startIndex; i < actualEndIndex; i++) {
-                const cellId = `${i}-${colIndex}`;
-                newDisabledCells.delete(cellId);
-
-                // passenger_conditions가 있으면 뱃지 설정
-                if (block.passenger_conditions && block.passenger_conditions.length > 0) {
-                  const badges: CategoryBadge[] = [];
-                  block.passenger_conditions.forEach((condition: any) => {
-                    const categoryName = getCategoryNameFromField(condition.field);
-                    if (categoryName && categories[categoryName]) {
-                      const categoryConfig = categories[categoryName];
-                      const badgeColor = getBadgeColor(categoryConfig.colorIndex);
-                      badges.push({
-                        category: categoryName,
-                        options: condition.values || [],
-                        colorIndex: categoryConfig.colorIndex,
-                        style: badgeColor.style
-                      });
-                    }
-                  });
-                  if (badges.length > 0) {
-                    newBadges[cellId] = badges;
+            // 시작일과 종료일이 포함하는 전체 날짜 범위 확인
+            if (isPreviousDay) {
+              // D-1 표시가 있을 때
+              if (startDate === prevDayStr) {
+                // 전날부터 시작
+                const startIdx = timeSlots.indexOf(startTime);
+                if (startIdx !== -1) {
+                  // 전날 시작 시간부터 00:00까지
+                  for (let i = startIdx; i < timeSlots.length; i++) {
+                    if (timeSlots[i] === "00:00") break;
+                    const cellId = `${i}-${colIndex}`;
+                    newDisabledCells.delete(cellId);
                   }
                 }
+              }
+
+              // 당일(22일) 처리
+              if (endDate >= date) {
+                // 00:00부터 처리
+                const zeroIdx = timeSlots.indexOf("00:00");
+                if (zeroIdx !== -1) {
+                  let endIdx = timeSlots.length; // 기본값: 끝까지
+
+                  // 종료일이 당일인 경우 종료 시간까지만
+                  if (endDate === date) {
+                    const endTimeIdx = timeSlots.indexOf(endTime);
+                    if (endTimeIdx !== -1) endIdx = endTimeIdx;
+                  } else if (endDate === nextDayStr && endTime === "00:00") {
+                    // 다음날 00:00까지 (즉, 당일 전체)
+                    endIdx = timeSlots.length;
+                  }
+
+                  // 당일 00:00부터 종료 시간까지 활성화
+                  for (let i = zeroIdx; i < endIdx; i++) {
+                    const cellId = `${i}-${colIndex}`;
+                    newDisabledCells.delete(cellId);
+                  }
+                }
+              }
+            } else {
+              // D-1 표시가 없을 때 (일반적인 경우)
+              if (startDate === date) {
+                const startIdx = timeSlots.indexOf(startTime);
+                let endIdx = timeSlots.length;
+
+                if (endDate === date) {
+                  const endTimeIdx = timeSlots.indexOf(endTime);
+                  if (endTimeIdx !== -1) endIdx = endTimeIdx;
+                } else if (endDate > date) {
+                  // 다음날까지 이어지는 경우 당일 끝까지
+                  endIdx = timeSlots.length;
+                }
+
+                if (startIdx !== -1) {
+                  for (let i = startIdx; i < endIdx; i++) {
+                    const cellId = `${i}-${colIndex}`;
+                    newDisabledCells.delete(cellId);
+                  }
+                }
+              }
+            }
+
+            // passenger_conditions가 있으면 뱃지 설정 (활성화된 모든 셀에 적용)
+            if (block.passenger_conditions && block.passenger_conditions.length > 0) {
+              const badges: CategoryBadge[] = [];
+              block.passenger_conditions.forEach((condition: any) => {
+                const categoryName = getCategoryNameFromField(condition.field);
+                if (categoryName && categories[categoryName]) {
+                  const categoryConfig = categories[categoryName];
+                  const badgeColor = getBadgeColor(categoryConfig.colorIndex);
+                  badges.push({
+                    category: categoryName,
+                    options: condition.values || [],
+                    colorIndex: categoryConfig.colorIndex,
+                    style: badgeColor.style
+                  });
+                }
+              });
+
+              // 이 period에 해당하는 모든 활성 셀에 뱃지 적용
+              if (badges.length > 0) {
+                // 활성화된 셀들을 다시 찾아서 뱃지 적용
+                facilities.forEach((_, colIdx) => {
+                  if (colIdx === colIndex) {
+                    timeSlots.forEach((_, rowIdx) => {
+                      const cellId = `${rowIdx}-${colIdx}`;
+                      if (!newDisabledCells.has(cellId)) {
+                        // 활성 셀이면 뱃지 추가
+                        newBadges[cellId] = badges;
+                      }
+                    });
+                  }
+                });
               }
             }
           }
@@ -2754,9 +2803,14 @@ export default function OperatingScheduleEditor({
       );
 
       if (needsInit) {
-        // 기존 schedule로부터 초기화
+        // 기존 schedule로부터 초기화 - 날짜 미리 계산
+        const currentDate = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+        const prevDay = new Date(currentDate);
+        prevDay.setDate(prevDay.getDate() - 1);
+        const prevDayStr = prevDay.toISOString().split('T')[0];
+
         const { disabledCells: initDisabledCells, badges: initBadges } =
-          initializeDisabledCellsFromPeriods(currentFacilities, timeSlots, isPreviousDay, CONDITION_CATEGORIES);
+          initializeDisabledCellsFromPeriods(currentFacilities, timeSlots, isPreviousDay, CONDITION_CATEGORIES, currentDate, prevDayStr);
 
         setDisabledCells(initDisabledCells);
         setCellBadges(initBadges);
@@ -2791,8 +2845,9 @@ export default function OperatingScheduleEditor({
             isPreviousDay
           );
           
-          // 기존 time_blocks와 비교하여 변경된 경우에만 업데이트
-          const hasChanged = JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
+          // 기존 time_blocks와 비교 (최적화: 길이 먼저 비교)
+          const hasChanged = existingTimeBlocks.length !== newTimeBlocks.length ||
+            JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
           
           if (hasChanged) {
             // Zustand store 업데이트
@@ -2808,7 +2863,7 @@ export default function OperatingScheduleEditor({
           }
         }
       });
-    }, 100); // 100ms debounce
+    }, 300); // 300ms debounce - 성능 개선
     
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
