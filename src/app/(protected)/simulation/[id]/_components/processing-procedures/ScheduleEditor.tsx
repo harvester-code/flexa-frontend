@@ -71,6 +71,24 @@ interface CategoryBadge {
   style?: React.CSSProperties;  // 인라인 스타일 추가
 }
 
+// TimeBlock 타입 정의 (타입 안전성 향상)
+interface TimeBlock {
+  period: string;
+  process_time_seconds: number;
+  passenger_conditions: Array<{
+    field: string;
+    values: string[];
+  }>;
+}
+
+// Facility 타입 정의 (타입 안전성 향상)
+interface FacilityWithSchedule {
+  id: string;
+  operating_schedule?: {
+    time_blocks: TimeBlock[];
+  };
+}
+
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 const createDynamicConditionCategories = (
   parquetMetadata: ParquetMetadataItem[],
@@ -192,6 +210,26 @@ const createDynamicConditionCategories = (
   return categories;
 };
 
+// Deep equality 체크를 위한 헬퍼 함수
+const deepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+
+  if (obj1 == null || obj2 == null) return false;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) return false;
+
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!deepEqual(obj1[key], obj2[key])) return false;
+  }
+
+  return true;
+};
+
 // 상수들
 
 // ROW_HEIGHT와 VIEWPORT_HEIGHT 상수들
@@ -224,18 +262,69 @@ const getNextTimeSlot = (timeStr: string, timeUnit: number): string => {
 };
 
 
-// disabled cells와 뱃지를 기반으로 period를 계산하는 함수
+// Period 파싱을 위한 안전한 헬퍼 함수
+const parsePeriodSafe = (period: string): {
+  startDateTime: Date | null,
+  endDateTime: Date | null,
+  startTime: string,
+  endTime: string,
+  startDate: string,
+  endDate: string,
+  valid: boolean
+} => {
+  try {
+    const periodMatch = period.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+    if (!periodMatch) {
+      return {
+        startDateTime: null,
+        endDateTime: null,
+        startTime: '',
+        endTime: '',
+        startDate: '',
+        endDate: '',
+        valid: false
+      };
+    }
+
+    const [, startDate, startTimeWithSec, endDate, endTimeWithSec] = periodMatch;
+    const startTime = startTimeWithSec.substring(0, 5);
+    const endTime = endTimeWithSec.substring(0, 5);
+
+    return {
+      startDateTime: new Date(`${startDate} ${startTimeWithSec}`),
+      endDateTime: new Date(`${endDate} ${endTimeWithSec}`),
+      startTime,
+      endTime,
+      startDate,
+      endDate,
+      valid: true
+    };
+  } catch (error) {
+    console.error('Period parsing error:', error, 'for period:', period);
+    return {
+      startDateTime: null,
+      endDateTime: null,
+      startTime: '',
+      endTime: '',
+      startDate: '',
+      endDate: '',
+      valid: false
+    };
+  }
+};
+
+// disabled cells와 뱃지를 기반으로 period를 계산하는 함수 (타입 안전성 강화)
 const calculatePeriodsFromDisabledCells = (
   facilityIndex: number,
   disabledCells: Set<string>,
   timeSlots: string[],
-  existingTimeBlocks: any[],
+  existingTimeBlocks: TimeBlock[],
   cellBadges: Record<string, CategoryBadge[]>,
   processTimeSeconds?: number, // 프로세스의 process_time_seconds 값
   timeUnit: number = 10, // time unit (기본값 10분)
   date?: string, // 날짜 (YYYY-MM-DD 형식)
   isPreviousDay?: boolean // 전날부터 시작하는지 여부
-): any[] => {
+): TimeBlock[] => {
   // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
   const processTime = processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
 
@@ -923,29 +1012,57 @@ export default function OperatingScheduleEditor({
   // 비활성화된 셀 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
   const [allZoneDisabledCells, setAllZoneDisabledCells] = useState<Record<string, Set<string>>>({});
 
+  // 마지막으로 저장된 시설 데이터의 해시값 (변경 감지용)
+  const [lastFacilitiesHash, setLastFacilitiesHash] = useState<string>('');
+
   // 현재 Zone의 키
-  const zoneKey = `${selectedProcessIndex}-${selectedZone}`;
+  const zoneKey = useMemo(() => `${selectedProcessIndex}-${selectedZone}`, [selectedProcessIndex, selectedZone]);
 
-  // 현재 Zone의 뱃지 가져오기
-  const cellBadges = allZoneBadges[zoneKey] || {};
+  // 현재 Zone의 뱃지 가져오기 (메모이제이션으로 최적화)
+  const cellBadges = useMemo(() => allZoneBadges[zoneKey] || {}, [allZoneBadges, zoneKey]);
 
-  // 현재 Zone의 비활성화된 셀 가져오기
-  const disabledCells = allZoneDisabledCells[zoneKey] || new Set<string>();
+  // 현재 Zone의 비활성화된 셀 가져오기 (메모이제이션으로 최적화)
+  const disabledCells = useMemo(() => allZoneDisabledCells[zoneKey] || new Set<string>(), [allZoneDisabledCells, zoneKey]);
 
-  // 현재 Zone의 뱃지 업데이트 함수
+  // 현재 Zone의 뱃지 업데이트 함수 (안전한 업데이트)
   const setCellBadges = useCallback((updater: any) => {
-    setAllZoneBadges(prev => ({
-      ...prev,
-      [zoneKey]: typeof updater === 'function' ? updater(prev[zoneKey] || {}) : updater
-    }));
+    setAllZoneBadges(prev => {
+      const newBadges = typeof updater === 'function' ? updater(prev[zoneKey] || {}) : updater;
+      // 변경사항이 있을 때만 업데이트
+      if (!deepEqual(prev[zoneKey], newBadges)) {
+        return {
+          ...prev,
+          [zoneKey]: newBadges
+        };
+      }
+      return prev;
+    });
   }, [zoneKey]);
 
-  // 현재 Zone의 비활성화된 셀 업데이트 함수
+  // 현재 Zone의 비활성화된 셀 업데이트 함수 (안전한 업데이트)
   const setDisabledCells = useCallback((updater: any) => {
-    setAllZoneDisabledCells(prev => ({
-      ...prev,
-      [zoneKey]: typeof updater === 'function' ? updater(prev[zoneKey] || new Set<string>()) : updater
-    }));
+    setAllZoneDisabledCells(prev => {
+      const currentSet = prev[zoneKey] || new Set<string>();
+      const newSet = typeof updater === 'function' ? updater(currentSet) : updater;
+
+      // Set 비교를 위한 헬퍼
+      const areSetsEqual = (a: Set<string>, b: Set<string>) => {
+        if (a.size !== b.size) return false;
+        for (const item of a) {
+          if (!b.has(item)) return false;
+        }
+        return true;
+      };
+
+      // 변경사항이 있을 때만 업데이트
+      if (!areSetsEqual(currentSet, newSet)) {
+        return {
+          ...prev,
+          [zoneKey]: newSet
+        };
+      }
+      return prev;
+    });
   }, [zoneKey]);
 
   // 우클릭 컨텍스트 메뉴 상태
@@ -985,15 +1102,15 @@ export default function OperatingScheduleEditor({
   // 초기 로드 상태 추적 - processIndex와 zone별로 추적
   const [initializedKeys, setInitializedKeys] = useState<Set<string>>(new Set());
 
-  // period 문자열을 disabled cells로 변환하는 함수 (최적화)
+  // period 문자열을 disabled cells로 변환하는 함수 (타입 안전성 향상)
   const initializeDisabledCellsFromPeriods = useCallback((
-    facilities: any[],
+    facilities: FacilityWithSchedule[],
     timeSlots: string[],
     isPreviousDay: boolean,
-    categories: any,
+    categories: Record<string, any>,
     currentDate: string,
     prevDayStr: string
-  ) => {
+  ): { disabledCells: Set<string>; badges: Record<string, CategoryBadge[]> } => {
     console.log('initializeDisabledCellsFromPeriods called with:', {
       facilitiesCount: facilities.length,
       timeSlotsCount: timeSlots.length,
@@ -1026,20 +1143,20 @@ export default function OperatingScheduleEditor({
             console.log('Processing time_block', blockIndex, 'for facility:', facility.id,
                        'period:', block.period,
                        'has conditions:', block.passenger_conditions?.length > 0);
-            // period 파싱: "2025-09-20 20:30:00-2025-09-21 01:30:00"
-            // 정규식으로 더 정확하게 파싱
-            const periodMatch = block.period.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
 
-            if (!periodMatch) {
-              console.warn('Invalid period format:', block.period);
+            // 안전한 period 파싱 사용
+            const parsedPeriod = parsePeriodSafe(block.period);
+
+            if (!parsedPeriod.valid) {
+              console.error('Failed to parse period:', block.period);
+              // 파싱 실패 시에도 데이터를 보존하기 위해 전체 활성화로 폴백
+              for (let i = 0; i < timeSlots.length; i++) {
+                activatedSlots.add(i);
+              }
               return;
             }
 
-            const [, startDate, startTimeWithSec, endDate, endTimeWithSec] = periodMatch;
-
-            // 시간 부분 추출 (안전하게)
-            const startTime = startTimeWithSec ? startTimeWithSec.substring(0, 5) : "00:00"; // "HH:MM"
-            const endTime = endTimeWithSec ? endTimeWithSec.substring(0, 5) : "00:00";
+            const { startDate, startTime, endDate, endTime } = parsedPeriod;
 
             console.log('Parsed period:', {
               startDate,
@@ -1144,12 +1261,35 @@ export default function OperatingScheduleEditor({
                 const startIdx = timeSlots.indexOf(startTime);
                 let endIdx = timeSlots.indexOf(endTime);
 
-                // endTime이 정확히 일치하지 않으면 직전 인덱스 사용
+                // endTime이 정확히 일치하지 않으면 timeUnit 기반으로 계산
                 if (endIdx === -1 || endIdx <= startIdx) {
-                  // endTime에서 30분을 뺀 시간 찾기 (21:30 -> 21:00)
+                  // timeUnit을 고려한 정확한 인덱스 계산
                   const [endHour, endMin] = endTime.split(':').map(Number);
-                  const prevEndTime = `${String(endMin === 0 ? endHour - 1 : endHour).padStart(2, '0')}:${endMin === 0 ? '30' : '00'}`;
+                  const timeUnit = timeSlots[1] ?
+                    (parseInt(timeSlots[1].split(':')[1]) - parseInt(timeSlots[0].split(':')[1]) + 60) % 60 || 30 :
+                    30;
+
+                  // 이전 시간 슬롯 계산
+                  let prevMin = endMin - timeUnit;
+                  let prevHour = endHour;
+                  if (prevMin < 0) {
+                    prevMin += 60;
+                    prevHour -= 1;
+                  }
+
+                  const prevEndTime = `${String(prevHour).padStart(2, '0')}:${String(prevMin).padStart(2, '0')}`;
                   endIdx = timeSlots.indexOf(prevEndTime) + 1;
+
+                  // 그래도 못 찾으면 가장 가까운 인덱스 찾기
+                  if (endIdx === 0) {
+                    for (let i = timeSlots.length - 1; i >= startIdx; i--) {
+                      const slotTime = timeSlots[i];
+                      if (slotTime <= endTime) {
+                        endIdx = i + 1;
+                        break;
+                      }
+                    }
+                  }
                 }
 
                 console.log('Badge application range:', startIdx, 'to', endIdx, 'for facility column:', colIndex);
@@ -1157,10 +1297,21 @@ export default function OperatingScheduleEditor({
                 if (startIdx !== -1 && endIdx > startIdx) {
                   for (let i = startIdx; i < endIdx; i++) {
                     const cellId = `${i}-${colIndex}`;
-                    if (!newDisabledCells.has(cellId)) {
-                      // 해당 period 내의 모든 활성 셀에 뱃지 추가
-                      newBadges[cellId] = badges;
-                      console.log('Added badge to cell:', cellId);
+                    // activatedSlots에 포함된 셀에만 뱃지 추가 (비활성화된 셀 제외)
+                    if (activatedSlots.has(i) && !newDisabledCells.has(cellId)) {
+                      // 기존 뱃지가 있으면 병합, 없으면 새로 추가
+                      if (newBadges[cellId]) {
+                        // 중복 제거하며 병합
+                        const existingCategories = new Set(newBadges[cellId].map(b => b.category));
+                        badges.forEach(badge => {
+                          if (!existingCategories.has(badge.category)) {
+                            newBadges[cellId].push(badge);
+                          }
+                        });
+                      } else {
+                        newBadges[cellId] = [...badges];
+                      }
+                      console.log('Added/updated badge for cell:', cellId, 'badges:', newBadges[cellId]);
                     }
                   }
                 }
@@ -2904,52 +3055,47 @@ export default function OperatingScheduleEditor({
       return; // 초기화 전에는 zustand 업데이트 하지 않음
     }
 
-    // debounce를 위한 timeout
-    const timeoutId = setTimeout(() => {
-      // 각 시설별로 period 재계산
-      currentFacilities.forEach((facility, facilityIndex) => {
-        if (facility && facility.id) {
-          const existingTimeBlocks = facility.operating_schedule?.time_blocks || [];
-          
-          // 현재 프로세스의 process_time_seconds 값 가져오기
-          const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
-          const processTimeSeconds = (currentProcess as any)?.process_time_seconds;
+    // 즉시 업데이트 (debounce 제거로 데이터 무결성 보장)
+    // 각 시설별로 period 재계산
+    currentFacilities.forEach((facility, facilityIndex) => {
+      if (facility && facility.id) {
+        const existingTimeBlocks = facility.operating_schedule?.time_blocks || [];
 
-          // 새로운 periods 계산 (뱃지 정보 포함, date 전달)
-          const date = useSimulationStore.getState().context.date;
-          const newTimeBlocks = calculatePeriodsFromDisabledCells(
-            facilityIndex,
-            disabledCells,
-            timeSlots,
-            existingTimeBlocks,
-            cellBadges,
-            processTimeSeconds ?? undefined,
-            appliedTimeUnit,
-            date,
-            isPreviousDay
-          );
-          
-          // 기존 time_blocks와 비교 (최적화: 길이 먼저 비교)
-          const hasChanged = existingTimeBlocks.length !== newTimeBlocks.length ||
-            JSON.stringify(existingTimeBlocks) !== JSON.stringify(newTimeBlocks);
-          
-          if (hasChanged) {
-            // Zustand store 업데이트
-            const { updateFacilitySchedule } = useSimulationStore.getState() as any;
-            if (updateFacilitySchedule) {
-              updateFacilitySchedule(
-                selectedProcessIndex,
-                selectedZone,
-                facility.id,
-                newTimeBlocks
-              );
-            }
+        // 현재 프로세스의 process_time_seconds 값 가져오기
+        const currentProcess = selectedProcessIndex !== null ? processFlow[selectedProcessIndex] : null;
+        const processTimeSeconds = (currentProcess as any)?.process_time_seconds;
+
+        // 새로운 periods 계산 (뱃지 정보 포함, date 전달)
+        const date = useSimulationStore.getState().context.date;
+        const newTimeBlocks = calculatePeriodsFromDisabledCells(
+          facilityIndex,
+          disabledCells,
+          timeSlots,
+          existingTimeBlocks,
+          cellBadges,
+          processTimeSeconds ?? undefined,
+          appliedTimeUnit,
+          date,
+          isPreviousDay
+        );
+
+        // Deep equality 체크로 정확한 변경 감지
+        const hasChanged = !deepEqual(existingTimeBlocks, newTimeBlocks);
+
+        if (hasChanged) {
+          // Zustand store 즉시 업데이트
+          const { updateFacilitySchedule } = useSimulationStore.getState() as any;
+          if (updateFacilitySchedule) {
+            updateFacilitySchedule(
+              selectedProcessIndex,
+              selectedZone,
+              facility.id,
+              newTimeBlocks
+            );
           }
         }
-      });
-    }, 300); // 300ms debounce - 성능 개선
-    
-    return () => clearTimeout(timeoutId);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     disabledCells,
