@@ -1,9 +1,22 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { AlertTriangle, CheckCircle, Edit, Play, Plus, Trash2, X, XCircle, Plane } from 'lucide-react';
-import { createPassengerShowUp, saveScenarioMetadata } from '@/services/simulationService';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Edit,
+  Play,
+  Plus,
+  Trash2,
+  X,
+  XCircle,
+  Plane,
+} from "lucide-react";
+import {
+  createPassengerShowUp,
+  saveScenarioMetadata,
+} from "@/services/simulationService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,21 +26,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/AlertDialog';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { IntegerNumberInput } from '@/components/ui/IntegerNumberInput';
-import { useToast } from '@/hooks/useToast';
-import { useSimulationStore } from '../../_stores';
-import ProfileCriteriaSettings from './ProfileCriteriaSettings';
-import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
+} from "@/components/ui/AlertDialog";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { IntegerNumberInput } from "@/components/ui/IntegerNumberInput";
+import { useToast } from "@/hooks/useToast";
+import { useSimulationStore } from "../../_stores";
+import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
-const Plot = dynamic(() => import('react-plotly.js'), {
+const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
-  loading: () => <div className="flex h-48 items-center justify-center text-gray-500">Loading chart...</div>,
+  loading: () => (
+    <div className="flex h-48 items-center justify-center text-gray-500">
+      Loading chart...
+    </div>
+  ),
 });
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
@@ -65,12 +88,24 @@ export default function ShowUpTimeSettings({
   hideGenerateButton = false,
 }: ShowUpTimeSettingsProps) {
   // 🆕 SimulationStore 연결
-  const paxArrivalPatternRules = useSimulationStore((s) => s.passenger.pax_arrival_patterns.rules);
-  const arrivalPatternsDefault = useSimulationStore((s) => s.passenger.pax_arrival_patterns.default);
-  const addPaxArrivalPatternRule = useSimulationStore((s) => s.addPaxArrivalPatternRule);
-  const updatePaxArrivalPatternRule = useSimulationStore((s) => s.updatePaxArrivalPatternRule);
-  const removePaxArrivalPatternRule = useSimulationStore((s) => s.removePaxArrivalPatternRule);
-  const setPaxArrivalPatternDefault = useSimulationStore((s) => s.setPaxArrivalPatternDefault);
+  const paxArrivalPatternRules = useSimulationStore(
+    (s) => s.passenger.pax_arrival_patterns.rules
+  );
+  const arrivalPatternsDefault = useSimulationStore(
+    (s) => s.passenger.pax_arrival_patterns.default
+  );
+  const addPaxArrivalPatternRule = useSimulationStore(
+    (s) => s.addPaxArrivalPatternRule
+  );
+  const updatePaxArrivalPatternRule = useSimulationStore(
+    (s) => s.updatePaxArrivalPatternRule
+  );
+  const removePaxArrivalPatternRule = useSimulationStore(
+    (s) => s.removePaxArrivalPatternRule
+  );
+  const setPaxArrivalPatternDefault = useSimulationStore(
+    (s) => s.setPaxArrivalPatternDefault
+  );
 
   // 🆕 SimulationStore에서 passenger 데이터 및 context 가져오기
   const passengerData = useSimulationStore((state) => state.passenger);
@@ -78,8 +113,12 @@ export default function ShowUpTimeSettings({
 
   // 🔄 다른 탭 데이터들도 SimulationStore에서 직접 가져오기 (Generate Pax API용)
   const loadFactorData = useSimulationStore((s) => s.passenger.pax_generation);
-  const nationalityData = useSimulationStore((s) => s.passenger.pax_demographics.nationality);
-  const profileData = useSimulationStore((s) => s.passenger.pax_demographics.profile);
+  const nationalityData = useSimulationStore(
+    (s) => s.passenger.pax_demographics.nationality
+  );
+  const profileData = useSimulationStore(
+    (s) => s.passenger.pax_demographics.profile
+  );
 
   // 🆕 Toast 및 API 호출 관련 상태
   const { toast } = useToast();
@@ -87,52 +126,52 @@ export default function ShowUpTimeSettings({
 
   // 🆕 조건 변환 로직 (Step 1과 동일)
   const labelToColumnMap: Record<string, string> = {
-    Airline: 'operating_carrier_iata',
-    'Aircraft Type': 'aircraft_type_icao',
-    'Flight Type': 'flight_type',
-    'Total Seats': 'total_seats',
-    'Arrival Airport': 'arrival_airport_iata',
-    'Arrival Terminal': 'arrival_terminal',
-    'Arrival City': 'arrival_city',
-    'Arrival Country': 'arrival_country',
-    'Arrival Region': 'arrival_region',
-    'Departure Airport Iata': 'departure_airport_iata',
-    'Departure Terminal': 'departure_terminal',
-    'Departure City': 'departure_city',
-    'Departure Country': 'departure_country',
-    'Departure Region': 'departure_region',
+    Airline: "operating_carrier_iata",
+    "Aircraft Type": "aircraft_type_icao",
+    "Flight Type": "flight_type",
+    "Total Seats": "total_seats",
+    "Arrival Airport": "arrival_airport_iata",
+    "Arrival Terminal": "arrival_terminal",
+    "Arrival City": "arrival_city",
+    "Arrival Country": "arrival_country",
+    "Arrival Region": "arrival_region",
+    "Departure Airport Iata": "departure_airport_iata",
+    "Departure Terminal": "departure_terminal",
+    "Departure City": "departure_city",
+    "Departure Country": "departure_country",
+    "Departure Region": "departure_region",
   };
 
   const valueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
-      'Korean Air': 'KE',
-      'Asiana Airlines': 'OZ',
+      "Korean Air": "KE",
+      "Asiana Airlines": "OZ",
       // 필요에 따라 추가
     },
   };
 
   // 백엔드 → UI 역변환 맵핑
   const columnToLabelMap: Record<string, string> = {
-    operating_carrier_iata: 'Airline',
-    aircraft_type_icao: 'Aircraft Type',
-    flight_type: 'Flight Type',
-    total_seats: 'Total Seats',
-    arrival_airport_iata: 'Arrival Airport',
-    arrival_terminal: 'Arrival Terminal',
-    arrival_city: 'Arrival City',
-    arrival_country: 'Arrival Country',
-    arrival_region: 'Arrival Region',
-    departure_airport_iata: 'Departure Airport Iata',
-    departure_terminal: 'Departure Terminal',
-    departure_city: 'Departure City',
-    departure_country: 'Departure Country',
-    departure_region: 'Departure Region',
+    operating_carrier_iata: "Airline",
+    aircraft_type_icao: "Aircraft Type",
+    flight_type: "Flight Type",
+    total_seats: "Total Seats",
+    arrival_airport_iata: "Arrival Airport",
+    arrival_terminal: "Arrival Terminal",
+    arrival_city: "Arrival City",
+    arrival_country: "Arrival Country",
+    arrival_region: "Arrival Region",
+    departure_airport_iata: "Departure Airport Iata",
+    departure_terminal: "Departure Terminal",
+    departure_city: "Departure City",
+    departure_country: "Departure Country",
+    departure_region: "Departure Region",
   };
 
   const reverseValueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
-      KE: 'Korean Air',
-      OZ: 'Asiana Airlines',
+      KE: "Korean Air",
+      OZ: "Asiana Airlines",
       // 필요에 따라 추가
     },
   };
@@ -142,13 +181,16 @@ export default function ShowUpTimeSettings({
     return paxArrivalPatternRules.map((rule, index) => ({
       id: `rule-${index}`,
       name: `Rule ${index + 1}`,
-      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
-        const displayLabel = columnToLabelMap[columnKey] || columnKey;
-        return values.map((value) => {
-          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
-          return `${displayLabel}: ${displayValue}`;
-        });
-      }),
+      conditions: Object.entries(rule.conditions || {}).flatMap(
+        ([columnKey, values]) => {
+          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          return values.map((value) => {
+            const displayValue =
+              reverseValueMapping[columnKey]?.[value] || value;
+            return `${displayLabel}: ${displayValue}`;
+          });
+        }
+      ),
       flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
       parameters: {
         Mean: rule.value?.mean || 120,
@@ -158,7 +200,8 @@ export default function ShowUpTimeSettings({
     }));
   }, [paxArrivalPatternRules]);
 
-  const hasDefaultRule = arrivalPatternsDefault.mean !== null && arrivalPatternsDefault.std !== null;
+  const hasDefaultRule =
+    arrivalPatternsDefault.mean !== null && arrivalPatternsDefault.std !== null;
   const defaultMean = arrivalPatternsDefault.mean;
   const defaultStd = arrivalPatternsDefault.std;
 
@@ -184,11 +227,13 @@ export default function ShowUpTimeSettings({
       const backendConditions: Record<string, string[]> = {};
 
       rule.conditions.forEach((condition) => {
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const columnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -203,8 +248,8 @@ export default function ShowUpTimeSettings({
       addPaxArrivalPatternRule({
         conditions: backendConditions,
         value: {
-          mean: rule.parameters?.['Mean'] || 120, // 룰 생성 시에만 기본값 사용
-          std: rule.parameters?.['Std'] || 30, // 룰 생성 시에만 기본값 사용
+          mean: rule.parameters?.["Mean"] || 120, // 룰 생성 시에만 기본값 사용
+          std: rule.parameters?.["Std"] || 30, // 룰 생성 시에만 기본값 사용
         },
       });
     },
@@ -213,10 +258,14 @@ export default function ShowUpTimeSettings({
 
   const updateShowUpTimeRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
 
       // 전체 규칙 업데이트인경우 (조건 + parameters + 플라이트카운트)
-      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.parameters) {
+      if (
+        updatedRule.conditions ||
+        updatedRule.flightCount !== undefined ||
+        updatedRule.parameters
+      ) {
         // 현재 규칙 가져오기
         const currentRule = paxArrivalPatternRules[ruleIndex];
         if (!currentRule) return;
@@ -226,11 +275,13 @@ export default function ShowUpTimeSettings({
         if (updatedRule.conditions) {
           backendConditions = {};
           updatedRule.conditions.forEach((condition) => {
-            const parts = condition.split(': ');
+            const parts = condition.split(": ");
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const columnKey =
+                labelToColumnMap[displayLabel] ||
+                displayLabel.toLowerCase().replace(" ", "_");
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -245,18 +296,24 @@ export default function ShowUpTimeSettings({
         updatePaxArrivalPatternRule(ruleIndex, {
           conditions: backendConditions,
           value: {
-            mean: updatedRule.parameters?.Mean ?? currentRule.value?.mean ?? 120,
+            mean:
+              updatedRule.parameters?.Mean ?? currentRule.value?.mean ?? 120,
             std: updatedRule.parameters?.Std ?? currentRule.value?.std ?? 30,
           },
         });
       }
     },
-    [updatePaxArrivalPatternRule, paxArrivalPatternRules, labelToColumnMap, valueMapping]
+    [
+      updatePaxArrivalPatternRule,
+      paxArrivalPatternRules,
+      labelToColumnMap,
+      valueMapping,
+    ]
   );
 
   const removeShowUpTimeRule = useCallback(
     (ruleId: string) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
       removePaxArrivalPatternRule(ruleIndex);
     },
     [removePaxArrivalPatternRule]
@@ -268,11 +325,13 @@ export default function ShowUpTimeSettings({
       const backendConditions: Record<string, string[]> = {};
 
       rule.conditions.forEach((condition) => {
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const columnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -287,8 +346,8 @@ export default function ShowUpTimeSettings({
       return {
         conditions: backendConditions,
         value: {
-          mean: rule.parameters?.['Mean'] || 120,
-          std: rule.parameters?.['Std'] || 30,
+          mean: rule.parameters?.["Mean"] || 120,
+          std: rule.parameters?.["Std"] || 30,
         },
       };
     });
@@ -308,9 +367,9 @@ export default function ShowUpTimeSettings({
   const handleGeneratePax = async () => {
     if (!simulationId) {
       toast({
-        title: 'Error',
-        description: 'Simulation ID is required',
-        variant: 'destructive',
+        title: "Error",
+        description: "Simulation ID is required",
+        variant: "destructive",
       });
       return;
     }
@@ -322,7 +381,7 @@ export default function ShowUpTimeSettings({
       const requestBody = {
         settings: {
           airport: contextData.airport,
-          date: contextData.date || new Date().toISOString().split('T')[0], // 빈 날짜면 오늘 날짜 사용
+          date: contextData.date || new Date().toISOString().split("T")[0], // 빈 날짜면 오늘 날짜 사용
           min_arrival_minutes: 15,
         },
         pax_generation: {
@@ -330,7 +389,8 @@ export default function ShowUpTimeSettings({
           default: {
             // 🆕 확실한 기본값 보장: null, undefined가 아닌 경우만 사용
             load_factor:
-              loadFactorData.default?.load_factor !== null && loadFactorData.default?.load_factor !== undefined
+              loadFactorData.default?.load_factor !== null &&
+              loadFactorData.default?.load_factor !== undefined
                 ? loadFactorData.default.load_factor
                 : 0.85, // 기본값 85% (이미 소수점 형식)
           },
@@ -357,9 +417,10 @@ export default function ShowUpTimeSettings({
         },
       };
 
-
-      const { data: response } = await createPassengerShowUp(simulationId, requestBody);
-
+      const { data: response } = await createPassengerShowUp(
+        simulationId,
+        requestBody
+      );
 
       // S3 저장 처리
       try {
@@ -370,7 +431,10 @@ export default function ShowUpTimeSettings({
         };
 
         // S3 저장 실행
-        const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+        const { data: saveResult } = await saveScenarioMetadata(
+          simulationId,
+          completeMetadata
+        );
 
         // 저장 성공 시 lastSavedAt 업데이트
         const savedTimestamp = new Date().toISOString();
@@ -380,17 +444,17 @@ export default function ShowUpTimeSettings({
       }
 
       toast({
-        title: 'Passenger Schedule Generated',
-        description: 'Passenger data has been generated successfully.',
+        title: "Passenger Schedule Generated",
+        description: "Passenger data has been generated successfully.",
       });
 
       // TODO: 응답 데이터 처리 (필요에 따라)
       // useSimulationStore.getState().setPassengerResults(response);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to generate passenger data. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to generate passenger data. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
@@ -398,7 +462,7 @@ export default function ShowUpTimeSettings({
   };
 
   // 로컬 UI 상태
-  const [definedProperties] = useState<string[]>(['mean', 'std']); // 고정값
+  const [definedProperties] = useState<string[]>(["mean", "std"]); // 고정값
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
@@ -450,26 +514,30 @@ export default function ShowUpTimeSettings({
   // 룰 조건을 실제 flights로 변환하는 헬퍼 함수
   const calculateRuleFlights = useCallback(
     (conditions: string[]): Set<string> => {
-      if (!parquetMetadata || parquetMetadata.length === 0 || conditions.length === 0) {
+      if (
+        !parquetMetadata ||
+        parquetMetadata.length === 0 ||
+        conditions.length === 0
+      ) {
         return new Set();
       }
 
       // Display label을 실제 column key로 변환하는 맵핑
       const labelToColumnMap: Record<string, string> = {
-        Airline: 'operating_carrier_name',
-        'Aircraft Type': 'aircraft_type_icao',
-        'Flight Type': 'flight_type',
-        'Total Seats': 'total_seats',
-        'Arrival Airport': 'arrival_airport_iata',
-        'Arrival Terminal': 'arrival_terminal',
-        'Arrival City': 'arrival_city',
-        'Arrival Country': 'arrival_country',
-        'Arrival Region': 'arrival_region',
-        'Departure Airport Iata': 'departure_airport_iata',
-        'Departure Terminal': 'departure_terminal',
-        'Departure City': 'departure_city',
-        'Departure Country': 'departure_country',
-        'Departure Region': 'departure_region',
+        Airline: "operating_carrier_name",
+        "Aircraft Type": "aircraft_type_icao",
+        "Flight Type": "flight_type",
+        "Total Seats": "total_seats",
+        "Arrival Airport": "arrival_airport_iata",
+        "Arrival Terminal": "arrival_terminal",
+        "Arrival City": "arrival_city",
+        "Arrival Country": "arrival_country",
+        "Arrival Region": "arrival_region",
+        "Departure Airport Iata": "departure_airport_iata",
+        "Departure Terminal": "departure_terminal",
+        "Departure City": "departure_city",
+        "Departure Country": "departure_country",
+        "Departure Region": "departure_region",
       };
 
       // 조건들을 컬럼별로 그룹화
@@ -477,11 +545,13 @@ export default function ShowUpTimeSettings({
 
       conditions.forEach((condition) => {
         // "Airline: Korean Air" 형태를 파싱
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const actualColumnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const actualColumnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           if (!conditionsByColumn[actualColumnKey]) {
             conditionsByColumn[actualColumnKey] = [];
@@ -494,7 +564,9 @@ export default function ShowUpTimeSettings({
       const flightSetsByColumn: Set<string>[] = [];
 
       Object.entries(conditionsByColumn).forEach(([columnKey, values]) => {
-        const columnData = parquetMetadata.find((item) => item.column === columnKey);
+        const columnData = parquetMetadata.find(
+          (item) => item.column === columnKey
+        );
         if (!columnData) return;
 
         // 해당 컬럼에서 선택된 값들의 항공편들을 모두 수집 (OR 조건)
@@ -520,7 +592,11 @@ export default function ShowUpTimeSettings({
       } else {
         let matchingFlights = flightSetsByColumn[0];
         for (let i = 1; i < flightSetsByColumn.length; i++) {
-          matchingFlights = new Set([...matchingFlights].filter((flight) => flightSetsByColumn[i].has(flight)));
+          matchingFlights = new Set(
+            [...matchingFlights].filter((flight) =>
+              flightSetsByColumn[i].has(flight)
+            )
+          );
         }
         return matchingFlights;
       }
@@ -541,10 +617,13 @@ export default function ShowUpTimeSettings({
       const currentRuleFlights = calculateRuleFlights(rule.conditions);
 
       // 이전 룰들과 겹치지 않는 flights만 선택
-      const availableFlights = [...currentRuleFlights].filter((flight) => !usedFlightsSoFar.has(flight));
+      const availableFlights = [...currentRuleFlights].filter(
+        (flight) => !usedFlightsSoFar.has(flight)
+      );
 
       // 겹치는 flights 개수 (limited)
-      const overlappingFlights = currentRuleFlights.size - availableFlights.length;
+      const overlappingFlights =
+        currentRuleFlights.size - availableFlights.length;
 
       // 실제 사용 가능한 편수
       const actualCount = availableFlights.length;
@@ -571,13 +650,13 @@ export default function ShowUpTimeSettings({
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ruleId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", ruleId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDragEnter = (e: React.DragEvent, ruleId: string) => {
@@ -601,8 +680,12 @@ export default function ShowUpTimeSettings({
       return;
     }
 
-    const dragIndex = createdRules.findIndex((rule) => rule.id === draggingRuleId);
-    const dropIndex = createdRules.findIndex((rule) => rule.id === targetRuleId);
+    const dragIndex = createdRules.findIndex(
+      (rule) => rule.id === draggingRuleId
+    );
+    const dropIndex = createdRules.findIndex(
+      (rule) => rule.id === targetRuleId
+    );
 
     if (dragIndex === -1 || dropIndex === -1) return;
 
@@ -635,7 +718,7 @@ export default function ShowUpTimeSettings({
     const groups: Record<string, string[]> = {};
 
     conditions.forEach((condition) => {
-      const parts = condition.split(': ');
+      const parts = condition.split(": ");
       if (parts.length === 2) {
         const category = parts[0]; // "Airline", "Aircraft Type", etc.
         const value = parts[1]; // "Korean Air", "A21N", etc.
@@ -660,7 +743,11 @@ export default function ShowUpTimeSettings({
 
   // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; parameters: { Mean: number; Std: number } }) => {
+    (savedRuleData: {
+      conditions: string[];
+      flightCount: number;
+      parameters: { Mean: number; Std: number };
+    }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
@@ -694,7 +781,14 @@ export default function ShowUpTimeSettings({
         }
       }
     },
-    [editingRuleId, defaultMean, defaultStd, createdRules.length, updateShowUpTimeRule, addShowUpTimeRule]
+    [
+      editingRuleId,
+      defaultMean,
+      defaultStd,
+      createdRules.length,
+      updateShowUpTimeRule,
+      addShowUpTimeRule,
+    ]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -709,16 +803,28 @@ export default function ShowUpTimeSettings({
   // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
   const combinedChartConfig = useMemo(() => {
     const traces: any[] = [];
-    const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#EC4899'];
+    const colors = [
+      "#8B5CF6",
+      "#06B6D4",
+      "#10B981",
+      "#F59E0B",
+      "#EF4444",
+      "#6366F1",
+      "#EC4899",
+    ];
 
     // 전체 범위 계산 (null이 아닌 분포들만 포함)
     const validMeans = [
       ...(defaultMean !== null ? [defaultMean] : []),
-      ...createdRules.map((rule) => rule.parameters?.Mean).filter((mean) => mean !== null && mean !== undefined),
+      ...createdRules
+        .map((rule) => rule.parameters?.Mean)
+        .filter((mean) => mean !== null && mean !== undefined),
     ];
     const validStds = [
       ...(defaultStd !== null ? [defaultStd] : []),
-      ...createdRules.map((rule) => rule.parameters?.Std).filter((std) => std !== null && std !== undefined),
+      ...createdRules
+        .map((rule) => rule.parameters?.Std)
+        .filter((std) => std !== null && std !== undefined),
     ];
 
     // 유효한 분포가 없으면 차트를 렌더링하지 않음
@@ -756,7 +862,13 @@ export default function ShowUpTimeSettings({
     }
 
     // Default 분포 추가 (x축 값을 음수로 변환)
-    if (defaultMean !== null && defaultStd !== null && !isNaN(defaultMean) && !isNaN(defaultStd) && defaultStd > 0) {
+    if (
+      defaultMean !== null &&
+      defaultStd !== null &&
+      !isNaN(defaultMean) &&
+      !isNaN(defaultStd) &&
+      defaultStd > 0
+    ) {
       const defaultY = xValues.map(
         (x) =>
           (1 / (defaultStd * Math.sqrt(2 * Math.PI))) *
@@ -766,16 +878,17 @@ export default function ShowUpTimeSettings({
       traces.push({
         x: xValues,
         y: defaultY,
-        type: 'scatter',
-        mode: 'lines',
+        type: "scatter",
+        mode: "lines",
         name: `Default (μ=${defaultMean}min)`,
         line: {
           color: colors[0],
           width: 3,
         },
-        fill: 'tonexty',
+        fill: "tonexty",
         fillcolor: `${colors[0]}15`,
-        hovertemplate: 'Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>',
+        hovertemplate:
+          "Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>",
       });
     }
 
@@ -794,22 +907,25 @@ export default function ShowUpTimeSettings({
         std > 0
       ) {
         const ruleY = xValues.map(
-          (x) => (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x + mean) / std, 2))
+          (x) =>
+            (1 / (std * Math.sqrt(2 * Math.PI))) *
+            Math.exp(-0.5 * Math.pow((x + mean) / std, 2))
         );
 
         traces.push({
           x: xValues,
           y: ruleY,
-          type: 'scatter',
-          mode: 'lines',
+          type: "scatter",
+          mode: "lines",
           name: `${rule.name} (μ=${mean}min)`,
           line: {
             color: colors[(index + 1) % colors.length],
             width: 2,
           },
-          fill: 'tonexty',
+          fill: "tonexty",
           fillcolor: `${colors[(index + 1) % colors.length]}10`,
-          hovertemplate: 'Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>',
+          hovertemplate:
+            "Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>",
         });
       }
     });
@@ -817,36 +933,38 @@ export default function ShowUpTimeSettings({
     // 레이아웃 설정
     const layout = {
       title: {
-        text: 'Passenger Arrival Distribution<br><sub>Time before scheduled departure</sub>',
+        text: "Passenger Arrival Distribution<br><sub>Time before scheduled departure</sub>",
         font: { size: 16 },
       },
       xaxis: {
-        title: '', // 축 제목 제거
+        title: "", // 축 제목 제거
         showgrid: true,
         zeroline: true,
         range: [rangeStart - 10, rangeEnd + 10], // 양쪽에 여백 추가
-        gridcolor: '#E5E7EB',
-        zerolinecolor: '#EF4444', // 출발시각 빨간색
+        gridcolor: "#E5E7EB",
+        zerolinecolor: "#EF4444", // 출발시각 빨간색
         zerolinewidth: 2,
-        tickmode: 'array' as const,
-        tickvals: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)].map((_, i) => -i * 30).reverse(),
-        ticktext: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)].map((_, i) =>
-          i === 0 ? '0' : `-${i * 30}min`
-        ).reverse(),
+        tickmode: "array" as const,
+        tickvals: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)]
+          .map((_, i) => -i * 30)
+          .reverse(),
+        ticktext: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)]
+          .map((_, i) => (i === 0 ? "0" : `-${i * 30}min`))
+          .reverse(),
         automargin: true,
         tickangle: 0,
         tickfont: {
           size: 11,
         },
-        ticksuffix: '  ', // 틱 레이블 뒤에 공백 추가
+        ticksuffix: "  ", // 틱 레이블 뒤에 공백 추가
         tickpadding: 8, // 틱과 그래프 사이 간격
       },
       yaxis: {
-        title: '', // 축 제목 제거
+        title: "", // 축 제목 제거
         showgrid: true,
         zeroline: false,
-        gridcolor: '#E5E7EB',
-        tickformat: '.3f',
+        gridcolor: "#E5E7EB",
+        tickformat: ".3f",
         tickfont: {
           size: 11,
         },
@@ -857,39 +975,39 @@ export default function ShowUpTimeSettings({
       showlegend: true,
       legend: {
         x: 0.02,
-        xanchor: 'left',
+        xanchor: "left",
         y: 0.98,
-        yanchor: 'top',
-        bgcolor: 'rgba(255, 255, 255, 0.9)',
-        bordercolor: '#E5E7EB',
+        yanchor: "top",
+        bgcolor: "rgba(255, 255, 255, 0.9)",
+        bordercolor: "#E5E7EB",
         borderwidth: 1,
       },
-      hovermode: 'x unified',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      paper_bgcolor: 'rgba(0,0,0,0)',
+      hovermode: "x unified",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      paper_bgcolor: "rgba(0,0,0,0)",
       annotations: [
         {
           x: 0,
           y: -0.08,
-          xref: 'x',
-          yref: 'paper',
-          text: '✈️ Departure',
+          xref: "x",
+          yref: "paper",
+          text: "✈️ Departure",
           showarrow: false, // 화살표 제거
-          bgcolor: '#FEE2E2',
-          bordercolor: '#EF4444',
+          bgcolor: "#FEE2E2",
+          bordercolor: "#EF4444",
           borderwidth: 1,
           borderpad: 4,
           font: {
-            color: '#EF4444',
+            color: "#EF4444",
             size: 11,
           },
-          xanchor: 'center',
+          xanchor: "center",
         },
         {
           x: defaultMean ? -defaultMean : -120,
           y: 0.5,
-          xref: 'x',
-          yref: 'paper',
+          xref: "x",
+          yref: "paper",
           text: `Peak Arrival<br>${defaultMean || 120}min before`,
           showarrow: true,
           arrowhead: 2,
@@ -898,7 +1016,7 @@ export default function ShowUpTimeSettings({
           arrowcolor: colors[0],
           ax: 0,
           ay: -40,
-          bgcolor: 'white',
+          bgcolor: "white",
           bordercolor: colors[0],
           borderwidth: 1,
           borderpad: 4,
@@ -911,16 +1029,16 @@ export default function ShowUpTimeSettings({
       shapes: [
         // 출발 시각 수직선
         {
-          type: 'line' as const,
+          type: "line" as const,
           x0: 0,
           x1: 0,
           y0: 0,
           y1: 1,
-          yref: 'paper' as const,
+          yref: "paper" as const,
           line: {
-            color: '#EF4444',
+            color: "#EF4444",
             width: 2,
-            dash: 'dashdot' as const,
+            dash: "dashdot" as const,
           },
         },
       ],
@@ -935,15 +1053,22 @@ export default function ShowUpTimeSettings({
       <div>
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Show-up Time Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">
+              Assign Show-up Time Rules
+            </h4>
             <p className="text-sm text-default-500">
-              Apply different show-up time parameters to flights based on specific conditions
+              Apply different show-up time parameters to flights based on
+              specific conditions
             </p>
           </div>
 
-          <Button variant="primary" onClick={handleOpenRuleModal} className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            onClick={handleOpenRuleModal}
+            className="flex items-center gap-2"
+          >
             <Plus size={16} />
-            Add Rules
+            Add Rule
           </Button>
         </div>
 
@@ -959,7 +1084,7 @@ export default function ShowUpTimeSettings({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, rule.id)}
               onDragEnd={handleDragEnd}
-              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
+              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? "scale-95 opacity-50" : ""} ${dragOverRuleId === rule.id ? "border-purple-400 bg-purple-50" : ""} hover:shadow-md`}
             >
               {/* Rule Header */}
               <div className="pointer-events-none flex items-center justify-between">
@@ -977,13 +1102,17 @@ export default function ShowUpTimeSettings({
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       <span className="font-medium text-gray-700">
-                        {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
+                        {flightCalculations.actualCounts[rule.id] ??
+                          rule.flightCount}
                       </span>
-                      <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                      <span className="text-sm text-gray-500">
+                        / {flightCalculations.totalFlights}
+                      </span>
                       <span className="text-sm text-gray-500">flights</span>
                     </div>
                     {(() => {
-                      const limitedCount = flightCalculations.limitedCounts[rule.id];
+                      const limitedCount =
+                        flightCalculations.limitedCounts[rule.id];
                       return limitedCount && limitedCount > 0 ? (
                         <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
                           -{limitedCount} limited
@@ -1016,13 +1145,15 @@ export default function ShowUpTimeSettings({
               {rule.conditions.length > 0 && (
                 <div className="mt-2">
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
+                    {Object.entries(
+                      groupConditionsByCategory(rule.conditions)
+                    ).map(([category, values]) => (
                       <Badge
                         key={category}
                         variant="secondary"
                         className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
                       >
-                        {values.join(' | ')}
+                        {values.join(" | ")}
                       </Badge>
                     ))}
                   </div>
@@ -1035,10 +1166,14 @@ export default function ShowUpTimeSettings({
                   <div className="space-y-3">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Mean (minutes)
+                        </label>
                         <IntegerNumberInput
                           value={
-                            rule.parameters.Mean !== undefined ? rule.parameters.Mean : defaultMean || 120 // 룰 수정 시에만 기본값 사용
+                            rule.parameters.Mean !== undefined
+                              ? rule.parameters.Mean
+                              : defaultMean || 120 // 룰 수정 시에만 기본값 사용
                           }
                           onChange={(newMean) => {
                             updateShowUpTimeRule(rule.id, {
@@ -1048,38 +1183,53 @@ export default function ShowUpTimeSettings({
                               },
                             });
                           }}
-                          placeholder={defaultMean ? `${defaultMean} minutes` : '120 minutes'}
+                          placeholder={
+                            defaultMean
+                              ? `${defaultMean} minutes`
+                              : "120 minutes"
+                          }
                           unit="minutes"
                           min={0}
                           max={999}
                           className={
-                            rule.parameters && (rule.parameters.Mean < 0 || rule.parameters.Std <= 0)
-                              ? 'border-red-500 bg-red-50'
-                              : ''
+                            rule.parameters &&
+                            (rule.parameters.Mean < 0 ||
+                              rule.parameters.Std <= 0)
+                              ? "border-red-500 bg-red-50"
+                              : ""
                           }
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Standard Deviation
+                        </label>
                         <IntegerNumberInput
                           value={
-                            rule.parameters.Std !== undefined ? rule.parameters.Std : defaultStd || 30 // 룰 수정 시에만 기본값 사용
+                            rule.parameters.Std !== undefined
+                              ? rule.parameters.Std
+                              : defaultStd || 30 // 룰 수정 시에만 기본값 사용
                           }
                           onChange={(newStd) => {
                             updateShowUpTimeRule(rule.id, {
                               parameters: {
-                                Mean: rule.parameters?.Mean || defaultMean || 120,
+                                Mean:
+                                  rule.parameters?.Mean || defaultMean || 120,
                                 Std: newStd,
                               },
                             });
                           }}
-                          placeholder={defaultStd ? defaultStd.toString() : '30'}
+                          placeholder={
+                            defaultStd ? defaultStd.toString() : "30"
+                          }
                           min={1}
                           max={999}
                           className={
-                            rule.parameters && (rule.parameters.Mean < 0 || rule.parameters.Std <= 0)
-                              ? 'border-red-500 bg-red-50'
-                              : ''
+                            rule.parameters &&
+                            (rule.parameters.Mean < 0 ||
+                              rule.parameters.Std <= 0)
+                              ? "border-red-500 bg-red-50"
+                              : ""
                           }
                         />
                       </div>
@@ -1088,10 +1238,13 @@ export default function ShowUpTimeSettings({
 
                   {/* Validation Status */}
                   <div className="mt-2 flex items-center gap-2 text-sm">
-                    {rule.parameters && rule.parameters.Mean >= 0 && rule.parameters.Std > 0 ? (
+                    {rule.parameters &&
+                    rule.parameters.Mean >= 0 &&
+                    rule.parameters.Std > 0 ? (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle size={14} />
-                        Valid parameters (μ={rule.parameters.Mean}, σ={rule.parameters.Std})
+                        Valid parameters (μ={rule.parameters.Mean}, σ=
+                        {rule.parameters.Std})
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-red-600">
@@ -1109,10 +1262,16 @@ export default function ShowUpTimeSettings({
           <div className="rounded-lg border bg-white px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">Default</Badge>
+                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">
+                  Default
+                </Badge>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
-                  <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                  <span className="font-medium text-gray-700">
+                    {flightCalculations.remainingFlights}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    / {flightCalculations.totalFlights}
+                  </span>
                   <span className="text-sm text-gray-500">flights</span>
                 </div>
               </div>
@@ -1123,30 +1282,44 @@ export default function ShowUpTimeSettings({
               <div className="space-y-3">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Mean (minutes)</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Mean (minutes)
+                    </label>
                     <IntegerNumberInput
                       value={defaultMean || 120} // 디폴트 입력값에서만 기본값 표시
                       onChange={(newMean) => {
                         updateShowUpTimeDefault(newMean, defaultStd || 30);
                       }}
-                      placeholder={defaultMean ? `${defaultMean} minutes` : '120 minutes'}
+                      placeholder={
+                        defaultMean ? `${defaultMean} minutes` : "120 minutes"
+                      }
                       unit="minutes"
                       min={0}
                       max={999}
-                      className={defaultMean !== null && defaultMean < 0 ? 'border-red-500 bg-red-50' : ''}
+                      className={
+                        defaultMean !== null && defaultMean < 0
+                          ? "border-red-500 bg-red-50"
+                          : ""
+                      }
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Standard Deviation</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Standard Deviation
+                    </label>
                     <IntegerNumberInput
                       value={defaultStd || 30} // 디폴트 입력값에서만 기본값 표시
                       onChange={(newStd) => {
                         updateShowUpTimeDefault(defaultMean || 120, newStd);
                       }}
-                      placeholder={defaultStd ? defaultStd.toString() : '30'}
+                      placeholder={defaultStd ? defaultStd.toString() : "30"}
                       min={1}
                       max={999}
-                      className={defaultStd !== null && defaultStd <= 0 ? 'border-red-500 bg-red-50' : ''}
+                      className={
+                        defaultStd !== null && defaultStd <= 0
+                          ? "border-red-500 bg-red-50"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -1154,7 +1327,10 @@ export default function ShowUpTimeSettings({
 
               {/* Default Validation Status */}
               <div className="mt-2 flex items-center gap-2 text-sm">
-                {defaultMean !== null && defaultStd !== null && defaultMean >= 0 && defaultStd > 0 ? (
+                {defaultMean !== null &&
+                defaultStd !== null &&
+                defaultMean >= 0 &&
+                defaultStd > 0 ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle size={14} />
                     Valid parameters (μ={defaultMean}, σ={defaultStd})
@@ -1177,27 +1353,30 @@ export default function ShowUpTimeSettings({
       </div>
 
       {/* Combined Distribution Chart - 유효한 데이터가 있을 때만 표시 */}
-      {combinedChartConfig.layout !== null && combinedChartConfig.data.length > 0 && (
-        <div className="mt-6 rounded-lg border bg-white p-4">
-          <h4 className="mb-4 text-lg font-medium text-gray-900">Show-up Time Distributions Comparison</h4>
-          {React.createElement(Plot as any, {
-            data: combinedChartConfig.data,
-            layout: combinedChartConfig.layout,
-            config: {
-              displayModeBar: false,
-              responsive: true,
-            },
-            style: { width: '100%', height: '400px' },
-          })}
-        </div>
-      )}
+      {combinedChartConfig.layout !== null &&
+        combinedChartConfig.data.length > 0 && (
+          <div className="mt-6 rounded-lg border bg-white p-4">
+            <h4 className="mb-4 text-lg font-medium text-gray-900">
+              Show-up Time Distributions Comparison
+            </h4>
+            {React.createElement(Plot as any, {
+              data: combinedChartConfig.data,
+              layout: combinedChartConfig.layout,
+              config: {
+                displayModeBar: false,
+                responsive: true,
+              },
+              style: { width: "100%", height: "400px" },
+            })}
+          </div>
+        )}
 
       {/* Generate Pax Button - 조건부 렌더링 */}
       {!hideGenerateButton && (
         <div className="mt-6 flex justify-end">
           <Button onClick={handleGeneratePax} disabled={isGenerating}>
             <Play size={16} />
-            {isGenerating ? 'Generating...' : 'Generate Pax'}
+            {isGenerating ? "Generating..." : "Generate Pax"}
           </Button>
         </div>
       )}
@@ -1208,13 +1387,13 @@ export default function ShowUpTimeSettings({
           <DialogHeader>
             <DialogTitle>
               {editingRuleId
-                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || 'Rule'}`
-                : 'Create New Rule'}
+                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || "Rule"}`
+                : "Create New Rule"}
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and show-up time parameters for this rule.'
-                : 'Select flight conditions and assign show-up time parameters.'}
+                ? "Modify the flight conditions and show-up time parameters for this rule."
+                : "Select flight conditions and assign show-up time parameters."}
             </DialogDescription>
           </DialogHeader>
 
@@ -1223,7 +1402,11 @@ export default function ShowUpTimeSettings({
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="show_up_time"
-              editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
+              editingRule={
+                editingRuleId
+                  ? createdRules.find((rule) => rule.id === editingRuleId)
+                  : undefined
+              }
             />
           </div>
         </DialogContent>

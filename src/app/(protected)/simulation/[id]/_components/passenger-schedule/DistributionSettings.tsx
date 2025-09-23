@@ -38,7 +38,7 @@ import PercentageControl, {
 } from "../shared/PercentageControl";
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
-import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
@@ -340,7 +340,11 @@ export default function DistributionSettings({
       });
 
       // 🎯 수정: 백엔드에서 처리하도록 정수 그대로 전달
-      addRule(backendConditions, rule.flightCount || 0, rule.distribution || {});
+      addRule(
+        backendConditions,
+        rule.flightCount || 0,
+        rule.distribution || {}
+      );
     },
     [addRule]
   );
@@ -436,7 +440,6 @@ export default function DistributionSettings({
     });
     return distribution;
   }, []);
-
 
   // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
   const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
@@ -702,7 +705,12 @@ export default function DistributionSettings({
       const distribution = calculateEqualDistribution(definedProperties);
       setDefault(distribution);
     }
-  }, [definedProperties.length, hasDefaultRule, calculateEqualDistribution, setDefault]);
+  }, [
+    definedProperties.length,
+    hasDefaultRule,
+    calculateEqualDistribution,
+    setDefault,
+  ]);
 
   // ✅ validation 함수들은 PercentageControl에서 import
 
@@ -791,7 +799,7 @@ export default function DistributionSettings({
             className="flex items-center gap-2"
           >
             <Plus size={16} />
-            Add Rules
+            Add Rule
           </Button>
         </div>
 
@@ -906,18 +914,18 @@ export default function DistributionSettings({
                         <span className="flex items-center gap-1 text-green-600">
                           <CheckCircle size={14} />
                           Valid distribution (Total:{" "}
-                          {Math.round(getDistributionTotal(
-                            rule.distribution || {}
-                          ))}
+                          {Math.round(
+                            getDistributionTotal(rule.distribution || {})
+                          )}
                           %)
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-600">
                           <XCircle size={14} />
                           Total must equal 100% (Current:{" "}
-                          {Math.round(getDistributionTotal(
-                            rule.distribution || {}
-                          ))}
+                          {Math.round(
+                            getDistributionTotal(rule.distribution || {})
+                          )}
                           %)
                         </span>
                       )}
@@ -966,18 +974,18 @@ export default function DistributionSettings({
                     <span className="flex items-center gap-1 text-green-600">
                       <CheckCircle size={14} />
                       Valid distribution (Total:{" "}
-                      {Math.round(getDistributionTotal(
-                        defaultDistribution || {}
-                      ))}
+                      {Math.round(
+                        getDistributionTotal(defaultDistribution || {})
+                      )}
                       %)
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-red-600">
                       <XCircle size={14} />
                       Total must equal 100% (Current:{" "}
-                      {Math.round(getDistributionTotal(
-                        defaultDistribution || {}
-                      ))}
+                      {Math.round(
+                        getDistributionTotal(defaultDistribution || {})
+                      )}
                       %)
                     </span>
                   )}
@@ -1055,7 +1063,7 @@ export default function DistributionSettings({
               onClick={handleConfirmChanges}
               style={{
                 backgroundColor: COMPONENT_TYPICAL_COLORS[3], // amber color
-                color: 'white',
+                color: "white",
               }}
               className="hover:opacity-90"
             >

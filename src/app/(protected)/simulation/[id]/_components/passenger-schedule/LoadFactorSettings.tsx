@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Edit, Plus, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Edit, Plus, Trash2, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,16 +11,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/AlertDialog';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { LoadFactorSlider } from '@/components/ui/LoadFactorSlider';
-import { useSimulationStore } from '../../_stores';
-import ProfileCriteriaSettings from './ProfileCriteriaSettings';
+} from "@/components/ui/AlertDialog";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { LoadFactorSlider } from "@/components/ui/LoadFactorSlider";
+import { useSimulationStore } from "../../_stores";
+import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
 // Removed import for conversion functions - no longer needed
-import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
@@ -49,50 +55,71 @@ interface LoadFactorSettingsProps {
   parquetMetadata?: ParquetMetadataItem[];
 }
 
-export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorSettingsProps) {
+export default function LoadFactorSettings({
+  parquetMetadata = [],
+}: LoadFactorSettingsProps) {
   // 🆕 SimulationStore 연결
-  const paxGenerationRules = useSimulationStore((s) => s.passenger.pax_generation.rules);
-  const defaultLoadFactor = useSimulationStore((s) => s.passenger.pax_generation.default.load_factor);
-  const addPaxGenerationRule = useSimulationStore((s) => s.addPaxGenerationRule);
-  const removePaxGenerationRule = useSimulationStore((s) => s.removePaxGenerationRule);
-  const updatePaxGenerationValue = useSimulationStore((s) => s.updatePaxGenerationValue);
-  const updatePaxGenerationRuleStore = useSimulationStore((s) => s.updatePaxGenerationRule);
-  const setPaxGenerationDefault = useSimulationStore((s) => s.setPaxGenerationDefault);
-  const reorderPaxGenerationRules = useSimulationStore((s) => s.reorderPaxGenerationRules);
+  const paxGenerationRules = useSimulationStore(
+    (s) => s.passenger.pax_generation.rules
+  );
+  const defaultLoadFactor = useSimulationStore(
+    (s) => s.passenger.pax_generation.default.load_factor
+  );
+  const addPaxGenerationRule = useSimulationStore(
+    (s) => s.addPaxGenerationRule
+  );
+  const removePaxGenerationRule = useSimulationStore(
+    (s) => s.removePaxGenerationRule
+  );
+  const updatePaxGenerationValue = useSimulationStore(
+    (s) => s.updatePaxGenerationValue
+  );
+  const updatePaxGenerationRuleStore = useSimulationStore(
+    (s) => s.updatePaxGenerationRule
+  );
+  const setPaxGenerationDefault = useSimulationStore(
+    (s) => s.setPaxGenerationDefault
+  );
+  const reorderPaxGenerationRules = useSimulationStore(
+    (s) => s.reorderPaxGenerationRules
+  );
 
   // 🆕 조건 변환 로직 (다른 탭들과 동일)
   const labelToColumnMap: Record<string, string> = {
-    Airline: 'operating_carrier_iata',
-    'Aircraft Type': 'aircraft_type_icao',
-    'Flight Type': 'flight_type',
-    'Total Seats': 'total_seats',
-    'Arrival Airport': 'arrival_airport_iata',
-    'Arrival Terminal': 'arrival_terminal',
-    'Arrival City': 'arrival_city',
-    'Arrival Country': 'arrival_country',
-    'Arrival Region': 'arrival_region',
-    'Departure Airport Iata': 'departure_airport_iata',
-    'Departure Terminal': 'departure_terminal',
-    'Departure City': 'departure_city',
-    'Departure Country': 'departure_country',
-    'Departure Region': 'departure_region',
+    Airline: "operating_carrier_iata",
+    "Aircraft Type": "aircraft_type_icao",
+    "Flight Type": "flight_type",
+    "Total Seats": "total_seats",
+    "Arrival Airport": "arrival_airport_iata",
+    "Arrival Terminal": "arrival_terminal",
+    "Arrival City": "arrival_city",
+    "Arrival Country": "arrival_country",
+    "Arrival Region": "arrival_region",
+    "Departure Airport Iata": "departure_airport_iata",
+    "Departure Terminal": "departure_terminal",
+    "Departure City": "departure_city",
+    "Departure Country": "departure_country",
+    "Departure Region": "departure_region",
   };
 
   const valueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
-      'Korean Air': 'KE',
-      'Asiana Airlines': 'OZ',
+      "Korean Air": "KE",
+      "Asiana Airlines": "OZ",
       // 필요에 따라 추가
     },
   };
 
   // 🆕 입력값 정규화 (1~100 정수로 제한)
-  const normalizeLoadFactor = useCallback((value: number | null | undefined): number => {
-    if (value === null || value === undefined || isNaN(value)) {
-      return 85; // 입력값 정규화 시에만 기본값 사용
-    }
-    return Math.max(1, Math.min(100, Math.round(value)));
-  }, []);
+  const normalizeLoadFactor = useCallback(
+    (value: number | null | undefined): number => {
+      if (value === null || value === undefined || isNaN(value)) {
+        return 85; // 입력값 정규화 시에만 기본값 사용
+      }
+      return Math.max(1, Math.min(100, Math.round(value)));
+    },
+    []
+  );
 
   // 변환 함수 제거 - 모든 값은 정수 퍼센트로 처리
 
@@ -100,27 +127,27 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
   const createdRules: Rule[] = useMemo(() => {
     // 백엔드 → UI 역변환 맵핑
     const columnToLabelMap: Record<string, string> = {
-      operating_carrier_iata: 'Airline',
-      aircraft_type_icao: 'Aircraft Type',
-      flight_type: 'Flight Type',
-      total_seats: 'Total Seats',
-      arrival_airport_iata: 'Arrival Airport',
-      arrival_terminal: 'Arrival Terminal',
-      arrival_city: 'Arrival City',
-      arrival_country: 'Arrival Country',
-      arrival_region: 'Arrival Region',
-      departure_airport_iata: 'Departure Airport Iata',
-      departure_terminal: 'Departure Terminal',
-      departure_city: 'Departure City',
-      departure_country: 'Departure Country',
-      departure_region: 'Departure Region',
+      operating_carrier_iata: "Airline",
+      aircraft_type_icao: "Aircraft Type",
+      flight_type: "Flight Type",
+      total_seats: "Total Seats",
+      arrival_airport_iata: "Arrival Airport",
+      arrival_terminal: "Arrival Terminal",
+      arrival_city: "Arrival City",
+      arrival_country: "Arrival Country",
+      arrival_region: "Arrival Region",
+      departure_airport_iata: "Departure Airport Iata",
+      departure_terminal: "Departure Terminal",
+      departure_city: "Departure City",
+      departure_country: "Departure Country",
+      departure_region: "Departure Region",
     };
 
     // 값 역변환 맵핑
     const reverseValueMapping: Record<string, Record<string, string>> = {
       operating_carrier_iata: {
-        KE: 'Korean Air',
-        OZ: 'Asiana Airlines',
+        KE: "Korean Air",
+        OZ: "Asiana Airlines",
         // 필요에 따라 추가
       },
     };
@@ -128,20 +155,24 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
     return paxGenerationRules.map((rule, index) => ({
       id: `rule-${index}`,
       name: `Rule ${index + 1}`,
-      conditions: Object.entries(rule.conditions || {}).flatMap(([columnKey, values]) => {
-        const displayLabel = columnToLabelMap[columnKey] || columnKey;
-        return values.map((value) => {
-          const displayValue = reverseValueMapping[columnKey]?.[value] || value;
-          return `${displayLabel}: ${displayValue}`;
-        });
-      }),
+      conditions: Object.entries(rule.conditions || {}).flatMap(
+        ([columnKey, values]) => {
+          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          return values.map((value) => {
+            const displayValue =
+              reverseValueMapping[columnKey]?.[value] || value;
+            return `${displayLabel}: ${displayValue}`;
+          });
+        }
+      ),
       flightCount: 0, // SimulationStore에는 flightCount가 없으므로 기본값 0
-      loadFactor: (rule.value?.load_factor ?? 80), // 백분율 값 (기본값 80%)
+      loadFactor: rule.value?.load_factor ?? 80, // 백분율 값 (기본값 80%)
       isExpanded: false,
     }));
   }, [paxGenerationRules]);
 
-  const hasDefaultRule = defaultLoadFactor !== null && defaultLoadFactor !== undefined;
+  const hasDefaultRule =
+    defaultLoadFactor !== null && defaultLoadFactor !== undefined;
 
   // 🆕 탭이 처음 열릴 때만 초기값 설정 - 지연 실행으로 탭 활성화 확인
   useEffect(() => {
@@ -163,37 +194,39 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
       // Display label을 실제 column key로 변환하는 맵핑
       const labelToColumnMap: Record<string, string> = {
-        Airline: 'operating_carrier_iata',
-        'Aircraft Type': 'aircraft_type_icao',
-        'Flight Type': 'flight_type',
-        'Total Seats': 'total_seats',
-        'Arrival Airport': 'arrival_airport_iata',
-        'Arrival Terminal': 'arrival_terminal',
-        'Arrival City': 'arrival_city',
-        'Arrival Country': 'arrival_country',
-        'Arrival Region': 'arrival_region',
-        'Departure Airport Iata': 'departure_airport_iata',
-        'Departure Terminal': 'departure_terminal',
-        'Departure City': 'departure_city',
-        'Departure Country': 'departure_country',
-        'Departure Region': 'departure_region',
+        Airline: "operating_carrier_iata",
+        "Aircraft Type": "aircraft_type_icao",
+        "Flight Type": "flight_type",
+        "Total Seats": "total_seats",
+        "Arrival Airport": "arrival_airport_iata",
+        "Arrival Terminal": "arrival_terminal",
+        "Arrival City": "arrival_city",
+        "Arrival Country": "arrival_country",
+        "Arrival Region": "arrival_region",
+        "Departure Airport Iata": "departure_airport_iata",
+        "Departure Terminal": "departure_terminal",
+        "Departure City": "departure_city",
+        "Departure Country": "departure_country",
+        "Departure Region": "departure_region",
       };
 
       // 값 변환 맵핑 (필요시)
       const valueMapping: Record<string, Record<string, string>> = {
         operating_carrier_iata: {
-          'Korean Air': 'KE',
-          'Asiana Airlines': 'OZ',
+          "Korean Air": "KE",
+          "Asiana Airlines": "OZ",
           // 필요에 따라 추가
         },
       };
 
       rule.conditions.forEach((condition) => {
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const columnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -212,10 +245,14 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
   const updateLoadFactorRule = useCallback(
     (ruleId: string, updatedRule: Partial<Rule>) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
 
       // 전체 규칙 업데이트인경우 (조건 + loadFactor + 플라이트카운트)
-      if (updatedRule.conditions || updatedRule.flightCount !== undefined || updatedRule.loadFactor !== undefined) {
+      if (
+        updatedRule.conditions ||
+        updatedRule.flightCount !== undefined ||
+        updatedRule.loadFactor !== undefined
+      ) {
         // 현재 규칙 가져오기
         const currentRule = paxGenerationRules[ruleIndex];
         if (!currentRule) return;
@@ -225,11 +262,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         if (updatedRule.conditions) {
           backendConditions = {};
           updatedRule.conditions.forEach((condition) => {
-            const parts = condition.split(': ');
+            const parts = condition.split(": ");
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+              const columnKey =
+                labelToColumnMap[displayLabel] ||
+                displayLabel.toLowerCase().replace(" ", "_");
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -245,18 +284,24 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
           ruleIndex,
           backendConditions,
           updatedRule.loadFactor ??
-            (typeof currentRule.value === 'object' && currentRule.value?.load_factor
+            (typeof currentRule.value === "object" &&
+            currentRule.value?.load_factor
               ? currentRule.value.load_factor // 값을 그대로 사용
               : 80) // 기본값 80%
         );
       }
     },
-    [updatePaxGenerationRuleStore, paxGenerationRules, labelToColumnMap, valueMapping]
+    [
+      updatePaxGenerationRuleStore,
+      paxGenerationRules,
+      labelToColumnMap,
+      valueMapping,
+    ]
   );
 
   const removeLoadFactorRule = useCallback(
     (ruleId: string) => {
-      const ruleIndex = parseInt(ruleId.replace('rule-', ''));
+      const ruleIndex = parseInt(ruleId.replace("rule-", ""));
       removePaxGenerationRule(ruleIndex);
     },
     [removePaxGenerationRule]
@@ -270,37 +315,39 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
         // Display label을 실제 column key로 변환하는 맵핑
         const labelToColumnMap: Record<string, string> = {
-          Airline: 'operating_carrier_iata',
-          'Aircraft Type': 'aircraft_type_icao',
-          'Flight Type': 'flight_type',
-          'Total Seats': 'total_seats',
-          'Arrival Airport': 'arrival_airport_iata',
-          'Arrival Terminal': 'arrival_terminal',
-          'Arrival City': 'arrival_city',
-          'Arrival Country': 'arrival_country',
-          'Arrival Region': 'arrival_region',
-          'Departure Airport Iata': 'departure_airport_iata',
-          'Departure Terminal': 'departure_terminal',
-          'Departure City': 'departure_city',
-          'Departure Country': 'departure_country',
-          'Departure Region': 'departure_region',
+          Airline: "operating_carrier_iata",
+          "Aircraft Type": "aircraft_type_icao",
+          "Flight Type": "flight_type",
+          "Total Seats": "total_seats",
+          "Arrival Airport": "arrival_airport_iata",
+          "Arrival Terminal": "arrival_terminal",
+          "Arrival City": "arrival_city",
+          "Arrival Country": "arrival_country",
+          "Arrival Region": "arrival_region",
+          "Departure Airport Iata": "departure_airport_iata",
+          "Departure Terminal": "departure_terminal",
+          "Departure City": "departure_city",
+          "Departure Country": "departure_country",
+          "Departure Region": "departure_region",
         };
 
         // 값 변환 맵핑 (필요시)
         const valueMapping: Record<string, Record<string, string>> = {
           operating_carrier_iata: {
-            'Korean Air': 'KE',
-            'Asiana Airlines': 'OZ',
+            "Korean Air": "KE",
+            "Asiana Airlines": "OZ",
             // 필요에 따라 추가
           },
         };
 
         rule.conditions.forEach((condition) => {
-          const parts = condition.split(': ');
+          const parts = condition.split(": ");
           if (parts.length === 2) {
             const displayLabel = parts[0];
             const value = parts[1];
-            const columnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+            const columnKey =
+              labelToColumnMap[displayLabel] ||
+              displayLabel.toLowerCase().replace(" ", "_");
 
             // 값 변환 적용 (있으면)
             const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -336,15 +383,15 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
   // const FRONTEND_DEFAULT_LOAD_FACTOR = 80;
 
   // 로컬 UI 상태
-  const [definedProperties] = useState<string[]>(['Load Factor']); // 고정값
-  const [newPropertyName, setNewPropertyName] = useState<string>('');
+  const [definedProperties] = useState<string[]>(["Load Factor"]); // 고정값
+  const [newPropertyName, setNewPropertyName] = useState<string>("");
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
   // 항목 변경 확인창 상태
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
-    type: 'add' | 'remove';
+    type: "add" | "remove";
     payload: string[];
   } | null>(null);
 
@@ -371,7 +418,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
   // Enter 키 처리
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddProperty();
     }
@@ -407,26 +454,30 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
   // 룰 조건을 실제 flights로 변환하는 헬퍼 함수
   const calculateRuleFlights = useCallback(
     (conditions: string[]): Set<string> => {
-      if (!parquetMetadata || parquetMetadata.length === 0 || conditions.length === 0) {
+      if (
+        !parquetMetadata ||
+        parquetMetadata.length === 0 ||
+        conditions.length === 0
+      ) {
         return new Set();
       }
 
       // Display label을 실제 column key로 변환하는 맵핑
       const labelToColumnMap: Record<string, string> = {
-        Airline: 'operating_carrier_name',
-        'Aircraft Type': 'aircraft_type_icao',
-        'Flight Type': 'flight_type',
-        'Total Seats': 'total_seats',
-        'Arrival Airport': 'arrival_airport_iata',
-        'Arrival Terminal': 'arrival_terminal',
-        'Arrival City': 'arrival_city',
-        'Arrival Country': 'arrival_country',
-        'Arrival Region': 'arrival_region',
-        'Departure Airport Iata': 'departure_airport_iata',
-        'Departure Terminal': 'departure_terminal',
-        'Departure City': 'departure_city',
-        'Departure Country': 'departure_country',
-        'Departure Region': 'departure_region',
+        Airline: "operating_carrier_name",
+        "Aircraft Type": "aircraft_type_icao",
+        "Flight Type": "flight_type",
+        "Total Seats": "total_seats",
+        "Arrival Airport": "arrival_airport_iata",
+        "Arrival Terminal": "arrival_terminal",
+        "Arrival City": "arrival_city",
+        "Arrival Country": "arrival_country",
+        "Arrival Region": "arrival_region",
+        "Departure Airport Iata": "departure_airport_iata",
+        "Departure Terminal": "departure_terminal",
+        "Departure City": "departure_city",
+        "Departure Country": "departure_country",
+        "Departure Region": "departure_region",
       };
 
       // 조건들을 컬럼별로 그룹화
@@ -434,11 +485,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
       conditions.forEach((condition) => {
         // "Airline: Korean Air" 형태를 파싱
-        const parts = condition.split(': ');
+        const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const actualColumnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+          const actualColumnKey =
+            labelToColumnMap[displayLabel] ||
+            displayLabel.toLowerCase().replace(" ", "_");
 
           if (!conditionsByColumn[actualColumnKey]) {
             conditionsByColumn[actualColumnKey] = [];
@@ -451,7 +504,9 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       const flightSetsByColumn: Set<string>[] = [];
 
       Object.entries(conditionsByColumn).forEach(([columnKey, values]) => {
-        const columnData = parquetMetadata.find((item) => item.column === columnKey);
+        const columnData = parquetMetadata.find(
+          (item) => item.column === columnKey
+        );
         if (!columnData) return;
 
         // 해당 컬럼에서 선택된 값들의 항공편들을 모두 수집 (OR 조건)
@@ -477,7 +532,11 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       } else {
         let matchingFlights = flightSetsByColumn[0];
         for (let i = 1; i < flightSetsByColumn.length; i++) {
-          matchingFlights = new Set([...matchingFlights].filter((flight) => flightSetsByColumn[i].has(flight)));
+          matchingFlights = new Set(
+            [...matchingFlights].filter((flight) =>
+              flightSetsByColumn[i].has(flight)
+            )
+          );
         }
         return matchingFlights;
       }
@@ -498,10 +557,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       const currentRuleFlights = calculateRuleFlights(rule.conditions);
 
       // 이전 룰들과 겹치지 않는 flights만 선택
-      const availableFlights = [...currentRuleFlights].filter((flight) => !usedFlightsSoFar.has(flight));
+      const availableFlights = [...currentRuleFlights].filter(
+        (flight) => !usedFlightsSoFar.has(flight)
+      );
 
       // 겹치는 flights 개수 (limited)
-      const overlappingFlights = currentRuleFlights.size - availableFlights.length;
+      const overlappingFlights =
+        currentRuleFlights.size - availableFlights.length;
 
       // 실제 사용 가능한 편수
       const actualCount = availableFlights.length;
@@ -528,13 +590,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
     setDraggingRuleId(ruleId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ruleId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", ruleId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDragEnter = (e: React.DragEvent, ruleId: string) => {
@@ -558,8 +620,12 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       return;
     }
 
-    const dragIndex = createdRules.findIndex((rule) => rule.id === draggingRuleId);
-    const dropIndex = createdRules.findIndex((rule) => rule.id === targetRuleId);
+    const dragIndex = createdRules.findIndex(
+      (rule) => rule.id === draggingRuleId
+    );
+    const dropIndex = createdRules.findIndex(
+      (rule) => rule.id === targetRuleId
+    );
 
     if (dragIndex === -1 || dropIndex === -1) return;
 
@@ -598,7 +664,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
     const groups: Record<string, string[]> = {};
 
     conditions.forEach((condition) => {
-      const parts = condition.split(': ');
+      const parts = condition.split(": ");
       if (parts.length === 2) {
         const category = parts[0]; // "Airline", "Aircraft Type", etc.
         const value = parts[1]; // "Korean Air", "A21N", etc.
@@ -623,7 +689,11 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
 
   // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: { conditions: string[]; flightCount: number; loadFactor: number }) => {
+    (savedRuleData: {
+      conditions: string[];
+      flightCount: number;
+      loadFactor: number;
+    }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
@@ -638,7 +708,8 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       } else {
         // Create 모드에서 새 규칙 생성
         if (savedRuleData) {
-          const loadFactor = savedRuleData.loadFactor ?? defaultLoadFactor ?? 85;
+          const loadFactor =
+            savedRuleData.loadFactor ?? defaultLoadFactor ?? 85;
 
           const newRule = {
             id: `rule-${Date.now()}`,
@@ -654,7 +725,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
         }
       }
     },
-    [editingRuleId, createdRules.length, defaultLoadFactor, updateLoadFactorRule, addLoadFactorRule]
+    [
+      editingRuleId,
+      createdRules.length,
+      defaultLoadFactor,
+      updateLoadFactorRule,
+      addLoadFactorRule,
+    ]
   );
 
   // 전역 함수 등록 (메모리 누수 방지)
@@ -683,15 +760,22 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
       <div>
         <div className="flex items-center justify-between border-l-4 border-primary pl-4">
           <div>
-            <h4 className="text-lg font-semibold text-default-900">Assign Load Factor Rules</h4>
+            <h4 className="text-lg font-semibold text-default-900">
+              Assign Load Factor Rules
+            </h4>
             <p className="text-sm text-default-500">
-              Apply different load factors to flights based on specific conditions
+              Apply different load factors to flights based on specific
+              conditions
             </p>
           </div>
 
-          <Button variant="primary" onClick={handleOpenRuleModal} className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            onClick={handleOpenRuleModal}
+            className="flex items-center gap-2"
+          >
             <Plus size={16} />
-            Add Rules
+            Add Rule
           </Button>
         </div>
 
@@ -707,7 +791,7 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, rule.id)}
               onDragEnd={handleDragEnd}
-              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? 'scale-95 opacity-50' : ''} ${dragOverRuleId === rule.id ? 'border-purple-400 bg-purple-50' : ''} hover:shadow-md`}
+              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? "scale-95 opacity-50" : ""} ${dragOverRuleId === rule.id ? "border-purple-400 bg-purple-50" : ""} hover:shadow-md`}
             >
               {/* Rule Header */}
               <div className="pointer-events-none flex items-center justify-between">
@@ -725,13 +809,17 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       <span className="font-medium text-gray-700">
-                        {flightCalculations.actualCounts[rule.id] ?? rule.flightCount}
+                        {flightCalculations.actualCounts[rule.id] ??
+                          rule.flightCount}
                       </span>
-                      <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                      <span className="text-sm text-gray-500">
+                        / {flightCalculations.totalFlights}
+                      </span>
                       <span className="text-sm text-gray-500">flights</span>
                     </div>
                     {(() => {
-                      const limitedCount = flightCalculations.limitedCounts[rule.id];
+                      const limitedCount =
+                        flightCalculations.limitedCounts[rule.id];
                       return limitedCount && limitedCount > 0 ? (
                         <div className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
                           -{limitedCount} limited
@@ -764,13 +852,15 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
               {rule.conditions.length > 0 && (
                 <div className="mt-2">
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(groupConditionsByCategory(rule.conditions)).map(([category, values]) => (
+                    {Object.entries(
+                      groupConditionsByCategory(rule.conditions)
+                    ).map(([category, values]) => (
                       <Badge
                         key={category}
                         variant="secondary"
                         className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700"
                       >
-                        {values.join(' | ')}
+                        {values.join(" | ")}
                       </Badge>
                     ))}
                   </div>
@@ -780,11 +870,15 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
               {/* Load Factor Input */}
               <div className="mt-3">
                 <div className="flex items-center gap-4">
-                  <label className="flex-shrink-0 text-sm font-medium text-gray-700">Load Factor:</label>
+                  <label className="flex-shrink-0 text-sm font-medium text-gray-700">
+                    Load Factor:
+                  </label>
                   <div className="flex-1 px-4">
                     <LoadFactorSlider
                       value={rule.loadFactor ?? defaultLoadFactor ?? 85}
-                      onChange={(value) => updateLoadFactorRule(rule.id, { loadFactor: value })}
+                      onChange={(value) =>
+                        updateLoadFactorRule(rule.id, { loadFactor: value })
+                      }
                       min={1}
                       max={100}
                       step={1}
@@ -799,10 +893,16 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
           <div className="rounded-lg border bg-white px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">Default</Badge>
+                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">
+                  Default
+                </Badge>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-700">{flightCalculations.remainingFlights}</span>
-                  <span className="text-sm text-gray-500">/ {flightCalculations.totalFlights}</span>
+                  <span className="font-medium text-gray-700">
+                    {flightCalculations.remainingFlights}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    / {flightCalculations.totalFlights}
+                  </span>
                   <span className="text-sm text-gray-500">flights</span>
                 </div>
               </div>
@@ -811,7 +911,9 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
             {/* Default Load Factor Input */}
             <div className="mt-3">
               <div className="flex items-center gap-4">
-                <label className="flex-shrink-0 text-sm font-medium text-gray-700">Default Load Factor:</label>
+                <label className="flex-shrink-0 text-sm font-medium text-gray-700">
+                  Default Load Factor:
+                </label>
                 <div className="flex-1 px-4">
                   <LoadFactorSlider
                     value={defaultLoadFactor ?? 85}
@@ -833,13 +935,13 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
           <DialogHeader>
             <DialogTitle>
               {editingRuleId
-                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || 'Rule'}`
-                : 'Create New Rule'}
+                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || "Rule"}`
+                : "Create New Rule"}
             </DialogTitle>
             <DialogDescription>
               {editingRuleId
-                ? 'Modify the flight conditions and load factor value for this rule.'
-                : 'Select flight conditions and assign load factor value.'}
+                ? "Modify the flight conditions and load factor value for this rule."
+                : "Select flight conditions and assign load factor value."}
             </DialogDescription>
           </DialogHeader>
 
@@ -848,7 +950,11 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
               configType="load_factor"
-              editingRule={editingRuleId ? createdRules.find((rule) => rule.id === editingRuleId) : undefined}
+              editingRule={
+                editingRuleId
+                  ? createdRules.find((rule) => rule.id === editingRuleId)
+                  : undefined
+              }
             />
           </div>
         </DialogContent>
@@ -863,9 +969,9 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
               Confirm Property Changes
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingAction?.type === 'add'
-                ? 'Adding new properties will affect existing load factor rules. Do you want to continue?'
-                : 'Removing properties will affect existing load factor rules. Do you want to continue?'}
+              {pendingAction?.type === "add"
+                ? "Adding new properties will affect existing load factor rules. Do you want to continue?"
+                : "Removing properties will affect existing load factor rules. Do you want to continue?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -874,7 +980,8 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
             <ul className="list-inside list-disc space-y-1 rounded bg-muted p-3 text-sm">
               {createdRules.length > 0 && (
                 <li>
-                  {createdRules.length} load factor rule{createdRules.length > 1 ? 's' : ''}
+                  {createdRules.length} load factor rule
+                  {createdRules.length > 1 ? "s" : ""}
                 </li>
               )}
               {hasDefaultRule && <li>Default load factor rule</li>}
@@ -882,7 +989,9 @@ export default function LoadFactorSettings({ parquetMetadata = [] }: LoadFactorS
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelChanges}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleCancelChanges}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmChanges}
               className="bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500"
