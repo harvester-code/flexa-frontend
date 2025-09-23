@@ -266,6 +266,55 @@ export default function ProcessFlowDesigner({
   );
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
 
+  // Create airport-city mapping from parquet metadata
+  const airportCityMapping = useMemo(() => {
+    if (!parquetMetadata) return null;
+
+    const mapping: Record<string, string> = {};
+
+    // Find arrival_airport_iata and arrival_city columns
+    const arrivalAirportData = parquetMetadata.find(item => item.column === 'arrival_airport_iata');
+    const arrivalCityData = parquetMetadata.find(item => item.column === 'arrival_city');
+
+    // Find departure_airport_iata and departure_city columns
+    const departureAirportData = parquetMetadata.find(item => item.column === 'departure_airport_iata');
+    const departureCityData = parquetMetadata.find(item => item.column === 'departure_city');
+
+    // Build mapping from arrival airports
+    if (arrivalAirportData && arrivalCityData) {
+      Object.keys(arrivalAirportData.values).forEach(airportCode => {
+        const flights = arrivalAirportData.values[airportCode].flights;
+        // Find corresponding city by checking common flights
+        Object.keys(arrivalCityData.values).forEach(cityName => {
+          const cityFlights = arrivalCityData.values[cityName].flights;
+          // If flights overlap significantly, this city matches this airport
+          const commonFlights = flights.filter(f => cityFlights.includes(f));
+          if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+            mapping[airportCode] = cityName;
+          }
+        });
+      });
+    }
+
+    // Build mapping from departure airports (if not already mapped)
+    if (departureAirportData && departureCityData) {
+      Object.keys(departureAirportData.values).forEach(airportCode => {
+        if (!mapping[airportCode]) {
+          const flights = departureAirportData.values[airportCode].flights;
+          Object.keys(departureCityData.values).forEach(cityName => {
+            const cityFlights = departureCityData.values[cityName].flights;
+            const commonFlights = flights.filter(f => cityFlights.includes(f));
+            if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+              mapping[airportCode] = cityName;
+            }
+          });
+        }
+      });
+    }
+
+    return Object.keys(mapping).length > 0 ? mapping : null;
+  }, [parquetMetadata]);
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1772,6 +1821,7 @@ export default function ProcessFlowDesigner({
                 onClearAll={() => setTempSelectedCriteriaItems({})}
                 initialSelectedItems={tempSelectedCriteriaItems}
                 flightAirlines={flightAirlines}
+                airportCityMapping={airportCityMapping}
               />
 
               {/* Dialog Actions */}

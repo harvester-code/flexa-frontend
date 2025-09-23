@@ -54,6 +54,7 @@ interface ScheduleContextMenuProps {
   onSelectAllCategories: () => void;
   onClearAllBadges: () => void;
   flightAirlines?: Record<string, string> | null;
+  airportCityMapping?: Record<string, string> | null;
 }
 
 export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
@@ -66,6 +67,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
   onSelectAllCategories,
   onClearAllBadges,
   flightAirlines,
+  airportCityMapping,
 }) => {
   // 🔍 카테고리별 검색어 관리
   const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
@@ -83,10 +85,24 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
     (category: string, options: string[]) => {
       const searchTerm = searchTerms[category]?.toLowerCase() || "";
       return options
-        .filter((option) => option.toLowerCase().includes(searchTerm))
+        .filter((option) => {
+          // For airlines, search by both code and name
+          if (category === "Airline" && flightAirlines?.[option]) {
+            const airlineName = flightAirlines[option].toLowerCase();
+            return option.toLowerCase().includes(searchTerm) ||
+                   airlineName.includes(searchTerm);
+          }
+          // For airports, search by both code and city
+          if ((category === "Arrival Airport" || category === "Departure Airport") && airportCityMapping?.[option]) {
+            const cityName = airportCityMapping[option].toLowerCase();
+            return option.toLowerCase().includes(searchTerm) ||
+                   cityName.includes(searchTerm);
+          }
+          return option.toLowerCase().includes(searchTerm);
+        })
         .sort((a, b) => a.localeCompare(b));
     },
-    [searchTerms]
+    [searchTerms, flightAirlines, airportCityMapping]
   );
 
   // 옵션 상태 확인 헬퍼 - 카테고리별 옵션 확인
@@ -254,6 +270,8 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                   <span className="truncate text-black">
                                     {category === "Airline" && flightAirlines?.[option]
                                       ? `(${option}) ${flightAirlines[option]}`
+                                      : (category === "Arrival Airport" || category === "Departure Airport") && airportCityMapping?.[option]
+                                      ? `(${option}) ${airportCityMapping[option]}`
                                       : option}
                                   </span>
                                 </div>

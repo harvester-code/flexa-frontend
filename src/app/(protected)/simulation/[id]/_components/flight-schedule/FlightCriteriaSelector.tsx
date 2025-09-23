@@ -34,6 +34,7 @@ interface FlightCriteriaSelectorProps {
   title?: string; // 🆕 제목을 props로 받기
   icon?: React.ReactNode; // 🆕 아이콘/이모지를 props로 받기
   flightAirlines?: Record<string, string> | null; // 항공사 코드-이름 매핑
+  airportCityMapping?: Record<string, string> | null; // 공항 코드-도시 매핑
 }
 
 export default function FlightCriteriaSelector({
@@ -46,6 +47,7 @@ export default function FlightCriteriaSelector({
   title = 'Search Criteria', // 🆕 기본값 설정
   icon, // 🆕 아이콘 props 추가
   flightAirlines, // 항공사 코드-이름 매핑
+  airportCityMapping, // 공항 코드-도시 매핑
 }: FlightCriteriaSelectorProps) {
   // UI 상태 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(initialSelectedItems);
@@ -380,6 +382,11 @@ export default function FlightCriteriaSelector({
                     return value.toLowerCase().includes(searchLower) ||
                            flightAirlines[value].toLowerCase().includes(searchLower);
                   }
+                  // Airport의 경우 코드와 도시 모두로 검색
+                  if ((selectedColumn === 'arrival_airport_iata' || selectedColumn === 'departure_airport_iata') && airportCityMapping?.[value]) {
+                    return value.toLowerCase().includes(searchLower) ||
+                           airportCityMapping[value].toLowerCase().includes(searchLower);
+                  }
                   return value.toLowerCase().includes(searchLower);
                 });
 
@@ -450,6 +457,8 @@ export default function FlightCriteriaSelector({
                                 <label htmlFor={itemKey} className="text-default-700 flex-1 cursor-pointer truncate">
                                   {selectedColumn === 'operating_carrier_iata' && flightAirlines?.[value]
                                     ? `(${value}) ${flightAirlines[value]}`
+                                    : (selectedColumn === 'arrival_airport_iata' || selectedColumn === 'departure_airport_iata') && airportCityMapping?.[value]
+                                    ? `(${value}) ${airportCityMapping[value]}`
                                     : value}
                                 </label>
                                 {flightInfo && (
