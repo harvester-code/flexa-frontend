@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Database } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   APIRequestLog,
   AirlineInfo,
@@ -568,20 +570,41 @@ function TabFlightSchedule({
 
   return (
     <div className="space-y-6 pt-8">
-      {/* Load Flight Schedule Data Section */}
-      <FlightDataLoader
-        loadingFlightSchedule={loadingFlightSchedule}
-        setIsSomethingChanged={setIsSomethingChanged}
-        onLoadData={handleLoadData}
-      />
+      {/* 하나의 카드로 통합된 Flight Schedule Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Database className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-lg font-semibold text-default-900">Flight Schedule</div>
+              <p className="text-sm font-normal text-default-500">Load and filter flight schedule data</p>
+            </div>
+          </CardTitle>
+        </CardHeader>
 
-      {/* 🆕 새로운 Condition Filter Section - zustand 데이터 존재할 때만 표시 */}
-      {hasFlightData && !loadingFlightSchedule && (
-        <FlightFilterConditions
-          loading={false}
-          onApplyFilter={handleApplyFiltersNew}
-        />
-      )}
+        {/* Load Data Section */}
+        <CardContent className="space-y-6">
+          <div className="pb-4 border-b">
+            <FlightDataLoader
+              loadingFlightSchedule={loadingFlightSchedule}
+              setIsSomethingChanged={setIsSomethingChanged}
+              onLoadData={handleLoadData}
+              isEmbedded={true}
+            />
+          </div>
+
+          {/* Filter Conditions Section - zustand 데이터 존재할 때만 표시 */}
+          {hasFlightData && !loadingFlightSchedule && (
+            <FlightFilterConditions
+              loading={false}
+              onApplyFilter={handleApplyFiltersNew}
+              isEmbedded={true}
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {/* ✨ 공통 로딩 상태 기반 조건부 렌더링 */}
       {loadingFlightSchedule || applyFilterLoading ? (

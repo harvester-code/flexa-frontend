@@ -15,12 +15,14 @@ interface FlightDataLoaderProps {
   loadingFlightSchedule: boolean;
   setIsSomethingChanged: (changed: boolean) => void;
   onLoadData: (airport: string, date: string) => void;
+  isEmbedded?: boolean; // 다른 컴포넌트 안에 임베드되었는지 여부
 }
 
 function FlightDataLoader({
   loadingFlightSchedule,
   setIsSomethingChanged,
   onLoadData,
+  isEmbedded = false,
 }: FlightDataLoaderProps) {
   // 🆕 초기값은 store에서 가져오되, 로컬 상태로 관리 (Load 버튼 클릭 시에만 저장)
   const storeAirport = useSimulationStore((s) => s.context.airport);
@@ -35,6 +37,79 @@ function FlightDataLoader({
   const [date, setDate] = useState(storeDate);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
 
+  // 임베드 모드일 때는 Card 래퍼 없이 내용만 렌더링
+  if (isEmbedded) {
+    return (
+      <div className="flex items-center gap-4">
+          {/* Airport Selection - 70% width */}
+          <div className="flex-1">
+            <AirportSelector
+              value={airport}
+              onChange={(value) => {
+                setIsSomethingChanged(airport !== value);
+                setAirport(value);
+              }}
+            />
+          </div>
+
+          {/* Date Selection and Load Button - Right side */}
+          <div className="flex items-center gap-4">
+            {/* Date Selection */}
+            <Popover open={openCalendarPopover} onOpenChange={setOpenCalendarPopover}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="default">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dayjs(date).format('MMM DD, YYYY')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar
+                  mode="single"
+                  selected={dayjs(date).toDate()}
+                  onSelect={(selectedDate) => {
+                    if (selectedDate) {
+                      setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
+                      setDate(dayjs(selectedDate).format('YYYY-MM-DD'));
+                      setOpenCalendarPopover(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Load Button */}
+            <Button
+              onClick={() => {
+                resetPassenger();
+                resetProcessFlow();
+                setStoreAirport(airport);
+                setStoreDate(date);
+                onLoadData(airport, date);
+              }}
+              disabled={loadingFlightSchedule || !airport}
+              className="min-w-24 overflow-hidden"
+            >
+              <span className="flex items-center">
+                {loadingFlightSchedule ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                    <span className="truncate">Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">Load</span>
+                  </>
+                )}
+              </span>
+            </Button>
+          </div>
+        </div>
+    );
+  }
+
+  // 독립 모드일 때는 Card 래퍼 포함
   return (
     <Card>
       <CardHeader>

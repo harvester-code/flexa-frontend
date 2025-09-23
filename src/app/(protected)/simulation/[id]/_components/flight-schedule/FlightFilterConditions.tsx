@@ -80,7 +80,7 @@ interface SelectedFilter {
 interface FlightFilterConditionsProps {
   loading: boolean; // 로딩 상태만 props로 (UI 상태)
   onApplyFilter: (type: string, conditions: Array<{ field: string; values: string[] }>) => Promise<any>;
-  // filtersData props 제거 - zustand에서 직접 가져올 예정
+  isEmbedded?: boolean; // 다른 컴포넌트 안에 임베드되었는지 여부
 }
 
 // ==================== Dropdown Component for Region Countries ====================
@@ -380,7 +380,7 @@ function TerminalAirlinesDropdown({
 }
 
 // ==================== Component ====================
-function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditionsProps) {
+function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: FlightFilterConditionsProps) {
   const { toast } = useToast();
 
   // 🆕 zustand에서 flight 데이터 구독
@@ -1223,17 +1223,12 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
   // 🔄 Loading 상태 처리
   if (loading) {
     return (
-      <Card className="mt-6">
+      <Card className="mt-6 border-l-4 border-l-primary">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-lg">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <Filter className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-default-900">Filter Conditions</div>
-              <p className="text-sm font-normal text-default-500">Loading filter options...</p>
-            </div>
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg font-semibold text-default-900">Filter Conditions</CardTitle>
+            <p className="text-sm font-normal text-default-500">Loading filter options...</p>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
@@ -1249,23 +1244,135 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
 
   // 🆕 부모에서 조건부 렌더링하므로 여기서는 데이터가 항상 있다고 가정
 
+  // 임베드 모드일 때는 Card/Collapsible 래퍼 없이 내용만 렌더링
+  if (isEmbedded) {
+    return (
+      <div className="space-y-6">
+        {/* Filter Conditions 헤더 */}
+        <div className="flex items-start gap-3">
+          <div className="w-1 h-12 bg-primary rounded-full" />
+          <div>
+            <h3 className="text-lg font-semibold text-default-900">Filter Conditions</h3>
+            <p className="text-sm font-normal text-default-500">
+              Select flight mode and filtering criteria | {(filtersData?.total_flights || 0).toLocaleString()} total flights
+            </p>
+          </div>
+        </div>
+
+        {/* Flight Mode를 탭으로 변경 */}
+        <Tabs
+          value={selectedFilter.mode}
+          onValueChange={(value) => handleModeChange(value as 'departure' | 'arrival')}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="departure">
+              Departure | {(filtersData?.filters.departure?.total_flights || 0).toLocaleString()} flights
+            </TabsTrigger>
+            <TabsTrigger value="arrival">
+              Arrival | {(filtersData?.filters.arrival?.total_flights || 0).toLocaleString()} flights
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="departure" className="mt-6">
+            {filtersData && renderFilterOptions('departure', filtersData.filters.departure)}
+          </TabsContent>
+
+          <TabsContent value="arrival" className="mt-6">
+            {filtersData && renderFilterOptions('arrival', filtersData.filters.arrival)}
+          </TabsContent>
+        </Tabs>
+
+        {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+              <div className="flex items-start gap-4">
+                {/* 선택 요약 - 항상 표시 */}
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="rounded-full bg-primary/20 p-1">
+                      <Filter className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm font-semibold text-primary">Selection Summary</span>
+                  </div>
+                  {/* 선택된 항목이 있을 때만 상세 내용 표시, 없으면 안내 메시지 */}
+                  <div className="text-sm text-muted-foreground">
+                    {Object.entries(selectedFilter.categories).some(([_, value]) =>
+                      Array.isArray(value) ? value.length > 0 : !!value
+                    ) ? (
+                      <span>Filters applied</span>
+                    ) : (
+                      <span>No filters selected - showing all flights</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 편수 통계 - 항상 표시 */}
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Selected Flights</div>
+                  <div className="text-lg font-bold text-primary">
+                    {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
+                    {(() => {
+                      const totalFiltered = getEstimatedFilteredFlights();
+                      const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                      return `${totalFiltered.toLocaleString()} / ${totalAvailable.toLocaleString()}`;
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Selection Summary & Actions */}
+            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* 왼쪽은 비워두고 버튼들은 오른쪽에 배치 */}
+              <div></div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                  disabled={Object.entries(selectedFilter.categories).every(([_, value]) =>
+                    Array.isArray(value) ? value.length === 0 : !value
+                  )}
+                >
+                  Clear All
+                </Button>
+
+                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying} className="overflow-hidden">
+                  <span className="flex items-center">
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                        <span className="hidden sm:inline truncate">Filtering...</span>
+                        <span className="sm:hidden truncate">Filter</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline truncate">Filter Flights</span>
+                        <span className="sm:hidden truncate">Filter</span>
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </div>
+            </div>
+      </div>
+    );
+  }
+
+  // 독립 모드일 때는 원래대로 Collapsible Card 사용
   return (
     <Collapsible defaultOpen={true}>
-      <Card className="mt-6">
+      <Card>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50 [&[data-state=open]>div>svg]:rotate-180">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-lg">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <Filter className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-default-900">Filter Conditions</div>
-                  <p className="text-sm font-normal text-default-500">
-                    Select flight mode and filtering criteria | {(filtersData?.total_flights || 0).toLocaleString()} total flights
-                  </p>
-                </div>
-              </CardTitle>
+              <div>
+                <CardTitle className="text-lg font-semibold text-default-900">Filter Conditions</CardTitle>
+                <p className="text-sm font-normal text-default-500">
+                  Select flight mode and filtering criteria | {(filtersData?.total_flights || 0).toLocaleString()} total flights
+                </p>
+              </div>
               <ChevronDown className="h-5 w-5 transition-transform duration-200" />
             </div>
           </CardHeader>
@@ -1273,6 +1380,7 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
 
         <CollapsibleContent>
           <CardContent className="space-y-6">
+            {/* Content is same as embedded version */}
             {/* Flight Mode를 탭으로 변경 */}
             <Tabs
               value={selectedFilter.mode}
@@ -1295,10 +1403,6 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
                 {filtersData && renderFilterOptions('arrival', filtersData.filters.arrival)}
               </TabsContent>
             </Tabs>
-
-            {/* 각 모드에 따른 옵션들이 이제 TabsContent 안에서 렌더링됨 */}
-
-            {/* ✅ Response Preview 제거 - 독립 컴포넌트로 분리 */}
 
             {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
             <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
