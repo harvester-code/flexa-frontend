@@ -12,6 +12,10 @@ import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
 import { useThrottle } from "./hooks/useThrottle";
 import { useDebounce } from "./hooks/useDebounce";
 import { useBadgeHandlers } from "./hooks/useBadgeHandlers";
+import { useKeyboardHandlers } from "./hooks/useKeyboardHandlers";
+import { useUndoRedoHandlers } from "./hooks/useUndoRedoHandlers";
+import { useContextMenuHandlers } from "./hooks/useContextMenuHandlers";
+import { useSelectionHandlers } from "./hooks/useSelectionHandlers";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import {
   Clock,
@@ -733,6 +737,67 @@ export default function OperatingScheduleEditor({
     // 가상화가 비활성화되었으므로 아무것도 하지 않음
   }, []);
 
+  // Undo/Redo handlers 훅 사용
+  const { handleUndo, handleRedo } = useUndoRedoHandlers({
+    undoHistory,
+    setDisabledCells,
+    setCellBadges,
+  });
+
+  // Context Menu handlers 훅 사용
+  const {
+    handleCellRightClick,
+    handleRowRightClick,
+    handleColumnRightClick,
+    handleTimeHeaderRightClick,
+  } = useContextMenuHandlers({
+    selectedCells,
+    setSelectedCells,
+    setContextMenu,
+    generateRowCells,
+    generateColumnCells,
+    generateAllCells,
+  });
+
+  // Selection handlers 훅 사용
+  const {
+    selectCellRange,
+    handleTimeHeaderClick,
+    handleCellClick,
+    handleCellMouseDown,
+    handleCellMouseEnter,
+    handleCellMouseUp,
+    handleColumnClick,
+    handleColumnMouseDown,
+    handleColumnMouseEnter,
+    handleColumnMouseUp,
+    handleRowClick,
+    handleRowMouseDown,
+    handleRowMouseEnter,
+    handleRowMouseUp,
+  } = useSelectionHandlers({
+    selectedCells,
+    setSelectedCells,
+    setTempSelectedCells,
+    shiftSelectStart,
+    setShiftSelectStart,
+    lastSelectedRow,
+    setLastSelectedRow,
+    lastSelectedCol,
+    setLastSelectedCol,
+    dragState,
+    setDragState,
+    createDragState,
+    finalizeDrag,
+    generateCellRange,
+    generateRowCells,
+    generateColumnCells,
+    generateRowRange,
+    generateColumnRange,
+    generateAllCells,
+    toggleCellIds,
+  });
+
   // 🗂️ 카테고리 그룹 정의
   const getCategoryGroups = useCallback(() => {
     const groups: Array<{
@@ -843,630 +908,6 @@ export default function OperatingScheduleEditor({
     processFlow,
   });
 
-  // 실행 취소 처리
-  const handleUndo = useCallback(() => {
-    const action = undoHistory.undo();
-    if (!action) return;
-
-    if (action.type === "toggleDisabled") {
-      // disabledCells 상태 복원
-      setDisabledCells((prev) => {
-        const newSet = new Set(prev);
-        action.cellIds.forEach((cellId) => {
-          const previousState = action.previousStates.get(cellId);
-          if (previousState) {
-            newSet.add(cellId);
-          } else {
-            newSet.delete(cellId);
-          }
-        });
-        return newSet;
-      });
-    } else if (action.type === "setBadges") {
-      // cellBadges 상태 복원
-      setCellBadges((prev) => {
-        const updated = { ...prev };
-        action.cellIds.forEach((cellId) => {
-          const previousBadges = action.previousBadges.get(cellId);
-          if (previousBadges) {
-            updated[cellId] = previousBadges;
-          } else {
-            delete updated[cellId];
-          }
-        });
-        return updated;
-      });
-    } else if (action.type === "paste") {
-      // Restore previous state for paste operation
-      setCellBadges((prev) => {
-        const updated = { ...prev };
-        action.targetCells.forEach((cellId) => {
-          const prevState = action.previousStates?.get(cellId);
-          if (prevState?.badges && prevState.badges.length > 0) {
-            updated[cellId] = prevState.badges;
-          } else {
-            delete updated[cellId];
-          }
-        });
-        return updated;
-      });
-      setDisabledCells((prev) => {
-        const newSet = new Set(prev);
-        action.targetCells.forEach((cellId) => {
-          const prevState = action.previousStates?.get(cellId);
-          if (prevState?.disabled) {
-            newSet.add(cellId);
-          } else {
-            newSet.delete(cellId);
-          }
-        });
-        return newSet;
-      });
-    }
-  }, [undoHistory, setDisabledCells, setCellBadges]);
-
-  // 재실행 처리
-  const handleRedo = useCallback(() => {
-    const action = undoHistory.redo();
-    if (!action) return;
-
-    if (action.type === "toggleDisabled") {
-      // disabledCells 상태 재적용
-      setDisabledCells((prev) => {
-        const newSet = new Set(prev);
-        action.cellIds.forEach((cellId) => {
-          const newState = action.newStates.get(cellId);
-          if (newState) {
-            newSet.add(cellId);
-          } else {
-            newSet.delete(cellId);
-          }
-        });
-        return newSet;
-      });
-    } else if (action.type === "setBadges") {
-      // cellBadges 상태 재적용
-      setCellBadges((prev) => {
-        const updated = { ...prev };
-        action.cellIds.forEach((cellId) => {
-          const newBadges = action.newBadges.get(cellId);
-          if (newBadges && newBadges.length > 0) {
-            updated[cellId] = newBadges;
-          } else {
-            delete updated[cellId];
-          }
-        });
-        return updated;
-      });
-    } else if (action.type === "paste") {
-      // Reapply paste operation
-      setCellBadges((prev) => {
-        const updated = { ...prev };
-        action.targetCells.forEach((cellId) => {
-          const newState = action.newStates?.get(cellId);
-          if (newState?.badges && newState.badges.length > 0) {
-            updated[cellId] = newState.badges;
-          } else {
-            delete updated[cellId];
-          }
-        });
-        return updated;
-      });
-      setDisabledCells((prev) => {
-        const newSet = new Set(prev);
-        action.targetCells.forEach((cellId) => {
-          const newState = action.newStates?.get(cellId);
-          if (newState?.disabled) {
-            newSet.add(cellId);
-          } else {
-            newSet.delete(cellId);
-          }
-        });
-        return newSet;
-      });
-    }
-  }, [undoHistory, setDisabledCells, setCellBadges]);
-
-  // 우클릭 핸들러
-  const handleCellRightClick = useCallback(
-    (e: React.MouseEvent, cellId: string) => {
-      e.preventDefault();
-
-      let targetCells: string[];
-      if (selectedCells.size > 0) {
-        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
-        targetCells = Array.from(selectedCells);
-      } else {
-        // 아무것도 선택되지 않은 경우 → 우클릭한 셀을 먼저 선택한 후 적용
-        setSelectedCells(new Set([cellId]));
-        targetCells = [cellId];
-      }
-
-      setContextMenu({
-        show: true,
-        cellId,
-        targetCells,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    [selectedCells, setSelectedCells]
-  );
-
-  // 행 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 행에 적용)
-  const handleRowRightClick = useCallback(
-    (e: React.MouseEvent, rowIndex: number) => {
-      e.preventDefault();
-
-      let targetCells: string[];
-      if (selectedCells.size > 0) {
-        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
-        targetCells = Array.from(selectedCells);
-      } else {
-        // 아무것도 선택되지 않은 경우 → 해당 행을 먼저 선택한 후 적용
-        const rowCellIds = generateRowCells(rowIndex);
-        setSelectedCells(rowCellIds);
-        targetCells = Array.from(rowCellIds);
-      }
-
-      setContextMenu({
-        show: true,
-        cellId: `${rowIndex}-0`, // 첫 번째 셀을 대표로 설정
-        targetCells,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    [generateRowCells, selectedCells, setSelectedCells]
-  );
-
-  // 열 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 열에 적용)
-  const handleColumnRightClick = useCallback(
-    (e: React.MouseEvent, colIndex: number) => {
-      e.preventDefault();
-
-      let targetCells: string[];
-      if (selectedCells.size > 0) {
-        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용 (기존 선택 유지)
-        targetCells = Array.from(selectedCells);
-      } else {
-        // 아무것도 선택되지 않은 경우 → 해당 열을 먼저 선택한 후 적용
-        const columnCellIds = generateColumnCells(colIndex);
-        setSelectedCells(columnCellIds);
-        targetCells = Array.from(columnCellIds);
-      }
-
-      setContextMenu({
-        show: true,
-        cellId: `0-${colIndex}`, // 첫 번째 셀을 대표로 설정
-        targetCells,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    [generateColumnCells, selectedCells, setSelectedCells]
-  );
-
-  // Time 헤더 클릭 핸들러 (전체 선택)
-  const handleTimeHeaderClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      // 전체 셀 선택
-      const allCellIds = generateAllCells();
-      setSelectedCells((prev) =>
-        toggleCellIds(allCellIds, prev, e.ctrlKey || e.metaKey)
-      );
-
-      // Shift 선택 시작점을 첫 번째 셀로 설정
-      setShiftSelectStart({ row: 0, col: 0 });
-    },
-    [generateAllCells]
-  );
-
-  // Time 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 전체 셀에 적용)
-  const handleTimeHeaderRightClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      let targetCells: string[];
-      if (selectedCells.size > 0) {
-        // 현재 선택된 셀이 있으면 → 모든 선택된 셀에 적용
-        targetCells = Array.from(selectedCells);
-      } else {
-        // 아무것도 선택되지 않은 경우 → 전체 셀에 적용
-        const allCellIds = generateAllCells();
-        targetCells = Array.from(allCellIds);
-      }
-
-      setContextMenu({
-        show: true,
-        cellId: "0-0", // 첫 번째 셀을 대표로 설정
-        targetCells,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    [generateAllCells, selectedCells]
-  );
-
-  // 범위 선택 함수
-  const selectCellRange = useCallback(
-    (startRow: number, startCol: number, endRow: number, endCol: number) => {
-      const rangeCells = generateCellRange(startRow, endRow, startCol, endCol);
-      setSelectedCells(rangeCells);
-    },
-    [generateCellRange, setSelectedCells]
-  );
-
-  // 셀 클릭 핸들러 (Shift, Ctrl 클릭 지원)
-  const handleCellClick = useCallback(
-    (
-      cellId: string,
-      rowIndex: number,
-      colIndex: number,
-      e: React.MouseEvent
-    ) => {
-      e.preventDefault();
-
-      if (e.ctrlKey || e.metaKey) {
-        // Ctrl + 클릭: 다중 선택
-        if (e.shiftKey && shiftSelectStart) {
-          // Ctrl + Shift + 클릭: 기존 선택 유지하면서 범위 추가
-          const rangeCells = generateCellRange(
-            shiftSelectStart.row,
-            rowIndex,
-            shiftSelectStart.col,
-            colIndex
-          );
-          setSelectedCells((prev) => {
-            const newSet = new Set(prev);
-            rangeCells.forEach((id) => newSet.add(id));
-            return newSet;
-          });
-        } else {
-          // Ctrl + 클릭: 개별 셀 토글
-          setSelectedCells((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(cellId)) {
-              newSet.delete(cellId);
-            } else {
-              newSet.add(cellId);
-            }
-            return newSet;
-          });
-          setShiftSelectStart({ row: rowIndex, col: colIndex });
-        }
-      } else if (e.shiftKey && shiftSelectStart) {
-        // Shift + 클릭: 범위 선택 (기존 선택 대체)
-        selectCellRange(
-          shiftSelectStart.row,
-          shiftSelectStart.col,
-          rowIndex,
-          colIndex
-        );
-      } else {
-        // 일반 클릭: 새로 선택 (기존 선택 해제)
-        setShiftSelectStart({ row: rowIndex, col: colIndex });
-        setSelectedCells(new Set([cellId]));
-      }
-    },
-    [
-      shiftSelectStart,
-      selectCellRange,
-      generateCellRange,
-      setSelectedCells,
-      setShiftSelectStart,
-    ]
-  );
-
-  // 드래그 이벤트 핸들러들
-  const handleCellMouseDown = useCallback(
-    (
-      cellId: string,
-      rowIndex: number,
-      colIndex: number,
-      e: React.MouseEvent
-    ) => {
-      // Shift 키는 클릭 처리
-      if (e.shiftKey) {
-        handleCellClick(cellId, rowIndex, colIndex, e);
-        return;
-      }
-
-      e.preventDefault();
-
-      const isAdditive = e.ctrlKey || e.metaKey;
-
-      // 🚀 드래그 시작: 임시 선택 상태 초기화 (성능 최적화)
-      const newTempSelection = isAdditive
-        ? new Set([...selectedCells, cellId])
-        : new Set([cellId]);
-
-      setTempSelectedCells(newTempSelection);
-
-      setDragState(
-        createDragState(
-          "cell",
-          { row: rowIndex, col: colIndex },
-          isAdditive,
-          isAdditive ? new Set(selectedCells) : null
-        )
-      );
-      setShiftSelectStart({ row: rowIndex, col: colIndex });
-    },
-    [handleCellClick, selectedCells]
-  );
-
-  // 드래그 성능 최적화를 위한 throttled 버전
-  const handleCellMouseEnterRaw = useCallback(
-    (
-      cellId: string,
-      rowIndex: number,
-      colIndex: number,
-      e: React.MouseEvent
-    ) => {
-      e.preventDefault();
-      if (dragState.isActive && dragState.type === "cell" && dragState.start) {
-        const rangeCells = generateCellRange(
-          dragState.start.row,
-          rowIndex,
-          dragState.start.col,
-          colIndex
-        );
-
-        // 🚀 드래그 중: 임시 선택 상태만 업데이트 (성능 최적화)
-        if (dragState.isAdditive && dragState.originalSelection) {
-          // Cmd + 드래그: 기존 선택 + 새 드래그 영역
-          const combinedCells = new Set([
-            ...dragState.originalSelection,
-            ...rangeCells,
-          ]);
-          setTempSelectedCells(combinedCells);
-        } else {
-          // 일반 드래그: 드래그 영역만 선택
-          setTempSelectedCells(rangeCells);
-        }
-      }
-    },
-    [dragState, generateCellRange, setTempSelectedCells]
-  );
-
-  // Throttle the mouse enter handler for better performance
-  const handleCellMouseEnter = useThrottle(handleCellMouseEnterRaw, 16); // ~60fps
-
-  const handleCellMouseUp = useCallback(() => {
-    // 드래그 종료 시 즉시 최종 상태 확정
-    requestAnimationFrame(() => {
-      finalizeDrag();
-    });
-  }, [finalizeDrag]);
-
-  // 열 전체 선택/해제 핸들러 (클릭용)
-  const handleColumnClick = useCallback(
-    (colIndex: number, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.shiftKey && lastSelectedCol !== null) {
-        // Shift + 클릭: 범위 선택 (이전 선택 열부터 현재 열까지)
-        const rangeCellIds = generateColumnRange(lastSelectedCol, colIndex);
-        setSelectedCells(rangeCellIds);
-      } else {
-        // 해당 열의 모든 셀 ID 생성
-        const columnCellIds = generateColumnCells(colIndex);
-
-        setSelectedCells((prev) =>
-          toggleCellIds(columnCellIds, prev, e.ctrlKey || e.metaKey)
-        );
-      }
-
-      // 마지막 선택 열 기록
-      setLastSelectedCol(colIndex);
-      // Shift 선택 시작점 설정
-      setShiftSelectStart({ row: 0, col: colIndex });
-    },
-    [
-      generateColumnRange,
-      generateColumnCells,
-      toggleCellIds,
-      setSelectedCells,
-      setLastSelectedCol,
-      setShiftSelectStart,
-      lastSelectedCol,
-    ]
-  );
-
-  // 열 드래그 핸들러들
-  const handleColumnMouseDown = useCallback(
-    (colIndex: number, e: React.MouseEvent) => {
-      // Shift 키는 클릭 처리
-      if (e.shiftKey) {
-        handleColumnClick(colIndex, e);
-        return;
-      }
-
-      e.preventDefault();
-
-      const isAdditive = e.ctrlKey || e.metaKey;
-      const columnCellIds = generateColumnCells(colIndex);
-
-      // 🚀 드래그 시작: 임시 선택 상태 사용
-      const newTempSelection = isAdditive
-        ? new Set([...selectedCells, ...columnCellIds])
-        : columnCellIds;
-
-      setTempSelectedCells(newTempSelection);
-
-      setDragState(
-        createDragState(
-          "column",
-          { row: 0, col: colIndex },
-          isAdditive,
-          isAdditive ? new Set(selectedCells) : null
-        )
-      );
-      setLastSelectedCol(colIndex);
-    },
-    [
-      generateColumnCells,
-      selectedCells,
-      setTempSelectedCells,
-      setDragState,
-      createDragState,
-      setLastSelectedCol,
-      handleColumnClick,
-    ]
-  );
-
-  // 열 드래그 성능 최적화를 위한 throttled 버전
-  const handleColumnMouseEnterRaw = useCallback(
-    (colIndex: number, e: React.MouseEvent) => {
-      if (
-        dragState.isActive &&
-        dragState.type === "column" &&
-        dragState.start
-      ) {
-        e.preventDefault();
-
-        // 드래그 범위의 모든 열 선택
-        const rangeCellIds = generateColumnRange(dragState.start.col, colIndex);
-
-        // 🚀 드래그 중: 임시 선택 상태만 업데이트 (성능 최적화)
-        if (dragState.isAdditive && dragState.originalSelection) {
-          // Cmd + 드래그: 기존 선택 + 새 드래그 영역
-          const combinedCells = new Set([
-            ...dragState.originalSelection,
-            ...rangeCellIds,
-          ]);
-          setTempSelectedCells(combinedCells);
-        } else {
-          // 일반 드래그: 드래그 영역만 선택
-          setTempSelectedCells(rangeCellIds);
-        }
-      }
-    },
-    [dragState, generateColumnRange, setTempSelectedCells]
-  );
-
-  const handleColumnMouseEnter = useThrottle(handleColumnMouseEnterRaw, 16);
-
-  const handleColumnMouseUp = useCallback(() => {
-    requestAnimationFrame(() => {
-      finalizeDrag();
-    });
-  }, [finalizeDrag]);
-
-  // 행 전체 선택/해제 핸들러 (클릭용)
-  const handleRowClick = useCallback(
-    (rowIndex: number, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.shiftKey && lastSelectedRow !== null) {
-        // Shift + 클릭: 범위 선택 (이전 선택 행부터 현재 행까지)
-        const rangeCellIds = generateRowRange(lastSelectedRow, rowIndex);
-        setSelectedCells(rangeCellIds);
-      } else {
-        // 해당 행의 모든 셀 ID 생성
-        const rowCellIds = generateRowCells(rowIndex);
-
-        setSelectedCells((prev) =>
-          toggleCellIds(rowCellIds, prev, e.ctrlKey || e.metaKey)
-        );
-      }
-
-      // 마지막 선택 행 기록
-      setLastSelectedRow(rowIndex);
-      // Shift 선택 시작점 설정
-      setShiftSelectStart({ row: rowIndex, col: 0 });
-    },
-    [
-      generateRowRange,
-      generateRowCells,
-      toggleCellIds,
-      setSelectedCells,
-      setLastSelectedRow,
-      setShiftSelectStart,
-      lastSelectedRow,
-    ]
-  );
-
-  // 행 드래그 핸들러들
-  const handleRowMouseDown = useCallback(
-    (rowIndex: number, e: React.MouseEvent) => {
-      // Shift 키는 클릭 처리
-      if (e.shiftKey) {
-        handleRowClick(rowIndex, e);
-        return;
-      }
-
-      e.preventDefault();
-
-      const isAdditive = e.ctrlKey || e.metaKey;
-      const rowCellIds = generateRowCells(rowIndex);
-
-      // 🚀 드래그 시작: 임시 선택 상태 사용
-      const newTempSelection = isAdditive
-        ? new Set([...selectedCells, ...rowCellIds])
-        : rowCellIds;
-
-      setTempSelectedCells(newTempSelection);
-
-      setDragState(
-        createDragState(
-          "row",
-          { row: rowIndex, col: 0 },
-          isAdditive,
-          isAdditive ? new Set(selectedCells) : null
-        )
-      );
-      setLastSelectedRow(rowIndex);
-    },
-    [
-      generateRowCells,
-      selectedCells,
-      setTempSelectedCells,
-      setDragState,
-      createDragState,
-      setLastSelectedRow,
-      handleRowClick,
-    ]
-  );
-
-  // 행 드래그 성능 최적화를 위한 throttled 버전
-  const handleRowMouseEnterRaw = useCallback(
-    (rowIndex: number, e: React.MouseEvent) => {
-      if (dragState.isActive && dragState.type === "row" && dragState.start) {
-        e.preventDefault();
-
-        // 드래그 범위의 모든 행 선택
-        const rangeCellIds = generateRowRange(dragState.start.row, rowIndex);
-
-        // 🚀 드래그 중: 임시 선택 상태만 업데이트 (성능 최적화)
-        if (dragState.isAdditive && dragState.originalSelection) {
-          // Cmd + 드래그: 기존 선택 + 새 드래그 영역
-          const combinedCells = new Set([
-            ...dragState.originalSelection,
-            ...rangeCellIds,
-          ]);
-          setTempSelectedCells(combinedCells);
-        } else {
-          // 일반 드래그: 드래그 영역만 선택
-          setTempSelectedCells(rangeCellIds);
-        }
-      }
-    },
-    [dragState, generateRowRange, setTempSelectedCells]
-  );
-
-  const handleRowMouseEnter = useThrottle(handleRowMouseEnterRaw, 16);
-
-  const handleRowMouseUp = useCallback(() => {
-    requestAnimationFrame(() => {
-      finalizeDrag();
-    });
-  }, [finalizeDrag]);
 
   // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
   const tableHandlers = useMemo(
@@ -1517,200 +958,29 @@ export default function OperatingScheduleEditor({
 
 
 
-  // 🛡️ 키보드 이벤트 핸들러 (컴포넌트 스코프로 제한)
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      // 🚀 컨텍스트 메뉴가 열려있을 때만 특정 키 차단
-      if (contextMenu.show) {
-        // Input, Popover 등 다른 UI 요소가 타겟인 경우는 차단하지 않음
-        const target = e.target as HTMLElement;
-        if (
-          target.tagName === "INPUT" ||
-          target.closest('[role="dialog"]') ||
-          target.closest("[data-radix-popper-content-wrapper]")
-        ) {
-          return; // Input이나 팝업 내부에서는 키보드 이벤트 허용
-        }
+  // Keyboard handlers 훅 사용
+  const { handleKeyDown } = useKeyboardHandlers({
+    selectedCells,
+    displaySelectedCells,
+    contextMenu,
+    disabledCells,
+    setDisabledCells,
+    setCellBadges,
+    cellBadges,
+    undoHistory,
+    handleUndo,
+    handleRedo,
+    handleCopy,
+    handlePaste,
+    copiedData,
+    showMarchingAnts,
+    setShowMarchingAnts,
+    setCopiedData,
+    setSelectedCells,
+    setShiftSelectStart,
+    containerRef,
+  });
 
-        if (e.code === "Escape") {
-          // ESC 키만 허용 - 메뉴를 닫기 위해
-          return; // DropdownMenu의 onEscapeKeyDown이 처리하도록 함
-        } else {
-          // 테이블 영역에서만 나머지 키는 무시
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-      }
-
-      // 🎯 포커스 확인 및 보장
-      if (document.activeElement !== containerRef.current) {
-        containerRef.current?.focus();
-      }
-
-      // Cmd/Ctrl + C: Copy
-      if ((e.metaKey || e.ctrlKey) && e.code === "KeyC") {
-        e.preventDefault();
-        handleCopy();
-        return;
-      }
-
-      // Cmd/Ctrl + V: Paste
-      if ((e.metaKey || e.ctrlKey) && e.code === "KeyV") {
-        e.preventDefault();
-        handlePaste();
-        // Hide marching ants after paste but keep selection
-        setShowMarchingAnts(false);
-        return;
-      }
-
-      // ESC: Clear copy selection and marching ants
-      if (e.code === "Escape") {
-        if (showMarchingAnts) {
-          setShowMarchingAnts(false);
-        } else if (copiedData) {
-          setCopiedData(null);
-        }
-        return;
-      }
-
-      // Space: Toggle disabled state for selected cells
-      if (e.code === "Space") {
-        e.preventDefault();
-        const selectedCellsArray = Array.from(displaySelectedCells);
-        if (selectedCellsArray.length === 0) return;
-
-        // Check if all selected cells are currently disabled
-        const allDisabled = selectedCellsArray.every((cellId) =>
-          disabledCells.has(cellId)
-        );
-
-        // Save previous states for undo
-        const previousStates = new Map<string, boolean>();
-        selectedCellsArray.forEach((cellId) => {
-          previousStates.set(cellId, disabledCells.has(cellId));
-        });
-
-        // Toggle disabled state
-        setDisabledCells((prev: Set<string>) => {
-          const newSet = new Set(prev);
-          selectedCellsArray.forEach((cellId) => {
-            if (allDisabled) {
-              // If all are disabled, enable them
-              newSet.delete(cellId);
-            } else {
-              // If any are enabled, disable all
-              newSet.add(cellId);
-            }
-          });
-          return newSet;
-        });
-
-        // Save new states for undo
-        const newStates = new Map<string, boolean>();
-        selectedCellsArray.forEach((cellId) => {
-          newStates.set(cellId, !allDisabled);
-        });
-
-        // Add to undo history
-        undoHistory.pushHistory({
-          type: "toggleDisabled",
-          cellIds: selectedCellsArray,
-          previousStates,
-          newStates,
-        });
-
-        return;
-      }
-
-      // Cmd/Ctrl + Z: 실행 취소
-      if ((e.metaKey || e.ctrlKey) && e.code === "KeyZ" && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-        return;
-      }
-
-      // 재실행: Mac은 Cmd+Shift+Z, Windows/Linux는 Ctrl+Y
-      if (
-        (e.metaKey && e.shiftKey && e.code === "KeyZ") || // Mac
-        (e.ctrlKey && e.code === "KeyY")
-      ) {
-        // Windows/Linux
-        e.preventDefault();
-        handleRedo();
-        return;
-      }
-
-      if (e.code === "Escape") {
-        // ESC: 모든 선택 해제
-        e.preventDefault();
-        setSelectedCells(new Set());
-        setShiftSelectStart(null);
-      } else if (e.code === "Delete" || e.code === "Backspace") {
-        // Delete/Backspace: 선택된 셀들의 뱃지 제거 (빈 상태로 만들기)
-        e.preventDefault();
-
-        if (selectedCells.size > 0) {
-          const targetCells = Array.from(selectedCells);
-
-          // 히스토리를 위한 이전 상태 저장
-          const previousBadges = new Map<string, any[]>();
-          targetCells.forEach((cellId) => {
-            previousBadges.set(
-              cellId,
-              cellBadges[cellId] ? [...cellBadges[cellId]] : []
-            );
-          });
-
-          // 🚀 배치 업데이트로 경쟁 조건 방지 및 성능 향상
-          React.startTransition(() => {
-            // 뱃지 제거 (빈 상태로)
-            setCellBadges((prev) => {
-              const updated = { ...prev };
-              const newBadges = new Map<string, any[]>();
-
-              targetCells.forEach((cellId) => {
-                delete updated[cellId]; // 완전히 제거
-                newBadges.set(cellId, []);
-              });
-
-              // 히스토리에 추가
-              setTimeout(() => {
-                undoHistory.pushHistory({
-                  type: "setBadges",
-                  cellIds: targetCells,
-                  previousBadges,
-                  newBadges,
-                });
-              }, 0);
-
-              return updated;
-            });
-          });
-        }
-      }
-    },
-    [
-      selectedCells,
-      displaySelectedCells,
-      contextMenu.show,
-      disabledCells,
-      setDisabledCells,
-      setCellBadges,
-      cellBadges,
-      undoHistory,
-      handleUndo,
-      handleRedo,
-      handleCopy,
-      handlePaste,
-      copiedData,
-      showMarchingAnts,
-      setShowMarchingAnts,
-      setCopiedData,
-      setSelectedCells,
-      setShiftSelectStart,
-    ]
-  );
 
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
   useEffect(() => {
