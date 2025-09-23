@@ -320,6 +320,7 @@ export default function ProcessFlowDesigner({
       const count = Math.max(1, Math.min(50, newCount));
 
       // Get current process from processFlow for reference
+      const currentProcess = processFlow[selectedProcessIndex];
       // Just get any existing facility data for period reference
       const existingFacility = processFlow
         .flatMap(p => Object.values(p.zones || {}))
@@ -639,30 +640,81 @@ export default function ProcessFlowDesigner({
     // If zone names have changed, rebuild zones object
     if (JSON.stringify(newZoneNames.sort()) !== JSON.stringify(currentZoneNames.sort())) {
       const newZones: any = {};
-      newZoneNames.forEach((newZoneName) => {
-        // Try to find matching zone in current process
-        const matchingCurrentZone = currentZoneNames.find(currentName =>
-          currentProcess.zones[currentName]?.facilities?.length === editedProcess.zones[newZoneName]?.facilities?.length
-        );
+      // Match zones by index position to maintain data integrity
+      newZoneNames.forEach((newZoneName, newIndex) => {
+        // Match by index position instead of facility count
+        const currentZoneName = currentZoneNames[newIndex];
 
-        if (matchingCurrentZone && currentProcess.zones[matchingCurrentZone]) {
-          // Preserve existing zone data with new name and update facility IDs
-          const originalFacilities = currentProcess.zones[matchingCurrentZone].facilities;
-          newZones[newZoneName] = {
-            ...currentProcess.zones[matchingCurrentZone],
-            facilities: originalFacilities.map((facility: any, index: number) => ({
-              ...facility,
-              id: `${newZoneName}_${index + 1}`, // Update ID with new zone name
-            }))
-          };
+        if (currentZoneName && currentProcess.zones[currentZoneName]) {
+          // Zone exists at this index - preserve its data with new name
+          const originalZone = currentProcess.zones[currentZoneName];
+          const originalFacilities = originalZone.facilities || [];
+          const newFacilityCount = editedProcess.zones[newZoneName]?.facilities?.length || originalFacilities.length;
+
+          // Check if facility count has also changed
+          if (originalFacilities.length !== newFacilityCount) {
+            // Both zone name and facility count changed
+            const updatedFacilities: any[] = [];
+
+            for (let i = 0; i < newFacilityCount; i++) {
+              if (i < originalFacilities.length) {
+                // Preserve existing facility with new ID
+                updatedFacilities.push({
+                  ...originalFacilities[i],
+                  id: `${newZoneName}_${i + 1}`
+                });
+              } else {
+                // Add new facility with default schedule
+                const chartResult = useSimulationStore.getState().passenger.chartResult;
+                let period = originalFacilities[0]?.operating_schedule?.time_blocks?.[0]?.period;
+
+                if (!period) {
+                  const chartXData = (chartResult as any)?.chart_x_data;
+                  if (chartXData && chartXData.length >= 2) {
+                    period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
+                  } else {
+                    const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+                    const nextDate = new Date(date);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    period = `${date} 00:00:00-${nextDate.toISOString().split('T')[0]} 00:00:00`;
+                  }
+                }
+
+                updatedFacilities.push({
+                  id: `${newZoneName}_${i + 1}`,
+                  operating_schedule: {
+                    time_blocks: [{
+                      period: period,
+                      process_time_seconds: editedProcess.process_time_seconds || currentProcess.process_time_seconds || 60,
+                      passenger_conditions: []
+                    }]
+                  }
+                });
+              }
+            }
+
+            newZones[newZoneName] = {
+              ...originalZone,
+              facilities: updatedFacilities
+            };
+          } else {
+            // Only zone name changed - just update facility IDs
+            newZones[newZoneName] = {
+              ...originalZone,
+              facilities: originalFacilities.map((facility: any, index: number) => ({
+                ...facility,
+                id: `${newZoneName}_${index + 1}`
+              }))
+            };
+          }
         } else if (editedProcess.zones[newZoneName]) {
-          // Use edited zone data and ensure IDs match zone name
+          // New zone that didn't exist at this index
           const editedFacilities = editedProcess.zones[newZoneName].facilities || [];
           newZones[newZoneName] = {
             ...editedProcess.zones[newZoneName],
             facilities: editedFacilities.map((facility: any, index: number) => ({
               ...facility,
-              id: `${newZoneName}_${index + 1}`, // Ensure ID matches zone name
+              id: `${newZoneName}_${index + 1}`
             }))
           };
         }
