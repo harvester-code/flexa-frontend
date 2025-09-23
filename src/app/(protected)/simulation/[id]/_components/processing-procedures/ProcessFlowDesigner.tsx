@@ -73,6 +73,8 @@ interface ParquetMetadataItem {
 interface ProcessFlowDesignerProps {
   // Data
   processFlow: ProcessStep[];
+  selectedProcessIndex: number | null;
+  onProcessSelect: (index: number | null) => void;
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
   paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
   simulationId: string; // 🆕 시뮬레이션 ID 추가
@@ -84,6 +86,7 @@ interface ProcessFlowDesignerProps {
   onRemoveProcess: (index: number) => void;
   onReorderProcesses?: (newProcessFlow: ProcessStep[]) => void; // New prop for reordering
   onCreateProcess?: (newProcess: ProcessStep) => void; // New prop for creating process
+  setProcessFlow: (processFlow: ProcessStep[]) => void; // Add setProcessFlow
 }
 
 // Sortable Process Card Component
@@ -253,6 +256,7 @@ export default function ProcessFlowDesigner({
   onRemoveProcess,
   onReorderProcesses,
   onCreateProcess,
+  setProcessFlow,
 }: ProcessFlowDesignerProps) {
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
@@ -609,6 +613,167 @@ export default function ProcessFlowDesigner({
     }
   }, [editedProcess]);
 
+  // Handle saving changes to existing process
+  const handleSaveChanges = useCallback(() => {
+    if (selectedProcessIndex === null || !editedProcess) return;
+
+    // Get the current process from store
+    const currentProcess = processFlow[selectedProcessIndex];
+    const updatedProcessFlow = [...processFlow];
+
+    // Only update allowed fields
+    const updatedProcess = {
+      ...currentProcess,
+      // Update only name
+      name: formatProcessNameForStorage(editedProcess.name),
+      // Update travel_time_minutes
+      travel_time_minutes: editedProcess.travel_time_minutes || 0,
+      // Update entry_conditions
+      entry_conditions: editedProcess.entry_conditions || [],
+    };
+
+    // Handle zone changes (rename zones if needed)
+    const newZoneNames = Object.keys(editedProcess.zones || {});
+    const currentZoneNames = Object.keys(currentProcess.zones || {});
+
+    // If zone names have changed, rebuild zones object
+    if (JSON.stringify(newZoneNames.sort()) !== JSON.stringify(currentZoneNames.sort())) {
+      const newZones: any = {};
+      newZoneNames.forEach((newZoneName) => {
+        // Try to find matching zone in current process
+        const matchingCurrentZone = currentZoneNames.find(currentName =>
+          currentProcess.zones[currentName]?.facilities?.length === editedProcess.zones[newZoneName]?.facilities?.length
+        );
+
+        if (matchingCurrentZone && currentProcess.zones[matchingCurrentZone]) {
+          // Preserve existing zone data with new name and update facility IDs
+          const originalFacilities = currentProcess.zones[matchingCurrentZone].facilities;
+          newZones[newZoneName] = {
+            ...currentProcess.zones[matchingCurrentZone],
+            facilities: originalFacilities.map((facility: any, index: number) => ({
+              ...facility,
+              id: `${newZoneName}_${index + 1}`, // Update ID with new zone name
+            }))
+          };
+        } else if (editedProcess.zones[newZoneName]) {
+          // Use edited zone data and ensure IDs match zone name
+          const editedFacilities = editedProcess.zones[newZoneName].facilities || [];
+          newZones[newZoneName] = {
+            ...editedProcess.zones[newZoneName],
+            facilities: editedFacilities.map((facility: any, index: number) => ({
+              ...facility,
+              id: `${newZoneName}_${index + 1}`, // Ensure ID matches zone name
+            }))
+          };
+        }
+      });
+      updatedProcess.zones = newZones;
+    } else {
+      // Zone names haven't changed, handle facility count changes
+      const updatedZones: any = {};
+
+      Object.keys(editedProcess.zones).forEach((zoneName) => {
+        const currentZone = currentProcess.zones[zoneName];
+        const editedZone = editedProcess.zones[zoneName];
+        const currentFacilityCount = currentZone?.facilities?.length || 0;
+        const newFacilityCount = editedZone?.facilities?.length || 0;
+
+        if (newFacilityCount === currentFacilityCount) {
+          // No change in count, preserve existing facilities
+          updatedZones[zoneName] = currentZone;
+        } else if (newFacilityCount < currentFacilityCount) {
+          // Decrease: Remove facilities from the end
+          updatedZones[zoneName] = {
+            ...currentZone,
+            facilities: currentZone.facilities.slice(0, newFacilityCount)
+          };
+        } else {
+          // Increase: Add new facilities
+          const newFacilities = [...(currentZone?.facilities || [])];
+
+          // Generate new facilities with incremented IDs
+          const existingIds = currentZone?.facilities?.map((f: any) => {
+            const match = f.id.match(/_([\d]+)$/);
+            return match ? parseInt(match[1]) : 0;
+          }) || [];
+          const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+
+          // Get period from existing facility or create new
+          let period = currentZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period;
+          if (!period) {
+            const chartResult = useSimulationStore.getState().passenger.chartResult;
+            const chartXData = (chartResult as any)?.chart_x_data;
+            if (chartXData && chartXData.length >= 2) {
+              period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
+            } else {
+              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+              const startDate = new Date(date);
+              const endDate = new Date(startDate);
+              endDate.setDate(endDate.getDate() + 2);
+              period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+            }
+          }
+
+          for (let i = currentFacilityCount; i < newFacilityCount; i++) {
+            newFacilities.push({
+              id: `${zoneName}_${maxId + i - currentFacilityCount + 1}`,
+              operating_schedule: {
+                time_blocks: [
+                  {
+                    period: period,
+                    process_time_seconds: editedProcess.process_time_seconds || 0,
+                    passenger_conditions: [],
+                  },
+                ],
+              },
+            });
+          }
+
+          updatedZones[zoneName] = {
+            ...currentZone,
+            facilities: newFacilities
+          };
+        }
+      });
+
+      updatedProcess.zones = updatedZones;
+    }
+
+    // Update process_time_seconds in all facilities
+    if (editedProcess.process_time_seconds !== undefined) {
+      const zonesWithUpdatedProcessTime: any = {};
+      Object.keys(updatedProcess.zones).forEach((zoneName) => {
+        const zone = updatedProcess.zones[zoneName];
+        if (zone?.facilities) {
+          zonesWithUpdatedProcessTime[zoneName] = {
+            ...zone,
+            facilities: zone.facilities.map((facility: any) => ({
+              ...facility,
+              operating_schedule: {
+                ...facility.operating_schedule,
+                time_blocks: facility.operating_schedule?.time_blocks?.map((block: any) => ({
+                  ...block,
+                  process_time_seconds: editedProcess.process_time_seconds,
+                })) || [],
+              },
+            }))
+          };
+        } else {
+          zonesWithUpdatedProcessTime[zoneName] = zone;
+        }
+      });
+      updatedProcess.zones = zonesWithUpdatedProcessTime;
+    }
+
+    updatedProcessFlow[selectedProcessIndex] = updatedProcess;
+    setProcessFlow(updatedProcessFlow);
+
+    toast({
+      title: "Process Updated",
+      description: "Process has been updated successfully.",
+    });
+  }, [selectedProcessIndex, editedProcess, processFlow, setProcessFlow]);
+
   const handleRunSimulation = async () => {
     if (!canRunSimulation) {
       toast({
@@ -631,7 +796,7 @@ export default function ProcessFlowDesigner({
       const sanitizedProcessFlow = processFlow.map((step) => ({
         step: step.step,
         name: step.name,
-        travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1),
+        travel_time_minutes: step.travel_time_minutes || 0,
         entry_conditions: step.entry_conditions || [],
         zones: step.zones || {},
       }));
@@ -685,7 +850,7 @@ export default function ProcessFlowDesigner({
           process_flow: processFlow.map((step) => ({
             step: step.step,
             name: step.name,
-            travel_time_minutes: Math.max(step.travel_time_minutes || 0, 1),
+            travel_time_minutes: step.travel_time_minutes || 0,
             entry_conditions: step.entry_conditions || [],
             zones: step.zones || {},
           })),
@@ -1058,77 +1223,72 @@ export default function ProcessFlowDesigner({
                                   setDefaultFacilityCount(count);
 
                                   // Update all zones with new facility count
-                                  if (editedProcess.zones) {
+                                  if (editedProcess.zones && count > 0) {
                                     const currentProcess = selectedProcessIndex !== null
                                       ? processFlow[selectedProcessIndex]
                                       : null;
                                     const updatedZones: any = {};
 
                                     Object.keys(editedProcess.zones).forEach((zoneName) => {
-                                      const facilities: any[] = [];
-
-                                      // First check processFlow for existing data
                                       const processFlowZone = currentProcess?.zones?.[zoneName];
-                                      // Then check edited process
                                       const editedZone = editedProcess.zones[zoneName];
+                                      const currentFacilities = processFlowZone?.facilities || editedZone?.facilities || [];
+                                      const currentFacilityCount = currentFacilities.length;
 
-                                      for (let i = 1; i <= count; i++) {
-                                        // Priority: processFlow > editedProcess > new
-                                        const existingFromProcess = processFlowZone?.facilities?.[i - 1];
-                                        const existingFromEdited = editedZone?.facilities?.[i - 1];
+                                      if (count === currentFacilityCount) {
+                                        // No change, preserve existing
+                                        updatedZones[zoneName] = processFlowZone || editedZone;
+                                      } else if (count < currentFacilityCount) {
+                                        // Decrease: Remove facilities from the end
+                                        updatedZones[zoneName] = {
+                                          facilities: currentFacilities.slice(0, count)
+                                        };
+                                      } else {
+                                        // Increase: Add new facilities with new IDs
+                                        const newFacilities = [...currentFacilities];
 
-                                        if (existingFromProcess) {
-                                          // Use data from processFlow (original source)
-                                          facilities.push({ ...existingFromProcess });
-                                        } else if (existingFromEdited) {
-                                          // Use data from edited process
-                                          facilities.push({ ...existingFromEdited });
-                                        } else {
-                                          // Create new facility with same period as existing ones
-                                          // Get period from first existing facility in this zone
-                                          let existingPeriod: string | null = null;
+                                        // Find the highest existing ID number
+                                        const existingIds = currentFacilities.map((f: any) => {
+                                          const match = f.id.match(/_([\d]+)$/);
+                                          return match ? parseInt(match[1]) : 0;
+                                        });
+                                        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
 
-                                          if (processFlowZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period) {
-                                            existingPeriod = processFlowZone.facilities[0].operating_schedule.time_blocks[0].period;
-                                          } else if (editedZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period) {
-                                            existingPeriod = editedZone.facilities[0].operating_schedule.time_blocks[0].period;
+                                        // Get period from existing facility or create new
+                                        let period = currentFacilities[0]?.operating_schedule?.time_blocks?.[0]?.period;
+                                        if (!period) {
+                                          const chartResult = useSimulationStore.getState().passenger.chartResult;
+                                          const chartXData = (chartResult as any)?.chart_x_data;
+                                          if (chartXData && chartXData.length >= 2) {
+                                            period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
+                                          } else {
+                                            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+                                            const startDate = new Date(date);
+                                            const endDate = new Date(startDate);
+                                            endDate.setDate(endDate.getDate() + 2);
+                                            period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
                                           }
+                                        }
 
-                                          // If no existing period, use chart_x_data
-                                          if (!existingPeriod) {
-                                            const chartResult = useSimulationStore.getState().passenger.chartResult;
-
-                                            if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
-                                              // chart_x_data의 첫번째와 마지막 값 사용
-                                              const firstTime = chartResult.chart_x_data[0];
-                                              const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
-                                              existingPeriod = `${firstTime}:00-${lastTime}:00`;
-                                            } else {
-                                              // Fallback to default period
-                                              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
-                                              const startDate = new Date(date);
-                                              const endDate = new Date(startDate);
-                                              endDate.setDate(endDate.getDate() + 2);
-                                              existingPeriod = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
-                                            }
-                                          }
-
-                                          facilities.push({
-                                            id: `${zoneName}_${i}`,
+                                        // Add new facilities with incremented IDs
+                                        for (let i = currentFacilityCount; i < count; i++) {
+                                          const newId = maxId + (i - currentFacilityCount) + 1;
+                                          newFacilities.push({
+                                            id: `${zoneName}_${newId}`,
                                             operating_schedule: {
                                               time_blocks: [
                                                 {
-                                                  period: existingPeriod,
-                                                  process_time_seconds:
-                                                    editedProcess?.process_time_seconds || 0,
+                                                  period: period,
+                                                  process_time_seconds: editedProcess?.process_time_seconds || 0,
                                                   passenger_conditions: [],
                                                 },
                                               ],
                                             },
                                           });
                                         }
+
+                                        updatedZones[zoneName] = { facilities: newFacilities };
                                       }
-                                      updatedZones[zoneName] = { facilities };
                                     });
 
                                     setEditedProcess({
@@ -1246,7 +1406,7 @@ export default function ProcessFlowDesigner({
                               <div
                                 className={`h-2 w-2 rounded-full ${
                                   editedProcess.travel_time_minutes != null &&
-                                  editedProcess.travel_time_minutes > 0
+                                  editedProcess.travel_time_minutes >= 0
                                     ? "bg-green-500"
                                     : "bg-yellow-500"
                                 }`}
@@ -1255,16 +1415,15 @@ export default function ProcessFlowDesigner({
                             <div className="relative">
                               <Input
                                 type="text"
-                                value={editedProcess.travel_time_minutes || ""}
-                                onChange={(e) =>
+                                value={editedProcess.travel_time_minutes ?? ""}
+                                onChange={(e) => {
+                                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                                  const walkingTime = numericValue === "" ? 0 : parseInt(numericValue);
                                   setEditedProcess({
                                     ...editedProcess,
-                                    travel_time_minutes:
-                                      parseInt(
-                                        e.target.value.replace(/[^0-9]/g, "")
-                                      ) || 0,
-                                  })
-                                }
+                                    travel_time_minutes: walkingTime >= 0 ? walkingTime : 0,
+                                  });
+                                }}
                                 placeholder="5"
                                 className="w-full pr-10 text-center"
                               />
@@ -1282,7 +1441,7 @@ export default function ProcessFlowDesigner({
                               <div
                                 className={`h-2 w-2 rounded-full ${
                                   editedProcess.process_time_seconds != null &&
-                                  editedProcess.process_time_seconds > 0
+                                  editedProcess.process_time_seconds >= 1
                                     ? "bg-green-500"
                                     : "bg-yellow-500"
                                 }`}
@@ -1291,22 +1450,13 @@ export default function ProcessFlowDesigner({
                             <div className="relative">
                               <Input
                                 type="text"
-                                value={editedProcess.process_time_seconds || ""}
+                                value={editedProcess.process_time_seconds ?? ""}
                                 onChange={(e) => {
-                                  const numericValue = e.target.value.replace(
-                                    /[^0-9]/g,
-                                    ""
-                                  );
-                                  const processTime =
-                                    numericValue === ""
-                                      ? undefined
-                                      : Math.min(
-                                          300,
-                                          Math.max(0, parseInt(numericValue))
-                                        );
+                                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                                  const processTime = numericValue === "" ? 1 : parseInt(numericValue);
                                   setEditedProcess({
                                     ...editedProcess,
-                                    process_time_seconds: processTime,
+                                    process_time_seconds: processTime >= 1 ? processTime : 1,
                                   });
                                 }}
                                 onClick={(e) =>
@@ -1463,20 +1613,35 @@ export default function ProcessFlowDesigner({
                                 "New process has been added successfully.",
                             });
                           }
+                        } else if (selectedProcessIndex !== null && editedProcess) {
+                          // Update existing process
+                          handleSaveChanges();
                         }
                       }}
                       disabled={
-                        !isCreatingNew ||
-                        !editedProcess?.name ||
-                        Object.keys(editedProcess?.zones || {}).length === 0 ||
-                        !defaultFacilityCount ||
-                        defaultFacilityCount <= 0 ||
-                        editedProcess?.travel_time_minutes == null ||
-                        editedProcess?.process_time_seconds == null ||
-                        editedProcess?.process_time_seconds <= 0
+                        isCreatingNew
+                          ? (
+                            !editedProcess?.name ||
+                            Object.keys(editedProcess?.zones || {}).length === 0 ||
+                            !defaultFacilityCount ||
+                            defaultFacilityCount <= 0 ||
+                            editedProcess?.travel_time_minutes == null ||
+                            editedProcess?.process_time_seconds == null ||
+                            editedProcess?.process_time_seconds < 1
+                          )
+                          : (
+                            selectedProcessIndex === null ||
+                            !editedProcess?.name ||
+                            Object.keys(editedProcess?.zones || {}).length === 0 ||
+                            !defaultFacilityCount ||
+                            defaultFacilityCount <= 0 ||
+                            editedProcess?.travel_time_minutes == null ||
+                            editedProcess?.process_time_seconds == null ||
+                            editedProcess?.process_time_seconds < 1
+                          )
                       }
                     >
-                      Create
+                      {isCreatingNew ? "Create" : "Update"}
                     </Button>
                   </div>
                 </div>

@@ -234,6 +234,7 @@ export default function TabProcessingProcedures({ simulationId, visible, apiRequ
         onOpenCreateModal={handleOpenCreateModal}
         onRemoveProcess={removeProcedure}
         onReorderProcesses={handleReorderProcesses}
+        setProcessFlow={setProcessFlow}
         onCreateProcess={handleDirectCreateProcess}
       />
 
