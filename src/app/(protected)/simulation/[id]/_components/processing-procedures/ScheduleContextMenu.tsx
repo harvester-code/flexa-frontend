@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
 
 // 카테고리별 뱃지 타입 정의
@@ -227,9 +228,8 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                         <>
                           {filteredOptions.map((option, optionIndex) => {
                             const checkState = getOptionCheckState(category, option);
-                            // Get color for this option based on category and option index
-                            const categoryColorIndex = categoryIndex * 3 + optionIndex;
-                            const optionColor = getColorByIndex(categoryColorIndex);
+                            // Use category index for consistent color across all options in the category
+                            const optionColor = getColorByIndex(config.colorIndex || categoryIndex);
 
                             return (
                               <DropdownMenuItem
@@ -238,37 +238,17 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                   e.preventDefault();
                                   onToggleBadgeOption(category, option);
                                 }}
-                                className="cursor-pointer hover:bg-transparent"
+                                className="cursor-pointer"
                                 style={{
-                                  // Apply hover background color matching the badge color
-                                  '--hover-bg': `${optionColor}1A`,
-                                } as React.CSSProperties}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = `${optionColor}1A`;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  backgroundColor: checkState ? `${optionColor}1A` : 'transparent',
                                 }}
                               >
                                 <div className="flex w-full items-center gap-2">
-                                  <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-black">
-                                    {checkState === true && (
-                                      <svg
-                                        className="h-3 w-3"
-                                        fill="black"
-                                        viewBox="0 0 20 20"
-                                      >
-                                        <path
-                                          fillRule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clipRule="evenodd"
-                                        />
-                                      </svg>
-                                    )}
-                                    {checkState === "indeterminate" && (
-                                      <div className="h-2 w-2 rounded-sm bg-black"></div>
-                                    )}
-                                  </div>
+                                  <Checkbox
+                                    checked={checkState === true || checkState === "indeterminate"}
+                                    onCheckedChange={() => {}}
+                                    className="pointer-events-none data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
                                   <span className="truncate text-black">{option}</span>
                                 </div>
                               </DropdownMenuItem>

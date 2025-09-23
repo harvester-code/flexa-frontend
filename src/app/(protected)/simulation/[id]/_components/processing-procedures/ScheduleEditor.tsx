@@ -11,6 +11,7 @@ import { useCellSelection } from "./hooks/useCellSelection";
 import { useUndoHistory, HistoryAction } from "./hooks/useUndoHistory";
 import { useThrottle } from "./hooks/useThrottle";
 import { useDebounce } from "./hooks/useDebounce";
+import { useBadgeHandlers } from "./hooks/useBadgeHandlers";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import {
   Clock,
@@ -43,7 +44,7 @@ import {
   calculatePeriodsFromDisabledCells,
 } from "./schedule-editor/helpers";
 import ExcelTable from "./schedule-editor/ExcelTable";
-import { useCopyPaste } from "./schedule-editor/hooks/useCopyPaste";
+import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useSimulationStore } from "../../_stores";
 import {
   Dialog,
@@ -825,29 +826,22 @@ export default function OperatingScheduleEditor({
     };
   }, [timeSlots, handleScroll]);
 
-  // 🔍 Process 카테고리 config 가져오기 헬퍼
-  const getProcessCategoryConfig = useCallback(
-    (category: string) => {
-      if (selectedProcessIndex > 0 && processFlow && processFlow.length > 0) {
-        let processColorIndex = Object.keys(CONDITION_CATEGORIES).length; // Process는 다른 카테고리 뒤에 위치
-        for (let i = 0; i < selectedProcessIndex; i++) {
-          const process = processFlow[i];
-          if (process && process.zones) {
-            const processName = formatProcessName(process.name);
-            if (processName === category) {
-              return {
-                icon: Navigation,
-                options: Object.keys(process.zones),
-                colorIndex: processColorIndex + i, // Process에 따라 다른 색상 인덱스
-              };
-            }
-          }
-        }
-      }
-      return null;
-    },
-    [selectedProcessIndex, processFlow, CONDITION_CATEGORIES]
-  );
+  // Badge handlers 훅 사용
+  const {
+    handleToggleBadgeOption,
+    handleRemoveCategoryBadge,
+    handleClearAllBadges,
+    handleSelectAllCategories,
+    getProcessCategoryConfig,
+  } = useBadgeHandlers({
+    contextMenu,
+    cellBadges,
+    setCellBadges,
+    undoHistory,
+    CONDITION_CATEGORIES,
+    selectedProcessIndex,
+    processFlow,
+  });
 
   // 실행 취소 처리
   const handleUndo = useCallback(() => {
@@ -972,217 +966,6 @@ export default function OperatingScheduleEditor({
       });
     }
   }, [undoHistory, setDisabledCells, setCellBadges]);
-
-  // 카테고리별 뱃지 토글 핸들러
-  const handleToggleBadgeOption = useCallback(
-    (category: string, option: string) => {
-      const targetCells = contextMenu.targetCells || [];
-      if (targetCells.length === 0) return;
-
-      // Process 카테고리인지 확인
-      const processCategoryConfig = getProcessCategoryConfig(category);
-      const categoryConfig =
-        processCategoryConfig ||
-        CONDITION_CATEGORIES[category as keyof typeof CONDITION_CATEGORIES];
-
-      if (!categoryConfig) return;
-
-      // 현재 해당 옵션이 모든 타겟 셀에 있는지 확인
-      const hasOptionInAllCells = targetCells.every((cellId) => {
-        const badges = cellBadges[cellId] || [];
-        const categoryBadge = badges.find(
-          (badge) => badge.category === category
-        );
-        return categoryBadge?.options.includes(option) || false;
-      });
-
-      // 히스토리를 위한 이전 상태 저장
-      const previousBadges = new Map<string, any[]>();
-      targetCells.forEach((cellId) => {
-        previousBadges.set(
-          cellId,
-          cellBadges[cellId] ? [...cellBadges[cellId]] : []
-        );
-      });
-
-      setCellBadges((prev) => {
-        const updated = { ...prev };
-        const newBadges = new Map<string, any[]>();
-
-        targetCells.forEach((cellId) => {
-          let existingBadges = updated[cellId] || [];
-
-          // 🔄 "All" 뱃지가 있다면 개별 옵션 선택 시 제거
-          const allBadgeIndex = existingBadges.findIndex(
-            (badge) => badge.category === "All"
-          );
-          if (allBadgeIndex >= 0) {
-            existingBadges = existingBadges.filter(
-              (badge) => badge.category !== "All"
-            );
-          }
-
-          const existingCategoryIndex = existingBadges.findIndex(
-            (badge) => badge.category === category
-          );
-
-          if (existingCategoryIndex >= 0) {
-            // 카테고리가 이미 있는 경우
-            const existingCategory = existingBadges[existingCategoryIndex];
-            const optionIndex = existingCategory.options.indexOf(option);
-
-            if (hasOptionInAllCells) {
-              // 옵션 제거
-              if (optionIndex >= 0) {
-                const newOptions = [...existingCategory.options];
-                newOptions.splice(optionIndex, 1);
-
-                if (newOptions.length === 0) {
-                  // 옵션이 없으면 카테고리 전체 제거
-                  existingBadges.splice(existingCategoryIndex, 1);
-                } else {
-                  // 옵션만 업데이트
-                  existingBadges[existingCategoryIndex] = {
-                    ...existingCategory,
-                    options: newOptions,
-                  };
-                }
-              }
-            } else {
-              // 옵션 추가
-              if (optionIndex < 0) {
-                existingBadges[existingCategoryIndex] = {
-                  ...existingCategory,
-                  options: [...existingCategory.options, option],
-                };
-              }
-            }
-          } else if (!hasOptionInAllCells) {
-            // 새 카테고리 추가
-            const badgeColor = getBadgeColor(categoryConfig.colorIndex);
-            const newCategoryBadge: CategoryBadge = {
-              category,
-              options: [option],
-              colorIndex: categoryConfig.colorIndex,
-              style: badgeColor.style,
-            };
-            existingBadges.push(newCategoryBadge);
-          }
-
-          updated[cellId] = [...existingBadges];
-          newBadges.set(cellId, [...existingBadges]);
-        });
-
-        // 히스토리에 추가
-        setTimeout(() => {
-          undoHistory.pushHistory({
-            type: "setBadges",
-            cellIds: targetCells,
-            previousBadges,
-            newBadges,
-          });
-        }, 0);
-
-        return updated;
-      });
-    },
-    [
-      contextMenu.targetCells,
-      cellBadges,
-      getProcessCategoryConfig,
-      CONDITION_CATEGORIES,
-      setCellBadges,
-      undoHistory,
-    ]
-  );
-
-  // 카테고리별 뱃지 제거 핸들러 (전체 카테고리 제거)
-  const handleRemoveCategoryBadge = useCallback(
-    (cellId: string, category: string) => {
-      setCellBadges((prev) => ({
-        ...prev,
-        [cellId]: (prev[cellId] || []).filter(
-          (badge) => badge.category !== category
-        ),
-      }));
-    },
-    []
-  );
-
-  // 모든 뱃지 제거 핸들러 (선택된 모든 셀에서) - 빈 배열로 설정
-  const handleClearAllBadges = useCallback(() => {
-    const targetCells = contextMenu.targetCells || [];
-    if (targetCells.length === 0) return;
-
-    // 히스토리를 위한 이전 상태 저장
-    const previousBadges = new Map<string, any[]>();
-    targetCells.forEach((cellId) => {
-      previousBadges.set(
-        cellId,
-        cellBadges[cellId] ? [...cellBadges[cellId]] : []
-      );
-    });
-
-    setCellBadges((prev) => {
-      const updated = { ...prev };
-      const newBadges = new Map<string, any[]>();
-
-      targetCells.forEach((cellId) => {
-        delete updated[cellId]; // 완전히 제거하여 메모리 최적화
-        newBadges.set(cellId, []);
-      });
-
-      // 히스토리에 추가
-      setTimeout(() => {
-        undoHistory.pushHistory({
-          type: "setBadges",
-          cellIds: targetCells,
-          previousBadges,
-          newBadges,
-        });
-      }, 0);
-
-      return updated;
-    });
-  }, [contextMenu.targetCells, cellBadges, undoHistory]);
-
-  // 모든 카테고리 선택 핸들러 - 뱃지를 비워서 All로 표시
-  const handleSelectAllCategories = useCallback(() => {
-    const targetCells = contextMenu.targetCells || [];
-    if (targetCells.length === 0) return;
-
-    // 히스토리를 위한 이전 상태 저장
-    const previousBadges = new Map<string, any[]>();
-    targetCells.forEach((cellId) => {
-      previousBadges.set(
-        cellId,
-        cellBadges[cellId] ? [...cellBadges[cellId]] : []
-      );
-    });
-
-    setCellBadges((prev) => {
-      const updated = { ...prev };
-      const newBadges = new Map<string, any[]>();
-
-      targetCells.forEach((cellId) => {
-        // 뱃지를 비워서 자동으로 All 표시되도록
-        delete updated[cellId];
-        newBadges.set(cellId, []);
-      });
-
-      // 히스토리에 추가
-      setTimeout(() => {
-        undoHistory.pushHistory({
-          type: "setBadges",
-          cellIds: targetCells,
-          previousBadges,
-          newBadges,
-        });
-      }, 0);
-
-      return updated;
-    });
-  }, [contextMenu.targetCells, cellBadges, undoHistory]);
 
   // 우클릭 핸들러
   const handleCellRightClick = useCallback(
@@ -2492,4 +2275,5 @@ export default function OperatingScheduleEditor({
         </AlertDialog>
       </div>
     </div>
-  )
+  );
+}

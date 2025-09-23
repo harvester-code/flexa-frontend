@@ -1,5 +1,5 @@
 import { useCallback, useState, useMemo } from "react";
-import { CategoryBadge } from "../types";
+import { CategoryBadge } from "../schedule-editor/types";
 
 interface CopyPasteData {
   cells: Array<{
