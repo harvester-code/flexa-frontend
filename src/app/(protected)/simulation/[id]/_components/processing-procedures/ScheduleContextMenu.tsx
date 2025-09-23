@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   Globe,
   MapPin,
@@ -7,6 +7,8 @@ import {
   Star,
   Trash2,
   Users,
+  Power,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,6 +57,10 @@ interface ScheduleContextMenuProps {
   onClearAllBadges: () => void;
   flightAirlines?: Record<string, string> | null;
   airportCityMapping?: Record<string, string> | null;
+  onToggleActivation?: () => void;
+  onSetProcessTime?: (multiplier: number) => void;
+  disabledCells?: Set<string>;
+  currentProcessTime?: number;
 }
 
 export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
@@ -68,9 +74,32 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
   onClearAllBadges,
   flightAirlines,
   airportCityMapping,
+  onToggleActivation,
+  onSetProcessTime,
+  disabledCells,
+  currentProcessTime = 60, // default 60 seconds
 }) => {
   // 🔍 카테고리별 검색어 관리
   const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
+  const [processTimeInput, setProcessTimeInput] = useState<string>("");
+  const [processMultiplier, setProcessMultiplier] = useState<number>(1);
+
+  // Calculate if all selected cells are activated
+  const areAllCellsActivated = useCallback(() => {
+    if (!disabledCells || contextMenu.targetCells.length === 0) return true;
+    return !contextMenu.targetCells.some(cellId => disabledCells.has(cellId));
+  }, [disabledCells, contextMenu.targetCells]);
+
+  // Calculate process time multiplier when input changes
+  useEffect(() => {
+    if (processTimeInput && currentProcessTime > 0) {
+      const inputSeconds = parseFloat(processTimeInput);
+      if (!isNaN(inputSeconds) && inputSeconds > 0) {
+        const multiplier = currentProcessTime / inputSeconds;
+        setProcessMultiplier(multiplier);
+      }
+    }
+  }, [processTimeInput, currentProcessTime]);
 
   // 🔍 검색어 변경 핸들러
   const handleSearchTermChange = useCallback((category: string, term: string) => {
@@ -161,6 +190,57 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
             <DropdownMenuSeparator />
           </>
         )}
+
+        {/* Activate/Deactivate toggle */}
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            if (onToggleActivation) {
+              onToggleActivation();
+            }
+          }}
+          className="cursor-pointer"
+        >
+          <div className="flex w-full items-center gap-2">
+            <Power size={16} className={areAllCellsActivated() ? "text-green-500" : "text-red-500"} />
+            <span className="font-medium text-black">
+              {areAllCellsActivated() ? "Deactivate" : "Activate"}
+            </span>
+          </div>
+        </DropdownMenuItem>
+
+        {/* Process Time input */}
+        <div className="px-2 py-2">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-blue-500" />
+            <span className="text-sm font-medium text-black">Process Time</span>
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <input
+              type="number"
+              value={processTimeInput}
+              onChange={(e) => setProcessTimeInput(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter' && onSetProcessTime && processMultiplier > 0) {
+                  onSetProcessTime(processMultiplier);
+                  onOpenChange(false);
+                }
+              }}
+              placeholder={`${currentProcessTime}s`}
+              className="w-20 rounded border px-2 py-1 text-xs"
+              min="1"
+            />
+            <span className="text-xs text-gray-500">
+              {processTimeInput && processMultiplier > 0 && (
+                <span className={processMultiplier > 1 ? "text-green-600 font-medium" : processMultiplier < 1 ? "text-red-600 font-medium" : ""}>
+                  ×{processMultiplier.toFixed(2)} {processMultiplier > 1 ? "faster" : processMultiplier < 1 ? "slower" : ""}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
 
         {/* Select All option */}
         <DropdownMenuItem

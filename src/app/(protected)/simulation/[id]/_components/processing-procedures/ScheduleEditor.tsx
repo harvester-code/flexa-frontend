@@ -539,6 +539,54 @@ export default function OperatingScheduleEditor({
     processFlow,
   });
 
+  // Get current process time from processFlow
+  const currentProcessTime = useMemo(() => {
+    if (selectedProcessIndex !== null && selectedProcessIndex < processFlow.length) {
+      const currentProcess = processFlow[selectedProcessIndex] as any;
+      return currentProcess?.process_time_seconds || 60;
+    }
+    return 60;
+  }, [processFlow, selectedProcessIndex]);
+
+  // Handler for toggling cell activation from context menu
+  const handleToggleActivationFromMenu = useCallback(() => {
+    if (!contextMenu.targetCells || contextMenu.targetCells.length === 0) return;
+
+    const targetCells = contextMenu.targetCells;
+    const hasDisabledCells = targetCells.some(cellId => disabledCells.has(cellId));
+
+    setDisabledCells((prev) => {
+      const newSet = new Set(prev);
+      targetCells.forEach((cellId) => {
+        if (hasDisabledCells) {
+          // If any cell is disabled, enable all
+          newSet.delete(cellId);
+        } else {
+          // If all cells are enabled, disable all
+          newSet.add(cellId);
+        }
+      });
+      return newSet;
+    });
+  }, [contextMenu.targetCells, disabledCells]);
+
+  // Handler for setting process time multiplier
+  const handleSetProcessTime = useCallback((multiplier: number) => {
+    if (!contextMenu.targetCells || contextMenu.targetCells.length === 0) return;
+    if (selectedProcessIndex === null) return;
+
+    const newProcessTime = Math.round(currentProcessTime / multiplier);
+
+    // For now, we'll just log the change
+    // TODO: Implement store update when the updateProcessTimeForCells method is available
+    console.log('Setting process time for cells:', {
+      cells: contextMenu.targetCells,
+      processIndex: selectedProcessIndex,
+      zone: selectedZone,
+      newProcessTime,
+      multiplier
+    });
+  }, [contextMenu.targetCells, selectedProcessIndex, selectedZone, currentProcessTime]);
 
   // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
   const tableHandlers = useMemo(
@@ -842,6 +890,10 @@ export default function OperatingScheduleEditor({
           onClearAllBadges={handleClearAllBadges}
           flightAirlines={flightAirlines}
           airportCityMapping={airportCityMapping}
+          onToggleActivation={handleToggleActivationFromMenu}
+          onSetProcessTime={handleSetProcessTime}
+          disabledCells={disabledCells}
+          currentProcessTime={currentProcessTime}
         />
 
         {/* 제목과 전체화면 버튼 */}
