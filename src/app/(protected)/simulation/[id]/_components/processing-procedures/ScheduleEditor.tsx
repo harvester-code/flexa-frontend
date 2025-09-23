@@ -1011,12 +1011,16 @@ export default function OperatingScheduleEditor({
       if (facility?.operating_schedule?.time_blocks) {
         const timeBlocks = facility.operating_schedule.time_blocks;
 
-        // 모든 셀을 먼저 비활성화로 설정
-        timeSlots.forEach((_, rowIndex) => {
-          newDisabledCells.add(`${rowIndex}-${colIndex}`);
-        });
+        // time_blocks가 없으면 모든 셀 활성화 (기본값)
+        if (timeBlocks.length === 0) {
+          // 아무것도 하지 않음 - 모든 셀이 활성화된 상태
+          return;
+        }
 
-        // 각 time_block에 대해 활성화
+        // 활성화된 시간대를 추적
+        const activatedSlots = new Set<number>();
+
+        // 각 time_block에 대해 활성화된 슬롯 마킹
         timeBlocks.forEach((block: any, blockIndex: number) => {
           if (block.period) {
             console.log('Processing time_block', blockIndex, 'for facility:', facility.id,
@@ -1070,8 +1074,7 @@ export default function OperatingScheduleEditor({
               // 전체 시간대 활성화
               console.log('Full period detected - activating all cells for facility:', facility.id);
               for (let i = 0; i < timeSlots.length; i++) {
-                const cellId = `${i}-${colIndex}`;
-                newDisabledCells.delete(cellId);
+                activatedSlots.add(i);
               }
             } else {
               // 부분적인 period 처리
@@ -1085,8 +1088,7 @@ export default function OperatingScheduleEditor({
                   if (startIdx !== -1) {
                     for (let i = startIdx; i < timeSlots.length && (endIdx === -1 || i < endIdx); i++) {
                       if (timeSlots[i] === "00:00") break;
-                      const cellId = `${i}-${colIndex}`;
-                      newDisabledCells.delete(cellId);
+                      activatedSlots.add(i);
                     }
                   }
                 }
@@ -1099,8 +1101,7 @@ export default function OperatingScheduleEditor({
                     const endIdx = endDate === date ? timeSlots.indexOf(endTime) : timeSlots.length;
 
                     for (let i = startIdx; i < endIdx; i++) {
-                      const cellId = `${i}-${colIndex}`;
-                      newDisabledCells.delete(cellId);
+                      activatedSlots.add(i);
                     }
                   }
                 }
@@ -1112,8 +1113,7 @@ export default function OperatingScheduleEditor({
 
                   if (startIdx !== -1) {
                     for (let i = startIdx; i < endIdx; i++) {
-                      const cellId = `${i}-${colIndex}`;
-                      newDisabledCells.delete(cellId);
+                      activatedSlots.add(i);
                     }
                   }
                 }
@@ -1168,6 +1168,14 @@ export default function OperatingScheduleEditor({
             }
           }
         });
+
+        // time_blocks 처리가 끝난 후, 활성화되지 않은 슬롯만 비활성화
+        for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+          if (!activatedSlots.has(rowIndex)) {
+            const cellId = `${rowIndex}-${colIndex}`;
+            newDisabledCells.add(cellId);
+          }
+        }
       }
     });
 
@@ -2927,7 +2935,7 @@ export default function OperatingScheduleEditor({
           
           if (hasChanged) {
             // Zustand store 업데이트
-            const updateFacilitySchedule = useSimulationStore.getState().updateFacilitySchedule;
+            const { updateFacilitySchedule } = useSimulationStore.getState() as any;
             if (updateFacilitySchedule) {
               updateFacilitySchedule(
                 selectedProcessIndex,
