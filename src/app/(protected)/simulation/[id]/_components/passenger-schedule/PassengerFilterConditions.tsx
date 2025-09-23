@@ -44,7 +44,6 @@ export default function PassengerFilterConditions({
 }: PassengerFilterConditionsProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set());
 
   // zustand store에서 데이터 가져오기
   const passengerData = useSimulationStore((state) => state.passenger);
@@ -63,6 +62,21 @@ export default function PassengerFilterConditions({
     passengerData.pax_generation.default.load_factor !== null &&
     passengerData.pax_arrival_patterns.default.mean !== null &&
     passengerData.pax_arrival_patterns.default.std !== null;
+
+  // 방문한 탭 초기값 설정 - zustand에 값이 있으면 방문한 것으로 처리
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => {
+    const initialTabs = new Set<string>();
+    // Load Factor에 값이 있으면 방문한 것으로 처리
+    if (passengerData.pax_generation.default.load_factor !== null) {
+      initialTabs.add("loadfactor");
+    }
+    // Show-up-Time에 값이 있으면 방문한 것으로 처리
+    if (passengerData.pax_arrival_patterns.default.mean !== null &&
+        passengerData.pax_arrival_patterns.default.std !== null) {
+      initialTabs.add("showuptime");
+    }
+    return initialTabs;
+  });
 
   // Generate Pax API 호출 함수
   const handleGeneratePax = async () => {
