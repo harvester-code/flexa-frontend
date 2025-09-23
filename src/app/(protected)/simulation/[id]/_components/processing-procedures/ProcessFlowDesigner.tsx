@@ -264,6 +264,7 @@ export default function ProcessFlowDesigner({
   const paxDemographicsFromStore = useSimulationStore(
     (s) => s.passenger.pax_demographics
   );
+  const flightAirlines = useSimulationStore((s) => s.flight.airlines);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1770,6 +1771,7 @@ export default function ProcessFlowDesigner({
                 onSelectionChange={setTempSelectedCriteriaItems}
                 onClearAll={() => setTempSelectedCriteriaItems({})}
                 initialSelectedItems={tempSelectedCriteriaItems}
+                flightAirlines={flightAirlines}
               />
 
               {/* Dialog Actions */}

@@ -33,6 +33,7 @@ interface FlightCriteriaSelectorProps {
   initialSelectedColumn?: string | null;
   title?: string; // 🆕 제목을 props로 받기
   icon?: React.ReactNode; // 🆕 아이콘/이모지를 props로 받기
+  flightAirlines?: Record<string, string> | null; // 항공사 코드-이름 매핑
 }
 
 export default function FlightCriteriaSelector({
@@ -44,6 +45,7 @@ export default function FlightCriteriaSelector({
   initialSelectedColumn = null,
   title = 'Search Criteria', // 🆕 기본값 설정
   icon, // 🆕 아이콘 props 추가
+  flightAirlines, // 항공사 코드-이름 매핑
 }: FlightCriteriaSelectorProps) {
   // UI 상태 관리
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(initialSelectedItems);
@@ -371,9 +373,15 @@ export default function FlightCriteriaSelector({
                 }
 
                 // 검색어에 따른 필터링
-                const filteredValues = sortedValues.filter((value) =>
-                  value.toLowerCase().includes(searchQuery.toLowerCase())
-                );
+                const filteredValues = sortedValues.filter((value) => {
+                  const searchLower = searchQuery.toLowerCase();
+                  // Airline의 경우 코드와 이름 모두로 검색
+                  if (selectedColumn === 'operating_carrier_iata' && flightAirlines?.[value]) {
+                    return value.toLowerCase().includes(searchLower) ||
+                           flightAirlines[value].toLowerCase().includes(searchLower);
+                  }
+                  return value.toLowerCase().includes(searchLower);
+                });
 
                 const isAllSelected = isAllSelectedInColumn(selectedColumn, filteredValues);
 
@@ -440,7 +448,9 @@ export default function FlightCriteriaSelector({
                                   onCheckedChange={() => handleItemToggle(itemKey)}
                                 />
                                 <label htmlFor={itemKey} className="text-default-700 flex-1 cursor-pointer truncate">
-                                  {value}
+                                  {selectedColumn === 'operating_carrier_iata' && flightAirlines?.[value]
+                                    ? `(${value}) ${flightAirlines[value]}`
+                                    : value}
                                 </label>
                                 {flightInfo && (
                                   <span className="text-default-400 text-xs font-medium">{flightInfo}</span>
