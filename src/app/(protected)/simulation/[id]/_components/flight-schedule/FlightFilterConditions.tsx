@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
 import {
   type TerminalAirlineCombo,
@@ -380,6 +381,8 @@ function TerminalAirlinesDropdown({
 
 // ==================== Component ====================
 function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditionsProps) {
+  const { toast } = useToast();
+
   // 🆕 zustand에서 flight 데이터 구독
   const flightData = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
@@ -927,8 +930,23 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
         originalLocalState: selectedFilter.categories,
       });
 
-      await onApplyFilter(selectedFilter.mode, conditions);
+      const result = await onApplyFilter(selectedFilter.mode, conditions);
+
+      // 성공 시 토스트 알림 표시
+      if (result) {
+        toast({
+          title: "Filter Applied",
+          description: `Successfully filtered ${totalFiltered.toLocaleString()} flights`,
+          variant: "default",
+        });
+      }
     } catch (error) {
+      // 에러 시 토스트 알림 표시
+      toast({
+        title: "Filter Failed",
+        description: error instanceof Error ? error.message : "Failed to apply filter",
+        variant: "destructive",
+      });
     } finally {
       // ✅ Apply Filter 완료 - 버튼 로딩 상태 해제
       setIsApplying(false);
@@ -940,6 +958,9 @@ function FlightFilterConditions({ loading, onApplyFilter }: FlightFilterConditio
     getEstimatedFilteredFlights,
     filtersData,
     setSelectedConditions,
+    resetPassenger,
+    resetProcessFlow,
+    toast,
   ]);
 
   // 초기화

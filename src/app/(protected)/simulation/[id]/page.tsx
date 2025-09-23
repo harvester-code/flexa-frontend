@@ -60,6 +60,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
   const flightScheduleCompleted = useSimulationStore((s) => s.workflow.step1Completed);
   const passengerScheduleCompleted = useSimulationStore((s) => s.workflow.step2Completed);
+  const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
+  const passengerChartResult = useSimulationStore((s) => s.passenger.chartResult);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -149,15 +151,22 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
     } catch (error) {}
   }, []);
 
-  // 탭 접근성 계산
+  // 탭 접근성 계산 - 버튼 클릭 기반으로 변경
   const getAvailableTabs = () => {
-    const completedStates = [flightScheduleCompleted, passengerScheduleCompleted];
+    // Flight Schedule 탭은 항상 접근 가능 (index 0)
+    // Passenger Schedule 탭은 Filter Flights 버튼을 눌러야 접근 가능 (appliedFilterResult가 있어야 함)
+    // Processing Procedures 탭은 Generate Pax 버튼을 눌러야 접근 가능 (passengerChartResult가 있어야 함)
 
-    // Flight Schedule 탭은 항상 접근 가능 + 완료된 탭까지 + 다음 탭 하나까지 활성화
-    const lastCompletedIndex = completedStates.lastIndexOf(true);
-    // 최소 0, 최대 tabs.length - 1 (모든 탭 접근 가능)
-    // 완료된 탭이 없으면 첫 번째 탭(0)만, 모두 완료되면 모든 탭 접근 가능
-    return Math.max(0, Math.min(lastCompletedIndex + 2, tabs.length - 1));
+    if (passengerChartResult) {
+      // Generate Pax 완료 - 모든 탭 접근 가능
+      return 2; // 0, 1, 2 탭 모두 접근 가능
+    } else if (appliedFilterResult) {
+      // Filter Flights 완료 - Flight Schedule과 Passenger Schedule 접근 가능
+      return 1; // 0, 1 탭 접근 가능
+    } else {
+      // 아무것도 완료 안됨 - Flight Schedule만 접근 가능
+      return 0; // 0 탭만 접근 가능
+    }
   };
 
   // 🆕 통합 Store에서 메타데이터 수집용 함수
