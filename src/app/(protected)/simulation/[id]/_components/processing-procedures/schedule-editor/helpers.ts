@@ -44,10 +44,6 @@ export const createDynamicConditionCategories = (
         categoryName = "Arrival Airport";
         icon = MapPin;
         break;
-      case "arrival_city":
-        categoryName = "Arrival City";
-        icon = MapPin;
-        break;
       case "arrival_country":
         categoryName = "Arrival Country";
         icon = Globe;
@@ -251,7 +247,6 @@ export const calculatePeriodsFromDisabledCells = (
       "Aircraft Type": "aircraft_type",
       "Flight Type": "flight_type",
       "Arrival Airport": "arrival_airport_iata",
-      "Arrival City": "arrival_city",
       "Arrival Country": "arrival_country",
       "Arrival Region": "arrival_region",
       Nationality: "nationality",

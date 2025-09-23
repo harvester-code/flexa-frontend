@@ -473,7 +473,6 @@ export default function OperatingScheduleEditor({
     const flightCategories = ["Airline", "Aircraft Type", "Flight Type"];
     const arrivalCategories = [
       "Arrival Airport",
-      "Arrival City",
       "Arrival Country",
       "Arrival Region",
     ];
