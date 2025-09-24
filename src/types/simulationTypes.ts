@@ -256,7 +256,6 @@ export interface Facility {
 export interface TimeBlock {
   period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
   process_time_seconds: number;
-  activate?: boolean; // 시설 운영 활성화 여부
   passenger_conditions: PassengerCondition[];
 }
 
