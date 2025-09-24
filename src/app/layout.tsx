@@ -1,18 +1,23 @@
-import '@/styles/globals.css';
-import type { Metadata } from 'next';
-import { cn } from '@/lib/utils';
-import Providers from './provider';
+import "@/styles/globals.css";
+import type { Metadata } from "next";
+import { cn } from "@/lib/utils";
+import Providers from "./provider";
 
 export const metadata: Metadata = {
-  title: 'Flexa | WaitFree Airport',
-  description: 'Make your airport wait-free',
+  title: "Flexa | WaitFree Airport",
+  description: "Make your airport wait-free",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <Providers>
       <html lang="en">
-        <body className={cn('antialiased')}>{children}</body>
+        <body className={cn("antialiased")}>{children}</body>
       </html>
     </Providers>
   );

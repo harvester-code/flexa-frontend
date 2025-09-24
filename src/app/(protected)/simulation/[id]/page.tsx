@@ -1,13 +1,23 @@
-'use client';
+"use client";
 
-import React, { Suspense, use, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import dayjs from 'dayjs';
-import { Save, Trash2 } from 'lucide-react';
-import { useShallow } from 'zustand/react/shallow';
-import { APIRequestLog } from '@/types/simulationTypes';
-import { deleteScenarioMetadata, saveScenarioMetadata } from '@/services/simulationService';
-import TheContentHeader from '@/components/TheContentHeader';
+import React, {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useSearchParams } from "next/navigation";
+import dayjs from "dayjs";
+import { Save, Trash2 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { APIRequestLog } from "@/types/simulationTypes";
+import {
+  deleteScenarioMetadata,
+  saveScenarioMetadata,
+} from "@/services/simulationService";
+import TheContentHeader from "@/components/TheContentHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,50 +28,76 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/AlertDialog';
-import { Button } from '@/components/ui/Button';
-import { useToast } from '@/hooks/useToast';
-import { timeToRelativeTime } from '@/lib/utils';
-import SimulationLoading from '../_components/SimulationLoading';
-import JSONDebugViewer from './_components/shared/DebugViewer';
-import TabDefault from './_components/shared/TabDefault';
-import TabFlightSchedule from './_components/flight-schedule/TabFlightSchedule';
-import TabPassengerSchedule from './_components/passenger-schedule/TabPassengerSchedule';
-import TabProcessingProcedures from './_components/processing-procedures/TabProcessingProcedures';
-import { useLoadScenarioData } from './_hooks/useLoadScenarioData';
-import { useScenarioProfileStore, useSimulationStore } from './_stores';
+} from "@/components/ui/AlertDialog";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/hooks/useToast";
+import { timeToRelativeTime } from "@/lib/utils";
+import SimulationLoading from "../_components/SimulationLoading";
+import JSONDebugViewer from "./_components/shared/DebugViewer";
+import TabDefault from "./_components/shared/TabDefault";
+import TabFlightSchedule from "./_components/flight-schedule/TabFlightSchedule";
+import TabPassengerSchedule from "./_components/passenger-schedule/TabPassengerSchedule";
+import TabProcessingProcedures from "./_components/processing-procedures/TabProcessingProcedures";
+import { useLoadScenarioData } from "./_hooks/useLoadScenarioData";
+import { useScenarioProfileStore, useSimulationStore } from "./_stores";
 
 const tabs: { text: string; number: number }[] = [
-  { text: 'Flight Schedule', number: 0 },
-  { text: 'Passenger Schedule', number: 1 },
-  { text: 'Processing Procedures', number: 2 },
+  { text: "Flight Schedule", number: 0 },
+  { text: "Passenger Schedule", number: 1 },
+  { text: "Processing Procedures", number: 2 },
 ];
 
 // Component that uses useSearchParams for scenario name from URL
-function ScenarioNameDisplay({ simulationId, scenarioName }: { simulationId: string; scenarioName: string }) {
+function ScenarioNameDisplay({
+  simulationId,
+  scenarioName,
+}: {
+  simulationId: string;
+  scenarioName: string;
+}) {
   const searchParams = useSearchParams();
-  const urlScenarioName = searchParams.get('name');
+  const urlScenarioName = searchParams.get("name");
 
-  return <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>;
+  return (
+    <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>
+  );
 }
 
-export default function SimulationDetail({ params }: { params: Promise<{ id: string }> }) {
+export default function SimulationDetail({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { toast } = useToast();
 
   // ✅ simulationId를 맨 위로 이동 (다른 훅들보다 먼저)
   const simulationId = use(params).id;
 
   // 개별 store에서 필요한 데이터만 직접 가져오기
-  const currentScenarioTab = useScenarioProfileStore((s) => s.currentScenarioTab);
+  const currentScenarioTab = useScenarioProfileStore(
+    (s) => s.currentScenarioTab
+  );
   const scenarioName = useScenarioProfileStore((s) => s.scenarioName);
   const scenarioHistory = useScenarioProfileStore((s) => s.scenarioHistory);
-  const setCurrentScenarioTab = useScenarioProfileStore((s) => s.setCurrentScenarioTab);
-  const loadScenarioProfileMetadata = useScenarioProfileStore((s) => s.loadMetadata);
+  const setCurrentScenarioTab = useScenarioProfileStore(
+    (s) => s.setCurrentScenarioTab
+  );
+  const loadScenarioProfileMetadata = useScenarioProfileStore(
+    (s) => s.loadMetadata
+  );
 
-  const flightScheduleCompleted = useSimulationStore((s) => s.workflow.step1Completed);
-  const passengerScheduleCompleted = useSimulationStore((s) => s.workflow.step2Completed);
-  const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
-  const passengerChartResult = useSimulationStore((s) => s.passenger.chartResult);
+  const flightScheduleCompleted = useSimulationStore(
+    (s) => s.workflow.step1Completed
+  );
+  const passengerScheduleCompleted = useSimulationStore(
+    (s) => s.workflow.step2Completed
+  );
+  const appliedFilterResult = useSimulationStore(
+    (s) => s.flight.appliedFilterResult
+  );
+  const passengerChartResult = useSimulationStore(
+    (s) => s.passenger.chartResult
+  );
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -71,7 +107,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       const tabs = metadata.tabs || {};
 
       // 🎯 S3에서 받은 데이터를 Zustand에 통째로 갈아끼우기
-      if (metadata.context || metadata.flight || metadata.passenger || metadata.process_flow || metadata.workflow) {
+      if (
+        metadata.context ||
+        metadata.flight ||
+        metadata.passenger ||
+        metadata.process_flow ||
+        metadata.workflow
+      ) {
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
 
@@ -113,7 +155,8 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           addProfileRule: currentStore.addProfileRule,
           removeNationalityRule: currentStore.removeNationalityRule,
           removeProfileRule: currentStore.removeProfileRule,
-          updateNationalityDistribution: currentStore.updateNationalityDistribution,
+          updateNationalityDistribution:
+            currentStore.updateNationalityDistribution,
           updateProfileDistribution: currentStore.updateProfileDistribution,
           reorderPaxDemographics: currentStore.reorderPaxDemographics,
           setPaxArrivalPatternRules: currentStore.setPaxArrivalPatternRules,
@@ -140,11 +183,15 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       // 🚧 Legacy tabs 구조 지원 (하위 호환성)
       else if (tabs.passengerSchedule || tabs.processingProcedures) {
         if (tabs.passengerSchedule) {
-          useSimulationStore.getState().loadPassengerMetadata(tabs.passengerSchedule);
+          useSimulationStore
+            .getState()
+            .loadPassengerMetadata(tabs.passengerSchedule);
         }
 
         if (tabs.processingProcedures) {
-          useSimulationStore.getState().loadProcessMetadata(tabs.processingProcedures);
+          useSimulationStore
+            .getState()
+            .loadProcessMetadata(tabs.processingProcedures);
         }
       } else {
       }
@@ -182,17 +229,19 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         // 날짜가 비어있으면 오늘 날짜로 설정
         context: {
           ...simulationState.context,
-          date: simulationState.context.date || new Date().toISOString().split('T')[0],
+          date:
+            simulationState.context.date ||
+            new Date().toISOString().split("T")[0],
         },
       };
 
       return metadata;
     } catch (error) {
-      const currentDate = new Date().toISOString().split('T')[0];
+      const currentDate = new Date().toISOString().split("T")[0];
       return {
         context: {
           scenarioId: scenarioId,
-          airport: '',
+          airport: "",
           date: currentDate,
           lastSavedAt: null,
         },
@@ -203,7 +252,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
           selectedConditions: null,
           appliedFilterResult: null,
         },
-        passenger: { settings: {}, demographics: {}, arrivalPatterns: {}, showUpResults: null },
+        passenger: {
+          settings: {},
+          demographics: {},
+          arrivalPatterns: {},
+          showUpResults: null,
+        },
         process: { flow: [] },
         workflow: {
           currentStep: 1,
@@ -217,7 +271,9 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   }, []);
 
   const [isInitialized, setIsInitialized] = useState(false);
-  const [apiRequestLog, setApiRequestLog] = useState<APIRequestLog | null>(null);
+  const [apiRequestLog, setApiRequestLog] = useState<APIRequestLog | null>(
+    null
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -230,7 +286,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
   // ✅ 클라이언트 측에서만 날짜 초기화 (hydration mismatch 방지)
   useEffect(() => {
     if (!currentDate) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       setDate(today);
     }
   }, [currentDate, setDate]);
@@ -267,21 +323,24 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
 
       const completeMetadata = getCompleteMetadata(simulationId);
 
-      const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
+      const { data: saveResult } = await saveScenarioMetadata(
+        simulationId,
+        completeMetadata
+      );
 
       // 🆕 저장 성공 시 lastSavedAt 업데이트
       const savedTimestamp = new Date().toISOString();
       setLastSavedAt(savedTimestamp);
 
       toast({
-        title: 'Saved',
-        description: 'Scenario has been saved.',
+        title: "Saved",
+        description: "Scenario has been saved.",
       });
     } catch (error) {
       toast({
-        title: 'Save Failed',
-        description: 'An error occurred while saving the metadata.',
-        variant: 'destructive',
+        title: "Save Failed",
+        description: "An error occurred while saving the metadata.",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -296,14 +355,14 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       await deleteScenarioMetadata(simulationId);
 
       toast({
-        title: 'Metadata Deleted',
-        description: 'Scenario metadata has been successfully deleted.',
+        title: "Metadata Deleted",
+        description: "Scenario metadata has been successfully deleted.",
       });
     } catch (error) {
       toast({
-        title: 'Delete Failed',
-        description: 'An error occurred while deleting the metadata.',
-        variant: 'destructive',
+        title: "Delete Failed",
+        description: "An error occurred while deleting the metadata.",
+        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
@@ -341,8 +400,13 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       <div className="mt-[15px] flex justify-between">
         <div className="flex items-center gap-3">
           <dl className="sub-title">
-            <Suspense fallback={<dd>{scenarioName || `Scenario ${simulationId}`}</dd>}>
-              <ScenarioNameDisplay simulationId={simulationId} scenarioName={scenarioName} />
+            <Suspense
+              fallback={<dd>{scenarioName || `Scenario ${simulationId}`}</dd>}
+            >
+              <ScenarioNameDisplay
+                simulationId={simulationId}
+                scenarioName={scenarioName}
+              />
             </Suspense>
           </dl>
           {latestHistory?.checkpoint && (
@@ -355,7 +419,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
         <div className="flex gap-2">
           <Button onClick={handleTempSave} disabled={isSaving}>
             <Save size={16} />
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -380,7 +444,7 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
                   onClick={handleDeleteMetadata}
                   disabled={isDeleting}
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -423,8 +487,12 @@ export default function SimulationDetail({ params }: { params: Promise<{ id: str
       )}
 
       {/* 개발 환경에서만 Debug Viewer 표시 */}
-      {process.env.NODE_ENV === 'development' && (
-        <JSONDebugViewer visible={true} simulationId={simulationId} apiRequestLog={apiRequestLog} />
+      {process.env.NODE_ENV === "development" && (
+        <JSONDebugViewer
+          visible={true}
+          simulationId={simulationId}
+          apiRequestLog={apiRequestLog}
+        />
       )}
     </div>
   );

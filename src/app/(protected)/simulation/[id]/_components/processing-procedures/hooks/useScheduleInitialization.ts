@@ -43,9 +43,7 @@ const getCategoryFieldName = (categoryName: string): string => {
 };
 
 // Badge color configuration
-const getBadgeColor = (
-  colorIndex: number
-): { style: string; hex: string } => {
+const getBadgeColor = (colorIndex: number): { style: string; hex: string } => {
   const colors = [
     { style: "bg-orange-200 text-orange-900", hex: "#fed7aa" },
     { style: "bg-yellow-200 text-yellow-900", hex: "#fef08a" },
@@ -80,7 +78,9 @@ const parsePeriodSafe = (period: string) => {
       // New format without spaces, need to find the date boundary
       // Format: "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS"
       // Find the position of the second date (after time)
-      const match = period.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?)-(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?)$/);
+      const match = period.match(
+        /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?)-(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?)$/
+      );
       if (match) {
         startPart = match[1];
         endPart = match[2];
@@ -104,7 +104,13 @@ const parsePeriodSafe = (period: string) => {
       endTime,
     };
   } catch {
-    return { valid: false, startDate: "", startTime: "", endDate: "", endTime: "" };
+    return {
+      valid: false,
+      startDate: "",
+      startTime: "",
+      endDate: "",
+      endTime: "",
+    };
   }
 };
 
@@ -122,18 +128,8 @@ export function useScheduleInitialization() {
       disabledCells: Set<string>;
       badges: Record<string, CategoryBadge[]>;
     } => {
-      console.log("initializeDisabledCellsFromPeriods called with:", {
-        facilitiesCount: facilities.length,
-        timeSlotsCount: timeSlots.length,
-        isPreviousDay,
-        currentDate,
-        prevDayStr,
-        firstFacility: facilities[0],
-      });
-
       const newDisabledCells = new Set<string>();
       const newBadges: Record<string, CategoryBadge[]> = {};
-      const date = currentDate;
 
       facilities.forEach((facility, colIndex) => {
         if (facility?.operating_schedule?.time_blocks) {
@@ -144,10 +140,7 @@ export function useScheduleInitialization() {
             return;
           }
 
-          // Track activated time slots
-          const activatedSlots = new Set<number>();
-
-          // Process each time_block
+          // Process each time_block - 단순화된 로직
           timeBlocks.forEach((block: any, blockIndex: number) => {
             if (block.period) {
               console.log(
@@ -157,8 +150,10 @@ export function useScheduleInitialization() {
                 facility.id,
                 "period:",
                 block.period,
-                "has conditions:",
-                block.passenger_conditions?.length > 0
+                "activate:",
+                block.activate,
+                "conditions:",
+                block.passenger_conditions?.length || 0
               );
 
               // Safe period parsing
@@ -166,241 +161,109 @@ export function useScheduleInitialization() {
 
               if (!parsedPeriod.valid) {
                 console.error("Failed to parse period:", block.period);
-                // Fallback to full activation to preserve data
-                for (let i = 0; i < timeSlots.length; i++) {
-                  activatedSlots.add(i);
-                }
                 return;
               }
 
-              const { startDate, startTime, endDate, endTime } = parsedPeriod;
+              const { startTime, endTime } = parsedPeriod;
 
-              console.log("Parsed period:", {
-                startDate,
-                startTime,
-                endDate,
-                endTime,
-                currentDate: date,
-                isPreviousDay,
-              });
+              // Find start and end indices in timeSlots
+              const startIdx = timeSlots.indexOf(startTime);
+              let endIdx = timeSlots.indexOf(endTime);
 
-              // Handle multi-day periods
-              const nextDayStr = new Date(new Date(date).getTime() + 86400000)
-                .toISOString()
-                .split("T")[0];
+              // If endTime is not found exactly, find the last slot before endTime
+              if (endIdx === -1) {
+                const [endHour, endMin] = endTime.split(":").map(Number);
+                const endTimeMinutes = endHour * 60 + endMin;
 
-              // Check if period includes current display date range
-              const periodStartDate = new Date(startDate);
-              const periodEndDate = new Date(endDate);
-              const currentDateObj = new Date(date);
-              const prevDateObj = new Date(prevDayStr);
-
-              console.log("Date range check:", {
-                periodStart: periodStartDate,
-                periodEnd: periodEndDate,
-                currentDate: currentDateObj,
-                prevDate: prevDateObj,
-                isPreviousDay,
-              });
-
-              // Check if period covers entire time range (2+ days)
-              const isFullPeriod =
-                periodStartDate <= prevDateObj &&
-                periodEndDate >= currentDateObj;
-
-              if (isFullPeriod) {
-                // Activate all time slots
-                console.log(
-                  "Full period detected - activating all cells for facility:",
-                  facility.id
-                );
-                for (let i = 0; i < timeSlots.length; i++) {
-                  activatedSlots.add(i);
-                }
-              } else {
-                // Handle partial period
-                if (isPreviousDay) {
-                  // With D-1 display
-                  if (startDate <= prevDayStr && endDate >= prevDayStr) {
-                    // Include previous day
-                    const startIdx =
-                      startDate === prevDayStr
-                        ? timeSlots.indexOf(startTime)
-                        : 0;
-                    const endIdx =
-                      endDate === prevDayStr
-                        ? timeSlots.indexOf(endTime)
-                        : timeSlots.indexOf("00:00");
-
-                    if (startIdx !== -1) {
-                      for (
-                        let i = startIdx;
-                        i < timeSlots.length && (endIdx === -1 || i < endIdx);
-                        i++
-                      ) {
-                        if (timeSlots[i] === "00:00") break;
-                        activatedSlots.add(i);
-                      }
-                    }
-                  }
-
-                  // Process current day
-                  if (startDate <= date && endDate >= date) {
-                    const zeroIdx = timeSlots.indexOf("00:00");
-                    if (zeroIdx !== -1) {
-                      const startIdx =
-                        startDate === date
-                          ? timeSlots.indexOf(startTime)
-                          : zeroIdx;
-                      const endIdx =
-                        endDate === date
-                          ? timeSlots.indexOf(endTime)
-                          : timeSlots.length;
-
-                      for (let i = startIdx; i < endIdx; i++) {
-                        activatedSlots.add(i);
-                      }
-                    }
-                  }
-                } else {
-                  // Without D-1 display
-                  if (startDate <= date && endDate >= date) {
-                    const startIdx =
-                      startDate === date ? timeSlots.indexOf(startTime) : 0;
-                    const endIdx =
-                      endDate === date
-                        ? timeSlots.indexOf(endTime)
-                        : timeSlots.length;
-
-                    if (startIdx !== -1) {
-                      for (let i = startIdx; i < endIdx; i++) {
-                        activatedSlots.add(i);
-                      }
-                    }
+                for (let i = timeSlots.length - 1; i >= 0; i--) {
+                  const [slotHour, slotMin] = timeSlots[i]
+                    .split(":")
+                    .map(Number);
+                  const slotMinutes = slotHour * 60 + slotMin;
+                  if (slotMinutes < endTimeMinutes) {
+                    endIdx = i + 1;
+                    break;
                   }
                 }
               }
 
-              // Apply badges if passenger_conditions exist
-              if (
-                block.passenger_conditions &&
-                block.passenger_conditions.length > 0
-              ) {
-                const badges: CategoryBadge[] = [];
-                block.passenger_conditions.forEach((condition: any) => {
-                  const categoryName = getCategoryNameFromField(
-                    condition.field
-                  );
-                  if (categoryName && categories[categoryName]) {
-                    const categoryConfig = categories[categoryName];
-                    badges.push({
-                      category: categoryName,
-                      options: condition.values || [],
-                      colorIndex: categoryConfig.colorIndex,
-                    });
+              console.log(
+                `Time range: ${startTime}(${startIdx}) - ${endTime}(${endIdx})`
+              );
+
+              if (startIdx !== -1 && endIdx > startIdx) {
+                // Apply activate state to all cells in this period
+                for (let i = startIdx; i < endIdx; i++) {
+                  const cellId = `${i}-${colIndex}`;
+
+                  // 🎯 단순한 로직: activate가 false면 비활성화
+                  if (block.activate === false) {
+                    newDisabledCells.add(cellId);
+                    console.log(`Disabled cell: ${cellId} (activate: false)`);
                   }
-                });
+                }
 
-                if (badges.length > 0) {
-                  console.log(
-                    "Applying badges for period:",
-                    block.period,
-                    "from",
-                    startTime,
-                    "to",
-                    endTime
-                  );
+                // 🎯 passenger_conditions → badges (activate와 독립적)
+                if (
+                  block.passenger_conditions &&
+                  block.passenger_conditions.length > 0
+                ) {
+                  const badges: CategoryBadge[] = [];
 
-                  // Apply badges to all cells in this period
-                  const startIdx = timeSlots.indexOf(startTime);
-                  let endIdx = timeSlots.indexOf(endTime);
-
-                  // Calculate exact index if endTime doesn't match exactly
-                  if (endIdx === -1 || endIdx <= startIdx) {
-                    const [endHour, endMin] = endTime.split(":").map(Number);
-                    const timeUnit = timeSlots[1]
-                      ? (parseInt(timeSlots[1].split(":")[1]) -
-                          parseInt(timeSlots[0].split(":")[1]) +
-                          60) %
-                          60 || 30
-                      : 30;
-
-                    // Calculate previous time slot
-                    let prevMin = endMin - timeUnit;
-                    let prevHour = endHour;
-                    if (prevMin < 0) {
-                      prevMin += 60;
-                      prevHour -= 1;
+                  block.passenger_conditions.forEach((condition: any) => {
+                    const categoryName = getCategoryNameFromField(
+                      condition.field
+                    );
+                    if (categoryName && categories[categoryName]) {
+                      const categoryConfig = categories[categoryName];
+                      badges.push({
+                        category: categoryName,
+                        options: condition.values || [],
+                        colorIndex: categoryConfig.colorIndex,
+                      });
                     }
+                  });
 
-                    const prevEndTime = `${String(prevHour).padStart(2, "0")}:${String(prevMin).padStart(2, "0")}`;
-                    endIdx = timeSlots.indexOf(prevEndTime) + 1;
+                  if (badges.length > 0) {
+                    console.log(
+                      `Applying badges to range ${startIdx}-${endIdx}:`,
+                      badges
+                    );
 
-                    // If still not found, find closest index
-                    if (endIdx === 0) {
-                      for (let i = timeSlots.length - 1; i >= startIdx; i--) {
-                        const slotTime = timeSlots[i];
-                        if (slotTime <= endTime) {
-                          endIdx = i + 1;
-                          break;
-                        }
-                      }
-                    }
-                  }
-
-                  console.log(
-                    "Badge application range:",
-                    startIdx,
-                    "to",
-                    endIdx,
-                    "for facility column:",
-                    colIndex
-                  );
-
-                  if (startIdx !== -1 && endIdx > startIdx) {
+                    // Apply badges to all cells in this period (activate 상태 무관)
                     for (let i = startIdx; i < endIdx; i++) {
                       const cellId = `${i}-${colIndex}`;
-                      // Only add badges to activated cells (exclude disabled cells)
-                      if (
-                        activatedSlots.has(i) &&
-                        !newDisabledCells.has(cellId)
-                      ) {
-                        // Merge with existing badges or add new ones
-                        if (newBadges[cellId]) {
-                          // Merge without duplicates
-                          const existingCategories = new Set(
-                            newBadges[cellId].map((b) => b.category)
-                          );
-                          badges.forEach((badge) => {
-                            if (!existingCategories.has(badge.category)) {
-                              newBadges[cellId].push(badge);
-                            }
-                          });
-                        } else {
-                          newBadges[cellId] = [...badges];
-                        }
-                        console.log(
-                          "Added/updated badge for cell:",
-                          cellId,
-                          "badges:",
-                          newBadges[cellId]
+
+                      if (newBadges[cellId]) {
+                        // Merge with existing badges without duplicates
+                        const existingCategories = new Set(
+                          newBadges[cellId].map((b) => b.category)
                         );
+                        badges.forEach((badge) => {
+                          if (!existingCategories.has(badge.category)) {
+                            newBadges[cellId].push(badge);
+                          }
+                        });
+                      } else {
+                        newBadges[cellId] = [...badges];
                       }
+
+                      console.log(
+                        `Added badge to cell: ${cellId}`,
+                        newBadges[cellId]
+                      );
                     }
                   }
                 }
               }
             }
           });
-
-          // After processing all time_blocks, disable non-activated slots
-          for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-            if (!activatedSlots.has(rowIndex)) {
-              const cellId = `${rowIndex}-${colIndex}`;
-              newDisabledCells.add(cellId);
-            }
-          }
         }
+      });
+
+      console.log("Final result:", {
+        disabledCells: Array.from(newDisabledCells),
+        badgedCells: Object.keys(newBadges),
       });
 
       return { disabledCells: newDisabledCells, badges: newBadges };

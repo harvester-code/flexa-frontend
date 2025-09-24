@@ -96,23 +96,34 @@ export default function OperatingScheduleEditor({
     const mapping: Record<string, string> = {};
 
     // Find arrival_airport_iata and arrival_city columns
-    const arrivalAirportData = parquetMetadata.find(item => item.column === 'arrival_airport_iata');
-    const arrivalCityData = parquetMetadata.find(item => item.column === 'arrival_city');
+    const arrivalAirportData = parquetMetadata.find(
+      (item) => item.column === "arrival_airport_iata"
+    );
+    const arrivalCityData = parquetMetadata.find(
+      (item) => item.column === "arrival_city"
+    );
 
     // Find departure_airport_iata and departure_city columns
-    const departureAirportData = parquetMetadata.find(item => item.column === 'departure_airport_iata');
-    const departureCityData = parquetMetadata.find(item => item.column === 'departure_city');
+    const departureAirportData = parquetMetadata.find(
+      (item) => item.column === "departure_airport_iata"
+    );
+    const departureCityData = parquetMetadata.find(
+      (item) => item.column === "departure_city"
+    );
 
     // Build mapping from arrival airports
     if (arrivalAirportData && arrivalCityData) {
-      Object.keys(arrivalAirportData.values).forEach(airportCode => {
+      Object.keys(arrivalAirportData.values).forEach((airportCode) => {
         const flights = arrivalAirportData.values[airportCode].flights;
         // Find corresponding city by checking common flights
-        Object.keys(arrivalCityData.values).forEach(cityName => {
+        Object.keys(arrivalCityData.values).forEach((cityName) => {
           const cityFlights = arrivalCityData.values[cityName].flights;
           // If flights overlap significantly, this city matches this airport
-          const commonFlights = flights.filter(f => cityFlights.includes(f));
-          if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+          const commonFlights = flights.filter((f) => cityFlights.includes(f));
+          if (
+            commonFlights.length > 0 &&
+            commonFlights.length === flights.length
+          ) {
             mapping[airportCode] = cityName;
           }
         });
@@ -121,13 +132,18 @@ export default function OperatingScheduleEditor({
 
     // Build mapping from departure airports (if not already mapped)
     if (departureAirportData && departureCityData) {
-      Object.keys(departureAirportData.values).forEach(airportCode => {
+      Object.keys(departureAirportData.values).forEach((airportCode) => {
         if (!mapping[airportCode]) {
           const flights = departureAirportData.values[airportCode].flights;
-          Object.keys(departureCityData.values).forEach(cityName => {
+          Object.keys(departureCityData.values).forEach((cityName) => {
             const cityFlights = departureCityData.values[cityName].flights;
-            const commonFlights = flights.filter(f => cityFlights.includes(f));
-            if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+            const commonFlights = flights.filter((f) =>
+              cityFlights.includes(f)
+            );
+            if (
+              commonFlights.length > 0 &&
+              commonFlights.length === flights.length
+            ) {
               mapping[airportCode] = cityName;
             }
           });
@@ -251,7 +267,6 @@ export default function OperatingScheduleEditor({
     y: number;
   }>({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
 
-
   // 초기 로드 상태 추적 - processIndex와 zone별로 추적
   const [initializedKeys, setInitializedKeys] = useState<Set<string>>(
     new Set()
@@ -262,7 +277,7 @@ export default function OperatingScheduleEditor({
     initializeDisabledCellsFromPeriods,
     getCategoryNameFromField,
     getCategoryFieldName,
-    getBadgeColor
+    getBadgeColor,
   } = useScheduleInitialization();
 
   // 🔄 실행 취소/재실행 히스토리 관리
@@ -541,7 +556,10 @@ export default function OperatingScheduleEditor({
 
   // Get current process time from processFlow
   const currentProcessTime = useMemo(() => {
-    if (selectedProcessIndex !== null && selectedProcessIndex < processFlow.length) {
+    if (
+      selectedProcessIndex !== null &&
+      selectedProcessIndex < processFlow.length
+    ) {
       const currentProcess = processFlow[selectedProcessIndex] as any;
       return currentProcess?.process_time_seconds || 60;
     }
@@ -550,10 +568,13 @@ export default function OperatingScheduleEditor({
 
   // Handler for toggling cell activation from context menu
   const handleToggleActivationFromMenu = useCallback(() => {
-    if (!contextMenu.targetCells || contextMenu.targetCells.length === 0) return;
+    if (!contextMenu.targetCells || contextMenu.targetCells.length === 0)
+      return;
 
     const targetCells = contextMenu.targetCells;
-    const hasDisabledCells = targetCells.some(cellId => disabledCells.has(cellId));
+    const hasDisabledCells = targetCells.some((cellId) =>
+      disabledCells.has(cellId)
+    );
 
     setDisabledCells((prev) => {
       const newSet = new Set(prev);
@@ -571,22 +592,31 @@ export default function OperatingScheduleEditor({
   }, [contextMenu.targetCells, disabledCells]);
 
   // Handler for setting process time multiplier
-  const handleSetProcessTime = useCallback((multiplier: number) => {
-    if (!contextMenu.targetCells || contextMenu.targetCells.length === 0) return;
-    if (selectedProcessIndex === null) return;
+  const handleSetProcessTime = useCallback(
+    (multiplier: number) => {
+      if (!contextMenu.targetCells || contextMenu.targetCells.length === 0)
+        return;
+      if (selectedProcessIndex === null) return;
 
-    const newProcessTime = Math.round(currentProcessTime / multiplier);
+      const newProcessTime = Math.round(currentProcessTime / multiplier);
 
-    // For now, we'll just log the change
-    // TODO: Implement store update when the updateProcessTimeForCells method is available
-    console.log('Setting process time for cells:', {
-      cells: contextMenu.targetCells,
-      processIndex: selectedProcessIndex,
-      zone: selectedZone,
-      newProcessTime,
-      multiplier
-    });
-  }, [contextMenu.targetCells, selectedProcessIndex, selectedZone, currentProcessTime]);
+      // For now, we'll just log the change
+      // TODO: Implement store update when the updateProcessTimeForCells method is available
+      console.log("Setting process time for cells:", {
+        cells: contextMenu.targetCells,
+        processIndex: selectedProcessIndex,
+        zone: selectedZone,
+        newProcessTime,
+        multiplier,
+      });
+    },
+    [
+      contextMenu.targetCells,
+      selectedProcessIndex,
+      selectedZone,
+      currentProcessTime,
+    ]
+  );
 
   // 핸들러 객체 생성 (메모이제이션으로 성능 최적화)
   const tableHandlers = useMemo(
@@ -634,9 +664,6 @@ export default function OperatingScheduleEditor({
     ]
   );
 
-
-
-
   // Keyboard handlers 훅 사용
   const { handleKeyDown } = useKeyboardHandlers({
     selectedCells,
@@ -659,7 +686,6 @@ export default function OperatingScheduleEditor({
     setShiftSelectStart,
     containerRef,
   });
-
 
   // 🎯 포커스 관리 (한 번만 등록, 이벤트 리스너 누적 방지)
   useEffect(() => {
@@ -805,11 +831,8 @@ export default function OperatingScheduleEditor({
         }}
       >
         {/* 2중 탭 */}
-        <div className="mb-2 space-y-0">
-          <div className="flex items-center gap-4">
-            <div className="w-16 text-sm font-medium text-default-900">
-              Process
-            </div>
+        <div className="mb-2 space-y-1">
+          <div className="flex items-center">
             <Tabs
               value={selectedProcessIndex.toString()}
               onValueChange={(value) =>
@@ -840,10 +863,7 @@ export default function OperatingScheduleEditor({
           {processFlow &&
             processFlow[selectedProcessIndex] &&
             processFlow[selectedProcessIndex].zones && (
-              <div className="flex items-center gap-4">
-                <div className="w-16 text-sm font-medium text-default-900">
-                  Zone
-                </div>
+              <div className="flex items-center">
                 <Tabs
                   value={selectedZone}
                   onValueChange={setSelectedZone}
@@ -898,15 +918,10 @@ export default function OperatingScheduleEditor({
 
         {/* 제목과 전체화면 버튼 */}
         {selectedZone && currentFacilities.length > 0 && (
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-default-900">
-              Operating Schedule -{" "}
-              {formatProcessName(processFlow[selectedProcessIndex]?.name)} /{" "}
-              {selectedZone}
-            </h3>
+          <div className="mt-4 mb-1 flex items-center justify-end">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-md border border-gray-200">
-                <Clock className="h-3.5 w-3.5 text-gray-500" />
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300 hover:border-gray-400 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                <Clock className="h-3.5 w-3.5 text-gray-600" />
                 <input
                   id="time-unit"
                   type="text"
@@ -952,9 +967,9 @@ export default function OperatingScheduleEditor({
                   }}
                   placeholder="30"
                   title="Time interval in minutes (1-60). Press Enter to apply."
-                  className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-700 placeholder-gray-400"
+                  className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-900 placeholder-gray-500"
                 />
-                <span className="text-xs text-gray-500">min</span>
+                <span className="text-xs text-gray-600 font-medium">min</span>
               </div>
               <Button
                 variant="outline"
@@ -1007,9 +1022,7 @@ export default function OperatingScheduleEditor({
           >
             <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
               <DialogTitle className="text-xl font-semibold">
-                Operating Schedule -{" "}
-                {formatProcessName(processFlow[selectedProcessIndex]?.name)} /{" "}
-                {selectedZone}
+                Operating Schedule
               </DialogTitle>
               <DialogDescription>
                 Configure time-based facility operations for{" "}
@@ -1048,7 +1061,19 @@ export default function OperatingScheduleEditor({
           open={showTimeUnitConfirm}
           onOpenChange={setShowTimeUnitConfirm}
         >
-          <AlertDialogContent>
+          <AlertDialogContent
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (pendingTimeUnit) {
+                  // Confirm 버튼 클릭과 동일한 동작
+                  setAppliedTimeUnit(pendingTimeUnit);
+                  setShowTimeUnitConfirm(false);
+                  setPendingTimeUnit(null);
+                }
+              }
+            }}
+          >
             <AlertDialogHeader>
               <AlertDialogTitle>Change Time Interval?</AlertDialogTitle>
               <AlertDialogDescription>

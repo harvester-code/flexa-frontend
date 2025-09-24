@@ -308,6 +308,7 @@ export const calculatePeriodsFromDisabledCells = (
           period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
           process_time_seconds: processTime,
           passenger_conditions: [],
+          activate: true,
         },
       ];
     }
@@ -318,6 +319,7 @@ export const calculatePeriodsFromDisabledCells = (
         period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
         process_time_seconds: processTime,
         passenger_conditions: firstConditions || [],
+        activate: true,
       },
     ];
   }
@@ -325,6 +327,7 @@ export const calculatePeriodsFromDisabledCells = (
   const periods: any[] = [];
   let currentStart: string | null = null;
   let currentConditions: any[] | null = null;
+  let currentIsActive: boolean | null = null;
 
   for (let i = 0; i < timeSlots.length; i++) {
     const cellId = `${i}-${facilityIndex}`;
@@ -340,92 +343,53 @@ export const calculatePeriodsFromDisabledCells = (
       }))
       .filter((c) => c.field);
 
-    if (!isDisabled) {
-      // 활성화된 셀
-      if (currentStart === null) {
-        // 새로운 활성 구간 시작
-        currentStart = currentTime;
-        currentConditions = conditions;
+    // 현재 셀의 activate 상태
+    const isActive = !isDisabled;
+
+    // 새로운 구간을 시작해야 하는지 확인 (activate 상태 변경 또는 조건 변경)
+    const needNewPeriod = currentStart === null ||
+                         currentIsActive !== isActive ||
+                         JSON.stringify(currentConditions) !== JSON.stringify(conditions);
+
+    if (needNewPeriod && currentStart !== null) {
+      // 이전 구간 저장
+      const prevIndex = i - 1;
+      const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
+
+      const startDate =
+        isPreviousDay &&
+        timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+          ? prevDayStr
+          : currentDate;
+
+      let endDateTime;
+      if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
+        endDateTime = `${nextDayStr} 00:00:00`;
       } else {
-        // 조건이 다르면 이전 구간을 종료하고 새 구간 시작 (최적화: 길이 먼저 비교)
-        const conditionsChanged =
-          currentConditions?.length !== conditions.length ||
-          JSON.stringify(currentConditions) !== JSON.stringify(conditions);
-        if (conditionsChanged) {
-          // 이전 구간 저장
-          const prevIndex = i - 1;
-          const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
-
-          const startDate =
-            isPreviousDay &&
-            timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-              ? prevDayStr
-              : currentDate;
-
-          // 24:00은 다음날 00:00으로 처리
-          let endDateTime;
-          if (endTime === "24:00" || endTime === "00:00") {
-            endDateTime = `${nextDayStr} 00:00:00`;
-          } else {
-            const endDate =
-              isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
-                ? prevDayStr
-                : currentDate;
-            endDateTime = `${endDate} ${endTime}:00`;
-          }
-
-          periods.push({
-            period: `${startDate} ${currentStart}:00-${endDateTime}`,
-            process_time_seconds: processTime,
-            passenger_conditions: currentConditions || [],
-          });
-
-          // 새 구간 시작
-          currentStart = currentTime;
-          currentConditions = conditions;
-        }
-      }
-      // 연속된 활성 셀이면 계속 진행
-    } else {
-      // 비활성화된 셀
-      if (currentStart !== null) {
-        // 이전 활성 구간을 저장
-        const prevIndex = i - 1;
-        const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
-
-        const startDate =
-          isPreviousDay &&
-          timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
+        const endDate =
+          isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
             ? prevDayStr
             : currentDate;
-
-        // 24:00은 다음날 00:00으로 처리
-        let endDateTime;
-        if (
-          endTime === "24:00" ||
-          (endTime === "00:00" && prevIndex === timeSlots.length - 1)
-        ) {
-          endDateTime = `${nextDayStr} 00:00:00`;
-        } else {
-          const endDate =
-            isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
-              ? prevDayStr
-              : currentDate;
-          endDateTime = `${endDate} ${endTime}:00`;
-        }
-
-        periods.push({
-          period: `${startDate} ${currentStart}:00-${endDateTime}`,
-          process_time_seconds: processTime,
-          passenger_conditions: currentConditions || [],
-        });
-        currentStart = null;
-        currentConditions = null;
+        endDateTime = `${endDate} ${endTime}:00`;
       }
+
+      periods.push({
+        period: `${startDate} ${currentStart}:00-${endDateTime}`,
+        process_time_seconds: processTime,
+        passenger_conditions: currentConditions || [],
+        activate: currentIsActive,  // 이전 구간의 activate 상태
+      });
+    }
+
+    if (needNewPeriod) {
+      // 새 구간 시작
+      currentStart = currentTime;
+      currentConditions = conditions;
+      currentIsActive = isActive;
     }
   }
 
-  // 마지막 활성 구간 처리
+  // 마지막 구간 처리
   if (currentStart !== null) {
     const lastIndex = timeSlots.length - 1;
     const endTime = getNextTimeSlot(timeSlots[lastIndex], timeUnit);
@@ -456,10 +420,10 @@ export const calculatePeriodsFromDisabledCells = (
       period: `${startDate} ${currentStart}:00-${endDateTime}`,
       process_time_seconds: processTime,
       passenger_conditions: currentConditions || [],
+      activate: currentIsActive,  // 마지막 구간의 activate 상태
     });
   }
 
-  // period가 하나도 없으면 (모두 비활성화) 빈 배열 반환 (운영 안함)
-  // 기존에는 기본값을 반환했지만, 전체 비활성화는 운영 안함을 의미
+  // 모두 비활성화인 경우에도 비활성화 period 반환
   return periods;
 };

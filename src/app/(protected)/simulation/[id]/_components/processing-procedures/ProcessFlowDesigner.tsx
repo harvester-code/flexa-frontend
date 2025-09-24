@@ -273,23 +273,34 @@ export default function ProcessFlowDesigner({
     const mapping: Record<string, string> = {};
 
     // Find arrival_airport_iata and arrival_city columns
-    const arrivalAirportData = parquetMetadata.find(item => item.column === 'arrival_airport_iata');
-    const arrivalCityData = parquetMetadata.find(item => item.column === 'arrival_city');
+    const arrivalAirportData = parquetMetadata.find(
+      (item) => item.column === "arrival_airport_iata"
+    );
+    const arrivalCityData = parquetMetadata.find(
+      (item) => item.column === "arrival_city"
+    );
 
     // Find departure_airport_iata and departure_city columns
-    const departureAirportData = parquetMetadata.find(item => item.column === 'departure_airport_iata');
-    const departureCityData = parquetMetadata.find(item => item.column === 'departure_city');
+    const departureAirportData = parquetMetadata.find(
+      (item) => item.column === "departure_airport_iata"
+    );
+    const departureCityData = parquetMetadata.find(
+      (item) => item.column === "departure_city"
+    );
 
     // Build mapping from arrival airports
     if (arrivalAirportData && arrivalCityData) {
-      Object.keys(arrivalAirportData.values).forEach(airportCode => {
+      Object.keys(arrivalAirportData.values).forEach((airportCode) => {
         const flights = arrivalAirportData.values[airportCode].flights;
         // Find corresponding city by checking common flights
-        Object.keys(arrivalCityData.values).forEach(cityName => {
+        Object.keys(arrivalCityData.values).forEach((cityName) => {
           const cityFlights = arrivalCityData.values[cityName].flights;
           // If flights overlap significantly, this city matches this airport
-          const commonFlights = flights.filter(f => cityFlights.includes(f));
-          if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+          const commonFlights = flights.filter((f) => cityFlights.includes(f));
+          if (
+            commonFlights.length > 0 &&
+            commonFlights.length === flights.length
+          ) {
             mapping[airportCode] = cityName;
           }
         });
@@ -298,13 +309,18 @@ export default function ProcessFlowDesigner({
 
     // Build mapping from departure airports (if not already mapped)
     if (departureAirportData && departureCityData) {
-      Object.keys(departureAirportData.values).forEach(airportCode => {
+      Object.keys(departureAirportData.values).forEach((airportCode) => {
         if (!mapping[airportCode]) {
           const flights = departureAirportData.values[airportCode].flights;
-          Object.keys(departureCityData.values).forEach(cityName => {
+          Object.keys(departureCityData.values).forEach((cityName) => {
             const cityFlights = departureCityData.values[cityName].flights;
-            const commonFlights = flights.filter(f => cityFlights.includes(f));
-            if (commonFlights.length > 0 && commonFlights.length === flights.length) {
+            const commonFlights = flights.filter((f) =>
+              cityFlights.includes(f)
+            );
+            if (
+              commonFlights.length > 0 &&
+              commonFlights.length === flights.length
+            ) {
               mapping[airportCode] = cityName;
             }
           });
@@ -338,7 +354,8 @@ export default function ProcessFlowDesigner({
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
-  const [isAddProcessDisabled, setIsAddProcessDisabled] = useState<boolean>(false);
+  const [isAddProcessDisabled, setIsAddProcessDisabled] =
+    useState<boolean>(false);
 
   // Entry Conditions state
   const [selectedCriteriaItems, setSelectedCriteriaItems] = useState<
@@ -374,11 +391,13 @@ export default function ProcessFlowDesigner({
       const currentProcess = processFlow[selectedProcessIndex];
       // Just get any existing facility data for period reference
       const existingFacility = processFlow
-        .flatMap(p => Object.values(p.zones || {}))
+        .flatMap((p) => Object.values(p.zones || {}))
         .flatMap((z: any) => z.facilities || [])
         .find((f: any) => f?.operating_schedule?.time_blocks?.[0]?.period);
-      const processFlowFacilities = currentProcess?.zones?.[editingZone]?.facilities || [];
-      const editedFacilities = editedProcess.zones[editingZone]?.facilities || [];
+      const processFlowFacilities =
+        currentProcess?.zones?.[editingZone]?.facilities || [];
+      const editedFacilities =
+        editedProcess.zones[editingZone]?.facilities || [];
 
       // Update the specific zone's facility count while preserving schedules
       const updatedZones = { ...editedProcess.zones };
@@ -398,22 +417,29 @@ export default function ProcessFlowDesigner({
           });
         } else {
           // Add new facility with default schedule
-          const chartResult = useSimulationStore.getState().passenger.chartResult;
+          const chartResult =
+            useSimulationStore.getState().passenger.chartResult;
           let period: string;
 
-          if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
+          if (
+            chartResult?.chart_x_data &&
+            chartResult.chart_x_data.length > 0
+          ) {
             // chart_x_data에서 첫번째와 마지막 시간 가져오기
             const firstTime = chartResult.chart_x_data[0]; // "2025-09-21 20:30"
-            const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
+            const lastTime =
+              chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
             // 초 추가
             period = `${firstTime}:00-${lastTime}:00`;
           } else {
             // fallback: 기본값 사용
-            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+            const date =
+              useSimulationStore.getState().context.date ||
+              new Date().toISOString().split("T")[0];
             const startDate = new Date(date);
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 2);
-            period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+            period = `${startDate.toISOString().replace("T", " ").slice(0, 19)}-${endDate.toISOString().replace("T", " ").slice(0, 19)}`;
           }
 
           facilities.push({
@@ -425,6 +451,7 @@ export default function ProcessFlowDesigner({
                   process_time_seconds:
                     editedProcess?.process_time_seconds || 0,
                   passenger_conditions: [],
+                  activate: true,
                 },
               ],
             },
@@ -436,7 +463,14 @@ export default function ProcessFlowDesigner({
     }
     setEditingZone(null);
     setEditingValue("");
-  }, [editingZone, editingValue, editedProcess, defaultFacilityCount, selectedProcessIndex, processFlow]);
+  }, [
+    editingZone,
+    editingValue,
+    editedProcess,
+    defaultFacilityCount,
+    selectedProcessIndex,
+    processFlow,
+  ]);
 
   const cancelEditingZone = useCallback(() => {
     setEditingZone(null);
@@ -690,7 +724,10 @@ export default function ProcessFlowDesigner({
     const currentZoneNames = Object.keys(currentProcess.zones || {});
 
     // If zone names have changed, rebuild zones object
-    if (JSON.stringify(newZoneNames.sort()) !== JSON.stringify(currentZoneNames.sort())) {
+    if (
+      JSON.stringify(newZoneNames.sort()) !==
+      JSON.stringify(currentZoneNames.sort())
+    ) {
       const newZones: any = {};
       // Match zones by index position to maintain data integrity
       newZoneNames.forEach((newZoneName, newIndex) => {
@@ -701,7 +738,9 @@ export default function ProcessFlowDesigner({
           // Zone exists at this index - preserve its data with new name
           const originalZone = currentProcess.zones[currentZoneName];
           const originalFacilities = originalZone.facilities || [];
-          const newFacilityCount = editedProcess.zones[newZoneName]?.facilities?.length || originalFacilities.length;
+          const newFacilityCount =
+            editedProcess.zones[newZoneName]?.facilities?.length ||
+            originalFacilities.length;
 
           // Check if facility count has also changed
           if (originalFacilities.length !== newFacilityCount) {
@@ -713,67 +752,82 @@ export default function ProcessFlowDesigner({
                 // Preserve existing facility with new ID
                 updatedFacilities.push({
                   ...originalFacilities[i],
-                  id: `${newZoneName}_${i + 1}`
+                  id: `${newZoneName}_${i + 1}`,
                 });
               } else {
                 // Add new facility with default schedule
-                const chartResult = useSimulationStore.getState().passenger.chartResult;
-                let period = originalFacilities[0]?.operating_schedule?.time_blocks?.[0]?.period;
+                const chartResult =
+                  useSimulationStore.getState().passenger.chartResult;
+                let period =
+                  originalFacilities[0]?.operating_schedule?.time_blocks?.[0]
+                    ?.period;
 
                 if (!period) {
                   const chartXData = (chartResult as any)?.chart_x_data;
                   if (chartXData && chartXData.length >= 2) {
                     period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
                   } else {
-                    const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+                    const date =
+                      useSimulationStore.getState().context.date ||
+                      new Date().toISOString().split("T")[0];
                     const nextDate = new Date(date);
                     nextDate.setDate(nextDate.getDate() + 1);
-                    period = `${date} 00:00:00-${nextDate.toISOString().split('T')[0]} 00:00:00`;
+                    period = `${date} 00:00:00-${nextDate.toISOString().split("T")[0]} 00:00:00`;
                   }
                 }
 
                 // Get process_time_seconds from edited process or existing facilities
                 let processTimeSeconds = editedProcess.process_time_seconds;
                 if (!processTimeSeconds && originalFacilities.length > 0) {
-                  processTimeSeconds = originalFacilities[0]?.operating_schedule?.time_blocks?.[0]?.process_time_seconds;
+                  processTimeSeconds =
+                    originalFacilities[0]?.operating_schedule?.time_blocks?.[0]
+                      ?.process_time_seconds;
                 }
 
                 updatedFacilities.push({
                   id: `${newZoneName}_${i + 1}`,
                   operating_schedule: {
-                    time_blocks: [{
-                      period: period,
-                      process_time_seconds: processTimeSeconds || 60,
-                      passenger_conditions: []
-                    }]
-                  }
+                    time_blocks: [
+                      {
+                        period: period,
+                        process_time_seconds: processTimeSeconds || 60,
+                        passenger_conditions: [],
+                        activate: true,
+                      },
+                    ],
+                  },
                 });
               }
             }
 
             newZones[newZoneName] = {
               ...originalZone,
-              facilities: updatedFacilities
+              facilities: updatedFacilities,
             };
           } else {
             // Only zone name changed - just update facility IDs
             newZones[newZoneName] = {
               ...originalZone,
-              facilities: originalFacilities.map((facility: any, index: number) => ({
-                ...facility,
-                id: `${newZoneName}_${index + 1}`
-              }))
+              facilities: originalFacilities.map(
+                (facility: any, index: number) => ({
+                  ...facility,
+                  id: `${newZoneName}_${index + 1}`,
+                })
+              ),
             };
           }
         } else if (editedProcess.zones[newZoneName]) {
           // New zone that didn't exist at this index
-          const editedFacilities = editedProcess.zones[newZoneName].facilities || [];
+          const editedFacilities =
+            editedProcess.zones[newZoneName].facilities || [];
           newZones[newZoneName] = {
             ...editedProcess.zones[newZoneName],
-            facilities: editedFacilities.map((facility: any, index: number) => ({
-              ...facility,
-              id: `${newZoneName}_${index + 1}`
-            }))
+            facilities: editedFacilities.map(
+              (facility: any, index: number) => ({
+                ...facility,
+                id: `${newZoneName}_${index + 1}`,
+              })
+            ),
           };
         }
       });
@@ -795,32 +849,38 @@ export default function ProcessFlowDesigner({
           // Decrease: Remove facilities from the end
           updatedZones[zoneName] = {
             ...currentZone,
-            facilities: currentZone.facilities.slice(0, newFacilityCount)
+            facilities: currentZone.facilities.slice(0, newFacilityCount),
           };
         } else {
           // Increase: Add new facilities
           const newFacilities = [...(currentZone?.facilities || [])];
 
           // Generate new facilities with incremented IDs
-          const existingIds = currentZone?.facilities?.map((f: any) => {
-            const match = f.id.match(/_([\d]+)$/);
-            return match ? parseInt(match[1]) : 0;
-          }) || [];
+          const existingIds =
+            currentZone?.facilities?.map((f: any) => {
+              const match = f.id.match(/_([\d]+)$/);
+              return match ? parseInt(match[1]) : 0;
+            }) || [];
           const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
 
           // Get period from existing facility or create new
-          let period = currentZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]?.period;
+          let period =
+            currentZone?.facilities?.[0]?.operating_schedule?.time_blocks?.[0]
+              ?.period;
           if (!period) {
-            const chartResult = useSimulationStore.getState().passenger.chartResult;
+            const chartResult =
+              useSimulationStore.getState().passenger.chartResult;
             const chartXData = (chartResult as any)?.chart_x_data;
             if (chartXData && chartXData.length >= 2) {
               period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
             } else {
-              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+              const date =
+                useSimulationStore.getState().context.date ||
+                new Date().toISOString().split("T")[0];
               const startDate = new Date(date);
               const endDate = new Date(startDate);
               endDate.setDate(endDate.getDate() + 2);
-              period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+              period = `${startDate.toISOString().replace("T", " ").slice(0, 19)}-${endDate.toISOString().replace("T", " ").slice(0, 19)}`;
             }
           }
 
@@ -831,8 +891,10 @@ export default function ProcessFlowDesigner({
                 time_blocks: [
                   {
                     period: period,
-                    process_time_seconds: editedProcess.process_time_seconds || 0,
+                    process_time_seconds:
+                      editedProcess.process_time_seconds || 0,
                     passenger_conditions: [],
+                    activate: true,
                   },
                 ],
               },
@@ -841,7 +903,7 @@ export default function ProcessFlowDesigner({
 
           updatedZones[zoneName] = {
             ...currentZone,
-            facilities: newFacilities
+            facilities: newFacilities,
           };
         }
       });
@@ -861,12 +923,15 @@ export default function ProcessFlowDesigner({
               ...facility,
               operating_schedule: {
                 ...facility.operating_schedule,
-                time_blocks: facility.operating_schedule?.time_blocks?.map((block: any) => ({
-                  ...block,
-                  process_time_seconds: editedProcess.process_time_seconds,
-                })) || [],
+                time_blocks:
+                  facility.operating_schedule?.time_blocks?.map(
+                    (block: any) => ({
+                      ...block,
+                      process_time_seconds: editedProcess.process_time_seconds,
+                    })
+                  ) || [],
               },
-            }))
+            })),
           };
         } else {
           zonesWithUpdatedProcessTime[zoneName] = zone;
@@ -876,6 +941,26 @@ export default function ProcessFlowDesigner({
     }
 
     updatedProcessFlow[selectedProcessIndex] = updatedProcess;
+
+    // activate 필드 포함 확인용 로그
+    console.log(
+      "Saving process_flow with activate fields:",
+      updatedProcessFlow.map((p) => ({
+        name: p.name,
+        zones: Object.entries(p.zones).map(([zoneName, zone]) => ({
+          zoneName,
+          facilities: zone.facilities?.map((f: any) => ({
+            id: f.id,
+            time_blocks: f.operating_schedule?.time_blocks?.map((tb: any) => ({
+              period: tb.period,
+              activate: tb.activate,
+              has_conditions: tb.passenger_conditions?.length > 0,
+            })),
+          })),
+        })),
+      }))
+    );
+
     setProcessFlow(updatedProcessFlow);
 
     toast({
@@ -910,6 +995,27 @@ export default function ProcessFlowDesigner({
         entry_conditions: step.entry_conditions || [],
         zones: step.zones || {},
       }));
+
+      // activate 필드 포함 확인용 로그
+      console.log(
+        "Running simulation with activate fields:",
+        sanitizedProcessFlow.map((p) => ({
+          name: p.name,
+          zones: Object.entries(p.zones).map(([zoneName, zone]) => ({
+            zoneName,
+            facilities: (zone as any).facilities?.map((f: any) => ({
+              id: f.id,
+              time_blocks: f.operating_schedule?.time_blocks?.map(
+                (tb: any) => ({
+                  period: tb.period,
+                  activate: tb.activate,
+                  has_conditions: tb.passenger_conditions?.length > 0,
+                })
+              ),
+            })),
+          })),
+        }))
+      );
 
       // Set API request log with new format
       const requestData = {
@@ -1241,34 +1347,51 @@ export default function ProcessFlowDesigner({
 
                                 // Expand zone names when input changes
                                 if (inputValue.trim()) {
-                                  const expandedZones = expandZoneNames(inputValue);
-                                  const currentProcess = selectedProcessIndex !== null
-                                    ? processFlow[selectedProcessIndex]
-                                    : null;
+                                  const expandedZones =
+                                    expandZoneNames(inputValue);
+                                  const currentProcess =
+                                    selectedProcessIndex !== null
+                                      ? processFlow[selectedProcessIndex]
+                                      : null;
                                   const newZones: any = {};
 
                                   expandedZones.forEach((name) => {
                                     // First check if zone exists in current process (from processFlow)
-                                    const existingInProcess = currentProcess?.zones?.[name];
+                                    const existingInProcess =
+                                      currentProcess?.zones?.[name];
                                     // Then check if zone exists in edited process
-                                    const existingInEdited = editedProcess.zones?.[name];
+                                    const existingInEdited =
+                                      editedProcess.zones?.[name];
 
-                                    if (existingInProcess && existingInProcess.facilities) {
+                                    if (
+                                      existingInProcess &&
+                                      existingInProcess.facilities
+                                    ) {
                                       // Preserve existing zone data from processFlow (source of truth)
                                       newZones[name] = existingInProcess;
-                                    } else if (existingInEdited && existingInEdited.facilities) {
+                                    } else if (
+                                      existingInEdited &&
+                                      existingInEdited.facilities
+                                    ) {
                                       // Preserve existing zone data from edited process
                                       newZones[name] = existingInEdited;
                                     } else {
                                       // Only create new zone if it doesn't exist at all
                                       const facilities: any[] = [];
-                                      const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+                                      const date =
+                                        useSimulationStore.getState().context
+                                          .date ||
+                                        new Date().toISOString().split("T")[0];
                                       const startDate = new Date(date);
                                       const endDate = new Date(startDate);
                                       endDate.setDate(endDate.getDate() + 2);
-                                      const period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+                                      const period = `${startDate.toISOString().replace("T", " ").slice(0, 19)}-${endDate.toISOString().replace("T", " ").slice(0, 19)}`;
 
-                                      for (let i = 1; i <= (defaultFacilityCount || 1); i++) {
+                                      for (
+                                        let i = 1;
+                                        i <= (defaultFacilityCount || 1);
+                                        i++
+                                      ) {
                                         facilities.push({
                                           id: `${name}_${i}`,
                                           operating_schedule: {
@@ -1276,8 +1399,10 @@ export default function ProcessFlowDesigner({
                                               {
                                                 period: period,
                                                 process_time_seconds:
-                                                  editedProcess?.process_time_seconds || 0,
+                                                  editedProcess?.process_time_seconds ||
+                                                  0,
                                                 passenger_conditions: [],
+                                                activate: true,
                                               },
                                             ],
                                           },
@@ -1336,72 +1461,127 @@ export default function ProcessFlowDesigner({
 
                                   // Update all zones with new facility count
                                   if (editedProcess.zones && count > 0) {
-                                    const currentProcess = selectedProcessIndex !== null
-                                      ? processFlow[selectedProcessIndex]
-                                      : null;
+                                    const currentProcess =
+                                      selectedProcessIndex !== null
+                                        ? processFlow[selectedProcessIndex]
+                                        : null;
                                     const updatedZones: any = {};
 
-                                    Object.keys(editedProcess.zones).forEach((zoneName) => {
-                                      const processFlowZone = currentProcess?.zones?.[zoneName];
-                                      const editedZone = editedProcess.zones[zoneName];
-                                      const currentFacilities = processFlowZone?.facilities || editedZone?.facilities || [];
-                                      const currentFacilityCount = currentFacilities.length;
+                                    Object.keys(editedProcess.zones).forEach(
+                                      (zoneName) => {
+                                        const processFlowZone =
+                                          currentProcess?.zones?.[zoneName];
+                                        const editedZone =
+                                          editedProcess.zones[zoneName];
+                                        const currentFacilities =
+                                          processFlowZone?.facilities ||
+                                          editedZone?.facilities ||
+                                          [];
+                                        const currentFacilityCount =
+                                          currentFacilities.length;
 
-                                      if (count === currentFacilityCount) {
-                                        // No change, preserve existing
-                                        updatedZones[zoneName] = processFlowZone || editedZone;
-                                      } else if (count < currentFacilityCount) {
-                                        // Decrease: Remove facilities from the end
-                                        updatedZones[zoneName] = {
-                                          facilities: currentFacilities.slice(0, count)
-                                        };
-                                      } else {
-                                        // Increase: Add new facilities with new IDs
-                                        const newFacilities = [...currentFacilities];
+                                        if (count === currentFacilityCount) {
+                                          // No change, preserve existing
+                                          updatedZones[zoneName] =
+                                            processFlowZone || editedZone;
+                                        } else if (
+                                          count < currentFacilityCount
+                                        ) {
+                                          // Decrease: Remove facilities from the end
+                                          updatedZones[zoneName] = {
+                                            facilities: currentFacilities.slice(
+                                              0,
+                                              count
+                                            ),
+                                          };
+                                        } else {
+                                          // Increase: Add new facilities with new IDs
+                                          const newFacilities = [
+                                            ...currentFacilities,
+                                          ];
 
-                                        // Find the highest existing ID number
-                                        const existingIds = currentFacilities.map((f: any) => {
-                                          const match = f.id.match(/_([\d]+)$/);
-                                          return match ? parseInt(match[1]) : 0;
-                                        });
-                                        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+                                          // Find the highest existing ID number
+                                          const existingIds =
+                                            currentFacilities.map((f: any) => {
+                                              const match =
+                                                f.id.match(/_([\d]+)$/);
+                                              return match
+                                                ? parseInt(match[1])
+                                                : 0;
+                                            });
+                                          const maxId =
+                                            existingIds.length > 0
+                                              ? Math.max(...existingIds)
+                                              : 0;
 
-                                        // Get period from existing facility or create new
-                                        let period = currentFacilities[0]?.operating_schedule?.time_blocks?.[0]?.period;
-                                        if (!period) {
-                                          const chartResult = useSimulationStore.getState().passenger.chartResult;
-                                          const chartXData = (chartResult as any)?.chart_x_data;
-                                          if (chartXData && chartXData.length >= 2) {
-                                            period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
-                                          } else {
-                                            const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
-                                            const startDate = new Date(date);
-                                            const endDate = new Date(startDate);
-                                            endDate.setDate(endDate.getDate() + 2);
-                                            period = `${startDate.toISOString().replace('T', ' ').slice(0, 19)}-${endDate.toISOString().replace('T', ' ').slice(0, 19)}`;
+                                          // Get period from existing facility or create new
+                                          let period =
+                                            currentFacilities[0]
+                                              ?.operating_schedule
+                                              ?.time_blocks?.[0]?.period;
+                                          if (!period) {
+                                            const chartResult =
+                                              useSimulationStore.getState()
+                                                .passenger.chartResult;
+                                            const chartXData = (
+                                              chartResult as any
+                                            )?.chart_x_data;
+                                            if (
+                                              chartXData &&
+                                              chartXData.length >= 2
+                                            ) {
+                                              period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
+                                            } else {
+                                              const date =
+                                                useSimulationStore.getState()
+                                                  .context.date ||
+                                                new Date()
+                                                  .toISOString()
+                                                  .split("T")[0];
+                                              const startDate = new Date(date);
+                                              const endDate = new Date(
+                                                startDate
+                                              );
+                                              endDate.setDate(
+                                                endDate.getDate() + 2
+                                              );
+                                              period = `${startDate.toISOString().replace("T", " ").slice(0, 19)}-${endDate.toISOString().replace("T", " ").slice(0, 19)}`;
+                                            }
                                           }
-                                        }
 
-                                        // Add new facilities with incremented IDs
-                                        for (let i = currentFacilityCount; i < count; i++) {
-                                          const newId = maxId + (i - currentFacilityCount) + 1;
-                                          newFacilities.push({
-                                            id: `${zoneName}_${newId}`,
-                                            operating_schedule: {
-                                              time_blocks: [
-                                                {
-                                                  period: period,
-                                                  process_time_seconds: editedProcess?.process_time_seconds || 0,
-                                                  passenger_conditions: [],
-                                                },
-                                              ],
-                                            },
-                                          });
-                                        }
+                                          // Add new facilities with incremented IDs
+                                          for (
+                                            let i = currentFacilityCount;
+                                            i < count;
+                                            i++
+                                          ) {
+                                            const newId =
+                                              maxId +
+                                              (i - currentFacilityCount) +
+                                              1;
+                                            newFacilities.push({
+                                              id: `${zoneName}_${newId}`,
+                                              operating_schedule: {
+                                                time_blocks: [
+                                                  {
+                                                    period: period,
+                                                    process_time_seconds:
+                                                      editedProcess?.process_time_seconds ||
+                                                      0,
+                                                    passenger_conditions: [],
+                                                    activate: true,
+                                                  },
+                                                ],
+                                              },
+                                            });
+                                          }
 
-                                        updatedZones[zoneName] = { facilities: newFacilities };
+                                          updatedZones[zoneName] = {
+                                            facilities: newFacilities,
+                                          };
+                                        }
                                       }
-                                    });
+                                    );
 
                                     setEditedProcess({
                                       ...editedProcess,
@@ -1529,11 +1709,18 @@ export default function ProcessFlowDesigner({
                                 type="text"
                                 value={editedProcess.travel_time_minutes ?? ""}
                                 onChange={(e) => {
-                                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                                  const walkingTime = numericValue === "" ? 0 : parseInt(numericValue);
+                                  const numericValue = e.target.value.replace(
+                                    /[^0-9]/g,
+                                    ""
+                                  );
+                                  const walkingTime =
+                                    numericValue === ""
+                                      ? 0
+                                      : parseInt(numericValue);
                                   setEditedProcess({
                                     ...editedProcess,
-                                    travel_time_minutes: walkingTime >= 0 ? walkingTime : 0,
+                                    travel_time_minutes:
+                                      walkingTime >= 0 ? walkingTime : 0,
                                   });
                                 }}
                                 placeholder="5"
@@ -1564,11 +1751,18 @@ export default function ProcessFlowDesigner({
                                 type="text"
                                 value={editedProcess.process_time_seconds ?? ""}
                                 onChange={(e) => {
-                                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                                  const processTime = numericValue === "" ? 1 : parseInt(numericValue);
+                                  const numericValue = e.target.value.replace(
+                                    /[^0-9]/g,
+                                    ""
+                                  );
+                                  const processTime =
+                                    numericValue === ""
+                                      ? 1
+                                      : parseInt(numericValue);
                                   setEditedProcess({
                                     ...editedProcess,
-                                    process_time_seconds: processTime >= 1 ? processTime : 1,
+                                    process_time_seconds:
+                                      processTime >= 1 ? processTime : 1,
                                   });
                                 }}
                                 onClick={(e) =>
@@ -1725,32 +1919,33 @@ export default function ProcessFlowDesigner({
                               description: "Process has been created.",
                             });
                           }
-                        } else if (selectedProcessIndex !== null && editedProcess) {
+                        } else if (
+                          selectedProcessIndex !== null &&
+                          editedProcess
+                        ) {
                           // Update existing process
                           handleSaveChanges();
                         }
                       }}
                       disabled={
                         isCreatingNew
-                          ? (
-                            !editedProcess?.name ||
-                            Object.keys(editedProcess?.zones || {}).length === 0 ||
+                          ? !editedProcess?.name ||
+                            Object.keys(editedProcess?.zones || {}).length ===
+                              0 ||
                             !defaultFacilityCount ||
                             defaultFacilityCount <= 0 ||
                             editedProcess?.travel_time_minutes == null ||
                             editedProcess?.process_time_seconds == null ||
                             editedProcess?.process_time_seconds < 1
-                          )
-                          : (
-                            selectedProcessIndex === null ||
+                          : selectedProcessIndex === null ||
                             !editedProcess?.name ||
-                            Object.keys(editedProcess?.zones || {}).length === 0 ||
+                            Object.keys(editedProcess?.zones || {}).length ===
+                              0 ||
                             !defaultFacilityCount ||
                             defaultFacilityCount <= 0 ||
                             editedProcess?.travel_time_minutes == null ||
                             editedProcess?.process_time_seconds == null ||
                             editedProcess?.process_time_seconds < 1
-                          )
                       }
                     >
                       {isCreatingNew ? "Create" : "Update"}
@@ -1790,7 +1985,7 @@ export default function ProcessFlowDesigner({
               </div>
 
               {/* Operating Schedule Editor Content */}
-              <div className="rounded-lg border bg-white p-6">
+              <div className="bg-white pt-1 pb-6">
                 <ScheduleEditor
                   processFlow={processFlow}
                   parquetMetadata={parquetMetadata}

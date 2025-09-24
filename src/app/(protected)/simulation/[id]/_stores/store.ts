@@ -104,37 +104,38 @@ const calculateOperatingPeriodFromPassengers = (
     // 데이터가 없으면 기본값 (00:00-24:00)
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
-    const nextDayStr = nextDay.toISOString().split('T')[0];
+    const nextDayStr = nextDay.toISOString().split("T")[0];
     return `${date} 00:00:00-${nextDayStr} 00:00:00`;
   }
 
   // chart_x_data의 첫번째와 마지막 값 직접 사용
   const firstTime = chartResult.chart_x_data[0]; // "2025-09-21 20:30"
-  const lastTime = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
+  const lastTime =
+    chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
 
-  console.log('Using chart_x_data directly - First time:', firstTime);
-  console.log('Using chart_x_data directly - Last time:', lastTime);
+  console.log("Using chart_x_data directly - First time:", firstTime);
+  console.log("Using chart_x_data directly - Last time:", lastTime);
 
   // 첫번째 시간에 초 추가
   const startDateTime = `${firstTime}:00`;
 
   // 마지막 시간 처리
   let endDateTime: string;
-  const [lastDate, lastTimeOnly] = lastTime.split(' ');
+  const [lastDate, lastTimeOnly] = lastTime.split(" ");
 
-  if (lastTimeOnly === '00:00') {
+  if (lastTimeOnly === "00:00") {
     // 이미 00:00이면 그대로 사용
     endDateTime = `${lastTime}:00`;
   } else {
     // 00:00이 아니면 다음날 00:00:00으로 설정
     const lastDateObj = new Date(lastDate);
     lastDateObj.setDate(lastDateObj.getDate() + 1);
-    const nextDayStr = lastDateObj.toISOString().split('T')[0];
+    const nextDayStr = lastDateObj.toISOString().split("T")[0];
     endDateTime = `${nextDayStr} 00:00:00`;
   }
 
   const result = `${startDateTime}-${endDateTime}`;
-  console.log('Final period result:', result);
+  console.log("Final period result:", result);
 
   // 예: "2025-09-21 20:30:00-2025-09-22 00:00:00"
   return result;
@@ -434,7 +435,10 @@ export interface SimulationStoreState {
     period: string
   ) => void;
   updateTravelTime: (processIndex: number, minutes: number) => void;
-  updateProcessTimeForAllZones: (processIndex: number, processTimeSeconds: number) => void;
+  updateProcessTimeForAllZones: (
+    processIndex: number,
+    processTimeSeconds: number
+  ) => void;
   updateFacilitySchedule: (
     processIndex: number,
     zoneName: string,
@@ -442,6 +446,7 @@ export interface SimulationStoreState {
     timeBlocks: Array<{
       period: string;
       process_time_seconds: number;
+      activate?: boolean; // 시설 운영 활성화 여부
       passenger_conditions: Array<{
         field: string;
         values: string[];
@@ -1362,15 +1367,19 @@ export const useSimulationStore = create<SimulationStoreState>()(
           state.process_flow[processIndex].zones[zoneName]
         ) {
           // 지정된 개수만큼 facilities 생성
-          const date = state.context.date || new Date().toISOString().split('T')[0];
+          const date =
+            state.context.date || new Date().toISOString().split("T")[0];
 
           // 여객 차트 데이터가 있으면 최초 여객 도착 시간 기준으로 운영 시간 설정
-          console.log('chartResult in setFacilitiesForZone:', state.passenger.chartResult);
+          console.log(
+            "chartResult in setFacilitiesForZone:",
+            state.passenger.chartResult
+          );
           const period = calculateOperatingPeriodFromPassengers(
             state.passenger.chartResult,
             date
           );
-          console.log('Calculated period:', period);
+          console.log("Calculated period:", period);
 
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
@@ -1379,8 +1388,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 {
                   period,
                   process_time_seconds: processTimeSeconds || 6,
-                  passenger_conditions: []
-                }
+                  passenger_conditions: [],
+                },
               ],
             },
           }));
@@ -1390,8 +1399,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
         } else {
         }
       }),
-
-
 
     // 개별 시설의 특정 시간 블록만 토글
     toggleFacilityTimeBlock: (processIndex, zoneName, facilityId, period) =>
@@ -1411,8 +1418,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
               facility.operating_schedule = { time_blocks: [] };
             }
 
-            const timeBlocks =
-              facility.operating_schedule.time_blocks || [];
+            const timeBlocks = facility.operating_schedule.time_blocks || [];
             const [startTime] = period.split("~");
 
             // 시간을 분 단위로 변환
@@ -1450,16 +1456,19 @@ export const useSimulationStore = create<SimulationStoreState>()(
             } else {
               // 겹치는 블록이 없으면 새로운 10분 블록 추가 (체크)
               // period를 API 형식으로 변환
-              const date = useSimulationStore.getState().context.date || new Date().toISOString().split('T')[0];
+              const date =
+                useSimulationStore.getState().context.date ||
+                new Date().toISOString().split("T")[0];
               const [startTime, endTime] = period.split("~");
               const nextDay = new Date(date);
               nextDay.setDate(nextDay.getDate() + 1);
-              const nextDayStr = nextDay.toISOString().split('T')[0];
+              const nextDayStr = nextDay.toISOString().split("T")[0];
 
               const startDateTime = `${date} ${startTime}:00`;
-              const endDateTime = endTime === "00:00"
-                ? `${nextDayStr} 00:00:00`
-                : `${date} ${endTime}:00`;
+              const endDateTime =
+                endTime === "00:00"
+                  ? `${nextDayStr} 00:00:00`
+                  : `${date} ${endTime}:00`;
 
               timeBlocks.push({
                 period: `${startDateTime}-${endDateTime}`,
@@ -1488,9 +1497,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
             if (zone.facilities) {
               zone.facilities.forEach((facility: any) => {
                 if (facility.operating_schedule?.time_blocks) {
-                  facility.operating_schedule.time_blocks.forEach((block: any) => {
-                    block.process_time_seconds = processTimeSeconds;
-                  });
+                  facility.operating_schedule.time_blocks.forEach(
+                    (block: any) => {
+                      block.process_time_seconds = processTimeSeconds;
+                    }
+                  );
                 }
               });
             }
@@ -1538,32 +1549,36 @@ export const useSimulationStore = create<SimulationStoreState>()(
         // Nationality 데이터 마이그레이션
         if (state.passenger.pax_demographics.nationality) {
           // Rules 마이그레이션
-          state.passenger.pax_demographics.nationality.rules = 
-            state.passenger.pax_demographics.nationality.rules.map(rule => ({
+          state.passenger.pax_demographics.nationality.rules =
+            state.passenger.pax_demographics.nationality.rules.map((rule) => ({
               ...rule,
-              value: migrateDistribution(rule.value)
+              value: migrateDistribution(rule.value),
             }));
-          
+
           // Default 마이그레이션
           if (state.passenger.pax_demographics.nationality.default) {
-            state.passenger.pax_demographics.nationality.default = 
-              migrateDistribution(state.passenger.pax_demographics.nationality.default);
+            state.passenger.pax_demographics.nationality.default =
+              migrateDistribution(
+                state.passenger.pax_demographics.nationality.default
+              );
           }
         }
 
         // Profile 데이터 마이그레이션
         if (state.passenger.pax_demographics.profile) {
           // Rules 마이그레이션
-          state.passenger.pax_demographics.profile.rules = 
-            state.passenger.pax_demographics.profile.rules.map(rule => ({
+          state.passenger.pax_demographics.profile.rules =
+            state.passenger.pax_demographics.profile.rules.map((rule) => ({
               ...rule,
-              value: migrateDistribution(rule.value)
+              value: migrateDistribution(rule.value),
             }));
-          
+
           // Default 마이그레이션
           if (state.passenger.pax_demographics.profile.default) {
-            state.passenger.pax_demographics.profile.default = 
-              migrateDistribution(state.passenger.pax_demographics.profile.default);
+            state.passenger.pax_demographics.profile.default =
+              migrateDistribution(
+                state.passenger.pax_demographics.profile.default
+              );
           }
         }
       }),

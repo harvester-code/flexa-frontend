@@ -352,20 +352,24 @@ export interface SimulationRunRequest {
     name: string;
     travel_time_minutes: number;
     entry_conditions: EntryCondition[];
-    zones: Record<string, {
-      facilities: Array<{
-        id: string;
-        operating_schedule: {
-          time_blocks: Array<{
-            period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
-            process_time_seconds: number;
-            passenger_conditions: Array<{
-              field: string;
-              values: string[];
+    zones: Record<
+      string,
+      {
+        facilities: Array<{
+          id: string;
+          operating_schedule: {
+            time_blocks: Array<{
+              period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
+              process_time_seconds: number;
+              activate?: boolean; // 시설 운영 활성화 여부
+              passenger_conditions: Array<{
+                field: string;
+                values: string[];
+              }>;
             }>;
-          }>;
-        };
-      }>;
-    }>;
+          };
+        }>;
+      }
+    >;
   }>;
 }

@@ -38,6 +38,7 @@ export interface CategoryBadge {
 export interface TimeBlock {
   period: string;
   process_time_seconds: number;
+  activate?: boolean; // 활성화/비활성화 여부 (선택적 필드)
   passenger_conditions: Array<{
     field: string;
     values: string[];
