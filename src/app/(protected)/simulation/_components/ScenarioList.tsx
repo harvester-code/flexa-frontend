@@ -530,22 +530,24 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         <table className="table-default">
           <thead>
             <tr className="border-b">
-              <th className="w-10 text-center">
-                <Checkbox
-                  id="selectAll"
-                  checked={isCurrentPageAllSelected}
-                  onCheckedChange={(checked) => {
-                    setIsScenarioSelected((prev) =>
-                      prev.map((selected, i) => {
-                        if (i >= currentPageStartIdx && i < currentPageEndIdx) {
-                          return !!checked;
-                        }
-                        return selected;
-                      })
-                    );
-                  }}
-                  className="checkbox text-sm"
-                />
+              <th className="w-10">
+                <div className="flex items-center justify-center">
+                  <Checkbox
+                    id="selectAll"
+                    checked={isCurrentPageAllSelected}
+                    onCheckedChange={(checked) => {
+                      setIsScenarioSelected((prev) =>
+                        prev.map((selected, i) => {
+                          if (i >= currentPageStartIdx && i < currentPageEndIdx) {
+                            return !!checked;
+                          }
+                          return selected;
+                        })
+                      );
+                    }}
+                    className="checkbox text-sm"
+                  />
+                </div>
               </th>
               <th className="w-48 text-left">Name</th>
               <th className="w-28 text-left">Airport</th>
@@ -581,25 +583,27 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         : ""
                     )}
                   >
-                    <td className="text-center">
-                      <Checkbox
-                        id={`check-${idx}`}
-                        className="checkbox text-sm"
-                        checked={
-                          isScenarioSelected[
-                            (currentPage - 1) * pageSize + idx
-                          ] || false
-                        }
-                        onCheckedChange={() => {
-                          const actualIndex =
-                            (currentPage - 1) * pageSize + idx;
-                          setIsScenarioSelected((prev) =>
-                            prev.map((selected, i) =>
-                              i === actualIndex ? !selected : selected
-                            )
-                          );
-                        }}
-                      />
+                    <td className="w-10">
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          id={`check-${idx}`}
+                          className="checkbox text-sm"
+                          checked={
+                            isScenarioSelected[
+                              (currentPage - 1) * pageSize + idx
+                            ] || false
+                          }
+                          onCheckedChange={() => {
+                            const actualIndex =
+                              (currentPage - 1) * pageSize + idx;
+                            setIsScenarioSelected((prev) =>
+                              prev.map((selected, i) =>
+                                i === actualIndex ? !selected : selected
+                              )
+                            );
+                          }}
+                        />
+                      </div>
                     </td>
 
                     <td>
