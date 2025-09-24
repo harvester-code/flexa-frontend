@@ -31,6 +31,10 @@ export const deleteScenario = (scenario_ids: string[]) => {
   return api.delete("", { data: { scenario_ids } });
 };
 
+export const copyScenario = (scenario_id: string, name?: string) => {
+  return api.post(`/${scenario_id}/copy`, { name });
+};
+
 export const getFlightSchedules = (
   scenario_id: string,
   params: FlightSchedulesParams

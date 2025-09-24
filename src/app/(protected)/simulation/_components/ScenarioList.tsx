@@ -11,13 +11,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Edit3,
+  Copy,
+  Pencil,
   Loader2,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
-import { modifyScenario } from "@/services/simulationService";
+import { modifyScenario, copyScenario } from "@/services/simulationService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/Popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import SimulationLoading from "./SimulationLoading";
@@ -57,14 +65,13 @@ interface ScenarioListProps {
   onDeleteScenario: (selectedIds: string[]) => void;
 }
 
-// 페이지당 표시할 시나리오 개수
-const ITEMS_PER_PAGE = 5;
+// 페이지당 표시할 시나리오 개수 옵션
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const DEFAULT_PAGE_SIZE = 10;
 
-// 테이블의 최소 높이 계산 (헤더 + ITEMS_PER_PAGE 만큼의 행)
+// 테이블의 최소 높이 계산 (헤더 + 행)
 const TABLE_HEADER_HEIGHT = 60; // 헤더 행 높이
 const TABLE_ROW_HEIGHT = 64; // 각 행의 높이 (p-3 패딩 포함)
-const TABLE_MIN_HEIGHT =
-  TABLE_HEADER_HEIGHT + ITEMS_PER_PAGE * TABLE_ROW_HEIGHT;
 
 /**
  * 페이지네이션 범위를 계산하는 함수
@@ -156,9 +163,14 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [copyingScenario, setCopyingScenario] = useState<any>(null);
+  const [copyName, setCopyName] = useState("");
+  const [isCopying, setIsCopying] = useState(false);
   const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
@@ -200,12 +212,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
   // 페이지네이션 계산
   const totalPages = Math.ceil(
-    (filteredScenarios?.length || 0) / ITEMS_PER_PAGE
+    (filteredScenarios?.length || 0) / pageSize
   );
   const currentScenarios =
     filteredScenarios?.slice(
-      (currentPage - 1) * ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize
     ) || [];
 
   // 검색 핸들러
@@ -220,6 +232,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     setCurrentPage(1);
   };
 
+  // 페이지 크기 변경 핸들러
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value));
+    setCurrentPage(1);
+  };
+
   // 그룹 단위 페이지네이션 (5개씩)
   const currentGroup = Math.floor((currentPage - 1) / 5);
   const totalGroups = Math.ceil(totalPages / 5);
@@ -227,7 +245,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const selRowCount = isScenarioSelected.filter(Boolean).length;
 
   // 현재 페이지의 선택 상태
-  const currentPageStartIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentPageStartIdx = (currentPage - 1) * pageSize;
   const currentPageEndIdx = currentPageStartIdx + currentScenarios.length;
   const currentPageSelected = isScenarioSelected.slice(
     currentPageStartIdx,
@@ -373,6 +391,41 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     navigateToScenario(scenarioId, scenarioName);
   };
 
+  const handleCopyClick = (scenario: any) => {
+    setCopyingScenario(scenario);
+    setCopyName(`${scenario.name} (Copy)`);
+    setShowCopyDialog(true);
+  };
+
+  const handleCopyConfirm = async () => {
+    if (!copyingScenario) return;
+
+    setIsCopying(true);
+    try {
+      // 이름이 입력되었으면 전달, 아니면 undefined
+      const nameToSend = copyName && copyName.trim() ? copyName.trim() : undefined;
+      const response = await copyScenario(copyingScenario.scenario_id, nameToSend);
+
+      toast({
+        title: "Copy Complete",
+        description: "Scenario copied successfully.",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["scenarios"] });
+      setShowCopyDialog(false);
+      setCopyName("");
+      setCopyingScenario(null);
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy scenario. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between">
@@ -394,13 +447,27 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       {/* 필터 섹션 */}
       <div className="mt-4 flex h-20 items-center justify-between">
-        <div className="text-sm text-default-500">
-          Showing{" "}
-          {currentScenarios.length > 0
-            ? (currentPage - 1) * ITEMS_PER_PAGE + 1
-            : 0}
-          -{Math.min(currentPage * ITEMS_PER_PAGE, filteredScenarios.length)} of{" "}
-          {filteredScenarios.length} scenarios
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-default-500">
+            Showing{" "}
+            {currentScenarios.length > 0
+              ? (currentPage - 1) * pageSize + 1
+              : 0}
+            -{Math.min(currentPage * pageSize, filteredScenarios.length)} of{" "}
+            {filteredScenarios.length} scenarios
+          </div>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size} rows
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -458,7 +525,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       <div
         className="table-container mt-4"
-        style={{ minHeight: `${TABLE_MIN_HEIGHT}px` }}
+        style={{ minHeight: `${TABLE_HEADER_HEIGHT + pageSize * TABLE_ROW_HEIGHT}px` }}
       >
         <table className="table-default">
           <thead>
@@ -508,7 +575,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     className={cn(
                       "border-b text-sm hover:bg-muted",
                       isScenarioSelected[
-                        (currentPage - 1) * ITEMS_PER_PAGE + idx
+                        (currentPage - 1) * pageSize + idx
                       ]
                         ? "active"
                         : ""
@@ -520,12 +587,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         className="checkbox text-sm"
                         checked={
                           isScenarioSelected[
-                            (currentPage - 1) * ITEMS_PER_PAGE + idx
+                            (currentPage - 1) * pageSize + idx
                           ] || false
                         }
                         onCheckedChange={() => {
                           const actualIndex =
-                            (currentPage - 1) * ITEMS_PER_PAGE + idx;
+                            (currentPage - 1) * pageSize + idx;
                           setIsScenarioSelected((prev) =>
                             prev.map((selected, i) =>
                               i === actualIndex ? !selected : selected
@@ -645,13 +712,23 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             isEditing ? cancelEdit() : startEdit(scenario)
                           }
                         >
-                          <Edit3
+                          <Pencil
                             className={cn(
-                              "size-5",
+                              "size-4",
                               isEditing ? "text-default-500" : "text-primary"
                             )}
                           />
                         </Button>
+                        {!isEditing && (
+                          <Button
+                            variant="link"
+                            className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
+                            title="Copy"
+                            onClick={() => handleCopyClick(scenario)}
+                          >
+                            <Copy className="size-4 text-primary" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -674,7 +751,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       {/* 페이지네이션 - 항상 고정된 위치 유지 */}
       <div className="mt-6 flex justify-center">
-        {scenarios && scenarios.length > ITEMS_PER_PAGE ? (
+        {scenarios && scenarios.length > pageSize ? (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -776,6 +853,54 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction onClick={executeUpdateScenario}>
               Update
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Copy Scenario Dialog */}
+      <AlertDialog open={showCopyDialog} onOpenChange={setShowCopyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copy Scenario</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a name for the copied scenario (optional).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Scenario name"
+              value={copyName}
+              onChange={(e) => setCopyName(e.target.value)}
+              disabled={isCopying}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              Leave empty to use the default name format.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowCopyDialog(false);
+                setCopyName("");
+                setCopyingScenario(null);
+              }}
+              disabled={isCopying}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCopyConfirm}
+              disabled={isCopying}
+            >
+              {isCopying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Copying...
+                </>
+              ) : (
+                "Copy"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
