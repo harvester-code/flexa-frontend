@@ -6,9 +6,6 @@ import Providers from "./provider";
 export const metadata: Metadata = {
   title: "Flexa | WaitFree Airport",
   description: "Make your airport wait-free",
-  icons: {
-    icon: "/favicon.svg",
-  },
 };
 
 export default function RootLayout({
