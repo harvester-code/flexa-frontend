@@ -169,34 +169,80 @@ export function useScheduleInitialization() {
                 return;
               }
 
-              const { startTime, endTime } = parsedPeriod;
+              const { startTime, endTime, startDate, endDate } = parsedPeriod;
 
-              // Find start and end indices in timeSlots
-              const startIdx = timeSlots.indexOf(startTime);
-              let endIdx = timeSlots.indexOf(endTime);
+              // Helper function to find closest time slot index
+              const findClosestTimeSlotIndex = (targetTime: string, isEndTime: boolean = false): number => {
+                const [targetHour, targetMin] = targetTime.split(":").map(Number);
+                const targetMinutes = targetHour * 60 + targetMin;
 
-              // If endTime is not found exactly, find the last slot before endTime
-              if (endIdx === -1) {
-                const [endHour, endMin] = endTime.split(":").map(Number);
-                const endTimeMinutes = endHour * 60 + endMin;
+                // First try exact match
+                const exactIdx = timeSlots.indexOf(targetTime);
+                if (exactIdx !== -1) return exactIdx;
 
-                for (let i = timeSlots.length - 1; i >= 0; i--) {
-                  const [slotHour, slotMin] = timeSlots[i]
-                    .split(":")
-                    .map(Number);
+                // Find closest slot
+                let closestIdx = -1;
+                let minDiff = Infinity;
+
+                for (let i = 0; i < timeSlots.length; i++) {
+                  const [slotHour, slotMin] = timeSlots[i].split(":").map(Number);
                   const slotMinutes = slotHour * 60 + slotMin;
-                  if (slotMinutes < endTimeMinutes) {
-                    endIdx = i + 1;
-                    break;
+                  const diff = Math.abs(slotMinutes - targetMinutes);
+
+                  if (isEndTime) {
+                    // For end time, prefer slots that come after the target
+                    if (slotMinutes >= targetMinutes && diff < minDiff) {
+                      minDiff = diff;
+                      closestIdx = i;
+                    }
+                  } else {
+                    // For start time, prefer slots that come at or before the target
+                    if (slotMinutes <= targetMinutes) {
+                      closestIdx = i;
+                    } else if (closestIdx === -1) {
+                      // If no slot before target, use the first slot after
+                      closestIdx = i;
+                      break;
+                    }
                   }
                 }
+
+                // Fallback
+                if (closestIdx === -1) {
+                  closestIdx = isEndTime ? timeSlots.length : 0;
+                }
+
+                return closestIdx;
+              };
+
+              // Find start and end indices in timeSlots
+              let startIdx = findClosestTimeSlotIndex(startTime, false);
+              let endIdx: number;
+
+              // Special handling for end time
+              if (endTime === "00:00" && endDate > startDate) {
+                // This spans to next day(s) 00:00
+                // Check how many days ahead
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+                if (daysDiff >= 1) {
+                  // Spans multiple days, include all time slots
+                  endIdx = timeSlots.length;
+                } else {
+                  endIdx = findClosestTimeSlotIndex(endTime, true);
+                }
+              } else {
+                endIdx = findClosestTimeSlotIndex(endTime, true);
               }
 
               console.log(
-                `Time range: ${startTime}(${startIdx}) - ${endTime}(${endIdx})`
+                `Time range: ${startTime}(${startIdx}) - ${endTime}(${endIdx})`,
+                `Dates: ${startDate} to ${endDate}`
               );
 
-              if (startIdx !== -1 && endIdx > startIdx) {
+              if (startIdx >= 0 && endIdx > startIdx) {
                 // Apply activate state to all cells in this period
                 for (let i = startIdx; i < endIdx; i++) {
                   const cellId = `${i}-${colIndex}`;
