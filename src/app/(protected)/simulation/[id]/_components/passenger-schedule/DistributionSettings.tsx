@@ -238,7 +238,7 @@ export default function DistributionSettings({
             const displayLabel = parts[0];
             const value = parts[1];
             const columnKey = getColumnName(displayLabel);
-            const convertedValue = valueMapping[columnKey]?.[value] || value;
+            const convertedValue = value;
 
             if (!backendConditions[columnKey]) {
               backendConditions[columnKey] = [];
@@ -272,8 +272,7 @@ export default function DistributionSettings({
           const value = parts[1];
           const columnKey = getColumnName(displayLabel);
 
-          // 값 변환 적용 (있으면)
-          const convertedValue = valueMapping[columnKey]?.[value] || value;
+          const convertedValue = value;
 
           if (!backendConditions[columnKey]) {
             backendConditions[columnKey] = [];

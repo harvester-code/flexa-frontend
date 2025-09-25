@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 // import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 import { DistributionDialog } from './DistributionDialog';
+import { getColumnLabel, getColumnName } from '@/styles/columnMappings';
 import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from '../shared/ValueSetters';
 
 interface ParquetMetadataItem {
@@ -481,27 +482,7 @@ export default function ProfileCriteriaSettings({
     }
   };
 
-  const getColumnLabel = (columnKey: string) => {
-    const labels: Record<string, string> = {
-      operating_carrier_name: 'Airline',
-      aircraft_type_icao: 'Aircraft Type',
-      total_seats: 'Total Seats',
-      flight_type: 'Flight Type',
-      arrival_airport_iata: 'Arrival Airport',
-      arrival_terminal: 'Arrival Terminal',
-      arrival_city: 'Arrival City',
-      arrival_country: 'Arrival Country',
-      arrival_region: 'Arrival Region',
-      departure_terminal: 'Departure Terminal',
-      departure_airport_iata: 'Departure Airport Iata',
-      departure_city: 'Departure City',
-      departure_country: 'Departure Country',
-      departure_region: 'Departure Region',
-      scheduled_departure_local: 'Scheduled Departure Local',
-      scheduled_arrival_local: 'Scheduled Arrival Local',
-    };
-    return labels[columnKey] || columnKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-  };
+  // Use centralized getColumnLabel function from columnMappings
 
   // 🎯 카테고리별 그룹화 (type에 따른 필터링 포함)
   const columnsByCategory: Record<string, Array<{ key: string; label: string; values: string[] }>> = {};
