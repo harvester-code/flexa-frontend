@@ -275,6 +275,7 @@ export const calculatePeriodsFromDisabledCells = (
 
   const periods: any[] = [];
   let currentStart: string | null = null;
+  let currentStartIndex: number = -1;  // 현재 구간의 시작 인덱스 추적
   let currentConditions: any[] | null = null;
   let currentIsActive: boolean | null = null;
 
@@ -306,17 +307,41 @@ export const calculatePeriodsFromDisabledCells = (
       const prevIndex = i - 1;
       const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
 
-      const startDate =
-        isPreviousDay &&
-        timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-          ? prevDayStr
-          : currentDate;
+      // 현재 구간의 시작 날짜 계산
+      let startDate = currentDate;
+      if (isPreviousDay) {
+        const midnightIdx = timeSlots.indexOf("00:00");
+
+        // 00:00이 있고, currentStartIndex가 00:00 이전에 있으면 전날
+        if (midnightIdx > 0 && currentStartIndex < midnightIdx) {
+          startDate = prevDayStr;
+        }
+      }
 
       let endDateTime;
-      if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
-        // Use 23:59:59 instead of next day 00:00:00
+
+      // 현재 블록이 마지막이 아니면, 다음 블록의 시작 시간을 종료 시간으로 사용
+      if (i < timeSlots.length) {
+        const nextBlockTime = timeSlots[i];
+
+        // 다음 블록이 00:00이고 현재가 전날이면
+        if (nextBlockTime === "00:00" && isPreviousDay && prevIndex < timeSlots.indexOf("00:00")) {
+          endDateTime = `${currentDate} 00:00:00`;
+        }
+        // 일반적인 경우 - 다음 블록의 시작 시간 사용
+        else {
+          const nextBlockDate =
+            isPreviousDay && i < timeSlots.indexOf("00:00")
+              ? prevDayStr
+              : currentDate;
+          endDateTime = `${nextBlockDate} ${nextBlockTime}:00`;
+        }
+      }
+      // 마지막 블록이거나 24:00인 경우
+      else if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
         endDateTime = `${currentDate} 23:59:59`;
-      } else {
+      }
+      else {
         const endDate =
           isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
             ? prevDayStr
@@ -335,6 +360,7 @@ export const calculatePeriodsFromDisabledCells = (
     if (needNewPeriod) {
       // 새 구간 시작
       currentStart = currentTime;
+      currentStartIndex = i;  // 시작 인덱스 저장
       currentConditions = conditions;
       currentIsActive = isActive;
     }
@@ -345,26 +371,40 @@ export const calculatePeriodsFromDisabledCells = (
     const lastIndex = timeSlots.length - 1;
     const endTime = getNextTimeSlot(timeSlots[lastIndex], timeUnit);
 
-    const startDate =
-      isPreviousDay &&
-      timeSlots.indexOf(currentStart) < timeSlots.indexOf("00:00")
-        ? prevDayStr
-        : currentDate;
+    // 현재 구간의 시작 날짜 계산
+    let startDate = currentDate;
+    if (isPreviousDay) {
+      const midnightIdx = timeSlots.indexOf("00:00");
 
-    // 마지막 시간이 23:30 등이면 다음날 00:00으로
+      // 00:00이 있고, currentStartIndex가 00:00 이전에 있으면 전날
+      if (midnightIdx > 0 && currentStartIndex < midnightIdx) {
+        startDate = prevDayStr;
+      }
+    }
+
+    // 마지막 구간의 종료 시간 처리
     let endDateTime;
-    if (
-      endTime === "24:00" ||
-      endTime === "00:00" ||
-      lastIndex === timeSlots.length - 1
-    ) {
-      // Use 23:59:59 instead of next day 00:00:00
+
+    // 마지막 슬롯이고 endTime이 24:00 또는 00:00인 경우만 23:59:59 사용
+    if (endTime === "24:00" || (endTime === "00:00" && lastIndex === timeSlots.length - 1)) {
       endDateTime = `${currentDate} 23:59:59`;
     } else {
-      const endDate =
-        isPreviousDay && lastIndex < timeSlots.indexOf("00:00")
-          ? prevDayStr
-          : currentDate;
+      // 날짜 경계를 정확히 처리
+      let endDate = currentDate;
+
+      // 전날부터 시작하는 경우
+      if (isPreviousDay) {
+        const midnightIdx = timeSlots.indexOf("00:00");
+        // 현재 구간이 전날에 있고, 종료 시간도 자정 전이면 전날로
+        if (midnightIdx > 0 && currentStartIndex < midnightIdx && lastIndex < midnightIdx) {
+          endDate = prevDayStr;
+        }
+        // 종료 시간이 00:00이면 현재 날짜의 00:00
+        else if (endTime === "00:00") {
+          endDate = currentDate;
+        }
+      }
+
       endDateTime = `${endDate} ${endTime}:00`;
     }
 
