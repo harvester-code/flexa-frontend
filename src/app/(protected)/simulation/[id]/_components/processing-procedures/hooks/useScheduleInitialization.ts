@@ -85,21 +85,13 @@ export function useScheduleInitialization() {
               }
             }
 
-            // passenger_conditions가 있으면 배지 추가
+            // passenger_conditions가 있으면 배지 추가 - JSON 그대로 사용
             if (block.passenger_conditions?.length > 0) {
-              const badges: CategoryBadge[] = block.passenger_conditions
-                .map((condition: any) => {
-                  const categoryName = getCategoryNameFromField(condition.field);
-                  const categoryConfig = categories[categoryName];
-                  if (!categoryName || !categoryConfig) return null;
-
-                  return {
-                    category: categoryName,
-                    options: condition.values || [],
-                    colorIndex: categoryConfig.colorIndex,
-                  };
-                })
-                .filter(Boolean);
+              const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => ({
+                category: condition.field,  // JSON의 field 그대로
+                options: condition.values || [],
+                colorIndex: 0,  // 색상은 나중에 UI에서 결정
+              }));
 
               // 해당 구간의 모든 셀에 배지 적용
               for (let i = startIdx; i < endIdx; i++) {
