@@ -1,44 +1,49 @@
 import { useCallback } from "react";
 import { FacilityWithSchedule, CategoryBadge } from "../schedule-editor/types";
 
+// Centralized badge field mapping configuration
+// 새로운 뱃지를 추가할 때는 이 배열에만 추가하면 됩니다
+const BADGE_FIELD_MAPPINGS = [
+  { field: "operating_carrier_name", category: "Airline" },
+  { field: "operating_carrier_iata", category: "Airline" },
+  { field: "aircraft_type", category: "Aircraft Type" },
+  { field: "flight_type", category: "Flight Type" },
+  { field: "arrival_airport_iata", category: "Arrival Airport" },
+  { field: "arrival_country", category: "Arrival Country" },
+  { field: "arrival_region", category: "Arrival Region" },
+  { field: "departure_airport_iata", category: "Departure Airport" },
+  { field: "departure_country", category: "Departure Country" },
+  { field: "departure_region", category: "Departure Region" },
+  { field: "gate_number", category: "Gate" },
+  { field: "terminal", category: "Terminal" },
+  { field: "day_of_week", category: "Day of Week" },
+  { field: "hour_of_day", category: "Hour of Day" },
+  { field: "passenger_class", category: "Passenger Class" },
+  { field: "passenger_type", category: "Passenger Type" },
+  { field: "transit_type", category: "Transit Type" },
+  { field: "passenger_nationality", category: "Nationality" },
+  { field: "group_size_category", category: "Group Size" },
+];
+
+// Build maps from the centralized configuration
+const fieldToCategoryMap: Record<string, string> = {};
+const categoryToFieldMap: Record<string, string> = {};
+
+BADGE_FIELD_MAPPINGS.forEach(({ field, category }) => {
+  fieldToCategoryMap[field] = category;
+  // For category to field, use the first field if multiple fields map to same category
+  if (!categoryToFieldMap[category]) {
+    categoryToFieldMap[category] = field;
+  }
+});
+
 // Helper function moved from main component
 const getCategoryNameFromField = (field: string): string => {
-  const fieldToCategoryMap: Record<string, string> = {
-    operating_carrier_name: "Airline",
-    operating_carrier_iata: "Airline",
-    aircraft_type: "Aircraft Type",
-    flight_type: "Flight Type",
-    arrival_airport_iata: "Arrival Airport",
-    departure_airport_iata: "Departure Airport",
-    gate_number: "Gate",
-    terminal: "Terminal",
-    day_of_week: "Day of Week",
-    hour_of_day: "Hour of Day",
-    passenger_class: "Passenger Class",
-    transit_type: "Transit Type",
-    passenger_nationality: "Nationality",
-    group_size_category: "Group Size",
-  };
   return fieldToCategoryMap[field] || field;
 };
 
 // Helper function for getting category field name
 const getCategoryFieldName = (categoryName: string): string => {
-  const categoryToFieldMap: Record<string, string> = {
-    Airline: "operating_carrier_name",
-    "Aircraft Type": "aircraft_type",
-    "Flight Type": "flight_type",
-    "Arrival Airport": "arrival_airport_iata",
-    "Departure Airport": "departure_airport_iata",
-    Gate: "gate_number",
-    Terminal: "terminal",
-    "Day of Week": "day_of_week",
-    "Hour of Day": "hour_of_day",
-    "Passenger Class": "passenger_class",
-    "Transit Type": "transit_type",
-    Nationality: "passenger_nationality",
-    "Group Size": "group_size_category",
-  };
   return categoryToFieldMap[categoryName] || categoryName;
 };
 
