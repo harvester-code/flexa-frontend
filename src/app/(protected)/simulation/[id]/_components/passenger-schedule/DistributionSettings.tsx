@@ -39,6 +39,7 @@ import PercentageControl, {
 
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
+import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
@@ -109,23 +110,7 @@ export default function DistributionSettings({
   );
   const totalFlightsFromStore = filteredFlightResult?.total || 0;
 
-  // 🆕 조건 변환 로직 (Step 1, 2와 동일) - 함수들보다 앞에 위치
-  const labelToColumnMap: Record<string, string> = {
-    Airline: "operating_carrier_iata",
-    "Aircraft Type": "aircraft_type_icao",
-    "Flight Type": "flight_type",
-    "Total Seats": "total_seats",
-    "Arrival Airport": "arrival_airport_iata",
-    "Arrival Terminal": "arrival_terminal",
-    "Arrival City": "arrival_city",
-    "Arrival Country": "arrival_country",
-    "Arrival Region": "arrival_region",
-    "Departure Airport Iata": "departure_airport_iata",
-    "Departure Terminal": "departure_terminal",
-    "Departure City": "departure_city",
-    "Departure Country": "departure_country",
-    "Departure Region": "departure_region",
-  };
+  // Use centralized column mapping
 
   const valueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
@@ -135,23 +120,7 @@ export default function DistributionSettings({
     },
   };
 
-  // 백엔드 → UI 역변환 맵핑
-  const columnToLabelMap: Record<string, string> = {
-    operating_carrier_iata: "Airline",
-    aircraft_type_icao: "Aircraft Type",
-    flight_type: "Flight Type",
-    total_seats: "Total Seats",
-    arrival_airport_iata: "Arrival Airport",
-    arrival_terminal: "Arrival Terminal",
-    arrival_city: "Arrival City",
-    arrival_country: "Arrival Country",
-    arrival_region: "Arrival Region",
-    departure_airport_iata: "Departure Airport Iata",
-    departure_terminal: "Departure Terminal",
-    departure_city: "Departure City",
-    departure_country: "Departure Country",
-    departure_region: "Departure Region",
-  };
+  // Use centralized column mapping
 
   const reverseValueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
@@ -169,7 +138,7 @@ export default function DistributionSettings({
       name: `Rule ${index + 1}`,
       conditions: Object.entries(rule.conditions || {}).flatMap(
         ([columnKey, values]) => {
-          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
             const displayValue =
               reverseValueMapping[columnKey]?.[value] || value;
@@ -229,9 +198,7 @@ export default function DistributionSettings({
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey =
-                labelToColumnMap[displayLabel] ||
-                displayLabel.toLowerCase().replace(" ", "_");
+              const columnKey = getColumnName(displayLabel);
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -251,7 +218,7 @@ export default function DistributionSettings({
         );
       }
     },
-    [updateRuleStore, demographicsData?.rules, labelToColumnMap, valueMapping]
+    [updateRuleStore, demographicsData?.rules, valueMapping]
   );
 
   const removeRuleById = useCallback(
@@ -290,9 +257,7 @@ export default function DistributionSettings({
           if (parts.length === 2) {
             const displayLabel = parts[0];
             const value = parts[1];
-            const columnKey =
-              labelToColumnMap[displayLabel] ||
-              displayLabel.toLowerCase().replace(" ", "_");
+            const columnKey = getColumnName(displayLabel);
             const convertedValue = valueMapping[columnKey]?.[value] || value;
 
             if (!backendConditions[columnKey]) {
@@ -312,7 +277,7 @@ export default function DistributionSettings({
       // SimulationStore에 새로운 순서 적용
       reorderRulesStore(backendRules);
     },
-    [reorderRulesStore, labelToColumnMap, valueMapping]
+    [reorderRulesStore, valueMapping]
   );
 
   const addRuleWithConversion = useCallback(
@@ -325,9 +290,7 @@ export default function DistributionSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const columnKey = getColumnName(displayLabel);
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;

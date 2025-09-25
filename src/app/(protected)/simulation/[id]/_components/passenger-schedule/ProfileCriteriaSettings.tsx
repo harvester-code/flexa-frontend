@@ -78,23 +78,7 @@ export default function ProfileCriteriaSettings({
         const selectedItemsFromConditions: Record<string, boolean> = {};
         let firstColumnToSelect: string | null = null;
 
-        // Display label을 실제 column key로 변환하는 맵핑 (실제 parquet 컬럼명과 매치)
-        const labelToColumnMap: Record<string, string> = {
-          Airline: 'operating_carrier_name',
-          'Aircraft Type': 'aircraft_type_icao',
-          'Flight Type': 'flight_type',
-          'Total Seats': 'total_seats',
-          'Arrival Airport': 'arrival_airport_iata',
-          'Arrival Terminal': 'arrival_terminal',
-          'Arrival City': 'arrival_city',
-          'Arrival Country': 'arrival_country',
-          'Arrival Region': 'arrival_region',
-          'Departure Airport Iata': 'departure_airport_iata',
-          'Departure Terminal': 'departure_terminal',
-          'Departure City': 'departure_city',
-          'Departure Country': 'departure_country',
-          'Departure Region': 'departure_region',
-        };
+        // Use centralized column mapping
 
         // 🎯 배지 형태에서 개별 조건으로 파싱하는 로직 지원
         const parseConditions = (conditions: string[]) => {
@@ -129,7 +113,7 @@ export default function ProfileCriteriaSettings({
           if (parts.length === 2) {
             const displayLabel = parts[0];
             const value = parts[1];
-            const actualColumnKey = labelToColumnMap[displayLabel] || displayLabel.toLowerCase().replace(' ', '_');
+            const actualColumnKey = getColumnName(displayLabel);
             const key = `${actualColumnKey}:${value}`;
             selectedItemsFromConditions[key] = true;
 

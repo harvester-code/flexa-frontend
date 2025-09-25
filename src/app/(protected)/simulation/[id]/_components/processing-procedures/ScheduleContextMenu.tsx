@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
 import { getCategoryColorIndex } from "./schedule-editor/badgeMappings";
+import { LABELS } from "@/styles/columnMappings";
 
 // 카테고리별 뱃지 타입 정의
 interface CategoryBadge {
@@ -123,7 +124,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                    airlineName.includes(searchTerm);
           }
           // For airports, search by both code and city
-          if ((category === "Arrival Airport" || category === "Departure Airport") && airportCityMapping?.[option]) {
+          if ((category === LABELS.ARRIVAL_AIRPORT || category === LABELS.DEPARTURE_AIRPORT) && airportCityMapping?.[option]) {
             const cityName = airportCityMapping[option].toLowerCase();
             return option.toLowerCase().includes(searchTerm) ||
                    cityName.includes(searchTerm);
@@ -346,9 +347,9 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                                     className="pointer-events-none data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
                                   <span className="truncate text-black">
-                                    {category === "Airline" && flightAirlines?.[option]
+                                    {category === LABELS.AIRLINE && flightAirlines?.[option]
                                       ? `${option} | ${flightAirlines[option]}`
-                                      : (category === "Arrival Airport" || category === "Departure Airport") && airportCityMapping?.[option]
+                                      : (category === LABELS.ARRIVAL_AIRPORT || category === LABELS.DEPARTURE_AIRPORT) && airportCityMapping?.[option]
                                       ? `${option} | ${airportCityMapping[option]}`
                                       : option}
                                   </span>

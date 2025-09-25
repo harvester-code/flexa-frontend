@@ -1,6 +1,0 @@
-services:
-  nextjs:
-    image: 531915313382.dkr.ecr.ap-northeast-2.amazonaws.com/coop/flexa-waitfree-next:v0.1.0-beta.4
-    container_name: flexa-waitfree-next-develop
-    ports:
-      - 3000:3000

@@ -41,6 +41,7 @@ import { IntegerNumberInput } from "@/components/ui/IntegerNumberInput";
 import { useToast } from "@/hooks/useToast";
 import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
@@ -124,57 +125,39 @@ export default function ShowUpTimeSettings({
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // 🆕 조건 변환 로직 (Step 1과 동일)
-  const labelToColumnMap: Record<string, string> = {
-    Airline: "operating_carrier_iata",
-    "Aircraft Type": "aircraft_type_icao",
-    "Flight Type": "flight_type",
-    "Total Seats": "total_seats",
-    "Arrival Airport": "arrival_airport_iata",
-    "Arrival Terminal": "arrival_terminal",
-    "Arrival City": "arrival_city",
-    "Arrival Country": "arrival_country",
-    "Arrival Region": "arrival_region",
-    "Departure Airport Iata": "departure_airport_iata",
-    "Departure Terminal": "departure_terminal",
-    "Departure City": "departure_city",
-    "Departure Country": "departure_country",
-    "Departure Region": "departure_region",
-  };
+  // Get airline mappings from store
+  const flightAirlines = useSimulationStore((state) => state.flight_airlines);
 
-  const valueMapping: Record<string, Record<string, string>> = {
-    operating_carrier_iata: {
-      "Korean Air": "KE",
-      "Asiana Airlines": "OZ",
-      // 필요에 따라 추가
-    },
-  };
+  // Create dynamic value mappings from store data
+  const valueMapping = useMemo(() => {
+    const mapping: Record<string, Record<string, string>> = {
+      operating_carrier_iata: {},
+    };
 
-  // 백엔드 → UI 역변환 맵핑
-  const columnToLabelMap: Record<string, string> = {
-    operating_carrier_iata: "Airline",
-    aircraft_type_icao: "Aircraft Type",
-    flight_type: "Flight Type",
-    total_seats: "Total Seats",
-    arrival_airport_iata: "Arrival Airport",
-    arrival_terminal: "Arrival Terminal",
-    arrival_city: "Arrival City",
-    arrival_country: "Arrival Country",
-    arrival_region: "Arrival Region",
-    departure_airport_iata: "Departure Airport Iata",
-    departure_terminal: "Departure Terminal",
-    departure_city: "Departure City",
-    departure_country: "Departure Country",
-    departure_region: "Departure Region",
-  };
+    // Build airline name to code mapping from store
+    flightAirlines.forEach((airline) => {
+      if (airline.name && airline.code) {
+        mapping.operating_carrier_iata[airline.name] = airline.code;
+      }
+    });
 
-  const reverseValueMapping: Record<string, Record<string, string>> = {
-    operating_carrier_iata: {
-      KE: "Korean Air",
-      OZ: "Asiana Airlines",
-      // 필요에 따라 추가
-    },
-  };
+    return mapping;
+  }, [flightAirlines]);
+
+  const reverseValueMapping = useMemo(() => {
+    const mapping: Record<string, Record<string, string>> = {
+      operating_carrier_iata: {},
+    };
+
+    // Build airline code to name mapping from store
+    flightAirlines.forEach((airline) => {
+      if (airline.name && airline.code) {
+        mapping.operating_carrier_iata[airline.code] = airline.name;
+      }
+    });
+
+    return mapping;
+  }, [flightAirlines]);
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
@@ -183,7 +166,7 @@ export default function ShowUpTimeSettings({
       name: `Rule ${index + 1}`,
       conditions: Object.entries(rule.conditions || {}).flatMap(
         ([columnKey, values]) => {
-          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
             const displayValue =
               reverseValueMapping[columnKey]?.[value] || value;
@@ -231,9 +214,7 @@ export default function ShowUpTimeSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const columnKey = getColumnName(displayLabel);
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -253,7 +234,7 @@ export default function ShowUpTimeSettings({
         },
       });
     },
-    [addPaxArrivalPatternRule]
+    [addPaxArrivalPatternRule, valueMapping]
   );
 
   const updateShowUpTimeRule = useCallback(
@@ -279,9 +260,7 @@ export default function ShowUpTimeSettings({
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey =
-                labelToColumnMap[displayLabel] ||
-                displayLabel.toLowerCase().replace(" ", "_");
+              const columnKey = getColumnName(displayLabel);
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -306,7 +285,6 @@ export default function ShowUpTimeSettings({
     [
       updatePaxArrivalPatternRule,
       paxArrivalPatternRules,
-      labelToColumnMap,
       valueMapping,
     ]
   );
@@ -329,9 +307,7 @@ export default function ShowUpTimeSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const columnKey = getColumnName(displayLabel);
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -354,7 +330,7 @@ export default function ShowUpTimeSettings({
 
     // 전체 룰 배열을 교체
     useSimulationStore.getState().setPaxArrivalPatternRules(convertedRules);
-  }, []);
+  }, [valueMapping]);
 
   const updateShowUpTimeDefault = useCallback(
     (mean: number, std: number) => {
@@ -522,24 +498,6 @@ export default function ShowUpTimeSettings({
         return new Set();
       }
 
-      // Display label을 실제 column key로 변환하는 맵핑
-      const labelToColumnMap: Record<string, string> = {
-        Airline: "operating_carrier_name",
-        "Aircraft Type": "aircraft_type_icao",
-        "Flight Type": "flight_type",
-        "Total Seats": "total_seats",
-        "Arrival Airport": "arrival_airport_iata",
-        "Arrival Terminal": "arrival_terminal",
-        "Arrival City": "arrival_city",
-        "Arrival Country": "arrival_country",
-        "Arrival Region": "arrival_region",
-        "Departure Airport Iata": "departure_airport_iata",
-        "Departure Terminal": "departure_terminal",
-        "Departure City": "departure_city",
-        "Departure Country": "departure_country",
-        "Departure Region": "departure_region",
-      };
-
       // 조건들을 컬럼별로 그룹화
       const conditionsByColumn: Record<string, string[]> = {};
 
@@ -549,9 +507,7 @@ export default function ShowUpTimeSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const actualColumnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const actualColumnKey = getColumnName(displayLabel);
 
           if (!conditionsByColumn[actualColumnKey]) {
             conditionsByColumn[actualColumnKey] = [];

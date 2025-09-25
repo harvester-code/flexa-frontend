@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadFactorSlider } from "@/components/ui/LoadFactorSlider";
 import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 // Removed import for conversion functions - no longer needed
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
@@ -84,23 +85,7 @@ export default function LoadFactorSettings({
     (s) => s.reorderPaxGenerationRules
   );
 
-  // 🆕 조건 변환 로직 (다른 탭들과 동일)
-  const labelToColumnMap: Record<string, string> = {
-    Airline: "operating_carrier_iata",
-    "Aircraft Type": "aircraft_type_icao",
-    "Flight Type": "flight_type",
-    "Total Seats": "total_seats",
-    "Arrival Airport": "arrival_airport_iata",
-    "Arrival Terminal": "arrival_terminal",
-    "Arrival City": "arrival_city",
-    "Arrival Country": "arrival_country",
-    "Arrival Region": "arrival_region",
-    "Departure Airport Iata": "departure_airport_iata",
-    "Departure Terminal": "departure_terminal",
-    "Departure City": "departure_city",
-    "Departure Country": "departure_country",
-    "Departure Region": "departure_region",
-  };
+  // Use centralized column mapping
 
   const valueMapping: Record<string, Record<string, string>> = {
     operating_carrier_iata: {
@@ -126,22 +111,7 @@ export default function LoadFactorSettings({
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
     // 백엔드 → UI 역변환 맵핑
-    const columnToLabelMap: Record<string, string> = {
-      operating_carrier_iata: "Airline",
-      aircraft_type_icao: "Aircraft Type",
-      flight_type: "Flight Type",
-      total_seats: "Total Seats",
-      arrival_airport_iata: "Arrival Airport",
-      arrival_terminal: "Arrival Terminal",
-      arrival_city: "Arrival City",
-      arrival_country: "Arrival Country",
-      arrival_region: "Arrival Region",
-      departure_airport_iata: "Departure Airport Iata",
-      departure_terminal: "Departure Terminal",
-      departure_city: "Departure City",
-      departure_country: "Departure Country",
-      departure_region: "Departure Region",
-    };
+    // Use centralized column mapping
 
     // 값 역변환 맵핑
     const reverseValueMapping: Record<string, Record<string, string>> = {
@@ -157,7 +127,7 @@ export default function LoadFactorSettings({
       name: `Rule ${index + 1}`,
       conditions: Object.entries(rule.conditions || {}).flatMap(
         ([columnKey, values]) => {
-          const displayLabel = columnToLabelMap[columnKey] || columnKey;
+          const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
             const displayValue =
               reverseValueMapping[columnKey]?.[value] || value;
@@ -192,23 +162,7 @@ export default function LoadFactorSettings({
       // 변환 로직 적용
       const backendConditions: Record<string, string[]> = {};
 
-      // Display label을 실제 column key로 변환하는 맵핑
-      const labelToColumnMap: Record<string, string> = {
-        Airline: "operating_carrier_iata",
-        "Aircraft Type": "aircraft_type_icao",
-        "Flight Type": "flight_type",
-        "Total Seats": "total_seats",
-        "Arrival Airport": "arrival_airport_iata",
-        "Arrival Terminal": "arrival_terminal",
-        "Arrival City": "arrival_city",
-        "Arrival Country": "arrival_country",
-        "Arrival Region": "arrival_region",
-        "Departure Airport Iata": "departure_airport_iata",
-        "Departure Terminal": "departure_terminal",
-        "Departure City": "departure_city",
-        "Departure Country": "departure_country",
-        "Departure Region": "departure_region",
-      };
+      // Use centralized column mapping
 
       // 값 변환 맵핑 (필요시)
       const valueMapping: Record<string, Record<string, string>> = {
@@ -224,9 +178,7 @@ export default function LoadFactorSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const columnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const columnKey = getColumnName(displayLabel);
 
           // 값 변환 적용 (있으면)
           const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -266,9 +218,7 @@ export default function LoadFactorSettings({
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey =
-                labelToColumnMap[displayLabel] ||
-                displayLabel.toLowerCase().replace(" ", "_");
+              const columnKey = getColumnName(displayLabel);
               const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
@@ -294,7 +244,6 @@ export default function LoadFactorSettings({
     [
       updatePaxGenerationRuleStore,
       paxGenerationRules,
-      labelToColumnMap,
       valueMapping,
     ]
   );
@@ -313,23 +262,7 @@ export default function LoadFactorSettings({
       const convertedRules = newOrder.map((rule) => {
         const backendConditions: Record<string, string[]> = {};
 
-        // Display label을 실제 column key로 변환하는 맵핑
-        const labelToColumnMap: Record<string, string> = {
-          Airline: "operating_carrier_iata",
-          "Aircraft Type": "aircraft_type_icao",
-          "Flight Type": "flight_type",
-          "Total Seats": "total_seats",
-          "Arrival Airport": "arrival_airport_iata",
-          "Arrival Terminal": "arrival_terminal",
-          "Arrival City": "arrival_city",
-          "Arrival Country": "arrival_country",
-          "Arrival Region": "arrival_region",
-          "Departure Airport Iata": "departure_airport_iata",
-          "Departure Terminal": "departure_terminal",
-          "Departure City": "departure_city",
-          "Departure Country": "departure_country",
-          "Departure Region": "departure_region",
-        };
+        // Use centralized column mapping
 
         // 값 변환 맵핑 (필요시)
         const valueMapping: Record<string, Record<string, string>> = {
@@ -345,9 +278,7 @@ export default function LoadFactorSettings({
           if (parts.length === 2) {
             const displayLabel = parts[0];
             const value = parts[1];
-            const columnKey =
-              labelToColumnMap[displayLabel] ||
-              displayLabel.toLowerCase().replace(" ", "_");
+            const columnKey = getColumnName(displayLabel);
 
             // 값 변환 적용 (있으면)
             const convertedValue = valueMapping[columnKey]?.[value] || value;
@@ -462,23 +393,7 @@ export default function LoadFactorSettings({
         return new Set();
       }
 
-      // Display label을 실제 column key로 변환하는 맵핑
-      const labelToColumnMap: Record<string, string> = {
-        Airline: "operating_carrier_name",
-        "Aircraft Type": "aircraft_type_icao",
-        "Flight Type": "flight_type",
-        "Total Seats": "total_seats",
-        "Arrival Airport": "arrival_airport_iata",
-        "Arrival Terminal": "arrival_terminal",
-        "Arrival City": "arrival_city",
-        "Arrival Country": "arrival_country",
-        "Arrival Region": "arrival_region",
-        "Departure Airport Iata": "departure_airport_iata",
-        "Departure Terminal": "departure_terminal",
-        "Departure City": "departure_city",
-        "Departure Country": "departure_country",
-        "Departure Region": "departure_region",
-      };
+      // Use centralized column mapping
 
       // 조건들을 컬럼별로 그룹화
       const conditionsByColumn: Record<string, string[]> = {};
@@ -489,9 +404,7 @@ export default function LoadFactorSettings({
         if (parts.length === 2) {
           const displayLabel = parts[0];
           const value = parts[1];
-          const actualColumnKey =
-            labelToColumnMap[displayLabel] ||
-            displayLabel.toLowerCase().replace(" ", "_");
+          const actualColumnKey = getColumnName(displayLabel);
 
           if (!conditionsByColumn[actualColumnKey]) {
             conditionsByColumn[actualColumnKey] = [];
