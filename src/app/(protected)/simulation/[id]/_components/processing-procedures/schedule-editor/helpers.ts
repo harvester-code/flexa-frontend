@@ -9,12 +9,17 @@ import { LABELS } from "@/styles/columnMappings";
 // 프로세스 이름을 lambda 함수 형식으로 변환하는 함수
 // 예: "Check In" -> "check_in_zone", "A" -> "a_zone"
 export const convertProcessNameToZoneField = (processName: string): string => {
-  return processName
+  const normalized = processName
     .toLowerCase() // 소문자 변환
-    .replace(/[^a-z0-9]/g, "_") // 영문, 숫자 외 모든 문자를 언더스코어로
+    .replace(/[^a-z0-9_]/g, "_") // 영문, 숫자, 언더스코어 외 모든 문자를 언더스코어로
     .replace(/_+/g, "_") // 연속된 언더스코어를 하나로
-    .replace(/^_|_$/g, "") // 앞뒤 언더스코어 제거
-    + "_zone"; // _zone 추가
+    .replace(/^_|_$/g, ""); // 앞뒤 언더스코어 제거
+
+  // _zone으로 끝나지 않을 때만 추가
+  if (!normalized.endsWith("_zone")) {
+    return normalized + "_zone";
+  }
+  return normalized;
 };
 
 // Zone 값을 lambda 함수 형식으로 변환하는 함수

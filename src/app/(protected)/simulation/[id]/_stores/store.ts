@@ -453,6 +453,10 @@ export interface SimulationStoreState {
       }>;
     }>
   ) => void;
+  updateProcessNameInPassengerConditions: (
+    oldProcessName: string,
+    newProcessName: string
+  ) => void;
   migratePercentageData: () => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
@@ -1581,6 +1585,58 @@ export const useSimulationStore = create<SimulationStoreState>()(
               );
           }
         }
+      }),
+
+    updateProcessNameInPassengerConditions: (oldProcessName, newProcessName) =>
+      set((state) => {
+        // Convert process names to zone field format
+        const convertToZoneField = (processName: string): string => {
+          const normalized = processName
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_|_$/g, "");
+
+          // Only append _zone if it doesn't already end with _zone
+          if (!normalized.endsWith("_zone")) {
+            return normalized + "_zone";
+          }
+          return normalized;
+        };
+
+        const oldFieldName = convertToZoneField(oldProcessName);
+        const newFieldName = convertToZoneField(newProcessName);
+
+        console.log("Updating passenger_conditions:", oldFieldName, "->", newFieldName);
+
+        // Update all facilities' passenger_conditions in all processes
+        state.process_flow.forEach((process) => {
+          if (process.zones) {
+            Object.values(process.zones).forEach((zone: any) => {
+              if (zone.facilities) {
+                zone.facilities.forEach((facility: Facility) => {
+                  if (facility.operating_schedule?.time_blocks) {
+                    facility.operating_schedule.time_blocks.forEach((block) => {
+                      if (block.passenger_conditions) {
+                        block.passenger_conditions = block.passenger_conditions.map(
+                          (condition) => {
+                            if (condition.field === oldFieldName) {
+                              return {
+                                ...condition,
+                                field: newFieldName,
+                              };
+                            }
+                            return condition;
+                          }
+                        );
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
       }),
 
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정

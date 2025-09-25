@@ -708,11 +708,15 @@ export default function ProcessFlowDesigner({
     const currentProcess = processFlow[selectedProcessIndex];
     const updatedProcessFlow = [...processFlow];
 
+    // Store the old name for passenger_conditions update
+    const oldProcessName = currentProcess.name;
+    const newProcessName = formatProcessNameForStorage(editedProcess.name);
+
     // Only update allowed fields
     const updatedProcess = {
       ...currentProcess,
       // Update only name
-      name: formatProcessNameForStorage(editedProcess.name),
+      name: newProcessName,
       // Update travel_time_minutes
       travel_time_minutes: editedProcess.travel_time_minutes || 0,
       // Update entry_conditions
@@ -962,6 +966,18 @@ export default function ProcessFlowDesigner({
     );
 
     setProcessFlow(updatedProcessFlow);
+
+    // Update passenger_conditions field if process name changed
+    if (oldProcessName !== newProcessName) {
+      console.log("ProcessFlowDesigner: Process name changed from", oldProcessName, "to", newProcessName);
+
+      // Use updateProcessNameInPassengerConditions from store
+      const updateProcessNameInPassengerConditions = useSimulationStore.getState().updateProcessNameInPassengerConditions;
+      if (updateProcessNameInPassengerConditions) {
+        updateProcessNameInPassengerConditions(oldProcessName, newProcessName);
+        console.log("Updated passenger_conditions fields");
+      }
+    }
 
     toast({
       title: "Process Updated",
