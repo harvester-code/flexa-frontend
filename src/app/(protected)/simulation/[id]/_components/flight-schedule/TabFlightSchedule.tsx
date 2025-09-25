@@ -467,36 +467,8 @@ function TabFlightSchedule({
           chart_x_data: data.chart_x_data,
           chart_y_data: processedChartData,
           appliedAt: new Date().toISOString(),
-          // 🔧 Passenger Schedule 탭 활성화를 위한 기본 parquet_metadata 추가
-          parquet_metadata: (data as any).parquet_metadata || [
-            {
-              column: "nationality",
-              values: {
-                Korean: { flights: [], indices: [] },
-                Japanese: { flights: [], indices: [] },
-                Chinese: { flights: [], indices: [] },
-                American: { flights: [], indices: [] },
-                European: { flights: [], indices: [] },
-                Other: { flights: [], indices: [] },
-              },
-            },
-            {
-              column: "age_group",
-              values: {
-                Child: { flights: [], indices: [] },
-                Adult: { flights: [], indices: [] },
-                Senior: { flights: [], indices: [] },
-              },
-            },
-            {
-              column: "passenger_type",
-              values: {
-                Business: { flights: [], indices: [] },
-                Economy: { flights: [], indices: [] },
-                Premium: { flights: [], indices: [] },
-              },
-            },
-          ],
+          // Use actual parquet_metadata from data, or empty array if not available
+          parquet_metadata: (data as any).parquet_metadata || [],
         });
 
         // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음

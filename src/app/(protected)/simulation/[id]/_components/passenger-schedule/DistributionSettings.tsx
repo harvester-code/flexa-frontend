@@ -110,25 +110,7 @@ export default function DistributionSettings({
   );
   const totalFlightsFromStore = filteredFlightResult?.total || 0;
 
-  // Use centralized column mapping
-
-  const valueMapping: Record<string, Record<string, string>> = {
-    operating_carrier_iata: {
-      "Korean Air": "KE",
-      "Asiana Airlines": "OZ",
-      // 필요에 따라 추가
-    },
-  };
-
-  // Use centralized column mapping
-
-  const reverseValueMapping: Record<string, Record<string, string>> = {
-    operating_carrier_iata: {
-      KE: "Korean Air",
-      OZ: "Asiana Airlines",
-      // 필요에 따라 추가
-    },
-  };
+  // No value mappings needed - data is already in correct format
 
   // SimulationStore 데이터 변환
   const definedProperties = demographicsData?.available_values || [];
@@ -140,9 +122,7 @@ export default function DistributionSettings({
         ([columnKey, values]) => {
           const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
-            const displayValue =
-              reverseValueMapping[columnKey]?.[value] || value;
-            return `${displayLabel}: ${displayValue}`;
+            return `${displayLabel}: ${value}`;
           });
         }
       ),
@@ -199,7 +179,7 @@ export default function DistributionSettings({
               const displayLabel = parts[0];
               const value = parts[1];
               const columnKey = getColumnName(displayLabel);
-              const convertedValue = valueMapping[columnKey]?.[value] || value;
+              const convertedValue = value;
 
               if (!backendConditions[columnKey]) {
                 backendConditions[columnKey] = [];
@@ -218,7 +198,7 @@ export default function DistributionSettings({
         );
       }
     },
-    [updateRuleStore, demographicsData?.rules, valueMapping]
+    [updateRuleStore, demographicsData?.rules]
   );
 
   const removeRuleById = useCallback(
@@ -277,7 +257,7 @@ export default function DistributionSettings({
       // SimulationStore에 새로운 순서 적용
       reorderRulesStore(backendRules);
     },
-    [reorderRulesStore, valueMapping]
+    [reorderRulesStore]
   );
 
   const addRuleWithConversion = useCallback(
@@ -435,10 +415,10 @@ export default function DistributionSettings({
 
           if (intersection.length > 0) {
             // OR 조건을 고려한 정확한 겹침 계산
-            // 예: Rule 1 (Korean Air) = 118편 사용
-            //     Rule 2 (Asiana Airlines | Korean Air + A21N | A333 | B77W) = 95편 요청
-            //     겹치는 부분: Korean Air 조건만 겹침
-            //     사용 가능한 부분: Asiana Airlines 조건은 여전히 사용 가능
+            // 예: Rule 1 (Airline A) = 118편 사용
+            //     Rule 2 (Airline B | Airline A + A21N | A333 | B77W) = 95편 요청
+            //     겹치는 부분: Airline A 조건만 겹침
+            //     사용 가능한 부분: Airline B 조건은 여전히 사용 가능
 
             // 이전 규칙이 현재 규칙에 완전히 포함되는 경우만 제외
             const isPrevCompletelyIncluded = prevConditions.every((condition) =>
@@ -586,7 +566,7 @@ export default function DistributionSettings({
       const parts = condition.split(": ");
       if (parts.length === 2) {
         const category = parts[0]; // "Airline", "Aircraft Type", etc.
-        const value = parts[1]; // "Korean Air", "A21N", etc.
+        const value = parts[1]; // Value from condition
 
         if (!groups[category]) {
           groups[category] = [];

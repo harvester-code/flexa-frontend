@@ -85,15 +85,7 @@ export default function LoadFactorSettings({
     (s) => s.reorderPaxGenerationRules
   );
 
-  // Use centralized column mapping
-
-  const valueMapping: Record<string, Record<string, string>> = {
-    operating_carrier_iata: {
-      "Korean Air": "KE",
-      "Asiana Airlines": "OZ",
-      // 필요에 따라 추가
-    },
-  };
+  // No value mappings needed - data is already in correct format
 
   // 🆕 입력값 정규화 (1~100 정수로 제한)
   const normalizeLoadFactor = useCallback(
@@ -110,18 +102,6 @@ export default function LoadFactorSettings({
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
-    // 백엔드 → UI 역변환 맵핑
-    // Use centralized column mapping
-
-    // 값 역변환 맵핑
-    const reverseValueMapping: Record<string, Record<string, string>> = {
-      operating_carrier_iata: {
-        KE: "Korean Air",
-        OZ: "Asiana Airlines",
-        // 필요에 따라 추가
-      },
-    };
-
     return paxGenerationRules.map((rule, index) => ({
       id: `rule-${index}`,
       name: `Rule ${index + 1}`,
@@ -129,9 +109,7 @@ export default function LoadFactorSettings({
         ([columnKey, values]) => {
           const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
-            const displayValue =
-              reverseValueMapping[columnKey]?.[value] || value;
-            return `${displayLabel}: ${displayValue}`;
+            return `${displayLabel}: ${value}`;
           });
         }
       ),
@@ -162,16 +140,6 @@ export default function LoadFactorSettings({
       // 변환 로직 적용
       const backendConditions: Record<string, string[]> = {};
 
-      // Use centralized column mapping
-
-      // 값 변환 맵핑 (필요시)
-      const valueMapping: Record<string, Record<string, string>> = {
-        operating_carrier_iata: {
-          "Korean Air": "KE",
-          "Asiana Airlines": "OZ",
-          // 필요에 따라 추가
-        },
-      };
 
       rule.conditions.forEach((condition) => {
         const parts = condition.split(": ");
@@ -180,13 +148,10 @@ export default function LoadFactorSettings({
           const value = parts[1];
           const columnKey = getColumnName(displayLabel);
 
-          // 값 변환 적용 (있으면)
-          const convertedValue = valueMapping[columnKey]?.[value] || value;
-
           if (!backendConditions[columnKey]) {
             backendConditions[columnKey] = [];
           }
-          backendConditions[columnKey].push(convertedValue);
+          backendConditions[columnKey].push(value);
         }
       });
 
@@ -219,12 +184,10 @@ export default function LoadFactorSettings({
               const displayLabel = parts[0];
               const value = parts[1];
               const columnKey = getColumnName(displayLabel);
-              const convertedValue = valueMapping[columnKey]?.[value] || value;
-
               if (!backendConditions[columnKey]) {
                 backendConditions[columnKey] = [];
               }
-              backendConditions[columnKey].push(convertedValue);
+              backendConditions[columnKey].push(value);
             }
           });
         }
@@ -243,8 +206,7 @@ export default function LoadFactorSettings({
     },
     [
       updatePaxGenerationRuleStore,
-      paxGenerationRules,
-      valueMapping,
+      paxGenerationRules
     ]
   );
 
@@ -262,16 +224,6 @@ export default function LoadFactorSettings({
       const convertedRules = newOrder.map((rule) => {
         const backendConditions: Record<string, string[]> = {};
 
-        // Use centralized column mapping
-
-        // 값 변환 맵핑 (필요시)
-        const valueMapping: Record<string, Record<string, string>> = {
-          operating_carrier_iata: {
-            "Korean Air": "KE",
-            "Asiana Airlines": "OZ",
-            // 필요에 따라 추가
-          },
-        };
 
         rule.conditions.forEach((condition) => {
           const parts = condition.split(": ");
@@ -280,13 +232,10 @@ export default function LoadFactorSettings({
             const value = parts[1];
             const columnKey = getColumnName(displayLabel);
 
-            // 값 변환 적용 (있으면)
-            const convertedValue = valueMapping[columnKey]?.[value] || value;
-
             if (!backendConditions[columnKey]) {
               backendConditions[columnKey] = [];
             }
-            backendConditions[columnKey].push(convertedValue);
+            backendConditions[columnKey].push(value);
           }
         });
 
@@ -399,7 +348,7 @@ export default function LoadFactorSettings({
       const conditionsByColumn: Record<string, string[]> = {};
 
       conditions.forEach((condition) => {
-        // "Airline: Korean Air" 형태를 파싱
+        // Parse condition format
         const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
@@ -580,7 +529,7 @@ export default function LoadFactorSettings({
       const parts = condition.split(": ");
       if (parts.length === 2) {
         const category = parts[0]; // "Airline", "Aircraft Type", etc.
-        const value = parts[1]; // "Korean Air", "A21N", etc.
+        const value = parts[1]; // Value from condition
 
         if (!groups[category]) {
           groups[category] = [];

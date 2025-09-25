@@ -85,11 +85,11 @@ export default function ProfileCriteriaSettings({
           const parsedConditions: string[] = [];
 
           conditions.forEach((condition) => {
-            // 일반 형태: "Airline: Korean Air"
+            // 일반 형태: "Category: Value"
             if (condition.includes(': ') && !condition.includes(' | ')) {
               parsedConditions.push(condition);
             }
-            // 배지 형태: "Airline: Korean Air | Asiana Airlines"
+            // 배지 형태: "Category: Value1 | Value2"
             else if (condition.includes(' | ')) {
               const parts = condition.split(': ');
               if (parts.length === 2) {
@@ -108,7 +108,7 @@ export default function ProfileCriteriaSettings({
         const individualConditions = parseConditions(editingRule.conditions);
 
         individualConditions.forEach((condition: string) => {
-          // "Airline: Korean Air" 형태를 파싱
+          // Parse condition format
           const parts = condition.split(': ');
           if (parts.length === 2) {
             const displayLabel = parts[0];

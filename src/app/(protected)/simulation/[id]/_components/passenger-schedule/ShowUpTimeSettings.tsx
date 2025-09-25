@@ -125,39 +125,7 @@ export default function ShowUpTimeSettings({
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Get airline mappings from store
-  const flightAirlines = useSimulationStore((state) => state.flight_airlines);
-
-  // Create dynamic value mappings from store data
-  const valueMapping = useMemo(() => {
-    const mapping: Record<string, Record<string, string>> = {
-      operating_carrier_iata: {},
-    };
-
-    // Build airline name to code mapping from store
-    flightAirlines.forEach((airline) => {
-      if (airline.name && airline.code) {
-        mapping.operating_carrier_iata[airline.name] = airline.code;
-      }
-    });
-
-    return mapping;
-  }, [flightAirlines]);
-
-  const reverseValueMapping = useMemo(() => {
-    const mapping: Record<string, Record<string, string>> = {
-      operating_carrier_iata: {},
-    };
-
-    // Build airline code to name mapping from store
-    flightAirlines.forEach((airline) => {
-      if (airline.name && airline.code) {
-        mapping.operating_carrier_iata[airline.code] = airline.name;
-      }
-    });
-
-    return mapping;
-  }, [flightAirlines]);
+  // No value mappings needed - data is already in correct format
 
   // SimulationStore 데이터 변환
   const createdRules: Rule[] = useMemo(() => {
@@ -168,9 +136,7 @@ export default function ShowUpTimeSettings({
         ([columnKey, values]) => {
           const displayLabel = getColumnLabel(columnKey);
           return values.map((value) => {
-            const displayValue =
-              reverseValueMapping[columnKey]?.[value] || value;
-            return `${displayLabel}: ${displayValue}`;
+            return `${displayLabel}: ${value}`;
           });
         }
       ),
@@ -216,13 +182,10 @@ export default function ShowUpTimeSettings({
           const value = parts[1];
           const columnKey = getColumnName(displayLabel);
 
-          // 값 변환 적용 (있으면)
-          const convertedValue = valueMapping[columnKey]?.[value] || value;
-
           if (!backendConditions[columnKey]) {
             backendConditions[columnKey] = [];
           }
-          backendConditions[columnKey].push(convertedValue);
+          backendConditions[columnKey].push(value);
         }
       });
 
@@ -234,7 +197,7 @@ export default function ShowUpTimeSettings({
         },
       });
     },
-    [addPaxArrivalPatternRule, valueMapping]
+    [addPaxArrivalPatternRule]
   );
 
   const updateShowUpTimeRule = useCallback(
@@ -261,12 +224,11 @@ export default function ShowUpTimeSettings({
               const displayLabel = parts[0];
               const value = parts[1];
               const columnKey = getColumnName(displayLabel);
-              const convertedValue = valueMapping[columnKey]?.[value] || value;
 
               if (!backendConditions[columnKey]) {
                 backendConditions[columnKey] = [];
               }
-              backendConditions[columnKey].push(convertedValue);
+              backendConditions[columnKey].push(value);
             }
           });
         }
@@ -284,8 +246,7 @@ export default function ShowUpTimeSettings({
     },
     [
       updatePaxArrivalPatternRule,
-      paxArrivalPatternRules,
-      valueMapping,
+      paxArrivalPatternRules
     ]
   );
 
@@ -309,13 +270,10 @@ export default function ShowUpTimeSettings({
           const value = parts[1];
           const columnKey = getColumnName(displayLabel);
 
-          // 값 변환 적용 (있으면)
-          const convertedValue = valueMapping[columnKey]?.[value] || value;
-
           if (!backendConditions[columnKey]) {
             backendConditions[columnKey] = [];
           }
-          backendConditions[columnKey].push(convertedValue);
+          backendConditions[columnKey].push(value);
         }
       });
 
@@ -330,7 +288,7 @@ export default function ShowUpTimeSettings({
 
     // 전체 룰 배열을 교체
     useSimulationStore.getState().setPaxArrivalPatternRules(convertedRules);
-  }, [valueMapping]);
+  }, []);
 
   const updateShowUpTimeDefault = useCallback(
     (mean: number, std: number) => {
@@ -502,7 +460,7 @@ export default function ShowUpTimeSettings({
       const conditionsByColumn: Record<string, string[]> = {};
 
       conditions.forEach((condition) => {
-        // "Airline: Korean Air" 형태를 파싱
+        // Parse condition format
         const parts = condition.split(": ");
         if (parts.length === 2) {
           const displayLabel = parts[0];
@@ -676,8 +634,8 @@ export default function ShowUpTimeSettings({
     conditions.forEach((condition) => {
       const parts = condition.split(": ");
       if (parts.length === 2) {
-        const category = parts[0]; // "Airline", "Aircraft Type", etc.
-        const value = parts[1]; // "Korean Air", "A21N", etc.
+        const category = parts[0]; // Category name
+        const value = parts[1]; // Category value
 
         if (!groups[category]) {
           groups[category] = [];

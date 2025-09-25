@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { getColumnLabel } from '@/styles/columnMappings';
 
 interface ParquetMetadataItem {
   column: string;
@@ -63,77 +64,22 @@ export default function FlightCriteriaSelector({
       let categoryName = '';
       let labelName = '';
 
-      switch (item.column) {
-        case 'operating_carrier_name':
-        case 'operating_carrier_iata':
-          categoryName = 'Airline & Aircraft';
-          labelName = 'Airline';
-          break;
-        case 'aircraft_type_icao':
-          categoryName = 'Airline & Aircraft';
-          labelName = 'Aircraft Type';
-          break;
-        case 'flight_type':
-          categoryName = 'Airline & Aircraft';
-          labelName = 'Flight Type';
-          break;
-        case 'total_seats':
-          categoryName = 'Airline & Aircraft';
-          labelName = 'Total Seats';
-          break;
-        case 'arrival_airport_iata':
-        case 'arrival_city':
-        case 'arrival_country':
-        case 'arrival_region':
-        case 'arrival_terminal':
-          categoryName = 'Arrival Info';
-          labelName = item.column
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-          break;
-        case 'departure_airport_iata':
-        case 'departure_city':
-        case 'departure_country':
-        case 'departure_region':
-        case 'departure_terminal':
-          categoryName = 'Departure Info';
-          labelName = item.column
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-          break;
-        case 'nationality':
-          categoryName = 'Passenger Demographics';
-          labelName = 'Nationality';
-          break;
-        case 'profile':
-          categoryName = 'Passenger Demographics';
-          labelName = 'Passenger Profile';
-          break;
-        default:
-          // 🆕 승객 관련 컬럼들 패턴 매칭
-          if (
-            item.column.startsWith('pax_') ||
-            item.column.startsWith('passenger_') ||
-            item.column.includes('demographics') ||
-            item.column.includes('nationality') ||
-            item.column.includes('profile')
-          ) {
-            categoryName = 'Passenger Demographics';
-            labelName = item.column
-              .split('_')
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-          } else {
-            categoryName = 'Other';
-            labelName = item.column
-              .split('_')
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-          }
-          break;
-      } // switch 문 닫기
+      // Use centralized column label mapping
+      labelName = getColumnLabel(item.column);
+
+      // Determine category based on column name patterns
+      if (item.column.includes('carrier') || item.column.includes('aircraft') || item.column === 'flight_type' || item.column === 'total_seats') {
+        categoryName = 'Airline & Aircraft';
+      } else if (item.column.startsWith('arrival_')) {
+        categoryName = 'Arrival Info';
+      } else if (item.column.startsWith('departure_')) {
+        categoryName = 'Departure Info';
+      } else if (item.column.startsWith('pax_') || item.column.startsWith('passenger_') ||
+                 item.column.includes('demographics') || item.column === 'nationality' || item.column === 'profile') {
+        categoryName = 'Passenger Demographics';
+      } else {
+        categoryName = 'Other';
+      }
 
       if (!categories[categoryName]) {
         categories[categoryName] = [];
@@ -228,23 +174,22 @@ export default function FlightCriteriaSelector({
       }
     });
 
-    // 항공사별 breakdown 계산 (Korean Air, Asiana Airlines 예시)
-    const airlines = ['Korean Air', 'Asiana Airlines'];
-    airlines.forEach((airline) => {
-      let selected = 0;
-      let total = 0;
+    // Calculate airline breakdown from actual data
+    const carrierColumn = parquetMetadata.find(item => item.column === 'operating_carrier_iata' || item.column === 'operating_carrier_name');
+    if (carrierColumn) {
+      Object.entries(carrierColumn.values).forEach(([airline, data]) => {
+        let selected = 0;
+        const total = data.flights.length;
 
-      // 간소화된 계산
-      if (airline === 'Korean Air') {
-        total = 114;
-        selected = totalSelected > 0 ? Math.min(totalSelected, 114) : 0;
-      } else if (airline === 'Asiana Airlines') {
-        total = 70;
-        selected = totalSelected > 114 ? Math.min(totalSelected - 114, 70) : 0;
-      }
+        // Check if this airline is selected
+        const itemKey = `${carrierColumn.column}:${airline}`;
+        if (selectedItems[itemKey]) {
+          selected = total;
+        }
 
-      airlineBreakdown.push({ name: airline, selected, total });
-    });
+        airlineBreakdown.push({ name: airline, selected, total });
+      });
+    }
 
     return {
       totalSelected,
