@@ -20,10 +20,8 @@ export const CATEGORY_COLOR_INDICES: Record<string, number> = {
   [LABELS.DEPARTURE_AIRPORT]: adjustColorIndex(6), // 6 -> 7: pink
   [LABELS.DEPARTURE_COUNTRY]: adjustColorIndex(7), // 7 -> 8: indigo
   [LABELS.DEPARTURE_REGION]: adjustColorIndex(8),  // 8 -> 9: lime
-
-  // Passenger demographics (paxDemographics에서 사용)
-  "Nationality": adjustColorIndex(9),              // 9 -> 10: teal
-  "Passenger Type": adjustColorIndex(10),          // 10 -> 11: stone (profile)
+  [LABELS.NATIONALITY]: adjustColorIndex(9),       // 9 -> 10: teal
+  [LABELS.PASSENGER_TYPE]: adjustColorIndex(10),   // 10 -> 11: stone
 };
 
 
@@ -38,10 +36,8 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
   [LABELS.DEPARTURE_AIRPORT]: MapPin,
   [LABELS.DEPARTURE_COUNTRY]: Globe,
   [LABELS.DEPARTURE_REGION]: Globe,
-
-  // Passenger demographics
-  "Nationality": Globe,
-  "Passenger Type": Users,
+  [LABELS.NATIONALITY]: Globe,
+  [LABELS.PASSENGER_TYPE]: Users,
 };
 
 // Helper functions using centralized column mappings

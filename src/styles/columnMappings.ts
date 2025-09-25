@@ -29,18 +29,9 @@ export const COLUMN_LABEL_MAP: Record<string, string> = {
   departure_country: "Departure Country",
   departure_region: "Departure Region",
 
-  // Passenger
-  passenger_nationality: "Nationality",
+  // Passenger demographics (paxDemographics에서 사용)
   nationality: "Nationality",
-  passenger_type: "Passenger Type",
   profile: "Passenger Type",
-  passenger_class: "Passenger Class",
-  transit_type: "Transit Type",
-  group_size_category: "Group Size",
-
-  // Facility
-  gate_number: "Gate",
-  terminal: "Terminal",
 } as const;
 
 // Helper function to get display label for a column
@@ -86,24 +77,20 @@ getColumnName.reverseMap = null as Record<string, string> | null;
 // Export type for the labels
 export type ColumnLabel = typeof COLUMN_LABEL_MAP[keyof typeof COLUMN_LABEL_MAP];
 
-// Common label constants for use in comparisons
+// Common label constants derived from COLUMN_LABEL_MAP
+// 중복 제거를 위해 COLUMN_LABEL_MAP의 값들을 기반으로 생성
 export const LABELS = {
-  AIRLINE: "Airline",
-  AIRCRAFT_TYPE: "Aircraft Type",
-  FLIGHT_TYPE: "Flight Type",
-  ARRIVAL_AIRPORT: "Arrival Airport",
-  DEPARTURE_AIRPORT: "Departure Airport",
-  ARRIVAL_COUNTRY: "Arrival Country",
-  DEPARTURE_COUNTRY: "Departure Country",
-  ARRIVAL_REGION: "Arrival Region",
-  DEPARTURE_REGION: "Departure Region",
-  NATIONALITY: "Nationality",
-  PASSENGER_TYPE: "Passenger Type",
-  PASSENGER_CLASS: "Passenger Class",
-  TRANSIT_TYPE: "Transit Type",
-  GROUP_SIZE: "Group Size",
-  GATE: "Gate",
-  TERMINAL: "Terminal",
+  AIRLINE: COLUMN_LABEL_MAP.operating_carrier_iata,
+  AIRCRAFT_TYPE: COLUMN_LABEL_MAP.aircraft_type,
+  FLIGHT_TYPE: COLUMN_LABEL_MAP.flight_type,
+  ARRIVAL_AIRPORT: COLUMN_LABEL_MAP.arrival_airport_iata,
+  DEPARTURE_AIRPORT: COLUMN_LABEL_MAP.departure_airport_iata,
+  ARRIVAL_COUNTRY: COLUMN_LABEL_MAP.arrival_country,
+  DEPARTURE_COUNTRY: COLUMN_LABEL_MAP.departure_country,
+  ARRIVAL_REGION: COLUMN_LABEL_MAP.arrival_region,
+  DEPARTURE_REGION: COLUMN_LABEL_MAP.departure_region,
+  NATIONALITY: COLUMN_LABEL_MAP.nationality,
+  PASSENGER_TYPE: COLUMN_LABEL_MAP.profile,
 } as const;
 
 // Get all unique labels
