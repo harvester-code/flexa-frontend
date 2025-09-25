@@ -277,7 +277,6 @@ export default function OperatingScheduleEditor({
     initializeDisabledCellsFromPeriods,
     getCategoryNameFromField,
     getCategoryFieldName,
-    getBadgeColor,
   } = useScheduleInitialization();
 
   // 🔄 실행 취소/재실행 히스토리 관리

@@ -1,8 +1,9 @@
 import React from "react";
-import { Plane, Navigation, MapPin, Globe, Users } from "lucide-react";
 import { getBadgeColor } from "@/styles/colors";
 import { useSimulationStore } from "../../../_stores";
 import { ParquetMetadataItem, CategoryBadge, TimeBlock } from "./types";
+import { getCategoryNameFromField, getCategoryIcon, getStorageFieldName, getCategoryColorIndex } from "./badgeMappings";
+import { Users, MapPin } from "lucide-react";
 
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 export const createDynamicConditionCategories = (
@@ -19,51 +20,17 @@ export const createDynamicConditionCategories = (
     }
   > = {};
 
-  let colorIndexCounter = 0; // 색상 인덱스 카운터
 
   // 🎯 1단계: parquetMetadata 처리
   parquetMetadata.forEach((item) => {
-    let categoryName = "";
-    let icon = Plane;
+    const categoryName = getCategoryNameFromField(item.column);
 
-    switch (item.column) {
-      case "operating_carrier_name":
-      case "operating_carrier_iata":
-        categoryName = "Airline";
-        icon = Plane;
-        break;
-      case "aircraft_type":
-        categoryName = "Aircraft Type";
-        icon = Plane;
-        break;
-      case "flight_type":
-        categoryName = "Flight Type";
-        icon = Navigation;
-        break;
-      case "arrival_airport_iata":
-        categoryName = "Arrival Airport";
-        icon = MapPin;
-        break;
-      case "arrival_country":
-        categoryName = "Arrival Country";
-        icon = Globe;
-        break;
-      case "arrival_region":
-        categoryName = "Arrival Region";
-        icon = Globe;
-        break;
-      case "nationality":
-        categoryName = "Nationality";
-        icon = MapPin;
-        break;
-      case "profile":
-        categoryName = "Passenger Type";
-        icon = Users;
-        break;
-      default:
-        // 기본 처리 (필요시 확장 가능)
-        return;
+    // Skip if field is not mapped
+    if (categoryName === item.column) {
+      return;
     }
+
+    const icon = getCategoryIcon(categoryName);
 
     if (categoryName) {
       let options = Object.keys(item.values);
@@ -85,7 +52,7 @@ export const createDynamicConditionCategories = (
         categories[categoryName] = {
           icon,
           options,
-          colorIndex: colorIndexCounter++,
+          colorIndex: getCategoryColorIndex(categoryName),
         };
       }
     }
@@ -107,15 +74,10 @@ export const createDynamicConditionCategories = (
 
       if (categoryName) {
         // paxDemographics가 우선순위를 가지도록 덮어쓰기
-        // 기존 카테고리가 있으면 그 colorIndex를 유지, 없으면 새로 할당
-        const existingColorIndex = categories[categoryName]?.colorIndex;
         categories[categoryName] = {
           icon,
           options: data.available_values,
-          colorIndex:
-            existingColorIndex !== undefined
-              ? existingColorIndex
-              : colorIndexCounter++,
+          colorIndex: getCategoryColorIndex(categoryName),
         };
       }
     }
@@ -240,20 +202,7 @@ export const calculatePeriodsFromDisabledCells = (
   const processTime =
     processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
 
-  // category name을 field name으로 변환하는 헬퍼 함수 (내부 정의)
-  const getCategoryFieldName = (category: string): string => {
-    const categoryToFieldMap: Record<string, string> = {
-      Airline: "operating_carrier_iata",
-      "Aircraft Type": "aircraft_type",
-      "Flight Type": "flight_type",
-      "Arrival Airport": "arrival_airport_iata",
-      "Arrival Country": "arrival_country",
-      "Arrival Region": "arrival_region",
-      Nationality: "nationality",
-      "Passenger Type": "profile",
-    };
-    return categoryToFieldMap[category] || "";
-  };
+  // Use the centralized function for category to field conversion
 
   // 모든 셀이 활성화되어 있는지 확인
   const isAllActive = timeSlots.every(
@@ -305,7 +254,7 @@ export const calculatePeriodsFromDisabledCells = (
 
       return [
         {
-          period: `${startDate} ${firstTime}:00-${nextDayStr} 00:00:00`,
+          period: `${startDate} ${firstTime}:00-${currentDate} 23:59:59`,
           process_time_seconds: processTime,
           passenger_conditions: [],
           activate: true,
@@ -313,10 +262,10 @@ export const calculatePeriodsFromDisabledCells = (
       ];
     }
 
-    // 기본값
+    // 기본값 - Use 23:59:59 instead of next day 00:00:00
     return [
       {
-        period: `${currentDate} 00:00:00-${nextDayStr} 00:00:00`,
+        period: `${currentDate} 00:00:00-${currentDate} 23:59:59`,
         process_time_seconds: processTime,
         passenger_conditions: firstConditions || [],
         activate: true,
@@ -336,9 +285,10 @@ export const calculatePeriodsFromDisabledCells = (
     const badges = cellBadges[cellId] || [];
 
     // 뱃지를 passenger_conditions 형식으로 변환
+    // Use getStorageFieldName for storage format (e.g., Airline -> operating_carrier_iata)
     const conditions = badges
       .map((badge) => ({
-        field: getCategoryFieldName(badge.category),
+        field: getStorageFieldName(badge.category),
         values: badge.options,
       }))
       .filter((c) => c.field);
@@ -364,7 +314,8 @@ export const calculatePeriodsFromDisabledCells = (
 
       let endDateTime;
       if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
-        endDateTime = `${nextDayStr} 00:00:00`;
+        // Use 23:59:59 instead of next day 00:00:00
+        endDateTime = `${currentDate} 23:59:59`;
       } else {
         const endDate =
           isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
@@ -377,7 +328,7 @@ export const calculatePeriodsFromDisabledCells = (
         period: `${startDate} ${currentStart}:00-${endDateTime}`,
         process_time_seconds: processTime,
         passenger_conditions: currentConditions || [],
-        activate: currentIsActive,  // 이전 구간의 activate 상태
+        activate: currentIsActive !== null ? currentIsActive : true,  // null인 경우 기본값 true
       });
     }
 
@@ -407,7 +358,8 @@ export const calculatePeriodsFromDisabledCells = (
       endTime === "00:00" ||
       lastIndex === timeSlots.length - 1
     ) {
-      endDateTime = `${nextDayStr} 00:00:00`;
+      // Use 23:59:59 instead of next day 00:00:00
+      endDateTime = `${currentDate} 23:59:59`;
     } else {
       const endDate =
         isPreviousDay && lastIndex < timeSlots.indexOf("00:00")
@@ -420,10 +372,21 @@ export const calculatePeriodsFromDisabledCells = (
       period: `${startDate} ${currentStart}:00-${endDateTime}`,
       process_time_seconds: processTime,
       passenger_conditions: currentConditions || [],
-      activate: currentIsActive,  // 마지막 구간의 activate 상태
+      activate: currentIsActive !== null ? currentIsActive : true,  // null인 경우 기본값 true
     });
   }
 
-  // 모두 비활성화인 경우에도 비활성화 period 반환
+  // periods가 비어있는 경우 기본값 반환 (모든 셀이 활성화)
+  if (periods.length === 0) {
+    return [
+      {
+        period: `${currentDate} 00:00:00-${currentDate} 23:59:59`,
+        process_time_seconds: processTime,
+        passenger_conditions: [],
+        activate: true,
+      },
+    ];
+  }
+
   return periods;
 };

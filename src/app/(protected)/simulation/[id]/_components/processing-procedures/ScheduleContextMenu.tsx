@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
+import { getCategoryColorIndex } from "./schedule-editor/badgeMappings";
 
 // 카테고리별 뱃지 타입 정의
 interface CategoryBadge {
@@ -275,15 +276,11 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
               );
               const searchTerm = searchTerms[category] || "";
 
-              // Calculate global category index for color consistency
-              let categoryIndex = 0;
-              for (let i = 0; i < groupIndex; i++) {
-                categoryIndex += categoryGroups[i].categories.length;
-              }
-              categoryIndex += categoryIndexInGroup;
+              // Use centralized color index for consistency
+              const categoryColorIndex = getCategoryColorIndex(category);
 
               // Get icon color from COMPONENT_TYPICAL_COLORS
-              const iconColor = getColorByIndex(categoryIndex);
+              const iconColor = getColorByIndex(categoryColorIndex);
 
               return (
                 <DropdownMenuSub key={category}>
@@ -326,8 +323,9 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                         <>
                           {filteredOptions.map((option, optionIndex) => {
                             const checkState = getOptionCheckState(category, option);
-                            // Use category index for consistent color across all options in the category
-                            const optionColor = getColorByIndex(config.colorIndex || categoryIndex);
+                            // Use centralized color index or config's colorIndex
+                            const effectiveIndex = config.colorIndex ?? categoryColorIndex;
+                            const optionColor = getColorByIndex(effectiveIndex);
 
                             return (
                               <DropdownMenuItem
