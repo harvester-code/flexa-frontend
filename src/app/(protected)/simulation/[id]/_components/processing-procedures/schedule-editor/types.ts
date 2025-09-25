@@ -29,6 +29,7 @@ export interface BadgeCondition {
 // 카테고리별 뱃지 타입 정의
 export interface CategoryBadge {
   category: string;
+  field?: string; // 원본 field 값 (passenger_conditions의 field)
   options: string[];
   colorIndex: number; // 색상 인덱스 추가
   style?: React.CSSProperties; // 인라인 스타일 추가

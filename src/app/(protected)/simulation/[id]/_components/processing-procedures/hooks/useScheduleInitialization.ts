@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { FacilityWithSchedule, CategoryBadge } from "../schedule-editor/types";
-import { getCategoryNameFromField, getCategoryFieldName } from "../schedule-editor/badgeMappings";
+import { getCategoryNameFromField, getCategoryFieldName, getCategoryColorIndex } from "../schedule-editor/badgeMappings";
+import { getBadgeColor } from "@/styles/colors";
 
 export function useScheduleInitialization() {
   // JSON 데이터를 그대로 UI에 매핑하는 단순한 로직
@@ -87,11 +88,23 @@ export function useScheduleInitialization() {
 
             // passenger_conditions가 있으면 배지 추가 - JSON 그대로 사용
             if (block.passenger_conditions?.length > 0) {
-              const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => ({
-                category: condition.field,  // JSON의 field 그대로
-                options: condition.values || [],
-                colorIndex: 0,  // 색상은 나중에 UI에서 결정
-              }));
+              const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => {
+                // field를 카테고리 이름으로 변환 (표시용)
+                const categoryName = getCategoryNameFromField(condition.field);
+
+                // 카테고리 이름을 기반으로 일관된 색상 인덱스 가져오기
+                // CATEGORY_COLOR_INDICES 사용
+                const colorIndex = getCategoryColorIndex(categoryName);
+                const badgeColor = getBadgeColor(colorIndex);
+
+                return {
+                  category: categoryName,  // 표시용 카테고리 이름
+                  field: condition.field,   // 원본 field 값 보관
+                  options: condition.values || [],
+                  colorIndex: colorIndex,  // 카테고리 기반 색상 인덱스
+                  style: badgeColor.style, // 색상 스타일
+                };
+              });
 
               // 해당 구간의 모든 셀에 배지 적용
               for (let i = startIdx; i < endIdx; i++) {

@@ -38,10 +38,19 @@ export function useBadgeHandlers({
           if (process && process.zones) {
             const processName = formatProcessName(process.name);
             if (processName === category) {
+              // 프로세스 이름을 기반으로 일관된 색상 인덱스 생성
+              // 문자열을 해시하여 일관된 인덱스 생성
+              let hash = 0;
+              for (let j = 0; j < processName.length; j++) {
+                hash = ((hash << 5) - hash) + processName.charCodeAt(j);
+                hash = hash & hash; // Convert to 32bit integer
+              }
+              const consistentColorIndex = processColorIndex + (Math.abs(hash) % 10);
+
               return {
                 icon: Navigation,
                 options: Object.keys(process.zones),
-                colorIndex: processColorIndex + i, // Process에 따라 다른 색상 인덱스
+                colorIndex: consistentColorIndex, // 프로세스 이름 기반 일관된 색상
               };
             }
           }

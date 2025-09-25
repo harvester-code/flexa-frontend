@@ -20,14 +20,12 @@ export const CATEGORY_COLOR_INDICES: Record<string, number> = {
   [LABELS.DEPARTURE_AIRPORT]: adjustColorIndex(6), // 6 -> 7: pink
   [LABELS.DEPARTURE_COUNTRY]: adjustColorIndex(7), // 7 -> 8: indigo
   [LABELS.DEPARTURE_REGION]: adjustColorIndex(8),  // 8 -> 9: lime
-  [LABELS.GATE]: adjustColorIndex(9),              // 9 -> 10: teal
-  [LABELS.TERMINAL]: adjustColorIndex(10),         // 10 -> 11: stone
-  [LABELS.PASSENGER_CLASS]: adjustColorIndex(11),  // 11 -> 12: purple (different from primary)
-  [LABELS.PASSENGER_TYPE]: adjustColorIndex(12),   // 12 -> 13: sky
-  [LABELS.TRANSIT_TYPE]: adjustColorIndex(13),     // 13 -> 14: fuchsia
-  [LABELS.NATIONALITY]: adjustColorIndex(14),      // 14 -> 15: lime-600
-  [LABELS.GROUP_SIZE]: adjustColorIndex(15),       // 15 -> 16: red-600
+
+  // Passenger demographics (paxDemographics에서 사용)
+  "Nationality": adjustColorIndex(9),              // 9 -> 10: teal
+  "Passenger Type": adjustColorIndex(10),          // 10 -> 11: stone (profile)
 };
+
 
 // Icon mapping for categories
 const CATEGORY_ICON_MAP: Record<string, any> = {
@@ -40,13 +38,10 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
   [LABELS.DEPARTURE_AIRPORT]: MapPin,
   [LABELS.DEPARTURE_COUNTRY]: Globe,
   [LABELS.DEPARTURE_REGION]: Globe,
-  [LABELS.GATE]: MapPin,
-  [LABELS.TERMINAL]: MapPin,
-  [LABELS.PASSENGER_CLASS]: Users,
-  [LABELS.PASSENGER_TYPE]: Users,
-  [LABELS.TRANSIT_TYPE]: Users,
-  [LABELS.NATIONALITY]: Globe,
-  [LABELS.GROUP_SIZE]: Users,
+
+  // Passenger demographics
+  "Nationality": Globe,
+  "Passenger Type": Users,
 };
 
 // Helper functions using centralized column mappings
