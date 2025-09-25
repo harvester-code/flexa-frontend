@@ -4,6 +4,25 @@ import { useSimulationStore } from "../../../_stores";
 import { ParquetMetadataItem, CategoryBadge, TimeBlock } from "./types";
 import { getCategoryNameFromField, getCategoryIcon, getStorageFieldName, getCategoryColorIndex } from "./badgeMappings";
 import { Users, MapPin } from "lucide-react";
+import { LABELS } from "@/styles/columnMappings";
+
+// 프로세스 이름을 lambda 함수 형식으로 변환하는 함수
+// 예: "Check In" -> "check_in_zone", "A" -> "a_zone"
+export const convertProcessNameToZoneField = (processName: string): string => {
+  return processName
+    .toLowerCase() // 소문자 변환
+    .replace(/[^a-z0-9]/g, "_") // 영문, 숫자 외 모든 문자를 언더스코어로
+    .replace(/_+/g, "_") // 연속된 언더스코어를 하나로
+    .replace(/^_|_$/g, "") // 앞뒤 언더스코어 제거
+    + "_zone"; // _zone 추가
+};
+
+// Zone 값을 lambda 함수 형식으로 변환하는 함수
+// Lambda는 대문자로 Zone을 처리하므로 대문자로 변환
+// 예: "a1" -> "A1", "dg1" -> "DG1"
+export const convertZoneValueForLambda = (zoneValue: string): string => {
+  return zoneValue.toUpperCase();
+};
 
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 export const createDynamicConditionCategories = (
@@ -288,10 +307,26 @@ export const calculatePeriodsFromDisabledCells = (
     // 뱃지를 passenger_conditions 형식으로 변환
     // Use getStorageFieldName for storage format (e.g., Airline -> operating_carrier_iata)
     const conditions = badges
-      .map((badge) => ({
-        field: getStorageFieldName(badge.category),
-        values: badge.options,
-      }))
+      .map((badge) => {
+        // Check if this is a process category (not in predefined categories)
+        const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
+
+        if (isProcessCategory) {
+          // Process names need special handling: convert to zone field format
+          // e.g., "A" -> "a_zone", "Check In" -> "check_in_zone"
+          // Zone values must be uppercase for Lambda (e.g., "a1" -> "A1")
+          return {
+            field: convertProcessNameToZoneField(badge.category),
+            values: badge.options.map(convertZoneValueForLambda),
+          };
+        } else {
+          // Regular categories use standard storage field mapping
+          return {
+            field: getStorageFieldName(badge.category),
+            values: badge.options,
+          };
+        }
+      })
       .filter((c) => c.field);
 
     // 현재 셀의 activate 상태
