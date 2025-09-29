@@ -18,7 +18,7 @@ function HomeAccordion({ title, icon, open = true, className, children }: HomeAc
   return (
     <div className={cn('mt-6 flex flex-col', className)}>
       <div
-        className="cursor-pointer rounded-lg bg-muted/30 p-4 transition-colors hover:bg-muted/50"
+        className="cursor-pointer rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200"
         onClick={() => setIsOpened(!isOpened)}
         aria-expanded={isOpened}
         aria-controls={`accordion-content-${title}`}
@@ -33,7 +33,7 @@ function HomeAccordion({ title, icon, open = true, className, children }: HomeAc
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {icon && <div className="rounded-lg bg-primary/10 p-2">{icon}</div>}
+            {icon && <div className="rounded-lg bg-primary/15 p-2">{icon}</div>}
             <div className="text-xl font-semibold text-default-900">{title}</div>
           </div>
           <ChevronDown

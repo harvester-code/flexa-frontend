@@ -5,7 +5,7 @@ async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       <AppSidebar />
-      <main className="flex flex-1 flex-col overflow-auto">
+      <main className="flex flex-1 flex-col overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
         <section className="flex-1">{children}</section>
         <AppFooter />
       </main>

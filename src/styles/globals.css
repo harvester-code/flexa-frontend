@@ -10,6 +10,9 @@
 /* 🎯 근본적 해결책: 전체 UI 크기 조정 */
 :root {
   font-size: 1rem; /* 16px → 13px = 18.75% 축소 (12px → 13px로 8% 증가) */
+
+  /* 스크롤바 공간 항상 예약하여 레이아웃 시프트 방지 */
+  scrollbar-gutter: stable;
 }
 
 /* 2️⃣ CSS VARIABLES & THEME SYSTEM */
