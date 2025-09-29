@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
+import { BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
@@ -12,7 +12,6 @@ import HomeDetails from './_components/HomeDetails';
 import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
-import HomeTopView from './_components/HomeTopView';
 import HomeWarning from './_components/HomeWarning';
 
 // FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
@@ -21,10 +20,6 @@ function HomePage() {
   const { data: scenarios } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
-  const [topViewMode, setTopViewMode] = useState<'view' | 'setting'>('view');
-
-  // HACK: 뷰 모드 설정 (view: TopView, setting: TopView 설정)
-  const [viewMode, setViewMode] = useState<'view' | 'setting'>('view');
 
   // 공통 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const { data: commonData, isLoading: isCommonLoading } = useCommonHomeData({
@@ -62,16 +57,6 @@ function HomePage() {
       <div className="mt-4 flex items-center justify-start gap-2">
         <HomeKpiSelector value={kpi} onChange={setKpi} />
       </div>
-
-      <HomeAccordion title="Top View" icon={<MapPin className="h-5 w-5 text-primary" />} className="mt-4" open={false}>
-        <HomeTopView
-          isLoading={isCommonLoading}
-          scenario={scenario}
-          data={allHomeData?.topview_data}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-        />
-      </HomeAccordion>
 
       <HomeAccordion title="Summary" icon={<BarChart3 className="h-5 w-5 text-primary" />} className="mt-4" open={true}>
         <HomeSummary
