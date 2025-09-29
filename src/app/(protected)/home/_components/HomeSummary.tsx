@@ -67,7 +67,7 @@ function HomeSummary({
         const seconds = value.hour * 60 * 60 + value.minute * 60 + value.second;
         return {
           title: process,
-          value: formatTimeTaken(value),
+          value: formatTimeTaken(value, 'histogram'),
           width: seconds > 0 ? seconds : allZero ? 1 : 0.001,
         };
       });
@@ -81,7 +81,7 @@ function HomeSummary({
         value: (
           <>
             {value.toLocaleString()}
-            {formatUnit('pax')}
+            {formatUnit('pax', 'histogram')}
           </>
         ),
         width: value > 0 ? value : allZero ? 1 : 0.001,

@@ -2,10 +2,21 @@ import { capitalCase } from 'change-case';
 import { capitalizeFirst } from '@/app/(protected)/home/_components/HomeFormat';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
-import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 
-// Create PRIMARY_COLOR_SCALES from COMPONENT_TYPICAL_COLORS (using first 10 colors)
-const PRIMARY_COLOR_SCALES = COMPONENT_TYPICAL_COLORS.slice(0, 10);
+// Primary 색상의 밝기 변화로 구분 (보라색 계열)
+// 어두운 색에서 밝은 색으로 그라데이션
+const PRIMARY_COLOR_SCALES = [
+  '#6b46c1', // violet-600 (가장 진한)
+  '#7c3aed', // violet-500
+  '#8b5cf6', // violet-400
+  '#a78bfa', // violet-300
+  '#c4b5fd', // violet-200
+  '#ddd6fe', // violet-100
+  '#ede9fe', // violet-50
+  '#f3f4f6', // gray-100 (연한)
+  '#e5e7eb', // gray-200
+  '#d1d5db', // gray-300
+];
 
 // 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
 function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): number[] {
@@ -93,16 +104,16 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                   <div style={{ width: `${width}%` }} className="min-w-0 cursor-pointer">
                     <div
                       className={cn(
-                        'truncate p-3.5 text-lg font-semibold text-white transition-opacity hover:opacity-80',
+                        'flex items-center justify-center truncate p-4 text-xl font-bold text-white transition-opacity hover:opacity-90',
                         idx === 0 ? 'rounded-l-lg' : '',
                         idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
                       )}
-                      style={{ background: `${PRIMARY_COLOR_SCALES[idx]}` }}
+                      style={{ background: `${PRIMARY_COLOR_SCALES[idx % PRIMARY_COLOR_SCALES.length]}` }}
                     >
-                      {value}
+                      <span className="tracking-wide">{value}</span>
                     </div>
 
-                    <p className="mt-1 truncate text-xs font-medium text-default-900">{capitalizeFirst(title)}</p>
+                    <p className="mt-1.5 truncate text-xs font-medium text-default-600">{capitalizeFirst(title)}</p>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center">

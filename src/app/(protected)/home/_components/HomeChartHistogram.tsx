@@ -93,7 +93,7 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
         value: (
           <>
             {value}
-            {value_unit ? formatUnit(value_unit) : null}
+            {value_unit ? formatUnit(value_unit, 'histogram') : null}
           </>
         ),
         width: value,
