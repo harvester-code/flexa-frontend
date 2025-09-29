@@ -22,7 +22,3 @@ export const fetchKpiHomeData = ({
     },
   });
 };
-
-export const fetchAemosTemplate = ({ scenarioId }: { scenarioId?: string }) => {
-  return api.get(`/aemos-template/${scenarioId}`);
-};

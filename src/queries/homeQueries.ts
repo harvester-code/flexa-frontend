@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAemosTemplate, fetchCommonHomeData, fetchKpiHomeData } from '@/services/homeService';
+import { fetchCommonHomeData, fetchKpiHomeData } from '@/services/homeService';
 
 // 공통 데이터 (KPI와 무관한 데이터: alert_issues, flow_chart, histogram, sankey_diagram)
 const useCommonHomeData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
@@ -35,15 +35,4 @@ const useKpiHomeData = ({
   });
 };
 
-const useAemosTemplate = ({ scenarioId }: { scenarioId?: string }) => {
-  return useQuery({
-    queryKey: ['aemos-template', scenarioId],
-    queryFn: async () => {
-      const { data: { data } = {} } = await fetchAemosTemplate({ scenarioId });
-      return data;
-    },
-    enabled: !!scenarioId,
-  });
-};
-
-export { useCommonHomeData, useKpiHomeData, useAemosTemplate };
+export { useCommonHomeData, useKpiHomeData };

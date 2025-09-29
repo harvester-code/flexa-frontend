@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, BarChart3, AlertTriangle, LineChart, FileText, FileDown } from 'lucide-react';
+import { MapPin, BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
-import AemosTemplate from './_components/AemosTemplate';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
@@ -109,10 +108,6 @@ function HomePage() {
           data={allHomeData?.facility_details}
           isLoading={isKpiLoading}
         />
-      </HomeAccordion>
-
-      <HomeAccordion title="AEMOS Template" icon={<FileDown className="h-5 w-5 text-primary" />} open={true}>
-        <AemosTemplate scenario={scenario} />
       </HomeAccordion>
     </div>
   );
