@@ -207,28 +207,33 @@ function HomeSummary({
       </div>
 
       {/* Missed Pax~Early Bird Ratio Metric 카드: Pax Experience 아래 */}
-      <div className="mt-[14px]">
-        {/* open 상태에 따라 트리거(화살표)를 상단/하단에 한 번만 렌더링 */}
-        {!accordionOpen && (
-          <div className="mt-[14px] flex justify-center">
-            <Button variant="outline" onClick={() => setAccordionOpen(true)}>
-              <svg
-                className="h-6 w-6 text-muted-foreground transition-transform duration-200"
-                style={{ transform: 'rotate(0deg)' }}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </Button>
-          </div>
-        )}
+      <div className="mt-[14px] rounded-lg border border-input bg-background p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Additional Metrics</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAccordionOpen(!accordionOpen)}
+            className="h-8 w-8 p-0"
+          >
+            <svg
+              className={cn(
+                'h-5 w-5 text-muted-foreground transition-transform duration-200',
+                accordionOpen ? 'rotate-180' : 'rotate-0'
+              )}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </Button>
+        </div>
 
         <Accordion type="single" collapsible value={accordionOpen ? 'metrics' : undefined}>
           <AccordionItem value="metrics" className="border-none">
-            <AccordionContent className="px-0 pb-0 pt-0">
+            <AccordionContent className="px-0 pb-0 pt-4">
               <div className="my-0 grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
                 <HomeSummaryCard
                   icon={PassengerQueue}
@@ -366,23 +371,6 @@ function HomeSummary({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-
-        {/* open 상태에 따라 하단에만 화살표 렌더링 */}
-        {accordionOpen && (
-          <div className="mt-[14px] flex justify-center">
-            <Button variant="outline" onClick={() => setAccordionOpen(false)}>
-              <svg
-                className="h-6 w-6 rotate-180 text-muted-foreground transition-transform duration-200"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </Button>
-          </div>
-        )}
       </div>
     </>
   );

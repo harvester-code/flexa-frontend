@@ -12,6 +12,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Link2,
+  Loader2,
   Plus,
   Search,
   XCircle,
@@ -37,6 +38,7 @@ interface HomeScenarioProps {
   data: ScenarioData[];
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
+  isLoading?: boolean;
 }
 
 // 페이지당 표시할 시나리오 개수 (이 값을 변경하면 팝업 크기가 자동으로 조정됩니다)
@@ -94,7 +96,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
   });
 };
 
-function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScenarioProps) {
+function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false }: HomeScenarioProps) {
   const router = useRouter();
   const [isOpened, setIsOpened] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -301,7 +303,20 @@ function HomeScenario({ className, data, scenario, onSelectScenario }: HomeScena
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredScenarios.length > 0 ? (
+                  {isLoading ? (
+                    <tr style={{ height: `${ITEMS_PER_PAGE * 60}px` }}>
+                      <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
+                        <div
+                          className="flex flex-col items-center justify-center"
+                          style={{ height: `${ITEMS_PER_PAGE * 60}px` }}
+                        >
+                          <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
+                          <p className="text-lg font-medium">Loading scenarios...</p>
+                          <p className="text-sm font-normal">Please wait while we fetch your scenarios.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredScenarios.length > 0 ? (
                     Array.from({ length: ITEMS_PER_PAGE }, (_, index) => {
                       const item = currentScenarios[index];
                       if (!item) {

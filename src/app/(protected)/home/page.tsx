@@ -17,7 +17,7 @@ import HomeWarning from './_components/HomeWarning';
 // FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
 
 function HomePage() {
-  const { data: scenarios } = useScenarios();
+  const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
@@ -52,7 +52,13 @@ function HomePage() {
     <div className="mx-auto max-w-page px-page-x pb-page-b">
       <TheContentHeader text="Home" />
 
-      <HomeScenario className="mt-8" data={scenarios || []} scenario={scenario} onSelectScenario={setScenario} />
+      <HomeScenario
+        className="mt-8"
+        data={scenarios || []}
+        scenario={scenario}
+        onSelectScenario={setScenario}
+        isLoading={isScenariosLoading}
+      />
 
       <div className="mt-4 flex items-center justify-start gap-2">
         <HomeKpiSelector value={kpi} onChange={setKpi} />
