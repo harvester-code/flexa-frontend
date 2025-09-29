@@ -2,22 +2,19 @@ import { createAPIService } from '@/lib/axios';
 
 const api = createAPIService('homes');
 
-export const fetchCommonHomeData = ({ scenarioId }: { scenarioId?: string }) => {
-  return api.get(`/common-data/${scenarioId}`);
+export const fetchStaticData = ({ scenarioId }: { scenarioId?: string }) => {
+  return api.get(`/${scenarioId}/static`);
 };
 
-export const fetchKpiHomeData = ({
-  calculate_type,
+export const fetchMetricsData = ({
   percentile,
   scenarioId,
 }: {
-  calculate_type: string;
   percentile: number | null;
   scenarioId?: string;
 }) => {
-  return api.get(`/kpi-data/${scenarioId}`, {
+  return api.get(`/${scenarioId}/metrics`, {
     params: {
-      calculate_type,
       percentile,
     },
   });

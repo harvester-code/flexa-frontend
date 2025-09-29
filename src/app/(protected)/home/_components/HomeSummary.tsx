@@ -30,19 +30,15 @@ const CHART_OPTIONS: Option[] = [
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
-  calculate_type: string;
   percentile: number | null;
   data?: any; // 배치 API에서 받은 summary 데이터
-  commonData?: any; // 공통 데이터 (missed_flight_passengers 등)
   isLoading?: boolean; // 배치 API 로딩 상태
 }
 
 function HomeSummary({
   scenario,
-  calculate_type,
   percentile,
   data,
-  commonData,
   isLoading: propIsLoading,
 }: HomeSummaryProps) {
   // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
@@ -131,8 +127,8 @@ function HomeSummary({
           icon={WaitTime}
           title={<span>Wait Time</span>}
           value={formatTimeTaken(summaryData?.waiting_time)}
-          kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'top' ? 'top' : undefined}
-          percentile={calculate_type === 'top' ? (percentile ?? undefined) : undefined}
+          kpiType={percentile ? 'top' : 'mean'}
+          percentile={percentile ?? undefined}
         />
 
         <HomeSummaryCard
@@ -144,8 +140,8 @@ function HomeSummary({
               {formatUnit('pax')}
             </>
           }
-          kpiType={calculate_type === 'mean' ? 'mean' : calculate_type === 'top' ? 'top' : undefined}
-          percentile={calculate_type === 'top' ? (percentile ?? undefined) : undefined}
+          kpiType={percentile ? 'top' : 'mean'}
+          percentile={percentile ?? undefined}
         />
 
         <HomeSummaryCard
@@ -202,139 +198,6 @@ function HomeSummary({
           }
         />
 
-        {/* Additional Metrics - 기본 그리드에 추가 */}
-                <HomeSummaryCard
-                  icon={PassengerQueue}
-                  title={
-                    <span className="flex items-center">
-                      Missed Pax
-                      <HomeTooltip content="The ratio of processed capacity to total installed capacity.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {commonData?.etc_info?.performance_kpi?.missed_flight_passengers?.value?.toLocaleString() ||
-                        'N/A'}
-                      {formatUnit('pax')}
-                    </>
-                  }
-                />
-                <HomeSummaryCard
-                  icon={PassengerThroughput}
-                  title={
-                    <span className="flex items-center">
-                      Ontime Pax
-                      <HomeTooltip content="Number of passengers who completed all processes before flight departure.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {commonData?.etc_info?.performance_kpi?.ontime_flight_passengers?.value?.toLocaleString() ||
-                        'N/A'}
-                      {formatUnit('pax')}
-                    </>
-                  }
-                />
-                <HomeSummaryCard
-                  icon={WaitTime}
-                  title={
-                    <span className="flex items-center">
-                      Avg. Dwell Time
-                      <HomeTooltip content="Average passenger dwell time at airport (arrival to actual departure from airport).">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {commonData?.etc_info?.performance_kpi?.[
-                        'avg_airport_dwell_time(min)'
-                      ]?.value?.toLocaleString() || 'N/A'}
-                      {formatUnit('min')}
-                    </>
-                  }
-                />
-                <HomeSummaryCard
-                  icon={RatioIcon01}
-                  title={
-                    <span className="flex items-center">
-                      Commercial Facility Usage Time
-                      <HomeTooltip content="Average available time for commercial facilities after final process completion.">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {commonData?.etc_info?.commercial_info?.[
-                        'commercial_facility_usage_time_avg(min)'
-                      ]?.value?.toLocaleString() || 'N/A'}
-                      {formatUnit('min')}
-                    </>
-                  }
-                />
-                <HomeSummaryCard
-                  icon={RatioIcon02}
-                  title={
-                    <span className="flex items-center">
-                      Shopping Available
-                      <HomeTooltip content="Shopping availability based on average spare time (Possible if positive, Impossible if negative)">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={<>{commonData?.etc_info?.commercial_info?.shopping_available?.value || 'N/A'}</>}
-                />
-                <HomeSummaryCard
-                  icon={RatioIcon03}
-                  title={
-                    <span className="flex items-center">
-                      Rush Hour
-                      <HomeTooltip content="Peak hour when most passengers arrive at the airport">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={<>{commonData?.etc_info?.operational_insights?.rush_hour?.value || 'N/A'}</>}
-                />
-                <HomeSummaryCard
-                  icon={() => <NavIcon02 />} // 병목 프로세스
-                  title={
-                    <span className="flex items-center">
-                      Bottleneck Process
-                      <HomeTooltip content="Process with the longest average waiting time (improvement priority)">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {capitalizeFirst(commonData?.etc_info?.operational_insights?.bottleneck_process?.value) || 'N/A'}
-                    </>
-                  }
-                />
-                <HomeSummaryCard
-                  icon={() => <NavIcon01 />} // 얼리버드 비율
-                  title={
-                    <span className="flex items-center">
-                      Early Bird Ratio
-                      <HomeTooltip content="Percentage of passengers arriving 2+ hours before departure">
-                        <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
-                      </HomeTooltip>
-                    </span>
-                  }
-                  value={
-                    <>
-                      {commonData?.etc_info?.operational_insights?.['early_bird_ratio(%)']?.value?.toLocaleString() ||
-                        'N/A'}
-                      {formatUnit('%')}
-                    </>
-                  }
-                />
       </div>
     </>
   );

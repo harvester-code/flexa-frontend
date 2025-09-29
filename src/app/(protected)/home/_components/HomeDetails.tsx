@@ -15,7 +15,6 @@ import HomeTooltip from './HomeTooltip';
 
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
-  calculate_type: string;
   percentile: number | null;
   data?: any; // 배치 API에서 받은 facility_details 데이터
   isLoading?: boolean; // 배치 API 로딩 상태
@@ -28,7 +27,7 @@ const getTooltipText = (type: string, percentile: number | null, base: string) =
   return base;
 };
 
-function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: propIsLoading }: HomeDetailsProps) {
+function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: HomeDetailsProps) {
   // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
   const details = data;
   const isLoading = propIsLoading || false;
@@ -114,16 +113,14 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     <div className="relative flex items-center">
                       {formatImageSize(<WaitTime />, 30)}
-                      {calculate_type && (
-                        <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
-                          {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                        </span>
-                      )}
+                      <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
+                        {percentile ? 'Top' : 'Mean'}
+                      </span>
                     </div>
                     <dl className="flex flex-col justify-center">
                       <dt className="flex items-center gap-1">
                         <span>Wait Time</span>
-                        <HomeTooltip content={getTooltipText(calculate_type, percentile, 'wait time of passengers')}>
+                        <HomeTooltip content={getTooltipText(percentile ? 'top' : 'mean', percentile, 'wait time of passengers')}>
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
@@ -136,16 +133,14 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     <div className="relative flex items-center">
                       {formatImageSize(<PassengerQueue />, 30)}
-                      {calculate_type && (
-                        <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
-                          {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                        </span>
-                      )}
+                      <span className="absolute -top-3.5 left-1/2 z-10 inline-flex h-3.5 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-1 text-xs font-medium leading-none text-primary-foreground">
+                        {percentile ? 'Top' : 'Mean'}
+                      </span>
                     </div>
                     <dl className="flex flex-col justify-center">
                       <dt className="flex items-center gap-1">
                         <span>Queue Pax</span>
-                        <HomeTooltip content={getTooltipText(calculate_type, percentile, 'queue passengers')}>
+                        <HomeTooltip content={getTooltipText(percentile ? 'top' : 'mean', percentile, 'queue passengers')}>
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
@@ -244,11 +239,9 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                             <div>
                               <div className="relative inline-block">
                                 {formatImageSize(<PassengerQueue />, 24)}
-                                {calculate_type && (
-                                  <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
-                                    {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                                  </span>
-                                )}
+                                <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
+                                  {percentile ? 'Top' : 'Mean'}
+                                </span>
                               </div>
                               <dl>
                                 <dt>Queue Pax</dt>
@@ -262,11 +255,9 @@ function HomeDetails({ scenario, calculate_type, percentile, data, isLoading: pr
                             <div>
                               <div className="relative inline-block">
                                 {formatImageSize(<WaitTime />, 24)}
-                                {calculate_type && (
-                                  <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
-                                    {calculate_type === 'mean' ? 'Mean' : 'Top'}
-                                  </span>
-                                )}
+                                <span className="absolute -top-3 left-1/2 z-10 inline-flex h-3 min-w-4 -translate-x-1/2 items-center justify-center rounded border border-primary bg-primary px-0.5 text-xs font-medium leading-none text-primary-foreground">
+                                  {percentile ? 'Top' : 'Mean'}
+                                </span>
                               </div>
                               <dl>
                                 <dt>Wait Time</dt>

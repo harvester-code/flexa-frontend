@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
-import { useCommonHomeData, useKpiHomeData } from '@/queries/homeQueries';
+import { useStaticData, useMetricsData } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
 import HomeAccordion from './_components/HomeAccordion';
@@ -21,24 +21,23 @@ function HomePage() {
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
-  // 공통 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
-  const { data: commonData, isLoading: isCommonLoading } = useCommonHomeData({
+  // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
+  const { data: staticData, isLoading: isStaticLoading } = useStaticData({
     scenarioId: scenario?.scenario_id,
     enabled: !!scenario,
   });
 
-  // KPI 의존적 데이터 (KPI 변경 시 재요청)
-  const { data: kpiData, isLoading: isKpiLoading } = useKpiHomeData({
+  // KPI 메트릭 데이터 (KPI 변경 시 재요청)
+  const { data: metricsData, isLoading: isMetricsLoading } = useMetricsData({
     scenarioId: scenario?.scenario_id,
-    calculate_type: kpi.type,
-    percentile: kpi.percentile ?? null,
+    percentile: kpi.type === 'top' ? (kpi.percentile ?? null) : null,
     enabled: !!scenario,
   });
 
   // 전체 데이터 조합
   const allHomeData = {
-    ...commonData,
-    ...kpiData,
+    ...staticData,
+    ...metricsData,
   };
 
   // 처음 랜더링될 때 시나리오 중 가장 최근 실행된 시나리오를 선택
@@ -67,16 +66,14 @@ function HomePage() {
       <HomeAccordion title="Summary" icon={<BarChart3 className="h-5 w-5 text-primary" />} className="mt-4" open={true}>
         <HomeSummary
           scenario={scenario}
-          calculate_type={kpi.type}
-          percentile={kpi.percentile ?? null}
+          percentile={kpi.type === 'top' ? (kpi.percentile ?? null) : null}
           data={allHomeData?.summary}
-          commonData={commonData}
-          isLoading={isKpiLoading}
+          isLoading={isMetricsLoading}
         />
       </HomeAccordion>
 
       <HomeAccordion title="Alert & Issues" icon={<AlertTriangle className="h-5 w-5 text-primary" />} open={true}>
-        <HomeWarning scenario={scenario} data={allHomeData?.alert_issues} isLoading={isCommonLoading} />
+        <HomeWarning scenario={scenario} data={allHomeData?.alert_issues} isLoading={isStaticLoading} />
       </HomeAccordion>
 
       <HomeAccordion title="Charts" icon={<LineChart className="h-5 w-5 text-primary" />} open={true}>
@@ -87,17 +84,16 @@ function HomePage() {
             histogram: allHomeData?.histogram,
             sankey_diagram: allHomeData?.sankey_diagram,
           }}
-          isLoading={isCommonLoading}
+          isLoading={isStaticLoading}
         />
       </HomeAccordion>
 
       <HomeAccordion title="Details" icon={<FileText className="h-5 w-5 text-primary" />} open={true}>
         <HomeDetails
           scenario={scenario}
-          calculate_type={kpi.type}
-          percentile={kpi.percentile ?? null}
+          percentile={kpi.type === 'top' ? (kpi.percentile ?? null) : null}
           data={allHomeData?.facility_details}
-          isLoading={isKpiLoading}
+          isLoading={isMetricsLoading}
         />
       </HomeAccordion>
     </div>
