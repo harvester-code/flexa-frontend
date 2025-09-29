@@ -115,7 +115,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
           )}
         </Popover>
       )}
-      {value.type === 'top' && <span className="text-lg font-semibold text-default-900">%</span>}
+      {value.type === 'top' && <span className="ml-0.5 text-lg font-semibold text-default-900">%</span>}
     </div>
   );
 };

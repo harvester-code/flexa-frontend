@@ -16,18 +16,22 @@ export function formatPercent(value: number | string): string {
 export function formatTimeTaken(time?: { hour?: number; minute?: number; second?: number }, variant: 'default' | 'histogram' = 'default'): React.ReactNode {
   if (!time) return '';
   const { hour = 0, minute = 0, second = 0 } = time;
+
+  // 모든 variant에서 동일한 형식 사용
   return (
     <>
       {hour > 0 && (
         <>
           {hour}
-          {formatUnit('h', variant)}{' '}
+          {formatUnit('h', variant)}
+          {' '}
         </>
       )}
       {(minute > 0 || hour > 0) && (
         <>
           {minute}
-          {formatUnit('m', variant)}{' '}
+          {formatUnit('m', variant)}
+          {' '}
         </>
       )}
       {second}
@@ -46,8 +50,9 @@ export function capitalizeFirst(str: string): string {
 }
 
 export function formatUnit(unit: string, variant: 'default' | 'histogram' = 'default'): React.ReactNode {
+  // 모든 variant에서 일관된 간격 적용 (ml-0.5)
   if (variant === 'histogram') {
-    return <span className="ml-1 text-base font-medium text-white">{unit}</span>;
+    return <span className="ml-0.5 text-base font-medium text-white">{unit}</span>;
   }
   return <span className="ml-0.5 text-xs font-normal text-default-500">{unit}</span>;
 }
