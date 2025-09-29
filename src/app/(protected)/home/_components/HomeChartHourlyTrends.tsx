@@ -86,10 +86,16 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     if (!hourlyTrendsData || !selectedFacilityValue) return [];
     const facilityData = hourlyTrendsData[selectedFacilityValue];
     if (!facilityData) return [];
-    return Object.keys(facilityData).map((key) => ({
-      label: key === 'all_zones' ? 'All Zones' : capitalizeFirst(key),
-      value: key,
-    }));
+
+    // 새로운 구조 처리 - data 속성이 있으면 그 안의 키를 사용
+    const dataSource = facilityData.data || facilityData;
+
+    return Object.keys(dataSource)
+      .filter(key => key !== 'process_name' && key !== 'facilities') // 메타 정보 제외
+      .map((key) => ({
+        label: key === 'all_zones' ? 'All Zones' : capitalizeFirst(key),
+        value: key,
+      }));
   }, [hourlyTrendsData, selectedFacilityValue]);
 
   const [selectedZoneValue, setSelectedZoneValue] = useState('');
@@ -119,7 +125,11 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   useEffect(() => {
     if (!hourlyTrendsData || !selectedFacilityValue || !selectedZoneValue) return;
 
-    const chartDataForZone = hourlyTrendsData[selectedFacilityValue]?.[selectedZoneValue];
+    // 새로운 구조 처리 - data 속성이 있으면 그 안에서 가져옴
+    const facilityData = hourlyTrendsData[selectedFacilityValue];
+    const dataSource = facilityData?.data || facilityData;
+    const chartDataForZone = dataSource?.[selectedZoneValue];
+
     if (!chartDataForZone) {
       setBarChartData([]);
       setLineChartData([]);

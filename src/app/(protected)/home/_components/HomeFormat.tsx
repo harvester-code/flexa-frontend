@@ -68,30 +68,64 @@ export function formatFlowChartLabel(label: string): string {
 }
 
 /**
- * FlowChart(Sankey)용 라벨 및 레이어 타이틀 생성 함수
- * @param labels 원본 label 배열 (예: ["check_in_A", ...])
- * @returns { nodeLabels: string[], layerTitles: string[] }
+ * FlowChart(Sankey)용 라벨 및 레이어 타이틀 생성 함수 - 새로운 계층 구조 지원
+ * @param data 백엔드에서 받은 새로운 구조 데이터
+ * @returns { nodeLabels: string[], layerTitles: string[], processInfo: any }
  */
-export function formatFlowChartLayout(labels: string[]): { nodeLabels: string[]; layerTitles: string[] } {
-  // 노드 라벨: _ 뒤만 추출
-  const nodeLabels = labels.map((label) => {
-    const lastUnderscore = label.lastIndexOf('_');
-    if (lastUnderscore !== -1) {
-      return label.slice(lastUnderscore + 1);
-    }
-    return label;
-  });
-  // 레이어 타이틀: _ 앞부분만 pascalCase, 중복 제거, 순서 유지
-  const seen = new Set<string>();
+export function formatFlowChartLayout(data: any): { nodeLabels: string[]; layerTitles: string[]; processInfo: any } {
+  // 이전 버전과의 호환성 체크
+  if (Array.isArray(data)) {
+    // 기존 방식 (label 배열)
+    const labels = data;
+    const nodeLabels = labels.map((label) => {
+      const lastUnderscore = label.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        return label.slice(lastUnderscore + 1);
+      }
+      return label;
+    });
+    const seen = new Set<string>();
+    const layerTitles: string[] = [];
+    labels.forEach((label) => {
+      const lastUnderscore = label.lastIndexOf('_');
+      const main = lastUnderscore !== -1 ? label.slice(0, lastUnderscore) : label;
+      const title = pascalCase(main);
+      if (!seen.has(title)) {
+        seen.add(title);
+        layerTitles.push(title);
+      }
+    });
+    return { nodeLabels, layerTitles, processInfo: null };
+  }
+
+  // 새로운 계층 구조 방식
+  const nodeLabels: string[] = [];
   const layerTitles: string[] = [];
-  labels.forEach((label) => {
-    const lastUnderscore = label.lastIndexOf('_');
-    const main = lastUnderscore !== -1 ? label.slice(0, lastUnderscore) : label;
-    const title = pascalCase(main);
-    if (!seen.has(title)) {
-      seen.add(title);
-      layerTitles.push(title);
+  const processInfo: any = {};
+
+  // 각 프로세스별로 처리
+  Object.keys(data).forEach((processKey) => {
+    if (processKey === 'times') return; // times는 건너뛰기
+
+    const process = data[processKey];
+    if (process && process.process_name && process.facilities) {
+      // 레이어 타이틀 추가
+      layerTitles.push(process.process_name);
+
+      // 프로세스 정보 저장
+      processInfo[processKey] = process;
+
+      // 노드 라벨 추가 (facilities)
+      process.facilities.forEach((facility: string) => {
+        // Skip 노드는 특별 처리
+        if (facility === 'Skip') {
+          nodeLabels.push(`${process.process_name} (Skip)`);
+        } else {
+          nodeLabels.push(facility);
+        }
+      });
     }
   });
-  return { nodeLabels, layerTitles };
+
+  return { nodeLabels, layerTitles, processInfo };
 }

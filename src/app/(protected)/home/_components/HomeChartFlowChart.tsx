@@ -21,9 +21,28 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
 
   const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
   const [layerTitles, setLayerTitles] = useState<string[]>([]);
+  const [chartHeight, setChartHeight] = useState<number>(600);
+
   useEffect(() => {
     if (!sankey) return;
-    const { nodeLabels, layerTitles } = formatFlowChartLayout(sankey.label || []);
+
+    // 새로운 구조 처리 - process_info가 있으면 새 구조, 없으면 기존 구조
+    const layoutData = sankey.process_info ? sankey.process_info : sankey.label || [];
+    const { nodeLabels, layerTitles, processInfo } = formatFlowChartLayout(layoutData);
+
+    // 노드 수에 따라 차트 높이 동적 조정
+    const nodeCount = nodeLabels.length;
+    const dynamicHeight = Math.max(600, nodeCount * 40); // 노드당 40px, 최소 600px
+    setChartHeight(dynamicHeight);
+
+    // Skip 노드에 대한 색상 처리
+    const nodeColors = nodeLabels.map((label, index) => {
+      if (label.includes('Skip')) {
+        return '#999999'; // Skip 노드는 회색
+      }
+      return COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
+    });
+
     const data: Plotly.Data[] = [
       {
         type: 'sankey',
@@ -32,7 +51,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
           pad: 15,
           thickness: 20,
           label: nodeLabels,
-          color: [...COMPONENT_TYPICAL_COLORS],
+          color: nodeColors,
         },
         link: sankey.link,
       },
@@ -76,13 +95,16 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
             );
           })}
         </div>
-        <SankeyChart
-          chartData={sankeyChartData}
-          chartLayout={{
-            margin: { l: 8, r: 8, b: 8, t: 8 },
-            font: { size: 20 },
-          }}
-        />
+        <div style={{ minHeight: `${chartHeight}px` }}>
+          <SankeyChart
+            chartData={sankeyChartData}
+            chartLayout={{
+              height: chartHeight,
+              margin: { l: 8, r: 8, b: 8, t: 8 },
+              font: { size: 14 },
+            }}
+          />
+        </div>
       </div>
     </div>
   );

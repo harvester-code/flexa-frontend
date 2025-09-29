@@ -48,8 +48,8 @@ function HomeAccordion({ title, icon, open = true, className, children }: HomeAc
       <div
         id={`accordion-content-${title}`}
         className={cn(
-          'overflow-hidden transition-all duration-200 ease-in-out',
-          isOpened ? 'mt-4 max-h-screen opacity-100' : 'max-h-0 opacity-0'
+          'transition-all duration-200 ease-in-out',
+          isOpened ? 'mt-4 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
         )}
       >
         {children}
