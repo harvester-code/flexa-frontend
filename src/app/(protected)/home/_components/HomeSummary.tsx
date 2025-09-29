@@ -14,10 +14,8 @@ import {
   RatioIcon03,
   WaitTime,
 } from '@/components/icons';
-import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/Accordion';
 import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
-import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
@@ -52,7 +50,6 @@ function HomeSummary({
   const isLoading = propIsLoading || false;
 
   const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
-  const [accordionOpen, setAccordionOpen] = useState(false);
 
   const chartData = useMemo(() => {
     if (!summaryData?.pax_experience) return [];
@@ -117,8 +114,8 @@ function HomeSummary({
         <TheHistogramChart chartData={chartData} />
       </div>
 
-      {/* KPI 카드 */}
-      <div className="mb-0 grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
+      {/* KPI 카드 - 모든 메트릭을 하나의 그리드에 표시 */}
+      <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
         <HomeSummaryCard
           icon={PassengerThroughput}
           title={<span>Pax Throughput</span>}
@@ -204,37 +201,8 @@ function HomeSummary({
             </>
           }
         />
-      </div>
 
-      {/* Missed Pax~Early Bird Ratio Metric 카드: Pax Experience 아래 */}
-      <div className="mt-[14px] rounded-lg border border-input bg-background p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">Additional Metrics</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setAccordionOpen(!accordionOpen)}
-            className="h-8 w-8 p-0"
-          >
-            <svg
-              className={cn(
-                'h-5 w-5 text-muted-foreground transition-transform duration-200',
-                accordionOpen ? 'rotate-180' : 'rotate-0'
-              )}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </Button>
-        </div>
-
-        <Accordion type="single" collapsible value={accordionOpen ? 'metrics' : undefined}>
-          <AccordionItem value="metrics" className="border-none">
-            <AccordionContent className="px-0 pb-0 pt-4">
-              <div className="my-0 grid grid-cols-1 grid-rows-6 gap-3 overflow-auto md:grid-cols-2 md:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2">
+        {/* Additional Metrics - 기본 그리드에 추가 */}
                 <HomeSummaryCard
                   icon={PassengerQueue}
                   title={
@@ -367,10 +335,6 @@ function HomeSummary({
                     </>
                   }
                 />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </div>
     </>
   );

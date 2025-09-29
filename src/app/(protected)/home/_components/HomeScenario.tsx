@@ -172,38 +172,35 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
       )}
     >
       <div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-3">
           <div className="flex items-center gap-1">
-            <span>Scenario Name:</span>
-            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
-              {scenario?.name || 'None Selected'}
+            <span className="text-xs text-muted-foreground">Name:</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+              {scenario?.name || 'None'}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span>Airport Code:</span>
-            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
+            <span className="text-xs text-muted-foreground">Airport:</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
               {scenario?.airport || 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span>Terminal:</span>
-            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
+            <span className="text-xs text-muted-foreground">Terminal:</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
               {scenario?.terminal || 'N/A'}
             </span>
           </div>
-        </div>
-
-        <div className="mt-2 flex gap-2">
           <div className="flex items-center gap-1">
-            <span>Target Date:</span>
-            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
-              {dayjs(scenario?.target_flight_schedule_date).format('YYYY-MM-DD')}
+            <span className="text-xs text-muted-foreground">Date:</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+              {scenario?.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('MM/DD') : 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span>Last Run:</span>
-            <span className="flex items-center rounded-md bg-muted px-2 font-medium text-muted-foreground">
-              {dayjs(scenario?.simulation_end_at).format('YYYY-MM-DD HH:mm')}
+            <span className="text-xs text-muted-foreground">Updated:</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+              {scenario?.updated_at ? dayjs(scenario.updated_at).format('MM/DD HH:mm') : 'N/A'}
             </span>
           </div>
         </div>
