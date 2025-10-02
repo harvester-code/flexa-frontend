@@ -37,6 +37,25 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const sanitizeNumericSeries = (series: unknown, expectedLength: number): number[] | undefined => {
+  if (!Array.isArray(series) || expectedLength <= 0) return undefined;
+
+  const sanitized = (series as unknown[]).map((value) => {
+    const numeric = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  });
+
+  if (sanitized.length === expectedLength) {
+    return sanitized;
+  }
+
+  if (sanitized.length < expectedLength) {
+    return [...sanitized, ...Array(expectedLength - sanitized.length).fill(0)];
+  }
+
+  return sanitized.slice(0, expectedLength);
+};
+
 interface HomeChartHourlyTrendsProps {
   scenario: ScenarioData | null;
   data?: any; // 배치 API에서 받은 flow_chart 데이터
@@ -125,16 +144,20 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   useEffect(() => {
     if (!hourlyTrendsData || !selectedFacilityValue || !selectedZoneValue) return;
 
+    const times = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
     // 새로운 구조 처리 - data 속성이 있으면 그 안에서 가져옴
     const facilityData = hourlyTrendsData[selectedFacilityValue];
     const dataSource = facilityData?.data || facilityData;
     const chartDataForZone = dataSource?.[selectedZoneValue];
 
-    if (!chartDataForZone) {
+    if (!chartDataForZone || !times.length) {
       setBarChartData([]);
       setLineChartData([]);
       return;
     }
+
+    const sanitizedSeriesCache: Record<string, number[]> = {};
+    const capacitySeries = sanitizeNumericSeries(chartDataForZone.capacity, times.length);
 
     const newBarChartData: Plotly.Data[] = [];
     const newLineChartData: Plotly.Data[] = [];
@@ -158,9 +181,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     chartOption1.forEach((activeIndex, i) => {
       const option = CHART_OPTIONS[activeIndex];
-      if (!option || !chartDataForZone[option.value]) return;
+      if (!option) return;
 
       const yaxisId = yaxisAssignment[i];
+
+      const sanitizedSeries = sanitizeNumericSeries(chartDataForZone[option.value], times.length);
+      if (!sanitizedSeries) return;
+      sanitizedSeriesCache[option.value] = sanitizedSeries;
 
       // Layout
       const yAxisConfig = {
@@ -186,8 +213,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
       // Bar chart data
       let barChartTrace: Plotly.Data = {
-        x: hourlyTrendsData.times,
-        y: chartDataForZone[option.value],
+        x: times,
+        y: sanitizedSeries,
         type: 'bar',
         name: option.label,
         offsetgroup: i + 1,
@@ -202,8 +229,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
       // Line chart data
       let lineChartTrace: Plotly.Data = {
-        x: hourlyTrendsData.times,
-        y: chartDataForZone[option.value],
+        x: times,
+        y: sanitizedSeries,
         name: option.label,
         line: { color: option.color, shape: 'spline', smoothing: 1 },
         yaxis: yaxisId,
@@ -229,15 +256,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     // --- Calculate Max Value for Pax Units ---
     const selectedPaxOptions = selectedOptionsWithAxis.filter((opt) => paxUnitOptions.includes(opt.value));
     if (selectedPaxOptions.length > 0) {
-      const dataToCompare = selectedPaxOptions.flatMap(
-        (opt) => chartDataForZone[opt.value]?.filter((v): v is number => typeof v === 'number') ?? []
-      );
+      const dataToCompare = selectedPaxOptions.flatMap((opt) => sanitizedSeriesCache[opt.value] ?? []);
 
       let maxPaxValue = dataToCompare.length > 0 ? Math.max(...dataToCompare) : 0;
 
       const hasFlow = selectedPaxOptions.some((opt) => ['inflow', 'outflow'].includes(opt.value));
-      if (hasFlow && chartDataForZone.capacity) {
-        const capacityMax = Math.max(...chartDataForZone.capacity.filter((v): v is number => typeof v === 'number'));
+      if (hasFlow && capacitySeries) {
+        const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
         maxPaxValue = Math.max(maxPaxValue, capacityMax);
       }
 
@@ -256,8 +281,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     // --- Calculate and Apply Max Value for Wait Time Unit ---
     const selectedWaitTimeOption = selectedOptionsWithAxis.find((opt) => opt.value === 'waiting_time');
     if (selectedWaitTimeOption) {
-      const waitTimeData =
-        chartDataForZone.waiting_time?.map((v) => (typeof v === 'number' ? Math.floor(v / 60) : 0)) ?? [];
+      const waitTimeRaw = sanitizedSeriesCache['waiting_time'] ?? [];
+      const waitTimeData = waitTimeRaw.map((v) => Math.floor(v / 60));
       const maxWaitTimeValue = waitTimeData.length > 0 ? Math.max(...waitTimeData) : 0;
       const waitTimeRangeMax = maxWaitTimeValue > 0 ? maxWaitTimeValue * 1.1 : 10;
 
@@ -269,7 +294,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     }
 
     const showCapacity =
-      chartOption1.some((i) => ['inflow', 'outflow'].includes(CHART_OPTIONS[i].value)) && chartDataForZone.capacity;
+      chartOption1.some((i) => ['inflow', 'outflow'].includes(CHART_OPTIONS[i].value)) && capacitySeries;
 
     if (showCapacity) {
       const firstFlowSelectionIndex = chartOption1.findIndex((i) =>
@@ -278,16 +303,16 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       const capacityYAxis = yaxisAssignment[firstFlowSelectionIndex];
 
       const capacityTrace: Plotly.Data = {
-        x: hourlyTrendsData.times,
-        y: chartDataForZone.capacity,
+        x: times,
+        y: capacitySeries,
         name: 'Capacity',
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#dc2626', dash: 'dashdot', shape: 'hv' },
+        line: { color: '#dc2626', dash: 'dashdot', shape: 'hv', width: 2 },
         yaxis: capacityYAxis,
       };
       newLineChartData.push(capacityTrace);
-      newBarChartData.push(capacityTrace);
+      newBarChartData.push({ ...capacityTrace });
       newLayout.showlegend = true;
       newLayout.legend = {
         x: 1,
