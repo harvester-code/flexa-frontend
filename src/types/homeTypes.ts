@@ -31,3 +31,39 @@ export type ScenariosDataResponse = Array<ScenarioData & {
   last_name?: string;
   email?: string;
 }>;
+
+export interface FacilityChartSeries {
+  label: string;
+  values: number[];
+}
+
+export interface FacilityChartSummary {
+  totalDemand: number;
+  totalProcessed: number;
+  maxCapacity: number;
+  averageCapacity: number;
+  bottleneckTimes: string[];
+}
+
+export interface FacilityChartData {
+  step: string;
+  facilityId: string;
+  intervalMinutes: number;
+  timeRange: string[];
+  capacity: number[];
+  demandSeries: FacilityChartSeries[];
+  processingSeries: FacilityChartSeries[];
+  totalDemand: number[];
+  totalProcessed: number[];
+  facilityInfo: string;
+  summary: FacilityChartSummary;
+}
+
+export interface FacilityChartsStep {
+  step: string;
+  facilityCharts: FacilityChartData[];
+}
+
+export interface FacilityChartsResponse {
+  steps: FacilityChartsStep[];
+}
