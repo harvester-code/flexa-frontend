@@ -33,6 +33,14 @@ const hexToRgba = (hex: string, alpha: number) => {
 
 const formatTimeLabel = (isoString: string) => dayjs(isoString).format('HH:mm');
 
+const translateSeriesLabel = (label: string, fallback: string) => {
+  return label
+    .replace('수요', 'Demand')
+    .replace('처리', 'Processing')
+    .replace('총계', 'Total')
+    .trim() || fallback;
+};
+
 export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFacilityChartsProps) {
   const [selectedStep, setSelectedStep] = useState<string>('');
   const [selectedFacility, setSelectedFacility] = useState<string>('');
@@ -68,6 +76,17 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     [stepData, selectedFacility]
   );
 
+  const facilityInfoText = useMemo(() => {
+    if (!facilityChart?.facilityInfo) return 'Not available';
+    return facilityChart.facilityInfo
+      .replace(/운영/g, 'operating')
+      .replace(/명\/시간/g, 'pax/hour')
+      .replace(/항공/g, 'airlines')
+      .replace(/시간/g, 'time')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }, [facilityChart?.facilityInfo]);
+
   const stepOptions: Option[] = useMemo(
     () =>
       data?.steps?.map((item) => ({
@@ -90,101 +109,110 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     if (!facilityChart) return null;
 
     const intervalMs = (facilityChart.intervalMinutes || 30) * 60 * 1000;
-    const halfIntervalMs = intervalMs / 2;
     const times = facilityChart.timeRange.map((ts) => new Date(ts));
 
     const demandBars = facilityChart.demandSeries.map((series, index) => {
       const baseColor = SERIES_COLORS[index % SERIES_COLORS.length];
+      const label = translateSeriesLabel(series.label, `Demand ${index + 1}`);
       return {
         type: 'bar',
-        name: series.label,
-        x: times.map((time) => new Date(time.getTime() - halfIntervalMs)),
+        name: label,
+        x: times,
         y: series.values,
         marker: {
           color: hexToRgba(baseColor, 0.18),
           line: { color: baseColor, width: 1.6 },
         },
-        width: intervalMs,
-        hovertemplate: '<b>%{x|%H:%M}</b><br>' + series.label + ': %{y:,d}명<extra></extra>',
+        offsetgroup: 'demand',
+        legendgroup: `demand-${index}`,
+        width: intervalMs * 0.9,
+        hovertemplate: '<b>%{x|%H:%M}</b><br>' + label + ': %{y:,d} pax<extra></extra>',
       } as Plotly.Data;
     });
 
     const processingBars = facilityChart.processingSeries.map((series, index) => {
       const baseColor = SERIES_COLORS[index % SERIES_COLORS.length];
-      const label = series.label.includes('처리') ? series.label : series.label.replace('수요', '처리');
+      const label = translateSeriesLabel(series.label, `Processing ${index + 1}`);
       return {
         type: 'bar',
         name: label,
-        x: times.map((time) => new Date(time.getTime() + halfIntervalMs)),
+        x: times,
         y: series.values,
         marker: {
           color: hexToRgba(baseColor, 0.78),
         },
-        width: intervalMs,
-        hovertemplate: '<b>%{x|%H:%M}</b><br>' + label + ': %{y:,d}명<extra></extra>',
+        offsetgroup: 'processing',
+        legendgroup: `processing-${index}`,
+        width: intervalMs * 0.9,
+        hovertemplate: '<b>%{x|%H:%M}</b><br>' + label + ': %{y:,d} pax<extra></extra>',
       } as Plotly.Data;
     });
 
     const capacityTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: '처리능력',
+      name: 'Capacity limit',
       x: times,
       y: facilityChart.capacity,
       line: { color: '#1d4ed8', width: 3 },
       marker: { size: 6, color: '#1d4ed8' },
       fill: 'tozeroy',
       fillcolor: 'rgba(29, 78, 216, 0.12)',
-      hovertemplate: '<b>%{x|%H:%M}</b><br>처리능력: %{y:.0f}명<extra></extra>',
+      hovertemplate: '<b>%{x|%H:%M}</b><br>Capacity: %{y:.0f} pax<extra></extra>',
     };
 
     const totalDemandTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: '수요 총계',
+      name: 'Total demand',
       x: times,
       y: facilityChart.totalDemand,
       line: { color: '#ef4444', width: 2, dash: 'dot' },
       marker: { size: 6, color: '#ef4444', symbol: 'circle-open' },
-      hovertemplate: '<b>%{x|%H:%M}</b><br>수요 총계: %{y:,d}명<extra></extra>',
+      hovertemplate: '<b>%{x|%H:%M}</b><br>Total demand: %{y:,d} pax<extra></extra>',
     };
 
     const totalProcessedTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: '처리 총계',
+      name: 'Total processed',
       x: times,
       y: facilityChart.totalProcessed,
       line: { color: '#16a34a', width: 3 },
       marker: { size: 6, color: '#16a34a' },
-      hovertemplate: '<b>%{x|%H:%M}</b><br>처리 총계: %{y:,d}명<extra></extra>',
+      hovertemplate: '<b>%{x|%H:%M}</b><br>Total processed: %{y:,d} pax<extra></extra>',
     };
 
     return {
       data: [...demandBars, ...processingBars, capacityTrace, totalDemandTrace, totalProcessedTrace],
       layout: {
         margin: { l: 60, r: 40, t: 50, b: 60 },
-        barmode: 'stack',
-        bargap: 0.2,
+        barmode: 'relative',
+        bargap: 0.25,
+        bargroupgap: 0.15,
         hovermode: 'x unified',
         paper_bgcolor: '#ffffff',
         plot_bgcolor: '#ffffff',
         legend: {
-          orientation: 'h',
-          yanchor: 'bottom',
-          y: 1.08,
-          x: 0,
+          orientation: 'v',
+          yanchor: 'top',
+          y: 1,
+          xanchor: 'left',
+          x: 1.02,
           font: { size: 11 },
+          bgcolor: 'rgba(255,255,255,0.85)',
+          bordercolor: '#e2e8f0',
+          borderwidth: 1,
         },
         xaxis: {
           type: 'date',
-          title: '시간',
+          title: 'Time',
           tickformat: '%H:%M',
           showgrid: false,
           zeroline: false,
         },
         yaxis: {
-          title: `승객 수 (명/${facilityChart.intervalMinutes}분)`,
+          title: `Passengers per ${facilityChart.intervalMinutes}-minute window`,
           rangemode: 'tozero',
           zeroline: true,
           zerolinecolor: '#e2e8f0',
@@ -204,11 +232,15 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     <div className="rounded-md border border-input bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">시설 수요 · 처리 비교</p>
+          <p className="text-sm font-medium text-muted-foreground">Facility throughput overview</p>
           <h3 className="text-xl font-semibold text-default-900">
             {capitalizeFirst(stepData?.step || '')}
             {selectedFacility ? ` · ${selectedFacility}` : ''}
           </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Compare demand (planned passengers) and processing (served passengers) per 30-minute window. Capacity line shows
+            theoretical maximum throughput for the selected facility.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <TheDropdownMenu
@@ -242,25 +274,28 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
           </div>
 
           <div className="grid gap-4 rounded-md bg-surface-50 p-4 md:grid-cols-2 lg:grid-cols-4">
-            <Statistic label="총 수요" value={formatNumberWithComma(summary?.totalDemand ?? 0)} />
-            <Statistic label="총 처리" value={formatNumberWithComma(summary?.totalProcessed ?? 0)} />
-            <Statistic label="최대 처리능력" value={`${formatNumberWithComma(Math.round(summary?.maxCapacity ?? 0))} 명`} />
+            <Statistic label="Total demand" value={`${formatNumberWithComma(summary?.totalDemand ?? 0)} pax`} />
+            <Statistic label="Total processed" value={`${formatNumberWithComma(summary?.totalProcessed ?? 0)} pax`} />
             <Statistic
-              label="평균 처리능력"
-              value={`${formatNumberWithComma(Math.round(summary?.averageCapacity ?? 0))} 명`}
+              label="Peak capacity"
+              value={`${formatNumberWithComma(Math.round(summary?.maxCapacity ?? 0))} pax / ${facilityChart.intervalMinutes} min`}
+            />
+            <Statistic
+              label="Average capacity"
+              value={`${formatNumberWithComma(Math.round(summary?.averageCapacity ?? 0))} pax / ${facilityChart.intervalMinutes} min`}
             />
           </div>
 
           <div className="space-y-3 rounded-md border border-dashed border-input p-4 text-sm leading-relaxed text-default-600">
             <div>
-              <span className="font-semibold text-default-700">시설 운영 정보:</span>{' '}
-              {facilityChart.facilityInfo || '정보 없음'}
+              <span className="font-semibold text-default-700">Operating windows:</span>{' '}
+              {facilityInfoText}
             </div>
             <div>
-              <span className="font-semibold text-default-700">병목 구간:</span>{' '}
+              <span className="font-semibold text-default-700">Bottleneck windows:</span>{' '}
               {summary?.bottleneckTimes?.length
                 ? summary.bottleneckTimes.map(formatTimeLabel).join(', ')
-                : '없음'}
+                : 'None detected'}
             </div>
           </div>
         </div>
