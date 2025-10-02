@@ -12,7 +12,7 @@ import { Option, ScenarioData, FacilityChartsResponse } from '@/types/homeTypes'
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
   loading: () => <div className="flex h-60 items-center justify-center text-muted-foreground">Loading chart...</div>,
-});
+}) as any;
 
 interface HomeFacilityChartsProps {
   scenario: ScenarioData | null;
