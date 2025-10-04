@@ -52,6 +52,9 @@ export function useFacilityScheduleSync({
 
     // Create unique key for this process-zone combination
     const initKey = `${selectedProcessIndex}-${selectedZone}`;
+    const storeState = useSimulationStore.getState() as any;
+    const contextDate =
+      storeState?.context?.date || new Date().toISOString().split("T")[0];
 
     // Skip update if not initialized yet for this specific process-zone
     if (!initializedKeys.has(initKey)) {
@@ -70,10 +73,7 @@ export function useFacilityScheduleSync({
 
       if (hasExistingSchedule) {
         // Initialize from existing schedule - calculate dates in advance
-        const currentDate =
-          useSimulationStore.getState().context.date ||
-          new Date().toISOString().split("T")[0];
-        const prevDay = new Date(currentDate);
+        const prevDay = new Date(contextDate);
         prevDay.setDate(prevDay.getDate() - 1);
         const prevDayStr = prevDay.toISOString().split("T")[0];
 
@@ -83,7 +83,7 @@ export function useFacilityScheduleSync({
             currentFacilities,
             timeSlots,
             isPreviousDay,
-            currentDate,
+            contextDate,
             prevDayStr
           );
 
@@ -121,7 +121,6 @@ export function useFacilityScheduleSync({
           ?.process_time_seconds;
 
         // Calculate new periods (including badge info, pass date)
-        const date = useSimulationStore.getState().context.date;
         const newTimeBlocks = calculatePeriodsFromDisabledCells(
           facilityIndex,
           disabledCells,
@@ -130,7 +129,7 @@ export function useFacilityScheduleSync({
           cellBadges,
           processTimeSeconds ?? undefined,
           appliedTimeUnit,
-          date,
+          contextDate,
           isPreviousDay
         );
 

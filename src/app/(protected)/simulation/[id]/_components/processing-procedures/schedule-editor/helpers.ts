@@ -1,6 +1,5 @@
 import React from "react";
 import { getBadgeColor } from "@/styles/colors";
-import { useSimulationStore } from "../../../_stores";
 import { ParquetMetadataItem, CategoryBadge, TimeBlock } from "./types";
 import { getCategoryNameFromField, getCategoryIcon, getStorageFieldName, getCategoryColorIndex } from "./badgeMappings";
 import { Users, MapPin } from "lucide-react";
@@ -211,256 +210,187 @@ export const parsePeriodSafe = (
 };
 
 // disabled cells와 뱃지를 기반으로 period를 계산하는 함수 (타입 안전성 강화)
+const MS_PER_MINUTE = 60 * 1000;
+
+const formatDateTime = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+const parseMinutes = (time: string) => {
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+};
+
 export const calculatePeriodsFromDisabledCells = (
   facilityIndex: number,
   disabledCells: Set<string>,
   timeSlots: string[],
   existingTimeBlocks: TimeBlock[],
   cellBadges: Record<string, CategoryBadge[]>,
-  processTimeSeconds?: number, // 프로세스의 process_time_seconds 값
-  timeUnit: number = 10, // time unit (기본값 10분)
-  date?: string, // 날짜 (YYYY-MM-DD 형식)
-  isPreviousDay?: boolean // 전날부터 시작하는지 여부
+  processTimeSeconds?: number,
+  timeUnit: number = 10,
+  date?: string,
+  isPreviousDay?: boolean
 ): TimeBlock[] => {
-  // 프로세스의 process_time_seconds 우선, 기존 값 fallback, 마지막으로 60 기본값
+  if (!timeSlots || timeSlots.length === 0) {
+    return [];
+  }
+
   const processTime =
     processTimeSeconds || existingTimeBlocks?.[0]?.process_time_seconds || 60;
 
-  // Use the centralized function for category to field conversion
+  const currentDate = date || new Date().toISOString().split("T")[0];
+  const baseDate = new Date(`${currentDate} 00:00:00`);
 
-  // 모든 셀이 활성화되어 있는지 확인
-  const isAllActive = timeSlots.every(
-    (_, i) => !disabledCells.has(`${i}-${facilityIndex}`)
+  let dayOffset = isPreviousDay ? -1 : 0;
+  let previousMinutes = parseMinutes(timeSlots[0]);
+
+  const slotStarts: Date[] = timeSlots.map((time, idx) => {
+    const minutes = parseMinutes(time);
+
+    if (idx > 0 && minutes < previousMinutes) {
+      dayOffset += 1;
+    }
+
+    const start = new Date(baseDate);
+    start.setDate(start.getDate() + dayOffset);
+    start.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+
+    previousMinutes = minutes;
+    return start;
+  });
+
+  const slotEnds: Date[] = slotStarts.map((start, idx) => {
+    if (idx < slotStarts.length - 1) {
+      return new Date(slotStarts[idx + 1]);
+    }
+
+    const rawEnd = new Date(start.getTime() + timeUnit * MS_PER_MINUTE);
+    if (rawEnd.getHours() === 0 && rawEnd.getMinutes() === 0 && rawEnd.getSeconds() === 0) {
+      return new Date(rawEnd.getTime() - 1000);
+    }
+    return rawEnd;
+  });
+
+  const slotStates = timeSlots.map((_, idx) => {
+    const cellId = `${idx}-${facilityIndex}`;
+    const isActive = !disabledCells.has(cellId);
+    const badges = cellBadges[cellId] || [];
+
+    if (badges.length === 0) {
+      return {
+        isActive,
+        conditions: [] as Array<{ field: string; values: string[] }> ,
+        conditionKey: "__all__",
+      };
+    }
+
+    const conditions = badges
+      .map((badge) => {
+        const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
+
+        if (isProcessCategory) {
+          return {
+            field: convertProcessNameToZoneField(badge.category),
+            values: badge.options.map(convertZoneValueForLambda),
+          };
+        }
+
+        return {
+          field: getStorageFieldName(badge.category),
+          values: badge.options,
+        };
+      })
+      .filter((condition) => condition.field);
+
+    const conditionKey = JSON.stringify(conditions);
+
+    return {
+      isActive,
+      conditions,
+      conditionKey,
+    };
+  });
+
+  const allActive = slotStates.every((state) => state.isActive);
+  const firstConditionKey = slotStates[0]?.conditionKey ?? "__all__";
+  const allSameConditions = slotStates.every(
+    (state) => state.conditionKey === firstConditionKey
   );
 
-  // 모든 셀이 같은 조건(또는 조건 없음)을 가지고 있는지 확인
-  let allSameConditions = true;
-  let firstConditions: any = null;
-  for (let i = 0; i < timeSlots.length; i++) {
-    const cellId = `${i}-${facilityIndex}`;
+  if (allActive && allSameConditions) {
+    const start = slotStarts[0];
+    const end = slotEnds[slotEnds.length - 1];
 
-    if (i === 0) {
-      firstConditions = [];
-    } else {
-      allSameConditions = false;
-      break;
-    }
-  }
-
-  // 날짜 가져오기 (전달되지 않으면 store에서 가져옴)
-  const currentDate =
-    date ||
-    useSimulationStore.getState().context.date ||
-    new Date().toISOString().split("T")[0];
-  const nextDay = new Date(currentDate);
-  nextDay.setDate(nextDay.getDate() + 1);
-  const nextDayStr = nextDay.toISOString().split("T")[0];
-  const prevDay = new Date(currentDate);
-  prevDay.setDate(prevDay.getDate() - 1);
-  const prevDayStr = prevDay.toISOString().split("T")[0];
-
-  // 모든 셀이 활성화되어 있고 조건이 동일한 경우
-  if (isAllActive && allSameConditions) {
-    // passenger chart 데이터가 있으면 그에 맞춰 설정
-    const chartResult = useSimulationStore.getState().passenger.chartResult;
-    if (
-      chartResult?.chart_x_data &&
-      chartResult.chart_x_data.length > 0 &&
-      isPreviousDay
-    ) {
-      // 전날부터 시작하는 경우 (D-1)
-      const firstTime = timeSlots[0]; // 예: "20:30"
-      const lastTime = timeSlots[timeSlots.length - 1];
-
-      // 전날 시작 시간 처리
-      const startDate =
-        timeSlots.indexOf("00:00") > 0 ? prevDayStr : currentDate;
-
-      return [
-        {
-          period: `${startDate} ${firstTime}:00-${currentDate} 23:59:59`,
-          process_time_seconds: processTime,
-          passenger_conditions: [],
-          activate: true,
-        },
-      ];
-    }
-
-    // 기본값 - Use 23:59:59 instead of next day 00:00:00
     return [
       {
-        period: `${currentDate} 00:00:00-${currentDate} 23:59:59`,
+        period: `${formatDateTime(start)}-${formatDateTime(end)}`,
         process_time_seconds: processTime,
-        passenger_conditions: firstConditions || [],
+        passenger_conditions: slotStates[0]?.conditions || [],
         activate: true,
       },
     ];
   }
 
-  const periods: any[] = [];
-  let currentStart: string | null = null;
-  let currentStartIndex: number = -1;  // 현재 구간의 시작 인덱스 추적
-  let currentConditions: any[] | null = null;
-  let currentIsActive: boolean | null = null;
+  const periods: TimeBlock[] = [];
+  let currentSegment: {
+    startIdx: number;
+    endIdx: number;
+    isActive: boolean;
+    conditions: Array<{ field: string; values: string[] }>;
+    conditionKey: string;
+  } | null = null;
 
-  for (let i = 0; i < timeSlots.length; i++) {
-    const cellId = `${i}-${facilityIndex}`;
-    const isDisabled = disabledCells.has(cellId);
-    const currentTime = timeSlots[i];
-    const badges = cellBadges[cellId] || [];
+  slotStates.forEach((state, idx) => {
+    if (
+      !currentSegment ||
+      currentSegment.isActive !== state.isActive ||
+      currentSegment.conditionKey !== state.conditionKey
+    ) {
+      if (currentSegment) {
+        const start = slotStarts[currentSegment.startIdx];
+        const end = slotEnds[currentSegment.endIdx];
 
-    // 뱃지를 passenger_conditions 형식으로 변환
-    // Use getStorageFieldName for storage format (e.g., Airline -> operating_carrier_iata)
-    const conditions = badges
-      .map((badge) => {
-        // Check if this is a process category (not in predefined categories)
-        const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
-
-        if (isProcessCategory) {
-          // Process names need special handling: convert to zone field format
-          // e.g., "A" -> "a_zone", "Check In" -> "check_in_zone"
-          // Zone values must be uppercase for Lambda (e.g., "a1" -> "A1")
-          return {
-            field: convertProcessNameToZoneField(badge.category),
-            values: badge.options.map(convertZoneValueForLambda),
-          };
-        } else {
-          // Regular categories use standard storage field mapping
-          return {
-            field: getStorageFieldName(badge.category),
-            values: badge.options,
-          };
-        }
-      })
-      .filter((c) => c.field);
-
-    // 현재 셀의 activate 상태
-    const isActive = !isDisabled;
-
-    // 새로운 구간을 시작해야 하는지 확인 (activate 상태 변경 또는 조건 변경)
-    const needNewPeriod = currentStart === null ||
-                         currentIsActive !== isActive ||
-                         JSON.stringify(currentConditions) !== JSON.stringify(conditions);
-
-    if (needNewPeriod && currentStart !== null) {
-      // 이전 구간 저장
-      const prevIndex = i - 1;
-      const endTime = getNextTimeSlot(timeSlots[prevIndex], timeUnit);
-
-      // 현재 구간의 시작 날짜 계산
-      let startDate = currentDate;
-      if (isPreviousDay) {
-        const midnightIdx = timeSlots.indexOf("00:00");
-
-        // 00:00이 있고, currentStartIndex가 00:00 이전에 있으면 전날
-        if (midnightIdx > 0 && currentStartIndex < midnightIdx) {
-          startDate = prevDayStr;
-        }
+        periods.push({
+          period: `${formatDateTime(start)}-${formatDateTime(end)}`,
+          process_time_seconds: processTime,
+          passenger_conditions: currentSegment.conditions,
+          activate: currentSegment.isActive,
+        });
       }
 
-      let endDateTime;
-
-      // 현재 블록이 마지막이 아니면, 다음 블록의 시작 시간을 종료 시간으로 사용
-      if (i < timeSlots.length) {
-        const nextBlockTime = timeSlots[i];
-
-        // 다음 블록이 00:00이고 현재가 전날이면
-        if (nextBlockTime === "00:00" && isPreviousDay && prevIndex < timeSlots.indexOf("00:00")) {
-          endDateTime = `${currentDate} 00:00:00`;
-        }
-        // 일반적인 경우 - 다음 블록의 시작 시간 사용
-        else {
-          const nextBlockDate =
-            isPreviousDay && i < timeSlots.indexOf("00:00")
-              ? prevDayStr
-              : currentDate;
-          endDateTime = `${nextBlockDate} ${nextBlockTime}:00`;
-        }
-      }
-      // 마지막 블록이거나 24:00인 경우
-      else if (endTime === "24:00" || (endTime === "00:00" && prevIndex === timeSlots.length - 1)) {
-        endDateTime = `${currentDate} 23:59:59`;
-      }
-      else {
-        const endDate =
-          isPreviousDay && prevIndex < timeSlots.indexOf("00:00")
-            ? prevDayStr
-            : currentDate;
-        endDateTime = `${endDate} ${endTime}:00`;
-      }
-
-      periods.push({
-        period: `${startDate} ${currentStart}:00-${endDateTime}`,
-        process_time_seconds: processTime,
-        passenger_conditions: currentConditions || [],
-        activate: currentIsActive !== null ? currentIsActive : true,  // null인 경우 기본값 true
-      });
-    }
-
-    if (needNewPeriod) {
-      // 새 구간 시작
-      currentStart = currentTime;
-      currentStartIndex = i;  // 시작 인덱스 저장
-      currentConditions = conditions;
-      currentIsActive = isActive;
-    }
-  }
-
-  // 마지막 구간 처리
-  if (currentStart !== null) {
-    const lastIndex = timeSlots.length - 1;
-    const endTime = getNextTimeSlot(timeSlots[lastIndex], timeUnit);
-
-    // 현재 구간의 시작 날짜 계산
-    let startDate = currentDate;
-    if (isPreviousDay) {
-      const midnightIdx = timeSlots.indexOf("00:00");
-
-      // 00:00이 있고, currentStartIndex가 00:00 이전에 있으면 전날
-      if (midnightIdx > 0 && currentStartIndex < midnightIdx) {
-        startDate = prevDayStr;
-      }
-    }
-
-    // 마지막 구간의 종료 시간 처리
-    let endDateTime;
-
-    // 마지막 슬롯이고 endTime이 24:00 또는 00:00인 경우만 23:59:59 사용
-    if (endTime === "24:00" || (endTime === "00:00" && lastIndex === timeSlots.length - 1)) {
-      endDateTime = `${currentDate} 23:59:59`;
+      currentSegment = {
+        startIdx: idx,
+        endIdx: idx,
+        isActive: state.isActive,
+        conditions: state.conditions,
+        conditionKey: state.conditionKey,
+      };
     } else {
-      // 날짜 경계를 정확히 처리
-      let endDate = currentDate;
-
-      // 전날부터 시작하는 경우
-      if (isPreviousDay) {
-        const midnightIdx = timeSlots.indexOf("00:00");
-        // 현재 구간이 전날에 있고, 종료 시간도 자정 전이면 전날로
-        if (midnightIdx > 0 && currentStartIndex < midnightIdx && lastIndex < midnightIdx) {
-          endDate = prevDayStr;
-        }
-        // 종료 시간이 00:00이면 현재 날짜의 00:00
-        else if (endTime === "00:00") {
-          endDate = currentDate;
-        }
-      }
-
-      endDateTime = `${endDate} ${endTime}:00`;
+      currentSegment.endIdx = idx;
     }
+  });
+
+  if (currentSegment) {
+    const start = slotStarts[currentSegment.startIdx];
+    const end = slotEnds[currentSegment.endIdx];
 
     periods.push({
-      period: `${startDate} ${currentStart}:00-${endDateTime}`,
+      period: `${formatDateTime(start)}-${formatDateTime(end)}`,
       process_time_seconds: processTime,
-      passenger_conditions: currentConditions || [],
-      activate: currentIsActive !== null ? currentIsActive : true,  // null인 경우 기본값 true
+      passenger_conditions: currentSegment.conditions,
+      activate: currentSegment.isActive,
     });
   }
 
-  // periods가 비어있는 경우 기본값 반환 (모든 셀이 활성화)
   if (periods.length === 0) {
+    const start = slotStarts[0];
+    const end = slotEnds[slotEnds.length - 1];
+
     return [
       {
-        period: `${currentDate} 00:00:00-${currentDate} 23:59:59`,
+        period: `${formatDateTime(start)}-${formatDateTime(end)}`,
         process_time_seconds: processTime,
         passenger_conditions: [],
         activate: true,
