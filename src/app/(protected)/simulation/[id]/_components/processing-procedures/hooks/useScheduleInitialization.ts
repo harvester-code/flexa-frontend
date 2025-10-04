@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { FacilityWithSchedule, CategoryBadge } from "../schedule-editor/types";
 import { getCategoryNameFromField, getCategoryFieldName, getCategoryColorIndex } from "../schedule-editor/badgeMappings";
 import { getBadgeColor } from "@/styles/colors";
+import { parsePeriodSafe } from "../schedule-editor/helpers";
 
 export function useScheduleInitialization() {
   // JSON 데이터를 그대로 UI에 매핑하는 단순한 로직
@@ -20,6 +21,24 @@ export function useScheduleInitialization() {
       const newDisabledCells = new Set<string>();
       const newBadges: Record<string, CategoryBadge[]> = {};
 
+      const midnightIdx = timeSlots.indexOf("00:00");
+      const slotDateTimes = timeSlots.map((time, idx) => {
+        let dateForSlot = currentDate;
+
+        if (isPreviousDay && midnightIdx >= 0 && idx < midnightIdx) {
+          dateForSlot = prevDayStr;
+        } else if (isPreviousDay && midnightIdx === -1) {
+          // When passenger data spans previous day but 00:00 is missing,
+          // treat leading slots as previous day by comparing with first slot time.
+          const firstTime = timeSlots[0];
+          if (firstTime && firstTime > time) {
+            dateForSlot = prevDayStr;
+          }
+        }
+
+        return new Date(`${dateForSlot} ${time}:00`);
+      });
+
       facilities.forEach((facility, colIndex) => {
         if (!facility?.operating_schedule?.time_blocks) return;
 
@@ -27,91 +46,52 @@ export function useScheduleInitialization() {
         facility.operating_schedule.time_blocks.forEach((block: any) => {
           if (!block.period) return;
 
-          // period에서 시간만 추출 (YYYY-MM-DD HH:MM:SS 형식)
-          const match = block.period.match(
-            /(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}):\d{2}-(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}):\d{2}/
-          );
+          const parsed = parsePeriodSafe(block.period);
 
-          if (!match) return;
-
-          const [, startDate, startTime, endDate, endTime] = match;
-
-          // timeSlots에서 인덱스 찾기 - 단순 매핑
-          let startIdx = timeSlots.indexOf(startTime);
-          let endIdx = timeSlots.indexOf(endTime);
-
-          // 전날부터 시작하는 경우, 동일 시간이 두 번 나타날 수 있음
-          if (isPreviousDay && timeSlots.indexOf("00:00") > 0) {
-            const midnightIdx = timeSlots.indexOf("00:00");
-
-            // 시작 시간이 중복되는 경우
-            if (timeSlots.lastIndexOf(startTime) !== startIdx) {
-              // 날짜로 구분
-              startIdx = startDate === prevDayStr
-                ? timeSlots.indexOf(startTime)  // 첫 번째 (전날)
-                : timeSlots.lastIndexOf(startTime); // 두 번째 (당일)
-            }
-
-            // 끝 시간이 중복되는 경우
-            if (timeSlots.lastIndexOf(endTime) !== endIdx) {
-              // 날짜로 구분
-              endIdx = endDate === prevDayStr
-                ? timeSlots.indexOf(endTime)  // 첫 번째 (전날)
-                : timeSlots.lastIndexOf(endTime); // 두 번째 (당일)
-            }
-
-            // 23:59는 해당 날짜의 끝을 의미
-            if (endTime === "23:59") {
-              endIdx = endDate === prevDayStr ? midnightIdx : timeSlots.length;
-            }
-          } else {
-            // 23:59는 끝까지
-            if (endTime === "23:59") {
-              endIdx = timeSlots.length;
-            }
+          if (!parsed.valid || !parsed.startDateTime || !parsed.endDateTime) {
+            return;
           }
 
-          // 00:00은 다음 슬롯을 의미
-          if (endTime === "00:00" && endDate > startDate) {
-            endIdx = timeSlots.indexOf("00:00");
-            if (endIdx === -1) endIdx = timeSlots.length;
+          const matchingSlots: number[] = [];
+
+          slotDateTimes.forEach((slotDateTime, slotIndex) => {
+            if (
+              slotDateTime >= parsed.startDateTime! &&
+              slotDateTime < parsed.endDateTime!
+            ) {
+              matchingSlots.push(slotIndex);
+            }
+          });
+
+          if (matchingSlots.length === 0) {
+            return;
           }
 
-          // 인덱스가 유효한 경우만 처리
-          if (startIdx >= 0 && endIdx >= 0 && endIdx > startIdx) {
-            // activate가 false면 비활성화
-            if (block.activate === false) {
-              for (let i = startIdx; i < endIdx; i++) {
-                newDisabledCells.add(`${i}-${colIndex}`);
-              }
-            }
+          if (block.activate === false) {
+            matchingSlots.forEach((slotIndex) => {
+              newDisabledCells.add(`${slotIndex}-${colIndex}`);
+            });
+          }
 
-            // passenger_conditions가 있으면 배지 추가 - JSON 그대로 사용
-            if (block.passenger_conditions?.length > 0) {
-              const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => {
-                // field를 카테고리 이름으로 변환 (표시용)
-                const categoryName = getCategoryNameFromField(condition.field);
+          if (block.passenger_conditions?.length > 0) {
+            const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => {
+              const categoryName = getCategoryNameFromField(condition.field);
+              const colorIndex = getCategoryColorIndex(categoryName);
+              const badgeColor = getBadgeColor(colorIndex);
 
-                // 카테고리 이름을 기반으로 일관된 색상 인덱스 가져오기
-                // CATEGORY_COLOR_INDICES 사용
-                const colorIndex = getCategoryColorIndex(categoryName);
-                const badgeColor = getBadgeColor(colorIndex);
+              return {
+                category: categoryName,
+                field: condition.field,
+                options: condition.values || [],
+                colorIndex,
+                style: badgeColor.style,
+              };
+            });
 
-                return {
-                  category: categoryName,  // 표시용 카테고리 이름
-                  field: condition.field,   // 원본 field 값 보관
-                  options: condition.values || [],
-                  colorIndex: colorIndex,  // 카테고리 기반 색상 인덱스
-                  style: badgeColor.style, // 색상 스타일
-                };
-              });
-
-              // 해당 구간의 모든 셀에 배지 적용
-              for (let i = startIdx; i < endIdx; i++) {
-                const cellId = `${i}-${colIndex}`;
-                newBadges[cellId] = badges;
-              }
-            }
+            matchingSlots.forEach((slotIndex) => {
+              const cellId = `${slotIndex}-${colIndex}`;
+              newBadges[cellId] = badges;
+            });
           }
         });
       });
