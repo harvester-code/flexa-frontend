@@ -38,8 +38,8 @@ export interface FacilityChartSeries {
 }
 
 export interface FacilityChartSummary {
-  totalDemand: number;
-  totalProcessed: number;
+  totalInflow: number;
+  totalOutflow: number;
   maxCapacity: number;
   averageCapacity: number;
   bottleneckTimes: string[];
@@ -48,13 +48,15 @@ export interface FacilityChartSummary {
 export interface FacilityChartData {
   step: string;
   facilityId: string;
+  zoneId: string;
+  zoneName: string;
   intervalMinutes: number;
   timeRange: string[];
   capacity: number[];
-  demandSeries: FacilityChartSeries[];
-  processingSeries: FacilityChartSeries[];
-  totalDemand: number[];
-  totalProcessed: number[];
+  inflowSeries: FacilityChartSeries[];
+  outflowSeries: FacilityChartSeries[];
+  totalInflow: number[];
+  totalOutflow: number[];
   facilityInfo: string;
   summary: FacilityChartSummary;
 }

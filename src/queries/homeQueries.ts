@@ -36,7 +36,7 @@ const useMetricsData = ({
 
 const useFacilityCharts = ({
   scenarioId,
-  intervalMinutes = 30,
+  intervalMinutes = 60,
   enabled = true,
 }: {
   scenarioId?: string;

@@ -4,7 +4,7 @@ const api = createAPIService('new-homes');
 
 export const fetchFacilityCharts = ({
   scenarioId,
-  intervalMinutes = 30,
+  intervalMinutes = 60,
 }: {
   scenarioId?: string;
   intervalMinutes?: number;
