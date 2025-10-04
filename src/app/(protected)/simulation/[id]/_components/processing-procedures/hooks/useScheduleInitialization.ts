@@ -11,7 +11,6 @@ export function useScheduleInitialization() {
       facilities: FacilityWithSchedule[],
       timeSlots: string[],
       isPreviousDay: boolean,
-      categories: Record<string, any>,
       currentDate: string,
       prevDayStr: string
     ): {

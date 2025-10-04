@@ -792,7 +792,6 @@ export default function OperatingScheduleEditor({
     setInitializedKeys,
     timeSlots,
     isPreviousDay,
-    CONDITION_CATEGORIES,
     initializeDisabledCellsFromPeriods,
     disabledCells,
     setDisabledCells,

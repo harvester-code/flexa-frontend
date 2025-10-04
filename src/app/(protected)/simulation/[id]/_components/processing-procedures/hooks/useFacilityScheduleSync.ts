@@ -11,12 +11,10 @@ interface UseFacilityScheduleSyncProps {
   setInitializedKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
   timeSlots: string[];
   isPreviousDay: boolean;
-  CONDITION_CATEGORIES: Record<string, any>;
   initializeDisabledCellsFromPeriods: (
     facilities: FacilityWithSchedule[],
     timeSlots: string[],
     isPreviousDay: boolean,
-    categories: Record<string, any>,
     currentDate: string,
     prevDayStr: string
   ) => {
@@ -39,7 +37,6 @@ export function useFacilityScheduleSync({
   setInitializedKeys,
   timeSlots,
   isPreviousDay,
-  CONDITION_CATEGORIES,
   initializeDisabledCellsFromPeriods,
   disabledCells,
   setDisabledCells,
@@ -86,7 +83,6 @@ export function useFacilityScheduleSync({
             currentFacilities,
             timeSlots,
             isPreviousDay,
-            CONDITION_CATEGORIES,
             currentDate,
             prevDayStr
           );
@@ -167,7 +163,6 @@ export function useFacilityScheduleSync({
     timeSlots,
     appliedTimeUnit,
     isPreviousDay,
-    CONDITION_CATEGORIES,
     initializeDisabledCellsFromPeriods,
   ]); // All necessary dependencies included
 }
