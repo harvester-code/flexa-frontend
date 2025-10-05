@@ -51,6 +51,7 @@ const SERIES_COLORS = ['#2563eb', '#0891b2', '#6366f1', '#22c55e', '#f97316', '#
 const INFLOW_HEAT_COLOR = '#2563eb';
 const OUTFLOW_HEAT_COLOR = '#16a34a';
 const EMPTY_HEAT_COLOR = 'rgba(148, 163, 184, 0.12)';
+const CHART_HEIGHT = '24rem';
 
 const hexToRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace('#', '');
@@ -61,7 +62,6 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const formatTimeLabel = (isoString: string) => dayjs(isoString).format('HH:mm');
 
 const translateSeriesLabel = (label: string, fallback: string) => {
   return label
@@ -166,17 +166,6 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     [activeZone, selectedFacility]
   );
 
-  const facilityInfoText = useMemo(() => {
-    if (!facilityChart?.facilityInfo) return 'Not available';
-    return facilityChart.facilityInfo
-      .replace(/운영/g, 'operating')
-      .replace(/명\/시간/g, 'pax/hour')
-      .replace(/항공/g, 'airlines')
-      .replace(/시간/g, 'time')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }, [facilityChart?.facilityInfo]);
-
   const heatmapData = useMemo<HeatmapData | null>(() => {
     if (!activeZone?.facilities?.length) return null;
 
@@ -216,7 +205,20 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     return { times, rows, maxInflow, maxOutflow };
   }, [activeZone]);
 
+
   const timeLabels = useMemo(() => heatmapData?.times.map((time) => dayjs(time).format('HH:mm')) || [], [heatmapData]);
+
+  const heatmapGridTemplate = useMemo(() => {
+    const columnCount = heatmapData?.times.length ?? 0;
+    if (!columnCount) return undefined;
+    return `repeat(${columnCount}, minmax(32px, 1fr))`;
+  }, [heatmapData?.times.length]);
+
+  const facilityRowTemplate = useMemo(() => {
+    const columnCount = heatmapData?.times.length ?? 0;
+    if (!columnCount) return undefined;
+    return `minmax(160px, max-content) repeat(${columnCount}, minmax(32px, 1fr))`;
+  }, [heatmapData?.times.length]);
 
   const getHeatColor = (value: number, maxValue: number, baseColor: string) => {
     if (!maxValue || value <= 0) return EMPTY_HEAT_COLOR;
@@ -255,6 +257,7 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
         legendgroup: `inflow-${index}`,
         width: intervalMs * 0.225,
         offset: inflowOffset / 2,
+        showlegend: false,
         hovertemplate: '<b>%{x|%H:%M}</b><br>' + label + ': %{y:,d} pax<extra></extra>',
       } as Plotly.Data;
     });
@@ -274,6 +277,7 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
         legendgroup: `outflow-${index}`,
         width: intervalMs * 0.225,
         offset: outflowOffset / 2,
+        showlegend: false,
         hovertemplate: '<b>%{x|%H:%M}</b><br>' + label + ': %{y:,d} pax<extra></extra>',
       } as Plotly.Data;
     });
@@ -281,7 +285,7 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     const capacityTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: 'Capacity limit',
+      name: 'Capacity',
       x: slotCenters,
       y: facilityChart.capacity,
       line: { color: '#1d4ed8', width: 3, shape: 'spline' },
@@ -294,23 +298,23 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     const totalInflowTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: 'Total inflow',
+      name: 'Inflow',
       x: slotCenters,
       y: facilityChart.totalInflow,
       line: { color: '#ef4444', width: 2, dash: 'dot', shape: 'spline' },
       marker: { size: 6, color: '#ef4444', symbol: 'circle-open' },
-      hovertemplate: '<b>%{x|%H:%M}</b><br>Total inflow: %{y:,d} pax<extra></extra>',
+      hovertemplate: '<b>%{x|%H:%M}</b><br>Inflow: %{y:,d} pax<extra></extra>',
     };
 
     const totalOutflowTrace: Plotly.Data = {
       type: 'scatter',
       mode: 'lines+markers',
-      name: 'Total outflow',
+      name: 'Outflow',
       x: slotCenters,
       y: facilityChart.totalOutflow,
       line: { color: '#16a34a', width: 3, shape: 'spline' },
       marker: { size: 6, color: '#16a34a' },
-      hovertemplate: '<b>%{x|%H:%M}</b><br>Total outflow: %{y:,d} pax<extra></extra>',
+      hovertemplate: '<b>%{x|%H:%M}</b><br>Outflow: %{y:,d} pax<extra></extra>',
     };
 
     return {
@@ -323,17 +327,7 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
         hovermode: 'x unified',
         paper_bgcolor: '#ffffff',
         plot_bgcolor: '#ffffff',
-        legend: {
-          orientation: 'v',
-          yanchor: 'top',
-          y: 1,
-          xanchor: 'left',
-          x: 1.02,
-          font: { size: 11 },
-          bgcolor: 'rgba(255,255,255,0.85)',
-          bordercolor: '#e2e8f0',
-          borderwidth: 1,
-        },
+        showlegend: false,
         xaxis: {
           type: 'date',
           title: 'Time',
@@ -353,7 +347,43 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
     };
   }, [facilityChart]);
 
-  const summary = facilityChart?.summary;
+  const stepCount = data?.steps?.length ?? 0;
+  const zoneCount = zonesForStep.length ?? 0;
+
+  const baseTriggerClass =
+    'group flex w-full items-center justify-center rounded-full px-4 py-1 text-sm font-semibold leading-tight text-[#626a82] transition-colors duration-200 whitespace-nowrap hover:bg-white/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7b4dff] data-[state=active]:to-[#a047ff] data-[state=active]:text-white';
+  const stepTriggerClass =
+    stepCount > 4
+      ? cn('min-w-[7rem]', baseTriggerClass)
+      : baseTriggerClass;
+  const zoneTriggerClass =
+    zoneCount > 4
+      ? cn('min-w-[7rem]', baseTriggerClass)
+      : baseTriggerClass;
+
+  const stepTabsStyle = stepCount
+    ? { gridTemplateColumns: `repeat(${stepCount}, minmax(${stepCount > 4 ? '7rem' : '0px'}, 1fr))` }
+    : undefined;
+  const zoneTabsStyle = zoneCount
+    ? { gridTemplateColumns: `repeat(${zoneCount}, minmax(${zoneCount > 4 ? '7rem' : '0px'}, 1fr))` }
+    : undefined;
+
+  const airlineLegend = useMemo(() => {
+    if (!facilityChart?.inflowSeries?.length) return [];
+    return facilityChart.inflowSeries.map((series, index) => {
+      const baseColor = SERIES_COLORS[index % SERIES_COLORS.length];
+      const rawLabel = series.label || `Airline ${index + 1}`;
+      const cleanedLabel = rawLabel
+        .replace(/\s*(유입|유출|수요|처리|Inflow|Outflow|Demand|Processing)$/i, '')
+        .replace(/[·-]+$/g, '')
+        .trim();
+      return {
+        key: `${rawLabel}-${index}`,
+        name: cleanedLabel || `Airline ${index + 1}`,
+        color: baseColor,
+      };
+    });
+  }, [facilityChart?.inflowSeries]);
 
   if (!scenario) return <HomeNoScenario />;
   if (isLoading) return <HomeLoading />;
@@ -377,12 +407,15 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
 
         <div className="space-y-3">
           <Tabs value={activeStep} onValueChange={(value) => setSelectedStep(value)} className="w-full">
-            <TabsList className="flex flex-wrap gap-2 bg-surface-100/60 p-1">
+            <TabsList
+              className="grid w-full gap-1 rounded-full bg-[#eef2ff] p-1.5 shadow-sm"
+              style={stepTabsStyle}
+            >
               {data.steps.map((item) => (
                 <TabsTrigger
                   key={item.step}
                   value={item.step}
-                  className="px-3 py-1.5 text-sm font-medium"
+                  className={stepTriggerClass}
                 >
                   {capitalizeFirst(item.step)}
                 </TabsTrigger>
@@ -391,20 +424,21 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
           </Tabs>
 
           {zonesForStep.length ? (
-            <Tabs
-              value={activeZone?.id || ''}
-              onValueChange={(value) => setSelectedZone(value)}
-              className="w-full"
-            >
-              <TabsList className="flex flex-wrap gap-2 bg-surface-100/60 p-1">
+            <Tabs value={activeZone?.id || ''} onValueChange={(value) => setSelectedZone(value)} className="w-full">
+              <TabsList
+                className="grid w-full gap-1 rounded-full bg-[#eef2ff] p-1.5 shadow-sm"
+                style={zoneTabsStyle}
+              >
                 {zonesForStep.map((zone) => (
                   <TabsTrigger
                     key={zone.id}
                     value={zone.id}
-                    className="px-3 py-1.5 text-sm font-medium"
+                    className={zoneTriggerClass}
                   >
-                    {zone.name}
-                    <span className="ml-1 text-xs text-muted-foreground">({zone.facilities.length})</span>
+                    <span className="truncate">{zone.name}</span>
+                    <span className="ml-2 text-xs text-[#7a7f95] group-data-[state=active]:text-white/80">
+                      ({zone.facilities.length})
+                    </span>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -413,165 +447,195 @@ export default function HomeFacilityCharts({ scenario, data, isLoading }: HomeFa
         </div>
       </div>
 
-      {heatmapData ? (
-        <div className="mt-6 space-y-6">
-          <div className="overflow-x-auto rounded-md border border-slate-200 bg-surface-50">
-            <div className="min-w-[720px]">
-              <div className="flex items-stretch">
-                <div className="w-28 flex-shrink-0 border-b border-r border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Facility
-                </div>
-                <div className="flex-1 border-b border-slate-200">
-                  <div
-                    className="grid text-center text-[10px] font-medium text-muted-foreground"
-                    style={{ gridTemplateColumns: `repeat(${heatmapData.times.length}, minmax(32px, 1fr))` }}
+      <div className="mt-6 space-y-6">
+        {facilityChart && plotConfig ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-end gap-3 text-xs font-semibold text-default-600">
+              <span className="inline-flex items-center gap-2">
+                <span className="flex items-center gap-1">
+                  <span className="h-[3px] w-6 rounded-full bg-[#1d4ed8]" />
+                  <span className="h-2 w-2 rounded-full bg-[#1d4ed8]" />
+                </span>
+                Capacity
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="flex items-center gap-1">
+                  <span
+                    className="h-[3px] w-6 rounded-full border-t-2 border-dashed"
+                    style={{ borderColor: '#ef4444' }}
+                  />
+                  <span
+                    className="inline-flex h-2 w-2 items-center justify-center rounded-full border"
+                    style={{ borderColor: '#ef4444' }}
                   >
-                    {timeLabels.map((label, index) => (
-                      <div
-                        key={`${heatmapData.times[index]}-label`}
-                        className="border-r border-slate-200 px-1 py-1.5 last:border-r-0"
-                      >
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                {heatmapData.rows.map((row) => {
-                  const isActive = row.facility.facilityId === selectedFacility;
-                  return (
-                    <div
-                      key={row.facility.facilityId}
-                      className={cn(
-                        'flex items-stretch border-b border-slate-200 last:border-b-0',
-                        isActive && 'bg-primary/5'
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFacility(row.facility.facilityId)}
-                        className={cn(
-                          'w-28 flex-shrink-0 border-r border-slate-200 px-2 py-1.5 text-left text-[11px] font-medium transition-colors',
-                          isActive ? 'text-primary' : 'text-default-700 hover:text-primary'
-                        )}
-                      >
-                        {row.facility.facilityId}
-                      </button>
-                      <div className="flex-1">
-                        <div
-                          className="grid"
-                          style={{ gridTemplateColumns: `repeat(${row.cells.length}, minmax(32px, 1fr))` }}
-                        >
-                          {row.cells.map((cell, index) => {
-                            const inflowColor = getHeatColor(cell.inflow, heatmapData.maxInflow, INFLOW_HEAT_COLOR);
-                            const outflowColor = getHeatColor(cell.outflow, heatmapData.maxOutflow, OUTFLOW_HEAT_COLOR);
-                            const hasValues = cell.inflow > 0 || cell.outflow > 0;
-                            return (
-                              <div
-                                key={`${row.facility.facilityId}-${cell.time}`}
-                                className="relative h-8 border-r border-slate-200 text-[9px] last:border-r-0"
-                                title={`${timeLabels[index]} · Inflow ${cell.inflow.toLocaleString()} pax | Outflow ${cell.outflow.toLocaleString()} pax`}
-                              >
-                                <div className="absolute inset-0 flex flex-col">
-                                  <div className="flex-1" style={{ backgroundColor: inflowColor }} />
-                                  <div
-                                    className="flex-1 border-t border-white/40"
-                                    style={{ backgroundColor: outflowColor }}
-                                  />
-                                </div>
-                                {hasValues ? (
-                                  <div className="relative flex h-full flex-col items-center justify-center gap-0.5 px-0.5">
-                                    <span className="text-[9px] font-semibold leading-none text-default-800">
-                                      {cell.inflow.toLocaleString()}
-                                    </span>
-                                    <span className="text-[9px] leading-none text-muted-foreground">
-                                      {cell.outflow.toLocaleString()}
-                                    </span>
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    <span className="h-1 w-1 rounded-full bg-[#ef4444]" />
+                  </span>
+                </span>
+                Inflow
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="flex items-center gap-1">
+                  <span className="h-[3px] w-6 rounded-full bg-[#16a34a]" />
+                  <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
+                </span>
+                Outflow
+              </span>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: hexToRgba(INFLOW_HEAT_COLOR, 0.6) }} />
-              <span>Top half · Inflow</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: hexToRgba(OUTFLOW_HEAT_COLOR, 0.6) }} />
-              <span>Bottom half · Outflow</span>
-            </div>
-            <span>Hover a cell to see exact inflow/outflow counts.</span>
-          </div>
-
-          {facilityChart && plotConfig ? (
-            <div className="space-y-6">
-              <div className="-mx-2 overflow-x-auto px-2">
+            <div className="-mx-2 overflow-x-auto px-2">
+              <div className="min-w-[720px]" style={{ height: CHART_HEIGHT }}>
                 <Plot
                   data={plotConfig.data as Plotly.Data[]}
                   layout={{
                     ...plotConfig.layout,
                     autosize: true,
-                    height: 420,
                   }}
                   config={{ displaylogo: false, responsive: true }}
-                  style={{ width: '100%', minWidth: '720px' }}
+                  useResizeHandler
+                  style={{ width: '100%', height: '100%' }}
                 />
               </div>
+            </div>
 
-              <div className="grid gap-4 rounded-md bg-surface-50 p-4 md:grid-cols-2 lg:grid-cols-4">
-                <Statistic label="Total inflow" value={`${formatNumberWithComma(summary?.totalInflow ?? 0)} pax`} />
-                <Statistic label="Total outflow" value={`${formatNumberWithComma(summary?.totalOutflow ?? 0)} pax`} />
-                <Statistic
-                  label="Peak capacity"
-                  value={`${formatNumberWithComma(Math.round(summary?.maxCapacity ?? 0))} pax / ${facilityChart.intervalMinutes} min`}
-                />
-                <Statistic
-                  label="Average capacity"
-                  value={`${formatNumberWithComma(Math.round(summary?.averageCapacity ?? 0))} pax / ${facilityChart.intervalMinutes} min`}
-                />
+            {airlineLegend.length ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-md border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-muted-foreground">
+                {airlineLegend.map((item) => (
+                  <div key={item.key} className="flex items-center gap-1">
+                    <span
+                      className="inline-block h-2 w-2 rounded-sm"
+                      style={{ backgroundColor: hexToRgba(item.color, 0.85) }}
+                    />
+                    <span className="font-medium text-default-700">{item.name}</span>
+                  </div>
+                ))}
               </div>
+            ) : null}
 
-              <div className="space-y-3 rounded-md border border-dashed border-input p-4 text-sm leading-relaxed text-default-600">
-                <div>
-                  <span className="font-semibold text-default-700">Operating windows:</span>{' '}
-                  {facilityInfoText}
+          </div>
+        ) : null}
+
+        {heatmapData ? (
+          <div className="space-y-6">
+            <div className="overflow-x-auto rounded-md border border-slate-200 bg-surface-50">
+              <div className="min-w-[720px]">
+                <div
+                  className="grid border-b border-slate-200 bg-white"
+                  style={
+                    facilityRowTemplate
+                      ? { gridTemplateColumns: facilityRowTemplate }
+                      : undefined
+                  }
+                >
+                  <div className="border-r border-slate-200 px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Facility
+                  </div>
+                  {timeLabels.map((label, index) => (
+                    <div
+                      key={`${heatmapData.times[index]}-label`}
+                      className="border-r border-slate-200 px-1 py-1.5 text-center text-[10px] font-medium text-muted-foreground last:border-r-0"
+                    >
+                      {label}
+                    </div>
+                  ))}
                 </div>
+
                 <div>
-                  <span className="font-semibold text-default-700">Bottleneck windows:</span>{' '}
-                  {summary?.bottleneckTimes?.length
-                    ? summary.bottleneckTimes.map(formatTimeLabel).join(', ')
-                    : 'None detected'}
+                  {heatmapData.rows.map((row) => {
+                    const isActive = row.facility.facilityId === selectedFacility;
+                    const totalOutflow = row.facility.summary?.totalOutflow;
+                    return (
+                      <div
+                        key={row.facility.facilityId}
+                        className="border-b border-slate-200 last-border-b-0"
+                      >
+                        <div
+                          className={cn('grid items-stretch', isActive && 'bg-primary/5')}
+                          style={
+                            facilityRowTemplate
+                              ? { gridTemplateColumns: facilityRowTemplate }
+                              : undefined
+                          }
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setSelectedFacility(row.facility.facilityId)}
+                            className={cn(
+                              'flex items-center justify-between gap-2 border-r border-slate-200 px-2 py-1.5 text-left transition-colors',
+                              isActive ? 'text-primary' : 'text-default-700 hover:text-primary'
+                            )}
+                          >
+                            {typeof totalOutflow === 'number' ? (
+                              <div className="flex w-full items-center justify-between gap-2">
+                                <span className="truncate text-[11px] font-medium leading-tight">
+                                  {row.facility.facilityId}
+                                </span>
+                                <span className="text-[10px] font-semibold text-primary">
+                                  {formatNumberWithComma(Math.round(totalOutflow))} pax
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="truncate text-[11px] font-medium leading-tight">
+                                {row.facility.facilityId}
+                              </span>
+                            )}
+                          </button>
+                          {row.cells.map((cell, index) => {
+                              const inflowColor = getHeatColor(cell.inflow, heatmapData.maxInflow, INFLOW_HEAT_COLOR);
+                              const outflowColor = getHeatColor(cell.outflow, heatmapData.maxOutflow, OUTFLOW_HEAT_COLOR);
+                              const hasValues = cell.inflow > 0 || cell.outflow > 0;
+                              return (
+                                <div
+                                  key={`${row.facility.facilityId}-${cell.time}`}
+                                  className="relative h-8 border-r border-slate-200 text-[9px] last-border-r-0"
+                                  title={`${timeLabels[index]} · Inflow ${cell.inflow.toLocaleString()} pax | Outflow ${cell.outflow.toLocaleString()} pax`}
+                                >
+                                  <div className="absolute inset-0 flex flex-col">
+                                    <div className="flex-1" style={{ backgroundColor: inflowColor }} />
+                                    <div
+                                      className="flex-1 border-t border-white/40"
+                                      style={{ backgroundColor: outflowColor }}
+                                    />
+                                  </div>
+                                  {hasValues ? (
+                                    <div className="relative flex h-full flex-col items-center justify-center gap-0.5 px-0.5">
+                                      <span className="text-[9px] font-semibold leading-none text-default-800">
+                                        {cell.inflow.toLocaleString()}
+                                      </span>
+                                      <span className="text-[9px] leading-none text-muted-foreground">
+                                        {cell.outflow.toLocaleString()}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                          })}
+                        </div>
+
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-          ) : null}
-        </div>
-      ) : (
-        <div className="mt-6 rounded-md border border-dashed border-input p-6 text-center text-sm text-muted-foreground">
-          No facility data available for this zone.
-        </div>
-      )}
-    </div>
-  );
-}
 
-function Statistic({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-white p-3 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-default-900">{value}</p>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: hexToRgba(INFLOW_HEAT_COLOR, 0.6) }} />
+                <span>Top half · Inflow</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: hexToRgba(OUTFLOW_HEAT_COLOR, 0.6) }} />
+                <span>Bottom half · Outflow</span>
+              </div>
+              <span>Hover a cell to see exact inflow/outflow counts.</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-input p-6 text-center text-sm text-muted-foreground">
+            No facility data available for this zone.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
