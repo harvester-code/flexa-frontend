@@ -212,6 +212,19 @@ export const parsePeriodSafe = (
 // disabled cells와 뱃지를 기반으로 period를 계산하는 함수 (타입 안전성 강화)
 const MS_PER_MINUTE = 60 * 1000;
 
+type PassengerCondition = TimeBlock["passenger_conditions"][number];
+
+type SlotState = {
+  isActive: boolean;
+  conditions: PassengerCondition[];
+  conditionKey: string;
+};
+
+type SegmentState = SlotState & {
+  startIdx: number;
+  endIdx: number;
+};
+
 const formatDateTime = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -273,7 +286,7 @@ export const calculatePeriodsFromDisabledCells = (
     return rawEnd;
   });
 
-  const slotStates = timeSlots.map((_, idx) => {
+  const slotStates: SlotState[] = timeSlots.map((_, idx) => {
     const cellId = `${idx}-${facilityIndex}`;
     const isActive = !disabledCells.has(cellId);
     const badges = cellBadges[cellId] || [];
@@ -281,12 +294,12 @@ export const calculatePeriodsFromDisabledCells = (
     if (badges.length === 0) {
       return {
         isActive,
-        conditions: [] as Array<{ field: string; values: string[] }> ,
+        conditions: [],
         conditionKey: "__all__",
       };
     }
 
-    const conditions = badges
+    const conditions: PassengerCondition[] = badges
       .map((badge) => {
         const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
 
@@ -297,12 +310,17 @@ export const calculatePeriodsFromDisabledCells = (
           };
         }
 
+        const field = getStorageFieldName(badge.category);
+        if (!field) {
+          return null;
+        }
+
         return {
-          field: getStorageFieldName(badge.category),
+          field,
           values: badge.options,
         };
       })
-      .filter((condition) => condition.field);
+      .filter((condition): condition is PassengerCondition => Boolean(condition?.field));
 
     const conditionKey = JSON.stringify(conditions);
 
@@ -334,15 +352,11 @@ export const calculatePeriodsFromDisabledCells = (
   }
 
   const periods: TimeBlock[] = [];
-  let currentSegment: {
-    startIdx: number;
-    endIdx: number;
-    isActive: boolean;
-    conditions: Array<{ field: string; values: string[] }>;
-    conditionKey: string;
-  } | null = null;
+  let currentSegment: SegmentState | null = null;
 
-  slotStates.forEach((state, idx) => {
+  for (let idx = 0; idx < slotStates.length; idx += 1) {
+    const state = slotStates[idx];
+
     if (
       !currentSegment ||
       currentSegment.isActive !== state.isActive ||
@@ -370,7 +384,7 @@ export const calculatePeriodsFromDisabledCells = (
     } else {
       currentSegment.endIdx = idx;
     }
-  });
+  }
 
   if (currentSegment) {
     const start = slotStarts[currentSegment.startIdx];
