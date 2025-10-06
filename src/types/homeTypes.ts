@@ -69,3 +69,44 @@ export interface FacilityChartsStep {
 export interface FacilityChartsResponse {
   steps: FacilityChartsStep[];
 }
+
+export interface PassengerSummaryTotals {
+  passengers: number;
+  flightDates: string[];
+  showUpWindow: {
+    start: string | null;
+    end: string | null;
+  };
+}
+
+export interface PassengerTopDestination {
+  airport: string | null | undefined;
+  city: string | null | undefined;
+  country: string | null | undefined;
+  passengers: number;
+  share: number;
+}
+
+export interface CarrierPassengerSummary {
+  label: string | null | undefined;
+  passengers: number;
+  flights: number;
+  destinations: number;
+  topDestination: PassengerTopDestination;
+}
+
+export interface DestinationPassengerSummary {
+  label: string | null | undefined;
+  country: string | null | undefined;
+  passengers: number;
+  airports: number;
+}
+
+export interface PassengerSummaryResponse {
+  totals: PassengerSummaryTotals;
+  dimensions: {
+    carrier: CarrierPassengerSummary[];
+    city: DestinationPassengerSummary[];
+    country: DestinationPassengerSummary[];
+  };
+}

@@ -12,15 +12,17 @@ function BarChart({ chartData, chartLayout, config }: BarChartProps) {
 
   useEffect(() => {
     if (chartRef.current) {
+      const layoutYAxis = typeof chartLayout?.yaxis === 'object' ? chartLayout.yaxis : {};
+      const layoutXAxis = typeof chartLayout?.xaxis === 'object' ? chartLayout.xaxis : {};
       const mergedLayout = {
         ...chartLayout,
         yaxis: {
-          ...(typeof chartLayout?.yaxis === 'object' ? chartLayout.yaxis : {}),
-          tickformat: ',d',
+          ...layoutYAxis,
+          tickformat: (layoutYAxis as any)?.tickformat ?? ',d',
         },
         xaxis: {
-          ...(typeof chartLayout?.xaxis === 'object' ? chartLayout.xaxis : {}),
-          tickformat: '%H:%M',
+          ...layoutXAxis,
+          tickformat: (layoutXAxis as any)?.tickformat ?? '%H:%M',
         },
         ...(chartLayout?.yaxis2
           ? {

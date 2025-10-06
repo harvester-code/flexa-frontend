@@ -19,3 +19,21 @@ export const fetchFacilityCharts = ({
     },
   });
 };
+
+export const fetchPassengerSummary = ({
+  scenarioId,
+  topN = 10,
+}: {
+  scenarioId?: string;
+  topN?: number;
+}) => {
+  if (!scenarioId) {
+    throw new Error('scenarioId is required');
+  }
+
+  return api.get(`/${scenarioId}/passenger-summary`, {
+    params: {
+      top_n: topN,
+    },
+  });
+};

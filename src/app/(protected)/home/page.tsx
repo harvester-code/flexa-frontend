@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
-import { useStaticData, useMetricsData, useFacilityCharts } from '@/queries/homeQueries';
+import { useStaticData, useMetricsData, useFacilityCharts, usePassengerSummary } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import TheContentHeader from '@/components/TheContentHeader';
 import HomeAccordion from './_components/HomeAccordion';
@@ -35,6 +35,11 @@ function HomePage() {
   });
 
   const { data: facilityChartsData, isLoading: isFacilityChartsLoading } = useFacilityCharts({
+    scenarioId: scenario?.scenario_id,
+    enabled: !!scenario,
+  });
+
+  const { data: passengerSummaryData, isLoading: isPassengerSummaryLoading } = usePassengerSummary({
     scenarioId: scenario?.scenario_id,
     enabled: !!scenario,
   });
@@ -92,6 +97,8 @@ function HomePage() {
           isLoading={isStaticLoading}
           facilityCharts={facilityChartsData}
           isFacilityChartsLoading={isFacilityChartsLoading}
+          passengerSummary={passengerSummaryData}
+          isPassengerSummaryLoading={isPassengerSummaryLoading}
         />
       </HomeAccordion>
 
