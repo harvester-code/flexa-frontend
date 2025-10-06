@@ -121,7 +121,7 @@ function FlightDestinationMap({ flights }: FlightDestinationMapProps) {
         showcoastlines: true,
         lakecolor: '#bfdbfe',
         showlakes: true,
-        fitbounds: 'locations',
+        // Avoid `fitbounds: "locations"`; Plotly 3.1 crashes when autoranging without cartesian axes
         showframe: false,
       },
     }),

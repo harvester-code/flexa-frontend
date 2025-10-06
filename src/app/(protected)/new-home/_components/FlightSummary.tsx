@@ -58,14 +58,14 @@ function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
       height: 320,
       margin: { l: 60, r: 30, t: 24, b: 60 },
       xaxis: {
-        title: 'Departure Hour',
+        title: { text: 'Departure Hour' },
         tickangle: -45,
         tickfont: { size: 11 },
       },
       yaxis: {
-        title: 'Flights',
+        title: { text: 'Flights' },
         tickformat: ',d',
-        rangemode: 'tozero',
+        rangemode: 'tozero' as const,
       },
       bargap: 0.2,
       plot_bgcolor: '#ffffff',
