@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Option, PassengerSummaryResponse, ScenarioData } from '@/types/homeTypes';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
-import HomeLoading from './HomeLoading';
-import HomeNoScenario from './HomeNoScenario';
-import HomeNoData from './HomeNoData';
+import HomeLoading from '@/app/(protected)/home/_components/HomeLoading';
+import HomeNoScenario from '@/app/(protected)/home/_components/HomeNoScenario';
+import HomeNoData from '@/app/(protected)/home/_components/HomeNoData';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -23,7 +23,7 @@ interface RankingRecord {
   metaLines: string[];
 }
 
-interface HomePassengerSummaryProps {
+interface PassengerSummaryProps {
   scenario: ScenarioData | null;
   summary?: PassengerSummaryResponse;
   isLoading?: boolean;
@@ -31,7 +31,7 @@ interface HomePassengerSummaryProps {
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 
-function HomePassengerSummary({ scenario, summary, isLoading }: HomePassengerSummaryProps) {
+function PassengerSummary({ scenario, summary, isLoading }: PassengerSummaryProps) {
   const [dimension, setDimension] = useState<Dimension>('carrier');
 
   const rankingRecords = useMemo<RankingRecord[]>(() => {
@@ -165,8 +165,7 @@ function HomePassengerSummary({ scenario, summary, isLoading }: HomePassengerSum
             ) : null}
             {totals.showUpWindow.start && totals.showUpWindow.end ? (
               <span>
-                Show-up Window: {totals.showUpWindow.start.replace('T', ' ')} –{' '}
-                {totals.showUpWindow.end.replace('T', ' ')}
+                Show-up Window: {totals.showUpWindow.start.replace('T', ' ')} – {totals.showUpWindow.end.replace('T', ' ')}
               </span>
             ) : null}
           </div>
@@ -207,8 +206,8 @@ function HomePassengerSummary({ scenario, summary, isLoading }: HomePassengerSum
                 {record.metaLines.map((line, index) => (
                   <p key={`${record.label}-meta-${index}`} className="mt-1 text-xs text-default-500">
                     {line}
-                  </p>)
-                )}
+                  </p>
+                ))}
               </div>
             ))}
           </div>
@@ -218,4 +217,4 @@ function HomePassengerSummary({ scenario, summary, isLoading }: HomePassengerSum
   );
 }
 
-export default HomePassengerSummary;
+export default PassengerSummary;

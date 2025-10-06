@@ -1,9 +1,7 @@
-import { ScenarioData, FacilityChartsResponse, PassengerSummaryResponse } from '@/types/homeTypes';
+import { ScenarioData } from '@/types/homeTypes';
 import HomeChartFlowChart from './HomeChartFlowChart';
 import HomeChartHistogram from './HomeChartHistogram';
 import HomeChartHourlyTrends from './HomeChartHourlyTrends';
-import HomeFacilityCharts from './HomeFacilityCharts';
-import HomePassengerSummary from './HomePassengerSummary';
 
 interface HomeChartsProps {
   scenario: ScenarioData | null;
@@ -13,36 +11,18 @@ interface HomeChartsProps {
     sankey_diagram?: any;
   }; // 배치 API에서 받은 차트 데이터들
   isLoading?: boolean; // 배치 API 로딩 상태
-  facilityCharts?: FacilityChartsResponse | undefined;
-  isFacilityChartsLoading?: boolean;
-  passengerSummary?: PassengerSummaryResponse;
-  isPassengerSummaryLoading?: boolean;
 }
 
 export default function HomeCharts({
   scenario,
   data,
   isLoading,
-  facilityCharts,
-  isFacilityChartsLoading,
-  passengerSummary,
-  isPassengerSummaryLoading,
 }: HomeChartsProps) {
   return (
     <div className="mt-5 flex flex-col gap-[35px]">
       <HomeChartHourlyTrends scenario={scenario} data={data?.flow_chart} isLoading={isLoading} />
       <HomeChartHistogram scenario={scenario} data={data?.histogram} isLoading={isLoading} />
-      <HomePassengerSummary
-        scenario={scenario}
-        summary={passengerSummary}
-        isLoading={isPassengerSummaryLoading}
-      />
       <HomeChartFlowChart scenario={scenario} data={data?.sankey_diagram} isLoading={isLoading} />
-      <HomeFacilityCharts
-        scenario={scenario}
-        data={facilityCharts}
-        isLoading={isFacilityChartsLoading}
-      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchStaticData, fetchMetricsData } from '@/services/homeService';
-import { fetchFacilityCharts, fetchPassengerSummary } from '@/services/newHomeService';
-import { PassengerSummaryResponse } from '@/types/homeTypes';
+import { fetchFacilityCharts, fetchPassengerSummary, fetchFlightSummary } from '@/services/newHomeService';
+import { PassengerSummaryResponse, FlightSummaryResponse } from '@/types/homeTypes';
 
 // 정적 데이터 (KPI와 무관한 데이터: alert_issues, flow_chart, histogram, sankey_diagram)
 const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
@@ -79,4 +79,26 @@ const usePassengerSummary = ({
   });
 };
 
-export { useStaticData, useMetricsData, useFacilityCharts, usePassengerSummary };
+const useFlightSummary = ({
+  scenarioId,
+  topN = 10,
+  enabled = true,
+}: {
+  scenarioId?: string;
+  topN?: number;
+  enabled?: boolean;
+}) => {
+  return useQuery({
+    queryKey: ['new-home-flight-summary', scenarioId, topN],
+    queryFn: async (): Promise<FlightSummaryResponse | undefined> => {
+      const {
+        data: { data },
+      } = await fetchFlightSummary({ scenarioId, topN });
+      return data;
+    },
+    enabled: enabled && !!scenarioId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export { useStaticData, useMetricsData, useFacilityCharts, usePassengerSummary, useFlightSummary };

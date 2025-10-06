@@ -37,3 +37,21 @@ export const fetchPassengerSummary = ({
     },
   });
 };
+
+export const fetchFlightSummary = ({
+  scenarioId,
+  topN = 10,
+}: {
+  scenarioId?: string;
+  topN?: number;
+}) => {
+  if (!scenarioId) {
+    throw new Error('scenarioId is required');
+  }
+
+  return api.get(`/${scenarioId}/flight-summary`, {
+    params: {
+      top_n: topN,
+    },
+  });
+};

@@ -15,6 +15,7 @@ import {
   Settings,
   User,
   UserPen,
+  LayoutDashboard,
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
@@ -52,6 +53,11 @@ const menuSections = [
         href: '/components',
         icon: Layers,
         label: 'Components',
+      },
+      {
+        href: '/new-home',
+        icon: LayoutDashboard,
+        label: 'New Home',
       },
     ],
   },

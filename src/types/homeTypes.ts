@@ -110,3 +110,67 @@ export interface PassengerSummaryResponse {
     country: DestinationPassengerSummary[];
   };
 }
+
+export interface FlightSummaryTotals {
+  flights: number;
+  passengers: number;
+  carriers: number;
+  dateRange: string[];
+  firstDeparture: string | null;
+  lastDeparture: string | null;
+}
+
+export interface FlightHourCarrierSummary {
+  label: string;
+  flights: number;
+}
+
+export interface FlightHourSummary {
+  hour: number;
+  label: string;
+  flights: number;
+  carriers: FlightHourCarrierSummary[];
+}
+
+export interface FlightCarrierSummary {
+  label: string;
+  flights: number;
+  passengers: number;
+  topDestination: {
+    airport: string | null;
+    city: string | null;
+    country: string | null;
+    flights: number;
+  };
+  topAircraft: Array<{
+    type: string;
+    flights: number;
+  }>;
+}
+
+export interface FlightDetailSummary {
+  flightNumber: string | null;
+  carrier: string;
+  departure: {
+    airport: string | null;
+    city: string | null;
+    country: string | null;
+    datetime: string | null;
+  };
+  arrival: {
+    airport: string | null;
+    city: string | null;
+    country: string | null;
+    datetime: string | null;
+  };
+  aircraft: string;
+  passengers: number;
+  totalSeats: number | null;
+}
+
+export interface FlightSummaryResponse {
+  totals: FlightSummaryTotals;
+  hours: FlightHourSummary[];
+  carriers: FlightCarrierSummary[];
+  flights: FlightDetailSummary[];
+}
