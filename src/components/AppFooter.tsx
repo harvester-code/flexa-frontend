@@ -2,9 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 
 const AppFooter: React.FC = () => (
-  <footer className="border-t bg-background px-12 text-center">
+  <footer className="border-t bg-background px-12">
     <div className="mx-auto max-w-[1340px]">
-      <div className="flex flex-col items-center justify-center py-4">
+      <div className="flex items-center justify-between py-4">
         <nav className="flex gap-6 text-sm font-medium">
           <Link className="text-xs font-medium text-default-500 transition-colors hover:text-primary-900" href="#">
             Contact
@@ -23,7 +23,7 @@ const AppFooter: React.FC = () => (
           </Link>
         </nav>
 
-        <div className="mt-2 text-xs text-default-500">© 2024 Flexa. All rights reserved.</div>
+        <div className="text-xs text-default-500">© 2024 Flexa. All rights reserved.</div>
       </div>
     </div>
   </footer>
