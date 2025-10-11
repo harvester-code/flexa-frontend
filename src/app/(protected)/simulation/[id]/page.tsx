@@ -10,8 +10,7 @@ import React, {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
-import { Save, Trash2 } from "lucide-react";
-import { useShallow } from "zustand/react/shallow";
+import { Clock, Save, Trash2 } from "lucide-react";
 import { APIRequestLog } from "@/types/simulationTypes";
 import {
   deleteScenarioMetadata,
@@ -98,6 +97,17 @@ export default function SimulationDetail({
   const passengerChartResult = useSimulationStore(
     (s) => s.passenger.chartResult
   );
+  const lastSavedAt = useSimulationStore(
+    (s) => s.savedAt || s.context.lastSavedAt || null
+  );
+  const lastSavedRelative = useMemo(
+    () => (lastSavedAt ? timeToRelativeTime(lastSavedAt) : ""),
+    [lastSavedAt]
+  );
+  const lastSavedTooltip = useMemo(
+    () => (lastSavedAt ? dayjs(lastSavedAt).format("YYYY-MM-DD HH:mm") : ""),
+    [lastSavedAt]
+  );
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback((data: any) => {
@@ -105,6 +115,11 @@ export default function SimulationDetail({
       // 🔧 새로운 통합 Store 구조에 맞게 수정
       const metadata = data.metadata || {};
       const tabs = metadata.tabs || {};
+      const savedTimestamp =
+        metadata.savedAt ||
+        metadata?.context?.lastSavedAt ||
+        data.loaded_at ||
+        null;
 
       // 🎯 S3에서 받은 데이터를 Zustand에 통째로 갈아끼우기
       if (
@@ -178,6 +193,10 @@ export default function SimulationDetail({
 
         // 🚀 한 방에 갈아끼우기
         useSimulationStore.setState(newState);
+
+        // ⏱️ 최신 저장 시각 동기화
+        useSimulationStore.setState({ savedAt: savedTimestamp || null });
+        useSimulationStore.getState().setLastSavedAt(savedTimestamp || null);
       }
 
       // 🚧 Legacy tabs 구조 지원 (하위 호환성)
@@ -412,6 +431,15 @@ export default function SimulationDetail({
           {latestHistory?.checkpoint && (
             <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-default-500">
               {timeToRelativeTime(latestHistory?.checkpoint)}
+            </span>
+          )}
+          {lastSavedRelative && (
+            <span
+              className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm font-medium text-primary"
+              title={lastSavedTooltip}
+            >
+              <Clock className="h-4 w-4" />
+              Updated {lastSavedRelative}
             </span>
           )}
         </div>
