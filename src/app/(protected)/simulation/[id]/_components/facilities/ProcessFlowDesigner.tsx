@@ -51,6 +51,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
 import {
   getBadgeColor,
@@ -366,6 +376,8 @@ export default function ProcessFlowDesigner({
   const [tempSelectedCriteriaItems, setTempSelectedCriteriaItems] = useState<
     Record<string, boolean>
   >({});
+  const [isProcessTimeOverrideDialogOpen, setIsProcessTimeOverrideDialogOpen] =
+    useState(false);
 
   // Zone facility count editing functions
   const startEditingZone = useCallback(
@@ -700,8 +712,7 @@ export default function ProcessFlowDesigner({
     }
   }, [editedProcess]);
 
-  // Handle saving changes to existing process
-  const handleSaveChanges = useCallback(() => {
+  const performProcessSave = useCallback(() => {
     if (selectedProcessIndex === null || !editedProcess) return;
 
     // Get the current process from store
@@ -964,7 +975,56 @@ export default function ProcessFlowDesigner({
       title: "Process Updated",
       description: "Process has been updated.",
     });
-  }, [selectedProcessIndex, editedProcess, processFlow, setProcessFlow]);
+  }, [
+    selectedProcessIndex,
+    editedProcess,
+    processFlow,
+    setProcessFlow,
+    toast,
+  ]);
+
+  // Handle saving changes to existing process
+  const handleSaveChanges = useCallback(() => {
+    if (selectedProcessIndex === null || !editedProcess) return;
+
+    const currentProcess = processFlow[selectedProcessIndex];
+    if (!currentProcess) return;
+
+    const newProcessTime = editedProcess.process_time_seconds;
+
+    if (newProcessTime != null) {
+      const uniqueProcessTimes = new Set<number>();
+
+      Object.values(currentProcess.zones || {})
+        .filter((zone: any) => zone?.facilities)
+        .forEach((zone: any) => {
+          zone.facilities.forEach((facility: any) => {
+            facility?.operating_schedule?.time_blocks?.forEach((block: any) => {
+              if (typeof block?.process_time_seconds === "number") {
+                uniqueProcessTimes.add(block.process_time_seconds);
+              }
+            });
+          });
+        });
+
+      const uniqueValues = Array.from(uniqueProcessTimes);
+      const hasDifferentFromNew = uniqueValues.some(
+        (value) => value !== newProcessTime
+      );
+
+      if (uniqueValues.length > 1 && hasDifferentFromNew) {
+        setIsProcessTimeOverrideDialogOpen(true);
+        return;
+      }
+    }
+
+    performProcessSave();
+  }, [
+    selectedProcessIndex,
+    editedProcess,
+    processFlow,
+    performProcessSave,
+  ]);
 
   const handleRunSimulation = async () => {
     if (!canRunSimulation) {
@@ -1945,6 +2005,34 @@ export default function ProcessFlowDesigner({
               )}
             </div>
           </div>
+
+          <AlertDialog
+            open={isProcessTimeOverrideDialogOpen}
+            onOpenChange={setIsProcessTimeOverrideDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Overwrite Existing Times?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You&apos;re changing the process time, and some facilities
+                  currently use different values. Continuing will overwrite
+                  those with the new process time. If that&apos;s okay, choose OK
+                  to proceed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setIsProcessTimeOverrideDialogOpen(false);
+                    performProcessSave();
+                  }}
+                >
+                  OK
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Operating Schedule Editor - Only show when there are processes */}
           {processFlow.length > 0 && (
