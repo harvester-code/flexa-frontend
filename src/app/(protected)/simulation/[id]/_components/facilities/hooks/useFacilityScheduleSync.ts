@@ -73,7 +73,7 @@ export function useFacilityScheduleSync({
         prevDay.setDate(prevDay.getDate() - 1);
         const prevDayStr = prevDay.toISOString().split("T")[0];
 
-        const { disabledCells: initDisabledCells, badges: initBadges } =
+        const { disabledCells: initDisabledCells, badges: initBadges, processTimes: initProcessTimes } =
           initializeDisabledCellsFromPeriods(
             currentFacilities,
             timeSlots,
@@ -84,6 +84,7 @@ export function useFacilityScheduleSync({
 
         setDisabledCells(initDisabledCells);
         setCellBadges(initBadges);
+        setCellProcessTimes(initProcessTimes);
         setInitializedKeys((prev) => new Set([...prev, initKey]));
         return;
       }

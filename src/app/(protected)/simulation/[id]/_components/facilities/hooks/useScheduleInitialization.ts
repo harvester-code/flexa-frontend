@@ -16,9 +16,11 @@ export function useScheduleInitialization() {
     ): {
       disabledCells: Set<string>;
       badges: Record<string, CategoryBadge[]>;
+      processTimes: Record<string, number>;
     } => {
       const newDisabledCells = new Set<string>();
       const newBadges: Record<string, CategoryBadge[]> = {};
+      const newProcessTimes: Record<string, number> = {};
 
       const midnightIdx = timeSlots.indexOf("00:00");
       const slotDateTimes = timeSlots.map((time, idx) => {
@@ -72,6 +74,14 @@ export function useScheduleInitialization() {
             });
           }
 
+          // Restore process_time_seconds for each matching slot
+          if (block.process_time_seconds !== undefined) {
+            matchingSlots.forEach((slotIndex) => {
+              const cellId = `${slotIndex}-${colIndex}`;
+              newProcessTimes[cellId] = block.process_time_seconds;
+            });
+          }
+
           if (block.passenger_conditions?.length > 0) {
             const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => {
               const categoryName = getCategoryNameFromField(condition.field);
@@ -95,7 +105,7 @@ export function useScheduleInitialization() {
         });
       });
 
-      return { disabledCells: newDisabledCells, badges: newBadges };
+      return { disabledCells: newDisabledCells, badges: newBadges, processTimes: newProcessTimes };
     },
     []
   );
