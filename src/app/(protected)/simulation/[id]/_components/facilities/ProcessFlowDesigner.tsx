@@ -44,7 +44,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { formatProcessName } from "@/lib/utils";
 import { useSimulationStore } from "../../_stores";
 import ScheduleEditor from "./ScheduleEditor";
-import FlightCriteriaSelector from "../flight-schedule/FlightCriteriaSelector";
+import FlightCriteriaSelector from "../flights/FlightCriteriaSelector";
 import {
   Dialog,
   DialogContent,

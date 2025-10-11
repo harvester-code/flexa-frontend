@@ -35,16 +35,16 @@ import { timeToRelativeTime } from "@/lib/utils";
 import SimulationLoading from "../_components/SimulationLoading";
 import JSONDebugViewer from "./_components/shared/DebugViewer";
 import TabDefault from "./_components/shared/TabDefault";
-import TabFlightSchedule from "./_components/flight-schedule/TabFlightSchedule";
-import TabPassengerSchedule from "./_components/passenger-schedule/TabPassengerSchedule";
-import TabProcessingProcedures from "./_components/processing-procedures/TabProcessingProcedures";
+import TabFlightSchedule from "./_components/flights/TabFlightSchedule";
+import TabPassengerSchedule from "./_components/passengers/TabPassengerSchedule";
+import TabProcessingProcedures from "./_components/facilities/TabProcessingProcedures";
 import { useLoadScenarioData } from "./_hooks/useLoadScenarioData";
 import { useScenarioProfileStore, useSimulationStore } from "./_stores";
 
 const tabs: { text: string; number: number }[] = [
-  { text: "Flight Schedule", number: 0 },
-  { text: "Passenger Schedule", number: 1 },
-  { text: "Processing Procedures", number: 2 },
+  { text: "Flights", number: 0 },
+  { text: "Passengers", number: 1 },
+  { text: "Facilities", number: 2 },
 ];
 
 // Component that uses useSearchParams for scenario name from URL
