@@ -17,33 +17,20 @@ interface FlightSummaryProps {
 const numberFormatter = new Intl.NumberFormat('en-US');
 
 function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-
-  if (isLoading) {
-    return <HomeLoading />;
-  }
-
-  if (!summary) {
-    return <HomeNoData />;
-  }
-
-  const totals = summary.totals;
-
+  const summaryHours = summary?.hours ?? [];
   const hourlyChartData = useMemo(() => {
-    if (!summary.hours?.length) {
+    if (!summaryHours.length) {
       return [];
     }
 
     return [
       {
         type: 'bar',
-        x: summary.hours.map((item) => item.label ?? `${item.hour.toString().padStart(2, '0')}:00`),
-        y: summary.hours.map((item) => item.flights),
+        x: summaryHours.map((item) => item.label ?? `${item.hour.toString().padStart(2, '0')}:00`),
+        y: summaryHours.map((item) => item.flights),
         marker: { color: '#22c55e' },
         hoverinfo: 'text',
-        hovertext: summary.hours.map(
+        hovertext: summaryHours.map(
           (item) =>
             `<b>${item.label ?? `${item.hour.toString().padStart(2, '0')}:00`}</b><br/>Flights: ${numberFormatter.format(
               item.flights
@@ -51,7 +38,7 @@ function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
         ),
       } as any,
     ];
-  }, [summary.hours]);
+  }, [summaryHours]);
 
   const hourlyChartLayout = useMemo(
     () => ({
@@ -74,8 +61,22 @@ function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
     []
   );
 
-  const carrierRows = summary.carriers ?? [];
-  const flightRows = summary.flights ?? [];
+  const carrierRows = summary?.carriers ?? [];
+  const flightRows = summary?.flights ?? [];
+
+  if (!scenario) {
+    return <HomeNoScenario />;
+  }
+
+  if (isLoading) {
+    return <HomeLoading />;
+  }
+
+  if (!summary) {
+    return <HomeNoData />;
+  }
+
+  const totals = summary.totals;
 
   return (
     <div className="flex flex-col gap-6">

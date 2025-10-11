@@ -411,7 +411,7 @@ export default function LoadFactorSettings({
     const actualCounts: Record<string, number> = {};
     const limitedCounts: Record<string, number> = {};
     let totalUsedFlights = 0;
-    let usedFlightsSoFar = new Set<string>(); // 이미 사용된 flights 추적
+    const usedFlightsSoFar = new Set<string>(); // 이미 사용된 flights 추적
 
     // 각 룰을 순차적으로 처리
     createdRules.forEach((rule, index) => {

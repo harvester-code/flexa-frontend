@@ -109,7 +109,7 @@ export default function InteractivePercentageBar({
     const property = properties[editingIndex];
 
     // 새로운 값 적용 - 입력값 그대로 저장
-    let newValues = { ...values };
+    const newValues = { ...values };
 
     // 🎯 1개 항목일 때: 항상 100
     if (properties.length === 1) {

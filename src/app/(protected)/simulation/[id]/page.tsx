@@ -432,7 +432,7 @@ export default function SimulationDetail({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Metadata</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this scenario's metadata?
+                  Are you sure you want to delete this scenario&rsquo;s metadata?
                   <br />
                   This action cannot be undone.
                 </AlertDialogDescription>

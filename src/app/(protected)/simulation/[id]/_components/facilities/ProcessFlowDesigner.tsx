@@ -355,7 +355,7 @@ export default function ProcessFlowDesigner({
 
   // Inline editing state - always keep a copy of the current process for editing
   const [editedProcess, setEditedProcess] = useState<
-    (ProcessStep & { process_time_seconds?: number }) | null
+    (ProcessStep & { process_time_seconds?: number | null }) | null
   >(null);
   const [defaultFacilityCount, setDefaultFacilityCount] = useState<
     number | null
@@ -1302,7 +1302,7 @@ export default function ProcessFlowDesigner({
                         step: processFlow.length + 1,
                         zones: {},
                         travel_time_minutes: null,
-                        process_time_seconds: null,
+                        process_time_seconds: undefined,
                         entry_conditions: [],
                       } as ProcessStep);
                       setZoneNamesInput("");

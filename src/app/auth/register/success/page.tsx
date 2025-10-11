@@ -47,7 +47,7 @@ function RegisterSuccessContent() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm text-default-900">Didn't receive the email?</p>
+            <p className="text-sm text-default-900">Didn&rsquo;t receive the email?</p>
             <form>
               <input type="hidden" name="email" value={email || ''} />
               <SubmitButton variant="primary" formAction={undefined} className="w-full" pendingText="Resending...">

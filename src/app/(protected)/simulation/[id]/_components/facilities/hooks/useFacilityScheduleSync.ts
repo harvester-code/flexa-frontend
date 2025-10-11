@@ -20,6 +20,7 @@ interface UseFacilityScheduleSyncProps {
   ) => {
     disabledCells: Set<string>;
     badges: Record<string, any[]>;
+    processTimes: Record<string, number>;
   };
   disabledCells: Set<string>;
   setDisabledCells: (cells: Set<string>) => void;

@@ -374,7 +374,7 @@ export default function DistributionSettings({
   // 🔧 개선된 균등분배 계산 함수 - decimal로 변환 (메모이제이션)
   const calculateEqualDistribution = useCallback((properties: string[]) => {
     const equalPercentage = Math.floor(100 / properties.length);
-    let remainder = 100 - equalPercentage * properties.length;
+    const remainder = 100 - equalPercentage * properties.length;
 
     const distribution: Record<string, number> = {};
     properties.forEach((prop, index) => {

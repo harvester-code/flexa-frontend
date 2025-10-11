@@ -21,7 +21,7 @@ export function useTimeSlotGeneration({
     if (chartResult?.chart_x_data && chartResult.chart_x_data.length > 0) {
       // Find first passenger time
       const chartData = chartResult.chart_y_data;
-      let totalPassengersByTime: number[] = new Array(
+      const totalPassengersByTime: number[] = new Array(
         chartResult.chart_x_data.length
       ).fill(0);
 

@@ -821,7 +821,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (values.length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
-          let remainder = 100 - equalPercentage * values.length;
+          const remainder = 100 - equalPercentage * values.length;
 
           const equalDistribution: Record<string, number> = {};
           values.forEach((prop, index) => {
@@ -842,7 +842,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             values.length > 0 && Object.keys(rule.value || {}).length > 0
               ? (() => {
                   const equalPercentage = Math.floor(100 / values.length);
-                  let remainder = 100 - equalPercentage * values.length;
+                  const remainder = 100 - equalPercentage * values.length;
 
                   const equalDistribution: Record<string, number> = {};
                   values.forEach((prop, index) => {
@@ -884,7 +884,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (values.length > 0) {
           // 균등분배 계산 (정수 백분율)
           const equalPercentage = Math.floor(100 / values.length);
-          let remainder = 100 - equalPercentage * values.length;
+          const remainder = 100 - equalPercentage * values.length;
 
           const equalDistribution: Record<string, number> = {};
           values.forEach((prop, index) => {
@@ -905,7 +905,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             values.length > 0 && Object.keys(rule.value || {}).length > 0
               ? (() => {
                   const equalPercentage = Math.floor(100 / values.length);
-                  let remainder = 100 - equalPercentage * values.length;
+                  const remainder = 100 - equalPercentage * values.length;
 
                   const equalDistribution: Record<string, number> = {};
                   values.forEach((prop, index) => {

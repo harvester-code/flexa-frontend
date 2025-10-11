@@ -30,21 +30,17 @@ export default function FlightResultChart() {
 
   // 🎯 Zustand에서 직접 데이터 가져오기
   const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
-
-  // 데이터가 없으면 아예 렌더링하지 않음
-  if (!appliedFilterResult) {
-    return null;
-  }
-
-  // 사용 가능한 카테고리 목록
-  const categories = Object.keys(appliedFilterResult.chart_y_data);
+  const chartYData = appliedFilterResult?.chart_y_data ?? {};
+  const chartXData = appliedFilterResult?.chart_x_data ?? [];
 
   // Plotly용 데이터 변환
   const { plotlyData, xAxisLabels } = useMemo(() => {
-    if (!appliedFilterResult.chart_y_data[selectedCategory]) return { plotlyData: [], xAxisLabels: [] };
+    const categoryData = chartYData[selectedCategory];
+    if (!categoryData) {
+      return { plotlyData: [], xAxisLabels: [] };
+    }
 
-    const categoryData = appliedFilterResult.chart_y_data[selectedCategory];
-    const xLabels = appliedFilterResult.chart_x_data;
+    const xLabels = chartXData;
 
     // ✅ 항공사별 총 운항횟수 기준으로 내림차순 정렬 (ETC는 항상 마지막)
     const sortedCategoryData = [...categoryData].sort((a, b) => {
@@ -74,7 +70,7 @@ export default function FlightResultChart() {
     }));
 
     return { plotlyData: traces, xAxisLabels: xLabels };
-  }, [appliedFilterResult, selectedCategory]);
+  }, [chartYData, chartXData, selectedCategory]);
 
   // Plotly 레이아웃 설정
   const layout = useMemo(() => ({
@@ -114,6 +110,13 @@ export default function FlightResultChart() {
     displayModeBar: true,
     responsive: true,
   };
+
+  if (!appliedFilterResult) {
+    return null;
+  }
+
+  // 사용 가능한 카테고리 목록
+  const categories = Object.keys(chartYData);
 
   return (
     <Card>

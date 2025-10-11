@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
             <div className="mb-6 flex flex-col items-center text-center">
               <Mail className="mb-3 h-12 w-12 text-primary" />
               <h2 className="mb-2 text-lg font-semibold leading-none text-default-900">Forgot Password?</h2>
-              <p className="text-sm text-default-900/70">Don't worry, we'll send you a link to reset it.</p>
+              <p className="text-sm text-default-900/70">Don&rsquo;t worry, we&rsquo;ll send you a link to reset it.</p>
             </div>
 
             <form action={formAction} className="space-y-4">

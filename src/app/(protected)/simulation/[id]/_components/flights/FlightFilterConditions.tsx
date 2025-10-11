@@ -389,6 +389,9 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
   const resetPassenger = useSimulationStore((state) => state.resetPassenger);
   const resetProcessFlow = useSimulationStore((state) => state.resetProcessFlow);
+  const airport = useSimulationStore((state) => state.context.airport);
+  const date = useSimulationStore((state) => state.context.date);
+  const scenarioId = useSimulationStore((state) => state.context.scenarioId);
 
   // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
   const [isApplying, setIsApplying] = useState(false);
@@ -396,9 +399,9 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
   // 🆕 데이터 구조를 기존 인터페이스에 맞게 변환
   const filtersData: FlightFiltersApiResponse | null = flightData.total_flights
     ? ({
-        airport: useSimulationStore((s) => s.context.airport),
-        date: useSimulationStore((s) => s.context.date),
-        scenario_id: useSimulationStore((s) => s.context.scenarioId),
+        airport,
+        date,
+        scenario_id: scenarioId,
         total_flights: flightData.total_flights,
         airlines: flightData.airlines || {},
         filters: flightData.filters || { departure: {}, arrival: {} },

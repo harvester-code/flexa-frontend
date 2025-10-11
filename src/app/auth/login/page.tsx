@@ -119,7 +119,7 @@ function LoginForm() {
 
           <div className="mt-6 text-center">
             <p className="text-sm font-medium text-primary">
-              Don't have an account?{' '}
+              Don&rsquo;t have an account?{' '}
               <Link href="/auth/register" className="font-semibold text-primary underline underline-offset-2">
                 Create account
               </Link>

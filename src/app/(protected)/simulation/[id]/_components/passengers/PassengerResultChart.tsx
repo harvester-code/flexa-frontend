@@ -87,7 +87,7 @@ export default function PassengerResultChart() {
 
     // etc를 마지막으로 이동
     const etcIndex = sortedCategoryData.findIndex(item => item.name.toLowerCase() === 'etc');
-    let reorderedData = [...sortedCategoryData];
+    const reorderedData = [...sortedCategoryData];
 
     if (etcIndex !== -1) {
       const etcData = reorderedData.splice(etcIndex, 1)[0];

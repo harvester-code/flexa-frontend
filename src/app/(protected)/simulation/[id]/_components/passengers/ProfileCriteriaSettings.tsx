@@ -139,7 +139,7 @@ export default function ProfileCriteriaSettings({
       // 새 생성 모드: 균등분배로 초기화
       if (configType === 'nationality' || configType === 'profile') {
         const equalPercentage = Math.floor(100 / definedProperties.length);
-        let remainder = 100 - equalPercentage * definedProperties.length;
+        const remainder = 100 - equalPercentage * definedProperties.length;
 
         const initialValues: Record<string, number> = {};
         definedProperties.forEach((prop, index) => {
@@ -180,8 +180,8 @@ export default function ProfileCriteriaSettings({
         const [columnKey, value] = key.split(':');
 
         // 선택된 값을 그대로 사용 (하드코딩 제거)
-        let apiField = columnKey;
-        let apiValue = value;
+        const apiField = columnKey;
+        const apiValue = value;
 
         if (!conditions[apiField]) {
           conditions[apiField] = [];
@@ -383,8 +383,8 @@ export default function ProfileCriteriaSettings({
           if (Array.isArray(values)) {
             values.forEach((apiValue) => {
               // 저장된 값을 그대로 사용 (변환 로직 제거)
-              let uiField = apiField;
-              let uiValue = apiValue;
+              const uiField = apiField;
+              const uiValue = apiValue;
 
               const itemKey = `${uiField}:${uiValue}`;
               restoredSelectedItems[itemKey] = true;
@@ -775,7 +775,7 @@ export default function ProfileCriteriaSettings({
                         <div className="space-y-1">
                           {filteredValues.length === 0 && searchQuery ? (
                             <div className="py-4 text-center text-sm text-default-500">
-                              No results found for "{searchQuery}"
+                              No results found for &ldquo;{searchQuery}&rdquo;
                             </div>
                           ) : (
                             filteredValues.map((value) => {

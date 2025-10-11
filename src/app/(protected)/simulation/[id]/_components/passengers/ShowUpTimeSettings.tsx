@@ -523,7 +523,7 @@ export default function ShowUpTimeSettings({
     const actualCounts: Record<string, number> = {};
     const limitedCounts: Record<string, number> = {};
     let totalUsedFlights = 0;
-    let usedFlightsSoFar = new Set<string>(); // 이미 사용된 flights 추적
+    const usedFlightsSoFar = new Set<string>(); // 이미 사용된 flights 추적
 
     // 각 룰을 순차적으로 처리
     createdRules.forEach((rule, index) => {
@@ -754,10 +754,9 @@ export default function ShowUpTimeSettings({
 
     // ✅ X축을 출발 시각 기준으로 변경 (왼쪽이 이른 도착, 오른쪽이 출발시각 0)
     let rangeStart: number;
-    let rangeEnd: number;
+    const rangeEnd = 0; // 출발 시각
 
     // 범위 설정: 가장 이른 도착부터 출발시각(0)까지
-    rangeEnd = 0; // 출발 시각
     rangeStart = -(maxMean + 3 * maxStd); // 가장 이른 도착 시간 (음수)
 
     // 최소 범위 보장

@@ -32,7 +32,7 @@ export function useBadgeHandlers({
   const getProcessCategoryConfig = useCallback(
     (category: string) => {
       if (selectedProcessIndex > 0 && processFlow && processFlow.length > 0) {
-        let processColorIndex = Object.keys(CONDITION_CATEGORIES).length; // Process는 다른 카테고리 뒤에 위치
+        const processColorIndex = Object.keys(CONDITION_CATEGORIES).length; // Process는 다른 카테고리 뒤에 위치
         for (let i = 0; i < selectedProcessIndex; i++) {
           const process = processFlow[i];
           if (process && process.zones) {

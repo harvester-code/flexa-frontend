@@ -128,11 +128,9 @@ function FlightDestinationMap({ flights }: FlightDestinationMapProps) {
     []
   );
 
-  if (!destinationAggregates.length) {
-    return <div className="flex h-64 items-center justify-center text-default-400">No destination data yet.</div>;
-  }
+  const hasDestinations = destinationAggregates.length > 0;
 
-  const topDestinations = destinationAggregates.slice(0, 12);
+  const topDestinations = useMemo(() => destinationAggregates.slice(0, 12), [destinationAggregates]);
 
   const barChartData = useMemo(() => {
     if (!topDestinations.length) return [];
@@ -186,31 +184,37 @@ function FlightDestinationMap({ flights }: FlightDestinationMapProps) {
         <p className="text-xs text-default-500">Flights by arrival country</p>
       </div>
 
-      <Plot
-        data={mapData}
-        layout={mapLayout}
-        config={{ responsive: true, displaylogo: false, staticPlot: true }}
-        style={{ width: '100%' }}
-      />
+      {hasDestinations ? (
+        <>
+          <Plot
+            data={mapData}
+            layout={mapLayout}
+            config={{ responsive: true, displaylogo: false, staticPlot: true }}
+            style={{ width: '100%' }}
+          />
 
-      <div className="rounded-md border border-muted bg-white p-5">
-        <h6 className="text-base font-semibold text-default-900">Top Destinations</h6>
-        <p className="text-xs text-default-500">Flights by arrival country (top 12)</p>
-        <div className="mt-6">
-          <BarChart chartData={barChartData} chartLayout={barLayout} config={{ responsive: true, displaylogo: false }} />
-        </div>
-        <div className="mt-4 grid gap-2 text-xs text-default-500 md:grid-cols-2">
-          {topDestinations.map((item) => (
-            <div key={item.country} className="flex justify-between rounded border border-muted px-3 py-2 text-default-700">
-              <span className="font-medium text-default-900">{item.country}</span>
-              <span>
-                {numberFormatter.format(item.flights)} flights • {numberFormatter.format(item.airportCount)} airports
-                {item.averageSeats !== null ? ` • Avg ${Math.round(item.averageSeats).toLocaleString()} seats` : ''}
-              </span>
+          <div className="rounded-md border border-muted bg-white p-5">
+            <h6 className="text-base font-semibold text-default-900">Top Destinations</h6>
+            <p className="text-xs text-default-500">Flights by arrival country (top 12)</p>
+            <div className="mt-6">
+              <BarChart chartData={barChartData} chartLayout={barLayout} config={{ responsive: true, displaylogo: false }} />
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="mt-4 grid gap-2 text-xs text-default-500 md:grid-cols-2">
+              {topDestinations.map((item) => (
+                <div key={item.country} className="flex justify-between rounded border border-muted px-3 py-2 text-default-700">
+                  <span className="font-medium text-default-900">{item.country}</span>
+                  <span>
+                    {numberFormatter.format(item.flights)} flights • {numberFormatter.format(item.airportCount)} airports
+                    {item.averageSeats !== null ? ` • Avg ${Math.round(item.averageSeats).toLocaleString()} seats` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex h-64 items-center justify-center text-default-400">No destination data yet.</div>
+      )}
     </div>
   );
 }

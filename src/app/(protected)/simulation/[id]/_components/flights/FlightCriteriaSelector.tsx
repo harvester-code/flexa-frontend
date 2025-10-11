@@ -374,7 +374,7 @@ export default function FlightCriteriaSelector({
                       <div className="space-y-1">
                         {filteredValues.length === 0 && searchQuery ? (
                           <div className="py-4 text-center text-sm text-default-500">
-                            No results found for "{searchQuery}"
+                            No results found for &ldquo;{searchQuery}&rdquo;
                           </div>
                         ) : (
                           filteredValues.map((value) => {
