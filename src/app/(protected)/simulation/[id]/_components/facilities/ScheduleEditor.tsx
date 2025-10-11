@@ -788,6 +788,8 @@ export default function OperatingScheduleEditor({
     setDisabledCells,
     setCellBadges,
     cellBadges,
+    cellProcessTimes,
+    setCellProcessTimes,
     undoHistory,
     handleUndo,
     handleRedo,

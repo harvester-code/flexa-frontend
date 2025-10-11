@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Globe,
   MapPin,
@@ -85,24 +85,17 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
   // 🔍 카테고리별 검색어 관리
   const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
   const [processTimeInput, setProcessTimeInput] = useState<string>("");
-  const [processMultiplier, setProcessMultiplier] = useState<number>(1);
+  const handleToggleActivation = useCallback(() => {
+    if (onToggleActivation) {
+      onToggleActivation();
+    }
+  }, [onToggleActivation]);
 
   // Calculate if all selected cells are activated
   const areAllCellsActivated = useCallback(() => {
     if (!disabledCells || contextMenu.targetCells.length === 0) return true;
     return !contextMenu.targetCells.some(cellId => disabledCells.has(cellId));
   }, [disabledCells, contextMenu.targetCells]);
-
-  // Calculate process time multiplier when input changes
-  useEffect(() => {
-    if (processTimeInput && currentProcessTime > 0) {
-      const inputSeconds = parseFloat(processTimeInput);
-      if (!isNaN(inputSeconds) && inputSeconds > 0) {
-        const multiplier = currentProcessTime / inputSeconds;
-        setProcessMultiplier(multiplier);
-      }
-    }
-  }, [processTimeInput, currentProcessTime]);
 
   // 🔍 검색어 변경 핸들러
   const handleSearchTermChange = useCallback((category: string, term: string) => {
@@ -198,6 +191,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();
+            handleToggleActivation();
           }}
           className="cursor-pointer"
         >
@@ -208,11 +202,7 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
             </div>
             <Switch
               checked={areAllCellsActivated()}
-              onCheckedChange={() => {
-                if (onToggleActivation) {
-                  onToggleActivation();
-                }
-              }}
+              onCheckedChange={() => handleToggleActivation()}
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -220,33 +210,49 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
 
         {/* Process Time input */}
         <div className="px-2 py-2">
-          <div className="flex items-center gap-2">
-            <Clock size={16} className="text-blue-500" />
-            <span className="text-sm font-medium text-black">Process Time</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2">
-            <input
-              type="number"
-              value={processTimeInput}
-              onChange={(e) => setProcessTimeInput(e.target.value)}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter' && onSetProcessTime && processMultiplier > 0) {
-                  onSetProcessTime(processMultiplier);
-                  onOpenChange(false);
-                }
-              }}
-              placeholder={`${currentProcessTime}s`}
-              className="w-20 rounded border px-2 py-1 text-xs"
-              min="1"
-            />
-            <span className="text-xs text-gray-500">
-              {processTimeInput && processMultiplier > 0 && (
-                <span className={processMultiplier > 1 ? "text-green-600 font-medium" : processMultiplier < 1 ? "text-red-600 font-medium" : ""}>
-                  ×{processMultiplier.toFixed(2)} {processMultiplier > 1 ? "faster" : processMultiplier < 1 ? "slower" : ""}
-                </span>
-              )}
-            </span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-blue-500" />
+              <span className="text-sm font-medium text-black">Process Time</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={processTimeInput}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^[1-9]\d*$/.test(value)) {
+                    setProcessTimeInput(value);
+                  }
+                }}
+                onFocus={(e) => {
+                  e.target.select();
+                }}
+                onClick={(e) => {
+                  // Ensure full selection on click without losing focus selection
+                  e.currentTarget.select();
+                }}
+                onMouseUp={(e) => {
+                  // Prevent default mouseup from clearing the selection
+                  e.preventDefault();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter' && onSetProcessTime) {
+                    const inputSeconds = parseInt(processTimeInput, 10);
+                    if (Number.isFinite(inputSeconds) && inputSeconds > 0 && currentProcessTime > 0) {
+                      const multiplier = currentProcessTime / inputSeconds;
+                      if (multiplier > 0) {
+                        onSetProcessTime(multiplier);
+                        onOpenChange(false);
+                      }
+                    }
+                  }
+                }}
+                placeholder={`${currentProcessTime}s`}
+                className="h-7 w-20 px-2 py-1 text-xs"
+                inputMode="numeric"
+              />
+            </div>
           </div>
         </div>
         <DropdownMenuSeparator />

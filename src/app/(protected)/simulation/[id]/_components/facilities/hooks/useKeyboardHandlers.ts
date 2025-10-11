@@ -12,6 +12,10 @@ interface UseKeyboardHandlersProps {
   setDisabledCells: React.Dispatch<React.SetStateAction<Set<string>>>;
   setCellBadges: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
   cellBadges: Record<string, any[]>;
+  cellProcessTimes: Record<string, number>;
+  setCellProcessTimes: React.Dispatch<
+    React.SetStateAction<Record<string, number>>
+  >;
   undoHistory: {
     pushHistory: (action: HistoryAction) => void;
   };
@@ -36,6 +40,8 @@ export function useKeyboardHandlers({
   setDisabledCells,
   setCellBadges,
   cellBadges,
+  cellProcessTimes,
+  setCellProcessTimes,
   undoHistory,
   handleUndo,
   handleRedo,
@@ -187,6 +193,7 @@ export function useKeyboardHandlers({
 
           // 히스토리를 위한 이전 상태 저장
           const previousBadges = new Map<string, any[]>();
+          const newBadges = new Map<string, any[]>();
           targetCells.forEach((cellId) => {
             previousBadges.set(
               cellId,
@@ -199,25 +206,38 @@ export function useKeyboardHandlers({
             // 뱃지 제거 (빈 상태로)
             setCellBadges((prev) => {
               const updated = { ...prev };
-              const newBadges = new Map<string, any[]>();
 
               targetCells.forEach((cellId) => {
                 delete updated[cellId]; // 완전히 제거
                 newBadges.set(cellId, []);
               });
 
-              // 히스토리에 추가
-              setTimeout(() => {
-                undoHistory.pushHistory({
-                  type: "setBadges",
-                  cellIds: targetCells,
-                  previousBadges,
-                  newBadges,
-                });
-              }, 0);
-
               return updated;
             });
+
+            // 프로세스 시간 오버라이드 제거 -> 기본값으로 복귀
+            setCellProcessTimes((prev) => {
+              let hasChanges = false;
+              const updated = { ...prev };
+              targetCells.forEach((cellId) => {
+                if (Object.prototype.hasOwnProperty.call(updated, cellId)) {
+                  delete updated[cellId];
+                  hasChanges = true;
+                }
+              });
+
+              return hasChanges ? updated : prev;
+            });
+
+            // 히스토리에 추가
+            setTimeout(() => {
+              undoHistory.pushHistory({
+                type: "setBadges",
+                cellIds: targetCells,
+                previousBadges,
+                newBadges,
+              });
+            }, 0);
           });
         }
       }
@@ -230,6 +250,8 @@ export function useKeyboardHandlers({
       setDisabledCells,
       setCellBadges,
       cellBadges,
+      cellProcessTimes,
+      setCellProcessTimes,
       undoHistory,
       handleUndo,
       handleRedo,

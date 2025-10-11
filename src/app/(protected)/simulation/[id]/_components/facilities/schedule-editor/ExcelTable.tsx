@@ -302,6 +302,24 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const isCustomProcessTime =
                         typeof cellProcessTime === "number" &&
                         cellProcessTime !== currentProcessTime;
+                      const processBadgeClass = (() => {
+                        if (isDisabled) {
+                          return "bg-gray-200 text-gray-500 border-gray-400";
+                        }
+
+                        if (!isCustomProcessTime) {
+                          return "bg-primary/15 text-primary border-primary/40";
+                        }
+
+                        if (
+                          typeof effectiveProcessTime === "number" &&
+                          effectiveProcessTime > currentProcessTime
+                        ) {
+                          return "bg-emerald-100 text-emerald-800 border-emerald-300";
+                        }
+
+                        return "bg-amber-100 text-amber-800 border-amber-300";
+                      })();
                       const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
@@ -404,11 +422,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                 <span
                                   className={cn(
                                     "select-none rounded border px-1 text-[8px] font-semibold leading-tight",
-                                    isDisabled
-                                      ? "bg-gray-200 text-gray-500 border-gray-400"
-                                      : isCustomProcessTime
-                                        ? "bg-amber-100 text-amber-800 border-amber-300"
-                                        : "bg-primary text-white border-primary/70"
+                                    processBadgeClass
                                   )}
                                   title={`Process Time: ${effectiveProcessTime} seconds`}
                                 >
