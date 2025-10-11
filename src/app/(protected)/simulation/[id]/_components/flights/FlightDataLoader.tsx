@@ -66,6 +66,7 @@ function FlightDataLoader({
                 <Calendar
                   mode="single"
                   selected={dayjs(date).toDate()}
+                  defaultMonth={dayjs(date).toDate()}
                   onSelect={(selectedDate) => {
                     if (selectedDate) {
                       setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
@@ -150,6 +151,7 @@ function FlightDataLoader({
                 <Calendar
                   mode="single"
                   selected={dayjs(date).toDate()}
+                  defaultMonth={dayjs(date).toDate()}
                   onSelect={(selectedDate) => {
                     if (selectedDate) {
                       setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
