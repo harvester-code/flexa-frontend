@@ -191,6 +191,10 @@ export default function OperatingScheduleEditor({
     Record<string, Record<string, number>>
   >({});
 
+  const previousProcessTimeRef = useRef<Record<number, number | null | undefined>>(
+    {}
+  );
+
   // 마지막으로 저장된 시설 데이터의 해시값 (변경 감지용)
   const [lastFacilitiesHash, setLastFacilitiesHash] = useState<string>("");
 
@@ -353,6 +357,58 @@ export default function OperatingScheduleEditor({
     const zone = currentProcess.zones[selectedZone];
     return zone?.facilities || [];
   }, [processFlow, selectedProcessIndex, selectedZone]);
+
+  useEffect(() => {
+    if (
+      selectedProcessIndex == null ||
+      selectedProcessIndex < 0 ||
+      selectedProcessIndex >= processFlow.length
+    ) {
+      return;
+    }
+
+    const currentProcess = processFlow[selectedProcessIndex] as any;
+    const newProcessTime = currentProcess?.process_time_seconds;
+
+    if (newProcessTime == null) {
+      return;
+    }
+
+    if (previousProcessTimeRef.current[selectedProcessIndex] === newProcessTime) {
+      return;
+    }
+
+    previousProcessTimeRef.current[selectedProcessIndex] = newProcessTime;
+
+    setAllZoneProcessTimes((prev) => {
+      let hasChanges = false;
+      const updated = { ...prev };
+
+      const zoneNames = Object.keys(currentProcess?.zones || {});
+
+      zoneNames.forEach((zoneName) => {
+        const zoneKey = `${selectedProcessIndex}-${zoneName}`;
+        const existing = prev[zoneKey];
+
+        if (!existing || Object.keys(existing).length === 0) {
+          return;
+        }
+
+        const newZoneProcessTimes: Record<string, number> = {};
+
+        Object.keys(existing).forEach((cellId) => {
+          newZoneProcessTimes[cellId] = newProcessTime;
+        });
+
+        if (!deepEqual(existing, newZoneProcessTimes)) {
+          updated[zoneKey] = newZoneProcessTimes;
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [processFlow, selectedProcessIndex]);
 
   // 셀 선택 커스텀 훅 사용
   const cellSelection = useCellSelection({

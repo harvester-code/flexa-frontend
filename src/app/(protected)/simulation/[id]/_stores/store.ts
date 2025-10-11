@@ -1281,6 +1281,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
           step: process.step,
           name: normalizeProcessName(process.name),
           travel_time_minutes: process.travel_time_minutes || 0,
+          process_time_seconds:
+            process.process_time_seconds ?? null,
           entry_conditions: process.entry_conditions || [],
           zones: process.zones || {},
         }));
@@ -1350,6 +1352,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
                 step: process.step,
                 name: normalizeProcessName(process.name), // 기존 데이터도 정규화
                 travel_time_minutes: process.travel_time_minutes || 0,
+                process_time_seconds:
+                  process.process_time_seconds ?? null,
                 entry_conditions: process.entry_conditions || [],
                 zones: process.zones || {},
               }));

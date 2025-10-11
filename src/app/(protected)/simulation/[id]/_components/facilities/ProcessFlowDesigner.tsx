@@ -719,6 +719,8 @@ export default function ProcessFlowDesigner({
       name: newProcessName,
       // Update travel_time_minutes
       travel_time_minutes: editedProcess.travel_time_minutes || 0,
+      // Persist process_time so schedule editor stays in sync
+      process_time_seconds: editedProcess.process_time_seconds ?? null,
       // Update entry_conditions
       entry_conditions: editedProcess.entry_conditions || [],
     };

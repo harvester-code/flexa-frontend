@@ -238,6 +238,7 @@ export interface ProcessStep {
   step: number;
   name: string;
   travel_time_minutes: number | null;
+  process_time_seconds?: number | null;
   entry_conditions: EntryCondition[];
   zones: Record<string, Zone>;
 }
