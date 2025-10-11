@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/DropdownMenu";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
 import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
 import { getCategoryColorIndex } from "./schedule-editor/badgeMappings";
 import { LABELS } from "@/styles/columnMappings";
@@ -197,17 +198,23 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();
-            if (onToggleActivation) {
-              onToggleActivation();
-            }
           }}
           className="cursor-pointer"
         >
-          <div className="flex w-full items-center gap-2">
-            <Power size={16} className={areAllCellsActivated() ? "text-green-500" : "text-red-500"} />
-            <span className="font-medium text-black">
-              {areAllCellsActivated() ? "Deactivate" : "Activate"}
-            </span>
+          <div className="flex w-full items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Power size={16} className={areAllCellsActivated() ? "text-green-500" : "text-red-500"} />
+              <span className="font-medium text-black">Activate</span>
+            </div>
+            <Switch
+              checked={areAllCellsActivated()}
+              onCheckedChange={() => {
+                if (onToggleActivation) {
+                  onToggleActivation();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </DropdownMenuItem>
 
