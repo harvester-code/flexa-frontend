@@ -186,6 +186,11 @@ export default function OperatingScheduleEditor({
     Record<string, Set<string>>
   >({});
 
+  // 셀별 process_time_seconds 상태 관리 - Zone별로 저장
+  const [allZoneProcessTimes, setAllZoneProcessTimes] = useState<
+    Record<string, Record<string, number>>
+  >({});
+
   // 마지막으로 저장된 시설 데이터의 해시값 (변경 감지용)
   const [lastFacilitiesHash, setLastFacilitiesHash] = useState<string>("");
 
@@ -205,6 +210,12 @@ export default function OperatingScheduleEditor({
   const disabledCells = useMemo(
     () => allZoneDisabledCells[zoneKey] || new Set<string>(),
     [allZoneDisabledCells, zoneKey]
+  );
+
+  // 현재 Zone의 process times 가져오기 (메모이제이션으로 최적화)
+  const cellProcessTimes = useMemo(
+    () => allZoneProcessTimes[zoneKey] || {},
+    [allZoneProcessTimes, zoneKey]
   );
 
   // 현재 Zone의 뱃지 업데이트 함수 (안전한 업데이트)
@@ -250,6 +261,27 @@ export default function OperatingScheduleEditor({
           return {
             ...prev,
             [zoneKey]: newSet,
+          };
+        }
+        return prev;
+      });
+    },
+    [zoneKey]
+  );
+
+  // 현재 Zone의 process times 업데이트 함수 (안전한 업데이트)
+  const setCellProcessTimes = useCallback(
+    (updater: any) => {
+      setAllZoneProcessTimes((prev) => {
+        const newProcessTimes =
+          typeof updater === "function"
+            ? updater(prev[zoneKey] || {})
+            : updater;
+        // 변경사항이 있을 때만 업데이트
+        if (!deepEqual(prev[zoneKey], newProcessTimes)) {
+          return {
+            ...prev,
+            [zoneKey]: newProcessTimes,
           };
         }
         return prev;
@@ -599,8 +631,15 @@ export default function OperatingScheduleEditor({
 
       const newProcessTime = Math.round(currentProcessTime / multiplier);
 
-      // For now, we'll just log the change
-      // TODO: Implement store update when the updateProcessTimeForCells method is available
+      // Update cellProcessTimes for selected cells
+      setCellProcessTimes((prev: Record<string, number>) => {
+        const updated = { ...prev };
+        contextMenu.targetCells.forEach((cellId) => {
+          updated[cellId] = newProcessTime;
+        });
+        return updated;
+      });
+
       console.log("Setting process time for cells:", {
         cells: contextMenu.targetCells,
         processIndex: selectedProcessIndex,
@@ -614,6 +653,7 @@ export default function OperatingScheduleEditor({
       selectedProcessIndex,
       selectedZone,
       currentProcessTime,
+      setCellProcessTimes,
     ]
   );
 
@@ -797,6 +837,8 @@ export default function OperatingScheduleEditor({
     setDisabledCells,
     cellBadges,
     setCellBadges,
+    cellProcessTimes,
+    setCellProcessTimes,
     appliedTimeUnit,
     processFlow,
   });
@@ -990,6 +1032,7 @@ export default function OperatingScheduleEditor({
           selectedCells={displaySelectedCells}
           cellBadges={cellBadges}
           disabledCells={disabledCells}
+          cellProcessTimes={cellProcessTimes}
           copiedCells={copiedCells}
           isFullScreen={false}
           virtualScroll={virtualScrollConfig}
@@ -1044,6 +1087,7 @@ export default function OperatingScheduleEditor({
                 selectedCells={displaySelectedCells}
                 cellBadges={cellBadges}
                 disabledCells={disabledCells}
+                cellProcessTimes={cellProcessTimes}
                 copiedCells={copiedCells}
                 isFullScreen={true}
                 virtualScroll={virtualScrollConfig}
@@ -1097,10 +1141,12 @@ export default function OperatingScheduleEditor({
                     // Clear data if exists
                     if (
                       Object.keys(cellBadges).length > 0 ||
-                      disabledCells.size > 0
+                      disabledCells.size > 0 ||
+                      Object.keys(cellProcessTimes).length > 0
                     ) {
                       setCellBadges({});
                       setDisabledCells(new Set<string>());
+                      setCellProcessTimes({});
                     }
                     setPendingTimeUnit(null);
                   }

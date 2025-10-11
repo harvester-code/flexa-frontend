@@ -218,6 +218,7 @@ type SlotState = {
   isActive: boolean;
   conditions: PassengerCondition[];
   conditionKey: string;
+  processTime: number;
 };
 
 type SegmentState = SlotState & {
@@ -241,6 +242,7 @@ export const calculatePeriodsFromDisabledCells = (
   timeSlots: string[],
   existingTimeBlocks: TimeBlock[],
   cellBadges: Record<string, CategoryBadge[]>,
+  cellProcessTimes: Record<string, number>,
   processTimeSeconds?: number,
   timeUnit: number = 10,
   date?: string,
@@ -290,12 +292,14 @@ export const calculatePeriodsFromDisabledCells = (
     const cellId = `${idx}-${facilityIndex}`;
     const isActive = !disabledCells.has(cellId);
     const badges = cellBadges[cellId] || [];
+    const cellProcessTime = cellProcessTimes[cellId] || processTime;
 
     if (badges.length === 0) {
       return {
         isActive,
         conditions: [],
         conditionKey: "__all__",
+        processTime: cellProcessTime,
       };
     }
 
@@ -328,13 +332,15 @@ export const calculatePeriodsFromDisabledCells = (
       isActive,
       conditions,
       conditionKey,
+      processTime: cellProcessTime,
     };
   });
 
   const allActive = slotStates.every((state) => state.isActive);
   const firstConditionKey = slotStates[0]?.conditionKey ?? "__all__";
+  const firstProcessTime = slotStates[0]?.processTime ?? processTime;
   const allSameConditions = slotStates.every(
-    (state) => state.conditionKey === firstConditionKey
+    (state) => state.conditionKey === firstConditionKey && state.processTime === firstProcessTime
   );
 
   if (allActive && allSameConditions) {
@@ -344,7 +350,7 @@ export const calculatePeriodsFromDisabledCells = (
     return [
       {
         period: `${formatDateTime(start)}-${formatDateTime(end)}`,
-        process_time_seconds: processTime,
+        process_time_seconds: firstProcessTime,
         passenger_conditions: slotStates[0]?.conditions || [],
         activate: true,
       },
@@ -360,7 +366,8 @@ export const calculatePeriodsFromDisabledCells = (
     if (
       !currentSegment ||
       currentSegment.isActive !== state.isActive ||
-      currentSegment.conditionKey !== state.conditionKey
+      currentSegment.conditionKey !== state.conditionKey ||
+      currentSegment.processTime !== state.processTime
     ) {
       if (currentSegment) {
         const start = slotStarts[currentSegment.startIdx];
@@ -368,7 +375,7 @@ export const calculatePeriodsFromDisabledCells = (
 
         periods.push({
           period: `${formatDateTime(start)}-${formatDateTime(end)}`,
-          process_time_seconds: processTime,
+          process_time_seconds: currentSegment.processTime,
           passenger_conditions: currentSegment.conditions,
           activate: currentSegment.isActive,
         });
@@ -380,6 +387,7 @@ export const calculatePeriodsFromDisabledCells = (
         isActive: state.isActive,
         conditions: state.conditions,
         conditionKey: state.conditionKey,
+        processTime: state.processTime,
       };
     } else {
       currentSegment.endIdx = idx;
@@ -392,7 +400,7 @@ export const calculatePeriodsFromDisabledCells = (
 
     periods.push({
       period: `${formatDateTime(start)}-${formatDateTime(end)}`,
-      process_time_seconds: processTime,
+      process_time_seconds: currentSegment.processTime,
       passenger_conditions: currentSegment.conditions,
       activate: currentSegment.isActive,
     });

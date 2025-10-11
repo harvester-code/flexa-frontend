@@ -25,6 +25,8 @@ interface UseFacilityScheduleSyncProps {
   setDisabledCells: (cells: Set<string>) => void;
   cellBadges: Record<string, any[]>;
   setCellBadges: (badges: Record<string, any[]>) => void;
+  cellProcessTimes: Record<string, number>;
+  setCellProcessTimes: (processTimes: Record<string, number>) => void;
   appliedTimeUnit: number;
   processFlow: any[];
 }
@@ -42,6 +44,8 @@ export function useFacilityScheduleSync({
   setDisabledCells,
   cellBadges,
   setCellBadges,
+  cellProcessTimes,
+  setCellProcessTimes,
   appliedTimeUnit,
   processFlow,
 }: UseFacilityScheduleSyncProps) {
@@ -127,6 +131,7 @@ export function useFacilityScheduleSync({
           timeSlots,
           existingTimeBlocks,
           cellBadges,
+          cellProcessTimes,
           processTimeSeconds ?? undefined,
           appliedTimeUnit,
           contextDate,
@@ -155,6 +160,7 @@ export function useFacilityScheduleSync({
   }, [
     disabledCells,
     cellBadges,
+    cellProcessTimes,
     currentFacilities,
     selectedZone,
     selectedProcessIndex,

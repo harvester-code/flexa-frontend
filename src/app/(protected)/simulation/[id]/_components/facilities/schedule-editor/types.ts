@@ -108,6 +108,7 @@ export interface ExcelTableProps {
   selectedCells: Set<string>;
   cellBadges: Record<string, CategoryBadge[]>;
   disabledCells: Set<string>;
+  cellProcessTimes: Record<string, number>;
   copiedCells?: Set<string>; // Cells that are currently copied
   isFullScreen?: boolean;
   virtualScroll: VirtualScrollConfig;

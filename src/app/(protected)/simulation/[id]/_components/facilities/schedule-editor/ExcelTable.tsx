@@ -13,6 +13,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     selectedCells,
     cellBadges,
     disabledCells,
+    cellProcessTimes,
     copiedCells = new Set(),
     isFullScreen = false,
     virtualScroll,
@@ -289,6 +290,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const isDisabled = disabledCells.has(cellId);
                       const isCopied = copiedCells.has(cellId);
                       const badges = cellBadges[cellId] || [];
+                      const processTime = cellProcessTimes[cellId];
                       const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
@@ -336,7 +338,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                             }
                           }}
                         >
-                          <div className="flex h-8 flex-col items-center justify-center space-y-1">
+                          <div className="flex h-8 flex-col items-center justify-center space-y-0.5">
                             <div className="flex items-center space-x-1">
                               {/* 카테고리 뱃지들 - 뱃지가 없으면 자동으로 All 표시 */}
                               {badges.length > 0 ? (
@@ -385,6 +387,22 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                 </span>
                               )}
                             </div>
+                            {/* Process Time 뱃지 */}
+                            {processTime && (
+                              <div className="flex items-center">
+                                <span
+                                  className={cn(
+                                    "select-none rounded border px-1 text-[8px] font-semibold leading-tight",
+                                    isDisabled
+                                      ? "bg-gray-200 text-gray-500 border-gray-400"
+                                      : "bg-blue-50 text-blue-700 border-blue-200"
+                                  )}
+                                  title={`Process Time: ${processTime} seconds`}
+                                >
+                                  {processTime}s
+                                </span>
+                              </div>
+                            )}
                           </div>
                           {/* Copy border overlay */}
                           {copyBorderInfo && (
