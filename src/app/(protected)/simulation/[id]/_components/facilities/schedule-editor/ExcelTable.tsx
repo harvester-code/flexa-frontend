@@ -60,7 +60,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
 
       return { selectedRows, selectedCols };
     }, [selectedCells, currentFacilities.length, timeSlots.length]);
-    
+
     // 🖼️ cellId 파싱 캐시 (성능 최적화)
     const parseCellId = useMemo(() => {
       const cache = new Map<string, [number, number]>();
@@ -178,7 +178,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
             <thead className="sticky top-0 bg-muted z-50">
               <tr className="bg-muted">
                 <th
-                  className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 overflow-hidden bg-purple-50 whitespace-nowrap text-ellipsis sticky top-0 font-semibold"
+                  className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 overflow-hidden bg-purple-50 whitespace-nowrap text-ellipsis sticky top-0 left-0 z-[60] font-semibold"
                   onClick={handlers.timeHeader.onClick}
                   onContextMenu={(e) => {
                     // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
@@ -239,7 +239,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 return (
                   <tr key={rowIndex} className="h-15">
                     <td
-                      className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium bg-purple-50 text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis ${
+                      className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium bg-purple-50 text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis sticky left-0 z-10 ${
                         selectedRowsAndCols.selectedRows.has(rowIndex)
                           ? "bg-primary/20"
                           : ""
@@ -303,7 +303,8 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                           key={`${rowIndex}-${colIndex}`}
                           className={cn(
                             "cursor-pointer select-none p-1 border border-gray-200 relative",
-                            isDisabled && "bg-gray-100"
+                            isDisabled && "bg-gray-100",
+                            isSelected && !isDisabled && "bg-primary/10"
                           )}
                           style={selectionStyles}
                           onMouseDown={(e) => {
