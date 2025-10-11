@@ -648,8 +648,36 @@ export default function OperatingScheduleEditor({
       selectedProcessIndex < processFlow.length
     ) {
       const currentProcess = processFlow[selectedProcessIndex] as any;
-      return currentProcess?.process_time_seconds || 60;
+      const definedProcessTime = currentProcess?.process_time_seconds;
+
+      if (
+        typeof definedProcessTime === "number" &&
+        !Number.isNaN(definedProcessTime) &&
+        definedProcessTime > 0
+      ) {
+        return definedProcessTime;
+      }
+
+      const zoneEntries = Object.values(currentProcess?.zones || {});
+      for (const zoneEntry of zoneEntries) {
+        const facilities = (zoneEntry as any)?.facilities || [];
+        for (const facility of facilities) {
+          const timeBlocks =
+            facility?.operating_schedule?.time_blocks || [];
+          for (const block of timeBlocks) {
+            const blockTime = block?.process_time_seconds;
+            if (
+              typeof blockTime === "number" &&
+              !Number.isNaN(blockTime) &&
+              blockTime > 0
+            ) {
+              return blockTime;
+            }
+          }
+        }
+      }
     }
+
     return 60;
   }, [processFlow, selectedProcessIndex]);
 
@@ -1086,6 +1114,7 @@ export default function OperatingScheduleEditor({
           virtualScroll={virtualScrollConfig}
           handlers={tableHandlers}
           isPreviousDay={isPreviousDay}
+          currentProcessTime={currentProcessTime}
         />
 
         {/* 전체화면 Dialog */}
@@ -1141,6 +1170,7 @@ export default function OperatingScheduleEditor({
                 virtualScroll={virtualScrollConfig}
                 handlers={tableHandlers}
                 isPreviousDay={isPreviousDay}
+                currentProcessTime={currentProcessTime}
               />
             </div>
           </DialogContent>

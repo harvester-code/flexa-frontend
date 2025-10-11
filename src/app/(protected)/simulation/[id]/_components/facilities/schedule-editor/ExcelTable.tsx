@@ -19,6 +19,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     virtualScroll,
     handlers,
     isPreviousDay = false,
+    currentProcessTime,
   }) => {
     const {
       visibleTimeSlots = timeSlots,
@@ -290,7 +291,17 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       const isDisabled = disabledCells.has(cellId);
                       const isCopied = copiedCells.has(cellId);
                       const badges = cellBadges[cellId] || [];
-                      const processTime = cellProcessTimes[cellId];
+                      const cellProcessTime = cellProcessTimes[cellId];
+                      const effectiveProcessTime =
+                        typeof cellProcessTime === "number"
+                          ? cellProcessTime
+                          : currentProcessTime;
+                      const showProcessBadge =
+                        typeof effectiveProcessTime === "number" &&
+                        effectiveProcessTime > 0;
+                      const isCustomProcessTime =
+                        typeof cellProcessTime === "number" &&
+                        cellProcessTime !== currentProcessTime;
                       const selectionStyles = getSelectionStyles(
                         rowIndex,
                         colIndex
@@ -388,18 +399,20 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                               )}
                             </div>
                             {/* Process Time 뱃지 */}
-                            {processTime && (
+                            {showProcessBadge && (
                               <div className="flex items-center">
                                 <span
                                   className={cn(
                                     "select-none rounded border px-1 text-[8px] font-semibold leading-tight",
                                     isDisabled
                                       ? "bg-gray-200 text-gray-500 border-gray-400"
-                                      : "bg-blue-50 text-blue-700 border-blue-200"
+                                      : isCustomProcessTime
+                                        ? "bg-amber-100 text-amber-800 border-amber-300"
+                                        : "bg-primary text-white border-primary/70"
                                   )}
-                                  title={`Process Time: ${processTime} seconds`}
+                                  title={`Process Time: ${effectiveProcessTime} seconds`}
                                 >
-                                  {processTime}s
+                                  {effectiveProcessTime}s
                                 </span>
                               </div>
                             )}

@@ -114,4 +114,5 @@ export interface ExcelTableProps {
   virtualScroll: VirtualScrollConfig;
   handlers: TableHandlers;
   isPreviousDay?: boolean;
+  currentProcessTime: number;
 }
