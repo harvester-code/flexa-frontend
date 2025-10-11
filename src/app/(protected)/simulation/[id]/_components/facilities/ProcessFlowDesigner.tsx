@@ -946,36 +946,15 @@ export default function ProcessFlowDesigner({
 
     updatedProcessFlow[selectedProcessIndex] = updatedProcess;
 
-    // activate 필드 포함 확인용 로그
-    console.log(
-      "Saving process_flow with activate fields:",
-      updatedProcessFlow.map((p) => ({
-        name: p.name,
-        zones: Object.entries(p.zones).map(([zoneName, zone]) => ({
-          zoneName,
-          facilities: zone.facilities?.map((f: any) => ({
-            id: f.id,
-            time_blocks: f.operating_schedule?.time_blocks?.map((tb: any) => ({
-              period: tb.period,
-              activate: tb.activate,
-              has_conditions: tb.passenger_conditions?.length > 0,
-            })),
-          })),
-        })),
-      }))
-    );
-
     setProcessFlow(updatedProcessFlow);
 
     // Update passenger_conditions field if process name changed
     if (oldProcessName !== newProcessName) {
-      console.log("ProcessFlowDesigner: Process name changed from", oldProcessName, "to", newProcessName);
 
       // Use updateProcessNameInPassengerConditions from store
       const updateProcessNameInPassengerConditions = useSimulationStore.getState().updateProcessNameInPassengerConditions;
       if (updateProcessNameInPassengerConditions) {
         updateProcessNameInPassengerConditions(oldProcessName, newProcessName);
-        console.log("Updated passenger_conditions fields");
       }
     }
 
@@ -1011,27 +990,6 @@ export default function ProcessFlowDesigner({
         entry_conditions: step.entry_conditions || [],
         zones: step.zones || {},
       }));
-
-      // activate 필드 포함 확인용 로그
-      console.log(
-        "Running simulation with activate fields:",
-        sanitizedProcessFlow.map((p) => ({
-          name: p.name,
-          zones: Object.entries(p.zones).map(([zoneName, zone]) => ({
-            zoneName,
-            facilities: (zone as any).facilities?.map((f: any) => ({
-              id: f.id,
-              time_blocks: f.operating_schedule?.time_blocks?.map(
-                (tb: any) => ({
-                  period: tb.period,
-                  activate: tb.activate,
-                  has_conditions: tb.passenger_conditions?.length > 0,
-                })
-              ),
-            })),
-          })),
-        }))
-      );
 
       // Set API request log with new format
       const requestData = {

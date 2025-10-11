@@ -304,30 +304,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         normalize(originalScenario.terminal) ||
       normalize(editingScenario.memo) !== normalize(originalScenario.memo);
 
-    // 🔍 디버깅용 로그 (임시)
-    console.log("🔍 Update Debug:", {
-      hasChanges,
-      editing: {
-        name: normalize(editingScenario.name),
-        airport: normalize(editingScenario.airport),
-        terminal: normalize(editingScenario.terminal),
-        memo: normalize(editingScenario.memo),
-      },
-      original: {
-        name: normalize(originalScenario.name),
-        airport: normalize(originalScenario.airport),
-        terminal: normalize(originalScenario.terminal),
-        memo: normalize(originalScenario.memo),
-      },
-    });
-
     if (!hasChanges) {
-      console.log("❌ No changes detected - canceling edit");
       cancelEdit();
       return;
     }
 
-    console.log("✅ Changes detected - showing dialog");
     // 확인 다이얼로그 표시
     setShowUpdateDialog(true);
   };

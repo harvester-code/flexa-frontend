@@ -17,7 +17,7 @@ const SimulationPage = () => {
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  // Debug: Check session
+  // Check session
   React.useEffect(() => {
     const checkSession = async () => {
       const { createClient } = await import('@/lib/auth/client');
@@ -28,10 +28,7 @@ const SimulationPage = () => {
         console.error('Session check error:', error);
       }
 
-      if (session) {
-        console.log('Session exists:', session.user?.email);
-      } else {
-        console.warn('No session found - redirecting to login...');
+      if (!session) {
         router.push('/auth/login');
       }
     };

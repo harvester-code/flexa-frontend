@@ -639,14 +639,6 @@ export default function OperatingScheduleEditor({
         });
         return updated;
       });
-
-      console.log("Setting process time for cells:", {
-        cells: contextMenu.targetCells,
-        processIndex: selectedProcessIndex,
-        zone: selectedZone,
-        newProcessTime,
-        multiplier,
-      });
     },
     [
       contextMenu.targetCells,

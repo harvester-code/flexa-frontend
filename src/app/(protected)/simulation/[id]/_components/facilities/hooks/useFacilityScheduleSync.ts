@@ -67,21 +67,12 @@ export function useFacilityScheduleSync({
         (f) => f.operating_schedule?.time_blocks && f.operating_schedule.time_blocks.length > 0
       );
 
-      console.log("ScheduleEditor initialization check:", {
-        processIndex: selectedProcessIndex,
-        zone: selectedZone,
-        hasExistingSchedule,
-        facilities: currentFacilities.length,
-        firstFacility: currentFacilities[0],
-      });
-
       if (hasExistingSchedule) {
         // Initialize from existing schedule - calculate dates in advance
         const prevDay = new Date(contextDate);
         prevDay.setDate(prevDay.getDate() - 1);
         const prevDayStr = prevDay.toISOString().split("T")[0];
 
-        console.log("Initializing from existing schedule data");
         const { disabledCells: initDisabledCells, badges: initBadges } =
           initializeDisabledCellsFromPeriods(
             currentFacilities,
@@ -90,11 +81,6 @@ export function useFacilityScheduleSync({
             contextDate,
             prevDayStr
           );
-
-        console.log("Initialized cells:", {
-          disabledCount: initDisabledCells.size,
-          badgeCount: Object.keys(initBadges).length,
-        });
 
         setDisabledCells(initDisabledCells);
         setCellBadges(initBadges);

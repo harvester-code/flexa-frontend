@@ -26,13 +26,8 @@ export function useLoadScenarioData(
         const currentScenarioId = currentState.context.scenarioId;
 
         if (currentScenarioId !== simulationId) {
-          console.log(
-            `🔄 시나리오 변경: ${currentScenarioId} → ${simulationId} (Store 초기화)`
-          );
           useSimulationStore.getState().resetStore();
           useSimulationStore.getState().setScenarioId(simulationId);
-        } else {
-          console.log(`✅ 같은 시나리오 재방문: ${simulationId} (데이터 유지)`);
         }
 
         const { data: s3Data } = await loadScenarioMetadata(simulationId);

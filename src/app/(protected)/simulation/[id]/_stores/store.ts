@@ -113,9 +113,6 @@ const calculateOperatingPeriodFromPassengers = (
   const lastTime =
     chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
 
-  console.log("Using chart_x_data directly - First time:", firstTime);
-  console.log("Using chart_x_data directly - Last time:", lastTime);
-
   // 첫번째 시간에 초 추가
   const startDateTime = `${firstTime}:00`;
 
@@ -135,7 +132,6 @@ const calculateOperatingPeriodFromPassengers = (
   }
 
   const result = `${startDateTime}-${endDateTime}`;
-  console.log("Final period result:", result);
 
   // 예: "2025-09-21 20:30:00-2025-09-22 00:00:00"
   return result;
@@ -1375,15 +1371,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
             state.context.date || new Date().toISOString().split("T")[0];
 
           // 여객 차트 데이터가 있으면 최초 여객 도착 시간 기준으로 운영 시간 설정
-          console.log(
-            "chartResult in setFacilitiesForZone:",
-            state.passenger.chartResult
-          );
           const period = calculateOperatingPeriodFromPassengers(
             state.passenger.chartResult,
             date
           );
-          console.log("Calculated period:", period);
 
           const facilities = Array.from({ length: count }, (_, i) => ({
             id: `${zoneName}_${i + 1}`,
@@ -1606,8 +1597,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         const oldFieldName = convertToZoneField(oldProcessName);
         const newFieldName = convertToZoneField(newProcessName);
-
-        console.log("Updating passenger_conditions:", oldFieldName, "->", newFieldName);
 
         // Update all facilities' passenger_conditions in all processes
         state.process_flow.forEach((process) => {

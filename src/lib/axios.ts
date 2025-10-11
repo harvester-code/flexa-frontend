@@ -26,8 +26,6 @@ instanceWithAuth.interceptors.request.use(
       const token = session?.access_token;
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('No access token found in session');
       }
 
       return config;
