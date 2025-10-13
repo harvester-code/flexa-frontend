@@ -132,6 +132,13 @@ export interface FlightHourSummary {
   carriers: FlightHourCarrierSummary[];
 }
 
+export interface FlightClassDistribution {
+  class: string;
+  label: string;
+  flights: number;
+  ratio: number;
+}
+
 export interface FlightCarrierSummary {
   label: string;
   flights: number;
@@ -145,6 +152,9 @@ export interface FlightCarrierSummary {
   topAircraft: Array<{
     type: string;
     flights: number;
+    code?: string | null;
+    class?: string;
+    manufacturer?: string | null;
   }>;
 }
 
@@ -164,6 +174,9 @@ export interface FlightDetailSummary {
     datetime: string | null;
   };
   aircraft: string;
+  aircraftCode: string | null;
+  aircraftClass: string;
+  aircraftManufacturer: string | null;
   passengers: number;
   totalSeats: number | null;
 }
@@ -171,6 +184,7 @@ export interface FlightDetailSummary {
 export interface FlightSummaryResponse {
   totals: FlightSummaryTotals;
   hours: FlightHourSummary[];
+  classDistribution: FlightClassDistribution[];
   carriers: FlightCarrierSummary[];
   flights: FlightDetailSummary[];
 }

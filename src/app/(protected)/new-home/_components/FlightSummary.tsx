@@ -15,6 +15,11 @@ interface FlightSummaryProps {
 }
 
 const numberFormatter = new Intl.NumberFormat('en-US');
+const percentFormatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
   const summaryHours = summary?.hours ?? [];
@@ -55,6 +60,51 @@ function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
         rangemode: 'tozero' as const,
       },
       bargap: 0.2,
+      plot_bgcolor: '#ffffff',
+      paper_bgcolor: '#ffffff',
+    }),
+    []
+  );
+
+  const classDistribution = summary?.classDistribution ?? [];
+  const classChartData = useMemo(() => {
+    if (!classDistribution.length) {
+      return [];
+    }
+
+    return [
+      {
+        type: 'bar',
+        x: classDistribution.map((item) => item.label || item.class || 'Unknown'),
+        y: classDistribution.map((item) => Number((item.ratio * 100).toFixed(2))),
+        marker: { color: '#2563eb' },
+        text: classDistribution.map((item) => `${(item.ratio * 100).toFixed(1)}%`),
+        textposition: 'outside',
+        hoverinfo: 'text',
+        hovertext: classDistribution.map(
+          (item) =>
+            `<b>${item.label || item.class || 'Unknown'}</b><br/>Flights: ${numberFormatter.format(
+              item.flights
+            )}<br/>Share: ${percentFormatter.format(item.ratio)}`
+        ),
+      } as any,
+    ];
+  }, [classDistribution]);
+
+  const classChartLayout = useMemo(
+    () => ({
+      height: 320,
+      margin: { l: 60, r: 30, t: 24, b: 60 },
+      xaxis: {
+        title: { text: 'Aircraft Class' },
+        tickfont: { size: 12 },
+      },
+      yaxis: {
+        title: { text: 'Share (%)' },
+        tickformat: ',.0f',
+        rangemode: 'tozero' as const,
+      },
+      bargap: 0.3,
       plot_bgcolor: '#ffffff',
       paper_bgcolor: '#ffffff',
     }),
@@ -175,6 +225,44 @@ function FlightSummary({ scenario, summary, isLoading }: FlightSummaryProps) {
             </table>
           </div>
         </div>
+
+        {classDistribution.length ? (
+          <div className="rounded-md border border-input bg-white p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h6 className="text-base font-semibold">Aircraft Class Mix</h6>
+                <p className="text-xs text-default-500">
+                  Share of flights by aircraft class ({numberFormatter.format(totals.flights)} flights)
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <BarChart
+                  chartData={classChartData}
+                  chartLayout={classChartLayout}
+                  config={{ responsive: true, displaylogo: false }}
+                />
+              </div>
+              <div className="flex flex-col gap-3">
+                {classDistribution.map((item) => (
+                  <div
+                    key={`${item.class || item.label || 'unknown'}-${item.flights}`}
+                    className="rounded-md border border-muted/60 bg-slate-50 p-3"
+                  >
+                    <div className="flex items-center justify-between text-sm font-semibold text-default-900">
+                      <span>{item.label || item.class || 'Unknown'}</span>
+                      <span>{percentFormatter.format(item.ratio)}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-default-500">
+                      {numberFormatter.format(item.flights)} flights
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-md border border-input bg-white p-5">
           <FlightDestinationMap flights={flightRows} />
