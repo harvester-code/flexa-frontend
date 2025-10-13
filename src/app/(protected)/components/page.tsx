@@ -2,7 +2,11 @@
 
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
+import type { Config, Data, Layout } from 'plotly.js';
 import { Calendar as CalendarIcon, Check, ChevronsUpDown, Save } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import TheHistogramChart from '@/components/charts/TheHistogramChart';
+import { formatUnit } from '@/app/(protected)/home/_components/HomeFormat';
 import TheContentHeader from '@/components/TheContentHeader';
 import { Button } from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/Calendar';
@@ -15,6 +19,102 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
 
 const breadcrumb = [{ text: 'Components', number: 1 }];
+
+const chartTimeLabels = ['06:00', '09:00', '12:00', '15:00', '18:00'];
+
+const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
+const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
+const SankeyChart = dynamic(() => import('@/components/charts/SankeyChart'), { ssr: false });
+
+const barChartShowcaseData = [
+  {
+    x: chartTimeLabels,
+    y: [140, 210, 180, 240, 310],
+    type: 'bar',
+    marker: { color: '#7c3aed' },
+    name: 'Queue Pax',
+  },
+] satisfies Data[];
+
+const barChartShowcaseLayout: Partial<Layout> = {
+  height: 320,
+  margin: { t: 40, l: 50, r: 20, b: 50 },
+  title: { text: 'Hourly Queue Pax' },
+  xaxis: { title: { text: 'Time' }, type: 'category' },
+  yaxis: { title: { text: 'Passengers' } },
+};
+
+const lineChartShowcaseData = [
+  {
+    x: chartTimeLabels,
+    y: [4.2, 6.1, 5.3, 3.7, 3.0],
+    type: 'scatter',
+    mode: 'lines+markers',
+    marker: { size: 8, color: '#6b46c1' },
+    line: { color: '#6b46c1', width: 3 },
+    name: 'Wait Time (min)',
+  },
+] satisfies Data[];
+
+const lineChartShowcaseLayout: Partial<Layout> = {
+  height: 320,
+  margin: { t: 40, l: 50, r: 20, b: 50 },
+  title: { text: 'Average Wait Time' },
+  xaxis: { title: { text: 'Time' }, type: 'category' },
+  yaxis: { title: { text: 'Minutes' } },
+};
+
+const sankeyChartShowcaseData = [
+  {
+    type: 'sankey',
+    orientation: 'h',
+    node: {
+      pad: 16,
+      thickness: 20,
+      label: ['Arrival', 'Check-in', 'Security', 'Immigration', 'Gate'],
+      color: ['#ede9fe', '#c4b5fd', '#a78bfa', '#8b5cf6', '#7c3aed'],
+    },
+    link: {
+      source: [0, 1, 1, 2, 3],
+      target: [1, 2, 3, 3, 4],
+      value: [600, 520, 80, 500, 480],
+      color: [
+        'rgba(124,58,237,0.35)',
+        'rgba(139,92,246,0.35)',
+        'rgba(139,92,246,0.2)',
+        'rgba(167,139,250,0.35)',
+        'rgba(167,139,250,0.3)',
+      ],
+    },
+  },
+] satisfies Data[];
+
+const sankeyChartShowcaseLayout: Partial<Layout> = {
+  height: 360,
+  margin: { t: 40, l: 30, r: 30, b: 40 },
+  title: { text: 'Passenger Flow Journey' },
+};
+
+const buildHistogramDatum = (title: string, percent: number) => ({
+  title,
+  value: (
+    <>
+      {percent}
+      {formatUnit('%', 'histogram')}
+    </>
+  ),
+  width: percent,
+});
+
+const histogramShowcaseData = [
+  buildHistogramDatum('0~5 min', 35),
+  buildHistogramDatum('5~10 min', 28),
+  buildHistogramDatum('10~15 min', 18),
+  buildHistogramDatum('15~20 min', 12),
+  buildHistogramDatum('20 min~', 7),
+];
+
+const baseChartConfig: Partial<Config> = { displayModeBar: false, responsive: true };
 
 export default function ComponentsPage() {
   // DatePicker for showcase
@@ -270,11 +370,12 @@ export default function ComponentsPage() {
         </div>
 
         <Tabs defaultValue="buttons" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="buttons">Buttons</TabsTrigger>
             <TabsTrigger value="inputs">Inputs</TabsTrigger>
             <TabsTrigger value="forms">Forms</TabsTrigger>
             <TabsTrigger value="selectors">Selectors</TabsTrigger>
+            <TabsTrigger value="charts">Charts</TabsTrigger>
           </TabsList>
 
           {/* Button Components Tab */}
@@ -544,6 +645,66 @@ export default function ComponentsPage() {
                 <div className="flex items-center gap-3">
                   <span className="w-16 text-xs font-normal text-default-500">sm:</span>
                   <SmallCombobox />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Chart Components Tab */}
+          <TabsContent value="charts" className="mt-8 space-y-12">
+            <div>
+              <h2 className="mb-4 text-lg font-semibold">Chart Components</h2>
+              <p className="mb-8 text-sm text-muted-foreground">
+                `src/components/charts` 폴더에서 사용하는 시각화 컴포넌트들을 샘플 데이터와 함께 확인할 수 있습니다.
+              </p>
+
+              <div className="space-y-12">
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium">TheHistogramChart</h3>
+                  <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <TheHistogramChart chartData={histogramShowcaseData} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
+                  <div className="space-y-4">
+                    <h3 className="text-base font-medium">BarChart</h3>
+                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                      <div className="h-[320px] w-full">
+                        <BarChart
+                          chartData={barChartShowcaseData}
+                          chartLayout={barChartShowcaseLayout}
+                          config={baseChartConfig}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-base font-medium">LineChart</h3>
+                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                      <div className="h-[320px] w-full">
+                        <LineChart
+                          chartData={lineChartShowcaseData}
+                          chartLayout={lineChartShowcaseLayout}
+                          config={baseChartConfig}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium">SankeyChart</h3>
+                  <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className="h-[360px] w-full">
+                      <SankeyChart
+                        chartData={sankeyChartShowcaseData}
+                        chartLayout={sankeyChartShowcaseLayout}
+                        config={baseChartConfig}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
