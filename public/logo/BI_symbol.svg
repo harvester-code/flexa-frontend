@@ -3,12 +3,12 @@
   <defs>
     <style>
       .cls-1 {
-        fill: url(#_무제_그라디언트_16);
+        fill: url(#_무제_그라디언트_32);
       }
     </style>
-    <linearGradient id="_무제_그라디언트_16" data-name="무제 그라디언트 16" x1="0" y1="100" x2="200" y2="100" gradientUnits="userSpaceOnUse">
+    <linearGradient id="_무제_그라디언트_32" data-name="무제 그라디언트 32" x1="0" y1="100" x2="200" y2="100" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#d406fe"/>
-      <stop offset="1" stop-color="#36bdfd"/>
+      <stop offset="1" stop-color="#007aff"/>
     </linearGradient>
   </defs>
   <g id="_레이어_1-2" data-name="레이어 1">
