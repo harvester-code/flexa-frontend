@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BarChart3, AlertTriangle, LineChart, FileText } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { useStaticData, useMetricsData } from '@/queries/homeQueries';
@@ -39,13 +39,6 @@ function HomePage() {
     ...staticData,
     ...metricsData,
   };
-
-  // 처음 랜더링될 때 시나리오 중 가장 최근 실행된 시나리오를 선택
-  useEffect(() => {
-    if ((scenarios as any)?.scenarios?.[0]) {
-      setScenario((scenarios as any).scenarios[0]);
-    }
-  }, [scenarios]);
 
   return (
     <div className="mx-auto max-w-page px-page-x pb-page-b">

@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useToast } from "@/hooks/useToast";
+import AirportSelector from "../[id]/_components/flights/AirportSelector";
 
 interface CreateScenarioProps {
   open: boolean;
@@ -43,7 +44,6 @@ const INPUT_FIELDS: InputField[] = [
     placeholder: "T2 Expansion",
     required: true,
   },
-  { key: "airport", label: "Airport", placeholder: "Airport code", required: false },
   { key: "terminal", label: "Terminal", placeholder: "T1", required: false },
   { key: "memo", label: "Memo", placeholder: "Description", required: false },
 ];
@@ -162,26 +162,38 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
 
         <div className="grid gap-4">
           {INPUT_FIELDS.map((field) => (
-            <div key={field.key} className="grid gap-2">
-              <Label htmlFor={field.key}>
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </Label>
-              <Input
-                id={field.key}
-                type="text"
-                placeholder={field.placeholder}
-                value={formData[field.key]}
-                onChange={(e) =>
-                  updateField(field.key, (e.target as HTMLInputElement).value)
-                }
-                onKeyDown={handleKeyDown}
-                className={errors[field.key] ? "border-red-500 focus:border-red-500" : ""}
-              />
-              {errors[field.key] && (
-                <p className="text-sm text-red-500">{errors[field.key]}</p>
+            <React.Fragment key={field.key}>
+              <div className="grid gap-2">
+                <Label htmlFor={field.key}>
+                  {field.label}
+                  {field.required && <span className="ml-1 text-red-500">*</span>}
+                </Label>
+                <Input
+                  id={field.key}
+                  type="text"
+                  placeholder={field.placeholder}
+                  value={formData[field.key]}
+                  onChange={(e) =>
+                    updateField(field.key, (e.target as HTMLInputElement).value)
+                  }
+                  onKeyDown={handleKeyDown}
+                  className={errors[field.key] ? "border-red-500 focus:border-red-500" : ""}
+                />
+                {errors[field.key] && (
+                  <p className="text-sm text-red-500">{errors[field.key]}</p>
+                )}
+              </div>
+
+              {field.key === "scenarioName" && (
+                <div className="grid gap-2">
+                  <Label>Airport</Label>
+                  <AirportSelector
+                    value={formData.airport}
+                    onChange={(value) => updateField("airport", value)}
+                  />
+                </div>
               )}
-            </div>
+            </React.Fragment>
           ))}
         </div>
 

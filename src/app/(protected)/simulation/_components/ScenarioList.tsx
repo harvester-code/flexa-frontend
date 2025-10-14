@@ -508,7 +508,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       </div>
 
       <div
-        className="table-container mt-4"
+        className="mt-4 overflow-x-auto"
         style={{
           minHeight: `${TABLE_HEADER_HEIGHT + pageSize * TABLE_ROW_HEIGHT}px`,
         }}
@@ -538,13 +538,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   />
                 </div>
               </th>
-              <th className="w-48 text-left">Name</th>
-              <th className="w-28 text-left">Airport</th>
-              <th className="w-28 text-center">Terminal</th>
-              <th className="w-28 text-left">Editor</th>
-              <th className="w-32 text-left">Updated at</th>
-              <th className="w-32 text-left">Last run</th>
-              <th className="!pl-5 text-left">Memo</th>
+              <th className="px-3 text-left whitespace-nowrap">Name</th>
+              <th className="px-3 text-left whitespace-nowrap">Airport</th>
+              <th className="px-3 text-center whitespace-nowrap">Terminal</th>
+              <th className="px-3 text-left whitespace-nowrap">Editor</th>
+              <th className="px-3 text-left whitespace-nowrap">Updated at</th>
+              <th className="px-3 text-left whitespace-nowrap">Last run</th>
+              <th className="px-3 text-left whitespace-nowrap">Memo</th>
               <th className="w-20"></th>
             </tr>
           </thead>
@@ -593,7 +593,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       </div>
                     </td>
 
-                    <td>
+                    <td className="px-3">
                       {isEditing ? (
                         <input
                           type="text"
@@ -627,8 +627,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         </div>
                       )}
                     </td>
-
-                    <td>
+                    <td className="px-3 whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="text"
@@ -647,7 +646,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
-                    <td className="text-center">
+                    <td className="px-3 text-center whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="text"
@@ -666,21 +665,33 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
-                    <td>{scenario.editor}</td>
-                    <td>
-                      {dayjs(scenario.updated_at).format("MMM-DD-YYYY HH:mm")}
+                    <td className="px-3 whitespace-nowrap">{scenario.editor}</td>
+                    <td className="px-3 whitespace-nowrap">
+                      <div className="flex flex-col leading-5">
+                        <span>{dayjs(scenario.updated_at).format("YYYY-MM-DD")}</span>
+                        <span className="text-xs text-muted-foreground text-center">
+                          {dayjs(scenario.updated_at).format("HH:mm")}
+                        </span>
+                      </div>
                     </td>
-                    <td>
+                    <td className="px-3 whitespace-nowrap">
                       {scenario.simulation_end_at ? (
-                        dayjs(scenario.simulation_end_at).format(
-                          "MMM-DD-YYYY HH:mm"
-                        )
+                        <div className="flex flex-col leading-5">
+                          <span>
+                            {dayjs(scenario.simulation_end_at).format(
+                              "YYYY-MM-DD"
+                            )}
+                          </span>
+                          <span className="text-xs text-muted-foreground text-center">
+                            {dayjs(scenario.simulation_end_at).format("HH:mm")}
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-gray-500 italic">Never run</span>
                       )}
                     </td>
 
-                    <td>
+                    <td className="px-3 align-top">
                       {isEditing ? (
                         <input
                           type="text"
@@ -695,11 +706,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                           className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       ) : (
-                        scenario.memo || "-"
+                        <span
+                          className="block max-w-xs truncate"
+                          title={scenario.memo || ""}
+                        >
+                          {scenario.memo || "-"}
+                        </span>
                       )}
                     </td>
 
-                    <td className="text-center">
+                    <td className="px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button
                           variant="link"

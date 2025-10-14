@@ -573,7 +573,9 @@ textarea {
 }
 
 .table-default {
-  @apply w-full;
+  width: max-content;
+  min-width: 100%;
+  @apply table-auto;
   thead {
     @apply bg-muted;
     tr {

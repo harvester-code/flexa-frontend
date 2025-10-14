@@ -1,7 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Ban,
@@ -13,7 +12,6 @@ import {
   ChevronsRight,
   Link2,
   Loader2,
-  Plus,
   Search,
   XCircle,
 } from 'lucide-react';
@@ -97,11 +95,12 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
 };
 
 function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false }: HomeScenarioProps) {
-  const router = useRouter();
   const [isOpened, setIsOpened] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const hasAutoOpened = useRef(false);
+  const availableScenarioCount = Array.isArray(data) ? data.length : 0;
 
   // 시나리오 필터링 (검색 키워드 및 날짜) - 단순화된 로직
   const filteredScenarios = useMemo(() => {
@@ -148,9 +147,18 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
     setCurrentPage(1);
   };
 
-  const handleNewScenario = () => {
-    router.push('/simulation');
-  };
+  useEffect(() => {
+    if (!hasAutoOpened.current && !isLoading && !scenario && availableScenarioCount > 0) {
+      setIsOpened(true);
+      hasAutoOpened.current = true;
+    }
+  }, [availableScenarioCount, isLoading, scenario]);
+
+  useEffect(() => {
+    if (scenario) {
+      hasAutoOpened.current = false;
+    }
+  }, [scenario]);
 
   // 고정된 팝업 높이 계산 (ITEMS_PER_PAGE 기준)
   const getDialogHeight = () => {
@@ -283,20 +291,23 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
               </div>
             </div>
 
-            {/* 테이블 영역 (고정 높이, 스크롤 없음) */}
-            <div className="flex-1 overflow-hidden" style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}>
-              <table className="w-full table-fixed">
+            {/* 테이블 영역 (고정 높이, 가로 스크롤 허용) */}
+            <div
+              className="flex-1 overflow-x-auto overflow-y-hidden"
+              style={{ height: `${ITEMS_PER_PAGE * 60 + 50}px` }}
+            >
+              <table className="table-auto min-w-max">
                 <thead
                   className="sticky top-0 z-10 border-b border-primary bg-muted text-left text-sm font-medium"
                   style={{ height: '50px' }}
                 >
                   <tr>
-                    <th className="w-[30%] px-3 py-3 font-medium">Name</th>
-                    <th className="w-[12%] px-3 py-3 font-medium">Airport</th>
-                    <th className="w-[12%] px-3 py-3 font-medium">Terminal</th>
-                    <th className="w-[16%] px-3 py-3 font-medium">Created at</th>
-                    <th className="w-[16%] px-3 py-3 font-medium">Updated at</th>
-                    <th className="w-[14%] px-3 py-3 font-medium">Memo</th>
+                    <th className="px-3 py-3 text-sm font-medium whitespace-nowrap">Name</th>
+                    <th className="px-3 py-3 text-sm font-medium whitespace-nowrap">Airport</th>
+                    <th className="px-3 py-3 text-sm font-medium whitespace-nowrap">Terminal</th>
+                    <th className="px-3 py-3 text-sm font-medium whitespace-nowrap">Created at</th>
+                    <th className="px-3 py-3 text-sm font-medium whitespace-nowrap">Updated at</th>
+                    <th className="px-3 py-3 text-sm font-medium">Memo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,22 +374,24 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                             </div>
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm font-normal">{item.airport}</td>
+                          <td className="px-3 py-3 text-sm font-normal whitespace-nowrap">
+                            {item.airport}
+                          </td>
 
-                          <td className="truncate px-3 py-3 text-sm font-normal">
+                          <td className="px-3 py-3 text-sm font-normal whitespace-nowrap">
                             <i>{item.terminal}</i>
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm font-normal">
+                          <td className="px-3 py-3 text-sm font-normal whitespace-nowrap">
                             {dayjs(item.created_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
 
-                          <td className="truncate px-3 py-3 text-sm font-normal">
+                          <td className="px-3 py-3 text-sm font-normal whitespace-nowrap">
                             {dayjs(item.updated_at).format('MMM-DD-YYYY HH:mm')}
                           </td>
 
-                          <td className="px-3 py-3 text-sm font-normal">
-                            <span className="block truncate" title={item.memo || ''}>
+                          <td className="px-3 py-3 text-sm font-normal align-top">
+                            <span className="block truncate max-w-xl" title={item.memo || ''}>
                               {item.memo || '-'}
                             </span>
                           </td>
