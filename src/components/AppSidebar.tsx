@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useTransition } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -136,28 +137,41 @@ function AppSidebar() {
     >
       {/* 🎯 Header with Logo */}
       <div className="flex h-16 items-center px-4">
-        <Link href="/home" className="flex items-center gap-3">
-          {/* Flexa 원형 로고 */}
-          <div className="relative h-9 w-9">
-            <svg viewBox="0 0 40 40" className="h-full w-full">
-              <defs>
-                <linearGradient id="flexa-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3B82F6" />
-                  <stop offset="50%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#7C3AED" />
-                </linearGradient>
-              </defs>
-              <circle cx="20" cy="20" r="20" fill="url(#flexa-gradient)" />
-              <text x="20" y="28" textAnchor="middle" fontSize="20" fontWeight="bold" fill="white">
-                F
-              </text>
-            </svg>
-          </div>
-          {/* Flexa 텍스트 - 축소시 숨김 */}
-          {!isCollapsed && (
-            <span className="bg-gradient-to-r from-primary-500 to-primary-900 bg-clip-text text-lg font-semibold text-transparent">
-              Flexa
-            </span>
+        <Link
+          href="/home"
+          className={cn(
+            'flex w-full items-center transition-all',
+            isCollapsed ? 'justify-center' : 'justify-center'
+          )}
+        >
+          {isCollapsed ? (
+            <Image
+              src="/logo/BI_symbol.svg"
+              alt="Flexa"
+              width={32}
+              height={32}
+              priority
+              className="h-8 w-8"
+            />
+          ) : (
+            <div className="flex items-center gap-4">
+              <Image
+                src="/logo/BI_symbol.svg"
+                alt="Flexa symbol"
+                width={32}
+                height={32}
+                priority
+                className="h-8 w-8"
+              />
+              <Image
+                src="/logo/BI_lettering.svg"
+                alt="Flexa lettering"
+                width={96}
+                height={24}
+                priority
+                className="h-6 w-auto"
+              />
+            </div>
           )}
         </Link>
       </div>
