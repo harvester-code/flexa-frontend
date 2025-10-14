@@ -22,6 +22,7 @@ export interface ScenarioData {
   user_id: string;
   simulation_start_at: string | null;
   simulation_end_at: string | null;
+  metadata_updated_at: string | null;
   has_simulation_data?: boolean; // S3에 simulation-pax.parquet 파일 존재 여부
 }
 
