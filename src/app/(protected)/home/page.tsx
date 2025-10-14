@@ -9,7 +9,6 @@ import TheContentHeader from '@/components/TheContentHeader';
 import HomeAccordion from './_components/HomeAccordion';
 import HomeCharts from './_components/HomeCharts';
 import HomeDetails from './_components/HomeDetails';
-import HomeKpiSelector from './_components/HomeKpiSelector';
 import HomeScenario from './_components/HomeScenario';
 import HomeSummary from './_components/HomeSummary';
 import HomeWarning from './_components/HomeWarning';
@@ -45,18 +44,16 @@ function HomePage() {
       <TheContentHeader text="Home" />
       <div className="mx-auto max-w-page px-page-x pb-page-b">
         <HomeScenario
-        className="mt-8"
-        data={scenarios || []}
-        scenario={scenario}
-        onSelectScenario={setScenario}
-        isLoading={isScenariosLoading}
-      />
+          className="mt-8"
+          data={scenarios || []}
+          scenario={scenario}
+          onSelectScenario={setScenario}
+          isLoading={isScenariosLoading}
+          kpi={kpi}
+          onKpiChange={setKpi}
+        />
 
-      <div className="mt-4 flex items-center justify-start gap-2">
-        <HomeKpiSelector value={kpi} onChange={setKpi} />
-      </div>
-
-      <HomeAccordion title="Summary" icon={<BarChart3 className="h-5 w-5 text-primary" />} className="mt-4" open={true}>
+        <HomeAccordion title="Summary" icon={<BarChart3 className="h-5 w-5 text-primary" />} className="mt-4" open={true}>
         <HomeSummary
           scenario={scenario}
           percentile={kpi.type === 'top' ? (kpi.percentile ?? null) : null}

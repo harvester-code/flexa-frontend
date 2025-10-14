@@ -25,6 +25,7 @@ import {
 import { ScenarioData } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import HomeKpiSelector from './HomeKpiSelector';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,8 @@ interface HomeScenarioProps {
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
   isLoading?: boolean;
+  kpi: { type: 'mean' | 'top'; percentile?: number };
+  onKpiChange: (kpi: { type: 'mean' | 'top'; percentile?: number }) => void;
 }
 
 // 페이지당 표시할 시나리오 개수 옵션
@@ -117,7 +120,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
   });
 };
 
-function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false }: HomeScenarioProps) {
+function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false, kpi, onKpiChange }: HomeScenarioProps) {
   const [isOpened, setIsOpened] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -216,48 +219,15 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   }, [scenario]);
 
   return (
-    <div
-      className={cn(
-        'flex min-h-20 flex-col rounded-md border border-input px-4 py-2.5 text-sm font-normal md:flex-row md:items-center md:justify-between',
-        className
-      )}
-    >
-      <div>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Name:</span>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-              {scenario?.name || 'None'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Airport:</span>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-              {scenario?.airport || 'N/A'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Terminal:</span>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-              {scenario?.terminal || 'N/A'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Date:</span>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-              {scenario?.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('MM/DD') : 'N/A'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Updated:</span>
-            <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-              {scenario?.updated_at ? dayjs(scenario.updated_at).format('MM/DD HH:mm') : 'N/A'}
-            </span>
-          </div>
+    <div className={cn('space-y-8', className)}>
+      {/* Header Section */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-default-900">Selected Scenario</h2>
+          <p className="text-sm text-default-600">
+            Review analysis results and insights for the selected simulation scenario
+          </p>
         </div>
-      </div>
-
-      <div className="mt-2 flex w-full justify-center md:mt-0 md:w-auto md:justify-end">
         <Dialog open={isOpened} onOpenChange={setIsOpened}>
           <DialogTrigger asChild>
             <Button>
@@ -625,6 +595,62 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Scenario Info Section */}
+      {scenario && (
+        <div className="rounded-md border border-input bg-muted/30 px-4 py-3">
+          <div className="space-y-3">
+            {/* First Row: Name, Last Saved, Last Run + KPI Selector */}
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Name:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Last Saved:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.metadata_updated_at ? dayjs(scenario.metadata_updated_at).format('MM/DD HH:mm') : 'Never saved'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Last Run:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.simulation_end_at ? dayjs(scenario.simulation_end_at).format('MM/DD HH:mm') : 'Never run'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <HomeKpiSelector value={kpi} onChange={onKpiChange} />
+              </div>
+            </div>
+
+            {/* Second Row: Airport, Terminal, Date */}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Airport:</span>
+                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                  {scenario.airport}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Terminal:</span>
+                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                  {scenario.terminal}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Date:</span>
+                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                  {scenario.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('MM/DD') : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
