@@ -49,7 +49,6 @@ import {
 } from "@/components/ui/Select";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -503,7 +502,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       </div>
 
       {/* 필터 섹션 */}
-      <div className="mt-4 flex h-20 items-start justify-between gap-4">
+      <div className="mt-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-start gap-4">
           {(airportOptions.length > 0 || terminalOptions.length > 0) && (
             <DropdownMenu>
@@ -513,11 +512,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   variant="outline"
                   className="w-48 justify-between"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium text-default-700">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-default-700">
                     <Filter className="h-4 w-4" />
                     Filter
                   </span>
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5">
                     {appliedFilterCount > 0 && (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                         {appliedFilterCount}
@@ -531,36 +530,78 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                 {airportOptions.length > 0 && (
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger className="justify-between">
-                      <span>Airport</span>
+                      <span className="flex items-center gap-1.5">
+                        <Plane className="h-3.5 w-3.5 text-default-500" />
+                        Airport
+                      </span>
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-48">
-                      {airportOptions.map((airport) => (
-                        <DropdownMenuCheckboxItem
+                  <DropdownMenuSubContent className="w-48">
+                    {airportOptions.map((airport) => {
+                      const isSelected = selectedAirports.includes(airport);
+                      return (
+                        <DropdownMenuItem
                           key={airport}
-                          checked={selectedAirports.includes(airport)}
-                          onCheckedChange={() => toggleAirportFilter(airport)}
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            toggleAirportFilter(airport);
+                          }}
+                          className={cn(
+                            "cursor-pointer px-2 py-1.5",
+                            isSelected ? "bg-primary/10 text-primary-900" : ""
+                          )}
                         >
-                          {airport}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                )}
-                {terminalOptions.length > 0 && (
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="justify-between">
-                      <span>Terminal</span>
+                          <div className="flex w-full items-center gap-2">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => {}}
+                              className="pointer-events-none h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white"
+                            />
+                            <span className="text-sm text-default-900">
+                              {airport}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              {terminalOptions.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-default-500" />
+                        Terminal
+                      </span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent className="w-48">
-                      {terminalOptions.map((terminal) => (
-                        <DropdownMenuCheckboxItem
-                          key={terminal}
-                          checked={selectedTerminals.includes(terminal)}
-                          onCheckedChange={() => toggleTerminalFilter(terminal)}
-                        >
-                          {terminal}
-                        </DropdownMenuCheckboxItem>
-                      ))}
+                      {terminalOptions.map((terminal) => {
+                        const isSelected = selectedTerminals.includes(terminal);
+                        return (
+                          <DropdownMenuItem
+                            key={terminal}
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              toggleTerminalFilter(terminal);
+                            }}
+                            className={cn(
+                              "cursor-pointer px-2 py-1.5",
+                              isSelected ? "bg-primary/10 text-primary-900" : ""
+                            )}
+                          >
+                            <div className="flex w-full items-center gap-2">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => {}}
+                              className="pointer-events-none h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white"
+                            />
+                              <span className="text-sm text-default-900">
+                                {terminal}
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        );
+                      })}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
                 )}
@@ -584,8 +625,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="hidden text-sm text-default-500 md:inline">Rows per page</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+          <span className="hidden text-sm text-default-500 md:inline">
+            Rows per page
+          </span>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={handlePageSizeChange}
+          >
             <SelectTrigger className="w-24 justify-between">
               <SelectValue />
             </SelectTrigger>
@@ -601,7 +647,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       </div>
 
       <div
-        className="mt-4 overflow-x-auto overflow-y-auto"
+        className="mt-2 overflow-x-auto overflow-y-auto"
         style={{
           height: `${TABLE_HEADER_HEIGHT + VISIBLE_ROW_COUNT * TABLE_ROW_HEIGHT}px`,
         }}
@@ -632,43 +678,43 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <Hash className="h-3.5 w-3.5" />
                   Name
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <Plane className="h-3.5 w-3.5" />
                   Airport
                 </div>
               </th>
               <th className="px-3 text-center whitespace-nowrap">
-                <div className="flex items-center justify-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center justify-center gap-1 text-sm font-medium text-default-900">
                   <Building2 className="h-3.5 w-3.5" />
                   Terminal
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <UserSquare2 className="h-3.5 w-3.5" />
                   Editor
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <Clock4 className="h-3.5 w-3.5" />
-                  Updated
+                  Last Saved
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <History className="h-3.5 w-3.5" />
-                  Last run
+                  Last Run
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
                   <StickyNote className="h-3.5 w-3.5" />
                   Memo
                 </div>
@@ -732,13 +778,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="min-w-[8rem] max-w-full px-2 py-1"
+                          className="flex-none w-56 max-w-sm px-2 py-1"
                           autoFocus
-                          style={{ width: 'auto' }}
                         />
                       ) : (
                         <div
-                          className="flex cursor-pointer items-center gap-2 hover:font-semibold"
+                          className="flex cursor-pointer items-center gap-1.5 hover:font-semibold"
                           onClick={() =>
                             handleScenarioClick(
                               scenario.scenario_id,
@@ -746,7 +791,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                         >
-                          <span className="flex items-center gap-2 overflow-hidden">
+                          <span className="flex items-center gap-1.5 overflow-hidden">
                             {navigatingToId === scenario.scenario_id && (
                               <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
                             )}
@@ -766,8 +811,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="min-w-[5rem] max-w-full px-2 py-1"
-                          style={{ width: 'auto' }}
+                          className="flex-none w-32 px-2 py-1"
                         />
                       ) : (
                         scenario.airport
@@ -785,22 +829,35 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="min-w-[3rem] max-w-full px-2 py-1"
-                          style={{ width: 'auto' }}
+                          className="flex-none w-20 px-2 py-1 text-center"
                         />
                       ) : (
                         scenario.terminal
                       )}
                     </td>
 
-                    <td className="px-3 whitespace-nowrap">{scenario.editor}</td>
                     <td className="px-3 whitespace-nowrap">
-                      <div className="flex flex-col leading-5">
-                        <span>{dayjs(scenario.updated_at).format("YYYY-MM-DD")}</span>
-                        <span className="text-xs text-muted-foreground text-center">
-                          {dayjs(scenario.updated_at).format("HH:mm")}
+                      {scenario.editor}
+                    </td>
+                    <td className="px-3 whitespace-nowrap">
+                      {scenario.metadata_updated_at ? (
+                        <div className="flex flex-col leading-5">
+                          <span>
+                            {dayjs(scenario.metadata_updated_at).format(
+                              "YYYY-MM-DD"
+                            )}
+                          </span>
+                          <span className="text-xs text-muted-foreground text-center">
+                            {dayjs(scenario.metadata_updated_at).format(
+                              "HH:mm"
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 italic">
+                          Never saved
                         </span>
-                      </div>
+                      )}
                     </td>
                     <td className="px-3 whitespace-nowrap">
                       {scenario.simulation_end_at ? (
@@ -830,8 +887,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="min-w-[8rem] max-w-full px-2 py-1"
-                          style={{ width: 'auto' }}
+                          className="flex-none w-64 max-w-md px-2 py-1"
                         />
                       ) : (
                         <span
