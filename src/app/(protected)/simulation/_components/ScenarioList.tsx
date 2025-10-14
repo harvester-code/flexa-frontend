@@ -6,15 +6,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Copy,
+  Filter,
   Pencil,
   Loader2,
   Plus,
   Trash2,
+  Hash,
+  Plane,
+  Building2,
+  UserSquare2,
+  Clock4,
+  History,
+  NotebookPen,
+  StickyNote,
 } from "lucide-react";
 import { modifyScenario, copyScenario } from "@/services/simulationService";
 import {
@@ -37,6 +47,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/DropdownMenu";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import SimulationLoading from "./SimulationLoading";
@@ -64,6 +85,7 @@ const DEFAULT_PAGE_SIZE = 10;
 // 테이블의 최소 높이 계산 (헤더 + 행)
 const TABLE_HEADER_HEIGHT = 60; // 헤더 행 높이
 const TABLE_ROW_HEIGHT = 64; // 각 행의 높이 (p-3 패딩 포함)
+const VISIBLE_ROW_COUNT = 10; // 고정 표시 행 수
 
 /**
  * 페이지네이션 범위를 계산하는 함수
@@ -163,15 +185,79 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
+  const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
+
+  const airportOptions = React.useMemo(() => {
+    if (!scenarios) return [];
+
+    const uniqueAirports = new Set<string>();
+    scenarios.forEach((scenario) => {
+      if (scenario?.airport) {
+        uniqueAirports.add(scenario.airport);
+      }
+    });
+
+    return Array.from(uniqueAirports).sort((a, b) => a.localeCompare(b));
+  }, [scenarios]);
+
+  const terminalOptions = React.useMemo(() => {
+    if (!scenarios) return [];
+
+    const uniqueTerminals = new Set<string>();
+    scenarios.forEach((scenario) => {
+      if (scenario?.terminal) {
+        uniqueTerminals.add(scenario.terminal);
+      }
+    });
+
+    return Array.from(uniqueTerminals).sort((a, b) => a.localeCompare(b));
+  }, [scenarios]);
 
   // 필터링된 시나리오 계산
   const filteredScenarios = React.useMemo(() => {
     if (!scenarios) return [];
 
-    const filtered = scenarios ? [...scenarios] : [];
+    let filtered = [...scenarios];
+
+    if (selectedAirports.length > 0) {
+      filtered = filtered.filter((scenario) =>
+        selectedAirports.includes(scenario.airport)
+      );
+    }
+
+    if (selectedTerminals.length > 0) {
+      filtered = filtered.filter((scenario) =>
+        selectedTerminals.includes(scenario.terminal)
+      );
+    }
 
     return filtered;
-  }, [scenarios]);
+  }, [scenarios, selectedAirports, selectedTerminals]);
+
+  useEffect(() => {
+    if (selectedAirports.length === 0) return;
+
+    const validSelections = selectedAirports.filter((airport) =>
+      airportOptions.includes(airport)
+    );
+
+    if (validSelections.length !== selectedAirports.length) {
+      setSelectedAirports(validSelections);
+    }
+  }, [airportOptions, selectedAirports]);
+
+  useEffect(() => {
+    if (selectedTerminals.length === 0) return;
+
+    const validSelections = selectedTerminals.filter((terminal) =>
+      terminalOptions.includes(terminal)
+    );
+
+    if (validSelections.length !== selectedTerminals.length) {
+      setSelectedTerminals(validSelections);
+    }
+  }, [terminalOptions, selectedTerminals]);
 
   useEffect(() => {
     if (!filteredScenarios || filteredScenarios.length < 1) return;
@@ -206,6 +292,29 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const totalGroups = Math.ceil(totalPages / 5);
 
   const selRowCount = isScenarioSelected.filter(Boolean).length;
+
+  const toggleAirportFilter = (airport: string) => {
+    setSelectedAirports((prev) =>
+      prev.includes(airport)
+        ? prev.filter((item) => item !== airport)
+        : [...prev, airport]
+    );
+  };
+
+  const toggleTerminalFilter = (terminal: string) => {
+    setSelectedTerminals((prev) =>
+      prev.includes(terminal)
+        ? prev.filter((item) => item !== terminal)
+        : [...prev, terminal]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedAirports([]);
+    setSelectedTerminals([]);
+  };
+
+  const appliedFilterCount = selectedAirports.length + selectedTerminals.length;
 
   // 현재 페이지의 선택 상태
   const currentPageStartIdx = (currentPage - 1) * pageSize;
@@ -394,18 +503,107 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       </div>
 
       {/* 필터 섹션 */}
-      <div className="mt-4 flex h-20 items-center justify-between">
-        <div className="flex items-center gap-4" />
+      <div className="mt-4 flex h-20 items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          {(airportOptions.length > 0 || terminalOptions.length > 0) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-48 justify-between"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-default-700">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {appliedFilterCount > 0 && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        {appliedFilterCount}
+                      </span>
+                    )}
+                    <ChevronDown className="h-4 w-4 text-default-500" />
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {airportOptions.length > 0 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="justify-between">
+                      <span>Airport</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-48">
+                      {airportOptions.map((airport) => (
+                        <DropdownMenuCheckboxItem
+                          key={airport}
+                          checked={selectedAirports.includes(airport)}
+                          onCheckedChange={() => toggleAirportFilter(airport)}
+                        >
+                          {airport}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+                {terminalOptions.length > 0 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="justify-between">
+                      <span>Terminal</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-48">
+                      {terminalOptions.map((terminal) => (
+                        <DropdownMenuCheckboxItem
+                          key={terminal}
+                          checked={selectedTerminals.includes(terminal)}
+                          onCheckedChange={() => toggleTerminalFilter(terminal)}
+                        >
+                          {terminal}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+                {appliedFilterCount > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        clearAllFilters();
+                      }}
+                      className="text-sm text-default-600 hover:text-default-900"
+                    >
+                      Clear filters
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
 
         <div className="flex items-center gap-2.5">
-          <div />
+          <span className="hidden text-sm text-default-500 md:inline">Rows per page</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-24 justify-between">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <div
-        className="mt-4 overflow-x-auto"
+        className="mt-4 overflow-x-auto overflow-y-auto"
         style={{
-          minHeight: `${TABLE_HEADER_HEIGHT + pageSize * TABLE_ROW_HEIGHT}px`,
+          height: `${TABLE_HEADER_HEIGHT + VISIBLE_ROW_COUNT * TABLE_ROW_HEIGHT}px`,
         }}
       >
         <table className="table-default">
@@ -433,13 +631,48 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   />
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">Name</th>
-              <th className="px-3 text-left whitespace-nowrap">Airport</th>
-              <th className="px-3 text-center whitespace-nowrap">Terminal</th>
-              <th className="px-3 text-left whitespace-nowrap">Editor</th>
-              <th className="px-3 text-left whitespace-nowrap">Updated at</th>
-              <th className="px-3 text-left whitespace-nowrap">Last run</th>
-              <th className="px-3 text-left whitespace-nowrap">Memo</th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <Hash className="h-3.5 w-3.5" />
+                  Name
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <Plane className="h-3.5 w-3.5" />
+                  Airport
+                </div>
+              </th>
+              <th className="px-3 text-center whitespace-nowrap">
+                <div className="flex items-center justify-center gap-2 text-sm font-medium text-default-900">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Terminal
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <UserSquare2 className="h-3.5 w-3.5" />
+                  Editor
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <Clock4 className="h-3.5 w-3.5" />
+                  Updated
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <History className="h-3.5 w-3.5" />
+                  Last run
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-default-900">
+                  <StickyNote className="h-3.5 w-3.5" />
+                  Memo
+                </div>
+              </th>
               <th className="w-20"></th>
             </tr>
           </thead>
@@ -490,8 +723,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
                     <td className="px-3">
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <Input
                           value={editingScenario?.name || ""}
                           onChange={(e) =>
                             updateEditingField(
@@ -500,8 +732,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="min-w-[8rem] max-w-full px-2 py-1"
                           autoFocus
+                          style={{ width: 'auto' }}
                         />
                       ) : (
                         <div
@@ -524,8 +757,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     </td>
                     <td className="px-3 whitespace-nowrap">
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <Input
                           value={editingScenario?.airport || ""}
                           onChange={(e) =>
                             updateEditingField(
@@ -534,7 +766,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="min-w-[5rem] max-w-full px-2 py-1"
+                          style={{ width: 'auto' }}
                         />
                       ) : (
                         scenario.airport
@@ -543,8 +776,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
                     <td className="px-3 text-center whitespace-nowrap">
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <Input
                           value={editingScenario?.terminal || ""}
                           onChange={(e) =>
                             updateEditingField(
@@ -553,7 +785,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="min-w-[3rem] max-w-full px-2 py-1"
+                          style={{ width: 'auto' }}
                         />
                       ) : (
                         scenario.terminal
@@ -588,8 +821,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
                     <td className="px-3 align-top">
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <Input
                           value={editingScenario?.memo || ""}
                           onChange={(e) =>
                             updateEditingField(
@@ -598,7 +830,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="w-full rounded border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="min-w-[8rem] max-w-full px-2 py-1"
+                          style={{ width: 'auto' }}
                         />
                       ) : (
                         <span
