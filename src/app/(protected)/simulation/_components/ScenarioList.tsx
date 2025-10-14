@@ -180,13 +180,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
     let filtered = [...scenarios];
 
-    // 날짜 필터링
+    // 날짜 필터링 (updated_at 기준으로 변경)
     if (selectedDate) {
       const selectedDateStr = dayjs(selectedDate).format("YYYY-MM-DD");
       filtered = filtered.filter(
         (s) =>
-          s.created_at &&
-          dayjs(s.created_at).format("YYYY-MM-DD") === selectedDateStr
+          s.updated_at &&
+          dayjs(s.updated_at).format("YYYY-MM-DD") === selectedDateStr
       );
     }
 
@@ -211,9 +211,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   }, [filteredScenarios]);
 
   // 페이지네이션 계산
-  const totalPages = Math.ceil(
-    (filteredScenarios?.length || 0) / pageSize
-  );
+  const totalPages = Math.ceil((filteredScenarios?.length || 0) / pageSize);
   const currentScenarios =
     filteredScenarios?.slice(
       (currentPage - 1) * pageSize,
@@ -384,8 +382,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     setIsCopying(true);
     try {
       // 이름이 입력되었으면 전달, 아니면 undefined
-      const nameToSend = copyName && copyName.trim() ? copyName.trim() : undefined;
-      const response = await copyScenario(copyingScenario.scenario_id, nameToSend);
+      const nameToSend =
+        copyName && copyName.trim() ? copyName.trim() : undefined;
+      const response = await copyScenario(
+        copyingScenario.scenario_id,
+        nameToSend
+      );
 
       toast({
         title: "Copy Complete",
@@ -431,13 +433,14 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         <div className="flex items-center gap-4">
           <div className="text-sm text-default-500">
             Showing{" "}
-            {currentScenarios.length > 0
-              ? (currentPage - 1) * pageSize + 1
-              : 0}
+            {currentScenarios.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
             -{Math.min(currentPage * pageSize, filteredScenarios.length)} of{" "}
             {filteredScenarios.length} scenarios
           </div>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={handlePageSizeChange}
+          >
             <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
@@ -456,7 +459,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             <PopoverTrigger asChild>
               <Button variant="outline">
                 <Calendar className="mr-2 h-4 w-4" />
-                Target Date{" "}
+                Updated Date{" "}
                 {selectedDate &&
                   `(${dayjs(selectedDate).format("MMM-DD-YYYY")})`}
               </Button>
@@ -506,7 +509,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       <div
         className="table-container mt-4"
-        style={{ minHeight: `${TABLE_HEADER_HEIGHT + pageSize * TABLE_ROW_HEIGHT}px` }}
+        style={{
+          minHeight: `${TABLE_HEADER_HEIGHT + pageSize * TABLE_ROW_HEIGHT}px`,
+        }}
       >
         <table className="table-default">
           <thead>
@@ -519,7 +524,10 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     onCheckedChange={(checked) => {
                       setIsScenarioSelected((prev) =>
                         prev.map((selected, i) => {
-                          if (i >= currentPageStartIdx && i < currentPageEndIdx) {
+                          if (
+                            i >= currentPageStartIdx &&
+                            i < currentPageEndIdx
+                          ) {
                             return !!checked;
                           }
                           return selected;
@@ -534,8 +542,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <th className="w-28 text-left">Airport</th>
               <th className="w-28 text-center">Terminal</th>
               <th className="w-28 text-left">Editor</th>
-              <th className="w-32 text-left">Created at</th>
               <th className="w-32 text-left">Updated at</th>
+              <th className="w-32 text-left">Last run</th>
               <th className="!pl-5 text-left">Memo</th>
               <th className="w-20"></th>
             </tr>
@@ -557,9 +565,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     key={scenario.scenario_id}
                     className={cn(
                       "border-b text-sm hover:bg-muted",
-                      isScenarioSelected[
-                        (currentPage - 1) * pageSize + idx
-                      ]
+                      isScenarioSelected[(currentPage - 1) * pageSize + idx]
                         ? "active"
                         : ""
                     )}
@@ -662,10 +668,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
                     <td>{scenario.editor}</td>
                     <td>
-                      {dayjs(scenario.created_at).format("MMM-DD-YYYY HH:mm")}
+                      {dayjs(scenario.updated_at).format("MMM-DD-YYYY HH:mm")}
                     </td>
                     <td>
-                      {dayjs(scenario.updated_at).format("MMM-DD-YYYY HH:mm")}
+                      {scenario.simulation_end_at ? (
+                        dayjs(scenario.simulation_end_at).format(
+                          "MMM-DD-YYYY HH:mm"
+                        )
+                      ) : (
+                        <span className="text-gray-500 italic">Never run</span>
+                      )}
                     </td>
 
                     <td>
@@ -874,10 +886,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCopyConfirm}
-              disabled={isCopying}
-            >
+            <AlertDialogAction onClick={handleCopyConfirm} disabled={isCopying}>
               {isCopying ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
