@@ -15,6 +15,7 @@ import HomeFacilityCharts from './_components/HomeFacilityCharts';
 function NewHomePage() {
   const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
+  const [kpi, setKpi] = useState<{ type: 'mean' | 'top'; percentile?: number }>({ type: 'mean', percentile: 5 });
 
   useEffect(() => {
     if ((scenarios as any)?.scenarios?.[0]) {
@@ -42,12 +43,14 @@ function NewHomePage() {
       <TheContentHeader text="New Home" />
       <div className="mx-auto max-w-page px-page-x pb-page-b">
         <HomeScenario
-        className="mt-8"
-        data={scenarios || []}
-        scenario={scenario}
-        onSelectScenario={setScenario}
-        isLoading={isScenariosLoading}
-      />
+          className="mt-8"
+          data={scenarios || []}
+          scenario={scenario}
+          onSelectScenario={setScenario}
+          isLoading={isScenariosLoading}
+          kpi={kpi}
+          onKpiChange={setKpi}
+        />
 
       <HomeAccordion title="Flight Insights" icon={<Plane className="h-5 w-5 text-primary" />} className="mt-4" open>
         <FlightSummary
