@@ -34,7 +34,11 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
     <div className="rounded-lg border border-input bg-muted/50 p-4">
       <div className="mb-3 border-b border-input pb-3">
         <div className="flex items-center space-x-3">
-          <Checkbox id="agreeToAll" checked={agreeToAll} onCheckedChange={handleAgreeToAll} className="size-4" />
+          <Checkbox
+            id="agreeToAll"
+            checked={agreeToAll}
+            onCheckedChange={(checked) => handleAgreeToAll(checked === true)}
+          />
           <Label htmlFor="agreeToAll" className="cursor-pointer text-sm font-semibold text-default-900">
             Agree to All
           </Label>
@@ -46,8 +50,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
           <Checkbox
             id="termsOfUse"
             checked={termsOfUse}
-            onCheckedChange={(checked) => setTermsOfUse(checked as boolean)}
-            className="size-4"
+            onCheckedChange={(checked) => setTermsOfUse(checked === true)}
           />
           <Label htmlFor="termsOfUse" className="cursor-pointer text-sm text-default-900">
             Terms of Use <span className="font-medium text-primary">(Required)</span>
@@ -58,8 +61,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
           <Checkbox
             id="privacyPolicy"
             checked={privacyPolicy}
-            onCheckedChange={(checked) => setPrivacyPolicy(checked as boolean)}
-            className="size-4"
+            onCheckedChange={(checked) => setPrivacyPolicy(checked === true)}
           />
           <Label htmlFor="privacyPolicy" className="cursor-pointer text-sm text-default-900">
             Privacy Policy <span className="font-medium text-primary">(Required)</span>

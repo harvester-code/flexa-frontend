@@ -5,6 +5,7 @@ import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Label } from '@/components/ui/Label';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst } from './HomeFormat';
@@ -338,15 +339,20 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-lg font-semibold">Hourly Trends</h5>
-        <div className="mb-4 mr-5 mt-8 flex items-center gap-1 text-sm font-normal">
-          <span>Bar Chart</span>
+        <div className="mb-4 mr-5 mt-8 flex items-center gap-2 text-sm font-normal">
+          <span className={cn(!chartType ? 'font-medium text-default-900' : 'text-muted-foreground')}>Bar Chart</span>
           <Checkbox
             id="chart-type"
-            className="checkbox-toggle"
             checked={chartType}
-            onCheckedChange={() => setChartType(!chartType)}
+            onCheckedChange={(checked) => setChartType(checked === true)}
+            aria-label="Toggle chart type"
           />
-          <span>Line Chart</span>
+          <Label
+            htmlFor="chart-type"
+            className={cn(chartType ? 'font-medium text-default-900' : 'text-muted-foreground', 'cursor-pointer')}
+          >
+            Line Chart
+          </Label>
         </div>
       </div>
       <div className="flex flex-col rounded-md border border-input bg-white p-5">

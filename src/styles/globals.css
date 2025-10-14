@@ -408,12 +408,6 @@ input[type='tel'] {
 input[type='text']:read-only {
   @apply text-default-500;
 }
-input[type='checkbox'] {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
 .input-mail {
   @apply pl-10 !important;
   background: white;
@@ -421,43 +415,6 @@ input[type='checkbox'] {
 /* ================================================================
    7️⃣ FORM COMPONENTS (복잡한 중첩 구조)
    ================================================================ */
-
-.checkbox input[type='checkbox'] + label {
-  @apply gap-2;
-  @apply flex cursor-pointer items-center;
-}
-.checkbox input[type='checkbox'] + label:before {
-  content: '';
-  display: flex;
-  @apply w-5;
-  @apply h-5;
-  @apply rounded-sm border border-input bg-white;
-}
-.checkbox input[type='checkbox']:checked + label:before {
-  @apply border-primary bg-primary;
-  content: '✓';
-  @apply flex items-center justify-center text-xs text-white;
-}
-
-.checkbox-toggle input[type='checkbox'] + label {
-  @apply gap-2;
-  @apply flex cursor-pointer items-center;
-}
-.checkbox-toggle input[type='checkbox'] + label:before {
-  content: '';
-  display: flex;
-  @apply relative h-5 w-9 rounded-full bg-gray-300 transition-all;
-}
-.checkbox-toggle input[type='checkbox'] + label:after {
-  content: '';
-  @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-all;
-}
-.checkbox-toggle input[type='checkbox']:checked + label:before {
-  @apply bg-primary;
-}
-.checkbox-toggle input[type='checkbox']:checked + label:after {
-  @apply left-4;
-}
 
 textarea {
   @apply w-full rounded-md border border-input bg-white p-4 text-sm font-normal text-default-900;
@@ -520,23 +477,6 @@ textarea {
   width: 360px;
   @apply mt-7;
 }
-.checkboxContainer {
-  background-color: hsl(var(--muted));
-  border-radius: 8px;
-  border: 1px solid hsl(var(--border));
-  @apply mt-5 flex flex-col;
-  dt {
-    background-color: hsl(var(--muted));
-    border-bottom: 1px solid hsl(var(--border));
-    @apply p-3;
-    display: flex;
-  }
-  dd {
-    @apply px-3 py-4;
-    @apply flex flex-col gap-2.5;
-  }
-}
-
 .password-Feedback {
   @apply mt-2.5 flex flex-col gap-2.5;
   li {
@@ -584,9 +524,6 @@ textarea {
         @apply pl-1;
         @apply pr-1;
         @apply h-12 text-sm font-medium text-default-900;
-        .checkbox input[type='checkbox'] + label:before {
-          @apply mb-1;
-        }
         button {
           @apply flex items-center gap-1.5 text-sm font-medium text-default-900;
         }
@@ -602,9 +539,6 @@ textarea {
         @apply px-1 py-2.5;
         line-height: 20px;
         @apply h-[60px] font-medium text-default-900;
-        .checkbox input[type='checkbox'] + label:before {
-          @apply mb-1;
-        }
       }
     }
   }
@@ -664,9 +598,6 @@ textarea {
         @apply px-1 py-2.5;
         line-height: 20px;
         @apply h-[70px] border-b border-input bg-white px-1.5 font-medium text-default-900;
-        .checkbox input[type='checkbox'] + label:before {
-          @apply mb-1;
-        }
       }
     }
   }

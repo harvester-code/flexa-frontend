@@ -38,10 +38,10 @@ function NewHomePage() {
   });
 
   return (
-    <div className="mx-auto max-w-page px-page-x pb-page-b">
+    <>
       <TheContentHeader text="New Home" />
-
-      <HomeScenario
+      <div className="mx-auto max-w-page px-page-x pb-page-b">
+        <HomeScenario
         className="mt-8"
         data={scenarios || []}
         scenario={scenario}
@@ -72,7 +72,8 @@ function NewHomePage() {
           isLoading={isFacilityChartsLoading}
         />
       </HomeAccordion>
-    </div>
+      </div>
+    </>
   );
 }
 

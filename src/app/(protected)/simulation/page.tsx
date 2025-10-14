@@ -63,24 +63,25 @@ const SimulationPage = () => {
   };
 
   return (
-    <div className="mx-auto max-w-page px-page-x pb-page-b">
+    <>
       <TheContentHeader text="Simulation" />
-
-      <div className="mt-8">
+      <div className="mx-auto max-w-page px-page-x pb-page-b">
+        <div className="mt-8">
         <ScenarioList
           scenarios={scenarios || []}
           isLoading={isScenariosLoading}
           onCreateScenario={handleCreateScenario}
           onDeleteScenario={handleDeleteScenario}
         />
-      </div>
+        </div>
 
-      <CreateScenario
-        open={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onCreate={handleScenarioCreated}
-      />
-    </div>
+        <CreateScenario
+          open={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onCreate={handleScenarioCreated}
+        />
+      </div>
+    </>
   );
 };
 

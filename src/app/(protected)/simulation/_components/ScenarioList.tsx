@@ -484,9 +484,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
   return (
     <>
-      <div className="flex justify-between">
-        <h2 className="title-sm">Scenario List</h2>
-        <div className="flex items-center gap-2.5">
+      <div className="flex justify-between items-start mb-8">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-default-900">Simulation Scenarios</h2>
+          <p className="text-sm text-default-600">Create and manage passenger flow simulation scenarios for different airport configurations</p>
+        </div>
+        <div className="flex items-center gap-2.5 flex-shrink-0">
           {selRowCount > 0 && (
             <Button variant="destructive" onClick={onDeleteMulti}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -543,23 +546,25 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                           key={airport}
                           onSelect={(event) => {
                             event.preventDefault();
-                            toggleAirportFilter(airport);
                           }}
                           className={cn(
-                            "cursor-pointer px-2 py-1.5",
+                            "px-2 py-1.5",
                             isSelected ? "bg-primary/10 text-primary-900" : ""
                           )}
                         >
-                          <div className="flex w-full items-center gap-2">
+                          <label
+                            htmlFor={`filter-airport-${airport}`}
+                            className="flex w-full cursor-pointer items-center gap-2"
+                          >
                             <Checkbox
+                              id={`filter-airport-${airport}`}
                               checked={isSelected}
-                              onCheckedChange={() => {}}
-                              className="pointer-events-none h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white"
+                              onCheckedChange={() => toggleAirportFilter(airport)}
                             />
                             <span className="text-sm text-default-900">
                               {airport}
                             </span>
-                          </div>
+                          </label>
                         </DropdownMenuItem>
                       );
                     })}
@@ -582,23 +587,25 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             key={terminal}
                             onSelect={(event) => {
                               event.preventDefault();
-                              toggleTerminalFilter(terminal);
                             }}
                             className={cn(
-                              "cursor-pointer px-2 py-1.5",
+                              "px-2 py-1.5",
                               isSelected ? "bg-primary/10 text-primary-900" : ""
                             )}
                           >
-                            <div className="flex w-full items-center gap-2">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => {}}
-                              className="pointer-events-none h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white"
-                            />
+                            <label
+                              htmlFor={`filter-terminal-${terminal}`}
+                              className="flex w-full cursor-pointer items-center gap-2"
+                            >
+                              <Checkbox
+                                id={`filter-terminal-${terminal}`}
+                                checked={isSelected}
+                                onCheckedChange={() => toggleTerminalFilter(terminal)}
+                              />
                               <span className="text-sm text-default-900">
                                 {terminal}
                               </span>
-                            </div>
+                            </label>
                           </DropdownMenuItem>
                         );
                       })}
@@ -657,24 +664,23 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             <tr className="border-b">
               <th className="w-10">
                 <div className="flex items-center justify-center">
-                  <Checkbox
-                    id="selectAll"
-                    checked={isCurrentPageAllSelected}
-                    onCheckedChange={(checked) => {
-                      setIsScenarioSelected((prev) =>
-                        prev.map((selected, i) => {
-                          if (
-                            i >= currentPageStartIdx &&
-                            i < currentPageEndIdx
-                          ) {
-                            return !!checked;
-                          }
-                          return selected;
-                        })
-                      );
-                    }}
-                    className="checkbox text-sm"
-                  />
+                        <Checkbox
+                          id="selectAll"
+                          checked={isCurrentPageAllSelected}
+                          onCheckedChange={(checked) => {
+                            setIsScenarioSelected((prev) =>
+                              prev.map((selected, i) => {
+                                if (
+                                  i >= currentPageStartIdx &&
+                                  i < currentPageEndIdx
+                                ) {
+                                  return !!checked;
+                                }
+                                return selected;
+                              })
+                            );
+                          }}
+                        />
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
@@ -748,7 +754,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       <div className="flex items-center justify-center">
                         <Checkbox
                           id={`check-${idx}`}
-                          className="checkbox text-sm"
                           checked={
                             isScenarioSelected[
                               (currentPage - 1) * pageSize + idx
@@ -1107,8 +1112,11 @@ const ScenarioList: React.FC<ScenarioListProps> = (props) => {
     <Suspense
       fallback={
         <div className="space-y-4">
-          <div className="flex justify-between">
-            <h2 className="title-sm">Scenario List</h2>
+          <div className="flex justify-between items-start mb-8">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-default-900">Simulation Scenarios</h2>
+              <p className="text-sm text-default-600">Create and manage passenger flow simulation scenarios for different airport configurations</p>
+            </div>
             <Button onClick={props.onCreateScenario}>Create Scenario</Button>
           </div>
           <div className="py-8 text-center">

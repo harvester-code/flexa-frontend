@@ -150,8 +150,7 @@ function RegionCountriesDropdown({
           <Checkbox
             id={`select-all-${regionName}`}
             checked={areAllFilteredSelected}
-            onCheckedChange={handleSelectAll}
-            className="h-3 w-3"
+            onCheckedChange={(checked) => handleSelectAll(checked === true)}
           />
           <Label
             htmlFor={`select-all-${regionName}`}
@@ -313,8 +312,7 @@ function TerminalAirlinesDropdown({
           <Checkbox
             id={`select-all-${terminalName}`}
             checked={areAllFilteredSelected}
-            onCheckedChange={handleSelectAll}
-            className="h-3 w-3"
+            onCheckedChange={(checked) => handleSelectAll(checked === true)}
           />
           <Label
             htmlFor={`select-all-${terminalName}`}

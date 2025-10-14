@@ -41,10 +41,10 @@ function HomePage() {
   };
 
   return (
-    <div className="mx-auto max-w-page px-page-x pb-page-b">
+    <>
       <TheContentHeader text="Home" />
-
-      <HomeScenario
+      <div className="mx-auto max-w-page px-page-x pb-page-b">
+        <HomeScenario
         className="mt-8"
         data={scenarios || []}
         scenario={scenario}
@@ -89,7 +89,8 @@ function HomePage() {
           isLoading={isMetricsLoading}
         />
       </HomeAccordion>
-    </div>
+      </div>
+    </>
   );
 }
 

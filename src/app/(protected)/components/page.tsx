@@ -360,20 +360,22 @@ export default function ComponentsPage() {
   );
 
   return (
-    <div>
+    <>
       <TheContentHeader text={breadcrumb[0]?.text || 'Components'} />
 
-      <div className="container mx-auto max-w-page px-page-x pb-page-b pt-12">
+      <div className="mx-auto max-w-page px-page-x pb-page-b">
+        <div className="mt-8">
         <div className="mb-8 text-center">
           <h1 className="mb-4 text-lg font-semibold">UI Components Library</h1>
           <p className="text-muted-foreground">개발할 때 참고할 수 있는 모든 UI 컴포넌트들을 한 곳에서 확인하세요</p>
         </div>
 
         <Tabs defaultValue="buttons" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="buttons">Buttons</TabsTrigger>
             <TabsTrigger value="inputs">Inputs</TabsTrigger>
             <TabsTrigger value="forms">Forms</TabsTrigger>
+            <TabsTrigger value="checkboxes">Checkbox</TabsTrigger>
             <TabsTrigger value="selectors">Selectors</TabsTrigger>
             <TabsTrigger value="charts">Charts</TabsTrigger>
           </TabsList>
@@ -545,53 +547,191 @@ export default function ComponentsPage() {
             <div>
               <h2 className="mb-8 text-lg font-semibold">Form Components</h2>
 
-              {/* Checkbox */}
-              <div className="mb-12">
-                <h3 className="mb-4 text-lg font-medium">Checkbox</h3>
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="mb-3 text-xs font-normal text-default-500">Normal State</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="checkbox1"
-                          checked={isChecked}
-                          onCheckedChange={(checked) => setIsChecked(checked === true)}
-                        />
-                        <Label htmlFor="checkbox1">Accept terms and conditions</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="checkbox2" />
-                        <Label htmlFor="checkbox2">Subscribe to newsletter</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="checkbox3" defaultChecked />
-                        <Label htmlFor="checkbox3">Remember my preferences</Label>
-                      </div>
+              <div className="grid gap-8 lg:grid-cols-2">
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <h3 className="text-base font-medium">Basic Form Layout</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Compose inputs, helper text, and actions for use in settings panels or modal flows.
+                  </p>
+                  <form className="mt-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="form-full-name">Full name</Label>
+                      <Input id="form-full-name" placeholder="홍길동" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="form-email">Email</Label>
+                      <Input id="form-email" type="email" placeholder="user@flexa.ai" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="form-date">Simulation date</Label>
+                      <Input id="form-date" type="date" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="form-notes">Memo</Label>
+                      <Input id="form-notes" placeholder="e.g. VIP passenger handling" />
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                      <Button type="button" variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                      <Button type="submit" size="sm">
+                        Save changes
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <h3 className="text-base font-medium">Field States</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Apply consistent styling for helper copy, validation, and disabled states.
+                  </p>
+                  <div className="mt-6 space-y-5">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="form-helper">With helper</Label>
+                      <Input id="form-helper" placeholder="ex. MNL · T3" />
+                      <p className="text-xs text-muted-foreground">Explain expected formatting or constraints.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="form-error" className="text-destructive">
+                        Validation error
+                      </Label>
+                      <Input
+                        id="form-error"
+                        placeholder="Required value"
+                        className="border-destructive focus-visible:!border-destructive"
+                      />
+                      <p className="text-xs text-destructive">Please fill out this field.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="form-disabled" className="text-muted-foreground">
+                        Disabled
+                      </Label>
+                      <Input id="form-disabled" placeholder="Read only" disabled />
+                      <p className="text-xs text-muted-foreground">Use for values fixed by simulation rules.</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
 
-                  <div>
-                    <h4 className="mb-3 text-xs font-normal text-default-500">Disabled State</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="checkbox4" disabled />
-                        <Label htmlFor="checkbox4" className="text-muted-foreground">
-                          Disabled unchecked
-                        </Label>
+          {/* Checkbox Components Tab */}
+          <TabsContent value="checkboxes" className="mt-8 space-y-12">
+            <div>
+              <h2 className="mb-2 text-lg font-semibold">Checkbox Components</h2>
+              <p className="mb-8 text-sm text-muted-foreground">
+                토글 가능한 옵션을 정의할 때 사용하는 기본 체크박스로, 선택 완료 시 브랜드 기본색과 체크 아이콘으로 상태를 표현합니다.
+              </p>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <h3 className="text-base font-medium">State Showcase</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Common states with their visual cues. Hover state uses the same border token as default.
+                  </p>
+                  <div className="mt-6 space-y-4">
+                    <div className="flex items-center justify-between rounded-md border border-dashed border-muted-foreground/30 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Checkbox id="checkbox-state-default" />
+                        <Label htmlFor="checkbox-state-default">Default</Label>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="checkbox5"
-                          checked={isCheckedDisabled}
-                          onCheckedChange={(checked) => setIsCheckedDisabled(checked === true)}
-                          disabled
-                        />
-                        <Label htmlFor="checkbox5" className="text-muted-foreground">
-                          Disabled checked
-                        </Label>
-                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Border: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">border-primary</code>
+                      </span>
                     </div>
+                    <div className="flex items-center justify-between rounded-md border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Checkbox id="checkbox-state-checked" defaultChecked />
+                        <Label htmlFor="checkbox-state-checked">Checked</Label>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Fill: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">bg-primary</code>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border border-dashed border-muted-foreground/30 bg-muted/40 px-4 py-3">
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Checkbox id="checkbox-state-disabled" disabled />
+                        <Label htmlFor="checkbox-state-disabled" className="text-muted-foreground">
+                          Disabled
+                        </Label>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Colors: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">disabled:* tokens</code>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <h3 className="text-base font-medium">Design Tokens</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    핵심 색상과 상호작용 토큰을 정리해 두어 컴포넌트 구현 시 참고할 수 있습니다.
+                  </p>
+                  <div className="mt-6 space-y-4 text-sm">
+                    <div className="rounded-md border border-muted-foreground/30 p-4">
+                      <p className="font-medium">Color System</p>
+                      <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
+                        <li>
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">bg-primary</code> — checked background
+                        </li>
+                        <li>
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">text-primary-foreground</code> — check icon color
+                        </li>
+                        <li>
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">border-primary</code> — default & hover outline
+                        </li>
+                        <li>
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">focus-visible:ring-ring</code> — focus halo
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="rounded-md border border-muted-foreground/30 p-4">
+                      <p className="font-medium">Sizing & Icon</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        기본 크기는 <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">h-4 w-4</code>, 아이콘은 lucide-react의
+                        <code className="ml-1 rounded bg-muted px-1 py-0.5 font-mono text-[11px]">Check</code>를 사용합니다.
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        크기 변경 시 <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">className</code>으로 높이·너비를 재정의하세요.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <h3 className="text-base font-medium">Usage Example</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  그룹 옵션을 배열할 때 라벨과 함께 배치하고, 선택 여부는 브랜드 색상으로 강조합니다.
+                </p>
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center justify-between rounded-md border border-muted-foreground/30 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="checkbox-usage-remember"
+                        checked={isChecked}
+                        onCheckedChange={(checked) => setIsChecked(checked === true)}
+                      />
+                      <Label htmlFor="checkbox-usage-remember">시뮬레이션 설정 기억하기</Label>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Checked: {isChecked ? 'true' : 'false'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-muted-foreground/30 bg-muted/40 px-4 py-3">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Checkbox
+                        id="checkbox-usage-disabled"
+                        checked={isCheckedDisabled}
+                        onCheckedChange={(checked) => setIsCheckedDisabled(checked === true)}
+                        disabled
+                      />
+                      <Label htmlFor="checkbox-usage-disabled" className="text-muted-foreground">
+                        운영 정책으로 고정
+                      </Label>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Disabled checked state</span>
                   </div>
                 </div>
               </div>
@@ -710,7 +850,8 @@ export default function ComponentsPage() {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
