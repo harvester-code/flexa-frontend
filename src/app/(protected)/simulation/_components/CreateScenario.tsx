@@ -3,6 +3,7 @@ import { createScenario } from "@/services/simulationService";
 import { useUser } from "@/queries/userQueries";
 import { Button } from "@/components/ui/Button";
 import { ClipLoader } from "react-spinners";
+import { PlaneTakeoff } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -154,10 +155,17 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Scenario</DialogTitle>
-          <DialogDescription>
-            Please fill in the scenario details.
-          </DialogDescription>
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <PlaneTakeoff className="h-5 w-5 text-primary" />
+            </div>
+            <div className="space-y-1 text-left">
+              <DialogTitle>Create New Scenario</DialogTitle>
+              <DialogDescription>
+                Please fill in the scenario details.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="grid gap-4">
