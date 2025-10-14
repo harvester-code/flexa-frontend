@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -15,7 +14,6 @@ import {
   Pencil,
   Loader2,
   Plus,
-  Search,
   Trash2,
 } from "lucide-react";
 import { modifyScenario, copyScenario } from "@/services/simulationService";
@@ -30,14 +28,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
 import { Button } from "@/components/ui/Button";
-import { Calendar as CalendarComponent } from "@/components/ui/Calendar";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/Popover";
 import {
   Select,
   SelectContent,
@@ -171,38 +163,15 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   // 필터링된 시나리오 계산
   const filteredScenarios = React.useMemo(() => {
     if (!scenarios) return [];
 
-    let filtered = [...scenarios];
-
-    // 날짜 필터링 (updated_at 기준으로 변경)
-    if (selectedDate) {
-      const selectedDateStr = dayjs(selectedDate).format("YYYY-MM-DD");
-      filtered = filtered.filter(
-        (s) =>
-          s.updated_at &&
-          dayjs(s.updated_at).format("YYYY-MM-DD") === selectedDateStr
-      );
-    }
-
-    // 검색 필터링
-    if (searchKeyword) {
-      filtered = filtered.filter(
-        (s) =>
-          s.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-          s.airport.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-          s.terminal.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-          (s.memo && s.memo.toLowerCase().includes(searchKeyword.toLowerCase()))
-      );
-    }
+    const filtered = scenarios ? [...scenarios] : [];
 
     return filtered;
-  }, [scenarios, searchKeyword, selectedDate]);
+  }, [scenarios]);
 
   useEffect(() => {
     if (!filteredScenarios || filteredScenarios.length < 1) return;
@@ -211,7 +180,14 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   }, [filteredScenarios]);
 
   // 페이지네이션 계산
-  const totalPages = Math.ceil((filteredScenarios?.length || 0) / pageSize);
+  const rawTotalPages = Math.ceil((filteredScenarios?.length || 0) / pageSize);
+  const totalPages = Math.max(1, rawTotalPages);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
   const currentScenarios =
     filteredScenarios?.slice(
       (currentPage - 1) * pageSize,
@@ -219,17 +195,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     ) || [];
 
   // 검색 핸들러
-  const handleSearch = (value: string) => {
-    setSearchKeyword(value);
-    setCurrentPage(1);
-  };
-
-  // 날짜 선택 핸들러
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    setCurrentPage(1);
-  };
-
   // 페이지 크기 변경 핸들러
   const handlePageSizeChange = (value: string) => {
     setPageSize(parseInt(value));
@@ -430,80 +395,10 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       {/* 필터 섹션 */}
       <div className="mt-4 flex h-20 items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-default-500">
-            Showing{" "}
-            {currentScenarios.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
-            -{Math.min(currentPage * pageSize, filteredScenarios.length)} of{" "}
-            {filteredScenarios.length} scenarios
-          </div>
-          <Select
-            value={pageSize.toString()}
-            onValueChange={handlePageSizeChange}
-          >
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size} rows
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <div className="flex items-center gap-4" />
 
         <div className="flex items-center gap-2.5">
-          <Popover modal>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <Calendar className="mr-2 h-4 w-4" />
-                Updated Date{" "}
-                {selectedDate &&
-                  `(${dayjs(selectedDate).format("MMM-DD-YYYY")})`}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="z-50 w-auto p-0"
-              align="end"
-              side="bottom"
-              sideOffset={4}
-              alignOffset={0}
-              avoidCollisions={false}
-              sticky="always"
-            >
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                initialFocus
-              />
-              {selectedDate && (
-                <div className="border-t p-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDateSelect(undefined)}
-                  >
-                    Clear Filter
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-
-          <div className="flex max-w-72 items-center border-b p-2.5">
-            <Input
-              className="max-h-6 border-none shadow-none focus-visible:ring-transparent"
-              placeholder="Search"
-              value={searchKeyword}
-              onChange={(e) =>
-                handleSearch((e.target as HTMLInputElement).value)
-              }
-            />
-            <Search className="ml-1 h-4 w-4" />
-          </div>
+          <div />
         </div>
       </div>
 
@@ -764,63 +659,61 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       {/* 페이지네이션 - 항상 고정된 위치 유지 */}
       <div className="mt-6 flex justify-center">
-        {scenarios && scenarios.length > pageSize ? (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (currentPage > 1) setCurrentPage(1);
-              }}
-              type="button"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (currentPage > 1) {
-                  setCurrentPage(currentPage - 1);
-                }
-              }}
-              type="button"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentPage > 1) setCurrentPage(1);
+            }}
+            type="button"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            type="button"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-            {/* 슬라이딩 페이지 번호 (최대 5개) */}
-            <div className="flex items-center justify-center gap-2">
-              {renderPaginationButtons(currentPage, totalPages, setCurrentPage)}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (currentPage < totalPages) {
-                  setCurrentPage(currentPage + 1);
-                }
-              }}
-              type="button"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (currentPage < totalPages && totalPages > 1)
-                  setCurrentPage(totalPages);
-              }}
-              type="button"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+          {/* 슬라이딩 페이지 번호 (최대 5개) */}
+          <div className="flex items-center justify-center gap-2">
+            {totalPages > 0
+              ? renderPaginationButtons(currentPage, totalPages, setCurrentPage)
+              : null}
           </div>
-        ) : (
-          <div className="h-8"></div> // 페이지네이션이 없을 때도 같은 높이 유지
-        )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            type="button"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentPage < totalPages && totalPages > 1)
+                setCurrentPage(totalPages);
+            }}
+            type="button"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Delete Scenario Confirmation Dialog */}
