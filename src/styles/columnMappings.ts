@@ -4,7 +4,7 @@
  */
 
 // Primary column to label mapping - 실제 데이터 컬럼명과 표시명 매핑
-export const COLUMN_LABEL_MAP: Record<string, string> = {
+const COLUMN_LABEL_MAP: Record<string, string> = {
   // Airlines & Aircraft
   operating_carrier_iata: "Airline",
   operating_carrier_name: "Airline",
@@ -92,17 +92,6 @@ export const LABELS = {
   NATIONALITY: COLUMN_LABEL_MAP.nationality,
   PASSENGER_TYPE: COLUMN_LABEL_MAP.profile,
 } as const;
-
-// Get all unique labels
-export function getAllLabels(): string[] {
-  const uniqueLabels = new Set(Object.values(COLUMN_LABEL_MAP));
-  return Array.from(uniqueLabels).sort();
-}
-
-// Check if a string is a known column
-export function isKnownColumn(column: string): boolean {
-  return column in COLUMN_LABEL_MAP;
-}
 
 // Get storage field name for specific contexts (e.g., saving to DB)
 export function getStorageFieldName(label: string): string {

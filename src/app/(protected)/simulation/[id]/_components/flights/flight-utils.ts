@@ -34,18 +34,6 @@ export const parseTerminalAirlineCombo = (combo: TerminalAirlineCombo): Terminal
   return null;
 };
 
-/** 터미널-항공사 조합 문자열에서 항공사 코드만 추출 */
-export const extractAirlineFromCombo = (combo: TerminalAirlineCombo): string | null => {
-  const parsed = parseTerminalAirlineCombo(combo);
-  return parsed ? parsed.airline : null;
-};
-
-/** 터미널-항공사 조합 문자열에서 터미널명만 추출 */
-export const extractTerminalFromCombo = (combo: TerminalAirlineCombo): string | null => {
-  const parsed = parseTerminalAirlineCombo(combo);
-  return parsed ? parsed.terminal : null;
-};
-
 /** 터미널-항공사 조합 배열에서 특정 터미널에 속한 것들만 필터링 */
 export const filterCombosByTerminal = (combos: TerminalAirlineCombo[], terminal: string): TerminalAirlineCombo[] => {
   return combos.filter((combo) => combo.startsWith(`${terminal}_`));
@@ -64,32 +52,9 @@ export const removeCombo = (
   return combos.filter((combo) => combo !== comboToRemove);
 };
 
-/** 터미널-항공사 조합 배열에서 항공사 코드 목록만 추출 (중복 제거) */
-export const extractUniqueAirlinesFromCombos = (combos: TerminalAirlineCombo[]): string[] => {
-  const airlines = new Set<string>();
-  combos.forEach((combo) => {
-    const airline = extractAirlineFromCombo(combo);
-    if (airline) {
-      airlines.add(airline);
-    }
-  });
-  return Array.from(airlines);
-};
-
 /** 터미널 데이터에서 모든 가능한 터미널-항공사 조합 생성 */
 export const createAllCombosForTerminal = (terminal: string, airlineCodes: string[]): TerminalAirlineCombo[] => {
   return airlineCodes.map((airline) => createTerminalAirlineCombo(terminal, airline));
-};
-
-/** 터미널-항공사 조합이 특정 터미널에 속하는지 확인 */
-export const isComboInTerminal = (combo: TerminalAirlineCombo, terminal: string): boolean => {
-  return combo.startsWith(`${terminal}_`);
-};
-
-/** 터미널-항공사 조합이 특정 항공사에 속하는지 확인 */
-export const isComboForAirline = (combo: TerminalAirlineCombo, airline: string): boolean => {
-  const parsedAirline = extractAirlineFromCombo(combo);
-  return parsedAirline === airline;
 };
 
 // ==================== API 변환 함수들 ====================
@@ -104,11 +69,20 @@ export const convertTerminalAirlinesToApiCondition = (
   field: string;
   values: string[];
 } | null => {
-  const airlines = extractUniqueAirlinesFromCombos(combos);
-  if (airlines.length === 0) return null;
+  // 터미널-항공사 조합에서 항공사 코드만 추출 (중복 제거)
+  const airlines = new Set<string>();
+  combos.forEach((combo) => {
+    const parsed = parseTerminalAirlineCombo(combo);
+    if (parsed) {
+      airlines.add(parsed.airline);
+    }
+  });
+
+  const airlineArray = Array.from(airlines);
+  if (airlineArray.length === 0) return null;
 
   return {
     field: 'operating_carrier_iata',
-    values: airlines,
+    values: airlineArray,
   };
 };

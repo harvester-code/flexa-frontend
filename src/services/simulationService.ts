@@ -55,12 +55,6 @@ export const getFlightFilters = (
     .get(`/flight-filters?airport=${airport}&date=${date}`);
 };
 
-export const getPassengerSchedules = (scenarioId: string, params: any) => {
-  return api
-    .withScenario(scenarioId)
-    .post<PassengerScheduleResponse>("/show-up-passenger", params);
-};
-
 export const createPassengerShowUp = (scenarioId: string, params: any) => {
   return api
     .withScenario(scenarioId)

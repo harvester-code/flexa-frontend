@@ -24,26 +24,20 @@ export const COMPONENT_TYPICAL_COLORS = [
   "#ca8a04", // yellow-600
 ] as const;
 
-// Helper function to generate badge styles using COMPONENT_TYPICAL_COLORS with opacity
-export function getBadgeStyles(index: number) {
+// Legacy function for backward compatibility - returns style object for Badge component
+export function getBadgeColor(index: number) {
   const color =
     COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
 
-  return {
+  const styles = {
     // 10% opacity for background
     backgroundColor: `${color}1A`,
     // Full color for text
     color: color,
     // 20% opacity for border
     borderColor: `${color}33`,
-    // CSS variables for hover effect (20% opacity)
-    "--hover-bg": `${color}33`,
   };
-}
 
-// Legacy function for backward compatibility - returns style object for Badge component
-export function getBadgeColor(index: number) {
-  const styles = getBadgeStyles(index);
   return {
     bgColor: "", // Empty string for className-based styling
     textColor: "",
@@ -62,22 +56,15 @@ export function getBadgeColor(index: number) {
 
 // Helper function to get badge style as inline style object
 export function getBadgeStyle(index: number): React.CSSProperties {
-  const styles = getBadgeStyles(index);
-  return {
-    backgroundColor: styles.backgroundColor,
-    color: styles.color,
-    borderColor: styles.borderColor,
-    borderWidth: "1px",
-    borderStyle: "solid",
-  };
-}
-
-// Helper function for hover effect
-export function getBadgeHoverStyle(index: number): React.CSSProperties {
   const color =
     COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
+
   return {
-    backgroundColor: `${color}33`, // 20% opacity on hover
+    backgroundColor: `${color}1A`,
+    color: color,
+    borderColor: `${color}33`,
+    borderWidth: "1px",
+    borderStyle: "solid",
   };
 }
 
@@ -96,16 +83,6 @@ export function getZoneGradientStyle(index: number): React.CSSProperties {
 export function getZoneGradient(index: number): string {
   // Returns empty string since we're using inline styles now
   return "";
-}
-
-// Helper function for zone hover effect
-export function getZoneHoverStyle(index: number): React.CSSProperties {
-  const color =
-    COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
-
-  return {
-    background: `linear-gradient(135deg, ${color}DD, ${color}BB)`, // Darker on hover
-  };
 }
 
 // Utility functions for color manipulation

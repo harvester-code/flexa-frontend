@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { createClient } from '@/lib/auth/client';
 
-export const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
+const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 
 const instanceWithAuth = axios.create({
   baseURL,
@@ -93,5 +93,3 @@ export const createAPIService = (domain: string) => {
     }),
   };
 };
-
-export { instanceWithAuth };

@@ -65,16 +65,6 @@ export function formatImageSize(icon: React.ReactNode, size: number): React.Reac
   );
 }
 
-export function formatFlowChartLabel(label: string): string {
-  const lastUnderscore = label.lastIndexOf('_');
-  if (lastUnderscore !== -1) {
-    const main = label.slice(0, lastUnderscore);
-    const last = label.slice(lastUnderscore + 1);
-    return `${pascalCase(main)} ${last}`;
-  }
-  return pascalCase(label);
-}
-
 /**
  * FlowChart(Sankey)용 라벨 및 레이어 타이틀 생성 함수 - 새로운 계층 구조 지원
  * @param data 백엔드에서 받은 새로운 구조 데이터

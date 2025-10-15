@@ -5,29 +5,6 @@ import { getCategoryNameFromField, getCategoryIcon, getStorageFieldName, getCate
 import { Users, MapPin } from "lucide-react";
 import { LABELS } from "@/styles/columnMappings";
 
-// 프로세스 이름을 lambda 함수 형식으로 변환하는 함수
-// 예: "Check In" -> "check_in_zone", "A" -> "a_zone"
-export const convertProcessNameToZoneField = (processName: string): string => {
-  const normalized = processName
-    .toLowerCase() // 소문자 변환
-    .replace(/[^a-z0-9_]/g, "_") // 영문, 숫자, 언더스코어 외 모든 문자를 언더스코어로
-    .replace(/_+/g, "_") // 연속된 언더스코어를 하나로
-    .replace(/^_|_$/g, ""); // 앞뒤 언더스코어 제거
-
-  // _zone으로 끝나지 않을 때만 추가
-  if (!normalized.endsWith("_zone")) {
-    return normalized + "_zone";
-  }
-  return normalized;
-};
-
-// Zone 값을 lambda 함수 형식으로 변환하는 함수
-// Lambda는 대문자로 Zone을 처리하므로 대문자로 변환
-// 예: "a1" -> "A1", "dg1" -> "DG1"
-export const convertZoneValueForLambda = (zoneValue: string): string => {
-  return zoneValue.toUpperCase();
-};
-
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 export const createDynamicConditionCategories = (
   parquetMetadata: ParquetMetadataItem[],
@@ -308,6 +285,24 @@ export const calculatePeriodsFromDisabledCells = (
         const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
 
         if (isProcessCategory) {
+          // 프로세스 이름을 lambda 함수 형식으로 변환
+          const convertProcessNameToZoneField = (processName: string): string => {
+            const normalized = processName
+              .toLowerCase()
+              .replace(/[^a-z0-9_]/g, "_")
+              .replace(/_+/g, "_")
+              .replace(/^_|_$/g, "");
+            if (!normalized.endsWith("_zone")) {
+              return normalized + "_zone";
+            }
+            return normalized;
+          };
+
+          // Zone 값을 lambda 함수 형식으로 변환 (대문자)
+          const convertZoneValueForLambda = (zoneValue: string): string => {
+            return zoneValue.toUpperCase();
+          };
+
           return {
             field: convertProcessNameToZoneField(badge.category),
             values: badge.options.map(convertZoneValueForLambda),

@@ -1635,7 +1635,3 @@ export const useSimulationStore = create<SimulationStoreState>()(
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정
   }))
 );
-
-// ==================== Helpers ====================
-export const getSimulationInitialState = (scenarioId?: string) =>
-  createInitialState(scenarioId);
