@@ -6,7 +6,7 @@ import TheContentHeader from '@/components/TheContentHeader';
 import HomeAccordion from '@/app/(protected)/home/_components/HomeAccordion';
 import HomeScenario from '@/app/(protected)/home/_components/HomeScenario';
 import { ScenarioData } from '@/types/homeTypes';
-import { useFacilityCharts, usePassengerSummary, useFlightSummary } from '@/queries/homeQueries';
+import { useNewHomeDashboard } from '@/queries/homeQueries';
 import { useScenarios } from '@/queries/simulationQueries';
 import PassengerSummary from './_components/PassengerSummary';
 import FlightSummary from './_components/FlightSummary';
@@ -23,20 +23,19 @@ function NewHomePage() {
     }
   }, [scenarios]);
 
-  const { data: flightSummaryData, isLoading: isFlightSummaryLoading } = useFlightSummary({
+  const {
+    data: dashboardData,
+    isLoading: isDashboardLoading,
+    isFetching: isDashboardFetching,
+  } = useNewHomeDashboard({
     scenarioId: scenario?.scenario_id,
     enabled: !!scenario,
   });
 
-  const { data: passengerSummaryData, isLoading: isPassengerSummaryLoading } = usePassengerSummary({
-    scenarioId: scenario?.scenario_id,
-    enabled: !!scenario,
-  });
-
-  const { data: facilityChartsData, isLoading: isFacilityChartsLoading } = useFacilityCharts({
-    scenarioId: scenario?.scenario_id,
-    enabled: !!scenario,
-  });
+  const flightSummaryData = dashboardData?.flightSummary;
+  const passengerSummaryData = dashboardData?.passengerSummary;
+  const facilityChartsData = dashboardData?.facilityCharts;
+  const isAggregatedLoading = isDashboardLoading || isDashboardFetching;
 
   return (
     <>
@@ -56,7 +55,7 @@ function NewHomePage() {
         <FlightSummary
           scenario={scenario}
           summary={flightSummaryData}
-          isLoading={isFlightSummaryLoading}
+          isLoading={isAggregatedLoading}
         />
       </HomeAccordion>
 
@@ -64,7 +63,7 @@ function NewHomePage() {
         <PassengerSummary
           scenario={scenario}
           summary={passengerSummaryData}
-          isLoading={isPassengerSummaryLoading}
+          isLoading={isAggregatedLoading}
         />
       </HomeAccordion>
 
@@ -72,7 +71,7 @@ function NewHomePage() {
         <HomeFacilityCharts
           scenario={scenario}
           data={facilityChartsData}
-          isLoading={isFacilityChartsLoading}
+          isLoading={isAggregatedLoading}
         />
       </HomeAccordion>
       </div>

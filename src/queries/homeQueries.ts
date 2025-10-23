@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchStaticData, fetchMetricsData } from '@/services/homeService';
-import { fetchFacilityCharts, fetchPassengerSummary, fetchFlightSummary } from '@/services/newHomeService';
-import { PassengerSummaryResponse, FlightSummaryResponse } from '@/types/homeTypes';
+import { fetchNewHomeDashboard } from '@/services/newHomeService';
+import { NewHomeDashboardResponse } from '@/types/homeTypes';
 
 // 정적 데이터 (KPI와 무관한 데이터: alert_issues, flow_chart, histogram, sankey_diagram)
 const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
@@ -35,43 +35,19 @@ const useMetricsData = ({
   });
 };
 
-const useFacilityCharts = ({
+const useNewHomeDashboard = ({
   scenarioId,
-  intervalMinutes = 60,
   enabled = true,
 }: {
   scenarioId?: string;
-  intervalMinutes?: number;
   enabled?: boolean;
 }) => {
   return useQuery({
-    queryKey: ['home-facility-charts', scenarioId, intervalMinutes],
-    queryFn: async () => {
-      const {
-        data: { data } = {},
-      } = await fetchFacilityCharts({ scenarioId, intervalMinutes });
-      return data;
-    },
-    enabled: enabled && !!scenarioId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-const usePassengerSummary = ({
-  scenarioId,
-  topN = 10,
-  enabled = true,
-}: {
-  scenarioId?: string;
-  topN?: number;
-  enabled?: boolean;
-}) => {
-  return useQuery({
-    queryKey: ['home-passenger-summary', scenarioId, topN],
-    queryFn: async (): Promise<PassengerSummaryResponse | undefined> => {
+    queryKey: ['new-home-dashboard', scenarioId],
+    queryFn: async (): Promise<NewHomeDashboardResponse | undefined> => {
       const {
         data: { data },
-      } = await fetchPassengerSummary({ scenarioId, topN });
+      } = await fetchNewHomeDashboard({ scenarioId });
       return data;
     },
     enabled: enabled && !!scenarioId,
@@ -79,26 +55,4 @@ const usePassengerSummary = ({
   });
 };
 
-const useFlightSummary = ({
-  scenarioId,
-  topN = 10,
-  enabled = true,
-}: {
-  scenarioId?: string;
-  topN?: number;
-  enabled?: boolean;
-}) => {
-  return useQuery({
-    queryKey: ['new-home-flight-summary', scenarioId, topN],
-    queryFn: async (): Promise<FlightSummaryResponse | undefined> => {
-      const {
-        data: { data },
-      } = await fetchFlightSummary({ scenarioId, topN });
-      return data;
-    },
-    enabled: enabled && !!scenarioId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-export { useStaticData, useMetricsData, useFacilityCharts, usePassengerSummary, useFlightSummary };
+export { useStaticData, useMetricsData, useNewHomeDashboard };

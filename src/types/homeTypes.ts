@@ -189,3 +189,9 @@ export interface FlightSummaryResponse {
   carriers: FlightCarrierSummary[];
   flights: FlightDetailSummary[];
 }
+
+export interface NewHomeDashboardResponse {
+  facilityCharts: FacilityChartsResponse;
+  passengerSummary: PassengerSummaryResponse;
+  flightSummary: FlightSummaryResponse;
+}
