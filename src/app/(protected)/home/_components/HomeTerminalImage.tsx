@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Upload,
-  Trash2,
-  Image as ImageIcon,
-  Download,
-  ScanFace,
-} from "lucide-react";
+import { Upload, Trash2, Image as ImageIcon, Download } from "lucide-react";
 import { createClient } from "@/lib/auth/client";
 import { ScenarioData } from "@/types/homeTypes";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +19,7 @@ import {
 } from "@/components/ui/AlertDialog";
 import { useToast } from "@/hooks/useToast";
 import Spinner from "@/components/ui/Spinner";
+import HomeNoScenario from "./HomeNoScenario";
 
 interface HomeTerminalImageProps {
   scenario: ScenarioData | null;
@@ -253,18 +248,7 @@ function HomeTerminalImage({ scenario }: HomeTerminalImageProps) {
   }, [scenario?.airport, scenario?.terminal]);
 
   if (!scenario) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-12">
-          <div className="flex flex-col items-center gap-2">
-            <ScanFace className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium text-muted-foreground">
-              You need to select scenario first.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <HomeNoScenario />;
   }
 
   return (
