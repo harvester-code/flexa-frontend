@@ -14,7 +14,6 @@ import {
   Copy,
   Filter,
   Pencil,
-  Loader2,
   Plus,
   Trash2,
   Hash,
@@ -58,6 +57,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/DropdownMenu";
 import { useToast } from "@/hooks/useToast";
+import Spinner from "@/components/ui/Spinner";
 import { cn } from "@/lib/utils";
 import SimulationLoading from "./SimulationLoading";
 
@@ -798,7 +798,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         >
                           <span className="flex items-center gap-1.5 overflow-hidden">
                             {navigatingToId === scenario.scenario_id && (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                              <Spinner size={16} className="shrink-0" />
                             )}
                             <span className="truncate">{scenario.name}</span>
                           </span>
@@ -1092,7 +1092,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
             <AlertDialogAction onClick={handleCopyConfirm} disabled={isCopying}>
               {isCopying ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner size={16} className="mr-2" />
                   Copying...
                 </>
               ) : (

@@ -25,7 +25,6 @@ import {
   Clock,
   Filter,
   GripVertical,
-  Loader2,
   MapPin,
   Plane,
   Play,
@@ -41,6 +40,7 @@ import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import Spinner from "@/components/ui/Spinner";
 import { formatProcessName } from "@/lib/utils";
 import { useSimulationStore } from "../../_stores";
 import ScheduleEditor from "./ScheduleEditor";
@@ -1154,7 +1154,7 @@ export default function ProcessFlowDesigner({
             >
               {isRunningSimulation ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner size={16} />
                   Running...
                 </>
               ) : (

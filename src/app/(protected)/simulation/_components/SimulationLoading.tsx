@@ -1,4 +1,4 @@
-import { ClipLoader } from 'react-spinners';
+import Spinner from '@/components/ui/Spinner';
 
 interface SimulationLoadingProps {
   size?: number;
@@ -8,18 +8,8 @@ interface SimulationLoadingProps {
 function SimulationLoading({ size = 60, minHeight = 'min-h-[300px]' }: SimulationLoadingProps) {
   return (
     <div className={`flex ${minHeight} flex-1 items-center justify-center overflow-hidden`}>
-      <div className="relative" style={{ width: size, height: size }}>
-        <ClipLoader
-          color="#8B5CF6"
-          size={size}
-          speedMultiplier={1.2}
-          cssOverride={{
-            borderWidth: '6px',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-          }}
-        />
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <Spinner size={size} />
       </div>
     </div>
   );

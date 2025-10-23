@@ -17,7 +17,6 @@ import {
   Hash,
   History,
   Link2,
-  Loader2,
   Plane,
   StickyNote,
   XCircle,
@@ -53,6 +52,7 @@ import {
 } from '@/components/ui/Select';
 import { Separator } from '@/components/ui/Separator';
 import { cn } from '@/lib/utils';
+import Spinner from '@/components/ui/Spinner';
 
 interface HomeScenarioProps {
   className?: string;
@@ -430,7 +430,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                     <tr>
                       <td colSpan={6}>
                         <div className="flex flex-col items-center justify-center py-12">
-                          <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
+                          <Spinner size={48} className="mx-auto mb-4" />
                           <p className="text-lg font-medium">Loading scenarios...</p>
                           <p className="text-sm font-normal">Please wait while we fetch your scenarios.</p>
                         </div>

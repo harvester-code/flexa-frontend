@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import Spinner from '@/components/ui/Spinner';
 
 function AuthErrorContent() {
   const searchParams = useSearchParams();
@@ -113,7 +114,7 @@ export default function AuthErrorPage() {
       fallback={
         <div className="flex min-h-svh items-center justify-center">
           <div className="text-center">
-            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <Spinner size={32} className="mx-auto" />
             <p className="mt-2 text-default-900">Loading...</p>
           </div>
         </div>

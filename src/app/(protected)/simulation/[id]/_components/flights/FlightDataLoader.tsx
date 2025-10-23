@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
-import { Calendar as CalendarIcon, Database, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Database } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/Calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 import { useSimulationStore } from '../../_stores';
+import Spinner from '@/components/ui/Spinner';
 import AirportSelector from './AirportSelector';
 
 
@@ -94,7 +95,7 @@ function FlightDataLoader({
               <span className="flex items-center">
                 {loadingFlightSchedule ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                    <Spinner size={16} className="mr-2 shrink-0" />
                     <span className="truncate">Loading...</span>
                   </>
                 ) : (
@@ -179,7 +180,7 @@ function FlightDataLoader({
               <span className="flex items-center">
                 {loadingFlightSchedule ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                    <Spinner size={16} className="mr-2 shrink-0" />
                     <span className="truncate">Loading...</span>
                   </>
                 ) : (

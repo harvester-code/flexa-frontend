@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { createScenario } from "@/services/simulationService";
 import { useUser } from "@/queries/userQueries";
 import { Button } from "@/components/ui/Button";
-import { ClipLoader } from "react-spinners";
 import { PlaneTakeoff } from "lucide-react";
 import {
   Dialog,
@@ -16,6 +15,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useToast } from "@/hooks/useToast";
+import Spinner from "@/components/ui/Spinner";
 import AirportSelector from "../[id]/_components/flights/AirportSelector";
 
 interface CreateScenarioProps {
@@ -214,9 +214,7 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
           <Button onClick={handleSubmit} disabled={isLoading} className="min-w-24 overflow-hidden">
             <span className="flex items-center justify-center">
               {isLoading && (
-                <div className="mr-2 shrink-0" style={{ width: 16, height: 16 }}>
-                  <ClipLoader size={16} color="white" />
-                </div>
+                <Spinner size={16} className="mr-2 shrink-0 text-white" />
               )}
               <span className="truncate">Create</span>
             </span>

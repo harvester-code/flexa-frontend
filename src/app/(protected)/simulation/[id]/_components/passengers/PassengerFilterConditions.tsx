@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, CheckCircle, Loader2, Play, Users, X, XCircle } from "lucide-react";
+import { Check, CheckCircle, Play, Users, X, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/hooks/useToast";
+import Spinner from "@/components/ui/Spinner";
 import { useSimulationStore } from "../../_stores";
 import DistributionSettings from "./DistributionSettings";
 import LoadFactorSettings from "./LoadFactorSettings";
@@ -212,7 +213,7 @@ export default function PassengerFilterConditions({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner size={16} />
                 Generating...
               </>
             ) : (

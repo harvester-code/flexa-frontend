@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
 import { DropdownMenuSubTriggerNoArrow } from '@/components/ui/DropdownMenuCustom';
+import Spinner from '@/components/ui/Spinner';
 import airportHierarchy from '../../_json/airport_hierarchy.json';
 import airportFlat from '../../_json/airport_flat.json';
 
@@ -196,7 +197,7 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
             debouncedSearchQuery !== searchQuery ? (
               <div className="p-2 text-center text-sm text-muted-foreground">
                 <div className="flex items-center justify-center gap-2">
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <Spinner size={12} />
                   Searching...
                 </div>
               </div>

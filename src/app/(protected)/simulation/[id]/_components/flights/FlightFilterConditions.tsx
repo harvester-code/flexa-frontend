@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { Building2, ChevronDown, Filter, Flag, Loader2, MapPin, Plane, Search } from 'lucide-react';
+import { Building2, ChevronDown, Filter, Flag, MapPin, Plane, Search } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useToast } from '@/hooks/useToast';
 import { useSimulationStore } from '../../_stores';
+import Spinner from '@/components/ui/Spinner';
 import {
   type TerminalAirlineCombo,
   convertTerminalAirlinesToApiCondition,
@@ -1234,7 +1235,7 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
         <CardContent>
           <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
             <div className="flex items-center gap-2 overflow-hidden">
-              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              <Spinner size={16} className="shrink-0" />
               <span className="truncate">Loading available filters...</span>
             </div>
           </div>
@@ -1342,7 +1343,7 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
                   <span className="flex items-center">
                     {isApplying ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                        <Spinner size={16} className="mr-2 shrink-0" />
                         <span className="hidden sm:inline truncate">Filtering...</span>
                         <span className="sm:hidden truncate">Filter</span>
                       </>
@@ -1464,7 +1465,7 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
                   <span className="flex items-center">
                     {isApplying ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                        <Spinner size={16} className="mr-2 shrink-0" />
                         <span className="hidden sm:inline truncate">Filtering...</span>
                         <span className="sm:hidden truncate">Filter</span>
                       </>
