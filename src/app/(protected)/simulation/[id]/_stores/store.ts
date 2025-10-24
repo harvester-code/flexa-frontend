@@ -2,7 +2,10 @@
 
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import { ProcessStep } from "@/types/simulationTypes";
+import type {
+  ProcessStep,
+  Zone as SimulationZone,
+} from "@/types/simulationTypes";
 // Removed convertToDecimal import - no longer converting to decimals
 
 // ==================== Passenger Types ====================
@@ -97,7 +100,7 @@ const normalizeProcessName = (name: string): string => {
  * @returns 운영 시간 period 문자열
  */
 const calculateOperatingPeriodFromPassengers = (
-  chartResult: any,
+  chartResult: PassengerData["chartResult"],
   date: string
 ): string => {
   if (!chartResult?.chart_x_data || chartResult.chart_x_data.length === 0) {
@@ -166,12 +169,12 @@ const migrateProceduresToProcessFlow = (
   return procedures
     .sort((a, b) => a.order - b.order)
     .map((procedure, index: number) => {
-      const processStep = {
+      const processStep: ProcessStep = {
         step: index,
         name: normalizeProcessName(procedure.process), // 정규화 적용
         travel_time_minutes: 0, // 사용자가 UI에서 설정
         entry_conditions: [],
-        zones: {} as Record<string, any>,
+        zones: {} as Record<string, SimulationZone>,
       };
 
       // facility_names를 zones로 변환 (범용적 처리)
@@ -205,7 +208,7 @@ export interface SimulationStoreState {
         selected: number; // 실제 필터된 결과 수
         total: number; // 전체 항공편 수
       };
-      originalLocalState?: Record<string, any>; // 🎯 원본 로컬 상태 저장 (복원용)
+      originalLocalState?: Record<string, unknown>; // 🎯 원본 로컬 상태 저장 (복원용)
     } | null;
     appliedFilterResult: {
       total: number;
@@ -271,7 +274,7 @@ export interface SimulationStoreState {
       selected: number;
       total: number;
     };
-    originalLocalState?: Record<string, any>;
+    originalLocalState?: Record<string, unknown>;
   }) => void;
 
   // 🆕 편의 액션들 - API 바디 형태 조작
@@ -1293,12 +1296,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const convertedFlow = procedures
           .sort((a, b) => a.order - b.order) // order 기준 정렬
           .map((procedure, index) => {
-            const processStep = {
+            const processStep: ProcessStep = {
               step: index,
               name: normalizeProcessName(procedure.process), // "Visa-Check" -> "visa_check"
               travel_time_minutes: 0, // 사용자가 UI에서 설정
               entry_conditions: [],
-              zones: {} as Record<string, any>,
+              zones: {} as Record<string, SimulationZone>,
             };
 
             // facility_names를 zones로 변환 (범용적 처리)
@@ -1493,17 +1496,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
           // 모든 zone의 모든 facility에 process_time_seconds 업데이트
           Object.keys(process.zones).forEach((zoneName) => {
             const zone = process.zones[zoneName];
-            if (zone.facilities) {
-              zone.facilities.forEach((facility: any) => {
-                if (facility.operating_schedule?.time_blocks) {
-                  facility.operating_schedule.time_blocks.forEach(
-                    (block: any) => {
-                      block.process_time_seconds = processTimeSeconds;
-                    }
-                  );
-                }
+            zone.facilities?.forEach((facility) => {
+              facility.operating_schedule?.time_blocks?.forEach((block) => {
+                block.process_time_seconds = processTimeSeconds;
               });
-            }
+            });
           });
         }
       }),
@@ -1604,31 +1601,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         // Update all facilities' passenger_conditions in all processes
         state.process_flow.forEach((process) => {
-          if (process.zones) {
-            Object.values(process.zones).forEach((zone: any) => {
-              if (zone.facilities) {
-                zone.facilities.forEach((facility: Facility) => {
-                  if (facility.operating_schedule?.time_blocks) {
-                    facility.operating_schedule.time_blocks.forEach((block) => {
-                      if (block.passenger_conditions) {
-                        block.passenger_conditions = block.passenger_conditions.map(
-                          (condition) => {
-                            if (condition.field === oldFieldName) {
-                              return {
-                                ...condition,
-                                field: newFieldName,
-                              };
-                            }
-                            return condition;
-                          }
-                        );
+          Object.values(process.zones).forEach((zone) => {
+            zone.facilities?.forEach((facility) => {
+              facility.operating_schedule?.time_blocks?.forEach((block) => {
+                if (block.passenger_conditions) {
+                  block.passenger_conditions = block.passenger_conditions.map(
+                    (condition) => {
+                      if (condition.field === oldFieldName) {
+                        return {
+                          ...condition,
+                          field: newFieldName,
+                        };
                       }
-                    });
-                  }
-                });
-              }
+                      return condition;
+                    }
+                  );
+                }
+              });
             });
-          }
+          });
         });
       }),
 

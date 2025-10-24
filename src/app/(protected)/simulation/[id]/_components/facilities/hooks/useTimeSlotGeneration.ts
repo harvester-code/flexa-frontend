@@ -1,8 +1,10 @@
 import { useMemo } from "react";
+import type { ChartData } from "@/types/simulationTypes";
+import type { PassengerData } from "../../../_stores/store";
 
 interface UseTimeSlotGenerationProps {
   appliedTimeUnit: number;
-  chartResult: any;
+  chartResult: PassengerData["chartResult"];
   contextDate: string | null;
 }
 
@@ -26,16 +28,12 @@ export function useTimeSlotGeneration({
       ).fill(0);
 
       if (chartData) {
-        Object.values(chartData).forEach((airlines: any) => {
-          if (Array.isArray(airlines)) {
-            airlines.forEach((airline: any) => {
-              if (airline.y && Array.isArray(airline.y)) {
-                airline.y.forEach((count: number, idx: number) => {
-                  totalPassengersByTime[idx] += count;
-                });
-              }
+        Object.values(chartData).forEach((airlineSeries) => {
+          airlineSeries.forEach((airline) => {
+            airline.y.forEach((count, idx) => {
+              totalPassengersByTime[idx] += count;
             });
-          }
+          });
         });
       }
 

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useSimulationStore } from "../../../_stores";
-import { FacilityWithSchedule } from "../schedule-editor/types";
+import { FacilityWithSchedule, CategoryBadge } from "../schedule-editor/types";
 import { calculatePeriodsFromDisabledCells, deepEqual } from "../schedule-editor/helpers";
+import type { ProcessStep } from "@/types/simulationTypes";
 
 interface UseFacilityScheduleSyncProps {
   currentFacilities: FacilityWithSchedule[];
@@ -19,17 +20,17 @@ interface UseFacilityScheduleSyncProps {
     prevDayStr: string
   ) => {
     disabledCells: Set<string>;
-    badges: Record<string, any[]>;
+    badges: Record<string, CategoryBadge[]>;
     processTimes: Record<string, number>;
   };
   disabledCells: Set<string>;
   setDisabledCells: (cells: Set<string>) => void;
-  cellBadges: Record<string, any[]>;
-  setCellBadges: (badges: Record<string, any[]>) => void;
+  cellBadges: Record<string, CategoryBadge[]>;
+  setCellBadges: (badges: Record<string, CategoryBadge[]>) => void;
   cellProcessTimes: Record<string, number>;
   setCellProcessTimes: (processTimes: Record<string, number>) => void;
   appliedTimeUnit: number;
-  processFlow: any[];
+  processFlow: ProcessStep[];
 }
 
 export function useFacilityScheduleSync({
@@ -62,7 +63,7 @@ export function useFacilityScheduleSync({
 
     // Create unique key for this process-zone combination
     const initKey = `${selectedProcessIndex}-${selectedZone}`;
-    const storeState = useSimulationStore.getState() as any;
+    const storeState = useSimulationStore.getState();
     const contextDate =
       storeState?.context?.date || new Date().toISOString().split("T")[0];
 
@@ -113,9 +114,8 @@ export function useFacilityScheduleSync({
         const currentProcess =
           selectedProcessIndex !== null
             ? processFlow[selectedProcessIndex]
-            : null;
-        const processTimeSeconds = (currentProcess as any)
-          ?.process_time_seconds;
+            : undefined;
+        const processTimeSeconds = currentProcess?.process_time_seconds ?? undefined;
 
         // Calculate new periods (including badge info, pass date)
         const newTimeBlocks = calculatePeriodsFromDisabledCells(
@@ -136,16 +136,13 @@ export function useFacilityScheduleSync({
 
         if (hasChanged || timeSlotsChanged) {
           // Update Zustand store immediately
-          const { updateFacilitySchedule } =
-            useSimulationStore.getState() as any;
-          if (updateFacilitySchedule) {
-            updateFacilitySchedule(
-              selectedProcessIndex,
-              selectedZone,
-              facility.id,
-              newTimeBlocks
-            );
-          }
+          const { updateFacilitySchedule } = useSimulationStore.getState();
+          updateFacilitySchedule(
+            selectedProcessIndex,
+            selectedZone,
+            facility.id,
+            newTimeBlocks
+          );
         }
       }
     });

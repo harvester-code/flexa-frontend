@@ -1,20 +1,35 @@
 import React from "react";
 import { getBadgeColor } from "@/styles/colors";
 import { ParquetMetadataItem, CategoryBadge, TimeBlock } from "./types";
-import { getCategoryNameFromField, getCategoryIcon, getStorageFieldName, getCategoryColorIndex } from "./badgeMappings";
+import {
+  getCategoryNameFromField,
+  getCategoryIcon,
+  getStorageFieldName,
+  getCategoryColorIndex,
+} from "./badgeMappings";
 import { Users, MapPin } from "lucide-react";
+import type { LucideProps } from "lucide-react";
 import { LABELS } from "@/styles/columnMappings";
+
+type PaxDemographicEntry = {
+  available_values?: string[];
+  [key: string]: unknown;
+};
+
+type PaxDemographicsMap = Record<string, PaxDemographicEntry>;
+
+const LABEL_VALUES = new Set<string>(Object.values(LABELS));
 
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 export const createDynamicConditionCategories = (
   parquetMetadata: ParquetMetadataItem[],
-  paxDemographics: Record<string, any>,
+  paxDemographics: PaxDemographicsMap,
   flightAirlines?: Record<string, string> | null
 ) => {
   const categories: Record<
     string,
     {
-      icon: React.ComponentType<any>;
+      icon: React.ComponentType<LucideProps>;
       options: string[];
       colorIndex: number; // 색상 인덱스 사용
     }
@@ -60,7 +75,7 @@ export const createDynamicConditionCategories = (
 
   // 🎯 2단계: paxDemographics 처리 (additionalMetadata와 동일)
   Object.entries(paxDemographics).forEach(([key, data]) => {
-    if (data && data.available_values && data.available_values.length > 0) {
+    if (data?.available_values && data.available_values.length > 0) {
       let categoryName = "";
       let icon = Users;
 
@@ -87,11 +102,10 @@ export const createDynamicConditionCategories = (
 };
 
 // Deep equality 체크를 위한 헬퍼 함수
-export const deepEqual = (obj1: any, obj2: any): boolean => {
+export const deepEqual = (obj1: unknown, obj2: unknown): boolean => {
   if (obj1 === obj2) return true;
 
-  if (obj1 == null || obj2 == null) return false;
-  if (typeof obj1 !== "object" || typeof obj2 !== "object") return false;
+  if (!isRecord(obj1) || !isRecord(obj2)) return false;
 
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
@@ -104,6 +118,10 @@ export const deepEqual = (obj1: any, obj2: any): boolean => {
   }
 
   return true;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
 };
 
 // 시간 문자열을 포맷팅하는 헬퍼 함수
@@ -279,7 +297,7 @@ export const calculatePeriodsFromDisabledCells = (
 
     const conditions: PassengerCondition[] = badges
       .map((badge) => {
-        const isProcessCategory = !Object.values(LABELS).includes(badge.category as any);
+        const isProcessCategory = !LABEL_VALUES.has(badge.category);
 
         if (isProcessCategory) {
           // 프로세스 이름을 lambda 함수 형식으로 변환
