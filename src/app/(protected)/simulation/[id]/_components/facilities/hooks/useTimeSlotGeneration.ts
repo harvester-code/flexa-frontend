@@ -55,17 +55,6 @@ export function useTimeSlotGeneration({
         const roundedStartMinute = Math.floor(startMinute / 30) * 30;
         const roundedStartHour = startHour;
 
-        // Process end time
-        const endDateTime =
-          chartResult.chart_x_data[
-            Math.min(
-              lastPassengerIndex + 1,
-              chartResult.chart_x_data.length - 1
-            )
-          ];
-        const [endDate, endTime] = endDateTime.split(" ");
-        const [endHour] = endTime.split(":").map(Number);
-
         // Check if start is from previous day
         const currentDate =
           contextDate || new Date().toISOString().split("T")[0];
@@ -84,8 +73,8 @@ export function useTimeSlotGeneration({
           }
         }
 
-        // Add current day times
-        const maxHour = Math.min(24, endHour + 1);
+        // Add current day times, ensuring we always reach the end of the day
+        const maxHour = 24;
         const startHourForToday = isPrev ? 0 : roundedStartHour;
         const startMinuteForToday = isPrev ? 0 : roundedStartMinute;
 

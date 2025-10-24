@@ -259,9 +259,6 @@ export const calculatePeriodsFromDisabledCells = (
     }
 
     const rawEnd = new Date(start.getTime() + timeUnit * MS_PER_MINUTE);
-    if (rawEnd.getHours() === 0 && rawEnd.getMinutes() === 0 && rawEnd.getSeconds() === 0) {
-      return new Date(rawEnd.getTime() - 1000);
-    }
     return rawEnd;
   });
 

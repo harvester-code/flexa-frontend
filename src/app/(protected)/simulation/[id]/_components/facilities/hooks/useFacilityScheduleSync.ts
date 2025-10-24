@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSimulationStore } from "../../../_stores";
 import { FacilityWithSchedule } from "../schedule-editor/types";
 import { calculatePeriodsFromDisabledCells, deepEqual } from "../schedule-editor/helpers";
@@ -50,10 +50,15 @@ export function useFacilityScheduleSync({
   appliedTimeUnit,
   processFlow,
 }: UseFacilityScheduleSyncProps) {
+  const timeSlotSignatureRef = useRef<string>("");
+
   // Sync facility schedules with store
   useEffect(() => {
     if (!currentFacilities || currentFacilities.length === 0) return;
     if (!selectedZone || selectedProcessIndex === null) return;
+
+    const currentSignature = timeSlots.join("|");
+    const timeSlotsChanged = timeSlotSignatureRef.current !== currentSignature;
 
     // Create unique key for this process-zone combination
     const initKey = `${selectedProcessIndex}-${selectedZone}`;
@@ -129,7 +134,7 @@ export function useFacilityScheduleSync({
         // Detect exact changes with deep equality check
         const hasChanged = !deepEqual(existingTimeBlocks, newTimeBlocks);
 
-        if (hasChanged) {
+        if (hasChanged || timeSlotsChanged) {
           // Update Zustand store immediately
           const { updateFacilitySchedule } =
             useSimulationStore.getState() as any;
@@ -144,6 +149,8 @@ export function useFacilityScheduleSync({
         }
       }
     });
+    timeSlotSignatureRef.current = currentSignature;
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     disabledCells,
