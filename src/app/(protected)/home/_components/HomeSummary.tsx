@@ -319,7 +319,7 @@ function HomeSummary({
                 title={<span>Facility Effi.</span>}
                 value={
                   <>
-                    {(totalMetrics.operating_rate * 100).toFixed(2)}
+                    {(totalMetrics.operating_rate * 100).toFixed(1)}
                     {formatUnit('%')}
                   </>
                 }
@@ -329,7 +329,7 @@ function HomeSummary({
                 title={<span>Workforce Effi.</span>}
                 value={
                   <>
-                    {(totalMetrics.utilization_rate * 100).toFixed(2)}
+                    {(totalMetrics.utilization_rate * 100).toFixed(1)}
                     {formatUnit('%')}
                   </>
                 }
@@ -339,7 +339,7 @@ function HomeSummary({
                 title={<span>Overall Effi.</span>}
                 value={
                   <>
-                    {(totalMetrics.total_rate * 100).toFixed(2)}
+                    {(totalMetrics.total_rate * 100).toFixed(1)}
                     {formatUnit('%')}
                   </>
                 }
@@ -352,14 +352,27 @@ function HomeSummary({
       {/* Economic Impact 섹션 */}
       {summaryData?.economic_impact && (
         <>
-          <div className="mt-3 mb-2 text-lg font-semibold">Monetary Value of Time</div>
+          <div className="mt-3 mb-2 flex items-center justify-between">
+            <div className="text-lg font-semibold">Monetary Value of Time</div>
+            {summaryData.economic_impact.airport_context && (() => {
+              const ctx = summaryData.economic_impact.airport_context;
+              const gdpData = ctx.gdp_ppp || ctx.gdp;
+              const gdpType = ctx.gdp_ppp ? 'GDP PPP' : 'GDP';
+
+              return (
+                <div className="text-xs text-default-500">
+                  Based on {ctx.country_name} {gdpType} {gdpData?.formatted} ({gdpData?.year}) | Source: World Bank
+                </div>
+              );
+            })()}
+          </div>
           <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
             <HomeSummaryCard
               icon={DollarSign}
               title={<span>Cost of Waiting</span>}
               value={
-                <span className="text-red-600">
-                  -${Math.abs(summaryData.economic_impact.total_wait_value).toLocaleString()}
+                <span className="text-lg text-red-600">
+                  -<span className="text-xs">USD</span> {Math.round(Math.abs(summaryData.economic_impact.total_wait_value)).toLocaleString()}
                 </span>
               }
             />
@@ -367,8 +380,8 @@ function HomeSummary({
               icon={DollarSign}
               title={<span>Cost of Proc. & Wait</span>}
               value={
-                <span className="text-red-600">
-                  -${Math.abs(summaryData.economic_impact.process_time_value).toLocaleString()}
+                <span className="text-lg text-red-600">
+                  -<span className="text-xs">USD</span> {Math.round(Math.abs(summaryData.economic_impact.process_time_value)).toLocaleString()}
                 </span>
               }
             />
@@ -376,8 +389,8 @@ function HomeSummary({
               icon={DollarSign}
               title={<span>Value of Comm. Dwell Time</span>}
               value={
-                <span className="text-green-600">
-                  USD {summaryData.economic_impact.commercial_dwell_value.toLocaleString()}
+                <span className="text-lg text-green-600">
+                  +<span className="text-xs">USD</span> {Math.round(summaryData.economic_impact.commercial_dwell_value).toLocaleString()}
                 </span>
               }
             />
