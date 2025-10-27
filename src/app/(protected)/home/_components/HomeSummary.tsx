@@ -4,17 +4,7 @@ import { useMemo, useState } from 'react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
-import {
-  NavIcon01,
-  NavIcon02,
-  PassengerQueue,
-  PassengerThroughput,
-  RatioIcon01,
-  RatioIcon02,
-  RatioIcon03,
-  WaitTime,
-} from '@/components/icons';
-import { Clock, Timer, Building2, Plane, DollarSign } from 'lucide-react';
+import { Clock, Timer, Building2, Plane, DollarSign, Users, UserCheck, Home, Hourglass, Gauge, Activity, Target } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
@@ -116,7 +106,7 @@ function HomeSummary({
           <div className="mt-[14px] mb-2 text-lg font-semibold">Throughputs</div>
           <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
             <HomeSummaryCard
-              icon={PassengerThroughput}
+              icon={Users}
               title={<span>Passengers</span>}
               value={
                 <>
@@ -126,7 +116,7 @@ function HomeSummary({
               }
             />
             <HomeSummaryCard
-              icon={PassengerQueue}
+              icon={UserCheck}
               title={<span>Completed</span>}
               value={
                 <>
@@ -136,7 +126,7 @@ function HomeSummary({
               }
             />
             <HomeSummaryCard
-              icon={NavIcon01}
+              icon={Home}
               title={<span>Missed Pax</span>}
               value={
                 <>
@@ -149,66 +139,45 @@ function HomeSummary({
         </>
       )}
 
-      {/* Pax Experience를 KPI 카드보다 위로 이동 */}
-      <div className="my-[14px] rounded border border-input px-5 py-3">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-semibold">Pax Experience</div>
-          <ToggleButtonGroup
-            options={CHART_OPTIONS}
-            selectedValue={selectedChartType}
-            onSelect={(opt) => setSelectedChartType(opt.value)}
-            labelExtractor={(opt) => opt.label}
-          />
-        </div>
-        <TheHistogramChart chartData={selectedChartType === 'waiting_time' ? waitTimeChartData : queueLengthChartData} />
-      </div>
-
       {/* Time & Delay 섹션 */}
       {summaryData?.timeMetrics && summaryData?.dwellTimes && (
         <>
-          <div className="mt-3 mb-2 text-lg font-semibold">Time & Delay</div>
+          <div className="mt-3 mb-2 flex items-center gap-2 text-lg font-semibold">
+            Time & Delay
+            <span className="inline-flex h-5 items-center rounded border border-primary bg-primary px-2 text-xs font-medium text-primary-foreground">
+              {percentile ? `Top ${percentile}%` : 'Mean'}
+            </span>
+          </div>
           <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
             <HomeSummaryCard
               icon={Clock}
               title={<span>Pre-Open Wait Time</span>}
               value={formatTimeTaken(summaryData.timeMetrics.open_wait)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
             <HomeSummaryCard
               icon={Timer}
               title={<span>In-Service Wait Time</span>}
               value={formatTimeTaken(summaryData.timeMetrics.queue_wait)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
             <HomeSummaryCard
-              icon={WaitTime}
+              icon={Hourglass}
               title={<span>Total Wait Time</span>}
               value={formatTimeTaken(summaryData.timeMetrics.total_wait)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
             <HomeSummaryCard
               icon={Timer}
               title={<span>Proc. & Queueing Time</span>}
               value={formatTimeTaken(summaryData.timeMetrics.process_time)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
             <HomeSummaryCard
               icon={Building2}
               title={<span>Commercial Dwell Time</span>}
               value={formatTimeTaken(summaryData.dwellTimes.commercial_dwell_time)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
             <HomeSummaryCard
               icon={Plane}
               title={<span>Total Dwell Time</span>}
               value={formatTimeTaken(summaryData.dwellTimes.airport_dwell_time)}
-              kpiType={percentile ? 'top' : 'mean'}
-              percentile={percentile ?? undefined}
             />
           </div>
         </>
@@ -225,7 +194,7 @@ function HomeSummary({
             <div className="mt-3 mb-2 text-lg font-semibold">Efficiency</div>
             <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
               <HomeSummaryCard
-                icon={RatioIcon01}
+                icon={Gauge}
                 title={<span>Facility Effi.</span>}
                 value={
                   <>
@@ -235,7 +204,7 @@ function HomeSummary({
                 }
               />
               <HomeSummaryCard
-                icon={RatioIcon02}
+                icon={Activity}
                 title={<span>Workforce Effi.</span>}
                 value={
                   <>
@@ -245,7 +214,7 @@ function HomeSummary({
                 }
               />
               <HomeSummaryCard
-                icon={RatioIcon03}
+                icon={Target}
                 title={<span>Overall Effi.</span>}
                 value={
                   <>
@@ -307,6 +276,18 @@ function HomeSummary({
           </div>
         </>
       )}
+
+      {/* Pax Experience 섹션 */}
+      <div className="mt-3 mb-2 flex items-center justify-between">
+        <div className="text-lg font-semibold">Pax Experience</div>
+        <ToggleButtonGroup
+          options={CHART_OPTIONS}
+          selectedValue={selectedChartType}
+          onSelect={(opt) => setSelectedChartType(opt.value)}
+          labelExtractor={(opt) => opt.label}
+        />
+      </div>
+      <TheHistogramChart chartData={selectedChartType === 'waiting_time' ? waitTimeChartData : queueLengthChartData} />
     </>
   );
 }
