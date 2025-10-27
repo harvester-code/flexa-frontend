@@ -3,9 +3,6 @@ import dynamic from 'next/dynamic';
 import { ChevronDown, Circle } from 'lucide-react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Label } from '@/components/ui/Label';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst } from './HomeFormat';
@@ -13,7 +10,6 @@ import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
 import TheDropdownMenu from './TheDropdownMenu';
 
-const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
 const CHART_OPTION_COLORS: Record<string, string> = {
@@ -68,7 +64,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   const hourlyTrendsData = data;
   const isFlowChartLoading = propIsLoading || false;
   const [lineChartData, setLineChartData] = useState<Plotly.Data[]>([]);
-  const [barChartData, setBarChartData] = useState<Plotly.Data[]>([]);
   const [chartLayout, setChartLayout] = useState<Partial<Plotly.Layout>>({
     margin: { l: 60, r: 60, b: 60, t: 24 },
     showlegend: false,
@@ -125,7 +120,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     }
   }, [ZONE_OPTIONS]);
 
-  const [chartType, setChartType] = useState(true);
   const [chartOption1, setChartOption1] = useState([0]);
   const handleChartOption1 = (buttonIndex: number) => {
     setChartOption1((prevData) => {
@@ -152,7 +146,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     const chartDataForZone = dataSource?.[selectedZoneValue];
 
     if (!chartDataForZone || !times.length) {
-      setBarChartData([]);
       setLineChartData([]);
       return;
     }
@@ -160,7 +153,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     const sanitizedSeriesCache: Record<string, number[]> = {};
     const capacitySeries = sanitizeNumericSeries(chartDataForZone.capacity, times.length);
 
-    const newBarChartData: Plotly.Data[] = [];
     const newLineChartData: Plotly.Data[] = [];
     const newLayout: Partial<Plotly.Layout> = {
       margin: { l: 60, r: 60, b: 60, t: 24 },
@@ -175,7 +167,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         ticks: 'outside',
         tickcolor: 'transparent',
       },
-      barmode: 'group',
     };
 
     const yaxisAssignment = [undefined, 'y2'] as const;
@@ -211,22 +202,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       } else {
         newLayout.yaxis = yAxisConfig;
       }
-
-      // Bar chart data
-      let barChartTrace: Plotly.Data = {
-        x: times,
-        y: sanitizedSeries,
-        type: 'bar',
-        name: option.label,
-        offsetgroup: i + 1,
-        marker: { color: option.color, opacity: 0.9 },
-        yaxis: yaxisId,
-        showlegend: false,
-      } as any;
-      if (option.value === 'waiting_time') {
-        barChartTrace = convertSecondsToMinutesInt(barChartTrace);
-      }
-      newBarChartData.push(barChartTrace);
 
       // Line chart data
       let lineChartTrace: Plotly.Data = {
@@ -313,7 +288,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         yaxis: capacityYAxis,
       };
       newLineChartData.push(capacityTrace);
-      newBarChartData.push({ ...capacityTrace });
       newLayout.showlegend = true;
       newLayout.legend = {
         x: 1,
@@ -323,7 +297,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       };
     }
 
-    setBarChartData(newBarChartData);
     setLineChartData(newLineChartData);
     setChartLayout(newLayout);
   }, [chartOption1, selectedFacilityValue, selectedZoneValue, hourlyTrendsData]);
@@ -339,21 +312,6 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     <div className="flex flex-col">
       <div className="flex items-center justify-between pl-5">
         <h5 className="flex h-[50px] items-center text-lg font-semibold">Hourly Trends</h5>
-        <div className="mb-4 mr-5 mt-8 flex items-center gap-2 text-sm font-normal">
-          <span className={cn(!chartType ? 'font-medium text-default-900' : 'text-muted-foreground')}>Bar Chart</span>
-          <Checkbox
-            id="chart-type"
-            checked={chartType}
-            onCheckedChange={(checked) => setChartType(checked === true)}
-            aria-label="Toggle chart type"
-          />
-          <Label
-            htmlFor="chart-type"
-            className={cn(chartType ? 'font-medium text-default-900' : 'text-muted-foreground', 'cursor-pointer')}
-          >
-            Line Chart
-          </Label>
-        </div>
       </div>
       <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="chart-header-container">
@@ -389,11 +347,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           </div>
         </div>
         <div className="mt-2 min-h-96 bg-white">
-          {chartType ? (
-            <LineChart chartData={lineChartData} chartLayout={chartLayout} />
-          ) : (
-            <BarChart chartData={barChartData} chartLayout={chartLayout} />
-          )}
+          <LineChart chartData={lineChartData} chartLayout={chartLayout} />
         </div>
       </div>
     </div>
