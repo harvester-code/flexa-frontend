@@ -182,12 +182,33 @@ export interface FlightDetailSummary {
   totalSeats: number | null;
 }
 
+export interface TimeHMS {
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+export interface TimeMetrics {
+  metric: string; // "mean" or "p{percentile}" (e.g., "p30")
+  open_wait: TimeHMS;
+  queue_wait: TimeHMS;
+  total_wait: TimeHMS;
+  process_time: TimeHMS;
+}
+
+export interface DwellTimes {
+  commercial_dwell_time: TimeHMS;
+  airport_dwell_time: TimeHMS;
+}
+
 export interface FlightSummaryResponse {
   totals: FlightSummaryTotals;
   hours: FlightHourSummary[];
   classDistribution: FlightClassDistribution[];
   carriers: FlightCarrierSummary[];
   flights: FlightDetailSummary[];
+  timeMetrics?: TimeMetrics;
+  dwellTimes?: DwellTimes;
 }
 
 export interface NewHomeDashboardResponse {

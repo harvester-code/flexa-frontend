@@ -14,6 +14,7 @@ import {
   RatioIcon03,
   WaitTime,
 } from '@/components/icons';
+import { Clock, Timer, Building2, Plane, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
@@ -109,6 +110,45 @@ function HomeSummary({
 
   return (
     <>
+      {/* Throughputs 섹션 */}
+      {summaryData?.passenger_summary && (
+        <>
+          <div className="mt-[14px] mb-2 text-lg font-semibold">Throughputs</div>
+          <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+            <HomeSummaryCard
+              icon={PassengerThroughput}
+              title={<span>Passengers</span>}
+              value={
+                <>
+                  {summaryData.passenger_summary.total.toLocaleString()}
+                  {formatUnit('pax')}
+                </>
+              }
+            />
+            <HomeSummaryCard
+              icon={PassengerQueue}
+              title={<span>Completed</span>}
+              value={
+                <>
+                  {summaryData.passenger_summary.completed.toLocaleString()}
+                  {formatUnit('pax')}
+                </>
+              }
+            />
+            <HomeSummaryCard
+              icon={NavIcon01}
+              title={<span>Missed Pax</span>}
+              value={
+                <>
+                  {summaryData.passenger_summary.missed.toLocaleString()}
+                  {formatUnit('pax')}
+                </>
+              }
+            />
+          </div>
+        </>
+      )}
+
       {/* Pax Experience를 KPI 카드보다 위로 이동 */}
       <div className="my-[14px] rounded border border-input px-5 py-3">
         <div className="mb-4 flex items-center justify-between">
@@ -212,6 +252,138 @@ function HomeSummary({
         />
 
       </div>
+
+      {/* Time & Delay 섹션 */}
+      {summaryData?.timeMetrics && summaryData?.dwellTimes && (
+        <>
+          <div className="mt-3 mb-2 text-lg font-semibold">Time & Delay</div>
+          <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+            <HomeSummaryCard
+              icon={Clock}
+              title={<span>Pre-Open Wait Time</span>}
+              value={formatTimeTaken(summaryData.timeMetrics.open_wait)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+            <HomeSummaryCard
+              icon={Timer}
+              title={<span>In-Service Wait Time</span>}
+              value={formatTimeTaken(summaryData.timeMetrics.queue_wait)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+            <HomeSummaryCard
+              icon={WaitTime}
+              title={<span>Total Wait Time</span>}
+              value={formatTimeTaken(summaryData.timeMetrics.total_wait)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+            <HomeSummaryCard
+              icon={Timer}
+              title={<span>Proc. & Queueing Time</span>}
+              value={formatTimeTaken(summaryData.timeMetrics.process_time)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+            <HomeSummaryCard
+              icon={Building2}
+              title={<span>Commercial Dwell Time</span>}
+              value={formatTimeTaken(summaryData.dwellTimes.commercial_dwell_time)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+            <HomeSummaryCard
+              icon={Plane}
+              title={<span>Total Dwell Time</span>}
+              value={formatTimeTaken(summaryData.dwellTimes.airport_dwell_time)}
+              kpiType={percentile ? 'top' : 'mean'}
+              percentile={percentile ?? undefined}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Efficiency 섹션 */}
+      {summaryData?.facility_metrics && summaryData.facility_metrics.length > 0 && (() => {
+        // "total" process만 찾기
+        const totalMetrics = summaryData.facility_metrics.find((m: any) => m.process === 'total');
+        if (!totalMetrics) return null;
+
+        return (
+          <>
+            <div className="mt-3 mb-2 text-lg font-semibold">Efficiency</div>
+            <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+              <HomeSummaryCard
+                icon={RatioIcon01}
+                title={<span>Facility Effi.</span>}
+                value={
+                  <>
+                    {(totalMetrics.operating_rate * 100).toFixed(2)}
+                    {formatUnit('%')}
+                  </>
+                }
+              />
+              <HomeSummaryCard
+                icon={RatioIcon02}
+                title={<span>Workforce Effi.</span>}
+                value={
+                  <>
+                    {(totalMetrics.utilization_rate * 100).toFixed(2)}
+                    {formatUnit('%')}
+                  </>
+                }
+              />
+              <HomeSummaryCard
+                icon={RatioIcon03}
+                title={<span>Overall Effi.</span>}
+                value={
+                  <>
+                    {(totalMetrics.total_rate * 100).toFixed(2)}
+                    {formatUnit('%')}
+                  </>
+                }
+              />
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Economic Impact 섹션 */}
+      {summaryData?.economic_impact && (
+        <>
+          <div className="mt-3 mb-2 text-lg font-semibold">Monetary Value of Time</div>
+          <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+            <HomeSummaryCard
+              icon={DollarSign}
+              title={<span>Cost of Waiting</span>}
+              value={
+                <span className="text-red-600">
+                  -${Math.abs(summaryData.economic_impact.total_wait_value).toLocaleString()}
+                </span>
+              }
+            />
+            <HomeSummaryCard
+              icon={DollarSign}
+              title={<span>Cost of Proc. & Wait</span>}
+              value={
+                <span className="text-red-600">
+                  -${Math.abs(summaryData.economic_impact.process_time_value).toLocaleString()}
+                </span>
+              }
+            />
+            <HomeSummaryCard
+              icon={DollarSign}
+              title={<span>Value of Comm. Dwell Time</span>}
+              value={
+                <span className="text-green-600">
+                  USD {summaryData.economic_impact.commercial_dwell_value.toLocaleString()}
+                </span>
+              }
+            />
+          </div>
+        </>
+      )}
     </>
   );
 }
