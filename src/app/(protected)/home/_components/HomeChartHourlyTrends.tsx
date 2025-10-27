@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronDown, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Circle, Check } from 'lucide-react';
 import { Option } from '@/types/homeTypes';
 import { ScenarioData } from '@/types/homeTypes';
+import { Checkbox } from '@/components/ui/Checkbox';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst } from './HomeFormat';
@@ -113,12 +114,31 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       }));
   }, [hourlyTrendsData, selectedFacilityValue]);
 
-  const [selectedZoneValue, setSelectedZoneValue] = useState('');
+  const [selectedZones, setSelectedZones] = useState<string[]>([]);
+  const [isZonePanelOpen, setIsZonePanelOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (ZONE_OPTIONS.length > 0) {
-      setSelectedZoneValue(ZONE_OPTIONS[0].value);
+      // 기본값으로 all_zones 선택
+      const allZonesOption = ZONE_OPTIONS.find(opt => opt.value === 'all_zones');
+      setSelectedZones(allZonesOption ? ['all_zones'] : [ZONE_OPTIONS[0].value]);
     }
   }, [ZONE_OPTIONS]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsZonePanelOpen(false);
+      }
+    };
+
+    if (isZonePanelOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isZonePanelOpen]);
 
   const [chartOption1, setChartOption1] = useState([0]);
   const handleChartOption1 = (buttonIndex: number) => {
@@ -136,22 +156,89 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     });
   };
 
+  const toggleZone = (zoneValue: string) => {
+    setSelectedZones((prev) => {
+      // all_zones 선택 시 모든 개별 zone 해제
+      if (zoneValue === 'all_zones') {
+        return ['all_zones'];
+      }
+
+      // 개별 zone 선택 시 all_zones 해제하고 토글
+      const withoutAllZones = prev.filter(z => z !== 'all_zones');
+      if (withoutAllZones.includes(zoneValue)) {
+        // 최소 1개는 선택되어야 함
+        const newSelection = withoutAllZones.filter(z => z !== zoneValue);
+        return newSelection.length > 0 ? newSelection : ['all_zones'];
+      } else {
+        return [...withoutAllZones, zoneValue];
+      }
+    });
+  };
+
   useEffect(() => {
-    if (!hourlyTrendsData || !selectedFacilityValue || !selectedZoneValue) return;
+    if (!hourlyTrendsData || !selectedFacilityValue || selectedZones.length === 0) return;
 
     const times = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
-    // 새로운 구조 처리 - data 속성이 있으면 그 안에서 가져옴
     const facilityData = hourlyTrendsData[selectedFacilityValue];
     const dataSource = facilityData?.data || facilityData;
-    const chartDataForZone = dataSource?.[selectedZoneValue];
 
-    if (!chartDataForZone || !times.length) {
+    if (!dataSource || !times.length) {
       setLineChartData([]);
       return;
     }
 
-    const sanitizedSeriesCache: Record<string, number[]> = {};
-    const capacitySeries = sanitizeNumericSeries(chartDataForZone.capacity, times.length);
+    // 선택된 zone들의 데이터 수집
+    const zonesToAggregate = selectedZones.includes('all_zones')
+      ? Object.keys(dataSource).filter(key => key !== 'all_zones')
+      : selectedZones;
+
+    // 데이터 합산을 위한 초기 객체
+    const aggregatedData: Record<string, number[]> = {
+      inflow: new Array(times.length).fill(0),
+      outflow: new Array(times.length).fill(0),
+      queue_length: new Array(times.length).fill(0),
+      waiting_time: new Array(times.length).fill(0),
+      capacity: new Array(times.length).fill(0),
+    };
+
+    let validZoneCount = 0;
+
+    // 각 zone의 데이터를 합산
+    zonesToAggregate.forEach((zoneKey) => {
+      const zoneData = dataSource[zoneKey];
+      if (!zoneData) return;
+
+      validZoneCount++;
+
+      // inflow, outflow, capacity는 합산
+      ['inflow', 'outflow', 'capacity'].forEach((key) => {
+        if (zoneData[key]) {
+          const sanitized = sanitizeNumericSeries(zoneData[key], times.length);
+          if (sanitized) {
+            aggregatedData[key] = aggregatedData[key].map((val, idx) => val + (sanitized[idx] || 0));
+          }
+        }
+      });
+
+      // queue_length, waiting_time은 평균 계산을 위해 합산 (나중에 zone 개수로 나눔)
+      ['queue_length', 'waiting_time'].forEach((key) => {
+        if (zoneData[key]) {
+          const sanitized = sanitizeNumericSeries(zoneData[key], times.length);
+          if (sanitized) {
+            aggregatedData[key] = aggregatedData[key].map((val, idx) => val + (sanitized[idx] || 0));
+          }
+        }
+      });
+    });
+
+    // queue_length와 waiting_time은 평균 계산
+    if (validZoneCount > 0) {
+      aggregatedData.queue_length = aggregatedData.queue_length.map(val => val / validZoneCount);
+      aggregatedData.waiting_time = aggregatedData.waiting_time.map(val => val / validZoneCount);
+    }
+
+    const sanitizedSeriesCache: Record<string, number[]> = aggregatedData;
+    const capacitySeries = aggregatedData.capacity;
 
     const newLineChartData: Plotly.Data[] = [];
     const newLayout: Partial<Plotly.Layout> = {
@@ -177,9 +264,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
       const yaxisId = yaxisAssignment[i];
 
-      const sanitizedSeries = sanitizeNumericSeries(chartDataForZone[option.value], times.length);
+      const sanitizedSeries = aggregatedData[option.value];
       if (!sanitizedSeries) return;
-      sanitizedSeriesCache[option.value] = sanitizedSeries;
 
       // Layout
       const yAxisConfig = {
@@ -299,7 +385,21 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     setLineChartData(newLineChartData);
     setChartLayout(newLayout);
-  }, [chartOption1, selectedFacilityValue, selectedZoneValue, hourlyTrendsData]);
+  }, [chartOption1, selectedFacilityValue, selectedZones, hourlyTrendsData]);
+
+  // 선택된 zone들의 라벨 생성
+  const selectedZonesLabel = useMemo(() => {
+    if (selectedZones.includes('all_zones')) {
+      return 'All Zones';
+    }
+    if (selectedZones.length === 0) {
+      return 'Select Zones';
+    }
+    if (selectedZones.length === 1) {
+      return ZONE_OPTIONS.find(opt => opt.value === selectedZones[0])?.label || selectedZones[0];
+    }
+    return `${selectedZones.length} zones selected`;
+  }, [selectedZones, ZONE_OPTIONS]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -316,20 +416,59 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       <div className="flex flex-col rounded-md border border-input bg-white p-5">
         <div className="chart-header-container">
           <div className="chart-header-selects">
-            <TheDropdownMenu
-              className="min-w-48 flex-1 [&>*]:justify-start"
-              items={FACILITY_OPTIONS}
-              icon={<ChevronDown />}
-              label={FACILITY_OPTIONS.find((opt) => opt.value === selectedFacilityValue)?.label || 'Select Facility'}
-              onSelect={(item) => setSelectedFacilityValue(item.value)}
-            />
-            <TheDropdownMenu
-              className="min-w-48 flex-1 [&>*]:justify-start"
-              items={ZONE_OPTIONS}
-              icon={<ChevronDown />}
-              label={ZONE_OPTIONS.find((opt) => opt.value === selectedZoneValue)?.label || 'Select Zone'}
-              onSelect={(item) => setSelectedZoneValue(item.value)}
-            />
+            <div ref={dropdownRef} className="relative min-w-48 flex-1">
+              <button
+                onClick={() => setIsZonePanelOpen(!isZonePanelOpen)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <span>
+                  {FACILITY_OPTIONS.find((opt) => opt.value === selectedFacilityValue)?.label || 'Select Facility'}
+                  {' · '}
+                  <span className="text-muted-foreground">{selectedZonesLabel}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+
+              {isZonePanelOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 flex min-w-[400px] rounded-md border bg-popover text-popover-foreground shadow-md">
+                  {/* Facility 리스트 */}
+                  <div className="w-1/2 border-r">
+                    {FACILITY_OPTIONS.map((facility) => (
+                      <button
+                        key={facility.value}
+                        onClick={() => setSelectedFacilityValue(facility.value)}
+                        className={cn(
+                          'flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent',
+                          selectedFacilityValue === facility.value && 'bg-accent'
+                        )}
+                      >
+                        <span>{facility.label}</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Zone 멀티셀렉트 패널 */}
+                  <div className="w-1/2 p-2">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2 px-2">Select Zones</div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {ZONE_OPTIONS.map((zone) => (
+                        <label
+                          key={zone.value}
+                          className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-sm cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedZones.includes(zone.value)}
+                            onCheckedChange={() => toggleZone(zone.value)}
+                          />
+                          <span className="text-sm">{zone.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="chart-header-buttons">
             <ToggleButtonGroup
