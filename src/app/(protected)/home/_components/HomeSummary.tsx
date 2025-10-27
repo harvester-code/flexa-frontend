@@ -47,40 +47,53 @@ function HomeSummary({
 
   const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
 
-  const chartData = useMemo(() => {
-    if (!summaryData?.pax_experience) return [];
+  const waitTimeChartData = useMemo(() => {
+    if (!summaryData?.pax_experience?.waiting_time) return [];
 
-    const processes = summaryData.pax_experience[selectedChartType];
+    const processes = summaryData.pax_experience.waiting_time;
+    const GRAY_COLOR = '#9ca3af'; // gray-400 (Open Wait)
+    const PRIMARY_COLOR_SCALES = ['#6b46c1', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'];
 
-    if (selectedChartType === 'waiting_time') {
-      const entries = Object.entries(processes as Record<string, { hour: number; minute: number; second: number }>);
-      const allZero = entries.every(([, value]) => value.hour === 0 && value.minute === 0 && value.second === 0);
+    // 8칸으로 펼치기: 각 프로세스마다 open_wait, queue_wait 2개
+    return Object.entries(processes).flatMap(([process, waitData]: [string, any], processIdx) => {
+      const openSeconds = waitData.open_wait.hour * 3600 + waitData.open_wait.minute * 60 + waitData.open_wait.second;
+      const queueSeconds = waitData.queue_wait.hour * 3600 + waitData.queue_wait.minute * 60 + waitData.queue_wait.second;
 
-      return entries.map(([process, value]) => {
-        const seconds = value.hour * 60 * 60 + value.minute * 60 + value.second;
-        return {
+      return [
+        {
           title: process,
-          value: formatTimeTaken(value, 'histogram'),
-          width: seconds > 0 ? seconds : allZero ? 1 : 0.001,
-        };
-      });
-    }
+          value: formatTimeTaken(waitData.open_wait, 'histogram'),
+          width: openSeconds > 0 ? openSeconds : 0.001,
+          color: GRAY_COLOR, // Open Wait는 회색
+        },
+        {
+          title: process,
+          value: formatTimeTaken(waitData.queue_wait, 'histogram'),
+          width: queueSeconds > 0 ? queueSeconds : 0.001,
+          color: PRIMARY_COLOR_SCALES[processIdx % PRIMARY_COLOR_SCALES.length], // Queue Wait는 보라색
+        },
+      ];
+    });
+  }, [summaryData]);
 
+  const queueLengthChartData = useMemo(() => {
+    if (!summaryData?.pax_experience?.queue_length) return [];
+
+    const processes = summaryData.pax_experience.queue_length;
     const entries = Object.entries(processes as Record<string, number>);
     const allZero = entries.every(([, value]) => value === 0);
-    return entries.map(([process, value]) => {
-      return {
-        title: process,
-        value: (
-          <>
-            {value.toLocaleString()}
-            {formatUnit('pax', 'histogram')}
-          </>
-        ),
-        width: value > 0 ? value : allZero ? 1 : 0.001,
-      };
-    });
-  }, [selectedChartType, summaryData]);
+
+    return entries.map(([process, value]) => ({
+      title: process,
+      value: (
+        <>
+          {value.toLocaleString()}
+          {formatUnit('pax', 'histogram')}
+        </>
+      ),
+      width: value > 0 ? value : allZero ? 1 : 0.001,
+    }));
+  }, [summaryData]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -107,7 +120,7 @@ function HomeSummary({
             labelExtractor={(opt) => opt.label}
           />
         </div>
-        <TheHistogramChart chartData={chartData} />
+        <TheHistogramChart chartData={selectedChartType === 'waiting_time' ? waitTimeChartData : queueLengthChartData} />
       </div>
 
       {/* KPI 카드 - 모든 메트릭을 하나의 그리드에 표시 */}
@@ -126,7 +139,7 @@ function HomeSummary({
         <HomeSummaryCard
           icon={WaitTime}
           title={<span>Wait Time</span>}
-          value={formatTimeTaken(summaryData?.waiting_time)}
+          value={formatTimeTaken(summaryData?.waiting_time?.total)}
           kpiType={percentile ? 'top' : 'mean'}
           percentile={percentile ?? undefined}
         />

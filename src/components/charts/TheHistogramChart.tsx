@@ -81,6 +81,7 @@ interface TheHistogramChartProps {
     title: string;
     value: React.ReactNode;
     width: number;
+    color?: string; // 커스텀 색상 (optional)
   }[];
   className?: string;
 }
@@ -96,8 +97,11 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
     <TooltipProvider delayDuration={0}>
       <div className={cn('flex w-full min-w-0 overflow-hidden text-center', className)}>
         {chartData &&
-          filteredChartData.map(({ title, value }, idx) => {
+          filteredChartData.map(({ title, value, color }, idx) => {
             const width = fixedWidths[idx];
+            // 커스텀 색상이 있으면 사용, 없으면 기본 색상 사용
+            const backgroundColor = color || PRIMARY_COLOR_SCALES[idx % PRIMARY_COLOR_SCALES.length];
+
             return (
               <Tooltip key={idx}>
                 <TooltipTrigger asChild>
@@ -108,7 +112,7 @@ function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
                         idx === 0 ? 'rounded-l-lg' : '',
                         idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
                       )}
-                      style={{ background: `${PRIMARY_COLOR_SCALES[idx % PRIMARY_COLOR_SCALES.length]}` }}
+                      style={{ background: backgroundColor }}
                     >
                       <span className="tracking-wide">{value}</span>
                     </div>
