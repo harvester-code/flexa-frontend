@@ -118,6 +118,36 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   const [isZonePanelOpen, setIsZonePanelOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [selectedAirlines, setSelectedAirlines] = useState<string[]>(['all']);
+  const [isAirlinePanelOpen, setIsAirlinePanelOpen] = useState(false);
+  const airlineDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 항공사 목록 추출
+  const AIRLINE_OPTIONS = useMemo(() => {
+    if (!hourlyTrendsData || !selectedFacilityValue) return [];
+
+    const facilityData = hourlyTrendsData[selectedFacilityValue];
+    const dataSource = facilityData?.data || facilityData;
+    if (!dataSource) return [];
+
+    // 모든 zone의 airlines 수집
+    const airlinesSet = new Set<string>();
+    Object.values(dataSource).forEach((zoneData: any) => {
+      if (zoneData.airlines) {
+        Object.keys(zoneData.airlines).forEach(airlineCode => {
+          airlinesSet.add(airlineCode);
+        });
+      }
+    });
+
+    const airlines = Array.from(airlinesSet).sort();
+
+    return [
+      { label: 'All Airlines', value: 'all' },
+      ...airlines.map(code => ({ label: code, value: code }))
+    ];
+  }, [hourlyTrendsData, selectedFacilityValue]);
+
   useEffect(() => {
     if (ZONE_OPTIONS.length > 0) {
       // 기본값으로 all_zones 선택
@@ -132,13 +162,16 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsZonePanelOpen(false);
       }
+      if (airlineDropdownRef.current && !airlineDropdownRef.current.contains(event.target as Node)) {
+        setIsAirlinePanelOpen(false);
+      }
     };
 
-    if (isZonePanelOpen) {
+    if (isZonePanelOpen || isAirlinePanelOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isZonePanelOpen]);
+  }, [isZonePanelOpen, isAirlinePanelOpen]);
 
   const [chartOption1, setChartOption1] = useState([0]);
   const handleChartOption1 = (buttonIndex: number) => {
@@ -171,6 +204,25 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         return newSelection.length > 0 ? newSelection : ['all_zones'];
       } else {
         return [...withoutAllZones, zoneValue];
+      }
+    });
+  };
+
+  const toggleAirline = (airlineValue: string) => {
+    setSelectedAirlines((prev) => {
+      // all 선택 시 모든 개별 airline 해제
+      if (airlineValue === 'all') {
+        return ['all'];
+      }
+
+      // 개별 airline 선택 시 all 해제하고 토글
+      const withoutAll = prev.filter(a => a !== 'all');
+      if (withoutAll.includes(airlineValue)) {
+        // 최소 1개는 선택되어야 함
+        const newSelection = withoutAll.filter(a => a !== airlineValue);
+        return newSelection.length > 0 ? newSelection : ['all'];
+      } else {
+        return [...withoutAll, airlineValue];
       }
     });
   };
@@ -208,12 +260,61 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       const zoneData = dataSource[zoneKey];
       if (!zoneData) return;
 
+      // 항공사 필터링이 적용된 경우
+      let dataToUse: any = {};
+
+      if (!selectedAirlines.includes('all') && zoneData.airlines) {
+        // 선택된 항공사들의 데이터 합산
+        const metrics = ['inflow', 'outflow', 'queue_length', 'waiting_time'];
+        metrics.forEach(metric => {
+          dataToUse[metric] = new Array(times.length).fill(0);
+        });
+
+        let airlineCount = 0;
+        selectedAirlines.forEach(airlineCode => {
+          const airlineData = zoneData.airlines[airlineCode];
+          if (!airlineData) return;
+
+          airlineCount++;
+
+          // inflow, outflow는 합산
+          ['inflow', 'outflow'].forEach(key => {
+            if (airlineData[key]) {
+              dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
+                val + (airlineData[key][idx] || 0)
+              );
+            }
+          });
+
+          // queue_length, waiting_time은 합산 (나중에 평균)
+          ['queue_length', 'waiting_time'].forEach(key => {
+            if (airlineData[key]) {
+              dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
+                val + (airlineData[key][idx] || 0)
+              );
+            }
+          });
+        });
+
+        // queue_length, waiting_time 평균 계산
+        if (airlineCount > 0) {
+          dataToUse.queue_length = dataToUse.queue_length.map((val: number) => val / airlineCount);
+          dataToUse.waiting_time = dataToUse.waiting_time.map((val: number) => val / airlineCount);
+        }
+
+        // capacity는 zone 전체 값 사용
+        dataToUse.capacity = zoneData.capacity || [];
+      } else {
+        // 전체 항공사 또는 airlines 데이터가 없는 경우
+        dataToUse = zoneData;
+      }
+
       validZoneCount++;
 
       // inflow, outflow, capacity는 합산
       ['inflow', 'outflow', 'capacity'].forEach((key) => {
-        if (zoneData[key]) {
-          const sanitized = sanitizeNumericSeries(zoneData[key], times.length);
+        if (dataToUse[key]) {
+          const sanitized = sanitizeNumericSeries(dataToUse[key], times.length);
           if (sanitized) {
             aggregatedData[key] = aggregatedData[key].map((val, idx) => val + (sanitized[idx] || 0));
           }
@@ -222,8 +323,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
       // queue_length, waiting_time은 평균 계산을 위해 합산 (나중에 zone 개수로 나눔)
       ['queue_length', 'waiting_time'].forEach((key) => {
-        if (zoneData[key]) {
-          const sanitized = sanitizeNumericSeries(zoneData[key], times.length);
+        if (dataToUse[key]) {
+          const sanitized = sanitizeNumericSeries(dataToUse[key], times.length);
           if (sanitized) {
             aggregatedData[key] = aggregatedData[key].map((val, idx) => val + (sanitized[idx] || 0));
           }
@@ -385,7 +486,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     setLineChartData(newLineChartData);
     setChartLayout(newLayout);
-  }, [chartOption1, selectedFacilityValue, selectedZones, hourlyTrendsData]);
+  }, [chartOption1, selectedFacilityValue, selectedZones, selectedAirlines, hourlyTrendsData]);
 
   // 선택된 zone들의 라벨 생성
   const selectedZonesLabel = useMemo(() => {
@@ -400,6 +501,20 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     }
     return `${selectedZones.length} zones selected`;
   }, [selectedZones, ZONE_OPTIONS]);
+
+  // 선택된 항공사들의 라벨 생성
+  const selectedAirlinesLabel = useMemo(() => {
+    if (selectedAirlines.includes('all')) {
+      return 'All Airlines';
+    }
+    if (selectedAirlines.length === 0) {
+      return 'Select Airlines';
+    }
+    if (selectedAirlines.length === 1) {
+      return selectedAirlines[0];
+    }
+    return `${selectedAirlines.length} airlines`;
+  }, [selectedAirlines]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -462,6 +577,54 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                             onCheckedChange={() => toggleZone(zone.value)}
                           />
                           <span className="text-sm">{zone.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Passengers (Airline) 드롭다운 */}
+            <div ref={airlineDropdownRef} className="relative min-w-48 flex-1">
+              <button
+                onClick={() => setIsAirlinePanelOpen(!isAirlinePanelOpen)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <span>
+                  Passengers
+                  {' · '}
+                  <span className="text-muted-foreground">{selectedAirlinesLabel}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+
+              {isAirlinePanelOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 flex min-w-[400px] rounded-md border bg-popover text-popover-foreground shadow-md">
+                  {/* Airline 카테고리 */}
+                  <div className="w-1/2 border-r">
+                    <button
+                      className="flex w-full items-center justify-between px-3 py-2 text-sm bg-accent"
+                    >
+                      <span>Airline</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Airline 멀티셀렉트 패널 */}
+                  <div className="w-1/2 p-2">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2 px-2">Select Airlines</div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {AIRLINE_OPTIONS.map((airline) => (
+                        <label
+                          key={airline.value}
+                          className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-sm cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedAirlines.includes(airline.value)}
+                            onCheckedChange={() => toggleAirline(airline.value)}
+                          />
+                          <span className="text-sm">{airline.label}</span>
                         </label>
                       ))}
                     </div>
