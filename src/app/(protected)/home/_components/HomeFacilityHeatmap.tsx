@@ -81,28 +81,89 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
   const formatTime = (timeString: string): string => {
     try {
       const date = new Date(timeString);
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
+      const hours = date.getHours().toString();
+      return `${hours}h`;
     } catch {
       return timeString;
     }
   };
+
+  // 날짜 포맷 (MM/DD)
+  const formatDate = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${month}/${day}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // 날짜별로 시간 그룹핑
+  const dateGroups = useMemo(() => {
+    const groups: { date: string; startIdx: number; count: number }[] = [];
+    let currentDate = '';
+    let startIdx = 0;
+    let count = 0;
+
+    times.forEach((time, idx) => {
+      const date = formatDate(time);
+      if (date !== currentDate) {
+        if (currentDate) {
+          groups.push({ date: currentDate, startIdx, count });
+        }
+        currentDate = date;
+        startIdx = idx;
+        count = 1;
+      } else {
+        count++;
+      }
+    });
+
+    if (currentDate) {
+      groups.push({ date: currentDate, startIdx, count });
+    }
+
+    return groups;
+  }, [times]);
 
   if (heatmapData.length === 0) {
     return null;
   }
 
   return (
-    <div className="mt-4 overflow-x-auto">
-      <table className="min-w-full border-collapse text-xs">
+    <div className="mt-4 overflow-x-auto relative">
+      {/* Legend at top-right */}
+      <div className="absolute top-0 right-0 flex items-center gap-3 text-xs text-muted-foreground bg-white px-3 py-2 rounded-md border border-input z-20">
+        <span className="whitespace-nowrap">Color intensity: Inflow / Capacity ratio</span>
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-16" style={{ background: 'linear-gradient(to right, rgb(255,255,255), rgb(239,68,68))' }} />
+          <span className="whitespace-nowrap">Low → High</span>
+        </div>
+      </div>
+
+      <table className="min-w-full border-collapse text-xs mt-12">
         <thead>
+          {/* Date Header Row */}
           <tr>
-            <th className="sticky left-0 z-10 border border-input bg-gray-50 px-2 py-1.5 text-left font-semibold text-xs">
-              FACILITY
+            <th className="sticky left-0 z-10 border border-input bg-gray-50" rowSpan={2}>
+              <div className="px-2 py-1.5 text-left font-semibold text-xs">FACILITY</div>
             </th>
+            {dateGroups.map((group, idx) => (
+              <th
+                key={idx}
+                colSpan={group.count}
+                className="border border-input bg-gray-100 px-1.5 py-1 text-center font-semibold text-xs"
+              >
+                {group.date}
+              </th>
+            ))}
+          </tr>
+          {/* Time Header Row */}
+          <tr>
             {times.map((time, idx) => (
-              <th key={idx} className="border border-input bg-gray-50 px-1.5 py-1 text-center font-medium text-xs min-w-[50px]">
+              <th key={idx} className="border border-input bg-gray-50 px-1.5 py-1 text-center font-medium text-xs min-w-[45px]">
                 {formatTime(time)}
               </th>
             ))}
@@ -135,13 +196,6 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
           ))}
         </tbody>
       </table>
-      <div className="mt-2 flex items-center justify-end gap-4 text-xs text-muted-foreground">
-        <span>Color intensity: Inflow / Capacity ratio</span>
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-8" style={{ background: 'linear-gradient(to right, rgb(255,255,255), rgb(239,68,68))' }} />
-          <span>Low → High</span>
-        </div>
-      </div>
     </div>
   );
 };

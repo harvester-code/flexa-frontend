@@ -86,10 +86,29 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     if (!hourlyTrendsData) return [];
     return Object.keys(hourlyTrendsData)
       .filter((key) => key !== 'times')
-      .map((key) => ({
-        label: capitalizeFirst(key.replace('_', ' ')),
-        value: key,
-      }));
+      .map((key) => {
+        const facilityData = hourlyTrendsData[key];
+        const dataSource = facilityData?.data || facilityData;
+        const facilities = facilityData?.facilities || [];
+
+        // 총 처리 인원 계산 (facilities 리스트에 있는 시설들의 inflow만 합산)
+        let totalThroughput = 0;
+        if (dataSource && facilities.length > 0) {
+          facilities.forEach((facilityName: string) => {
+            if (facilityName === 'Skip') return; // Skip 제외
+            const facilityZoneData = dataSource[facilityName];
+            if (facilityZoneData?.inflow && Array.isArray(facilityZoneData.inflow)) {
+              totalThroughput += facilityZoneData.inflow.reduce((sum: number, val: number) => sum + (val || 0), 0);
+            }
+          });
+        }
+
+        return {
+          label: capitalizeFirst(key.replace('_', ' ')),
+          value: key,
+          throughput: totalThroughput,
+        };
+      });
   }, [hourlyTrendsData]);
 
   const [selectedFacilityValue, setSelectedFacilityValue] = useState('');
@@ -558,7 +577,12 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                           selectedFacilityValue === facility.value && 'bg-accent'
                         )}
                       >
-                        <span>{facility.label}</span>
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span>{facility.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {facility.throughput.toLocaleString()} pax
+                          </span>
+                        </div>
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     ))}
