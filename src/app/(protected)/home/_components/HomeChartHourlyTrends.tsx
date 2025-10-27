@@ -10,6 +10,7 @@ import { capitalizeFirst } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoScenario from './HomeNoScenario';
 import TheDropdownMenu from './TheDropdownMenu';
+import HomeFacilityHeatmap from './HomeFacilityHeatmap';
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
 
@@ -651,6 +652,26 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         <div className="mt-2 min-h-96 bg-white">
           <LineChart chartData={lineChartData} chartLayout={chartLayout} />
         </div>
+
+        {/* Facility-level Heatmap */}
+        {hourlyTrendsData && selectedFacilityValue && (() => {
+          const times = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
+          const facilityData = hourlyTrendsData[selectedFacilityValue];
+          const dataSource = facilityData?.data || facilityData;
+          const facilities = facilityData?.facilities || [];
+
+          if (!dataSource || facilities.length === 0 || times.length === 0) {
+            return null;
+          }
+
+          return (
+            <HomeFacilityHeatmap
+              times={times}
+              facilities={facilities}
+              facilityData={dataSource}
+            />
+          );
+        })()}
       </div>
     </div>
   );
