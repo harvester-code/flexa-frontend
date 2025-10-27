@@ -612,13 +612,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">Last Saved:</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                    {scenario.metadata_updated_at ? dayjs(scenario.metadata_updated_at).format('MM/DD HH:mm') : 'Never saved'}
+                    {scenario.metadata_updated_at ? dayjs(scenario.metadata_updated_at).format('YYYY-MM-DD HH:mm') : 'Never saved'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">Last Run:</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                    {scenario.simulation_end_at ? dayjs(scenario.simulation_end_at).format('MM/DD HH:mm') : 'Never run'}
+                    {scenario.simulation_end_at ? dayjs(scenario.simulation_end_at).format('YYYY-MM-DD HH:mm') : 'Never run'}
                   </span>
                 </div>
               </div>
@@ -644,7 +644,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Date:</span>
                 <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                  {scenario.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('MM/DD') : 'N/A'}
+                  {scenario.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('YYYY-MM-DD') : 'N/A'}
                 </span>
               </div>
             </div>
