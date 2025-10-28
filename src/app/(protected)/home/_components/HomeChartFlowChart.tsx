@@ -49,8 +49,6 @@ function HomeChartFlowChart({
     const nodeColors: string[] = [];
 
     if (processInfo) {
-      let currentIndex = 0;
-
       Object.keys(processInfo).forEach((processKey) => {
         const facilities = processInfo[processKey]?.facilities || [];
 
@@ -121,12 +119,12 @@ function HomeChartFlowChart({
             const isLast = i === layerTitles.length - 1;
 
             // processInfo에서 해당 레이어의 pax_count 찾기
-            let paxCount = null;
+            let paxCount: number | null = null;
             if (processInfo) {
               const processKeys = Object.keys(processInfo);
               if (i < processKeys.length) {
                 const processKey = processKeys[i];
-                paxCount = processInfo[processKey]?.pax_count;
+                paxCount = processInfo[processKey]?.pax_count ?? null;
               }
             }
 
