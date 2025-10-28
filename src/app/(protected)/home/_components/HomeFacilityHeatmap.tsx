@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from "react";
 
 interface FacilityHeatmapData {
   facilityName: string;
@@ -17,13 +17,25 @@ interface HomeFacilityHeatmapProps {
   facilityData: Record<string, { inflow: number[]; capacity?: number[] }>;
 }
 
-const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHeatmapProps) => {
+const HomeFacilityHeatmap = ({
+  times,
+  facilities,
+  facilityData,
+}: HomeFacilityHeatmapProps) => {
+  const [hoveredCell, setHoveredCell] = useState<{
+    facilityIdx: number;
+    hourIdx: number;
+  } | null>(null);
+
   const heatmapData = useMemo<FacilityHeatmapData[]>(() => {
     if (!facilities || facilities.length === 0) return [];
 
     return facilities
-      .filter(facilityName => facilityName !== 'all_zones' && facilityName !== 'Skip')
-      .map(facilityName => {
+      .filter(
+        (facilityName) =>
+          facilityName !== "all_zones" && facilityName !== "Skip"
+      )
+      .map((facilityName) => {
         const data = facilityData[facilityName];
         if (!data) return null;
 
@@ -35,7 +47,6 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
           const inflow = inflowArray[idx] || 0;
           const capacity = capacityArray[idx] || 1; // 0으로 나누기 방지
           const ratio = capacity > 0 ? inflow / capacity : 0;
-
 
           return {
             time,
@@ -55,7 +66,13 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
   }, [times, facilities, facilityData]);
 
   // ratio를 빨간색 강도로 변환 (30% 단위 구간)
-  const getRatioColor = (ratio: number): { backgroundColor: string; textColor: string; normalizedRatio: number } => {
+  const getRatioColor = (
+    ratio: number
+  ): {
+    backgroundColor: string;
+    textColor: string;
+    normalizedRatio: number;
+  } => {
     let colorIntensity: number;
 
     if (ratio < 0.3) {
@@ -102,7 +119,7 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
     const backgroundColor = `rgb(${r}, ${g}, ${b})`;
 
     // 색상 강도에 따라 텍스트 색상 결정
-    const textColor = colorIntensity >= 0.4 ? '#ffffff' : '#000000';
+    const textColor = colorIntensity >= 0.4 ? "#ffffff" : "#000000";
 
     return { backgroundColor, textColor, normalizedRatio: colorIntensity };
   };
@@ -122,18 +139,18 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
   const formatDate = (timeString: string): string => {
     try {
       const date = new Date(timeString);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
       return `${month}/${day}`;
     } catch {
-      return '';
+      return "";
     }
   };
 
   // 날짜별로 시간 그룹핑
   const dateGroups = useMemo(() => {
     const groups: { date: string; startIdx: number; count: number }[] = [];
-    let currentDate = '';
+    let currentDate = "";
     let startIdx = 0;
     let count = 0;
 
@@ -166,10 +183,16 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
     <div className="mt-4 overflow-x-auto relative">
       {/* Legend at top-right */}
       <div className="absolute top-0 right-0 flex items-center gap-3 text-xs text-muted-foreground bg-white px-3 py-2 rounded-md border border-input z-20">
-        <span className="whitespace-nowrap">Color intensity: Inflow / Capacity ratio</span>
+        {/* <span className="whitespace-nowrap">Color intensity: Inflow / Capacity ratio</span> */}
         <div className="flex items-center gap-2">
-          <div className="h-3 w-16" style={{ background: 'linear-gradient(to right, rgb(255,255,255), rgb(239,68,68))' }} />
-          <span className="whitespace-nowrap">Low → High</span>
+          <div
+            className="h-3 w-16"
+            style={{
+              background:
+                "linear-gradient(to right, rgb(255,255,255), rgb(239,68,68))",
+            }}
+          />
+          <span className="whitespace-nowrap">Inflow / Capacity ratio</span>
         </div>
       </div>
 
@@ -177,8 +200,13 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
         <thead>
           {/* Date Header Row */}
           <tr>
-            <th className="sticky left-0 z-10 border border-input bg-gray-50" rowSpan={2}>
-              <div className="px-2 py-1.5 text-left font-semibold text-xs">FACILITY</div>
+            <th
+              className="sticky left-0 z-10 border border-input bg-gray-50"
+              rowSpan={2}
+            >
+              <div className="px-2 py-1.5 text-left font-semibold text-xs">
+                FACILITY
+              </div>
             </th>
             {dateGroups.map((group, idx) => (
               <th
@@ -193,7 +221,10 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
           {/* Time Header Row */}
           <tr>
             {times.map((time, idx) => (
-              <th key={idx} className="border border-input bg-gray-50 px-1.5 py-1 text-center font-medium text-xs min-w-[45px]">
+              <th
+                key={idx}
+                className="border border-input bg-gray-50 px-1.5 py-1 text-center font-medium text-xs min-w-[45px]"
+              >
                 {formatTime(time)}
               </th>
             ))}
@@ -204,7 +235,9 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
             <tr key={facilityIdx} className="hover:bg-gray-50">
               <td className="sticky left-0 z-10 border border-input bg-white px-2 py-1.5">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-semibold text-xs">{facility.facilityName}</span>
+                  <span className="font-semibold text-xs">
+                    {facility.facilityName}
+                  </span>
                   <span className="text-[10px] text-muted-foreground">
                     {facility.totalThroughput.toLocaleString()} pax
                   </span>
@@ -212,12 +245,19 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
               </td>
               {facility.hourlyData.map((hour, hourIdx) => {
                 const colorInfo = getRatioColor(hour.ratio);
+                const isHovered =
+                  hoveredCell?.facilityIdx === facilityIdx &&
+                  hoveredCell?.hourIdx === hourIdx;
+
                 return (
                   <td
                     key={hourIdx}
-                    className="border border-input px-1.5 py-1 text-center"
+                    className="border border-input px-1.5 py-1 text-center relative"
                     style={{ backgroundColor: colorInfo.backgroundColor }}
-                    title={`Inflow: ${hour.inflow} | Capacity: ${hour.capacity} | Ratio: ${(hour.ratio * 100).toFixed(1)}%`}
+                    onMouseEnter={() =>
+                      setHoveredCell({ facilityIdx, hourIdx })
+                    }
+                    onMouseLeave={() => setHoveredCell(null)}
                   >
                     <span
                       className="text-xs font-medium"
@@ -225,6 +265,17 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
                     >
                       {hour.inflow}
                     </span>
+
+                    {/* 즉시 나타나는 커스텀 tooltip */}
+                    {isHovered && (
+                      <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none">
+                        <div>Inflow: {hour.inflow}</div>
+                        <div>Capacity: {hour.capacity}</div>
+                        <div>Ratio: {(hour.ratio * 100).toFixed(1)}%</div>
+                        {/* 작은 화살표 */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    )}
                   </td>
                 );
               })}
