@@ -1,8 +1,8 @@
-import { ComponentType } from 'react';
 import { formatImageSize } from './HomeFormat';
+import { LucideIcon } from 'lucide-react';
 
 interface HomeSummaryCardProps {
-  icon: ComponentType<unknown>;
+  icon: LucideIcon;
   title: React.ReactNode;
   value: React.ReactNode;
   kpiType?: 'mean' | 'top'; // for Wait Time/Queue Pax badge

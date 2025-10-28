@@ -732,12 +732,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           // 선택된 zone 확인
           const isAllZones = selectedZones.includes('all_zones');
 
-          let facilities: string[] = [];
-          let filteredFacilityData: Record<string, any> = {};
+          let facilities: string[];
+          let filteredFacilityData: Record<string, any>;
 
           if (isAllZones) {
             // All Zones 선택 → zone 레벨 표시
             facilities = zoneFacilities;
+            filteredFacilityData = {};
             Object.keys(dataSource).forEach((key) => {
               const zoneData = dataSource[key];
               if (typeof zoneData === 'object' && zoneData !== null) {
@@ -753,17 +754,20 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             });
           } else {
             // 일부 zone 선택 (1개 이상) → 선택된 zone들의 모든 개별 facility 표시
+            const tempFacilities: string[] = [];
+            const tempFacilityData: Record<string, any> = {};
+
             selectedZones.forEach((zoneName) => {
               const zoneData = dataSource[zoneName];
               if (zoneData && zoneData.sub_facilities && zoneData.facility_data) {
                 // 해당 zone의 개별 facility 추가
-                facilities.push(...zoneData.sub_facilities);
+                tempFacilities.push(...zoneData.sub_facilities);
 
                 // facility_data의 각 facility 데이터를 시간에 맞춰 자르기
                 Object.keys(zoneData.facility_data).forEach((facilityName) => {
                   const facData = zoneData.facility_data[facilityName];
                   if (typeof facData === 'object' && facData !== null) {
-                    filteredFacilityData[facilityName] = {
+                    tempFacilityData[facilityName] = {
                       ...facData,
                       inflow: facData.inflow ? facData.inflow.slice(0, times.length) : [],
                       outflow: facData.outflow ? facData.outflow.slice(0, times.length) : [],
@@ -775,8 +779,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 });
               } else if (zoneData) {
                 // sub_facilities가 없으면 해당 zone만 표시
-                facilities.push(zoneName);
-                filteredFacilityData[zoneName] = {
+                tempFacilities.push(zoneName);
+                tempFacilityData[zoneName] = {
                   ...zoneData,
                   inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
                   outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
@@ -786,6 +790,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 };
               }
             });
+
+            facilities = tempFacilities;
+            filteredFacilityData = tempFacilityData;
           }
 
           if (facilities.length === 0) {
