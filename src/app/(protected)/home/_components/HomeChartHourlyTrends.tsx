@@ -150,6 +150,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     const dataSource = facilityData?.data || facilityData;
     if (!dataSource) return [];
 
+    // 항공사 이름 매핑 가져오기
+    const airlineNames = facilityData?.airline_names || {};
+
     // 모든 zone의 airlines 수집
     const airlinesSet = new Set<string>();
     Object.values(dataSource).forEach((zoneData: any) => {
@@ -164,7 +167,10 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     return [
       { label: 'All Airlines', value: 'all' },
-      ...airlines.map(code => ({ label: code, value: code }))
+      ...airlines.map(code => ({
+        label: airlineNames[code] ? `${code} | ${airlineNames[code]}` : code,
+        value: code
+      }))
     ];
   }, [hourlyTrendsData, selectedFacilityValue]);
 
@@ -557,10 +563,11 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       return 'Select Airlines';
     }
     if (selectedAirlines.length === 1) {
-      return selectedAirlines[0];
+      const airline = AIRLINE_OPTIONS.find(opt => opt.value === selectedAirlines[0]);
+      return airline?.label || selectedAirlines[0];
     }
     return `${selectedAirlines.length} airlines`;
-  }, [selectedAirlines]);
+  }, [selectedAirlines, AIRLINE_OPTIONS]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -731,6 +738,54 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
           // 선택된 zone 확인
           const isAllZones = selectedZones.includes('all_zones');
+          // 항공사 필터 확인
+          const isAirlineFiltered = !selectedAirlines.includes('all');
+
+          // 항공사별 데이터 집계 헬퍼 함수
+          const aggregateAirlineData = (airlinesData: Record<string, any>, timeLength: number) => {
+            const result = {
+              inflow: new Array(timeLength).fill(0),
+              outflow: new Array(timeLength).fill(0),
+              queue_length: new Array(timeLength).fill(0),
+              waiting_time: new Array(timeLength).fill(0),
+            };
+
+            let airlineCount = 0;
+            selectedAirlines.forEach((airlineCode) => {
+              const airlineData = airlinesData[airlineCode];
+              if (airlineData) {
+                airlineCount++;
+                // inflow, outflow는 합산
+                ['inflow', 'outflow'].forEach((key) => {
+                  if (airlineData[key]) {
+                    airlineData[key].forEach((value: number, idx: number) => {
+                      if (idx < timeLength) {
+                        result[key as 'inflow' | 'outflow'][idx] += value;
+                      }
+                    });
+                  }
+                });
+                // queue_length, waiting_time은 합산 후 평균
+                ['queue_length', 'waiting_time'].forEach((key) => {
+                  if (airlineData[key]) {
+                    airlineData[key].forEach((value: number, idx: number) => {
+                      if (idx < timeLength) {
+                        result[key as 'queue_length' | 'waiting_time'][idx] += value;
+                      }
+                    });
+                  }
+                });
+              }
+            });
+
+            // queue_length, waiting_time 평균 계산
+            if (airlineCount > 0) {
+              result.queue_length = result.queue_length.map(v => Math.round(v / airlineCount));
+              result.waiting_time = result.waiting_time.map(v => Math.round(v / airlineCount));
+            }
+
+            return result;
+          };
 
           let facilities: string[];
           let filteredFacilityData: Record<string, any>;
@@ -742,13 +797,25 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             Object.keys(dataSource).forEach((key) => {
               const zoneData = dataSource[key];
               if (typeof zoneData === 'object' && zoneData !== null) {
+                let facilityMetrics;
+
+                if (isAirlineFiltered && zoneData.airlines) {
+                  // 항공사 필터 적용
+                  facilityMetrics = aggregateAirlineData(zoneData.airlines, times.length);
+                } else {
+                  // 전체 데이터 사용
+                  facilityMetrics = {
+                    inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+                    outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                    queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+                    waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+                  };
+                }
+
                 filteredFacilityData[key] = {
                   ...zoneData,
-                  inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
-                  outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                  ...facilityMetrics,
                   capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
-                  queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
-                  waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
                 };
               }
             });
@@ -767,26 +834,50 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 Object.keys(zoneData.facility_data).forEach((facilityName) => {
                   const facData = zoneData.facility_data[facilityName];
                   if (typeof facData === 'object' && facData !== null) {
+                    let facilityMetrics;
+
+                    if (isAirlineFiltered && facData.airlines) {
+                      // 항공사 필터 적용
+                      facilityMetrics = aggregateAirlineData(facData.airlines, times.length);
+                    } else {
+                      // 전체 데이터 사용
+                      facilityMetrics = {
+                        inflow: facData.inflow ? facData.inflow.slice(0, times.length) : [],
+                        outflow: facData.outflow ? facData.outflow.slice(0, times.length) : [],
+                        queue_length: facData.queue_length ? facData.queue_length.slice(0, times.length) : [],
+                        waiting_time: facData.waiting_time ? facData.waiting_time.slice(0, times.length) : [],
+                      };
+                    }
+
                     tempFacilityData[facilityName] = {
                       ...facData,
-                      inflow: facData.inflow ? facData.inflow.slice(0, times.length) : [],
-                      outflow: facData.outflow ? facData.outflow.slice(0, times.length) : [],
+                      ...facilityMetrics,
                       capacity: facData.capacity ? facData.capacity.slice(0, times.length) : [],
-                      queue_length: facData.queue_length ? facData.queue_length.slice(0, times.length) : [],
-                      waiting_time: facData.waiting_time ? facData.waiting_time.slice(0, times.length) : [],
                     };
                   }
                 });
               } else if (zoneData) {
                 // sub_facilities가 없으면 해당 zone만 표시
                 tempFacilities.push(zoneName);
+
+                let facilityMetrics;
+                if (isAirlineFiltered && zoneData.airlines) {
+                  // 항공사 필터 적용
+                  facilityMetrics = aggregateAirlineData(zoneData.airlines, times.length);
+                } else {
+                  // 전체 데이터 사용
+                  facilityMetrics = {
+                    inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+                    outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                    queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+                    waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+                  };
+                }
+
                 tempFacilityData[zoneName] = {
                   ...zoneData,
-                  inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
-                  outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                  ...facilityMetrics,
                   capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
-                  queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
-                  waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
                 };
               }
             });
