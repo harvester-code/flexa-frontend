@@ -36,6 +36,7 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
           const capacity = capacityArray[idx] || 1; // 0으로 나누기 방지
           const ratio = capacity > 0 ? inflow / capacity : 0;
 
+
           return {
             time,
             inflow,
@@ -53,28 +54,57 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
       .filter((item): item is FacilityHeatmapData => item !== null);
   }, [times, facilities, facilityData]);
 
-  // 최대 ratio 계산 (색상 스케일링용)
-  const maxRatio = useMemo(() => {
-    let max = 0;
-    heatmapData.forEach(facility => {
-      facility.hourlyData.forEach(hour => {
-        if (hour.ratio > max) max = hour.ratio;
-      });
-    });
-    return Math.max(max, 1); // 최소 1로 설정
-  }, [heatmapData]);
+  // ratio를 빨간색 강도로 변환 (30% 단위 구간)
+  const getRatioColor = (ratio: number): { backgroundColor: string; textColor: string; normalizedRatio: number } => {
+    let colorIntensity: number;
 
-  // ratio를 빨간색 강도로 변환 (0.0 ~ 1.0)
-  const getRatioColor = (ratio: number): string => {
-    const normalizedRatio = Math.min(ratio / maxRatio, 1);
+    if (ratio < 0.3) {
+      // 0~30%
+      colorIntensity = 0.0;
+    } else if (ratio < 0.6) {
+      // 30~60%
+      colorIntensity = 0.1;
+    } else if (ratio < 0.9) {
+      // 60~90%
+      colorIntensity = 0.2;
+    } else if (ratio < 1.2) {
+      // 90~120%
+      colorIntensity = 0.35;
+    } else if (ratio < 1.5) {
+      // 120~150%
+      colorIntensity = 0.5;
+    } else if (ratio < 1.8) {
+      // 150~180%
+      colorIntensity = 0.6;
+    } else if (ratio < 2.1) {
+      // 180~210%
+      colorIntensity = 0.7;
+    } else if (ratio < 2.4) {
+      // 210~240%
+      colorIntensity = 0.8;
+    } else if (ratio < 2.7) {
+      // 240~270%
+      colorIntensity = 0.9;
+    } else if (ratio < 3.0) {
+      // 270~300%
+      colorIntensity = 0.95;
+    } else {
+      // 300%+ (모두 동일한 최대 빨강)
+      colorIntensity = 1.0;
+    }
 
-    // 빨간색 그라데이션 (흰색 -> 빨강)
-    // rgb(255, 255, 255) -> rgb(239, 68, 68) (red-500)
+    // 빨간색 그라데이션
+    // rgb(255, 255, 255) -> rgb(220, 38, 38) (red-600)
     const r = 255;
-    const g = Math.round(255 - (255 - 68) * normalizedRatio);
-    const b = Math.round(255 - (255 - 68) * normalizedRatio);
+    const g = Math.round(255 - (255 - 38) * colorIntensity);
+    const b = Math.round(255 - (255 - 38) * colorIntensity);
 
-    return `rgb(${r}, ${g}, ${b})`;
+    const backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+    // 색상 강도에 따라 텍스트 색상 결정
+    const textColor = colorIntensity >= 0.4 ? '#ffffff' : '#000000';
+
+    return { backgroundColor, textColor, normalizedRatio: colorIntensity };
   };
 
   // 시간 포맷 (HH:mm)
@@ -180,18 +210,24 @@ const HomeFacilityHeatmap = ({ times, facilities, facilityData }: HomeFacilityHe
                   </span>
                 </div>
               </td>
-              {facility.hourlyData.map((hour, hourIdx) => (
-                <td
-                  key={hourIdx}
-                  className="border border-input px-1.5 py-1 text-center"
-                  style={{ backgroundColor: getRatioColor(hour.ratio) }}
-                  title={`Inflow: ${hour.inflow} | Capacity: ${hour.capacity} | Ratio: ${(hour.ratio * 100).toFixed(1)}%`}
-                >
-                  <span className={hour.ratio > 0.7 ? 'font-semibold text-white text-xs' : 'font-medium text-xs'}>
-                    {hour.inflow}
-                  </span>
-                </td>
-              ))}
+              {facility.hourlyData.map((hour, hourIdx) => {
+                const colorInfo = getRatioColor(hour.ratio);
+                return (
+                  <td
+                    key={hourIdx}
+                    className="border border-input px-1.5 py-1 text-center"
+                    style={{ backgroundColor: colorInfo.backgroundColor }}
+                    title={`Inflow: ${hour.inflow} | Capacity: ${hour.capacity} | Ratio: ${(hour.ratio * 100).toFixed(1)}%`}
+                  >
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: colorInfo.textColor }}
+                    >
+                      {hour.inflow}
+                    </span>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

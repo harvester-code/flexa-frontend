@@ -250,7 +250,23 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   useEffect(() => {
     if (!hourlyTrendsData || !selectedFacilityValue || selectedZones.length === 0) return;
 
-    const times = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
+    const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
+
+    // 자정(00:00) 이후 데이터 제거 - 당일까지만 표시
+    const times = allTimes.filter((timeStr, idx) => {
+      if (idx === 0) return true; // 첫 시간은 무조건 포함
+
+      const currentTime = new Date(timeStr);
+      const prevTime = new Date(allTimes[idx - 1]);
+
+      // 시간이 이전 시간보다 작으면 다음날로 넘어간 것 (예: 23:00 -> 00:00)
+      if (currentTime.getHours() < prevTime.getHours()) {
+        return false; // 다음날 데이터 제외
+      }
+
+      return true;
+    });
+
     const facilityData = hourlyTrendsData[selectedFacilityValue];
     const dataSource = facilityData?.data || facilityData;
 
@@ -300,8 +316,10 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           // inflow, outflow는 합산
           ['inflow', 'outflow'].forEach(key => {
             if (airlineData[key]) {
+              // 필터링된 times 길이만큼만 사용
+              const slicedData = airlineData[key].slice(0, times.length);
               dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
-                val + (airlineData[key][idx] || 0)
+                val + (slicedData[idx] || 0)
               );
             }
           });
@@ -309,8 +327,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           // queue_length, waiting_time은 합산 (나중에 평균)
           ['queue_length', 'waiting_time'].forEach(key => {
             if (airlineData[key]) {
+              const slicedData = airlineData[key].slice(0, times.length);
               dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
-                val + (airlineData[key][idx] || 0)
+                val + (slicedData[idx] || 0)
               );
             }
           });
@@ -322,11 +341,18 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           dataToUse.waiting_time = dataToUse.waiting_time.map((val: number) => val / airlineCount);
         }
 
-        // capacity는 zone 전체 값 사용
-        dataToUse.capacity = zoneData.capacity || [];
+        // capacity는 zone 전체 값 사용 (필터링된 길이로)
+        dataToUse.capacity = zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [];
       } else {
         // 전체 항공사 또는 airlines 데이터가 없는 경우
-        dataToUse = zoneData;
+        // 모든 배열을 필터링된 times 길이로 자르기
+        dataToUse = {
+          inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+          outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+          capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+          queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+          waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+        };
       }
 
       validZoneCount++;
@@ -679,7 +705,22 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
         {/* Facility-level Heatmap */}
         {hourlyTrendsData && selectedFacilityValue && (() => {
-          const times = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
+          const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
+
+          // 자정(00:00) 이후 데이터 제거 - 당일까지만 표시
+          const times = allTimes.filter((timeStr, idx) => {
+            if (idx === 0) return true;
+
+            const currentTime = new Date(timeStr);
+            const prevTime = new Date(allTimes[idx - 1]);
+
+            if (currentTime.getHours() < prevTime.getHours()) {
+              return false;
+            }
+
+            return true;
+          });
+
           const facilityData = hourlyTrendsData[selectedFacilityValue];
           const dataSource = facilityData?.data || facilityData;
           const facilities = facilityData?.facilities || [];
@@ -688,11 +729,27 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             return null;
           }
 
+          // 필터링된 인덱스에 맞게 데이터도 자르기
+          const filteredFacilityData: Record<string, any> = {};
+          Object.keys(dataSource).forEach((key) => {
+            const zoneData = dataSource[key];
+            if (typeof zoneData === 'object' && zoneData !== null) {
+              filteredFacilityData[key] = {
+                ...zoneData,
+                inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+                outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+                queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+                waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+              };
+            }
+          });
+
           return (
             <HomeFacilityHeatmap
               times={times}
               facilities={facilities}
-              facilityData={dataSource}
+              facilityData={filteredFacilityData}
             />
           );
         })()}
