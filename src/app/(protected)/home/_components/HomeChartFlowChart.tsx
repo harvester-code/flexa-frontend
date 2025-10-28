@@ -32,7 +32,7 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
 
     // 노드 수에 따라 차트 높이 동적 조정
     const nodeCount = nodeLabels.length;
-    const dynamicHeight = Math.max(600, nodeCount * 40); // 노드당 40px, 최소 600px
+    const dynamicHeight = Math.max(400, Math.min(nodeCount * 20, 600)); // 노드당 20px, 최소 400px, 최대 600px
     setChartHeight(dynamicHeight);
 
     // Skip 노드에 대한 색상 처리
@@ -48,8 +48,8 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
         type: 'sankey',
         orientation: 'h',
         node: {
-          pad: 15,
-          thickness: 20,
+          pad: 8,
+          thickness: 15,
           label: nodeLabels,
           color: nodeColors,
         },
