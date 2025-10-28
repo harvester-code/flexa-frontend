@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   BarChart3,
-  AlertTriangle,
   LineChart,
   FileText,
   Image,
@@ -17,7 +16,6 @@ import HomeCharts from "./_components/HomeCharts";
 import HomeDetails from "./_components/HomeDetails";
 import HomeScenario from "./_components/HomeScenario";
 import HomeSummary from "./_components/HomeSummary";
-import HomeWarning from "./_components/HomeWarning";
 import HomeTerminalImage from "./_components/HomeTerminalImage";
 
 // FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
@@ -81,18 +79,6 @@ function HomePage() {
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
             data={allHomeData?.summary}
             isLoading={isMetricsLoading}
-          />
-        </HomeAccordion>
-
-        <HomeAccordion
-          title="Alert & Issues"
-          icon={<AlertTriangle className="h-5 w-5 text-primary" />}
-          open={true}
-        >
-          <HomeWarning
-            scenario={scenario}
-            data={allHomeData?.alert_issues}
-            isLoading={isStaticLoading}
           />
         </HomeAccordion>
 
