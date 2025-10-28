@@ -723,27 +723,74 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
           const facilityData = hourlyTrendsData[selectedFacilityValue];
           const dataSource = facilityData?.data || facilityData;
-          const facilities = facilityData?.facilities || [];
+          const zoneFacilities = facilityData?.facilities || [];
 
-          if (!dataSource || facilities.length === 0 || times.length === 0) {
+          if (!dataSource || zoneFacilities.length === 0 || times.length === 0) {
             return null;
           }
 
-          // 필터링된 인덱스에 맞게 데이터도 자르기
-          const filteredFacilityData: Record<string, any> = {};
-          Object.keys(dataSource).forEach((key) => {
-            const zoneData = dataSource[key];
-            if (typeof zoneData === 'object' && zoneData !== null) {
-              filteredFacilityData[key] = {
-                ...zoneData,
-                inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
-                outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
-                capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
-                queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
-                waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
-              };
-            }
-          });
+          // 선택된 zone 확인
+          const isAllZones = selectedZones.includes('all_zones');
+
+          let facilities: string[] = [];
+          let filteredFacilityData: Record<string, any> = {};
+
+          if (isAllZones) {
+            // All Zones 선택 → zone 레벨 표시
+            facilities = zoneFacilities;
+            Object.keys(dataSource).forEach((key) => {
+              const zoneData = dataSource[key];
+              if (typeof zoneData === 'object' && zoneData !== null) {
+                filteredFacilityData[key] = {
+                  ...zoneData,
+                  inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+                  outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                  capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+                  queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+                  waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+                };
+              }
+            });
+          } else {
+            // 일부 zone 선택 (1개 이상) → 선택된 zone들의 모든 개별 facility 표시
+            selectedZones.forEach((zoneName) => {
+              const zoneData = dataSource[zoneName];
+              if (zoneData && zoneData.sub_facilities && zoneData.facility_data) {
+                // 해당 zone의 개별 facility 추가
+                facilities.push(...zoneData.sub_facilities);
+
+                // facility_data의 각 facility 데이터를 시간에 맞춰 자르기
+                Object.keys(zoneData.facility_data).forEach((facilityName) => {
+                  const facData = zoneData.facility_data[facilityName];
+                  if (typeof facData === 'object' && facData !== null) {
+                    filteredFacilityData[facilityName] = {
+                      ...facData,
+                      inflow: facData.inflow ? facData.inflow.slice(0, times.length) : [],
+                      outflow: facData.outflow ? facData.outflow.slice(0, times.length) : [],
+                      capacity: facData.capacity ? facData.capacity.slice(0, times.length) : [],
+                      queue_length: facData.queue_length ? facData.queue_length.slice(0, times.length) : [],
+                      waiting_time: facData.waiting_time ? facData.waiting_time.slice(0, times.length) : [],
+                    };
+                  }
+                });
+              } else if (zoneData) {
+                // sub_facilities가 없으면 해당 zone만 표시
+                facilities.push(zoneName);
+                filteredFacilityData[zoneName] = {
+                  ...zoneData,
+                  inflow: zoneData.inflow ? zoneData.inflow.slice(0, times.length) : [],
+                  outflow: zoneData.outflow ? zoneData.outflow.slice(0, times.length) : [],
+                  capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+                  queue_length: zoneData.queue_length ? zoneData.queue_length.slice(0, times.length) : [],
+                  waiting_time: zoneData.waiting_time ? zoneData.waiting_time.slice(0, times.length) : [],
+                };
+              }
+            });
+          }
+
+          if (facilities.length === 0) {
+            return null;
+          }
 
           return (
             <HomeFacilityHeatmap
