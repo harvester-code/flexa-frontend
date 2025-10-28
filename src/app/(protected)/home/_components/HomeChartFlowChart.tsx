@@ -35,13 +35,39 @@ function HomeChartFlowChart({ scenario, data, isLoading: propIsLoading }: HomeCh
     const dynamicHeight = Math.max(400, Math.min(nodeCount * 20, 600)); // 노드당 20px, 최소 400px, 최대 600px
     setChartHeight(dynamicHeight);
 
-    // Skip 노드에 대한 색상 처리
-    const nodeColors = nodeLabels.map((label, index) => {
-      if (label.includes('Skip')) {
-        return '#999999'; // Skip 노드는 회색
-      }
-      return COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
-    });
+    // 각 프로세스별로 색상을 COMPONENT_TYPICAL_COLORS 순서대로 할당
+    const nodeColors: string[] = [];
+
+    if (processInfo) {
+      let currentIndex = 0;
+
+      Object.keys(processInfo).forEach((processKey) => {
+        const facilities = processInfo[processKey]?.facilities || [];
+
+        facilities.forEach((facility: string, layerIndex: number) => {
+          // Failed와 Skipped는 특별 색상
+          if (facility === 'Failed') {
+            nodeColors.push('#EF4444'); // 빨간색
+          } else if (facility === 'Skipped' || facility.includes('Skip')) {
+            nodeColors.push('#999999'); // 회색
+          } else {
+            // 나머지는 레이어 내 순서대로 COMPONENT_TYPICAL_COLORS 사용
+            nodeColors.push(COMPONENT_TYPICAL_COLORS[layerIndex % COMPONENT_TYPICAL_COLORS.length]);
+          }
+        });
+      });
+    } else {
+      // processInfo가 없는 경우 기본 처리
+      nodeLabels.forEach((label, index) => {
+        if (label === 'Failed') {
+          nodeColors.push('#EF4444');
+        } else if (label === 'Skipped' || label.includes('Skip')) {
+          nodeColors.push('#999999');
+        } else {
+          nodeColors.push(COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length]);
+        }
+      });
+    }
 
     const data: Plotly.Data[] = [
       {
