@@ -113,10 +113,14 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
   const [selectedFacilityValue, setSelectedFacilityValue] = useState('');
   useEffect(() => {
-    if (FACILITY_OPTIONS.length > 0 && !selectedFacilityValue) {
-      setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
+    if (FACILITY_OPTIONS.length > 0) {
+      // selectedFacilityValue가 비어있거나 현재 옵션에 없으면 첫 번째 옵션 선택
+      const isValidSelection = selectedFacilityValue && FACILITY_OPTIONS.some(opt => opt.value === selectedFacilityValue);
+      if (!isValidSelection) {
+        setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
+      }
     }
-  }, [FACILITY_OPTIONS, selectedFacilityValue]);
+  }, [FACILITY_OPTIONS]);
 
   const ZONE_OPTIONS = useMemo(() => {
     if (!hourlyTrendsData || !selectedFacilityValue) return [];
@@ -176,9 +180,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
   useEffect(() => {
     if (ZONE_OPTIONS.length > 0) {
-      // 기본값으로 all_zones 선택
-      const allZonesOption = ZONE_OPTIONS.find(opt => opt.value === 'all_zones');
-      setSelectedZones(allZonesOption ? ['all_zones'] : [ZONE_OPTIONS[0].value]);
+      // all_zones가 아닌 첫 번째 실제 zone 선택
+      const firstActualZone = ZONE_OPTIONS.find(opt => opt.value !== 'all_zones');
+      setSelectedZones(firstActualZone ? [firstActualZone.value] : [ZONE_OPTIONS[0].value]);
     }
   }, [ZONE_OPTIONS]);
 

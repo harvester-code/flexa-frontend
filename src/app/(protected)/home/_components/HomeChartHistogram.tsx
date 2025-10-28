@@ -32,10 +32,14 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
 
   const [selectedFacilityValue, setSelectedFacilityValue] = useState('');
   useEffect(() => {
-    if (FACILITY_OPTIONS.length > 0 && !selectedFacilityValue) {
-      setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
+    if (FACILITY_OPTIONS.length > 0) {
+      // selectedFacilityValue가 비어있거나 현재 옵션에 없으면 첫 번째 옵션 선택
+      const isValidSelection = selectedFacilityValue && FACILITY_OPTIONS.some(opt => opt.value === selectedFacilityValue);
+      if (!isValidSelection) {
+        setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
+      }
     }
-  }, [FACILITY_OPTIONS, selectedFacilityValue]);
+  }, [FACILITY_OPTIONS]);
 
   const ZONE_OPTIONS = useMemo(() => {
     if (!histogramData || !selectedFacilityValue) return [];
@@ -50,7 +54,9 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
   const [selectedZoneValue, setSelectedZoneValue] = useState('');
   useEffect(() => {
     if (ZONE_OPTIONS.length > 0) {
-      setSelectedZoneValue(ZONE_OPTIONS[0].value);
+      // all_zones가 아닌 첫 번째 실제 zone 선택
+      const firstActualZone = ZONE_OPTIONS.find(opt => opt.value !== 'all_zones');
+      setSelectedZoneValue(firstActualZone ? firstActualZone.value : ZONE_OPTIONS[0].value);
     } else {
       setSelectedZoneValue('');
     }
