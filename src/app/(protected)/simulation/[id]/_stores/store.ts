@@ -160,6 +160,13 @@ interface Facility {
   };
 }
 
+export interface ZoneAreaRect {
+  x: number; // 0-1 비율 좌표
+  y: number; // 0-1 비율 좌표
+  width: number; // 0-1 비율 너비
+  height: number; // 0-1 비율 높이
+}
+
 /**
  * Legacy procedures를 새로운 process_flow 형태로 변환하는 헬퍼 함수
  */
@@ -241,6 +248,9 @@ export interface SimulationStoreState {
   };
   passenger: PassengerData;
   process_flow: ProcessStep[];
+  terminalLayout: {
+    zoneAreas: Record<string, ZoneAreaRect>;
+  };
   workflow: {
     currentStep: number;
     step1Completed: boolean;
@@ -459,6 +469,8 @@ export interface SimulationStoreState {
     newProcessName: string
   ) => void;
   migratePercentageData: () => void;
+  setZoneArea: (step: number, zoneName: string, rect: ZoneAreaRect) => void;
+  removeZoneArea: (step: number, zoneName: string) => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
 }
@@ -512,6 +524,9 @@ const createInitialState = (scenarioId?: string) => ({
     },
   },
   process_flow: [],
+  terminalLayout: {
+    zoneAreas: {},
+  },
   workflow: {
     currentStep: 1,
     step1Completed: false,
@@ -617,6 +632,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.workflow.step1Completed = false;
         state.workflow.step2Completed = false;
         state.workflow.availableSteps = [1]; // 첫 번째 단계만 접근 가능
+
+        // ✅ 관련 존 영역도 초기화
+        state.terminalLayout.zoneAreas = {};
       }),
 
     setSelectedConditions: (selectedConditions) =>
@@ -1336,6 +1354,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.process_flow = [];
 
         // ✅ process_flow 리셋 시 관련 workflow 상태도 초기화
+        state.terminalLayout.zoneAreas = {};
       }),
 
     loadProcessMetadata: (metadata) =>
@@ -1629,6 +1648,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
             });
           });
         });
+      }),
+
+    setZoneArea: (step, zoneName, rect) =>
+      set((state) => {
+        const key = `${step}:${zoneName}`;
+        state.terminalLayout.zoneAreas[key] = { ...rect };
+      }),
+
+    removeZoneArea: (step, zoneName) =>
+      set((state) => {
+        const key = `${step}:${zoneName}`;
+        if (state.terminalLayout.zoneAreas[key]) {
+          delete state.terminalLayout.zoneAreas[key];
+        }
       }),
 
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정
