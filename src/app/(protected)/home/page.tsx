@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BarChart3,
   LineChart,
@@ -17,6 +17,10 @@ import HomeDetails from "./_components/HomeDetails";
 import HomeScenario from "./_components/HomeScenario";
 import HomeSummary from "./_components/HomeSummary";
 import HomeTerminalImage from "./_components/HomeTerminalImage";
+import type {
+  ScenarioTerminalLayout,
+  TerminalLayoutZoneRect,
+} from "@/types/terminalLayout";
 
 // FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
 
@@ -46,6 +50,57 @@ function HomePage() {
     ...metricsData,
   };
 
+  const terminalLayoutData = useMemo<ScenarioTerminalLayout | null>(() => {
+    const rawLayout = (staticData as unknown as { terminalLayout?: unknown })?.terminalLayout;
+    if (!rawLayout || typeof rawLayout !== "object") {
+      return null;
+    }
+
+    const layoutRecord = rawLayout as Record<string, unknown>;
+    const zoneAreasRaw = layoutRecord.zoneAreas;
+
+    if (!zoneAreasRaw || typeof zoneAreasRaw !== "object") {
+      return null;
+    }
+
+    const normalizedZoneAreas: Record<string, TerminalLayoutZoneRect> = {};
+
+    Object.entries(zoneAreasRaw as Record<string, unknown>).forEach(
+      ([key, value]) => {
+        if (!value || typeof value !== "object") {
+          return;
+        }
+
+        const rectRecord = value as Record<string, unknown>;
+        const x = Number(rectRecord.x);
+        const y = Number(rectRecord.y);
+        const width = Number(rectRecord.width);
+        const height = Number(rectRecord.height);
+
+        if ([x, y, width, height].every((val) => Number.isFinite(val))) {
+          normalizedZoneAreas[key] = { x, y, width, height };
+        }
+      }
+    );
+
+    if (Object.keys(normalizedZoneAreas).length === 0) {
+      return null;
+    }
+
+    const imageUrl = ["imageUrl", "mapUrl", "image_path"].reduce<
+      string | null
+    >((acc, key) => {
+      if (acc) return acc;
+      const value = layoutRecord[key];
+      return typeof value === "string" ? value : acc;
+    }, null);
+
+    return {
+      imageUrl,
+      zoneAreas: normalizedZoneAreas,
+    };
+  }, [staticData]);
+
   return (
     <>
       <TheContentHeader text="Home" />
@@ -66,7 +121,10 @@ function HomePage() {
           className="mt-4"
           open={true}
         >
-          <HomeTerminalImage scenario={scenario} />
+          <HomeTerminalImage
+            scenario={scenario}
+            layoutData={terminalLayoutData}
+          />
         </HomeAccordion>
 
         <HomeAccordion
