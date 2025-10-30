@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +49,11 @@ interface TerminalImageManagerProps {
   className?: string;
 }
 
-function TerminalImageManager({ airport, terminal, className }: TerminalImageManagerProps) {
+function TerminalImageManager({
+  airport,
+  terminal,
+  className,
+}: TerminalImageManagerProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +130,8 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
       selectedZone &&
       zoneItems.some(
         (zone) =>
-          zone.step === selectedZone.step && zone.zoneName === selectedZone.zoneName
+          zone.step === selectedZone.step &&
+          zone.zoneName === selectedZone.zoneName
       );
 
     if (!hasSelectedZone) {
@@ -169,10 +173,6 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
     setSelectedZone(zone);
     setSelectedStep(zone.step);
   };
-
-  const assignedZoneCount = useMemo(() => {
-    return zoneItems.filter((zone) => zoneAreas[getZoneKey(zone.step, zone.zoneName)]).length;
-  }, [zoneItems, zoneAreas, getZoneKey]);
 
   const hasAnyZoneAreas = useMemo(() => {
     return Object.keys(zoneAreas).length > 0;
@@ -223,7 +223,8 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
         if (zoneItems.length > 0) {
           toast({
             title: "Select a zone",
-            description: "Pick a zone before drawing a waiting area on the map.",
+            description:
+              "Pick a zone before drawing a waiting area on the map.",
             variant: "destructive",
           });
         }
@@ -268,10 +269,7 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
   );
 
   const handlePointerFinalize = useCallback(
-    (
-      event: ReactPointerEvent<HTMLDivElement>,
-      finalize: boolean = false
-    ) => {
+    (event: ReactPointerEvent<HTMLDivElement>, finalize: boolean = false) => {
       if (!isDrawing || activePointerId !== event.pointerId || !startPoint) {
         return;
       }
@@ -291,7 +289,8 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
         return;
       }
 
-      const endPoint = getRelativePoint(event.clientX, event.clientY) || startPoint;
+      const endPoint =
+        getRelativePoint(event.clientX, event.clientY) || startPoint;
       const rect = {
         x: Math.min(startPoint.x, endPoint.x),
         y: Math.min(startPoint.y, endPoint.y),
@@ -552,336 +551,348 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
 
   return (
     <div className={className}>
-      <Card>
-        <CardContent className="space-y-4 p-6">
-          <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-muted">
-            {!hasIdentifiers ? (
-              <div className="flex h-96 flex-col items-center justify-center gap-4">
-                <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Select an airport and terminal to view the layout image.
+      <div className="relative overflow-hidden rounded-lg bg-muted">
+        {!hasIdentifiers ? (
+          <div className="flex h-96 flex-col items-center justify-center gap-4">
+            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Select an airport and terminal to view the layout image.
+            </p>
+          </div>
+        ) : isLoading ? (
+          <div className="flex h-96 items-center justify-center">
+            <Spinner size={32} />
+          </div>
+        ) : imageUrl ? (
+          <div className="space-y-6 p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Select a zone and drag on the map to mark the waiting area.
                 </p>
               </div>
-            ) : isLoading ? (
-              <div className="flex h-96 items-center justify-center">
-                <Spinner size={32} />
-              </div>
-            ) : imageUrl ? (
-              <div className="space-y-6 p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      Select a zone and drag on the map to mark the waiting area.
-                    </p>
-                    {zoneItems.length > 0 && (
-                      <p className="text-xs font-medium text-primary">
-                        {assignedZoneCount}/{zoneItems.length} zones mapped
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={handleDownload}
+                  disabled={isLoading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download />
+                  Download
+                </Button>
+
+                <label>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={isUploading}
+                    asChild
+                  >
+                    <span>
+                      <Upload />
+                      {isUploading ? "Updating..." : "Update"}
+                    </span>
+                  </Button>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
                     <Button
-                      onClick={handleDownload}
-                      disabled={isLoading}
-                      variant="outline"
+                      disabled={isLoading || !imageUrl}
+                      variant="destructive"
                       size="sm"
                     >
-                      <Download />
-                      Download
+                      <Trash2 />
+                      Delete
                     </Button>
-
-                    <label>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        disabled={isUploading}
-                        asChild
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this image? This action
+                        cannot be undone. All image files for {airport}-
+                        {terminal}
+                        will be removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        <span>
-                          <Upload />
-                          {isUploading ? "Updating..." : "Update"}
-                        </span>
-                      </Button>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
-                        onChange={handleFileChange}
-                        disabled={isUploading}
-                        className="hidden"
-                      />
-                    </label>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          disabled={isLoading || !imageUrl}
-                          variant="destructive"
-                          size="sm"
-                        >
-                          <Trash2 />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this image? This action
-                            cannot be undone. All image files for {airport}-{terminal}
-                            will be removed.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Processes
-                    </p>
-                    {stepGroups.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Add zones in the Process Flow before mapping areas.
-                      </p>
-                    ) : (
-                      <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
-                        {stepGroups.map((group) => {
-                          const totalZones = group.zoneNames.length;
-                          const mappedZones = group.zoneNames.filter((zoneName) =>
-                            zoneAreas[getZoneKey(group.step, zoneName)]
-                          ).length;
-                          const isActiveStep = selectedStep === group.step;
-                          return (
-                            <button
-                              key={`${group.step}:${group.processName}`}
-                              type="button"
-                              onClick={() => handleStepSelect(group.step)}
-                              className={cn(
-                                "flex-none rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                                isActiveStep
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10"
-                              )}
-                            >
-                              <span className="font-medium">
-                                {formatProcessName(group.processName)}
-                              </span>
-                              <span className="ml-2 text-[10px] text-muted-foreground">
-                                {mappedZones}/{totalZones}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="rounded-lg bg-white p-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900">Zones</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Choose a zone below, then drag on the map to outline its queue area.
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        {selectedZoneKey && zoneAreas[selectedZoneKey] && (
-                          <Button variant="ghost" size="sm" onClick={handleClearSelectedZone}>
-                            <Eraser className="h-4 w-4" />
-                            Clear selected zone
-                          </Button>
+            <div className="space-y-4">
+              {stepGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Add zones in the Process Flow before mapping areas.
+                </p>
+              ) : (
+                <div className="flex justify-end gap-2 overflow-x-auto pb-1">
+                  {stepGroups.map((group) => {
+                    const totalZones = group.zoneNames.length;
+                    const mappedZones = group.zoneNames.filter(
+                      (zoneName) => zoneAreas[getZoneKey(group.step, zoneName)]
+                    ).length;
+                    const isActiveStep = selectedStep === group.step;
+                    const isCompleted =
+                      mappedZones === totalZones && totalZones > 0;
+                    return (
+                      <button
+                        key={`${group.step}:${group.processName}`}
+                        type="button"
+                        onClick={() => handleStepSelect(group.step)}
+                        className={cn(
+                          "flex-none rounded-full border px-3 py-2 text-xs font-medium transition",
+                          isActiveStep
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10",
+                          isCompleted &&
+                            !isActiveStep &&
+                            "border-emerald-400 bg-emerald-50 text-emerald-700"
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleClearAllZones}
-                          disabled={!hasAnyZoneAreas}
-                        >
-                          <Eraser className="h-4 w-4" />
-                          Clear all zones
-                        </Button>
-                      </div>
-                    </div>
+                      >
+                        <span className="flex items-center gap-1 font-medium">
+                          {formatProcessName(group.processName)}
+                          {isCompleted ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">
+                              {mappedZones}/{totalZones}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-                    {stepGroups.length === 0 ? null : !selectedStepGroup || zonesForSelectedStep.length === 0 ? (
-                      <p className="mt-4 text-sm text-muted-foreground">
-                        Select a process step to see its zones.
-                      </p>
-                    ) : (
-                      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                        {zonesForSelectedStep.map((zone) => {
-                          const key = getZoneKey(zone.step, zone.zoneName);
-                          const isSelected = selectedZoneKey === key;
-                          const hasArea = Boolean(zoneAreas[key]);
-                          return (
-                            <Button
-                              key={key}
-                              variant={isSelected ? "primary" : hasArea ? "outline" : "ghost"}
-                              size="sm"
-                              onClick={() => handleZoneSelect(zone)}
-                              className={cn(
-                                "flex-none justify-between whitespace-nowrap px-3 py-2",
-                                hasArea && !isSelected ? "border-primary/40 text-primary" : ""
-                              )}
-                            >
-                              <span className="text-xs font-medium">
-                                {zone.zoneName}
-                              </span>
-                              {hasArea && <Check className="ml-2 h-4 w-4" />}
-                            </Button>
-                          );
-                        })}
-                      </div>
+              <div className="rounded-lg bg-white p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Zones
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Choose a zone below, then drag on the map to outline its
+                      queue area.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedZoneKey && zoneAreas[selectedZoneKey] && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearSelectedZone}
+                      >
+                        <Eraser className="h-4 w-4" />
+                        Clear selected zone
+                      </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearAllZones}
+                      disabled={!hasAnyZoneAreas}
+                    >
+                      <Eraser className="h-4 w-4" />
+                      Clear all zones
+                    </Button>
                   </div>
                 </div>
 
-                <div
-                  ref={imageContainerRef}
-                  className="relative overflow-hidden rounded-lg bg-white"
-                >
-                  <img
-                    src={imageUrl}
-                    alt={`${airport} ${terminal} Terminal Layout`}
-                    className="h-auto w-full select-none object-contain"
-                    draggable={false}
-                  />
-
-                  <div
-                    className={cn(
-                      "absolute inset-0",
-                      canDraw ? "cursor-crosshair" : "cursor-not-allowed",
-                      zoneItems.length === 0 ? "pointer-events-none" : "pointer-events-auto"
-                    )}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerCancel}
-                  >
-                    {overlayItems.map(({ zone, rect }) => {
+                {stepGroups.length === 0 ? null : !selectedStepGroup ||
+                  zonesForSelectedStep.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Select a process step to see its zones.
+                  </p>
+                ) : (
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {zonesForSelectedStep.map((zone) => {
                       const key = getZoneKey(zone.step, zone.zoneName);
                       const isSelected = selectedZoneKey === key;
+                      const hasArea = Boolean(zoneAreas[key]);
                       return (
-                        <div
+                        <Button
                           key={key}
-                          className={cn(
-                            "pointer-events-none absolute rounded-md border",
+                          variant={
                             isSelected
-                              ? "border-primary bg-primary/20"
-                              : "border-primary/40 bg-primary/10"
+                              ? "primary"
+                              : hasArea
+                                ? "outline"
+                                : "ghost"
+                          }
+                          size="sm"
+                          onClick={() => handleZoneSelect(zone)}
+                          className={cn(
+                            "flex-none justify-between whitespace-nowrap px-3 py-2",
+                            hasArea && !isSelected
+                              ? "border-primary/40 text-primary"
+                              : ""
                           )}
-                          style={{
-                            left: `${rect.x * 100}%`,
-                            top: `${rect.y * 100}%`,
-                            width: `${rect.width * 100}%`,
-                            height: `${rect.height * 100}%`,
-                          }}
                         >
-                          <div className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                          <span className="text-xs font-medium">
                             {zone.zoneName}
-                          </div>
-                        </div>
+                          </span>
+                          {hasArea && <Check className="ml-2 h-4 w-4" />}
+                        </Button>
                       );
                     })}
-
-                    {draftRect && (
-                      <div
-                        className="pointer-events-none absolute z-20 rounded-md border-2 border-primary/70 bg-primary/20"
-                        style={{
-                          left: `${draftRect.x * 100}%`,
-                          top: `${draftRect.y * 100}%`,
-                          width: `${draftRect.width * 100}%`,
-                          height: `${draftRect.height * 100}%`,
-                        }}
-                      />
-                    )}
                   </div>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="flex h-96 flex-col items-center justify-center gap-4">
-                <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  No image available
-                </p>
+            </div>
 
-                <div className="flex gap-2">
-                  <label>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      disabled={isUploading}
-                      asChild
+            <div
+              ref={imageContainerRef}
+              className="relative overflow-hidden rounded-lg bg-white"
+            >
+              <img
+                src={imageUrl}
+                alt={`${airport} ${terminal} Terminal Layout`}
+                className="h-auto w-full select-none object-contain"
+                draggable={false}
+              />
+
+              <div
+                className={cn(
+                  "absolute inset-0",
+                  canDraw ? "cursor-crosshair" : "cursor-not-allowed",
+                  zoneItems.length === 0
+                    ? "pointer-events-none"
+                    : "pointer-events-auto"
+                )}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+              >
+                {overlayItems.map(({ zone, rect }) => {
+                  const key = getZoneKey(zone.step, zone.zoneName);
+                  const isSelected = selectedZoneKey === key;
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        "pointer-events-none absolute rounded-md border",
+                        isSelected
+                          ? "border-primary bg-primary/20"
+                          : "border-primary/40 bg-primary/10"
+                      )}
+                      style={{
+                        left: `${rect.x * 100}%`,
+                        top: `${rect.y * 100}%`,
+                        width: `${rect.width * 100}%`,
+                        height: `${rect.height * 100}%`,
+                      }}
                     >
-                      <span>
-                        <Upload />
-                        {isUploading ? "Uploading..." : "Upload"}
-                      </span>
-                    </Button>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
-                      onChange={handleFileChange}
-                      disabled={isUploading}
-                      className="hidden"
-                    />
-                  </label>
+                      <div className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                        {zone.zoneName}
+                      </div>
+                    </div>
+                  );
+                })}
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        disabled={isLoading || !imageUrl}
-                        variant="destructive"
-                        size="sm"
-                      >
-                        <Trash2 />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this image? This action
-                          cannot be undone. All image files for {airport}-{terminal}
-                          will be removed.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                {draftRect && (
+                  <div
+                    className="pointer-events-none absolute z-20 rounded-md border-2 border-primary/70 bg-primary/20"
+                    style={{
+                      left: `${draftRect.x * 100}%`,
+                      top: `${draftRect.y * 100}%`,
+                      width: `${draftRect.width * 100}%`,
+                      height: `${draftRect.height * 100}%`,
+                    }}
+                  />
+                )}
               </div>
-            )}
+            </div>
           </div>
+        ) : (
+          <div className="flex h-96 flex-col items-center justify-center gap-4">
+            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No image available</p>
 
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            <div className="flex gap-2">
+              <label>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={isUploading}
+                  asChild
+                >
+                  <span>
+                    <Upload />
+                    {isUploading ? "Uploading..." : "Upload"}
+                  </span>
+                </Button>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={isLoading || !imageUrl}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2 />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this image? This action
+                      cannot be undone. All image files for {airport}-{terminal}
+                      will be removed.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
