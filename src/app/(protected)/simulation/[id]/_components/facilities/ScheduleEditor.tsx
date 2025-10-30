@@ -53,6 +53,7 @@ import {
 import ExcelTable from "./schedule-editor/ExcelTable";
 import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useSimulationStore } from "../../_stores";
+import TerminalImageManager from "@/components/TerminalImageManager";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
+import { fetchScenarios } from "@/services/simulationService";
 
 // 상수들
 
@@ -88,6 +90,54 @@ export default function OperatingScheduleEditor({
 }: OperatingScheduleEditorProps) {
   // ✈️ 항공사 매핑 데이터 가져오기
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
+  const scenarioId = useSimulationStore((s) => s.context.scenarioId);
+  const storeAirport = useSimulationStore((s) => s.context.airport);
+  const storeTerminal = useSimulationStore((s) => s.context.terminal);
+  const setStoreAirport = useSimulationStore((s) => s.setAirport);
+  const setStoreTerminal = useSimulationStore((s) => s.setTerminal);
+
+  useEffect(() => {
+    if (!scenarioId) return;
+    if (storeAirport && storeTerminal) return;
+
+    let cancelled = false;
+
+    const ensureScenarioBasics = async () => {
+      try {
+        const response = await fetchScenarios();
+        const scenarios = response.data || [];
+        const matched = scenarios.find(
+          (item) => item.scenario_id === scenarioId
+        );
+
+        if (!matched || cancelled) {
+          return;
+        }
+
+        if (!storeAirport && matched.airport) {
+          setStoreAirport(matched.airport);
+        }
+
+        if (!storeTerminal && matched.terminal) {
+          setStoreTerminal(matched.terminal);
+        }
+      } catch (error) {
+        console.error("Failed to load scenario context:", error);
+      }
+    };
+
+    ensureScenarioBasics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    scenarioId,
+    storeAirport,
+    storeTerminal,
+    setStoreAirport,
+    setStoreTerminal,
+  ]);
 
   // Create airport-city mapping from parquet metadata
   const airportCityMapping = useMemo(() => {
@@ -1117,6 +1167,12 @@ export default function OperatingScheduleEditor({
           handlers={tableHandlers}
           isPreviousDay={isPreviousDay}
           currentProcessTime={currentProcessTime}
+        />
+
+        <TerminalImageManager
+          airport={storeAirport}
+          terminal={storeTerminal}
+          className="mt-6"
         />
 
         {/* 전체화면 Dialog */}

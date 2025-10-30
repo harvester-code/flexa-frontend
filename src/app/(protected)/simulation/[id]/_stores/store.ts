@@ -194,6 +194,7 @@ export interface SimulationStoreState {
   context: {
     scenarioId: string;
     airport: string;
+    terminal: string;
     date: string;
     lastSavedAt: string | null;
   };
@@ -254,6 +255,7 @@ export interface SimulationStoreState {
   // Context 관련 액션들
   setScenarioId: (scenarioId: string) => void;
   setAirport: (airport: string) => void;
+  setTerminal: (terminal: string) => void;
   setDate: (date: string) => void;
   setLastSavedAt: (timestamp: string | null) => void;
 
@@ -466,6 +468,7 @@ const createInitialState = (scenarioId?: string) => ({
   context: {
     scenarioId: scenarioId || "",
     airport: "", // 기본값 제거 - 사용자가 입력해야 함
+    terminal: "",
     date: new Date().toISOString().split("T")[0], // 🆕 오늘 날짜로 초기화
     lastSavedAt: null,
   },
@@ -539,6 +542,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
     setAirport: (airport) =>
       set((state) => {
         state.context.airport = airport;
+      }),
+
+    setTerminal: (terminal) =>
+      set((state) => {
+        state.context.terminal = terminal;
       }),
 
     setDate: (date) =>
