@@ -67,7 +67,6 @@ function TerminalImageManager({
   const zoneAreas = useSimulationStore((s) => s.terminalLayout.zoneAreas);
   const setZoneArea = useSimulationStore((s) => s.setZoneArea);
   const removeZoneArea = useSimulationStore((s) => s.removeZoneArea);
-  const clearAllZoneAreas = useSimulationStore((s) => s.clearAllZoneAreas);
 
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<ZoneItem | null>(null);
@@ -174,9 +173,14 @@ function TerminalImageManager({
     setSelectedStep(zone.step);
   };
 
-  const hasAnyZoneAreas = useMemo(() => {
-    return Object.keys(zoneAreas).length > 0;
-  }, [zoneAreas]);
+  const hasMappedZonesForSelectedStep = useMemo(() => {
+    if (selectedStep === null) return false;
+    const activeGroup = stepGroups.find((group) => group.step === selectedStep);
+    if (!activeGroup) return false;
+    return activeGroup.zoneNames.some((zoneName) =>
+      zoneAreas[getZoneKey(selectedStep, zoneName)]
+    );
+  }, [selectedStep, stepGroups, zoneAreas, getZoneKey]);
 
   const overlayItems = useMemo(() => {
     return zoneItems.reduce<Array<{ zone: ZoneItem; rect: ZoneAreaRect }>>(
@@ -343,9 +347,14 @@ function TerminalImageManager({
     removeZoneArea(selectedZone.step, selectedZone.zoneName);
   }, [removeZoneArea, selectedZone]);
 
-  const handleClearAllZones = useCallback(() => {
-    clearAllZoneAreas();
-  }, [clearAllZoneAreas]);
+  const handleClearAllZonesForStep = useCallback(() => {
+    if (selectedStep === null) return;
+    const activeGroup = stepGroups.find((group) => group.step === selectedStep);
+    if (!activeGroup) return;
+    activeGroup.zoneNames.forEach((zoneName) => {
+      removeZoneArea(selectedStep, zoneName);
+    });
+  }, [removeZoneArea, selectedStep, stepGroups]);
 
   // Generate image file name with extension
   const getImageFileName = (
@@ -638,6 +647,7 @@ function TerminalImageManager({
                 </AlertDialog>
               </div>
             </div>
+            <div className="h-px bg-border" />
 
             <div className="space-y-4">
               {stepGroups.length === 0 ? (
@@ -654,33 +664,39 @@ function TerminalImageManager({
                     const isActiveStep = selectedStep === group.step;
                     const isCompleted =
                       mappedZones === totalZones && totalZones > 0;
-                    return (
-                      <button
-                        key={`${group.step}:${group.processName}`}
-                        type="button"
-                        onClick={() => handleStepSelect(group.step)}
-                        className={cn(
-                          "flex-none rounded-full border px-3 py-2 text-xs font-medium transition",
-                          isActiveStep
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10",
-                          isCompleted &&
-                            !isActiveStep &&
-                            "border-emerald-400 bg-emerald-50 text-emerald-700"
-                        )}
-                      >
-                        <span className="flex items-center gap-1 font-medium">
-                          {formatProcessName(group.processName)}
-                          {isCompleted ? (
-                            <Check className="h-3.5 w-3.5" />
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">
-                              {mappedZones}/{totalZones}
+                        return (
+                          <Button
+                            variant="ghost"
+                            key={`${group.step}:${group.processName}`}
+                            type="button"
+                            onClick={() => handleStepSelect(group.step)}
+                            className={cn(
+                              "flex-none rounded-full border px-3 py-2 text-xs font-medium transition",
+                              isActiveStep
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10",
+                              isCompleted &&
+                                !isActiveStep &&
+                                "border-primary bg-primary/10 text-primary"
+                            )}
+                          >
+                            <span className="flex items-center gap-1 font-medium">
+                              {formatProcessName(group.processName)}
+                              {isCompleted ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5" />
+                                  <span className="text-[10px] text-muted-foreground opacity-0">
+                                    {mappedZones}/{totalZones}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {mappedZones}/{totalZones}
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
-                      </button>
-                    );
+                          </Button>
+                        );
                   })}
                 </div>
               )}
@@ -710,8 +726,8 @@ function TerminalImageManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleClearAllZones}
-                      disabled={!hasAnyZoneAreas}
+                      onClick={handleClearAllZonesForStep}
+                      disabled={!hasMappedZonesForSelectedStep}
                     >
                       <Eraser className="h-4 w-4" />
                       Clear all zones
