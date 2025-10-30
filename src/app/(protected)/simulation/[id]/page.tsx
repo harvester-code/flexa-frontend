@@ -196,6 +196,7 @@ export default function SimulationDetail({
           updateTravelTime: currentStore.updateTravelTime,
           setZoneArea: currentStore.setZoneArea,
           removeZoneArea: currentStore.removeZoneArea,
+          clearAllZoneAreas: currentStore.clearAllZoneAreas,
         };
 
         // 🚀 한 방에 갈아끼우기

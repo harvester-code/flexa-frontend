@@ -64,7 +64,9 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
   const zoneAreas = useSimulationStore((s) => s.terminalLayout.zoneAreas);
   const setZoneArea = useSimulationStore((s) => s.setZoneArea);
   const removeZoneArea = useSimulationStore((s) => s.removeZoneArea);
+  const clearAllZoneAreas = useSimulationStore((s) => s.clearAllZoneAreas);
 
+  const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<ZoneItem | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [activePointerId, setActivePointerId] = useState<number | null>(null);
@@ -79,21 +81,32 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
   );
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const zoneItems = useMemo<ZoneItem[]>(() => {
+  const stepGroups = useMemo<
+    Array<{ step: number; processName: string; zoneNames: string[] }>
+  >(() => {
     if (!processFlow || processFlow.length === 0) {
       return [];
     }
 
-    return processFlow.flatMap((step) => {
-      const zoneNames = Object.keys(step.zones || {});
-
-      return zoneNames.map((zoneName) => ({
+    return processFlow
+      .map((step) => ({
         step: step.step,
         processName: step.name,
-        zoneName,
-      }));
-    });
+        zoneNames: Object.keys(step.zones || {}),
+      }))
+      .filter((group) => group.zoneNames.length > 0)
+      .sort((a, b) => a.step - b.step);
   }, [processFlow]);
+
+  const zoneItems = useMemo<ZoneItem[]>(() => {
+    return stepGroups.flatMap((group) =>
+      group.zoneNames.map((zoneName) => ({
+        step: group.step,
+        processName: group.processName,
+        zoneName,
+      }))
+    );
+  }, [stepGroups]);
 
   const getZoneKey = useCallback((step: number, zoneName: string) => {
     return `${step}:${zoneName}`;
@@ -106,23 +119,64 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
   useEffect(() => {
     if (zoneItems.length === 0) {
       setSelectedZone(null);
+      setSelectedStep(null);
       return;
     }
 
-    if (
-      !selectedZone ||
-      !zoneItems.some(
+    const hasSelectedZone =
+      selectedZone &&
+      zoneItems.some(
         (zone) =>
           zone.step === selectedZone.step && zone.zoneName === selectedZone.zoneName
-      )
-    ) {
-      setSelectedZone(zoneItems[0]);
+      );
+
+    if (!hasSelectedZone) {
+      const defaultZone = zoneItems[0];
+      setSelectedZone(defaultZone);
+      setSelectedStep(defaultZone.step);
+      return;
     }
-  }, [zoneItems, selectedZone]);
+
+    if (selectedStep === null || selectedZone.step !== selectedStep) {
+      setSelectedStep(selectedZone.step);
+    }
+  }, [zoneItems, selectedZone, selectedStep]);
+
+  const selectedStepGroup = useMemo(() => {
+    if (selectedStep === null) {
+      return null;
+    }
+    return stepGroups.find((group) => group.step === selectedStep) || null;
+  }, [selectedStep, stepGroups]);
+
+  const zonesForSelectedStep = useMemo(() => {
+    if (selectedStep === null) {
+      return [] as ZoneItem[];
+    }
+    return zoneItems.filter((zone) => zone.step === selectedStep);
+  }, [selectedStep, zoneItems]);
+
+  const handleStepSelect = (stepNumber: number) => {
+    setSelectedStep(stepNumber);
+    if (!selectedZone || selectedZone.step !== stepNumber) {
+      const fallbackZone =
+        zoneItems.find((zone) => zone.step === stepNumber) || null;
+      setSelectedZone(fallbackZone);
+    }
+  };
+
+  const handleZoneSelect = (zone: ZoneItem) => {
+    setSelectedZone(zone);
+    setSelectedStep(zone.step);
+  };
 
   const assignedZoneCount = useMemo(() => {
     return zoneItems.filter((zone) => zoneAreas[getZoneKey(zone.step, zone.zoneName)]).length;
   }, [zoneItems, zoneAreas, getZoneKey]);
+
+  const hasAnyZoneAreas = useMemo(() => {
+    return Object.keys(zoneAreas).length > 0;
+  }, [zoneAreas]);
 
   const overlayItems = useMemo(() => {
     return zoneItems.reduce<Array<{ zone: ZoneItem; rect: ZoneAreaRect }>>(
@@ -249,11 +303,6 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
       setStartPoint(null);
 
       if (rect.width < MIN_RECT_SIZE || rect.height < MIN_RECT_SIZE) {
-        toast({
-          title: "Area is too small",
-          description: "Draw an area that covers at least 1% of the image.",
-          variant: "destructive",
-        });
         return;
       }
 
@@ -294,6 +343,10 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
     if (!selectedZone) return;
     removeZoneArea(selectedZone.step, selectedZone.zoneName);
   }, [removeZoneArea, selectedZone]);
+
+  const handleClearAllZones = useCallback(() => {
+    clearAllZoneAreas();
+  }, [clearAllZoneAreas]);
 
   // Generate image file name with extension
   const getImageFileName = (
@@ -515,7 +568,7 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
               </div>
             ) : imageUrl ? (
               <div className="space-y-6 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">
                       Select a zone and drag on the map to mark the waiting area.
@@ -593,6 +646,108 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
                   </div>
                 </div>
 
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Processes
+                    </p>
+                    {stepGroups.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Add zones in the Process Flow before mapping areas.
+                      </p>
+                    ) : (
+                      <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
+                        {stepGroups.map((group) => {
+                          const totalZones = group.zoneNames.length;
+                          const mappedZones = group.zoneNames.filter((zoneName) =>
+                            zoneAreas[getZoneKey(group.step, zoneName)]
+                          ).length;
+                          const isActiveStep = selectedStep === group.step;
+                          return (
+                            <button
+                              key={`${group.step}:${group.processName}`}
+                              type="button"
+                              onClick={() => handleStepSelect(group.step)}
+                              className={cn(
+                                "flex-none rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                                isActiveStep
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10"
+                              )}
+                            >
+                              <span className="font-medium">
+                                {formatProcessName(group.processName)}
+                              </span>
+                              <span className="ml-2 text-[10px] text-muted-foreground">
+                                {mappedZones}/{totalZones}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg bg-white p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Zones</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Choose a zone below, then drag on the map to outline its queue area.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {selectedZoneKey && zoneAreas[selectedZoneKey] && (
+                          <Button variant="ghost" size="sm" onClick={handleClearSelectedZone}>
+                            <Eraser className="h-4 w-4" />
+                            Clear selected zone
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleClearAllZones}
+                          disabled={!hasAnyZoneAreas}
+                        >
+                          <Eraser className="h-4 w-4" />
+                          Clear all zones
+                        </Button>
+                      </div>
+                    </div>
+
+                    {stepGroups.length === 0 ? null : !selectedStepGroup || zonesForSelectedStep.length === 0 ? (
+                      <p className="mt-4 text-sm text-muted-foreground">
+                        Select a process step to see its zones.
+                      </p>
+                    ) : (
+                      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                        {zonesForSelectedStep.map((zone) => {
+                          const key = getZoneKey(zone.step, zone.zoneName);
+                          const isSelected = selectedZoneKey === key;
+                          const hasArea = Boolean(zoneAreas[key]);
+                          return (
+                            <Button
+                              key={key}
+                              variant={isSelected ? "primary" : hasArea ? "outline" : "ghost"}
+                              size="sm"
+                              onClick={() => handleZoneSelect(zone)}
+                              className={cn(
+                                "flex-none justify-between whitespace-nowrap px-3 py-2",
+                                hasArea && !isSelected ? "border-primary/40 text-primary" : ""
+                              )}
+                            >
+                              <span className="text-xs font-medium">
+                                {zone.zoneName}
+                              </span>
+                              {hasArea && <Check className="ml-2 h-4 w-4" />}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div
                   ref={imageContainerRef}
                   className="relative overflow-hidden rounded-lg bg-white"
@@ -653,68 +808,6 @@ function TerminalImageManager({ airport, terminal, className }: TerminalImageMan
                       />
                     )}
                   </div>
-                </div>
-
-                <div className="rounded-lg border border-dashed border-primary/40 bg-white/60 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900">Zone Area Assignment</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Choose a zone, then drag on the image to outline its queue area.
-                      </p>
-                    </div>
-
-                    {selectedZoneKey && zoneAreas[selectedZoneKey] && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleClearSelectedZone}
-                        className="self-start"
-                      >
-                        <Eraser className="h-4 w-4" />
-                        Clear selected zone
-                      </Button>
-                    )}
-                  </div>
-
-                  {zoneItems.length === 0 ? (
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Add zones in the Process Flow before mapping areas.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {zoneItems.map((zone) => {
-                          const key = getZoneKey(zone.step, zone.zoneName);
-                          const isSelected = selectedZoneKey === key;
-                          const hasArea = Boolean(zoneAreas[key]);
-                          return (
-                            <Button
-                              key={key}
-                              variant={isSelected ? "primary" : hasArea ? "outline" : "ghost"}
-                              size="sm"
-                              onClick={() => setSelectedZone(zone)}
-                              className={cn(
-                                "min-w-[180px] justify-start whitespace-normal px-3 py-2 text-left",
-                                hasArea && !isSelected
-                                  ? "border-primary/40 text-primary"
-                                  : ""
-                              )}
-                            >
-                              {hasArea && <Check className="mr-2 h-4 w-4" />}
-                              <span className="text-xs font-medium leading-snug">
-                                {buildZoneLabel(zone)}
-                              </span>
-                            </Button>
-                          );
-                        })}
-                      </div>
-
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        {assignedZoneCount}/{zoneItems.length} zones currently have an assigned area.
-                      </p>
-                    </>
-                  )}
                 </div>
               </div>
             ) : (

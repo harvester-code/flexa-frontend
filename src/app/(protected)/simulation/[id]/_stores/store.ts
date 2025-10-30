@@ -471,6 +471,7 @@ export interface SimulationStoreState {
   migratePercentageData: () => void;
   setZoneArea: (step: number, zoneName: string, rect: ZoneAreaRect) => void;
   removeZoneArea: (step: number, zoneName: string) => void;
+  clearAllZoneAreas: () => void;
 
   // TODO: 사용자가 필요한 액션들을 하나씩 추가할 예정
 }
@@ -1662,6 +1663,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (state.terminalLayout.zoneAreas[key]) {
           delete state.terminalLayout.zoneAreas[key];
         }
+      }),
+
+    clearAllZoneAreas: () =>
+      set((state) => {
+        state.terminalLayout.zoneAreas = {};
       }),
 
     // TODO: 사용자가 필요한 액션들을 여기에 하나씩 추가할 예정
