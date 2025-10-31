@@ -30,6 +30,7 @@ import {
   useSimulationStore,
   type ZoneAreaRect,
 } from "@/app/(protected)/simulation/[id]/_stores";
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 const BUCKET_NAME = "airport-terminal-images";
 
@@ -159,7 +160,22 @@ function TerminalImageManager({
     return zoneItems.filter((zone) => zone.step === selectedStep);
   }, [selectedStep, zoneItems]);
 
-  const handleStepSelect = (stepNumber: number) => {
+  const handleStepSelect = (stepNumber: number, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Save current scroll position
+      const scrollY = window.scrollY;
+
+      // Blur to remove focus
+      (event.currentTarget as HTMLElement).blur();
+
+      // Restore scroll position after state update
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    }
     setSelectedStep(stepNumber);
     if (!selectedZone || selectedZone.step !== stepNumber) {
       const fallbackZone =
@@ -168,7 +184,22 @@ function TerminalImageManager({
     }
   };
 
-  const handleZoneSelect = (zone: ZoneItem) => {
+  const handleZoneSelect = (zone: ZoneItem, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Save current scroll position
+      const scrollY = window.scrollY;
+
+      // Blur to remove focus
+      (event.currentTarget as HTMLElement).blur();
+
+      // Restore scroll position after state update
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    }
     setSelectedZone(zone);
     setSelectedStep(zone.step);
   };
@@ -195,6 +226,11 @@ function TerminalImageManager({
       []
     );
   }, [zoneItems, zoneAreas, getZoneKey]);
+
+  // Get color for a specific step
+  const getStepColor = useCallback((step: number) => {
+    return COMPONENT_TYPICAL_COLORS[step % COMPONENT_TYPICAL_COLORS.length];
+  }, []);
 
   const clamp = useCallback((value: number) => {
     if (Number.isNaN(value)) return 0;
@@ -688,7 +724,7 @@ function TerminalImageManager({
                             variant="ghost"
                             key={`${group.step}:${group.processName}`}
                             type="button"
-                            onClick={() => handleStepSelect(group.step)}
+                            onClick={(e) => handleStepSelect(group.step, e)}
                             className={cn(
                               "flex-none rounded-full border px-3 py-2 text-xs font-medium transition",
                               isActiveStep
@@ -768,6 +804,7 @@ function TerminalImageManager({
                       return (
                         <Button
                           key={key}
+                          type="button"
                           variant={
                             isSelected
                               ? "primary"
@@ -776,7 +813,7 @@ function TerminalImageManager({
                                 : "ghost"
                           }
                           size="sm"
-                          onClick={() => handleZoneSelect(zone)}
+                          onClick={(e) => handleZoneSelect(zone, e)}
                           className={cn(
                             "flex-none justify-between whitespace-nowrap px-3 py-2",
                             hasArea && !isSelected
@@ -823,20 +860,18 @@ function TerminalImageManager({
                 {overlayItems.map(({ zone, rect }) => {
                   const key = getZoneKey(zone.step, zone.zoneName);
                   const isSelected = selectedZoneKey === key;
+                  const color = getStepColor(zone.step);
                   return (
                     <div
                       key={key}
-                      className={cn(
-                        "pointer-events-none absolute rounded-md border",
-                        isSelected
-                          ? "border-primary bg-primary/20"
-                          : "border-primary/40 bg-primary/10"
-                      )}
+                      className="pointer-events-none absolute rounded-md border-2"
                       style={{
                         left: `${rect.x * 100}%`,
                         top: `${rect.y * 100}%`,
                         width: `${rect.width * 100}%`,
                         height: `${rect.height * 100}%`,
+                        borderColor: isSelected ? color : `${color}66`,
+                        backgroundColor: isSelected ? `${color}33` : `${color}1A`,
                       }}
                     >
                       <div className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
@@ -846,14 +881,16 @@ function TerminalImageManager({
                   );
                 })}
 
-                {draftRect && (
+                {draftRect && selectedZone && (
                   <div
-                    className="pointer-events-none absolute z-20 rounded-md border-2 border-primary/70 bg-primary/20"
+                    className="pointer-events-none absolute z-20 rounded-md border-2"
                     style={{
                       left: `${draftRect.x * 100}%`,
                       top: `${draftRect.y * 100}%`,
                       width: `${draftRect.width * 100}%`,
                       height: `${draftRect.height * 100}%`,
+                      borderColor: `${getStepColor(selectedZone.step)}B3`,
+                      backgroundColor: `${getStepColor(selectedZone.step)}33`,
                     }}
                   />
                 )}
