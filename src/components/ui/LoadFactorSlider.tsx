@@ -125,19 +125,47 @@ export const LoadFactorSlider: React.FC<LoadFactorSliderProps> = ({
           {/* Slider Track */}
           <div
             ref={sliderRef}
-            className="relative h-6 cursor-pointer select-none overflow-hidden rounded-full bg-gray-200"
+            className="relative h-7 cursor-pointer select-none rounded-full bg-transparent"
             onMouseDown={handleMouseDown}
           >
-            {/* Progress Fill */}
-            <div
-              className="pointer-events-none h-full rounded-full bg-primary"
-              style={{ width: `${Math.min(100, Math.max(0, (value / max) * 100))}%` }}
-            />
+            {(() => {
+              const range = Math.max(max - min, 1);
+              const clampedValue = Math.min(max, Math.max(min, value));
+              const percentage = ((clampedValue - min) / range) * 100;
 
-            {/* Value Display on Track */}
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-semibold text-white drop-shadow-sm">{value}%</span>
-            </div>
+              return (
+                <>
+                  {/* Track base */}
+                  <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-muted" />
+
+                  {/* Progress Fill */}
+                  <div
+                    className="absolute left-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+                  />
+
+                  {/* Outline */}
+                  <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full border border-primary/10" />
+
+                  {/* Value bubble */}
+                  <div
+                    className="pointer-events-none absolute -top-9 flex flex-col items-center"
+                    style={{ left: `calc(${Math.min(100, Math.max(0, percentage))}% - 22px)` }}
+                  >
+                    <span className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm">
+                      {clampedValue}%
+                    </span>
+                    <span className="mt-1 block h-2 w-2 rotate-45 rounded-sm bg-primary" />
+                  </div>
+
+                  {/* Thumb */}
+                  <div
+                    className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-border bg-background shadow-sm"
+                    style={{ left: `calc(${Math.min(100, Math.max(0, percentage))}% - 10px)` }}
+                  />
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -152,8 +180,10 @@ export const LoadFactorSlider: React.FC<LoadFactorSliderProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             onClick={handleInputClick}
-            className={`w-16 rounded border px-2 py-1 text-center text-sm [appearance:textfield] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
-              hasError ? 'border-red-500 bg-red-50 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
+            className={`w-16 rounded-lg border border-input bg-background px-2 py-1 text-center text-sm font-semibold text-foreground shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+              hasError
+                ? 'border-destructive/40 bg-destructive/10 focus:ring-destructive'
+                : 'focus:ring-primary'
             }`}
           />
           <span className="text-sm font-semibold text-gray-900">%</span>

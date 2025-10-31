@@ -13,6 +13,7 @@ import type {
   TerminalLayoutZoneRect,
 } from "@/types/terminalLayout";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
+import { Slider } from "@/components/ui/Slider";
 
 interface HomeTerminalImageProps {
   scenario: ScenarioData | null;
@@ -71,7 +72,7 @@ const appendAlpha = (hexColor: string, alpha: number) => {
 };
 
 const getZoneColorByStep = (stepIndex: number) => {
-  const paletteSize = COMPONENT_TYPICAL_COLORS.length;
+  const paletteSize = COMPONENT_TYPICAL_COLORS.length as number;
   if (paletteSize === 0) {
     return "#3b82f6";
   }
@@ -162,16 +163,15 @@ const buildZoneEntries = (
     .filter((entry): entry is ZoneEntry => Boolean(entry));
 };
 
-const formatTimeLabel = (value: string): string => {
-  if (!value) return "";
-  if (value.length >= 16) {
-    return value.slice(11, 16);
-  }
+const formatDateTimeLabel = (value: string): { date: string; time: string } => {
+  if (!value) return { date: "", time: "" };
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return { date: "", time: value };
   }
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  return { date: dateStr, time: timeStr };
 };
 
 const DOT_DENSITY = 15000;
@@ -180,25 +180,9 @@ const MAX_DOTS = 5000;
 const DOT_SIZE_PX = 3;
 const DOT_GAP_PX = 0;
 
-const computeDotScaling = (rect: TerminalLayoutZoneRect, queueValue: number) => {
-  if (queueValue <= 0) {
-    return { dotCount: 0, peoplePerDot: 1 };
-  }
-
-  const area = Math.max(rect.width * rect.height, 0);
-  const normalizedArea = Math.max(area, 0.01); // 최소 면적 보정 (1%)
-  const estimatedDots = Math.round(normalizedArea * DOT_DENSITY);
-  const maxDots = Math.min(MAX_DOTS, Math.max(MIN_DOTS, estimatedDots));
-
-  // 공간이 충분하면 1:1로, 부족하면 스케일링
-  if (queueValue <= maxDots) {
-    return { dotCount: queueValue, peoplePerDot: 1 };
-  }
-
-  const peoplePerDot = Math.ceil(queueValue / maxDots);
-  const dotCount = Math.ceil(queueValue / peoplePerDot);
-
-  return { dotCount, peoplePerDot };
+const computeDotScaling = (queueValue: number) => {
+  // 항상 1 dot = 1 pax
+  return { dotCount: queueValue, peoplePerDot: 1 };
 };
 
 const sanitizeNumericSeries = (series: Array<number | string>): number[] => {
@@ -267,8 +251,6 @@ function HomeTerminalImage({
       .filter((value) => value.length > 0);
   }, [flowChartData]);
 
-  const timeLabels = useMemo(() => times.map((value) => formatTimeLabel(value)), [times]);
-
   const [timeIndex, setTimeIndex] = useState(0);
 
   useEffect(() => {
@@ -311,8 +293,8 @@ function HomeTerminalImage({
                   const currentValue = queueSeries[safeIndex] ?? 0;
                   queueValue = Math.max(0, Math.round(currentValue));
 
-                  // 현재 queueValue를 기준으로 scaling 계산
-                  const scaling = computeDotScaling(entry.rect, queueValue);
+                  // 항상 1 dot = 1 pax
+                  const scaling = computeDotScaling(queueValue);
                   basePeoplePerDot = scaling.peoplePerDot;
                   baseDotCount = scaling.dotCount;
                   hasData = true;
@@ -431,7 +413,11 @@ function HomeTerminalImage({
       ? metadataImage
       : fallbackImage);
 
-  const selectedTimeLabel = timeLabels[timeIndex] ?? "";
+  const safeTimeIndex = times.length > 0 ? Math.min(timeIndex, times.length - 1) : 0;
+  const sliderPositionPercent = times.length > 1 ? (safeTimeIndex / (times.length - 1)) * 100 : 0;
+  const selectedDateTime = formatDateTimeLabel(times[safeTimeIndex] ?? "");
+  const startLabel = formatDateTimeLabel(times[0] ?? "");
+  const endLabel = formatDateTimeLabel(times[times.length - 1] ?? "");
 
   return (
     <div className="mt-4 space-y-4">
@@ -484,7 +470,7 @@ function HomeTerminalImage({
                   }}
                 >
                   <div
-                    className="pointer-events-none absolute inset-0"
+                    className="pointer-events-none absolute inset-0 overflow-visible"
                     style={{
                       border: `1px dashed ${borderColor}`,
                       backgroundColor,
@@ -497,12 +483,13 @@ function HomeTerminalImage({
                       {labelText}
                     </span>
 
-                    <div className="flex h-full w-full p-0">
+                    <div className="flex h-full w-full p-0 overflow-visible">
                       {hasData && dotCount > 0 && (
                         <div
-                          className="flex flex-wrap h-full w-full content-start"
+                          className="flex flex-wrap content-start overflow-visible"
                           style={{
                             gap: `${DOT_GAP_PX}px`,
+                            width: "100%",
                           }}
                         >
                           {Array.from({ length: dotCount }).map((_, index) => (
@@ -527,26 +514,51 @@ function HomeTerminalImage({
         </div>
       </div>
 
-      {times.length > 1 ? (
-        <div className="rounded-md border border-input bg-white p-4">
-          <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-            <span>Queue snapshot</span>
-            <span>{selectedTimeLabel}</span>
+      {times.length > 0 ? (
+        <div className="mt-6 px-2">
+          {/* Slider with selected time bubble */}
+          <div className="relative mb-8">
+            {times.length > 0 && (
+              <div
+                className="pointer-events-none absolute top-full mt-3 flex flex-col items-center"
+                style={{ left: `${sliderPositionPercent}%`, transform: "translateX(-50%)" }}
+              >
+                <span className="mb-1 block h-2 w-2 rotate-45 rounded-sm bg-primary" />
+                <div className="rounded-md bg-primary px-3 py-1 text-center text-xs font-medium text-primary-foreground shadow-sm">
+                  {selectedDateTime.date ? (
+                    <>
+                      <span className="block leading-tight">{selectedDateTime.date}</span>
+                      <span className="block font-mono text-xs font-normal leading-tight">{selectedDateTime.time}</span>
+                    </>
+                  ) : (
+                    <span className="block font-mono text-xs font-normal leading-tight">{selectedDateTime.time}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <Slider
+              min={0}
+              max={Math.max(times.length - 1, 0)}
+              step={1}
+              value={[timeIndex]}
+              onValueChange={(value) => setTimeIndex(value[0])}
+              className="mt-2"
+            />
           </div>
-          <input
-            type="range"
-            min={0}
-            max={Math.max(times.length - 1, 0)}
-            value={timeIndex}
-            onChange={(event) => setTimeIndex(Number(event.target.value))}
-            className="mt-3 w-full"
-          />
-          {timeLabels.length > 1 ? (
-            <div className="mt-2 flex justify-between text-[10px] font-mono text-muted-foreground">
-              <span>{timeLabels[0]}</span>
-              <span>{timeLabels[timeLabels.length - 1]}</span>
+
+          {/* Start and end labels only */}
+          <div className="relative h-10">
+            <div className="absolute left-0 flex flex-col items-start">
+              <span className="text-xs font-semibold text-foreground">{startLabel.date}</span>
+              <span className="text-xs font-mono text-muted-foreground">{startLabel.time}</span>
             </div>
-          ) : null}
+
+            <div className="absolute right-0 flex flex-col items-end">
+              <span className="text-xs font-semibold text-foreground">{endLabel.date}</span>
+              <span className="text-xs font-mono text-muted-foreground">{endLabel.time}</span>
+            </div>
+          </div>
         </div>
       ) : null}
 
