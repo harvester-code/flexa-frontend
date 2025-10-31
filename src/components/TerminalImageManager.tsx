@@ -820,30 +820,55 @@ function TerminalImageManager({
                       const key = getZoneKey(zone.step, zone.zoneName);
                       const isSelected = selectedZoneKey === key;
                       const hasArea = Boolean(zoneAreas[key]);
+                      const zoneColor = getStepColor(zone.step);
+                      const textColor = isSelected
+                        ? "#ffffff"
+                        : hasArea
+                        ? zoneColor
+                        : appendAlpha(zoneColor, 0.85);
+                      const backgroundColor = isSelected
+                        ? zoneColor
+                        : hasArea
+                        ? appendAlpha(zoneColor, 0.12)
+                        : appendAlpha(zoneColor, 0.08);
+                      const borderColor = isSelected
+                        ? zoneColor
+                        : appendAlpha(zoneColor, hasArea ? 0.55 : 0.4);
+                      const hoverBackground = isSelected
+                        ? zoneColor
+                        : appendAlpha(zoneColor, hasArea ? 0.18 : 0.12);
+                      const hoverText = textColor;
+                      const buttonStyle = {
+                        backgroundColor,
+                        borderColor,
+                        color: textColor,
+                        "--zone-hover-bg": hoverBackground,
+                        "--zone-hover-text": hoverText,
+                      } as CSSProperties & Record<string, string>;
+                      const checkColor = isSelected ? "#ffffff" : textColor;
                       return (
                         <Button
                           key={key}
                           type="button"
-                          variant={
-                            isSelected
-                              ? "primary"
-                              : hasArea
-                                ? "outline"
-                                : "ghost"
-                          }
+                          variant="ghost"
                           size="sm"
                           onClick={(e) => handleZoneSelect(zone, e)}
+                          style={buttonStyle}
                           className={cn(
-                            "flex-none justify-between whitespace-nowrap px-3 py-2",
-                            hasArea && !isSelected
-                              ? "border-primary/40 text-primary"
-                              : ""
+                            "flex-none justify-between whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-0 hover:opacity-95 hover:!bg-[var(--zone-hover-bg)] hover:!text-[var(--zone-hover-text)]",
+                            !hasArea && !isSelected && "border-dashed",
+                            isSelected && "text-white"
                           )}
                         >
                           <span className="text-xs font-medium">
                             {zone.zoneName}
                           </span>
-                          {hasArea && <Check className="ml-2 h-4 w-4" />}
+                          {hasArea && (
+                            <Check
+                              className="ml-2 h-4 w-4"
+                              style={{ color: checkColor }}
+                            />
+                          )}
                         </Button>
                       );
                     })}
@@ -880,6 +905,15 @@ function TerminalImageManager({
                   const key = getZoneKey(zone.step, zone.zoneName);
                   const isSelected = selectedZoneKey === key;
                   const color = getStepColor(zone.step);
+                  const borderColor = isSelected
+                    ? color
+                    : appendAlpha(color, 0.6);
+                  const backgroundColor = isSelected
+                    ? appendAlpha(color, 0.45)
+                    : appendAlpha(color, 0.22);
+                  const labelBackground = isSelected
+                    ? appendAlpha(color, 0.8)
+                    : appendAlpha(color, 0.65);
                   return (
                     <div
                       key={key}
@@ -889,11 +923,16 @@ function TerminalImageManager({
                         top: `${rect.y * 100}%`,
                         width: `${rect.width * 100}%`,
                         height: `${rect.height * 100}%`,
-                        borderColor: isSelected ? color : `${color}66`,
-                        backgroundColor: isSelected ? `${color}33` : `${color}1A`,
+                        borderColor,
+                        backgroundColor,
                       }}
                     >
-                      <div className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                      <div
+                        className="pointer-events-none absolute left-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white"
+                        style={{
+                          backgroundColor: labelBackground,
+                        }}
+                      >
                         {zone.zoneName}
                       </div>
                     </div>
