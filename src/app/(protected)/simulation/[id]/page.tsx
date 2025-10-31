@@ -459,10 +459,10 @@ export default function SimulationDetail({
   }, [scenarioName, simulationId]);
 
   return (
-    <div className="mx-auto max-w-page px-page-x pb-page-b">
+    <>
       <TheContentHeader text="Simulation" breadcrumbs={breadcrumbs} />
-
-      <div className="mt-[15px] flex justify-between">
+      <div className="mx-auto max-w-page px-page-x pb-page-b">
+        <div className="mt-[15px] flex justify-between">
         <div className="flex items-center gap-3">
           <dl className="sub-title">
             <Suspense
@@ -568,6 +568,7 @@ export default function SimulationDetail({
           apiRequestLog={apiRequestLog}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
