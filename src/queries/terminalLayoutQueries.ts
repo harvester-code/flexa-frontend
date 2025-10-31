@@ -14,6 +14,33 @@ const extractTerminalLayout = (metadata: unknown): ScenarioTerminalLayout | null
   const metadataRecord = metadata as Record<string, unknown>;
   const tabs = (metadataRecord.tabs as Record<string, unknown> | undefined) ?? {};
 
+  let stepNames: Record<string, string> | undefined;
+  const processFlowRaw = metadataRecord.process_flow;
+  if (Array.isArray(processFlowRaw)) {
+    const mapping: Record<string, string> = {};
+    for (const step of processFlowRaw) {
+      if (!step || typeof step !== "object") {
+        continue;
+      }
+
+      const stepRecord = step as Record<string, unknown>;
+      const stepNumberRaw = stepRecord.step;
+      const stepNameRaw = stepRecord.name;
+
+      const stepNumber =
+        typeof stepNumberRaw === "number" ? stepNumberRaw : Number(stepNumberRaw);
+      const stepName = typeof stepNameRaw === "string" ? stepNameRaw : undefined;
+
+      if (Number.isFinite(stepNumber) && stepName) {
+        mapping[String(stepNumber)] = stepName;
+      }
+    }
+
+    if (Object.keys(mapping).length > 0) {
+      stepNames = mapping;
+    }
+  }
+
   const candidateSources: unknown[] = [
     metadataRecord.terminalLayout,
     tabs.terminalLayout,
@@ -62,6 +89,7 @@ const extractTerminalLayout = (metadata: unknown): ScenarioTerminalLayout | null
     return {
       imageUrl: imageUrl ?? null,
       zoneAreas,
+      stepNames,
     };
   }
 

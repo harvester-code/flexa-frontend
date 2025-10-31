@@ -19,9 +19,9 @@ interface ContentsHeaderProps {
 }
 
 export default function ContentsHeader({ text, breadcrumbs }: ContentsHeaderProps) {
-  // If breadcrumbs are not provided, create a default one with Home and current page
+  // If breadcrumbs are not provided, create a default one with Flexa and current page
   const defaultBreadcrumbs: BreadcrumbItem[] = [
-    { label: 'Home', href: '/home' },
+    { label: 'Flexa', href: '/home' },
     { label: text },
   ];
 

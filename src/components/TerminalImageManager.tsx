@@ -425,12 +425,21 @@ function TerminalImageManager({
       const extension = getFileExtension(file);
       const fileName = getImageFileName(airport, terminal, extension);
 
-      // Upload image (allow overwrite)
+      // Delete all existing files with different extensions first
+      const extensions = ["jpg", "jpeg", "png", "svg", "webp"];
+      const filesToDelete = extensions.map((ext) =>
+        getImageFileName(airport, terminal, ext)
+      );
+
+      // Ignore delete errors (files may not exist)
+      await supabase.storage.from(BUCKET_NAME).remove(filesToDelete);
+
+      // Upload new image
       const { error: uploadError } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(fileName, file, {
           cacheControl: "3600",
-          upsert: true, // Overwrite if exists
+          upsert: false, // No need to upsert since we deleted existing files
           contentType: file.type,
         });
 
@@ -560,6 +569,16 @@ function TerminalImageManager({
 
   return (
     <div className={className}>
+      <div className="mb-6 flex items-start justify-between border-l-4 border-primary pl-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-default-900">
+            Terminal Waiting Area Editor
+          </h3>
+          <p className="text-sm text-default-500">
+            Configure waiting areas for each zone on the terminal layout
+          </p>
+        </div>
+      </div>
       <div className="relative overflow-hidden rounded-lg bg-muted">
         {!hasIdentifiers ? (
           <div className="flex h-96 flex-col items-center justify-center gap-4">

@@ -8,4 +8,5 @@ export interface TerminalLayoutZoneRect {
 export interface ScenarioTerminalLayout {
   imageUrl?: string | null;
   zoneAreas: Record<string, TerminalLayoutZoneRect>;
+  stepNames?: Record<string, string>;
 }

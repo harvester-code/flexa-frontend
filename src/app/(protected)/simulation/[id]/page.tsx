@@ -422,9 +422,25 @@ export default function SimulationDetail({
       : null;
   }, [scenarioHistory]);
 
+  // Breadcrumbs for the simulation page
+  const breadcrumbs = useMemo(() => {
+    const searchParams = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : ""
+    );
+    const urlScenarioName = searchParams.get("name");
+    const displayName =
+      urlScenarioName || scenarioName || `Scenario ${simulationId}`;
+
+    return [
+      { label: "Flexa", href: "/home" },
+      { label: "Simulation" },
+      { label: displayName },
+    ];
+  }, [scenarioName, simulationId]);
+
   return (
     <div className="mx-auto max-w-page px-page-x pb-page-b">
-      <TheContentHeader text="Simulation" />
+      <TheContentHeader text="Simulation" breadcrumbs={breadcrumbs} />
 
       <div className="mt-[15px] flex justify-between">
         <div className="flex items-center gap-3">

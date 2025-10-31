@@ -124,6 +124,7 @@ function HomePage() {
           <HomeTerminalImage
             scenario={scenario}
             layoutData={terminalLayoutData}
+            flowChartData={allHomeData?.flow_chart ?? null}
           />
         </HomeAccordion>
 
