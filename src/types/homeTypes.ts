@@ -210,9 +210,3 @@ export interface FlightSummaryResponse {
   timeMetrics?: TimeMetrics;
   dwellTimes?: DwellTimes;
 }
-
-export interface NewHomeDashboardResponse {
-  facilityCharts: FacilityChartsResponse;
-  passengerSummary: PassengerSummaryResponse;
-  flightSummary: FlightSummaryResponse;
-}
