@@ -459,43 +459,6 @@ function HomeTerminalImage({
           Failed to load terminal layout metadata. Showing image only.
         </p>
       ) : null}
-
-      {zoneOverlayData.length > 0 ? (
-        <div className="rounded-md border border-input bg-white p-4">
-          <h3 className="text-sm font-semibold text-foreground">Mapped zones</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Queue counts update as you move the slider. Showing data for {selectedTimeLabel || "selected time"}.
-          </p>
-
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {zoneOverlayData.map(({ key, stepLabel, stepName, zoneLabel, rect, queueValue, peoplePerDot, hasData }) => (
-              <li
-                key={key}
-                className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2 text-xs"
-              >
-                <p className="font-medium text-foreground">
-                  Step {stepLabel}
-                  {stepName ? ` · ${stepName.replace(/_/g, " ")}` : ""} · {zoneLabel}
-                </p>
-                <p className="mt-1 text-muted-foreground">
-                  {hasData
-                    ? `${queueValue.toLocaleString()} pax • 1 dot = ${peoplePerDot.toLocaleString()} pax`
-                    : "Queue data unavailable"}
-                </p>
-                <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                  x: {(rect.x * 100).toFixed(1)}% · y: {(rect.y * 100).toFixed(1)}% · w: {(
-                    rect.width * 100
-                  ).toFixed(1)}% · h: {(rect.height * 100).toFixed(1)}%
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className="rounded-md border border-input bg-white p-6 text-sm text-muted-foreground">
-          No zone areas have been mapped yet for this terminal layout.
-        </div>
-      )}
     </div>
   );
 }

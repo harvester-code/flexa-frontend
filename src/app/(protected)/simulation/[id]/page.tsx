@@ -64,7 +64,7 @@ function ScenarioNameDisplay({
     [scenarioName, fallbackName]
   );
 
-  const [displayName, setDisplayName] = useState(fallbackName);
+  const [displayName, setDisplayName] = useState(derivedDefaultName);
 
   useEffect(() => {
     const urlScenarioName = searchParams.get("name");
@@ -79,7 +79,7 @@ function ScenarioNameDisplay({
     );
   }, [searchParams, derivedDefaultName]);
 
-  return <dd>{displayName}</dd>;
+  return <dd suppressHydrationWarning>{displayName}</dd>;
 }
 
 export default function SimulationDetail({
