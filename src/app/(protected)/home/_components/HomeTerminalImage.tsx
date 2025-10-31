@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { ScenarioData } from "@/types/homeTypes";
 import HomeNoScenario from "./HomeNoScenario";
 import HomeLoading from "./HomeLoading";
@@ -11,6 +12,7 @@ import type {
   ScenarioTerminalLayout,
   TerminalLayoutZoneRect,
 } from "@/types/terminalLayout";
+import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 interface HomeTerminalImageProps {
   scenario: ScenarioData | null;
@@ -21,6 +23,7 @@ interface HomeTerminalImageProps {
 interface ZoneEntry {
   key: string;
   stepLabel: string;
+  stepIndex: number;
   zoneLabel: string;
   rect: TerminalLayoutZoneRect;
 }
@@ -55,6 +58,80 @@ const sanitizeRect = (rect: TerminalLayoutZoneRect): TerminalLayoutZoneRect => {
   };
 };
 
+const appendAlpha = (hexColor: string, alpha: number) => {
+  const normalized = (hexColor || "").replace("#", "").trim();
+  if (normalized.length !== 6) {
+    return hexColor;
+  }
+  const clamped = Math.max(0, Math.min(1, alpha));
+  const alphaHex = Math.round(clamped * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `#${normalized}${alphaHex}`;
+};
+
+const getZoneColorByStep = (stepIndex: number) => {
+  const paletteSize = COMPONENT_TYPICAL_COLORS.length;
+  if (paletteSize === 0) {
+    return "#3b82f6";
+  }
+  const normalizedIndex = Number.isFinite(stepIndex)
+    ? ((Math.trunc(stepIndex) % paletteSize) + paletteSize) % paletteSize
+    : 0;
+  return COMPONENT_TYPICAL_COLORS[normalizedIndex];
+};
+
+type LabelPlacement = "top" | "bottom" | "left" | "right";
+
+const LABEL_OFFSET_PX = 6;
+
+const getLabelPlacement = (rect: TerminalLayoutZoneRect): LabelPlacement => {
+  const freeTop = rect.y;
+  const freeBottom = 1 - rect.y - rect.height;
+  const freeLeft = rect.x;
+  const freeRight = 1 - rect.x - rect.width;
+
+  const preferences: Array<{ placement: LabelPlacement; space: number }> = [
+    { placement: "top", space: freeTop },
+    { placement: "bottom", space: freeBottom },
+    { placement: "left", space: freeLeft },
+    { placement: "right", space: freeRight },
+  ];
+
+  const best = preferences.sort((a, b) => b.space - a.space)[0];
+  return best?.placement ?? "top";
+};
+
+const getLabelPositionStyle = (placement: LabelPlacement): CSSProperties => {
+  switch (placement) {
+    case "bottom":
+      return {
+        left: "50%",
+        top: "100%",
+        transform: `translate(-50%, ${LABEL_OFFSET_PX}px)`,
+      };
+    case "left":
+      return {
+        left: 0,
+        top: "50%",
+        transform: `translate(calc(-100% - ${LABEL_OFFSET_PX}px), -50%)`,
+      };
+    case "right":
+      return {
+        left: "100%",
+        top: "50%",
+        transform: `translate(${LABEL_OFFSET_PX}px, -50%)`,
+      };
+    case "top":
+    default:
+      return {
+        left: "50%",
+        top: 0,
+        transform: `translate(-50%, calc(-100% - ${LABEL_OFFSET_PX}px))`,
+      };
+  }
+};
+
 const buildZoneEntries = (
   zoneAreas: Record<string, TerminalLayoutZoneRect> | null | undefined
 ): ZoneEntry[] => {
@@ -70,12 +147,15 @@ const buildZoneEntries = (
 
       const [stepPart, ...zoneParts] = key.split(":");
       const zoneName = zoneParts.length > 0 ? zoneParts.join(":") : stepPart;
-      const stepLabel = stepPart || "-";
+      const parsedStep = Number(stepPart);
+      const stepIndex = Number.isFinite(parsedStep) ? parsedStep : 0;
+      const stepLabel = stepPart ?? "-";
 
       return {
         key,
         rect: sanitizeRect(rect),
         stepLabel,
+        stepIndex,
         zoneLabel: zoneName,
       } as ZoneEntry;
     })
@@ -349,7 +429,7 @@ function HomeTerminalImage({
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="relative overflow-hidden rounded-md border border-input bg-white">
+      <div className="relative overflow-hidden rounded-lg border border-input bg-white shadow-sm">
         <div className="relative">
           <img
             src={imageSrc}
@@ -359,10 +439,34 @@ function HomeTerminalImage({
           />
 
           <div className="pointer-events-none absolute inset-0">
-            {zoneOverlayData.map(({ key, rect, zoneLabel, queueValue, dotCount, peoplePerDot, hasData, maxDotCount }) => {
+            {zoneOverlayData.map(({
+              key,
+              rect,
+              zoneLabel,
+              stepIndex,
+              queueValue,
+              dotCount,
+              hasData,
+              maxDotCount,
+            }) => {
               const aspectRatio = rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
               const columnSeed = maxDotCount > 0 ? maxDotCount : dotCount > 0 ? dotCount : 1;
               const columns = Math.max(1, Math.ceil(Math.sqrt(columnSeed * aspectRatio)));
+              const zoneColor = getZoneColorByStep(stepIndex);
+              const borderColor = appendAlpha(zoneColor, 0.65);
+              const backgroundColor = appendAlpha(zoneColor, 0.18);
+              const labelBackground = appendAlpha(zoneColor, 0.82);
+              const dotColor = appendAlpha(zoneColor, 0.88);
+              const idleTextColor = appendAlpha(zoneColor, 0.8);
+              const labelPlacement = getLabelPlacement(rect);
+              const labelPositionStyle = getLabelPositionStyle(labelPlacement);
+              const labelText = `${zoneLabel}: ${queueValue.toLocaleString()}pax`;
+              const labelStyle: CSSProperties = {
+                ...labelPositionStyle,
+                backgroundColor: labelBackground,
+                color: "#ffffff",
+                whiteSpace: "nowrap",
+              };
 
               return (
                 <div
@@ -375,12 +479,18 @@ function HomeTerminalImage({
                     height: `${rect.height * 100}%`,
                   }}
                 >
-                  <div className="pointer-events-none absolute inset-0 rounded border border-primary/60 bg-primary/5">
-                    <span className="absolute left-1 top-1 rounded bg-primary/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                      {zoneLabel}
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-md border-2"
+                    style={{ borderColor, backgroundColor }}
+                  >
+                    <span
+                      className="pointer-events-none absolute z-10 rounded-full px-1.5 py-0.5 text-[10px] font-semibold shadow-sm"
+                      style={labelStyle}
+                    >
+                      {labelText}
                     </span>
 
-                    <div className="flex h-full w-full flex-col justify-start p-1">
+                    <div className="flex h-full w-full flex-col justify-start p-1.5">
                       {hasData && dotCount > 0 ? (
                         <div
                           className="grid h-full w-full"
@@ -397,29 +507,24 @@ function HomeTerminalImage({
                           {Array.from({ length: dotCount }).map((_, index) => (
                             <span
                               key={index}
-                              className="block rounded-full bg-primary/90"
+                              className="block rounded-full"
                               style={{
                                 width: `${DOT_SIZE_PX}px`,
                                 height: `${DOT_SIZE_PX}px`,
+                                backgroundColor: dotColor,
                               }}
                             />
                           ))}
                         </div>
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-primary/70">
+                        <div
+                          className="flex h-full w-full items-center justify-center text-[10px] font-medium"
+                          style={{ color: idleTextColor }}
+                        >
                           {hasData ? "No queue" : "No data"}
                         </div>
                       )}
                     </div>
-
-                    <div className="absolute bottom-1 left-1 rounded bg-primary/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                      {queueValue.toLocaleString()} pax
-                    </div>
-                    {hasData ? (
-                      <div className="absolute bottom-1 right-1 rounded bg-background/70 px-1.5 py-0.5 text-[9px] font-medium text-foreground">
-                        1 dot = {peoplePerDot.toLocaleString()} pax
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               );

@@ -8,7 +8,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 import { Clock, Save, Trash2 } from "lucide-react";
 import { APIRequestLog } from "@/types/simulationTypes";
@@ -46,51 +45,40 @@ const tabs: { text: string; number: number }[] = [
   { text: "Facilities", number: 2 },
 ];
 
-// Component that uses useSearchParams for scenario name from URL
+// Scenario name display defaults to the simulation ID when no name is available
 function ScenarioNameDisplay({
-  simulationId,
-  scenarioName,
+  label,
 }: {
-  simulationId: string;
-  scenarioName: string;
+  label: string;
 }) {
-  const searchParams = useSearchParams();
-  const fallbackName = useMemo(
-    () => `Scenario ${simulationId}`,
-    [simulationId]
-  );
-  const derivedDefaultName = useMemo(
-    () => scenarioName || fallbackName,
-    [scenarioName, fallbackName]
-  );
-
-  const [displayName, setDisplayName] = useState(derivedDefaultName);
-
-  useEffect(() => {
-    const urlScenarioName = searchParams.get("name");
-
-    if (urlScenarioName) {
-      setDisplayName((prev) => (prev === urlScenarioName ? prev : urlScenarioName));
-      return;
-    }
-
-    setDisplayName((prev) =>
-      prev === derivedDefaultName ? prev : derivedDefaultName
-    );
-  }, [searchParams, derivedDefaultName]);
-
-  return <dd suppressHydrationWarning>{displayName}</dd>;
+  return <dd suppressHydrationWarning>{label}</dd>;
 }
 
 export default function SimulationDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[]>>;
 }) {
   const { toast } = useToast();
 
   // ✅ simulationId를 맨 위로 이동 (다른 훅들보다 먼저)
   const simulationId = use(params).id;
+
+  const resolvedSearchParams = use(
+    searchParams ?? Promise.resolve({} as Record<string, string | string[]>)
+  );
+
+  const queryScenarioName = useMemo(() => {
+    const rawName = resolvedSearchParams?.name;
+    const normalized = Array.isArray(rawName) ? rawName[0] : rawName;
+    if (typeof normalized !== "string") {
+      return undefined;
+    }
+    const trimmed = normalized.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, [resolvedSearchParams]);
 
   // 개별 store에서 필요한 데이터만 직접 가져오기
   const currentScenarioTab = useScenarioProfileStore(
@@ -98,6 +86,20 @@ export default function SimulationDetail({
   );
   const scenarioName = useScenarioProfileStore((s) => s.scenarioName);
   const scenarioHistory = useScenarioProfileStore((s) => s.scenarioHistory);
+
+  const displayScenarioName = useMemo(() => {
+    if (queryScenarioName) {
+      return queryScenarioName;
+    }
+    if (typeof scenarioName === "string") {
+      const trimmed = scenarioName.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+    return simulationId;
+  }, [queryScenarioName, scenarioName, simulationId]);
+
   const setCurrentScenarioTab = useScenarioProfileStore(
     (s) => s.setCurrentScenarioTab
   );
@@ -444,19 +446,14 @@ export default function SimulationDetail({
 
   // Breadcrumbs for the simulation page
   const breadcrumbs = useMemo(() => {
-    const searchParams = new URLSearchParams(
-      typeof window !== "undefined" ? window.location.search : ""
-    );
-    const urlScenarioName = searchParams.get("name");
-    const displayName =
-      urlScenarioName || scenarioName || `Scenario ${simulationId}`;
+    const displayName = displayScenarioName;
 
     return [
       { label: "Flexa", href: "/home" },
       { label: "Simulation" },
       { label: displayName },
     ];
-  }, [scenarioName, simulationId]);
+  }, [displayScenarioName]);
 
   return (
     <>
@@ -465,13 +462,8 @@ export default function SimulationDetail({
         <div className="mt-[15px] flex justify-between">
         <div className="flex items-center gap-3">
           <dl className="sub-title">
-            <Suspense
-              fallback={<dd>{scenarioName || `Scenario ${simulationId}`}</dd>}
-            >
-              <ScenarioNameDisplay
-                simulationId={simulationId}
-                scenarioName={scenarioName}
-              />
+            <Suspense fallback={<dd>{displayScenarioName}</dd>}>
+              <ScenarioNameDisplay label={displayScenarioName} />
             </Suspense>
           </dl>
           {latestHistory?.checkpoint && (
