@@ -2,14 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import {
-  Upload,
-  Trash2,
-  Image as ImageIcon,
-  Download,
-  Check,
-  Eraser,
-} from "lucide-react";
+import { Upload, Trash2, Image as ImageIcon, Check, Eraser } from "lucide-react";
 import { createClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/Button";
 import {
@@ -566,38 +559,6 @@ function TerminalImageManager({
     handleUpload(file);
   };
 
-  // Download image
-  const handleDownload = async () => {
-    if (!airport || !terminal || !imageUrl) return;
-
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-
-      // Get extension from blob type
-      const extension = blob.type.split("/")[1] || "jpg";
-      const fileName = getImageFileName(airport, terminal, extension);
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast({
-        title: "Success",
-        description: `Downloaded as ${fileName}`,
-      });
-    } catch (err) {
-      console.error("Error downloading image:", err);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download image. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Load image when codes change
   useEffect(() => {
     if (airport && terminal) {
@@ -610,7 +571,7 @@ function TerminalImageManager({
 
   return (
     <div className={className}>
-      <div className="mb-6 flex items-start justify-between border-l-4 border-primary pl-4">
+      <div className="mb-6 flex flex-col gap-3 border-l-4 border-primary pl-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-default-900">
             Terminal Waiting Area Editor
@@ -618,6 +579,66 @@ function TerminalImageManager({
           <p className="text-sm text-default-500">
             Configure waiting areas for each zone on the terminal layout
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <label>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={isUploading}
+              asChild
+            >
+              <span>
+                <Upload />
+                {imageUrl
+                  ? isUploading
+                    ? "Updating..."
+                    : "Update"
+                  : isUploading
+                  ? "Uploading..."
+                  : "Upload"}
+              </span>
+            </Button>
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+              onChange={handleFileChange}
+              disabled={isUploading}
+              className="hidden"
+            />
+          </label>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={isLoading || !imageUrl}
+                variant="destructive"
+                size="sm"
+              >
+                <Trash2 />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action will remove the current terminal image. You can
+                  upload a new file afterwards.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       <div className="relative overflow-hidden rounded-lg bg-muted">
@@ -634,81 +655,6 @@ function TerminalImageManager({
           </div>
         ) : imageUrl ? (
           <div className="space-y-6 p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
-                  Select a zone and drag on the map to mark the waiting area.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  onClick={handleDownload}
-                  disabled={isLoading}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Download />
-                  Download
-                </Button>
-
-                <label>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={isUploading}
-                    asChild
-                  >
-                    <span>
-                      <Upload />
-                      {isUploading ? "Updating..." : "Update"}
-                    </span>
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                    className="hidden"
-                  />
-                </label>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      disabled={isLoading || !imageUrl}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      <Trash2 />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this image? This action
-                        cannot be undone. All image files for {airport}-
-                        {terminal}
-                        will be removed.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-            <div className="h-px bg-border" />
-
             <div className="space-y-4">
               {stepGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -785,7 +731,7 @@ function TerminalImageManager({
                       queue area.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     {selectedZoneKey && zoneAreas[selectedZoneKey] && (
                       <Button
                         variant="ghost"
@@ -958,61 +904,6 @@ function TerminalImageManager({
           <div className="flex h-96 flex-col items-center justify-center gap-4">
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">No image available</p>
-
-            <div className="flex gap-2">
-              <label>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={isUploading}
-                  asChild
-                >
-                  <span>
-                    <Upload />
-                    {isUploading ? "Uploading..." : "Upload"}
-                  </span>
-                </Button>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
-                  onChange={handleFileChange}
-                  disabled={isUploading}
-                  className="hidden"
-                />
-              </label>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    disabled={isLoading || !imageUrl}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    <Trash2 />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this image? This action
-                      cannot be undone. All image files for {airport}-{terminal}
-                      will be removed.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
           </div>
         )}
       </div>
