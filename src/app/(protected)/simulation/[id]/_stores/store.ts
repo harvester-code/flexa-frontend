@@ -572,6 +572,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setLastSavedAt: (timestamp) =>
       set((state) => {
+        state.savedAt = timestamp;
         state.context.lastSavedAt = timestamp;
       }),
 

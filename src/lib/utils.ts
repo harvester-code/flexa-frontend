@@ -10,6 +10,9 @@ export const timeToRelativeTime = (time?: string | Dayjs) => {
   if (!time) return '';
   const timeCurrent = dayjs(time);
   const minutes = dayjs().diff(timeCurrent, 'minute');
+  if (minutes < 1) {
+    return 'Just now';
+  }
   const hours = minutes / 60;
   const days = hours / 24;
   const months = days / 30;
