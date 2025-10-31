@@ -355,10 +355,6 @@ function TerminalImageManager({
       }
 
       setZoneArea(selectedZone.step, selectedZone.zoneName, rect);
-      toast({
-        title: "Zone area saved",
-        description: buildZoneLabel(selectedZone),
-      });
     },
     [
       MIN_RECT_SIZE,
@@ -731,8 +727,9 @@ function TerminalImageManager({
                     const stepColor = getStepColor(group.step);
                     const buttonStyle = {
                       "--step-color": stepColor,
-                      "--step-hover-bg": appendAlpha(stepColor, 0.2),
+                      "--step-hover-bg": appendAlpha(stepColor, isCompleted ? 0.2 : 0.15),
                       "--step-inactive-bg": appendAlpha(stepColor, 0.12),
+                      "--step-incomplete-bg": appendAlpha(stepColor, 0.08),
                       "--step-text-color": stepColor,
                     } as CSSProperties;
                     const ratioColor = isActiveStep
@@ -747,11 +744,13 @@ function TerminalImageManager({
                         onClick={(e) => handleStepSelect(group.step, e)}
                         style={buttonStyle}
                         className={cn(
-                          "flex-none rounded-full border px-3 py-2 text-xs font-medium transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-0",
-                          isActiveStep
-                            ? "border-transparent bg-[var(--step-color)] text-white hover:!bg-[var(--step-color)] hover:!text-white"
-                            : "border-[var(--step-color)] bg-[var(--step-inactive-bg)] text-[var(--step-text-color)] hover:!bg-[var(--step-hover-bg)] hover:!text-[var(--step-text-color)]",
-                          !isActiveStep && "shadow-none"
+                          "flex-none rounded-full border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-0",
+                          isActiveStep &&
+                            "shadow-sm border-transparent bg-[var(--step-color)] text-white hover:!bg-[var(--step-color)] hover:!text-white",
+                          !isActiveStep &&
+                            (isCompleted
+                              ? "shadow-none border-[var(--step-color)] bg-[var(--step-inactive-bg)] text-[var(--step-text-color)] hover:!bg-[var(--step-hover-bg)] hover:!text-[var(--step-text-color)]"
+                              : "shadow-none border-dashed border-[var(--step-color)] bg-[var(--step-incomplete-bg)] text-[var(--step-text-color)] hover:!bg-[var(--step-hover-bg)] hover:!text-[var(--step-text-color)]")
                         )}
                       >
                         <span className="flex items-center gap-1 font-semibold">
