@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import {
   Upload,
   Trash2,
@@ -33,6 +33,15 @@ import {
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
 const BUCKET_NAME = "airport-terminal-images";
+
+const appendAlpha = (hexColor: string, alpha: number) => {
+  const normalizedHex = hexColor.replace("#", "");
+  const clampedAlpha = Math.max(0, Math.min(1, alpha));
+  const alphaHex = Math.round(clampedAlpha * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `#${normalizedHex}${alphaHex}`;
+};
 
 type ZoneItem = {
   step: number;
@@ -719,39 +728,49 @@ function TerminalImageManager({
                     const isActiveStep = selectedStep === group.step;
                     const isCompleted =
                       mappedZones === totalZones && totalZones > 0;
-                        return (
-                          <Button
-                            variant="ghost"
-                            key={`${group.step}:${group.processName}`}
-                            type="button"
-                            onClick={(e) => handleStepSelect(group.step, e)}
-                            className={cn(
-                              "flex-none rounded-full border px-3 py-2 text-xs font-medium transition",
-                              isActiveStep
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/10",
-                              isCompleted &&
-                                !isActiveStep &&
-                                "border-primary bg-primary/10 text-primary"
-                            )}
+                    const stepColor = getStepColor(group.step);
+                    const buttonStyle = {
+                      "--step-color": stepColor,
+                      "--step-hover-bg": appendAlpha(stepColor, 0.2),
+                      "--step-inactive-bg": appendAlpha(stepColor, 0.12),
+                      "--step-text-color": stepColor,
+                    } as CSSProperties;
+                    const ratioColor = isActiveStep
+                      ? "rgba(255,255,255,0.85)"
+                      : appendAlpha(stepColor, 0.75);
+
+                    return (
+                      <Button
+                        variant="ghost"
+                        key={`${group.step}:${group.processName}`}
+                        type="button"
+                        onClick={(e) => handleStepSelect(group.step, e)}
+                        style={buttonStyle}
+                        className={cn(
+                          "flex-none rounded-full border px-3 py-2 text-xs font-medium transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-0",
+                          isActiveStep
+                            ? "border-transparent bg-[var(--step-color)] text-white hover:!bg-[var(--step-color)] hover:!text-white"
+                            : "border-[var(--step-color)] bg-[var(--step-inactive-bg)] text-[var(--step-text-color)] hover:!bg-[var(--step-hover-bg)] hover:!text-[var(--step-text-color)]",
+                          !isActiveStep && "shadow-none"
+                        )}
+                      >
+                        <span className="flex items-center gap-1 font-semibold">
+                          {formatProcessName(group.processName)}
+                          {isCompleted && (
+                            <Check
+                              className="h-3.5 w-3.5"
+                              style={{ color: ratioColor }}
+                            />
+                          )}
+                          <span
+                            className="text-[10px] font-medium"
+                            style={{ color: ratioColor }}
                           >
-                            <span className="flex items-center gap-1 font-medium">
-                              {formatProcessName(group.processName)}
-                              {isCompleted ? (
-                                <>
-                                  <Check className="h-3.5 w-3.5" />
-                                  <span className="text-[10px] text-muted-foreground opacity-0">
-                                    {mappedZones}/{totalZones}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {mappedZones}/{totalZones}
-                                </span>
-                              )}
-                            </span>
-                          </Button>
-                        );
+                            {mappedZones}/{totalZones}
+                          </span>
+                        </span>
+                      </Button>
+                    );
                   })}
                 </div>
               )}

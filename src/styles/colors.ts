@@ -4,11 +4,11 @@ export const COMPONENT_TYPICAL_COLORS = [
   "#3b82f6", // blue
   "#10b981", // emerald
   "#f97316", // orange
-  "#8b5cf6", // violet
+  "#ec4899", // pink
+  // "#8b5cf6", // violet
   "#f59e0b", // amber
   // "#ef4444", // red
   "#06b6d4", // cyan
-  "#ec4899", // pink
   "#6366f1", // indigo
   "#84cc16", // lime
   "#14b8a6", // teal

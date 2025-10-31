@@ -871,7 +871,7 @@ export default function OperatingScheduleEditor({
         document.activeElement !== containerRef.current &&
         !isFormElement
       ) {
-        containerRef.current.focus();
+        containerRef.current.focus({ preventScroll: true });
       }
     };
 

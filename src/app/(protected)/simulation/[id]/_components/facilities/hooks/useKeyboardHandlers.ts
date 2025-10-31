@@ -83,7 +83,7 @@ export function useKeyboardHandlers({
 
       // 🎯 포커스 확인 및 보장
       if (document.activeElement !== containerRef.current) {
-        containerRef.current?.focus();
+        containerRef.current?.focus({ preventScroll: true });
       }
 
       // Cmd/Ctrl + C: Copy

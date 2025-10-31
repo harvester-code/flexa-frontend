@@ -55,11 +55,31 @@ function ScenarioNameDisplay({
   scenarioName: string;
 }) {
   const searchParams = useSearchParams();
-  const urlScenarioName = searchParams.get("name");
-
-  return (
-    <dd>{urlScenarioName || scenarioName || `Scenario ${simulationId}`}</dd>
+  const fallbackName = useMemo(
+    () => `Scenario ${simulationId}`,
+    [simulationId]
   );
+  const derivedDefaultName = useMemo(
+    () => scenarioName || fallbackName,
+    [scenarioName, fallbackName]
+  );
+
+  const [displayName, setDisplayName] = useState(fallbackName);
+
+  useEffect(() => {
+    const urlScenarioName = searchParams.get("name");
+
+    if (urlScenarioName) {
+      setDisplayName((prev) => (prev === urlScenarioName ? prev : urlScenarioName));
+      return;
+    }
+
+    setDisplayName((prev) =>
+      prev === derivedDefaultName ? prev : derivedDefaultName
+    );
+  }, [searchParams, derivedDefaultName]);
+
+  return <dd>{displayName}</dd>;
 }
 
 export default function SimulationDetail({
