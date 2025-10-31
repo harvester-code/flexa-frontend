@@ -174,11 +174,11 @@ const formatTimeLabel = (value: string): string => {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 };
 
-const DOT_DENSITY = 900;
-const MIN_DOTS = 8;
-const MAX_DOTS = 150;
-const DOT_SIZE_PX = 6;
-const DOT_GAP_PX = 2;
+const DOT_DENSITY = 15000;
+const MIN_DOTS = 1;
+const MAX_DOTS = 5000;
+const DOT_SIZE_PX = 3;
+const DOT_GAP_PX = 0;
 
 const computeDotScaling = (rect: TerminalLayoutZoneRect, queueValue: number) => {
   if (queueValue <= 0) {
@@ -189,8 +189,14 @@ const computeDotScaling = (rect: TerminalLayoutZoneRect, queueValue: number) => 
   const normalizedArea = Math.max(area, 0.01); // 최소 면적 보정 (1%)
   const estimatedDots = Math.round(normalizedArea * DOT_DENSITY);
   const maxDots = Math.min(MAX_DOTS, Math.max(MIN_DOTS, estimatedDots));
-  const peoplePerDot = Math.max(1, Math.ceil(queueValue / maxDots));
-  const dotCount = Math.max(1, Math.ceil(queueValue / peoplePerDot));
+
+  // 공간이 충분하면 1:1로, 부족하면 스케일링
+  if (queueValue <= maxDots) {
+    return { dotCount: queueValue, peoplePerDot: 1 };
+  }
+
+  const peoplePerDot = Math.ceil(queueValue / maxDots);
+  const dotCount = Math.ceil(queueValue / peoplePerDot);
 
   return { dotCount, peoplePerDot };
 };
@@ -301,13 +307,14 @@ function HomeTerminalImage({
               if (Array.isArray(queueSeriesRaw) && queueSeriesRaw.length > 0) {
                 const queueSeries = sanitizeNumericSeries(queueSeriesRaw as Array<number | string>);
                 if (queueSeries.length > 0) {
-                  const maxQueueValue = queueSeries.reduce((max, value) => Math.max(max, value), 0);
-                  const scaling = computeDotScaling(entry.rect, maxQueueValue);
-                  basePeoplePerDot = Math.max(1, scaling.peoplePerDot);
-                  baseDotCount = scaling.dotCount;
                   const safeIndex = Math.min(timeIndex, queueSeries.length - 1);
                   const currentValue = queueSeries[safeIndex] ?? 0;
                   queueValue = Math.max(0, Math.round(currentValue));
+
+                  // 현재 queueValue를 기준으로 scaling 계산
+                  const scaling = computeDotScaling(entry.rect, queueValue);
+                  basePeoplePerDot = scaling.peoplePerDot;
+                  baseDotCount = scaling.dotCount;
                   hasData = true;
                 }
               }
@@ -316,8 +323,7 @@ function HomeTerminalImage({
         }
       }
 
-      const computedDotCount = queueValue > 0 ? Math.max(1, Math.ceil(queueValue / basePeoplePerDot)) : 0;
-      const dotCount = baseDotCount > 0 ? Math.min(baseDotCount, computedDotCount) : computedDotCount;
+      const dotCount = baseDotCount;
 
       return {
         ...entry,
@@ -435,6 +441,7 @@ function HomeTerminalImage({
             src={imageSrc}
             alt="Terminal layout"
             className="h-auto w-full select-none object-contain"
+            style={{ filter: "grayscale(100%)", opacity: 0.4 }}
             loading="lazy"
           />
 
@@ -449,20 +456,17 @@ function HomeTerminalImage({
               hasData,
               maxDotCount,
             }) => {
-              const aspectRatio = rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
-              const columnSeed = maxDotCount > 0 ? maxDotCount : dotCount > 0 ? dotCount : 1;
-              const columns = Math.max(1, Math.ceil(Math.sqrt(columnSeed * aspectRatio)));
               const zoneColor = getZoneColorByStep(stepIndex);
               const borderColor = appendAlpha(zoneColor, 0.65);
               const backgroundColor = appendAlpha(zoneColor, 0.18);
               const labelBackground = appendAlpha(zoneColor, 0.82);
               const dotColor = appendAlpha(zoneColor, 0.88);
               const idleTextColor = appendAlpha(zoneColor, 0.8);
-              const labelPlacement = getLabelPlacement(rect);
-              const labelPositionStyle = getLabelPositionStyle(labelPlacement);
               const labelText = `${zoneLabel}: ${queueValue.toLocaleString()}pax`;
               const labelStyle: CSSProperties = {
-                ...labelPositionStyle,
+                left: "0",
+                top: "-2px",
+                transform: "translateY(-100%)",
                 backgroundColor: labelBackground,
                 color: "#ffffff",
                 whiteSpace: "nowrap",
@@ -480,34 +484,31 @@ function HomeTerminalImage({
                   }}
                 >
                   <div
-                    className="pointer-events-none absolute inset-0 rounded-md border-2"
-                    style={{ borderColor, backgroundColor }}
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      border: `1px dashed ${borderColor}`,
+                      backgroundColor,
+                    }}
                   >
                     <span
-                      className="pointer-events-none absolute z-10 rounded-full px-1.5 py-0.5 text-[10px] font-semibold shadow-sm"
+                      className="pointer-events-none absolute z-10 rounded-full px-1 py-0 text-[10px] font-semibold shadow-sm leading-tight"
                       style={labelStyle}
                     >
                       {labelText}
                     </span>
 
-                    <div className="flex h-full w-full flex-col justify-start p-1.5">
-                      {hasData && dotCount > 0 ? (
+                    <div className="flex h-full w-full p-0">
+                      {hasData && dotCount > 0 && (
                         <div
-                          className="grid h-full w-full"
+                          className="flex flex-wrap h-full w-full content-start"
                           style={{
-                            gridTemplateColumns: `repeat(${columns}, ${DOT_SIZE_PX}px)`,
                             gap: `${DOT_GAP_PX}px`,
-                            justifyItems: "start",
-                            alignItems: "start",
-                            justifyContent: "start",
-                            alignContent: "start",
-                            gridAutoFlow: "row",
                           }}
                         >
                           {Array.from({ length: dotCount }).map((_, index) => (
                             <span
                               key={index}
-                              className="block rounded-full"
+                              className="block rounded-full flex-shrink-0"
                               style={{
                                 width: `${DOT_SIZE_PX}px`,
                                 height: `${DOT_SIZE_PX}px`,
@@ -515,13 +516,6 @@ function HomeTerminalImage({
                               }}
                             />
                           ))}
-                        </div>
-                      ) : (
-                        <div
-                          className="flex h-full w-full items-center justify-center text-[10px] font-medium"
-                          style={{ color: idleTextColor }}
-                        >
-                          {hasData ? "No queue" : "No data"}
                         </div>
                       )}
                     </div>
