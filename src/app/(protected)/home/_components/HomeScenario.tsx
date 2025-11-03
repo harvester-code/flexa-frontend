@@ -236,7 +236,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="max-w-6xl h-[800px] flex flex-col">
+          <DialogContent className="h-[800px] w-full max-w-[min(100vw-4rem,72rem)] flex flex-col">
             <DialogHeader>
               <DialogTitle>Select Scenario</DialogTitle>
               <DialogDescription>Select the scenario you&apos;d like to review.</DialogDescription>
