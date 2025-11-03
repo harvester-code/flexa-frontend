@@ -34,7 +34,6 @@ interface ZoneOverlayEntry extends ZoneEntry {
   dotCount: number;
   peoplePerDot: number;
   hasData: boolean;
-  maxDotCount: number;
 }
 
 const clampToUnitInterval = (value: number) => {
@@ -81,57 +80,6 @@ const getZoneColorByStep = (stepIndex: number) => {
   return COMPONENT_TYPICAL_COLORS[normalizedIndex];
 };
 
-type LabelPlacement = "top" | "bottom" | "left" | "right";
-
-const LABEL_OFFSET_PX = 6;
-
-const getLabelPlacement = (rect: TerminalLayoutZoneRect): LabelPlacement => {
-  const freeTop = rect.y;
-  const freeBottom = 1 - rect.y - rect.height;
-  const freeLeft = rect.x;
-  const freeRight = 1 - rect.x - rect.width;
-
-  const preferences: Array<{ placement: LabelPlacement; space: number }> = [
-    { placement: "top", space: freeTop },
-    { placement: "bottom", space: freeBottom },
-    { placement: "left", space: freeLeft },
-    { placement: "right", space: freeRight },
-  ];
-
-  const best = preferences.sort((a, b) => b.space - a.space)[0];
-  return best?.placement ?? "top";
-};
-
-const getLabelPositionStyle = (placement: LabelPlacement): CSSProperties => {
-  switch (placement) {
-    case "bottom":
-      return {
-        left: "50%",
-        top: "100%",
-        transform: `translate(-50%, ${LABEL_OFFSET_PX}px)`,
-      };
-    case "left":
-      return {
-        left: 0,
-        top: "50%",
-        transform: `translate(calc(-100% - ${LABEL_OFFSET_PX}px), -50%)`,
-      };
-    case "right":
-      return {
-        left: "100%",
-        top: "50%",
-        transform: `translate(${LABEL_OFFSET_PX}px, -50%)`,
-      };
-    case "top":
-    default:
-      return {
-        left: "50%",
-        top: 0,
-        transform: `translate(-50%, calc(-100% - ${LABEL_OFFSET_PX}px))`,
-      };
-  }
-};
-
 const buildZoneEntries = (
   zoneAreas: Record<string, TerminalLayoutZoneRect> | null | undefined
 ): ZoneEntry[] => {
@@ -174,26 +122,8 @@ const formatTimeLabel = (value: string): string => {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 };
 
-const DOT_DENSITY = 900;
-const MIN_DOTS = 8;
-const MAX_DOTS = 150;
-const DOT_SIZE_PX = 6;
-const DOT_GAP_PX = 2;
-
-const computeDotScaling = (rect: TerminalLayoutZoneRect, queueValue: number) => {
-  if (queueValue <= 0) {
-    return { dotCount: 0, peoplePerDot: 1 };
-  }
-
-  const area = Math.max(rect.width * rect.height, 0);
-  const normalizedArea = Math.max(area, 0.01); // 최소 면적 보정 (1%)
-  const estimatedDots = Math.round(normalizedArea * DOT_DENSITY);
-  const maxDots = Math.min(MAX_DOTS, Math.max(MIN_DOTS, estimatedDots));
-  const peoplePerDot = Math.max(1, Math.ceil(queueValue / maxDots));
-  const dotCount = Math.max(1, Math.ceil(queueValue / peoplePerDot));
-
-  return { dotCount, peoplePerDot };
-};
+const DOT_SIZE_PX = 3;
+const DOT_GAP_PX = 0.5;
 
 const sanitizeNumericSeries = (series: Array<number | string>): number[] => {
   return series.map((value) => {
@@ -280,8 +210,6 @@ function HomeTerminalImage({
       const stepName = combinedStepNames?.[entry.stepLabel];
       let queueValue = 0;
       let hasData = false;
-      let basePeoplePerDot = 1;
-      let baseDotCount = 0;
 
       if (stepName && flowChartData && typeof flowChartData === "object" && times.length > 0) {
         const stepPayloadRaw = (flowChartData as Record<string, unknown>)[stepName];
@@ -301,10 +229,6 @@ function HomeTerminalImage({
               if (Array.isArray(queueSeriesRaw) && queueSeriesRaw.length > 0) {
                 const queueSeries = sanitizeNumericSeries(queueSeriesRaw as Array<number | string>);
                 if (queueSeries.length > 0) {
-                  const maxQueueValue = queueSeries.reduce((max, value) => Math.max(max, value), 0);
-                  const scaling = computeDotScaling(entry.rect, maxQueueValue);
-                  basePeoplePerDot = Math.max(1, scaling.peoplePerDot);
-                  baseDotCount = scaling.dotCount;
                   const safeIndex = Math.min(timeIndex, queueSeries.length - 1);
                   const currentValue = queueSeries[safeIndex] ?? 0;
                   queueValue = Math.max(0, Math.round(currentValue));
@@ -316,17 +240,15 @@ function HomeTerminalImage({
         }
       }
 
-      const computedDotCount = queueValue > 0 ? Math.max(1, Math.ceil(queueValue / basePeoplePerDot)) : 0;
-      const dotCount = baseDotCount > 0 ? Math.min(baseDotCount, computedDotCount) : computedDotCount;
+      const dotCount = queueValue;
 
       return {
         ...entry,
         stepName,
         queueValue,
         dotCount,
-        peoplePerDot: basePeoplePerDot,
+        peoplePerDot: 1,
         hasData,
-        maxDotCount: baseDotCount,
       };
     });
   }, [zoneEntries, combinedStepNames, flowChartData, times.length, timeIndex]);
@@ -447,22 +369,18 @@ function HomeTerminalImage({
               queueValue,
               dotCount,
               hasData,
-              maxDotCount,
             }) => {
-              const aspectRatio = rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
-              const columnSeed = maxDotCount > 0 ? maxDotCount : dotCount > 0 ? dotCount : 1;
-              const columns = Math.max(1, Math.ceil(Math.sqrt(columnSeed * aspectRatio)));
               const zoneColor = getZoneColorByStep(stepIndex);
               const borderColor = appendAlpha(zoneColor, 0.65);
               const backgroundColor = appendAlpha(zoneColor, 0.18);
               const labelBackground = appendAlpha(zoneColor, 0.82);
               const dotColor = appendAlpha(zoneColor, 0.88);
               const idleTextColor = appendAlpha(zoneColor, 0.8);
-              const labelPlacement = getLabelPlacement(rect);
-              const labelPositionStyle = getLabelPositionStyle(labelPlacement);
-              const labelText = `${zoneLabel}: ${queueValue.toLocaleString()}pax`;
+              const labelText = `${zoneLabel}: ${queueValue.toLocaleString()} pax`;
               const labelStyle: CSSProperties = {
-                ...labelPositionStyle,
+                left: 0,
+                top: 0,
+                transform: "translate(0, calc(-100% - 4px))",
                 backgroundColor: labelBackground,
                 color: "#ffffff",
                 whiteSpace: "nowrap",
@@ -480,28 +398,30 @@ function HomeTerminalImage({
                   }}
                 >
                   <div
-                    className="pointer-events-none absolute inset-0 rounded-md border-2"
-                    style={{ borderColor, backgroundColor }}
+                    className="pointer-events-none absolute inset-0 rounded-md"
+                    style={{
+                      borderColor,
+                      backgroundColor,
+                      borderWidth: "1px",
+                      borderStyle: "dashed",
+                    }}
                   >
                     <span
-                      className="pointer-events-none absolute z-10 rounded-full px-1.5 py-0.5 text-[10px] font-semibold shadow-sm"
+                      className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[9px] font-semibold leading-none shadow-sm"
                       style={labelStyle}
                     >
                       {labelText}
                     </span>
 
-                    <div className="flex h-full w-full flex-col justify-start p-1.5">
+                    <div className="flex h-full w-full flex-col justify-start">
                       {hasData && dotCount > 0 ? (
                         <div
-                          className="grid h-full w-full"
+                          className="flex h-full w-full flex-wrap"
                           style={{
-                            gridTemplateColumns: `repeat(${columns}, ${DOT_SIZE_PX}px)`,
                             gap: `${DOT_GAP_PX}px`,
-                            justifyItems: "start",
-                            alignItems: "start",
-                            justifyContent: "start",
-                            alignContent: "start",
-                            gridAutoFlow: "row",
+                            alignItems: "flex-start",
+                            alignContent: "flex-start",
+                            justifyContent: "flex-start",
                           }}
                         >
                           {Array.from({ length: dotCount }).map((_, index) => (
