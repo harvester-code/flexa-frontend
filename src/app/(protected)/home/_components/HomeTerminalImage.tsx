@@ -2,12 +2,14 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import type { CSSProperties } from "react";
 import { ScenarioData } from "@/types/homeTypes";
 import HomeNoScenario from "./HomeNoScenario";
 import HomeLoading from "./HomeLoading";
 import { useScenarioTerminalLayout } from "@/queries/terminalLayoutQueries";
 import { createClient } from "@/lib/auth/client";
+import { Slider } from "@/components/ui/Slider";
 import type {
   ScenarioTerminalLayout,
   TerminalLayoutZoneRect,
@@ -331,6 +333,20 @@ function HomeTerminalImage({
     };
   }, [airport, terminal, metadataImage, supabase]);
 
+  const selectedTimeLabel = timeLabels[timeIndex] ?? "";
+  const selectedTimestamp = times[timeIndex] ?? "";
+  const selectedDateTimeLabel = selectedTimestamp || selectedTimeLabel;
+  const selectedMoment = useMemo(() => {
+    if (!selectedTimestamp) {
+      return null;
+    }
+    const parsed = dayjs(selectedTimestamp);
+    return parsed.isValid() ? parsed : null;
+  }, [selectedTimestamp]);
+  const sliderPositionPercent = times.length > 1
+    ? Math.min(Math.max(timeIndex / (times.length - 1), 0), 1) * 100
+    : 0;
+
   if (!scenario) {
     return <HomeNoScenario />;
   }
@@ -346,8 +362,6 @@ function HomeTerminalImage({
     (metadataImage && /^https?:\/\//i.test(metadataImage)
       ? metadataImage
       : fallbackImage);
-
-  const selectedTimeLabel = timeLabels[timeIndex] ?? "";
 
   return (
     <div className="mt-4 space-y-4">
@@ -453,24 +467,50 @@ function HomeTerminalImage({
         </div>
       </div>
 
-      {times.length > 1 ? (
-        <div className="rounded-md border border-input bg-white p-4">
-          <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-            <span>Queue snapshot</span>
-            <span>{selectedTimeLabel}</span>
-          </div>
-          <input
-            type="range"
+      {times.length > 0 ? (
+        <div className="relative mt-3">
+          <Slider
+            value={[timeIndex]}
             min={0}
             max={Math.max(times.length - 1, 0)}
-            value={timeIndex}
-            onChange={(event) => setTimeIndex(Number(event.target.value))}
-            className="mt-3 w-full"
+            step={1}
+            onValueChange={(value) => {
+              const [next] = value;
+              if (typeof next === "number" && !Number.isNaN(next)) {
+                const clamped = Math.min(
+                  Math.max(next, 0),
+                  Math.max(times.length - 1, 0)
+                );
+                setTimeIndex(clamped);
+              }
+            }}
+            className="w-full"
+            disabled={times.length <= 1}
           />
-          {timeLabels.length > 1 ? (
-            <div className="mt-2 flex justify-between text-[10px] font-mono text-muted-foreground">
-              <span>{timeLabels[0]}</span>
-              <span>{timeLabels[timeLabels.length - 1]}</span>
+          {(selectedMoment || selectedDateTimeLabel || selectedTimeLabel) ? (
+            <div
+              className="pointer-events-none absolute top-full mt-2 flex justify-center"
+              style={{
+                left: `${sliderPositionPercent}%`,
+                transform: "translateX(-50%)",
+              }}
+            >
+              <div className="rounded-full bg-primary/10 px-3 py-1 text-center text-xs font-semibold text-primary">
+                {selectedMoment ? (
+                  <>
+                    <span className="block whitespace-nowrap">
+                      {selectedMoment.format("YYYY-MM-DD")}
+                    </span>
+                    <span className="block whitespace-nowrap">
+                      {selectedMoment.format("HH:mm")}
+                    </span>
+                  </>
+                ) : (
+                  <span className="block whitespace-nowrap">
+                    {selectedDateTimeLabel || selectedTimeLabel}
+                  </span>
+                )}
+              </div>
             </div>
           ) : null}
         </div>
