@@ -407,7 +407,7 @@ function HomeTerminalImage({
                     }}
                   >
                     <span
-                      className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[9px] font-semibold leading-none shadow-sm"
+                      className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[10px] font-semibold leading-none shadow-sm"
                       style={labelStyle}
                     >
                       {labelText}
