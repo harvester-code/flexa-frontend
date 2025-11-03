@@ -121,7 +121,11 @@ const formatTimeLabel = (value: string): string => {
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 };
 
 const DOT_SIZE_PX = 3;
@@ -193,7 +197,10 @@ function HomeTerminalImage({
       .filter((value) => value.length > 0);
   }, [flowChartData]);
 
-  const timeLabels = useMemo(() => times.map((value) => formatTimeLabel(value)), [times]);
+  const timeLabels = useMemo(
+    () => times.map((value) => formatTimeLabel(value)),
+    [times]
+  );
 
   const [timeIndex, setTimeIndex] = useState(0);
 
@@ -213,8 +220,15 @@ function HomeTerminalImage({
       let queueValue = 0;
       let hasData = false;
 
-      if (stepName && flowChartData && typeof flowChartData === "object" && times.length > 0) {
-        const stepPayloadRaw = (flowChartData as Record<string, unknown>)[stepName];
+      if (
+        stepName &&
+        flowChartData &&
+        typeof flowChartData === "object" &&
+        times.length > 0
+      ) {
+        const stepPayloadRaw = (flowChartData as Record<string, unknown>)[
+          stepName
+        ];
 
         if (stepPayloadRaw && typeof stepPayloadRaw === "object") {
           const stepPayload = stepPayloadRaw as Record<string, unknown>;
@@ -229,7 +243,9 @@ function HomeTerminalImage({
               const queueSeriesRaw = zoneData.queue_length;
 
               if (Array.isArray(queueSeriesRaw) && queueSeriesRaw.length > 0) {
-                const queueSeries = sanitizeNumericSeries(queueSeriesRaw as Array<number | string>);
+                const queueSeries = sanitizeNumericSeries(
+                  queueSeriesRaw as Array<number | string>
+                );
                 if (queueSeries.length > 0) {
                   const safeIndex = Math.min(timeIndex, queueSeries.length - 1);
                   const currentValue = queueSeries[safeIndex] ?? 0;
@@ -282,8 +298,8 @@ function HomeTerminalImage({
         candidateKeys.push(`${baseKey}.${ext}`);
       });
 
-      const uniqueCandidates = candidateKeys.filter((key, index) =>
-        key && candidateKeys.indexOf(key) === index
+      const uniqueCandidates = candidateKeys.filter(
+        (key, index) => key && candidateKeys.indexOf(key) === index
       );
 
       for (const candidate of uniqueCandidates) {
@@ -343,9 +359,23 @@ function HomeTerminalImage({
     const parsed = dayjs(selectedTimestamp);
     return parsed.isValid() ? parsed : null;
   }, [selectedTimestamp]);
-  const sliderPositionPercent = times.length > 1
-    ? Math.min(Math.max(timeIndex / (times.length - 1), 0), 1) * 100
-    : 0;
+  const sliderPositionPercent =
+    times.length > 1
+      ? Math.min(Math.max(timeIndex / (times.length - 1), 0), 1) * 100
+      : 0;
+
+  // 시작 시점과 종료 시점
+  const startMoment = useMemo(() => {
+    if (times.length === 0) return null;
+    const parsed = dayjs(times[0]);
+    return parsed.isValid() ? parsed : null;
+  }, [times]);
+
+  const endMoment = useMemo(() => {
+    if (times.length === 0) return null;
+    const parsed = dayjs(times[times.length - 1]);
+    return parsed.isValid() ? parsed : null;
+  }, [times]);
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -358,13 +388,14 @@ function HomeTerminalImage({
   }
 
   const fallbackImage = "/maps/MNL_T3_L3.jpg";
-  const imageSrc = imageUrl ||
+  const imageSrc =
+    imageUrl ||
     (metadataImage && /^https?:\/\//i.test(metadataImage)
       ? metadataImage
       : fallbackImage);
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-4 mb-4 space-y-4">
       <div className="relative overflow-hidden rounded-lg border border-input bg-white shadow-sm">
         <div className="relative">
           <img
@@ -375,94 +406,98 @@ function HomeTerminalImage({
           />
 
           <div className="pointer-events-none absolute inset-0">
-            {zoneOverlayData.map(({
-              key,
-              rect,
-              zoneLabel,
-              stepIndex,
-              queueValue,
-              dotCount,
-              hasData,
-            }) => {
-              const zoneColor = getZoneColorByStep(stepIndex);
-              const borderColor = appendAlpha(zoneColor, 0.65);
-              const backgroundColor = appendAlpha(zoneColor, 0.18);
-              const labelBackground = appendAlpha(zoneColor, 0.82);
-              const dotColor = appendAlpha(zoneColor, 0.88);
-              const idleTextColor = appendAlpha(zoneColor, 0.8);
-              const labelText = `${zoneLabel}: ${queueValue.toLocaleString()} pax`;
-              const labelStyle: CSSProperties = {
-                left: 0,
-                top: 0,
-                transform: "translate(0, calc(-100% - 4px))",
-                backgroundColor: labelBackground,
-                color: "#ffffff",
-                whiteSpace: "nowrap",
-              };
+            {zoneOverlayData.map(
+              ({
+                key,
+                rect,
+                zoneLabel,
+                stepIndex,
+                queueValue,
+                dotCount,
+                hasData,
+              }) => {
+                const zoneColor = getZoneColorByStep(stepIndex);
+                const borderColor = appendAlpha(zoneColor, 0.65);
+                const backgroundColor = appendAlpha(zoneColor, 0.18);
+                const labelBackground = appendAlpha(zoneColor, 0.82);
+                const dotColor = appendAlpha(zoneColor, 0.88);
+                const idleTextColor = appendAlpha(zoneColor, 0.8);
+                const labelText = `${zoneLabel}: ${queueValue.toLocaleString()} pax`;
+                const labelStyle: CSSProperties = {
+                  left: 0,
+                  top: 0,
+                  transform: "translate(0, calc(-100% - 4px))",
+                  backgroundColor: labelBackground,
+                  color: "#ffffff",
+                  whiteSpace: "nowrap",
+                };
 
-              return (
-                <div
-                  key={key}
-                  className="absolute"
-                  style={{
-                    left: `${rect.x * 100}%`,
-                    top: `${rect.y * 100}%`,
-                    width: `${rect.width * 100}%`,
-                    height: `${rect.height * 100}%`,
-                  }}
-                >
+                return (
                   <div
-                    className="pointer-events-none absolute inset-0 rounded-md"
+                    key={key}
+                    className="absolute"
                     style={{
-                      borderColor,
-                      backgroundColor,
-                      borderWidth: "1px",
-                      borderStyle: "dashed",
+                      left: `${rect.x * 100}%`,
+                      top: `${rect.y * 100}%`,
+                      width: `${rect.width * 100}%`,
+                      height: `${rect.height * 100}%`,
                     }}
                   >
-                    <span
-                      className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[10px] font-semibold leading-none shadow-sm"
-                      style={labelStyle}
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-md"
+                      style={{
+                        borderColor,
+                        backgroundColor,
+                        borderWidth: "1px",
+                        borderStyle: "dashed",
+                      }}
                     >
-                      {labelText}
-                    </span>
+                      <span
+                        className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[10px] font-semibold leading-none shadow-sm"
+                        style={labelStyle}
+                      >
+                        {labelText}
+                      </span>
 
-                    <div className="flex h-full w-full flex-col justify-start">
-                      {hasData && dotCount > 0 ? (
-                        <div
-                          className="flex h-full w-full flex-wrap"
-                          style={{
-                            gap: `${DOT_GAP_PX}px`,
-                            alignItems: "flex-start",
-                            alignContent: "flex-start",
-                            justifyContent: "flex-start",
-                          }}
-                        >
-                          {Array.from({ length: dotCount }).map((_, index) => (
-                            <span
-                              key={index}
-                              className="block rounded-full"
-                              style={{
-                                width: `${DOT_SIZE_PX}px`,
-                                height: `${DOT_SIZE_PX}px`,
-                                backgroundColor: dotColor,
-                              }}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div
-                          className="flex h-full w-full items-center justify-center text-[10px] font-medium"
-                          style={{ color: idleTextColor }}
-                        >
-                          {hasData ? "No queue" : "No data"}
-                        </div>
-                      )}
+                      <div className="flex h-full w-full flex-col justify-start">
+                        {hasData && dotCount > 0 ? (
+                          <div
+                            className="flex h-full w-full flex-wrap"
+                            style={{
+                              gap: `${DOT_GAP_PX}px`,
+                              alignItems: "flex-start",
+                              alignContent: "flex-start",
+                              justifyContent: "flex-start",
+                            }}
+                          >
+                            {Array.from({ length: dotCount }).map(
+                              (_, index) => (
+                                <span
+                                  key={index}
+                                  className="block rounded-full"
+                                  style={{
+                                    width: `${DOT_SIZE_PX}px`,
+                                    height: `${DOT_SIZE_PX}px`,
+                                    backgroundColor: dotColor,
+                                  }}
+                                />
+                              )
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            className="flex h-full w-full items-center justify-center text-[10px] font-medium"
+                            style={{ color: idleTextColor }}
+                          >
+                            {hasData ? "No queue" : "No data"}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </div>
         </div>
       </div>
@@ -487,7 +522,22 @@ function HomeTerminalImage({
             className="w-full"
             disabled={times.length <= 1}
           />
-          {(selectedMoment || selectedDateTimeLabel || selectedTimeLabel) ? (
+          {/* 시작 시점 (왼쪽) */}
+          {startMoment && (
+            <div className="pointer-events-none absolute top-full mt-4 left-0">
+              <div className="text-center text-xs text-default-900">
+                <span className="block whitespace-nowrap">
+                  {startMoment.format("MM-DD")}
+                </span>
+                <span className="block whitespace-nowrap">
+                  {startMoment.format("HH:mm")}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 선택된 시점 (중앙) */}
+          {selectedMoment || selectedDateTimeLabel || selectedTimeLabel ? (
             <div
               className="pointer-events-none absolute top-full mt-2 flex justify-center"
               style={{
@@ -495,7 +545,7 @@ function HomeTerminalImage({
                 transform: "translateX(-50%)",
               }}
             >
-              <div className="rounded-full bg-primary/10 px-3 py-1 text-center text-xs font-semibold text-primary">
+              <div className="rounded-md bg-primary/10 px-3 py-1 text-center text-xs font-semibold text-primary">
                 {selectedMoment ? (
                   <>
                     <span className="block whitespace-nowrap">
@@ -513,6 +563,20 @@ function HomeTerminalImage({
               </div>
             </div>
           ) : null}
+
+          {/* 종료 시점 (오른쪽) */}
+          {endMoment && (
+            <div className="pointer-events-none absolute top-full mt-4 right-0">
+              <div className="text-center text-xs text-default-900">
+                <span className="block whitespace-nowrap">
+                  {endMoment.format("MM-DD")}
+                </span>
+                <span className="block whitespace-nowrap">
+                  {endMoment.format("HH:mm")}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 
