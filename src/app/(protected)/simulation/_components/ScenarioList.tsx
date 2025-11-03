@@ -865,15 +865,15 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
                     <td className="px-3 whitespace-nowrap">
-                      {scenario.simulation_end_at ? (
+                      {scenario.simulation_start_at ? (
                         <div className="flex flex-col leading-5">
                           <span>
-                            {dayjs(scenario.simulation_end_at).format(
+                            {dayjs(scenario.simulation_start_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
                           <span className="text-xs text-muted-foreground text-center">
-                            {dayjs(scenario.simulation_end_at).format("HH:mm")}
+                            {dayjs(scenario.simulation_start_at).format("HH:mm")}
                           </span>
                         </div>
                       ) : (

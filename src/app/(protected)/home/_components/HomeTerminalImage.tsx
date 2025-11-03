@@ -71,7 +71,7 @@ const appendAlpha = (hexColor: string, alpha: number) => {
 };
 
 const getZoneColorByStep = (stepIndex: number) => {
-  const paletteSize = COMPONENT_TYPICAL_COLORS.length;
+  const paletteSize = COMPONENT_TYPICAL_COLORS.length as number;
   if (paletteSize === 0) {
     return "#3b82f6";
   }
