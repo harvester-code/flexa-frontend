@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  BarChart3,
-  LineChart,
-  FileText,
-  Image,
-} from "lucide-react";
+import { BarChart3, LineChart, FileText, Image } from "lucide-react";
 import { ScenarioData } from "@/types/homeTypes";
 import { useStaticData, useMetricsData } from "@/queries/homeQueries";
 import { useScenarios } from "@/queries/simulationQueries";
@@ -51,7 +46,8 @@ function HomePage() {
   };
 
   const terminalLayoutData = useMemo<ScenarioTerminalLayout | null>(() => {
-    const rawLayout = (staticData as unknown as { terminalLayout?: unknown })?.terminalLayout;
+    const rawLayout = (staticData as unknown as { terminalLayout?: unknown })
+      ?.terminalLayout;
     if (!rawLayout || typeof rawLayout !== "object") {
       return null;
     }
@@ -87,13 +83,14 @@ function HomePage() {
       return null;
     }
 
-    const imageUrl = ["imageUrl", "mapUrl", "image_path"].reduce<
-      string | null
-    >((acc, key) => {
-      if (acc) return acc;
-      const value = layoutRecord[key];
-      return typeof value === "string" ? value : acc;
-    }, null);
+    const imageUrl = ["imageUrl", "mapUrl", "image_path"].reduce<string | null>(
+      (acc, key) => {
+        if (acc) return acc;
+        const value = layoutRecord[key];
+        return typeof value === "string" ? value : acc;
+      },
+      null
+    );
 
     return {
       imageUrl,
@@ -131,6 +128,7 @@ function HomePage() {
         <HomeAccordion
           title="Summary"
           icon={<BarChart3 className="h-5 w-5 text-primary" />}
+          className="mt-12"
           open={true}
         >
           <HomeSummary
