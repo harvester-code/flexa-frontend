@@ -142,7 +142,7 @@ const sanitizeNumericSeries = (series: Array<number | string>): number[] => {
 };
 
 const BUCKET_NAME = "airport-terminal-images";
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "svg", "webp"];
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "svg", "webp", "gif", "bmp"];
 
 function HomeTerminalImage({
   scenario,
@@ -387,23 +387,36 @@ function HomeTerminalImage({
     return <HomeLoading />;
   }
 
-  const fallbackImage = "/maps/MNL_T3_L3.jpg";
   const imageSrc =
     imageUrl ||
     (metadataImage && /^https?:\/\//i.test(metadataImage)
       ? metadataImage
-      : fallbackImage);
+      : null);
+
+  // 이미지가 없으면 간단한 안내 메시지 표시
+  if (!imageSrc && imageError) {
+    return (
+      <div className="py-3 text-sm text-muted-foreground">
+        No terminal layout image found. Upload in{" "}
+        <span className="font-semibold text-default-900">
+          Simulation → Terminal Waiting Area Editor
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 mb-4 space-y-4">
       <div className="relative overflow-hidden rounded-lg border border-input bg-white shadow-sm">
         <div className="relative">
-          <img
-            src={imageSrc}
-            alt="Terminal layout"
-            className="h-auto w-full select-none object-contain"
-            loading="lazy"
-          />
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt="Terminal layout"
+              className="h-auto w-full select-none object-contain"
+              loading="lazy"
+            />
+          ) : null}
 
           <div className="pointer-events-none absolute inset-0">
             {zoneOverlayData.map(
@@ -580,9 +593,6 @@ function HomeTerminalImage({
         </div>
       ) : null}
 
-      {imageError ? (
-        <p className="text-xs text-destructive">{imageError}</p>
-      ) : null}
       {!layoutData && isError ? (
         <p className="text-xs text-destructive">
           Failed to load terminal layout metadata. Showing image only.
