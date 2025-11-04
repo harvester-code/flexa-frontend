@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -80,6 +82,10 @@ interface ScenarioListProps {
 // 페이지당 표시할 시나리오 개수 옵션
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const DEFAULT_PAGE_SIZE = 10;
+
+// 정렬 가능한 필드 타입
+type SortField = "name" | "airport" | "terminal" | "editor" | "metadata_updated_at" | "simulation_start_at" | "memo";
+type SortOrder = "asc" | "desc";
 
 // 테이블의 최소 높이 계산 (헤더 + 행)
 const TABLE_HEADER_HEIGHT = 60; // 헤더 행 높이
@@ -186,6 +192,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<SortField>("simulation_start_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
     if (!scenarios) return [];
@@ -213,12 +221,40 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     return Array.from(uniqueTerminals).sort((a, b) => a.localeCompare(b));
   }, [scenarios]);
 
-  // 필터링된 시나리오 계산
+  // 정렬 핸들러
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // 같은 필드를 클릭하면 순서 반전
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // 다른 필드를 클릭하면 해당 필드로 오름차순
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  // 정렬 아이콘 렌더링 (고정된 너비로 공간 확보)
+  const renderSortIcon = (field: SortField) => {
+    return (
+      <span className="inline-flex w-3.5 ml-1">
+        {sortField === field && (
+          sortOrder === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5 text-primary" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 text-primary" />
+          )
+        )}
+      </span>
+    );
+  };
+
+  // 필터링 및 정렬된 시나리오 계산
   const filteredScenarios = React.useMemo(() => {
     if (!scenarios) return [];
 
     let filtered = [...scenarios];
 
+    // 필터링
     if (selectedAirports.length > 0) {
       filtered = filtered.filter((scenario) =>
         selectedAirports.includes(scenario.airport)
@@ -231,8 +267,37 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       );
     }
 
+    // 정렬
+    filtered.sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // null/undefined 처리
+      if (aValue === null || aValue === undefined) aValue = "";
+      if (bValue === null || bValue === undefined) bValue = "";
+
+      // 날짜 필드 처리
+      if (sortField === "metadata_updated_at" || sortField === "simulation_start_at") {
+        // null/undefined/"Never saved"/"Never run" 값은 가장 마지막으로
+        const aIsEmpty = !aValue;
+        const bIsEmpty = !bValue;
+
+        if (aIsEmpty && bIsEmpty) return 0;
+        if (aIsEmpty) return 1;
+        if (bIsEmpty) return -1;
+
+        const aTime = new Date(aValue).getTime();
+        const bTime = new Date(bValue).getTime();
+        return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
+      // 문자열 비교
+      const comparison = String(aValue).localeCompare(String(bValue));
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
     return filtered;
-  }, [scenarios, selectedAirports, selectedTerminals]);
+  }, [scenarios, selectedAirports, selectedTerminals, sortField, sortOrder]);
 
   useEffect(() => {
     if (selectedAirports.length === 0) return;
@@ -684,45 +749,73 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("name")}
+                >
                   <Hash className="h-3.5 w-3.5" />
                   Name
+                  {renderSortIcon("name")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("airport")}
+                >
                   <Plane className="h-3.5 w-3.5" />
                   Airport
+                  {renderSortIcon("airport")}
                 </div>
               </th>
               <th className="px-3 text-center whitespace-nowrap">
-                <div className="flex items-center justify-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center justify-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("terminal")}
+                >
                   <Building2 className="h-3.5 w-3.5" />
                   Terminal
+                  {renderSortIcon("terminal")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("editor")}
+                >
                   <UserSquare2 className="h-3.5 w-3.5" />
                   Editor
+                  {renderSortIcon("editor")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("metadata_updated_at")}
+                >
                   <Clock4 className="h-3.5 w-3.5" />
                   Last Saved
+                  {renderSortIcon("metadata_updated_at")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("simulation_start_at")}
+                >
                   <History className="h-3.5 w-3.5" />
                   Last Run
+                  {renderSortIcon("simulation_start_at")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
-                <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("memo")}
+                >
                   <StickyNote className="h-3.5 w-3.5" />
                   Memo
+                  {renderSortIcon("memo")}
                 </div>
               </th>
               <th className="w-20"></th>
