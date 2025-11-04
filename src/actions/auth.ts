@@ -5,7 +5,16 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/auth/server';
 
-export const signInAction = async (prevState: any, formData: FormData) => {
+interface AuthActionState {
+  error?: {
+    message: string;
+  };
+}
+
+export const signInAction = async (
+  _prevState: AuthActionState | null,
+  formData: FormData
+): Promise<AuthActionState | null> => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -24,7 +33,10 @@ export const signInAction = async (prevState: any, formData: FormData) => {
   redirect('/home');
 };
 
-export const signUpAction = async (prevState: any, formData: FormData) => {
+export const signUpAction = async (
+  _prevState: AuthActionState | null,
+  formData: FormData
+): Promise<AuthActionState | null> => {
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const email = formData.get('email') as string;

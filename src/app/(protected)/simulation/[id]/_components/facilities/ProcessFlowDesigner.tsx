@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { runSimulation } from "@/services/simulationService";
 import { useToast } from "@/hooks/useToast";
+import { createClient } from "@/lib/auth/client";
 import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -275,6 +276,63 @@ export default function ProcessFlowDesigner({
     (s) => s.passenger.pax_demographics
   );
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
+
+  // 🔔 Supabase Realtime: 시뮬레이션 상태 실시간 구독
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Realtime 채널 생성 및 구독
+    const channel = supabase
+      .channel(`simulation-${simulationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "scenario_information",
+          filter: `scenario_id=eq.${simulationId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.simulation_status;
+          const oldStatus = payload.old?.simulation_status;
+
+          // 상태가 실제로 변경된 경우만 알림
+          if (newStatus !== oldStatus) {
+            if (newStatus === "processing") {
+              toast({
+                title: "Simulation Processing",
+                description: "Simulation is now running.",
+              });
+            } else if (newStatus === "completed") {
+              const endTime = payload.new.simulation_end_at;
+              toast({
+                title: "Simulation Completed",
+                description: endTime
+                  ? `Completed at ${new Date(endTime).toLocaleString()}`
+                  : "Simulation has been completed successfully.",
+              });
+              setIsRunningSimulation(false);
+            } else if (newStatus === "failed") {
+              const errorMsg = payload.new.simulation_error;
+              toast({
+                title: "Simulation Failed",
+                description:
+                  errorMsg ||
+                  "Failed to complete simulation. Please try again.",
+                variant: "destructive",
+              });
+              setIsRunningSimulation(false);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 클린업: 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [simulationId, toast]);
 
   // Create airport-city mapping from parquet metadata
   const airportCityMapping = useMemo(() => {
@@ -963,9 +1021,9 @@ export default function ProcessFlowDesigner({
 
     // Update passenger_conditions field if process name changed
     if (oldProcessName !== newProcessName) {
-
       // Use updateProcessNameInPassengerConditions from store
-      const updateProcessNameInPassengerConditions = useSimulationStore.getState().updateProcessNameInPassengerConditions;
+      const updateProcessNameInPassengerConditions =
+        useSimulationStore.getState().updateProcessNameInPassengerConditions;
       if (updateProcessNameInPassengerConditions) {
         updateProcessNameInPassengerConditions(oldProcessName, newProcessName);
       }
@@ -975,13 +1033,7 @@ export default function ProcessFlowDesigner({
       title: "Process Updated",
       description: "Process has been updated.",
     });
-  }, [
-    selectedProcessIndex,
-    editedProcess,
-    processFlow,
-    setProcessFlow,
-    toast,
-  ]);
+  }, [selectedProcessIndex, editedProcess, processFlow, setProcessFlow, toast]);
 
   // Handle saving changes to existing process
   const handleSaveChanges = useCallback(() => {
@@ -1019,12 +1071,7 @@ export default function ProcessFlowDesigner({
     }
 
     performProcessSave();
-  }, [
-    selectedProcessIndex,
-    editedProcess,
-    processFlow,
-    performProcessSave,
-  ]);
+  }, [selectedProcessIndex, editedProcess, processFlow, performProcessSave]);
 
   const handleRunSimulation = async () => {
     if (!canRunSimulation) {
@@ -2016,8 +2063,8 @@ export default function ProcessFlowDesigner({
                 <AlertDialogDescription>
                   You&apos;re changing the process time, and some facilities
                   currently use different values. Continuing will overwrite
-                  those with the new process time. If that&apos;s okay, choose OK
-                  to proceed.
+                  those with the new process time. If that&apos;s okay, choose
+                  OK to proceed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
