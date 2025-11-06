@@ -498,16 +498,20 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                         </td>
 
                         <td className="px-3 whitespace-nowrap">
-                          {item.simulation_start_at ? (
+                          {item.simulation_end_at ? (
                             <>
-                              {dayjs(item.simulation_start_at).format('YYYY-MM-DD')}
+                              {dayjs(item.simulation_end_at).format('YYYY-MM-DD')}
                               <br />
                               <span className="text-xs text-default-500">
-                                {dayjs(item.simulation_start_at).format('HH:mm')}
+                                {dayjs(item.simulation_end_at).format('HH:mm')}
                               </span>
                             </>
                           ) : (
-                            <span className="text-sm italic text-default-400">Never run</span>
+                            <span className="text-sm italic text-default-400">
+                              {item.simulation_status === 'processing'
+                                ? 'In progress'
+                                : 'Never run'}
+                            </span>
                           )}
                         </td>
 
@@ -618,7 +622,11 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">Last Run:</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                    {scenario.simulation_start_at ? dayjs(scenario.simulation_start_at).format('YYYY-MM-DD HH:mm') : 'Never run'}
+                    {scenario.simulation_end_at
+                      ? dayjs(scenario.simulation_end_at).format('YYYY-MM-DD HH:mm')
+                      : scenario.simulation_status === 'processing'
+                        ? 'In progress'
+                        : 'Never run'}
                   </span>
                 </div>
               </div>

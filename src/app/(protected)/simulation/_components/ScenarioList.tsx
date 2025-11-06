@@ -84,7 +84,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const DEFAULT_PAGE_SIZE = 10;
 
 // 정렬 가능한 필드 타입
-type SortField = "name" | "airport" | "terminal" | "editor" | "metadata_updated_at" | "simulation_start_at" | "memo";
+type SortField = "name" | "airport" | "terminal" | "editor" | "metadata_updated_at" | "simulation_end_at" | "memo";
 type SortOrder = "asc" | "desc";
 
 // 테이블의 최소 높이 계산 (헤더 + 행)
@@ -192,7 +192,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("simulation_start_at");
+  const [sortField, setSortField] = useState<SortField>("simulation_end_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
@@ -277,7 +277,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       if (bValue === null || bValue === undefined) bValue = "";
 
       // 날짜 필드 처리
-      if (sortField === "metadata_updated_at" || sortField === "simulation_start_at") {
+      if (sortField === "metadata_updated_at" || sortField === "simulation_end_at") {
         // null/undefined/"Never saved"/"Never run" 값은 가장 마지막으로
         const aIsEmpty = !aValue;
         const bIsEmpty = !bValue;
@@ -801,11 +801,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <th className="px-3 text-left whitespace-nowrap">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort("simulation_start_at")}
+                  onClick={() => handleSort("simulation_end_at")}
                 >
                   <History className="h-3.5 w-3.5" />
                   Last Run
-                  {renderSortIcon("simulation_start_at")}
+                  {renderSortIcon("simulation_end_at")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
@@ -958,19 +958,23 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
                     <td className="px-3 whitespace-nowrap">
-                      {scenario.simulation_start_at ? (
+                      {scenario.simulation_end_at ? (
                         <div className="flex flex-col leading-5">
                           <span>
-                            {dayjs(scenario.simulation_start_at).format(
+                            {dayjs(scenario.simulation_end_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
                           <span className="text-xs text-muted-foreground text-center">
-                            {dayjs(scenario.simulation_start_at).format("HH:mm")}
+                            {dayjs(scenario.simulation_end_at).format("HH:mm")}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-500 italic">Never run</span>
+                        <span className="text-gray-500 italic">
+                          {scenario.simulation_status === "processing"
+                            ? "In progress"
+                            : "Never run"}
+                        </span>
                       )}
                     </td>
 

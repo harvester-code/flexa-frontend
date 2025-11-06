@@ -302,7 +302,7 @@ export default function ProcessFlowDesigner({
             if (newStatus === "processing") {
               const startTime = payload.new.simulation_start_at;
               toast({
-                title: "🚀 Simulation Processing",
+                title: "Simulation Processing",
                 description: startTime
                   ? `Started at ${new Date(startTime).toLocaleString()}`
                   : "Simulation is now running.",
@@ -343,7 +343,7 @@ export default function ProcessFlowDesigner({
               }
 
               toast({
-                title: "✅ Simulation Completed",
+                title: "Simulation Completed",
                 description: endTime
                   ? `Completed at ${new Date(endTime).toLocaleString()}${durationText}`
                   : "Simulation has been completed successfully.",
