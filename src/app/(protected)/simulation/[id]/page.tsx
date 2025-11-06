@@ -449,8 +449,8 @@ export default function SimulationDetail({
     const displayName = displayScenarioName;
 
     return [
-      { label: "Flexa", href: "/home" },
-      { label: "Simulation" },
+      { label: "Flexa", href: "/" },
+      { label: "Simulation", href: "/simulation" },
       { label: displayName },
     ];
   }, [displayScenarioName]);

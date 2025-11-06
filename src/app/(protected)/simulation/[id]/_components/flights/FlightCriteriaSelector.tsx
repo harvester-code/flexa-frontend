@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { getColumnLabel } from '@/styles/columnMappings';
+import { getColumnLabel as mapColumnLabel } from '@/styles/columnMappings';
 
 interface ParquetMetadataItem {
   column: string;
@@ -65,7 +65,7 @@ export default function FlightCriteriaSelector({
       let labelName = '';
 
       // Use centralized column label mapping
-      labelName = getColumnLabel(item.column);
+      labelName = mapColumnLabel(item.column);
 
       // Determine category based on column name patterns
       if (item.column.includes('carrier') || item.column.includes('aircraft') || item.column === 'flight_type' || item.column === 'total_seats') {
@@ -141,12 +141,12 @@ export default function FlightCriteriaSelector({
   }, [parquetMetadata, additionalMetadata]);
 
   // 컬럼 라벨 가져오기 함수
-  const getColumnLabel = (columnKey: string): string => {
+  const getColumnLabelFromCategories = (columnKey: string): string => {
     for (const columns of Object.values(columnsByCategory)) {
       const column = columns.find((col) => col.key === columnKey);
       if (column) return column.label;
     }
-    return columnKey;
+    return mapColumnLabel(columnKey);
   };
 
   // 항공편 계산 (선택된 항목들을 기반으로)
@@ -341,7 +341,7 @@ export default function FlightCriteriaSelector({
                   <>
                     {/* 헤더와 Select All */}
                     <div className="mb-3 flex items-center justify-between border-b pb-2">
-                      <h6 className="text-sm font-semibold text-default-900">{getColumnLabel(selectedColumn)}</h6>
+                      <h6 className="text-sm font-semibold text-default-900">{getColumnLabelFromCategories(selectedColumn)}</h6>
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`select-all-${selectedColumn}`}
