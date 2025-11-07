@@ -111,7 +111,7 @@ function HomeSummary({
               value={
                 <>
                   {summaryData.passenger_summary.total.toLocaleString()}
-                  {formatUnit('pax')}
+                  {formatUnit('pax', 'default', 'lg')}
                 </>
               }
             />
@@ -121,7 +121,7 @@ function HomeSummary({
               value={
                 <>
                   {summaryData.passenger_summary.completed.toLocaleString()}
-                  {formatUnit('pax')}
+                  {formatUnit('pax', 'default', 'lg')}
                 </>
               }
             />
@@ -131,7 +131,7 @@ function HomeSummary({
               value={
                 <>
                   {summaryData.passenger_summary.missed.toLocaleString()}
-                  {formatUnit('pax')}
+                  {formatUnit('pax', 'default', 'lg')}
                 </>
               }
             />
@@ -152,32 +152,32 @@ function HomeSummary({
             <HomeSummaryCard
               icon={Clock}
               title={<span>Pre-Open Wait Time</span>}
-              value={formatTimeTaken(summaryData.timeMetrics.open_wait)}
+              value={formatTimeTaken(summaryData.timeMetrics.open_wait, 'default', 'lg')}
             />
             <HomeSummaryCard
               icon={Timer}
               title={<span>In-Service Wait Time</span>}
-              value={formatTimeTaken(summaryData.timeMetrics.queue_wait)}
+              value={formatTimeTaken(summaryData.timeMetrics.queue_wait, 'default', 'lg')}
             />
             <HomeSummaryCard
               icon={Hourglass}
               title={<span>Total Wait Time</span>}
-              value={formatTimeTaken(summaryData.timeMetrics.total_wait)}
+              value={formatTimeTaken(summaryData.timeMetrics.total_wait, 'default', 'lg')}
             />
             <HomeSummaryCard
               icon={Timer}
               title={<span>Proc. & Queueing Time</span>}
-              value={formatTimeTaken(summaryData.timeMetrics.process_time)}
+              value={formatTimeTaken(summaryData.timeMetrics.process_time, 'default', 'lg')}
             />
             <HomeSummaryCard
               icon={Building2}
               title={<span>Commercial Dwell Time</span>}
-              value={formatTimeTaken(summaryData.dwellTimes.commercial_dwell_time)}
+              value={formatTimeTaken(summaryData.dwellTimes.commercial_dwell_time, 'default', 'lg')}
             />
             <HomeSummaryCard
               icon={Plane}
               title={<span>Total Dwell Time</span>}
-              value={formatTimeTaken(summaryData.dwellTimes.airport_dwell_time)}
+              value={formatTimeTaken(summaryData.dwellTimes.airport_dwell_time, 'default', 'lg')}
             />
           </div>
         </>
@@ -199,7 +199,7 @@ function HomeSummary({
                 value={
                   <>
                     {(totalMetrics.operating_rate * 100).toFixed(1)}
-                    {formatUnit('%')}
+                    {formatUnit('%', 'default', 'lg')}
                   </>
                 }
               />
@@ -209,7 +209,7 @@ function HomeSummary({
                 value={
                   <>
                     {(totalMetrics.utilization_rate * 100).toFixed(1)}
-                    {formatUnit('%')}
+                    {formatUnit('%', 'default', 'lg')}
                   </>
                 }
               />
@@ -219,7 +219,7 @@ function HomeSummary({
                 value={
                   <>
                     {(totalMetrics.total_rate * 100).toFixed(1)}
-                    {formatUnit('%')}
+                    {formatUnit('%', 'default', 'lg')}
                   </>
                 }
               />
@@ -239,7 +239,7 @@ function HomeSummary({
               const gdpType = ctx.gdp_ppp ? 'GDP PPP' : 'GDP';
 
               return (
-                <div className="text-xs text-default-500">
+                <div className="text-sm text-default-500">
                   Based on {ctx.country_name} {gdpType} {gdpData?.formatted} ({gdpData?.year}) | Source: World Bank
                 </div>
               );
@@ -250,8 +250,8 @@ function HomeSummary({
               icon={DollarSign}
               title={<span>Cost of Waiting</span>}
               value={
-                <span className="text-lg text-red-600">
-                  -<span className="text-xs">USD</span> {Math.round(Math.abs(summaryData.economic_impact.total_wait_value)).toLocaleString()}
+                <span className="text-2xl text-red-600">
+                  -<span className="text-base">USD</span> {Math.round(Math.abs(summaryData.economic_impact.total_wait_value)).toLocaleString()}
                 </span>
               }
             />
@@ -259,8 +259,8 @@ function HomeSummary({
               icon={DollarSign}
               title={<span>Cost of Proc. & Wait</span>}
               value={
-                <span className="text-lg text-red-600">
-                  -<span className="text-xs">USD</span> {Math.round(Math.abs(summaryData.economic_impact.process_time_value)).toLocaleString()}
+                <span className="text-2xl text-red-600">
+                  -<span className="text-base">USD</span> {Math.round(Math.abs(summaryData.economic_impact.process_time_value)).toLocaleString()}
                 </span>
               }
             />
@@ -268,8 +268,8 @@ function HomeSummary({
               icon={DollarSign}
               title={<span>Value of Comm. Dwell Time</span>}
               value={
-                <span className="text-lg text-green-600">
-                  +<span className="text-xs">USD</span> {Math.round(summaryData.economic_impact.commercial_dwell_value).toLocaleString()}
+                <span className="text-2xl text-green-600">
+                  +<span className="text-base">USD</span> {Math.round(summaryData.economic_impact.commercial_dwell_value).toLocaleString()}
                 </span>
               }
             />

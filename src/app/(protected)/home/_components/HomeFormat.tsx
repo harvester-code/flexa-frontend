@@ -1,5 +1,16 @@
 import React from 'react';
 import { pascalCase } from 'change-case';
+import clsx from 'clsx';
+
+type UnitSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl';
+const UNIT_SIZE_CLASS_MAP: Record<UnitSize, string> = {
+  xs: 'text-xs',
+  sm: 'text-sm',
+  base: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+  '2xl': 'text-2xl',
+};
 
 export function formatNumberWithComma(value: number | string): string {
   if (typeof value === 'number') return value.toLocaleString();
@@ -13,7 +24,11 @@ export function formatPercent(value: number | string): string {
   return value as string;
 }
 
-export function formatTimeTaken(time?: { hour?: number; minute?: number; second?: number }, variant: 'default' | 'histogram' = 'default'): React.ReactNode {
+export function formatTimeTaken(
+  time?: { hour?: number; minute?: number; second?: number },
+  variant: 'default' | 'histogram' = 'default',
+  unitSize?: UnitSize
+): React.ReactNode {
   if (!time) return '';
   const { hour = 0, minute = 0, second = 0 } = time;
 
@@ -23,19 +38,19 @@ export function formatTimeTaken(time?: { hour?: number; minute?: number; second?
       {hour > 0 && (
         <>
           {hour}
-          {formatUnit('h', variant)}
+          {formatUnit('h', variant, unitSize)}
           {' '}
         </>
       )}
       {(minute > 0 || hour > 0) && (
         <>
           {minute}
-          {formatUnit('m', variant)}
+          {formatUnit('m', variant, unitSize)}
           {' '}
         </>
       )}
       {second}
-      {formatUnit('s', variant)}
+      {formatUnit('s', variant, unitSize)}
     </>
   );
 }
@@ -49,12 +64,18 @@ export function capitalizeFirst(str: string): string {
     .join(' ');
 }
 
-export function formatUnit(unit: string, variant: 'default' | 'histogram' = 'default'): React.ReactNode {
-  // 모든 variant에서 일관된 간격 적용 (ml-0.5)
-  if (variant === 'histogram') {
-    return <span className="ml-0.5 text-base font-medium text-white">{unit}</span>;
-  }
-  return <span className="ml-0.5 text-xs font-normal text-default-500">{unit}</span>;
+export function formatUnit(
+  unit: string,
+  variant: 'default' | 'histogram' = 'default',
+  size?: UnitSize
+): React.ReactNode {
+  const resolvedSize = size ?? (variant === 'histogram' ? 'lg' : 'sm');
+  const baseClasses =
+    variant === 'histogram'
+      ? 'ml-0.5 font-medium text-white'
+      : 'ml-0.5 font-normal text-default-500';
+
+  return <span className={clsx(baseClasses, UNIT_SIZE_CLASS_MAP[resolvedSize])}>{unit}</span>;
 }
 
 export function formatImageSize(icon: React.ReactNode, size: number): React.ReactNode {

@@ -7,9 +7,18 @@ interface HomeSummaryCardProps {
   value: React.ReactNode;
   kpiType?: 'mean' | 'top'; // for Wait Time/Queue Pax badge
   percentile?: number;
+  valueClassName?: string;
 }
 
-function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentile }: HomeSummaryCardProps) {
+function HomeSummaryCard({
+  title,
+  value,
+  icon: IconComponent,
+  kpiType,
+  percentile,
+  valueClassName,
+}: HomeSummaryCardProps) {
+  const resolvedValueClassName = valueClassName ?? 'text-2xl font-semibold text-default-900';
   return (
     <div className="rounded border border-input bg-white px-4 py-3">
       <p className="mb-4 flex items-center gap-2 text-sm font-medium text-default-900">
@@ -22,7 +31,7 @@ function HomeSummaryCard({ title, value, icon: IconComponent, kpiType, percentil
       </p>
       <div className="flex items-center justify-between">
         {formatImageSize(<IconComponent />, 32)}
-        <div className="text-lg font-semibold text-default-900">{value}</div>
+        <div className={resolvedValueClassName}>{value}</div>
       </div>
     </div>
   );

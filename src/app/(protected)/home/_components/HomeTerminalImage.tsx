@@ -434,15 +434,20 @@ function HomeTerminalImage({
                 const backgroundColor = appendAlpha(zoneColor, 0.18);
                 const labelBackground = appendAlpha(zoneColor, 0.82);
                 const dotColor = appendAlpha(zoneColor, 0.88);
-                const idleTextColor = appendAlpha(zoneColor, 0.8);
-                const labelText = `${zoneLabel}: ${queueValue.toLocaleString()} pax`;
+                const queueLabel = `${queueValue.toLocaleString()} pax`;
+                const longestLineLength = Math.max(
+                  zoneLabel?.length ?? 0,
+                  queueLabel.length
+                );
+                const minWidthCh = Math.max(longestLineLength, 4);
                 const labelStyle: CSSProperties = {
                   left: 0,
                   top: 0,
                   transform: "translate(0, calc(-100% - 4px))",
                   backgroundColor: labelBackground,
                   color: "#ffffff",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "normal",
+                  minWidth: `${minWidthCh}ch`,
                 };
 
                 return (
@@ -466,10 +471,13 @@ function HomeTerminalImage({
                       }}
                     >
                       <span
-                        className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[10px] font-semibold leading-none shadow-sm"
+                        className="pointer-events-none absolute z-10 rounded-sm px-1 py-0 text-[10px] font-semibold leading-tight shadow-sm"
                         style={labelStyle}
                       >
-                        {labelText}
+                        <span className="block leading-tight">{zoneLabel}</span>
+                        <span className="block text-[9px] font-medium leading-tight">
+                          {queueLabel}
+                        </span>
                       </span>
 
                       <div className="flex h-full w-full flex-col justify-start">
@@ -497,14 +505,7 @@ function HomeTerminalImage({
                               )
                             )}
                           </div>
-                        ) : (
-                          <div
-                            className="flex h-full w-full items-center justify-center text-[10px] font-medium"
-                            style={{ color: idleTextColor }}
-                          >
-                            {hasData ? "No queue" : "No data"}
-                          </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
