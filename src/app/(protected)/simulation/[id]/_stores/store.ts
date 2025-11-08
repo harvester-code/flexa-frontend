@@ -1412,18 +1412,24 @@ export const useSimulationStore = create<SimulationStoreState>()(
             date
           );
 
-          const facilities = Array.from({ length: count }, (_, i) => ({
-            id: `${zoneName}_${i + 1}`,
-            operating_schedule: {
-              time_blocks: [
-                {
-                  period,
-                  process_time_seconds: processTimeSeconds || 6,
-                  passenger_conditions: [],
-                },
-              ],
-            },
-          }));
+          const facilities = Array.from({ length: count }, (_, i) => {
+            // 제로 패딩 적용된 ID 생성
+            const digits = count.toString().length;
+            const paddedIndex = (i + 1).toString().padStart(digits, '0');
+            
+            return {
+              id: `${zoneName}_${paddedIndex}`,
+              operating_schedule: {
+                time_blocks: [
+                  {
+                    period,
+                    process_time_seconds: processTimeSeconds || 6,
+                    passenger_conditions: [],
+                  },
+                ],
+              },
+            };
+          });
 
           state.process_flow[processIndex].zones[zoneName].facilities =
             facilities;

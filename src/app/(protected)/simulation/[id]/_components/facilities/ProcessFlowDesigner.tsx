@@ -1615,18 +1615,37 @@ export default function ProcessFlowDesigner({
                                         } else if (
                                           count < currentFacilityCount
                                         ) {
-                                          // Decrease: Remove facilities from the end
+                                          // Decrease: Remove facilities from the end (제로 패딩 유지)
+                                          const digits = count.toString().length;
+                                          const reindexedFacilities = currentFacilities
+                                            .slice(0, count)
+                                            .map((f: any, idx: number) => {
+                                              const paddedIndex = (idx + 1).toString().padStart(digits, '0');
+                                              return {
+                                                ...f,
+                                                id: `${zoneName}_${paddedIndex}`,
+                                              };
+                                            });
+                                          
                                           updatedZones[zoneName] = {
-                                            facilities: currentFacilities.slice(
-                                              0,
-                                              count
-                                            ),
+                                            facilities: reindexedFacilities,
                                           };
                                         } else {
-                                          // Increase: Add new facilities with new IDs
-                                          const newFacilities = [
-                                            ...currentFacilities,
-                                          ];
+                                          // Increase: Reformat existing IDs and add new facilities
+                                          const digits = count.toString().length; // 최종 개수 기준으로 자릿수 결정
+                                          
+                                          // 기존 시설들의 ID를 제로 패딩으로 리포맷
+                                          const reformattedFacilities = currentFacilities.map(
+                                            (f: any, idx: number) => {
+                                              const paddedIndex = (idx + 1).toString().padStart(digits, '0');
+                                              return {
+                                                ...f,
+                                                id: `${zoneName}_${paddedIndex}`,
+                                              };
+                                            }
+                                          );
+                                          
+                                          const newFacilities = [...reformattedFacilities];
 
                                           // Find the highest existing ID number
                                           const existingIds =
@@ -1677,7 +1696,7 @@ export default function ProcessFlowDesigner({
                                             }
                                           }
 
-                                          // Add new facilities with incremented IDs
+                                          // Add new facilities with incremented IDs (제로 패딩 적용)
                                           for (
                                             let i = currentFacilityCount;
                                             i < count;
@@ -1687,8 +1706,10 @@ export default function ProcessFlowDesigner({
                                               maxId +
                                               (i - currentFacilityCount) +
                                               1;
+                                            const paddedId = newId.toString().padStart(digits, '0');
+                                            
                                             newFacilities.push({
-                                              id: `${zoneName}_${newId}`,
+                                              id: `${zoneName}_${paddedId}`,
                                               operating_schedule: {
                                                 time_blocks: [
                                                   {

@@ -132,7 +132,7 @@ export default function SimulationDetail({
   );
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
-  const loadCompleteS3Metadata = useCallback((data: any) => {
+  const loadCompleteS3Metadata = useCallback(async (data: any) => {
     try {
       // 🔧 새로운 통합 Store 구조에 맞게 수정
       const metadata = data.metadata || {};
@@ -151,6 +151,15 @@ export default function SimulationDetail({
         metadata.process_flow ||
         metadata.workflow
       ) {
+        // 🔄 시설 ID 마이그레이션: A_1 → A_01
+        if (metadata.process_flow && Array.isArray(metadata.process_flow)) {
+          const { migrateProcessFlowFacilityIds } = await import(
+            "./_components/facilities/helpers"
+          );
+          metadata.process_flow = migrateProcessFlowFacilityIds(
+            metadata.process_flow
+          );
+        }
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
         const metadataTerminalLayout =
