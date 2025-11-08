@@ -128,8 +128,9 @@ const HomeFacilityHeatmap = ({
   const formatTime = (timeString: string): string => {
     try {
       const date = new Date(timeString);
-      const hours = date.getHours().toString();
-      return `${hours}h`;
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
     } catch {
       return timeString;
     }
