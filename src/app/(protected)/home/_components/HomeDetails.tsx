@@ -151,37 +151,37 @@ function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: H
                     </dl>
                   </div>
                 </div>
-                {/* A/I Ratio */}
+                {/* Facility Effi. */}
                 <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     {formatImageSize(<RatioIcon01 />, 30)}
                     <dl className="flex flex-col justify-center">
                       <dt className="flex items-center">
-                        <span>A/I Ratio</span>
+                        <span>Facility Effi.</span>
                         <HomeTooltip content="The ratio of activated capacity to total installed capacity.">
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {Math.round(Number(overview?.ai_ratio || 0))}
+                        {Math.round(Number(overview?.facility_effi || 0))}
                         {formatUnit('%')}
                       </dd>
                     </dl>
                   </div>
                 </div>
-                {/* P/A Ratio */}
+                {/* Workforce Effi. */}
                 <div className="flex min-h-[50px] flex-col justify-center rounded-md border border-input bg-white p-1 xl:min-h-[60px] xl:p-2">
                   <div className="flex h-full flex-row items-center justify-center gap-3">
                     {formatImageSize(<RatioIcon02 />, 30)}
                     <dl className="flex flex-col justify-center">
                       <dt className="flex items-center">
-                        <span>P/A Ratio</span>
+                        <span>Workforce Effi.</span>
                         <HomeTooltip content="The ratio of processed capacity to total activated capacity.">
                           <span className="ml-1 size-3 cursor-pointer">ⓘ</span>
                         </HomeTooltip>
                       </dt>
                       <dd className="text-lg font-semibold">
-                        {Math.round(Number(overview?.pa_ratio || 0))}
+                        {Math.round(Number(overview?.workforce_effi || 0))}
                         {formatUnit('%')}
                       </dd>
                     </dl>
@@ -268,9 +268,9 @@ function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: H
                             <div>
                               {formatImageSize(<RatioIcon01 />, 24)}
                               <dl>
-                                <dt>A/I Ratio</dt>
+                                <dt>Facility Effi.</dt>
                                 <dd className="!font-semibold">
-                                  {Math.round(Number(comp?.ai_ratio || 0))}
+                                  {Math.round(Number(comp?.facility_effi || 0))}
                                   {formatUnit('%')}
                                 </dd>
                               </dl>
@@ -279,9 +279,9 @@ function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: H
                             <div>
                               {formatImageSize(<RatioIcon02 />, 24)}
                               <dl>
-                                <dt>P/A Ratio</dt>
+                                <dt>Workforce Effi.</dt>
                                 <dd className="!font-semibold">
-                                  {Math.round(Number(comp?.pa_ratio || 0))}
+                                  {Math.round(Number(comp?.workforce_effi || 0))}
                                   {formatUnit('%')}
                                 </dd>
                               </dl>
