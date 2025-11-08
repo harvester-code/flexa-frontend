@@ -364,18 +364,26 @@ function HomeTerminalImage({
       ? Math.min(Math.max(timeIndex / (times.length - 1), 0), 1) * 100
       : 0;
 
-  // 시작 시점과 종료 시점
-  const startMoment = useMemo(() => {
-    if (times.length === 0) return null;
-    const parsed = dayjs(times[0]);
-    return parsed.isValid() ? parsed : null;
-  }, [times]);
+  // 양 끝 근처에서 점진적으로 박스 위치 조정
+  const getBoxTransform = () => {
+    const percent = sliderPositionPercent;
+    const threshold = 10; // 양 끝 10% 구간에서 점진적 전환
 
-  const endMoment = useMemo(() => {
-    if (times.length === 0) return null;
-    const parsed = dayjs(times[times.length - 1]);
-    return parsed.isValid() ? parsed : null;
-  }, [times]);
+    if (percent <= threshold) {
+      // 왼쪽 끝: 0%에서 translateX(0%) → 10%에서 translateX(-50%)
+      const ratio = percent / threshold;
+      const translateX = -50 * ratio;
+      return `translateX(${translateX}%)`;
+    } else if (percent >= 100 - threshold) {
+      // 오른쪽 끝: 90%에서 translateX(-50%) → 100%에서 translateX(-100%)
+      const ratio = (percent - (100 - threshold)) / threshold;
+      const translateX = -50 - 50 * ratio;
+      return `translateX(${translateX}%)`;
+    } else {
+      // 중간: translateX(-50%)
+      return "translateX(-50%)";
+    }
+  };
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -536,34 +544,20 @@ function HomeTerminalImage({
             className="w-full"
             disabled={times.length <= 1}
           />
-          {/* 시작 시점 (왼쪽) */}
-          {startMoment && (
-            <div className="pointer-events-none absolute top-full mt-4 left-0">
-              <div className="text-center text-xs text-default-900">
-                <span className="block whitespace-nowrap">
-                  {startMoment.format("MM-DD")}
-                </span>
-                <span className="block whitespace-nowrap">
-                  {startMoment.format("HH:mm")}
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* 선택된 시점 (중앙) */}
           {selectedMoment || selectedDateTimeLabel || selectedTimeLabel ? (
             <div
-              className="pointer-events-none absolute top-full mt-2 flex justify-center"
+              className="pointer-events-none absolute top-full mt-2 flex justify-center transition-transform duration-150 ease-out"
               style={{
                 left: `${sliderPositionPercent}%`,
-                transform: "translateX(-50%)",
+                transform: getBoxTransform(),
               }}
             >
               <div className="rounded-md bg-primary/10 px-3 py-1 text-center text-xs font-semibold text-primary">
                 {selectedMoment ? (
                   <>
                     <span className="block whitespace-nowrap">
-                      {selectedMoment.format("YYYY-MM-DD")}
+                      {selectedMoment.format("MM-DD")}
                     </span>
                     <span className="block whitespace-nowrap">
                       {selectedMoment.format("HH:mm")}
@@ -577,20 +571,6 @@ function HomeTerminalImage({
               </div>
             </div>
           ) : null}
-
-          {/* 종료 시점 (오른쪽) */}
-          {endMoment && (
-            <div className="pointer-events-none absolute top-full mt-4 right-0">
-              <div className="text-center text-xs text-default-900">
-                <span className="block whitespace-nowrap">
-                  {endMoment.format("MM-DD")}
-                </span>
-                <span className="block whitespace-nowrap">
-                  {endMoment.format("HH:mm")}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       ) : null}
 
