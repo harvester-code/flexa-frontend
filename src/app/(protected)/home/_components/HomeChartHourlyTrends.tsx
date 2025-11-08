@@ -180,9 +180,14 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
   useEffect(() => {
     if (ZONE_OPTIONS.length > 0) {
-      // all_zones가 아닌 첫 번째 실제 zone 선택
-      const firstActualZone = ZONE_OPTIONS.find(opt => opt.value !== 'all_zones');
-      setSelectedZones(firstActualZone ? [firstActualZone.value] : [ZONE_OPTIONS[0].value]);
+      // 항상 All Zones를 첫 선택으로 설정
+      const allZonesOption = ZONE_OPTIONS.find(opt => opt.value === 'all_zones');
+      if (allZonesOption) {
+        setSelectedZones(['all_zones']);
+      } else {
+        // all_zones가 없으면 첫 번째 옵션 선택
+        setSelectedZones([ZONE_OPTIONS[0].value]);
+      }
     }
   }, [ZONE_OPTIONS]);
 
