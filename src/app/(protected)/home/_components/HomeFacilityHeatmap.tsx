@@ -153,7 +153,6 @@ const HomeFacilityHeatmap = ({
   // 시간 포맷 및 D-1 뱃지 로직
   const formatTimeWithBadge = (timeString: string, timeIdx: number): { date: string; time: string; isDayBefore: boolean } => {
     try {
-      const timeDate = new Date(timeString);
       const date = formatDate(timeString);
       const time = formatTime(timeString);
 
