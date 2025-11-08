@@ -262,15 +262,19 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
 
-    // 자정(00:00) 이후 데이터 제거 - 당일까지만 표시
+    // 자정(00:00) 포함, 그 이후 데이터 제거 - 당일까지만 표시
     const times = allTimes.filter((timeStr, idx) => {
       if (idx === 0) return true; // 첫 시간은 무조건 포함
 
       const currentTime = new Date(timeStr);
       const prevTime = new Date(allTimes[idx - 1]);
 
-      // 시간이 이전 시간보다 작으면 다음날로 넘어간 것 (예: 23:00 -> 00:00)
+      // 00:00은 포함, 그 이후(00:15 등)부터 제외
       if (currentTime.getHours() < prevTime.getHours()) {
+        // 00:00은 포함
+        if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
+          return true;
+        }
         return false; // 다음날 데이터 제외
       }
 
@@ -718,14 +722,19 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         {hourlyTrendsData && selectedFacilityValue && (() => {
           const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
 
-          // 자정(00:00) 이후 데이터 제거 - 당일까지만 표시
+          // 자정(00:00) 포함, 그 이후 데이터 제거 - 당일까지만 표시
           const times = allTimes.filter((timeStr, idx) => {
             if (idx === 0) return true;
 
             const currentTime = new Date(timeStr);
             const prevTime = new Date(allTimes[idx - 1]);
 
+            // 00:00은 포함, 그 이후(00:15 등)부터 제외
             if (currentTime.getHours() < prevTime.getHours()) {
+              // 00:00은 포함
+              if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
+                return true;
+              }
               return false;
             }
 
@@ -899,6 +908,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
               times={times}
               facilities={facilities}
               facilityData={filteredFacilityData}
+              scenarioDate={scenario?.date}
             />
           );
         })()}

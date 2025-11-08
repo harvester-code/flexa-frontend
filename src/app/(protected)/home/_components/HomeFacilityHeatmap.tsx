@@ -15,16 +15,18 @@ interface HomeFacilityHeatmapProps {
   times: string[];
   facilities: string[];
   facilityData: Record<string, { inflow: number[]; capacity?: number[] }>;
+  scenarioDate?: string; // 기준 날짜 (예: "2025-11-06")
 }
 
 const HomeFacilityHeatmap = ({
   times,
   facilities,
   facilityData,
+  scenarioDate,
 }: HomeFacilityHeatmapProps) => {
   const [hoveredCell, setHoveredCell] = useState<{
+    timeIdx: number;
     facilityIdx: number;
-    hourIdx: number;
   } | null>(null);
 
   const heatmapData = useMemo<FacilityHeatmapData[]>(() => {
@@ -124,18 +126,6 @@ const HomeFacilityHeatmap = ({
     return { backgroundColor, textColor, normalizedRatio: colorIntensity };
   };
 
-  // 시간 포맷 (HH:mm)
-  const formatTime = (timeString: string): string => {
-    try {
-      const date = new Date(timeString);
-      const hours = date.getHours().toString().padStart(2, "0");
-      const minutes = date.getMinutes().toString().padStart(2, "0");
-      return `${hours}:${minutes}`;
-    } catch {
-      return timeString;
-    }
-  };
-
   // 날짜 포맷 (MM/DD)
   const formatDate = (timeString: string): string => {
     try {
@@ -148,33 +138,42 @@ const HomeFacilityHeatmap = ({
     }
   };
 
-  // 날짜별로 시간 그룹핑
-  const dateGroups = useMemo(() => {
-    const groups: { date: string; startIdx: number; count: number }[] = [];
-    let currentDate = "";
-    let startIdx = 0;
-    let count = 0;
-
-    times.forEach((time, idx) => {
-      const date = formatDate(time);
-      if (date !== currentDate) {
-        if (currentDate) {
-          groups.push({ date: currentDate, startIdx, count });
-        }
-        currentDate = date;
-        startIdx = idx;
-        count = 1;
-      } else {
-        count++;
-      }
-    });
-
-    if (currentDate) {
-      groups.push({ date: currentDate, startIdx, count });
+  // 시간 포맷 (HH:mm)
+  const formatTime = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    } catch {
+      return timeString;
     }
+  };
 
-    return groups;
-  }, [times]);
+  // 시간 포맷 및 D-1 뱃지 로직
+  const formatTimeWithBadge = (timeString: string, timeIdx: number): { date: string; time: string; isDayBefore: boolean } => {
+    try {
+      const timeDate = new Date(timeString);
+      const date = formatDate(timeString);
+      const time = formatTime(timeString);
+
+      // 00:00이 나오기 전까지는 D-1
+      const midnightIndex = times.findIndex((t) => {
+        const d = new Date(t);
+        return d.getHours() === 0 && d.getMinutes() === 0;
+      });
+
+      const isDayBefore = midnightIndex > 0 && timeIdx < midnightIndex;
+
+      return {
+        date,
+        time,
+        isDayBefore,
+      };
+    } catch {
+      return { date: "", time: timeString, isDayBefore: false };
+    }
+  };
 
   if (heatmapData.length === 0) {
     return null;
@@ -184,7 +183,6 @@ const HomeFacilityHeatmap = ({
     <div className="mt-4 overflow-x-auto relative">
       {/* Legend at top-right */}
       <div className="absolute top-0 right-0 flex items-center gap-3 text-xs text-muted-foreground bg-white px-3 py-2 rounded-md border border-input z-20">
-        {/* <span className="whitespace-nowrap">Color intensity: Inflow / Capacity ratio</span> */}
         <div className="flex items-center gap-2">
           <div
             className="h-3 w-16"
@@ -199,89 +197,84 @@ const HomeFacilityHeatmap = ({
 
       <table className="min-w-full border-collapse text-xs mt-12">
         <thead>
-          {/* Date Header Row */}
+          {/* Single Header Row - Facility Names */}
           <tr>
-            <th
-              className="sticky left-0 z-10 border border-input bg-gray-50"
-              rowSpan={2}
-            >
-              <div className="px-2 py-1.5 text-left font-semibold text-xs">
-                FACILITY
-              </div>
+            <th className="sticky left-0 z-10 border border-input bg-purple-50 px-2 py-1.5 text-center font-semibold text-xs w-20">
+              TIME
             </th>
-            {dateGroups.map((group, idx) => (
+            {heatmapData.map((facility, idx) => (
               <th
                 key={idx}
-                colSpan={group.count}
-                className="border border-input bg-gray-100 px-1.5 py-1 text-center font-semibold text-xs"
+                className="border border-input bg-gray-50 px-2 py-1.5 text-center font-semibold text-xs min-w-[60px]"
               >
-                {group.date}
-              </th>
-            ))}
-          </tr>
-          {/* Time Header Row */}
-          <tr>
-            {times.map((time, idx) => (
-              <th
-                key={idx}
-                className="border border-input bg-gray-50 px-1.5 py-1 text-center font-medium text-xs min-w-[45px]"
-              >
-                {formatTime(time)}
+                <div className="flex flex-col gap-0.5">
+                  <span>{facility.facilityName}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {facility.totalThroughput.toLocaleString()} pax
+                  </span>
+                </div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {heatmapData.map((facility, facilityIdx) => (
-            <tr key={facilityIdx} className="hover:bg-gray-50">
-              <td className="sticky left-0 z-10 border border-input bg-white px-2 py-1.5">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-semibold text-xs">
-                    {facility.facilityName}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {facility.totalThroughput.toLocaleString()} pax
-                  </span>
-                </div>
-              </td>
-              {facility.hourlyData.map((hour, hourIdx) => {
-                const colorInfo = getRatioColor(hour.ratio);
-                const isHovered =
-                  hoveredCell?.facilityIdx === facilityIdx &&
-                  hoveredCell?.hourIdx === hourIdx;
-
-                return (
-                  <td
-                    key={hourIdx}
-                    className="border border-input px-1.5 py-1 text-center relative"
-                    style={{ backgroundColor: colorInfo.backgroundColor }}
-                    onMouseEnter={() =>
-                      setHoveredCell({ facilityIdx, hourIdx })
-                    }
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: colorInfo.textColor }}
-                    >
-                      {hour.inflow}
-                    </span>
-
-                    {/* 즉시 나타나는 커스텀 tooltip */}
-                    {isHovered && (
-                      <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none">
-                        <div>Inflow: {hour.inflow}</div>
-                        <div>Capacity: {hour.capacity}</div>
-                        <div>Ratio: {(hour.ratio * 100).toFixed(1)}%</div>
-                        {/* 작은 화살표 */}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                      </div>
+          {times.map((time, timeIdx) => {
+            const { date, time: formattedTime, isDayBefore } = formatTimeWithBadge(time, timeIdx);
+            
+            return (
+              <tr key={timeIdx} className="hover:bg-gray-50">
+                <td className="sticky left-0 z-10 border border-input bg-purple-50 px-1 py-1.5 w-20">
+                  <div className="flex items-center justify-center gap-1">
+                    {isDayBefore && (
+                      <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
+                        D-1
+                      </span>
                     )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+                    <span className="font-medium text-xs">{formattedTime}</span>
+                  </div>
+                </td>
+                {heatmapData.map((facility, facilityIdx) => {
+                  const hour = facility.hourlyData[timeIdx];
+                  if (!hour) return null;
+
+                  const colorInfo = getRatioColor(hour.ratio);
+                  const isHovered =
+                    hoveredCell?.timeIdx === timeIdx &&
+                    hoveredCell?.facilityIdx === facilityIdx;
+
+                  return (
+                    <td
+                      key={facilityIdx}
+                      className="border border-input px-1.5 py-1 text-center relative"
+                      style={{ backgroundColor: colorInfo.backgroundColor }}
+                      onMouseEnter={() =>
+                        setHoveredCell({ timeIdx, facilityIdx })
+                      }
+                      onMouseLeave={() => setHoveredCell(null)}
+                    >
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: colorInfo.textColor }}
+                      >
+                        {hour.inflow}
+                      </span>
+
+                      {/* 즉시 나타나는 커스텀 tooltip */}
+                      {isHovered && (
+                        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none">
+                          <div>Inflow: {hour.inflow}</div>
+                          <div>Capacity: {hour.capacity}</div>
+                          <div>Ratio: {(hour.ratio * 100).toFixed(1)}%</div>
+                          {/* 작은 화살표 */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
