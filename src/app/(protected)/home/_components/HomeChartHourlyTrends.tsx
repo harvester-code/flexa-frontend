@@ -913,7 +913,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
               times={times}
               facilities={facilities}
               facilityData={filteredFacilityData}
-              scenarioDate={scenario?.date}
+              scenarioDate={scenario?.target_flight_schedule_date}
             />
           );
         })()}

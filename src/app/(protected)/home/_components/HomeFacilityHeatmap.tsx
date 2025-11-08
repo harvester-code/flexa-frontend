@@ -15,7 +15,7 @@ interface HomeFacilityHeatmapProps {
   times: string[];
   facilities: string[];
   facilityData: Record<string, { inflow: number[]; capacity?: number[] }>;
-  scenarioDate?: string; // 기준 날짜 (예: "2025-11-06")
+  scenarioDate?: string | null; // 기준 날짜 (예: "2025-11-06")
 }
 
 const HomeFacilityHeatmap = ({
