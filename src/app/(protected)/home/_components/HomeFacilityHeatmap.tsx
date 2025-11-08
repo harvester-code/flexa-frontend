@@ -185,35 +185,31 @@ const HomeFacilityHeatmap = ({
       <div className="flex justify-end mb-2">
         <div className="flex items-center gap-3 text-xs text-muted-foreground bg-white px-3 py-2 rounded-md border border-input">
           <div className="flex items-center gap-2">
-            <div
-              className="h-3 w-16"
-              style={{
-                background:
-                  "linear-gradient(to right, rgb(255,255,255), rgb(239,68,68))",
-              }}
-            />
+            <div className="h-3 w-16 bg-gradient-to-r from-white to-red-500" />
             <span className="whitespace-nowrap">Inflow / Capacity ratio</span>
           </div>
         </div>
       </div>
 
       {/* 스크롤 가능한 테이블 컨테이너 */}
-      <div className="overflow-auto" style={{ maxHeight: '600px' }}>
-        <table className="min-w-full border-collapse text-xs">
-        <thead className="sticky top-0 z-20">
+      <div className="overflow-auto max-h-screen">
+        <table className="min-w-full border-separate border-spacing-0 text-xs">
+        <thead className="sticky top-0 z-50 shadow-sm bg-gray-50">
           {/* Single Header Row - Facility Names */}
           <tr className="bg-gray-50">
-            <th className="sticky left-0 z-30 border border-input bg-purple-50 px-2 py-1.5 text-center font-semibold text-xs w-20 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+            <th
+              className="sticky left-0 z-50 border border-input px-2 py-1.5 text-center font-semibold text-xs w-20 shadow-md bg-purple-50"
+            >
               TIME
             </th>
             {heatmapData.map((facility, idx) => (
               <th
                 key={idx}
-                className="border border-input bg-gray-50 px-2 py-1.5 text-center font-semibold text-xs min-w-[60px]"
+                className="border border-input bg-gray-50 px-2 py-1.5 text-center font-semibold text-xs min-w-16 relative"
               >
                 <div className="flex flex-col gap-0.5">
                   <span>{facility.facilityName}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
+                  <span className="text-xs text-muted-foreground font-normal">
                     {facility.totalThroughput.toLocaleString()} pax
                   </span>
                 </div>
@@ -227,10 +223,12 @@ const HomeFacilityHeatmap = ({
             
             return (
               <tr key={timeIdx} className="hover:bg-gray-50">
-                <td className="sticky left-0 z-10 border border-input bg-purple-50 px-1 py-1.5 w-20 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+                <td
+                  className="sticky left-0 z-10 border border-input px-1 py-1.5 w-20 shadow-md bg-purple-50"
+                >
                   <div className="flex items-center justify-center gap-1">
                     {isDayBefore && (
-                      <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
+                      <span className="px-1 py-0.5 text-xs font-semibold bg-orange-100 text-orange-800 rounded">
                         D-1
                       </span>
                     )}
