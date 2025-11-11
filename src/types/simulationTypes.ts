@@ -1,4 +1,4 @@
-import type { CellStyle } from "@silevis/reactgrid";
+export type CellStyle = Record<string, string | number | undefined>;
 
 // =======================================================================
 // Common Types

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScenariosDataResponse } from '@/types/homeTypes';
+import { ScenariosDataResponse, ScenarioData } from '@/types/homeTypes';
 import { fetchScenarios } from '@/services/simulationService';
 
 const useScenarios = () => {
@@ -9,17 +9,18 @@ const useScenarios = () => {
       try {
         const { data } = await fetchScenarios();
 
-        // 백엔드에서 이미 단순한 배열로 반환하므로 정렬만 적용
-        const scenarios = (data || []).sort((a, b) => {
+        const normalized: ScenarioData[] = extractScenarioArray(data);
+
+        const scenarios = [...normalized].sort((a, b) => {
           const aTime = a.simulation_start_at ? new Date(a.simulation_start_at).getTime() : 0;
           const bTime = b.simulation_start_at ? new Date(b.simulation_start_at).getTime() : 0;
           return bTime - aTime;
         });
 
         return scenarios;
-      } catch (error: any) {
+      } catch (error) {
         console.error('Failed to fetch scenarios:', error);
-        throw error;
+        throw error instanceof Error ? error : new Error('Failed to fetch scenarios');
       }
     },
   });
@@ -28,6 +29,29 @@ const useScenarios = () => {
     ...response,
     scenarios: response?.data || [],
   };
+};
+
+type ScenarioApiPayload =
+  | ScenarioData[]
+  | {
+      data?: ScenarioData[];
+      results?: ScenarioData[];
+    };
+
+const extractScenarioArray = (payload: ScenarioApiPayload | undefined): ScenarioData[] => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload?.data && Array.isArray(payload.data)) {
+    return payload.data;
+  }
+
+  if (payload?.results && Array.isArray(payload.results)) {
+    return payload.results;
+  }
+
+  return [];
 };
 
 export { useScenarios };
