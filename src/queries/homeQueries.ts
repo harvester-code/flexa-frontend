@@ -6,7 +6,7 @@ const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; en
   return useQuery({
     queryKey: ['home-static-data', scenarioId],
     queryFn: async () => {
-      const { data: { data } = {} } = await fetchStaticData({ scenarioId });
+      const { data } = await fetchStaticData({ scenarioId });
       return data;
     },
     enabled: enabled && !!scenarioId,
@@ -26,7 +26,7 @@ const useMetricsData = ({
   return useQuery({
     queryKey: ['home-metrics-data', scenarioId, percentile],
     queryFn: async () => {
-      const { data: { data } = {} } = await fetchMetricsData({ percentile, scenarioId });
+      const { data } = await fetchMetricsData({ percentile, scenarioId });
       return data;
     },
     enabled: enabled && !!scenarioId,
