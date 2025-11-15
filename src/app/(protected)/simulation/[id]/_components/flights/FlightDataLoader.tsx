@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Calendar as CalendarIcon, Database } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -37,6 +37,10 @@ function FlightDataLoader({
   const [airport, setAirport] = useState(storeAirport);
   const [date, setDate] = useState(storeDate);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
+
+  useEffect(() => {
+    setAirport(storeAirport);
+  }, [storeAirport]);
 
   // 임베드 모드일 때는 Card 래퍼 없이 내용만 렌더링
   if (isEmbedded) {

@@ -80,6 +80,16 @@ export default function SimulationDetail({
     return trimmed.length > 0 ? trimmed : undefined;
   }, [resolvedSearchParams]);
 
+  const queryScenarioAirport = useMemo(() => {
+    const rawAirport = resolvedSearchParams?.airport;
+    const normalized = Array.isArray(rawAirport) ? rawAirport[0] : rawAirport;
+    if (typeof normalized !== "string") {
+      return undefined;
+    }
+    const trimmed = normalized.trim().toUpperCase();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, [resolvedSearchParams]);
+
   // 개별 store에서 필요한 데이터만 직접 가져오기
   const currentScenarioTab = useScenarioProfileStore(
     (s) => s.currentScenarioTab
@@ -119,6 +129,8 @@ export default function SimulationDetail({
   const passengerChartResult = useSimulationStore(
     (s) => s.passenger.chartResult
   );
+  const storeAirport = useSimulationStore((s) => s.context.airport);
+  const setStoreAirport = useSimulationStore((s) => s.setAirport);
   const lastSavedAt = useSimulationStore(
     (s) => s.savedAt || s.context.lastSavedAt || null
   );
@@ -130,6 +142,12 @@ export default function SimulationDetail({
     () => (lastSavedAt ? dayjs(lastSavedAt).format("YYYY-MM-DD HH:mm") : ""),
     [lastSavedAt]
   );
+
+  useEffect(() => {
+    if (queryScenarioAirport && !storeAirport) {
+      setStoreAirport(queryScenarioAirport);
+    }
+  }, [queryScenarioAirport, setStoreAirport, storeAirport]);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
   const loadCompleteS3Metadata = useCallback(async (data: any) => {

@@ -84,7 +84,15 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const DEFAULT_PAGE_SIZE = 10;
 
 // 정렬 가능한 필드 타입
-type SortField = "name" | "airport" | "terminal" | "editor" | "metadata_updated_at" | "simulation_end_at" | "memo";
+type SortField =
+  | "name"
+  | "airport"
+  | "terminal"
+  | "editor"
+  | "metadata_updated_at"
+  | "simulation_end_at"
+  | "memo"
+  | "updated_at";
 type SortOrder = "asc" | "desc";
 
 // 테이블의 최소 높이 계산 (헤더 + 행)
@@ -153,13 +161,32 @@ const renderPaginationButtons = (
 };
 
 // Custom hook for navigation that uses pathname and router
+interface ScenarioNavigationOptions {
+  scenarioName?: string;
+  airport?: string;
+}
+
 function useScenarioNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const navigateToScenario = (scenarioId: string, scenarioName?: string) => {
-    const url = scenarioName
-      ? `${pathname}/${scenarioId}?name=${encodeURIComponent(scenarioName)}`
+  const navigateToScenario = (
+    scenarioId: string,
+    options?: ScenarioNavigationOptions
+  ) => {
+    const params = new URLSearchParams();
+
+    if (options?.scenarioName) {
+      params.set("name", options.scenarioName);
+    }
+
+    if (options?.airport) {
+      params.set("airport", options.airport);
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${pathname}/${scenarioId}?${queryString}`
       : `${pathname}/${scenarioId}`;
     router.push(url);
   };
@@ -192,7 +219,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("simulation_end_at");
+  const [sortField, setSortField] = useState<SortField>("updated_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
@@ -277,7 +304,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       if (bValue === null || bValue === undefined) bValue = "";
 
       // 날짜 필드 처리
-      if (sortField === "metadata_updated_at" || sortField === "simulation_end_at") {
+      if (
+        sortField === "metadata_updated_at" ||
+        sortField === "simulation_end_at" ||
+        sortField === "updated_at"
+      ) {
         // null/undefined/"Never saved"/"Never run" 값은 가장 마지막으로
         const aIsEmpty = !aValue;
         const bIsEmpty = !bValue;
@@ -503,9 +534,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     });
   };
 
-  const handleScenarioClick = (scenarioId: string, scenarioName?: string) => {
+  const handleScenarioClick = (
+    scenarioId: string,
+    scenarioName?: string,
+    airport?: string
+  ) => {
     setNavigatingToId(scenarioId);
-    navigateToScenario(scenarioId, scenarioName);
+    navigateToScenario(scenarioId, { scenarioName, airport });
   };
 
   const handleCopyClick = (scenario: any) => {
@@ -811,6 +846,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <th className="px-3 text-left whitespace-nowrap">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("updated_at")}
+                >
+                  <NotebookPen className="h-3.5 w-3.5" />
+                  Updated At
+                  {renderSortIcon("updated_at")}
+                </div>
+              </th>
+              <th className="px-3 text-left whitespace-nowrap">
+                <div
+                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("memo")}
                 >
                   <StickyNote className="h-3.5 w-3.5" />
@@ -825,7 +870,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
           <tbody className="min-h-24">
             {isLoading ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <SimulationLoading size={50} minHeight="h-64" />
                 </td>
               </tr>
@@ -885,7 +930,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                           onClick={() =>
                             handleScenarioClick(
                               scenario.scenario_id,
-                              scenario.name
+                              scenario.name,
+                              scenario.airport
                             )
                           }
                         >
@@ -978,6 +1024,21 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
+                    <td className="px-3 whitespace-nowrap">
+                      {scenario.updated_at ? (
+                        <div className="flex flex-col leading-5">
+                          <span>
+                            {dayjs(scenario.updated_at).format("YYYY-MM-DD")}
+                          </span>
+                          <span className="text-xs text-muted-foreground text-center">
+                            {dayjs(scenario.updated_at).format("HH:mm")}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 italic">-</span>
+                      )}
+                    </td>
+
                     <td className="px-3 align-top">
                       {isEditing ? (
                         <Input
@@ -1000,7 +1061,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         </span>
                       )}
                     </td>
-
                     <td className="px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button
@@ -1035,7 +1095,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="flex flex-1 flex-col items-center justify-center">
                     <p className="text-sm text-default-500">
                       No scenarios found.
