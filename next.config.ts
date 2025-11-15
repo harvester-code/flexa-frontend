@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1] || '' },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   output: 'standalone',
 };
 
