@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronRight, Search, Globe, MapPin, Plane } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +10,6 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
 import { DropdownMenuSubTriggerNoArrow } from '@/components/ui/DropdownMenuCustom';
 import Spinner from '@/components/ui/Spinner';
@@ -23,34 +21,49 @@ interface AirportSelectorProps {
   onChange: (value: string) => void;
 }
 
+const SEARCH_INPUT_INDEX = -1;
+const DEBOUNCE_DELAY_MS = 150;
+const MAX_SEARCH_RESULTS = 20;
+
+const TEXT = {
+  SELECT: 'Select airport',
+  SEARCH: 'Search airport',
+  SEARCHING: 'Searching...',
+  NO_RESULTS: 'No results found',
+  AIRPORTS: 'Airports',
+} as const;
+
+interface AirportHierarchy {
+  [region: string]: {
+    [country: string]: {
+      [city: string]: string[];
+    };
+  };
+}
+
+const hierarchy = airportHierarchy as AirportHierarchy;
+
 export default function AirportSelector({ value, onChange }: AirportSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1); // -1 means search input is focused
+  const [selectedIndex, setSelectedIndex] = useState(SEARCH_INPUT_INDEX);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Find current selection info
   const currentAirport = airportFlat.find((a) => a.iata === value);
 
-  // Format number with thousand separators
-  const formatNumber = (num: number) => {
-    return num.toLocaleString();
-  };
-
-  // Calculate airport counts for regions and countries
   const airportCounts = useMemo(() => {
     const regionCounts: Record<string, number> = {};
     const countryCounts: Record<string, Record<string, number>> = {};
 
-    Object.entries(airportHierarchy).forEach(([region, countries]) => {
+    Object.entries(hierarchy).forEach(([region, countries]) => {
       let regionTotal = 0;
       countryCounts[region] = {};
 
-      Object.entries(countries as any).forEach(([country, cities]) => {
-        let countryTotal = 0;
-        Object.values(cities as any).forEach((airports: any) => {
-          countryTotal += airports.length;
-        });
+      Object.entries(countries).forEach(([country, cities]) => {
+        const countryTotal = Object.values(cities).reduce(
+          (sum, airports) => sum + airports.length,
+          0
+        );
         countryCounts[region][country] = countryTotal;
         regionTotal += countryTotal;
       });
@@ -61,14 +74,12 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     return { regionCounts, countryCounts };
   }, []);
 
-  // Search across all levels with debouncing
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 150); // 150ms delay
+    }, DEBOUNCE_DELAY_MS);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -80,28 +91,20 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     const iataMatches: typeof airportFlat = [];
     const otherMatches: typeof airportFlat = [];
 
-    // Search only in IATA code, city, and country
-    for (let i = 0; i < airportFlat.length; i++) {
-      const airport = airportFlat[i];
-
-      // Check IATA code first (priority)
+    for (const airport of airportFlat) {
       if (airport.iata.includes(query)) {
         iataMatches.push(airport);
-      }
-      // Check city or country (no priority between them)
-      else if (
+      } else if (
         airport.city.toUpperCase().includes(query) ||
         airport.country.toUpperCase().includes(query)
       ) {
         otherMatches.push(airport);
       }
 
-      // Stop if we have enough results
-      if (iataMatches.length + otherMatches.length >= 20) break;
+      if (iataMatches.length + otherMatches.length >= MAX_SEARCH_RESULTS) break;
     }
 
-    // Return IATA matches first, then other matches
-    return [...iataMatches, ...otherMatches].slice(0, 20);
+    return [...iataMatches, ...otherMatches].slice(0, MAX_SEARCH_RESULTS);
   }, [debouncedSearchQuery]);
 
   const handleSelect = (iata: string) => {
@@ -110,57 +113,58 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     setOpen(false);
   };
 
-  // Auto-focus search input when dropdown opens
   useEffect(() => {
     if (open) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         searchInputRef.current?.focus();
-      }, 0);
+      });
     }
   }, [open]);
 
-  // Reset selected index when search changes
   useEffect(() => {
-    setSelectedIndex(-1);
+    setSelectedIndex(SEARCH_INPUT_INDEX);
   }, [searchQuery]);
 
-  // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Only handle navigation when there's a search query
     if (!searchQuery) return;
 
     const totalItems = searchResults.length;
+    const isInputFocused = selectedIndex === SEARCH_INPUT_INDEX;
+    const selectedAirport = selectedIndex >= 0 ? searchResults[selectedIndex] : null;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        if (selectedIndex < totalItems - 1) {
-          setSelectedIndex(selectedIndex + 1);
-        }
+        setSelectedIndex((prev) => Math.min(prev + 1, totalItems - 1));
         break;
+
       case 'ArrowUp':
         e.preventDefault();
-        if (selectedIndex > -1) {
-          setSelectedIndex(selectedIndex - 1);
-        }
+        setSelectedIndex((prev) => Math.max(prev - 1, SEARCH_INPUT_INDEX));
         break;
+
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
-          handleSelect(searchResults[selectedIndex].iata);
-        } else if (selectedIndex === -1 && searchResults.length > 0) {
-          // If focus is on search input and there are results, select the first one
+        if (selectedAirport) {
+          handleSelect(selectedAirport.iata);
+        } else if (isInputFocused && searchResults[0]) {
           handleSelect(searchResults[0].iata);
         }
         break;
+
       case 'ArrowRight':
-        e.preventDefault();
-        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
-          handleSelect(searchResults[selectedIndex].iata);
+        if (selectedAirport) {
+          e.preventDefault();
+          handleSelect(selectedAirport.iata);
         }
         break;
     }
   };
+
+  const isSearching = debouncedSearchQuery !== searchQuery;
+  const showSearchResults = searchQuery && !isSearching && searchResults.length > 0;
+  const showNoResults = searchQuery && !isSearching && searchResults.length === 0;
+  const isInputHighlighted = selectedIndex === SEARCH_INPUT_INDEX && searchQuery;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -168,90 +172,95 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
         <Button variant="outline" className="w-full justify-between">
           <div className="flex items-center gap-2">
             <Plane className="h-4 w-4 text-primary" />
-            <span className="font-semibold">{currentAirport ? currentAirport.display : 'Select airport'}</span>
+            <span className="font-semibold">{currentAirport?.display ?? TEXT.SELECT}</span>
           </div>
           <Search className="ml-2 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-96" align="start">
-        {/* Search Input */}
         <div className="p-2 pb-0">
-          <div className={`relative ${selectedIndex === -1 && searchQuery ? 'bg-accent/50 rounded px-2' : ''}`}>
+          <div className={`relative ${isInputHighlighted ? 'bg-accent/50 rounded px-2' : ''}`}>
             <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
-              placeholder="Search airport"
+              placeholder={TEXT.SEARCH}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
+              onFocus={() => setSelectedIndex(SEARCH_INPUT_INDEX)}
               className="w-full pl-8 py-2 bg-transparent outline-none border-0 border-b border-gray-200 focus:border-gray-400 transition-colors text-sm"
               autoFocus
-              onFocus={() => setSelectedIndex(-1)}
             />
           </div>
         </div>
 
         <div className="max-h-[400px] overflow-y-auto">
-          {searchQuery ? (
-            // Search Results with loading state
-            debouncedSearchQuery !== searchQuery ? (
-              <div className="p-2 text-center text-sm text-muted-foreground">
-                <div className="flex items-center justify-center gap-2">
-                  <Spinner size={12} />
-                  Searching...
+          {isSearching && (
+            <div className="p-2 text-center text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2">
+                <Spinner size={12} />
+                {TEXT.SEARCHING}
+              </div>
+            </div>
+          )}
+
+          {showSearchResults &&
+            searchResults.map((airport, index) => (
+              <DropdownMenuItem
+                key={airport.iata}
+                onClick={() => handleSelect(airport.iata)}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={`flex items-center gap-2 ${
+                  index === selectedIndex ? 'bg-accent' : ''
+                }`}
+              >
+                <Plane className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-bold text-sm">{airport.iata}</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({airport.city}, {airport.country})
+                  </span>
                 </div>
-              </div>
-            ) : searchResults.length > 0 ? (
-              searchResults.map((airport, index) => (
-                <DropdownMenuItem
-                  key={airport.iata}
-                  onClick={() => handleSelect(airport.iata)}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  className={`flex items-center gap-2 ${
-                    index === selectedIndex ? 'bg-accent' : ''
-                  }`}
-                >
-                  <Plane className="h-4 w-4 text-primary flex-shrink-0" />
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-bold text-sm">{airport.iata}</span>
-                    <span className="text-sm text-muted-foreground">({airport.city}, {airport.country})</span>
-                  </div>
-                </DropdownMenuItem>
-              ))
-            ) : (
-              <div className="p-2 text-center text-sm text-muted-foreground">
-                No results found
-              </div>
-            )
-          ) : (
-            // Hierarchical Navigation
-            Object.entries(airportHierarchy).map(([region, countries]) => (
+              </DropdownMenuItem>
+            ))}
+
+          {showNoResults && (
+            <div className="p-2 text-center text-sm text-muted-foreground">{TEXT.NO_RESULTS}</div>
+          )}
+
+          {!searchQuery &&
+            Object.entries(hierarchy).map(([region, countries]) => (
               <DropdownMenuSub key={region}>
                 <DropdownMenuSubTriggerNoArrow className="gap-1">
                   <Globe className="h-3.5 w-3.5 text-blue-500" />
                   <span className="flex-1">{region}</span>
-                  <span className="text-xs text-muted-foreground mr-1">{formatNumber(airportCounts.regionCounts[region])} Airports</span>
+                  <span className="text-xs text-muted-foreground mr-1">
+                    {airportCounts.regionCounts[region].toLocaleString()} {TEXT.AIRPORTS}
+                  </span>
                   <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 </DropdownMenuSubTriggerNoArrow>
                 <DropdownMenuSubContent className="w-64" sideOffset={5}>
                   <div className="max-h-[400px] overflow-y-auto">
-                    {Object.entries(countries as any).map(([country, cities]) => (
+                    {Object.entries(countries).map(([country, cities]) => (
                       <DropdownMenuSub key={country}>
                         <DropdownMenuSubTriggerNoArrow className="gap-1">
                           <MapPin className="h-3 w-3 text-green-500" />
                           <span className="flex-1">{country}</span>
-                          <span className="text-xs text-muted-foreground mr-1">{formatNumber(airportCounts.countryCounts[region][country])} Airports</span>
+                          <span className="text-xs text-muted-foreground mr-1">
+                            {airportCounts.countryCounts[region][country].toLocaleString()}{' '}
+                            {TEXT.AIRPORTS}
+                          </span>
                           <ChevronRight className="h-3 w-3 text-muted-foreground" />
                         </DropdownMenuSubTriggerNoArrow>
                         <DropdownMenuSubContent className="w-64" sideOffset={5}>
                           <div className="max-h-[400px] overflow-y-auto">
-                            {Object.entries(cities as any).map(([city, airports]) => (
+                            {Object.entries(cities).map(([city, airports]) => (
                               <div key={city}>
                                 <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground">
                                   <MapPin className="h-3 w-3 text-orange-400" />
                                   {city}
                                 </div>
-                                {(airports as string[]).map((airport) => (
+                                {airports.map((airport) => (
                                   <DropdownMenuItem
                                     key={airport}
                                     onClick={() => handleSelect(airport)}
@@ -259,7 +268,9 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
                                   >
                                     <Plane className="h-3 w-3 text-primary" />
                                     <span className="font-semibold text-xs">{airport}</span>
-                                    <span className="text-xs text-muted-foreground ml-0.5">({city}, {country})</span>
+                                    <span className="text-xs text-muted-foreground ml-0.5">
+                                      ({city}, {country})
+                                    </span>
                                   </DropdownMenuItem>
                                 ))}
                               </div>
@@ -271,8 +282,7 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
                   </div>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-            ))
-          )}
+            ))}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
