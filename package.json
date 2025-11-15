@@ -3,7 +3,7 @@
   "version": "0.1.7",
   "private": true,
   "engines": {
-    "node": "^20.9.0",
+    "node": "^24.0.0",
     "npm": "^10.2.5"
   },
   "engineStrict": true,
@@ -75,7 +75,7 @@
     "@eslint/eslintrc": "^3",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/lodash": "^4.17.19",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "@types/plotly.js-dist-min": "^2.3.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",

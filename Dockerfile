@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:24-slim
 
 # 작업 디렉토리 설정
 WORKDIR /app
