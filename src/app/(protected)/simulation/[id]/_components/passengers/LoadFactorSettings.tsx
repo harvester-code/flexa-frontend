@@ -38,6 +38,7 @@ interface Rule {
   conditions: string[];
   flightCount: number;
   loadFactor?: number; // 🔄 distribution → loadFactor (단순 백분율 값)
+  originalConditions?: Record<string, string[]>; // 실제 컬럼 키 유지용
   isExpanded?: boolean;
 }
 
@@ -138,22 +139,26 @@ export default function LoadFactorSettings({
   const addLoadFactorRule = useCallback(
     (rule: Rule) => {
       // 변환 로직 적용
-      const backendConditions: Record<string, string[]> = {};
+      // originalConditions가 있으면 그대로 사용하여 컬럼 키를 보존
+      const backendConditions: Record<string, string[]> = rule.originalConditions
+        ? { ...rule.originalConditions }
+        : {};
 
+      if (!rule.originalConditions) {
+        rule.conditions.forEach((condition) => {
+          const parts = condition.split(": ");
+          if (parts.length === 2) {
+            const displayLabel = parts[0];
+            const value = parts[1];
+            const columnKey = getColumnName(displayLabel);
 
-      rule.conditions.forEach((condition) => {
-        const parts = condition.split(": ");
-        if (parts.length === 2) {
-          const displayLabel = parts[0];
-          const value = parts[1];
-          const columnKey = getColumnName(displayLabel);
-
-          if (!backendConditions[columnKey]) {
-            backendConditions[columnKey] = [];
+            if (!backendConditions[columnKey]) {
+              backendConditions[columnKey] = [];
+            }
+            backendConditions[columnKey].push(value);
           }
-          backendConditions[columnKey].push(value);
-        }
-      });
+        });
+      }
 
       addPaxGenerationRule(backendConditions, rule.loadFactor ?? 80);
     },
@@ -161,7 +166,7 @@ export default function LoadFactorSettings({
   );
 
   const updateLoadFactorRule = useCallback(
-    (ruleId: string, updatedRule: Partial<Rule>) => {
+    (ruleId: string, updatedRule: Partial<Rule> & { originalConditions?: Record<string, string[]> }) => {
       const ruleIndex = parseInt(ruleId.replace("rule-", ""));
 
       // 전체 규칙 업데이트인경우 (조건 + loadFactor + 플라이트카운트)
@@ -175,15 +180,24 @@ export default function LoadFactorSettings({
         if (!currentRule) return;
 
         // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
-        let backendConditions = currentRule.conditions;
-        if (updatedRule.conditions) {
+        let backendConditions =
+          updatedRule.originalConditions || currentRule.conditions;
+        if (!updatedRule.originalConditions && updatedRule.conditions) {
           backendConditions = {};
           updatedRule.conditions.forEach((condition) => {
             const parts = condition.split(": ");
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey = getColumnName(displayLabel);
+
+              // 기존 조건에서 동일 값을 가진 컬럼 키 우선 사용
+              const existingKey = Object.entries(currentRule.conditions).find(
+                ([columnKey, values]) =>
+                  getColumnLabel(columnKey) === displayLabel &&
+                  values?.includes(value)
+              )?.[0];
+
+              const columnKey = existingKey || getColumnName(displayLabel);
               if (!backendConditions[columnKey]) {
                 backendConditions[columnKey] = [];
               }
@@ -222,22 +236,25 @@ export default function LoadFactorSettings({
     (newOrder: Rule[]) => {
       // Rule[] 형식을 SimulationStore 형식으로 변환 (동일한 변환 로직 사용)
       const convertedRules = newOrder.map((rule) => {
-        const backendConditions: Record<string, string[]> = {};
+        const backendConditions: Record<string, string[]> = rule.originalConditions
+          ? { ...rule.originalConditions }
+          : {};
 
+        if (!rule.originalConditions) {
+          rule.conditions.forEach((condition) => {
+            const parts = condition.split(": ");
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const columnKey = getColumnName(displayLabel);
 
-        rule.conditions.forEach((condition) => {
-          const parts = condition.split(": ");
-          if (parts.length === 2) {
-            const displayLabel = parts[0];
-            const value = parts[1];
-            const columnKey = getColumnName(displayLabel);
-
-            if (!backendConditions[columnKey]) {
-              backendConditions[columnKey] = [];
+              if (!backendConditions[columnKey]) {
+                backendConditions[columnKey] = [];
+              }
+              backendConditions[columnKey].push(value);
             }
-            backendConditions[columnKey].push(value);
-          }
-        });
+          });
+        }
 
         return {
           conditions: backendConditions,
@@ -555,6 +572,7 @@ export default function LoadFactorSettings({
       conditions: string[];
       flightCount: number;
       loadFactor: number;
+      originalConditions?: Record<string, string[]>;
     }) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
@@ -563,6 +581,7 @@ export default function LoadFactorSettings({
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
             loadFactor: savedRuleData.loadFactor,
+            originalConditions: savedRuleData.originalConditions,
           });
         }
         setEditingRuleId(null);
@@ -579,6 +598,7 @@ export default function LoadFactorSettings({
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
             loadFactor,
+            originalConditions: savedRuleData.originalConditions,
             isExpanded: true,
           };
 

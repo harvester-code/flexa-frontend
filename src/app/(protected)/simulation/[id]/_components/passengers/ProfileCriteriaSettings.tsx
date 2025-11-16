@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle, ChevronDown, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -43,6 +43,32 @@ export default function ProfileCriteriaSettings({
   const [isValidDistribution, setIsValidDistribution] = useState(true);
   const [currentTotal, setCurrentTotal] = useState(100);
 
+  // 주어진 apiField/value가 parquetMetadata에 존재하는 컬럼 키로 매칭되도록 보정
+  const resolveColumnKey = useCallback(
+    (apiField: string, value: string) => {
+      // 1) 동일 컬럼이 존재하고 값이 있으면 그대로 사용
+      const direct = parquetMetadata.find(
+        (item) => item.column === apiField && item.values?.[value]
+      );
+      if (direct) return apiField;
+
+      // 2) 같은 라벨을 가진 컬럼 중 값이 존재하는 첫 번째 컬럼을 사용 (예: iata <-> name)
+      const label = getColumnLabel(apiField);
+      const fallback = parquetMetadata.find(
+        (item) => getColumnLabel(item.column) === label && item.values?.[value]
+      );
+      if (fallback) return fallback.column;
+
+      // 3) 값이 존재하는 아무 컬럼이나 찾아서 사용 (최후 fallback)
+      const anyMatch = parquetMetadata.find((item) => item.values?.[value]);
+      if (anyMatch) return anyMatch.column;
+
+      // 4) 없으면 원래 키 유지
+      return apiField;
+    },
+    [parquetMetadata]
+  );
+
   // 초기값 설정 (새 생성 모드 + 편집 모드)
   useEffect(() => {
     // 🔄 새 생성 모드: 상태 초기화
@@ -75,64 +101,126 @@ export default function ProfileCriteriaSettings({
       }
 
       // 편집 모드: 배지에서 체크박스 상태 복구 🎯
-      if (editingRule.conditions && editingRule.conditions.length > 0) {
+      // 🆕 originalConditions가 있으면 우선 사용 (정확한 컬럼 키 보장)
+      if (editingRule.originalConditions && typeof editingRule.originalConditions === 'object' && !Array.isArray(editingRule.originalConditions)) {
         const selectedItemsFromConditions: Record<string, boolean> = {};
         let firstColumnToSelect: string | null = null;
 
-        // Use centralized column mapping
+        Object.entries(editingRule.originalConditions).forEach(([apiField, values]: [string, any]) => {
+          if (Array.isArray(values)) {
+            values.forEach((apiValue) => {
+              const columnKey = resolveColumnKey(apiField, apiValue);
+              const itemKey = `${columnKey}:${apiValue}`;
+              selectedItemsFromConditions[itemKey] = true;
 
-        // 🎯 배지 형태에서 개별 조건으로 파싱하는 로직 지원
-        const parseConditions = (conditions: string[]) => {
-          const parsedConditions: string[] = [];
-
-          conditions.forEach((condition) => {
-            // 일반 형태: "Category: Value"
-            if (condition.includes(': ') && !condition.includes(' | ')) {
-              parsedConditions.push(condition);
-            }
-            // 배지 형태: "Category: Value1 | Value2"
-            else if (condition.includes(' | ')) {
-              const parts = condition.split(': ');
-              if (parts.length === 2) {
-                const category = parts[0];
-                const values = parts[1].split(' | ');
-                values.forEach((value) => {
-                  parsedConditions.push(`${category}: ${value.trim()}`);
-                });
+              // 첫 번째 컬럼을 기본 선택 컬럼으로 설정
+              if (!firstColumnToSelect) {
+                firstColumnToSelect = columnKey;
               }
-            }
-          });
-
-          return parsedConditions;
-        };
-
-        const individualConditions = parseConditions(editingRule.conditions);
-
-        individualConditions.forEach((condition: string) => {
-          // Parse condition format
-          const parts = condition.split(': ');
-          if (parts.length === 2) {
-            const displayLabel = parts[0];
-            const value = parts[1];
-            const actualColumnKey = getColumnName(displayLabel);
-            const key = `${actualColumnKey}:${value}`;
-            selectedItemsFromConditions[key] = true;
-
-            // 첫 번째 컬럼을 기본 선택 컬럼으로 설정 (2단계 선택 구조)
-            if (!firstColumnToSelect) {
-              firstColumnToSelect = actualColumnKey;
-            }
+            });
           }
         });
 
         // 🎯 1단계: 먼저 컬럼 선택 (오른쪽 패널 렌더링 트리거)
         if (firstColumnToSelect) {
           setSelectedColumn(firstColumnToSelect);
-
-          // 🎯 2단계: 컬럼 선택 후 약간의 지연을 두고 체크박스 상태 설정
+          // 🎯 selectedItems를 즉시 설정하여 flightCalculations가 바로 계산되도록 함
+          setSelectedItems(selectedItemsFromConditions);
+          
+          // 🎯 2단계: 추가로 약간의 지연을 두고 다시 설정 (렌더링 완료 후 체크박스 UI 업데이트)
           setTimeout(() => {
             setSelectedItems(selectedItemsFromConditions);
-          }, 100); // 100ms 지연으로 렌더링 완료 후 체크박스 설정
+          }, 50); // 50ms 지연으로 렌더링 완료 후 체크박스 UI 업데이트
+        } else {
+          // 컬럼 선택이 없어도 selectedItems는 설정 (flightCalculations 계산을 위해)
+          setSelectedItems(selectedItemsFromConditions);
+        }
+      }
+      // conditions가 배열 형태인 경우 (DistributionSettings에서 변환된 형태, originalConditions가 없는 경우)
+      else if (editingRule.conditions) {
+        const selectedItemsFromConditions: Record<string, boolean> = {};
+        let firstColumnToSelect: string | null = null;
+
+        // 🎯 conditions가 배열 형태인 경우 (DistributionSettings에서 변환된 형태)
+        if (Array.isArray(editingRule.conditions) && editingRule.conditions.length > 0) {
+          // 🎯 배지 형태에서 개별 조건으로 파싱하는 로직 지원
+          const parseConditions = (conditions: string[]) => {
+            const parsedConditions: string[] = [];
+
+            conditions.forEach((condition) => {
+              // 일반 형태: "Category: Value"
+              if (condition.includes(': ') && !condition.includes(' | ')) {
+                parsedConditions.push(condition);
+              }
+              // 배지 형태: "Category: Value1 | Value2"
+              else if (condition.includes(' | ')) {
+                const parts = condition.split(': ');
+                if (parts.length === 2) {
+                  const category = parts[0];
+                  const values = parts[1].split(' | ');
+                  values.forEach((value) => {
+                    parsedConditions.push(`${category}: ${value.trim()}`);
+                  });
+                }
+              }
+            });
+
+            return parsedConditions;
+          };
+
+          const individualConditions = parseConditions(editingRule.conditions);
+
+          individualConditions.forEach((condition: string) => {
+            // Parse condition format
+            const parts = condition.split(': ');
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const actualColumnKey = resolveColumnKey(
+                getColumnName(displayLabel),
+                value
+              );
+              const key = `${actualColumnKey}:${value}`;
+              selectedItemsFromConditions[key] = true;
+
+              // 첫 번째 컬럼을 기본 선택 컬럼으로 설정 (2단계 선택 구조)
+              if (!firstColumnToSelect) {
+                firstColumnToSelect = actualColumnKey;
+              }
+            }
+          });
+        }
+        // 🎯 conditions가 객체 형태인 경우 (원본 store 데이터)
+        else if (typeof editingRule.conditions === 'object' && !Array.isArray(editingRule.conditions)) {
+          Object.entries(editingRule.conditions).forEach(([apiField, values]: [string, any]) => {
+            if (Array.isArray(values)) {
+              values.forEach((apiValue) => {
+                const columnKey = resolveColumnKey(apiField, apiValue);
+                const itemKey = `${columnKey}:${apiValue}`;
+                selectedItemsFromConditions[itemKey] = true;
+
+                // 첫 번째 컬럼을 기본 선택 컬럼으로 설정
+                if (!firstColumnToSelect) {
+                  firstColumnToSelect = columnKey;
+                }
+              });
+            }
+          });
+        }
+
+        // 🎯 1단계: 먼저 컬럼 선택 (오른쪽 패널 렌더링 트리거)
+        if (firstColumnToSelect) {
+          setSelectedColumn(firstColumnToSelect);
+          // 🎯 selectedItems를 즉시 설정하여 flightCalculations가 바로 계산되도록 함
+          setSelectedItems(selectedItemsFromConditions);
+          
+          // 🎯 2단계: 추가로 약간의 지연을 두고 다시 설정 (렌더링 완료 후 체크박스 UI 업데이트)
+          setTimeout(() => {
+            setSelectedItems(selectedItemsFromConditions);
+          }, 50); // 50ms 지연으로 렌더링 완료 후 체크박스 UI 업데이트
+        } else {
+          // 컬럼 선택이 없어도 selectedItems는 설정 (flightCalculations 계산을 위해)
+          setSelectedItems(selectedItemsFromConditions);
         }
       }
     } else if (!editingRule && definedProperties.length > 0) {
@@ -154,7 +242,7 @@ export default function ProfileCriteriaSettings({
         setPropertyValues({ mean: 120, std: 30 });
       }
     }
-  }, [definedProperties, configType, editingRule]);
+  }, [definedProperties, configType, editingRule, resolveColumnKey]);
 
   // Create 핸들러
   const handleCreate = () => {
@@ -216,6 +304,7 @@ export default function ProfileCriteriaSettings({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues,
+            originalConditions: conditions,
           });
         } else {
         }
@@ -234,6 +323,7 @@ export default function ProfileCriteriaSettings({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues, // 0-100% 범위 그대로 전달
+            originalConditions: conditions,
           });
         } else {
         }
@@ -254,6 +344,7 @@ export default function ProfileCriteriaSettings({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             loadFactor: loadFactorValue, // 🆕 그대로 전달
+            originalConditions: conditions,
           });
         }
       } else if (configType === 'show_up_time') {
@@ -269,6 +360,7 @@ export default function ProfileCriteriaSettings({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             parameters: showUpTimeParameters, // 🆕 올바른 필드명
+            originalConditions: conditions,
           });
         }
       } else if (configType === 'pax_arrival_patterns') {
@@ -343,59 +435,7 @@ export default function ProfileCriteriaSettings({
     return null;
   };
 
-  // 편집 모드일 때 기존 데이터 복원
-  useEffect(() => {
-    if (editingRule) {
-      // 1. propertyValues 복원
-      if (configType === 'load_factor' && editingRule.distribution) {
-        // Load Factor 편집 모드: 값을 그대로 사용
-        setPropertyValues({ 'Load Factor': editingRule.distribution['Load Factor'] || 85 });
-      } else if (configType === 'show_up_time' && editingRule.distribution) {
-        // Show-up Time 편집 모드: mean과 std 값 복원
-        setPropertyValues({
-          mean: editingRule.distribution.mean || 120,
-          std: editingRule.distribution.std || 30,
-        });
-      } else if (editingRule.value) {
-        if (configType === 'pax_arrival_patterns') {
-          setPropertyValues({
-            mean: editingRule.value.mean || 120,
-            std: editingRule.value.std || 30,
-          });
-        } else {
-          // nationality, profile
-          const percentValues = Object.keys(editingRule.value).reduce(
-            (acc, key) => {
-              acc[key] = editingRule.value[key] || 0; // 값을 그대로 사용
-              return acc;
-            },
-            {} as Record<string, number>
-          );
-          setPropertyValues(percentValues);
-        }
-      }
-
-      // 2. selectedItems 복원 (조건 → UI 선택 상태)
-      if (editingRule.conditions) {
-        const restoredSelectedItems: Record<string, boolean> = {};
-
-        Object.entries(editingRule.conditions).forEach(([apiField, values]: [string, any]) => {
-          if (Array.isArray(values)) {
-            values.forEach((apiValue) => {
-              // 저장된 값을 그대로 사용 (변환 로직 제거)
-              const uiField = apiField;
-              const uiValue = apiValue;
-
-              const itemKey = `${uiField}:${uiValue}`;
-              restoredSelectedItems[itemKey] = true;
-            });
-          }
-        });
-
-        setSelectedItems(restoredSelectedItems);
-      }
-    }
-  }, [editingRule, configType]);
+  // 🚫 중복된 useEffect 제거 - 위의 useEffect에서 이미 처리함
 
   // 🔴 zustand 연결 제거 - Mock 데이터로 교체
   const filterType = 'departure'; // 기본값 departure

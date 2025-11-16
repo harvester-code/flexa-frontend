@@ -44,10 +44,19 @@ import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
 
+interface SavedRulePayload {
+  conditions: string[];
+  flightCount: number;
+  distribution?: Record<string, number>;
+  // 원본 조건 객체 (실제 컬럼 키 보존용)
+  originalConditions?: Record<string, string[]>;
+}
+
 interface Rule {
   id: string;
   name: string;
   conditions: string[];
+  originalConditions?: Record<string, string[]>; // 🆕 원본 조건 객체 (복구 시 정확한 컬럼 키 사용)
   flightCount: number;
   distribution?: Record<string, number>;
   isExpanded?: boolean;
@@ -121,11 +130,14 @@ export default function DistributionSettings({
       conditions: Object.entries(rule.conditions || {}).flatMap(
         ([columnKey, values]) => {
           const displayLabel = getColumnLabel(columnKey);
+          // 🆕 원본 컬럼 키를 포함하여 저장 (복구 시 정확한 매칭을 위해)
           return values.map((value) => {
             return `${displayLabel}: ${value}`;
           });
         }
       ),
+      // 🆕 원본 조건 객체를 보존 (복구 시 정확한 컬럼 키 사용)
+      originalConditions: rule.conditions || {},
       flightCount: rule.flightCount || 0,
       distribution: rule.value || {},
       isExpanded: false,
@@ -156,7 +168,7 @@ export default function DistributionSettings({
   );
 
   const updateRule = useCallback(
-    (ruleId: string, updatedRule: Partial<Rule>) => {
+    (ruleId: string, updatedRule: Partial<Rule> & { originalConditions?: Record<string, string[]> }) => {
       const ruleIndex = parseInt(ruleId.replace("rule-", ""));
 
       // 전체 규칙 업데이트인경우 (조건 + 분배 + 플라이트카운트)
@@ -170,21 +182,32 @@ export default function DistributionSettings({
         if (!currentRule) return;
 
         // UI 조건을 백엔드 형식으로 변환 (조건이 변경된 경우)
-        let backendConditions = currentRule.conditions;
-        if (updatedRule.conditions) {
+        // 원본 조건 객체가 들어오면 우선적으로 그대로 사용하여 컬럼 키를 보존
+        let backendConditions =
+          updatedRule.originalConditions || currentRule.conditions;
+
+        if (!updatedRule.originalConditions && updatedRule.conditions) {
           backendConditions = {};
           updatedRule.conditions.forEach((condition) => {
             const parts = condition.split(": ");
+
             if (parts.length === 2) {
               const displayLabel = parts[0];
               const value = parts[1];
-              const columnKey = getColumnName(displayLabel);
-              const convertedValue = value;
+
+              // 기존 조건에서 동일한 값을 가진 컬럼 키를 우선 사용 (operating_carrier_name vs _iata 대응)
+              const existingKey = Object.entries(currentRule.conditions).find(
+                ([columnKey, values]) =>
+                  getColumnLabel(columnKey) === displayLabel &&
+                  values?.includes(value)
+              )?.[0];
+
+              const columnKey = existingKey || getColumnName(displayLabel);
 
               if (!backendConditions[columnKey]) {
                 backendConditions[columnKey] = [];
               }
-              backendConditions[columnKey].push(convertedValue);
+              backendConditions[columnKey].push(value);
             }
           });
         }
@@ -230,22 +253,25 @@ export default function DistributionSettings({
       // UI Rule[]을 백엔드 형식으로 변환
       const backendRules = newOrder.map((rule) => {
         // UI 조건을 백엔드 형식으로 변환
-        const backendConditions: Record<string, string[]> = {};
+        const backendConditions: Record<string, string[]> =
+          rule.originalConditions ? { ...rule.originalConditions } : {};
 
-        rule.conditions.forEach((condition) => {
-          const parts = condition.split(": ");
-          if (parts.length === 2) {
-            const displayLabel = parts[0];
-            const value = parts[1];
-            const columnKey = getColumnName(displayLabel);
-            const convertedValue = value;
+        if (!rule.originalConditions) {
+          rule.conditions.forEach((condition) => {
+            const parts = condition.split(": ");
+            if (parts.length === 2) {
+              const displayLabel = parts[0];
+              const value = parts[1];
+              const columnKey = getColumnName(displayLabel);
+              const convertedValue = value;
 
-            if (!backendConditions[columnKey]) {
-              backendConditions[columnKey] = [];
+              if (!backendConditions[columnKey]) {
+                backendConditions[columnKey] = [];
+              }
+              backendConditions[columnKey].push(convertedValue);
             }
-            backendConditions[columnKey].push(convertedValue);
-          }
-        });
+          });
+        }
 
         return {
           conditions: backendConditions,
@@ -263,23 +289,26 @@ export default function DistributionSettings({
   const addRuleWithConversion = useCallback(
     (rule: Rule) => {
       // UI 조건을 백엔드 형식으로 변환
-      const backendConditions: Record<string, string[]> = {};
+      // originalConditions가 있으면 그대로 사용하여 컬럼 키를 보존
+      const backendConditions: Record<string, string[]> = rule.originalConditions
+        ? { ...rule.originalConditions }
+        : {};
 
-      rule.conditions.forEach((condition) => {
-        const parts = condition.split(": ");
-        if (parts.length === 2) {
-          const displayLabel = parts[0];
-          const value = parts[1];
-          const columnKey = getColumnName(displayLabel);
+      if (!rule.originalConditions) {
+        rule.conditions.forEach((condition) => {
+          const parts = condition.split(": ");
+          if (parts.length === 2) {
+            const displayLabel = parts[0];
+            const value = parts[1];
+            const columnKey = getColumnName(displayLabel);
 
-          const convertedValue = value;
-
-          if (!backendConditions[columnKey]) {
-            backendConditions[columnKey] = [];
+            if (!backendConditions[columnKey]) {
+              backendConditions[columnKey] = [];
+            }
+            backendConditions[columnKey].push(value);
           }
-          backendConditions[columnKey].push(convertedValue);
-        }
-      });
+        });
+      }
 
       // 🎯 수정: 백엔드에서 처리하도록 정수 그대로 전달
       addRule(
@@ -587,11 +616,7 @@ export default function DistributionSettings({
 
   // ProfileCriteriaSettings와 통신하기 위한 최적화된 콜백
   const handleRuleSaved = useCallback(
-    (savedRuleData: {
-      conditions: string[];
-      flightCount: number;
-      distribution: Record<string, number>;
-    }) => {
+    (savedRuleData: SavedRulePayload) => {
       if (editingRuleId) {
         // Edit 모드에서 규칙 업데이트
         if (savedRuleData) {
@@ -599,6 +624,7 @@ export default function DistributionSettings({
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
             distribution: savedRuleData.distribution,
+            originalConditions: savedRuleData.originalConditions,
           });
         }
         setEditingRuleId(null);
@@ -616,6 +642,7 @@ export default function DistributionSettings({
             conditions: savedRuleData.conditions,
             flightCount: savedRuleData.flightCount,
             distribution,
+            originalConditions: savedRuleData.originalConditions,
             isExpanded: true,
           };
 
@@ -760,14 +787,15 @@ export default function DistributionSettings({
             {/* Clear button for rules - always visible */}
             <Button
               variant="outline"
+              size="icon"
               onClick={() => {
                 reorderRulesStore([]);
               }}
               disabled={createdRules.length === 0}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+              title="Clear all rules"
             >
-              <X size={16} />
-              Clear
+              <Trash2 size={16} />
             </Button>
 
             <Button
