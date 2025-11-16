@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/AlertDialog";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
 import { timeToRelativeTime } from "@/lib/utils";
 import SimulationLoading from "../_components/SimulationLoading";
@@ -533,7 +533,7 @@ export default function SimulationDetail({
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700"
+                  className={buttonVariants({ variant: "destructive" })}
                   onClick={handleDeleteMetadata}
                   disabled={isDeleting}
                 >

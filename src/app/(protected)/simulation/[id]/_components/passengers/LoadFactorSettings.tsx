@@ -770,17 +770,14 @@ export default function LoadFactorSettings({
             </ul>
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelChanges}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmChanges}
-              className="bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500"
-            >
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelChanges}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmChanges}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

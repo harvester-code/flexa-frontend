@@ -41,6 +41,34 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const hideWarningTimeout = React.useRef<number>();
+    const lastWarningAt = React.useRef<number>(0);
+    const [showInlineWarning, setShowInlineWarning] = React.useState(false);
+
+    React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+
+    const showAsciiWarning = React.useCallback(() => {
+      const now = Date.now();
+      if (now - lastWarningAt.current < 800) return; // throttle repeat warnings
+      lastWarningAt.current = now;
+      setShowInlineWarning(true);
+      if (hideWarningTimeout.current) {
+        window.clearTimeout(hideWarningTimeout.current);
+      }
+      hideWarningTimeout.current = window.setTimeout(() => {
+        setShowInlineWarning(false);
+      }, 1500);
+    }, []);
+
+    React.useEffect(() => {
+      return () => {
+        if (hideWarningTimeout.current) {
+          window.clearTimeout(hideWarningTimeout.current);
+        }
+      };
+    }, []);
+
     const sanitizeAscii = React.useCallback((value: string) => {
       return asciiOnly ? value.replace(/[^\x00-\x7F]/g, '') : value;
     }, [asciiOnly]);
@@ -55,6 +83,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         const sanitized = sanitizeAscii(e.target.value);
         if (sanitized !== e.target.value) {
           e.target.value = sanitized;
+          showAsciiWarning();
         }
       }
 
@@ -65,6 +94,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       if (!asciiOnly) return;
       const data = (e as unknown as InputEvent).data ?? '';
       if (typeof data === 'string' && /[^\x00-\x7F]/.test(data)) {
+        showAsciiWarning();
         e.preventDefault();
       }
       props.onBeforeInput?.(e as any);
@@ -88,22 +118,31 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         // 수동으로 change 이벤트 트리거
         const event = new Event('input', { bubbles: true });
         target.dispatchEvent(event);
+        showAsciiWarning();
       }
       props.onPaste?.(e);
     };
 
     return (
-      <input
-        type={type}
-        className={cn(inputVariants({ size, className }))}
-        ref={ref}
-        readOnly={readOnly}
-        disabled={disabled}
-        onChange={handleChange}
-        onBeforeInput={handleBeforeInput}
-        onPaste={handlePaste}
-        {...props}
-      />
+      <div className="relative inline-block w-full">
+        <input
+          type={type}
+          className={cn(inputVariants({ size, className }))}
+          ref={inputRef}
+          readOnly={readOnly}
+          disabled={disabled}
+          onChange={handleChange}
+          onBeforeInput={handleBeforeInput}
+          onPaste={handlePaste}
+          {...props}
+          aria-invalid={asciiOnly && showInlineWarning ? true : props['aria-invalid']}
+        />
+        {asciiOnly && showInlineWarning && (
+          <span className="pointer-events-none absolute left-0 top-full mt-1 text-xs font-medium text-destructive" role="alert">
+            English only
+          </span>
+        )}
+      </div>
     );
   }
 );

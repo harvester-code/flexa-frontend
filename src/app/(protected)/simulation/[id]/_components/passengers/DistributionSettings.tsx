@@ -633,7 +633,6 @@ export default function DistributionSettings({
           type="text"
           placeholder={`Enter ${isNationality ? "property name (e.g., domestic, international or a,b,c)" : "profile name (e.g., business, leisure, premium or a,b,c)"}...`}
           value={newPropertyName}
-          asciiOnly
           onChange={(e) =>
             setNewPropertyName((e.target as HTMLInputElement).value)
           }
@@ -992,21 +991,14 @@ export default function DistributionSettings({
             </ul>
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelChanges}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmChanges}
-              style={{
-                backgroundColor: COMPONENT_TYPICAL_COLORS[3], // amber color
-                color: "white",
-              }}
-              className="hover:opacity-90"
-            >
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelChanges}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmChanges}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
