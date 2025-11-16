@@ -185,11 +185,19 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
               ref={searchInputRef}
               placeholder={TEXT.SEARCH}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) =>
+                setSearchQuery(e.target.value.replace(/[^\x00-\x7F]/g, ""))
+              }
               onKeyDown={handleKeyDown}
               onFocus={() => setSelectedIndex(SEARCH_INPUT_INDEX)}
               className="w-full pl-8 py-2 bg-transparent outline-none border-0 border-b border-gray-200 focus:border-gray-400 transition-colors text-sm"
               autoFocus
+              onBeforeInput={(e) => {
+                const data = (e as unknown as InputEvent).data ?? "";
+                if (typeof data === "string" && /[^\x00-\x7F]/.test(data)) {
+                  e.preventDefault();
+                }
+              }}
             />
           </div>
         </div>

@@ -799,16 +799,26 @@ export default function ProfileCriteriaSettings({
                       </div>
 
                       {/* 검색창 */}
-                      <div className="relative mb-2">
-                        <Search className="text-default-400 absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          placeholder="Search..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
-                          className="border-default-200/60 placeholder:text-default-400 w-full border-b bg-transparent py-1.5 pl-8 pr-3 text-xs focus:outline-none"
-                        />
-                      </div>
+          <div className="relative mb-2">
+            <Search className="text-default-400 absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) =>
+                setSearchQuery(
+                  (e.target as HTMLInputElement).value.replace(/[^\x00-\x7F]/g, '')
+                )
+              }
+              className="border-default-200/60 placeholder:text-default-400 w-full border-b bg-transparent py-1.5 pl-8 pr-3 text-xs focus:outline-none"
+              onBeforeInput={(e) => {
+                const data = (e as unknown as InputEvent).data ?? '';
+                if (typeof data === 'string' && /[^\x00-\x7F]/.test(data)) {
+                  e.preventDefault();
+                }
+              }}
+            />
+          </div>
 
                       {/* 목록 */}
                       <div className="flex-1 overflow-y-auto">

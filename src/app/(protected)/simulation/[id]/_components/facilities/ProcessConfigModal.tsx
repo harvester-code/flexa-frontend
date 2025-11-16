@@ -237,6 +237,7 @@ export default function ProcessConfigModal({
                 type="text"
                 placeholder="e.g., Check In"
                 value={processName}
+                asciiOnly
                 onChange={(e) => setProcessName((e.target as HTMLInputElement).value)}
                 onKeyDown={handleKeyDown}
                 required
@@ -253,6 +254,7 @@ export default function ProcessConfigModal({
                 type="text"
                 placeholder="e.g., A~E, Gate1~5"
                 value={facilitiesInput}
+                asciiOnly
                 onChange={(e) => handleFacilityInputChange((e.target as HTMLInputElement).value)}
                 onKeyDown={handleKeyDown}
                 required

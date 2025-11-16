@@ -633,6 +633,7 @@ export default function DistributionSettings({
           type="text"
           placeholder={`Enter ${isNationality ? "property name (e.g., domestic, international or a,b,c)" : "profile name (e.g., business, leisure, premium or a,b,c)"}...`}
           value={newPropertyName}
+          asciiOnly
           onChange={(e) =>
             setNewPropertyName((e.target as HTMLInputElement).value)
           }
