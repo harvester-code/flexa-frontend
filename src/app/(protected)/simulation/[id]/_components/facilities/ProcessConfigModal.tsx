@@ -53,6 +53,19 @@ export default function ProcessConfigModal({
   const [zoneFacilityCounts, setZoneFacilityCounts] = useState<Record<string, number>>({});
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
+  const applyDefaultCountToZones = useCallback(
+    (value: string) => {
+      const parsed = parseInt(value || '0');
+      const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
+      setDefaultFacilityCount(count.toString());
+      const updatedCounts: Record<string, number> = {};
+      facilities.forEach((facility) => {
+        updatedCounts[facility.name] = count;
+      });
+      setZoneFacilityCounts(updatedCounts);
+    },
+    [facilities]
+  );
 
 
   // Zone별 시설 개수 변경 함수
@@ -66,7 +79,13 @@ export default function ProcessConfigModal({
   // 인라인 편집 관련 함수들
   const startEditing = useCallback(
     (zoneName: string) => {
-      const currentCount = zoneFacilityCounts[zoneName] || (defaultFacilityCount ? parseInt(defaultFacilityCount) : 10);
+      const zoneCount = zoneFacilityCounts[zoneName];
+      const currentCount =
+        typeof zoneCount === 'number'
+          ? zoneCount
+          : defaultFacilityCount
+            ? parseInt(defaultFacilityCount)
+            : 10;
       setEditingZone(zoneName);
       setEditingValue(currentCount.toString());
     },
@@ -75,8 +94,9 @@ export default function ProcessConfigModal({
 
   const finishEditing = useCallback(() => {
     if (editingZone) {
-      const newCount = editingValue === '' ? 0 : parseInt(editingValue);
-      const count = Math.max(0, Math.min(50, newCount));
+      const newCountRaw = editingValue.trim();
+      const parsed = parseInt(newCountRaw || '0');
+      const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
       handleZoneCountChange(editingZone, count);
     }
     setEditingZone(null);
@@ -193,11 +213,20 @@ export default function ProcessConfigModal({
   const handleSave = useCallback(() => {
     if (!processName.trim() || !facilitiesInput.trim()) return;
 
+    // Normalize zone counts so Create uses per-zone overrides (fallback to default)
+    const normalizedZoneCounts: Record<string, number> = {};
+    const defaultCount = defaultFacilityCount ? parseInt(defaultFacilityCount) : 10;
+    facilities.forEach((facility) => {
+      const raw = zoneFacilityCounts[facility.name];
+      const parsed = typeof raw === 'number' ? raw : defaultCount;
+      normalizedZoneCounts[facility.name] = Math.max(0, Math.min(50, isNaN(parsed) ? defaultCount : parsed));
+    });
+
     onSave({
       name: processName,
       facilities: facilities,
-      defaultFacilityCount: defaultFacilityCount ? parseInt(defaultFacilityCount) : 10,
-      zoneFacilityCounts: zoneFacilityCounts,
+      defaultFacilityCount: defaultCount,
+      zoneFacilityCounts: normalizedZoneCounts,
     });
 
     onClose();
@@ -265,29 +294,27 @@ export default function ProcessConfigModal({
                 <Building2 className="mr-2 inline h-4 w-4" />
                 Facilities/Zone
               </label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  value={defaultFacilityCount}
-                  onChange={(e) => {
-                    const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
-                    setDefaultFacilityCount(numericValue);
-
-                    // 모든 기존 Zone들의 count를 새로운 기본값으로 업데이트
-                    if (numericValue && facilities.length > 0) {
-                      const count = Math.min(50, Math.max(1, parseInt(numericValue)));
-                      const updatedCounts: Record<string, number> = {};
-                      facilities.forEach((facility) => {
-                        updatedCounts[facility.name] = count;
-                      });
-                      setZoneFacilityCounts(updatedCounts);
-                    }
-                  }}
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                  className="pr-8 text-center"
-                  placeholder="10"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500">EA</span>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={defaultFacilityCount}
+                      onChange={(e) => {
+                        const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
+                        setDefaultFacilityCount(numericValue);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const raw = ((e.target as HTMLInputElement).value || '').replace(/[^0-9]/g, '');
+                          setDefaultFacilityCount(raw);
+                          applyDefaultCountToZones(raw);
+                        }
+                      }}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                      className="pr-8 text-center"
+                      placeholder="10"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500">EA</span>
               </div>
             </div>
           </div>
@@ -303,7 +330,13 @@ export default function ProcessConfigModal({
                 </div>
                 <div className="grid grid-cols-6 gap-3 md:grid-cols-8 lg:grid-cols-10">
                   {facilities.map((facility, index) => {
-                    const count = zoneFacilityCounts[facility.name] || (defaultFacilityCount ? parseInt(defaultFacilityCount) : 10);
+                    const zoneCount = zoneFacilityCounts[facility.name];
+                    const count =
+                      typeof zoneCount === 'number'
+                        ? zoneCount
+                        : defaultFacilityCount
+                          ? parseInt(defaultFacilityCount)
+                          : 10;
                     const isEditing = editingZone === facility.name;
                     const colorClasses = [
                       'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
@@ -319,7 +352,7 @@ export default function ProcessConfigModal({
                       <div
                         key={facility.name}
                         className={`group relative flex h-16 w-16 flex-col items-center justify-center rounded-md bg-gradient-to-br ${colorClass} p-2 text-white shadow-sm transition-all duration-200 ${isEditing ? 'ring-2 ring-white ring-offset-2' : 'hover:scale-105 hover:shadow-md'}`}
-                        onDoubleClick={() => !isEditing && startEditing(facility.name)}
+                        onClick={() => !isEditing && startEditing(facility.name)}
                       >
                         <div className="mb-1 text-xs font-semibold">{facility.name}</div>
                         <div className="flex items-center justify-center">
@@ -334,6 +367,11 @@ export default function ProcessConfigModal({
                                   (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 50)
                                 ) {
                                   setEditingValue(numericValue);
+                                  if (editingZone) {
+                                    const parsed = parseInt(numericValue || '0');
+                                    const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
+                                    handleZoneCountChange(editingZone, count);
+                                  }
                                 }
                               }}
                               onKeyDown={handleEditKeyDown}

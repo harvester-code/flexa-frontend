@@ -46,7 +46,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const lastWarningAt = React.useRef<number>(0);
     const [showInlineWarning, setShowInlineWarning] = React.useState(false);
 
-    React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+    React.useImperativeHandle(ref, () => inputRef.current);
 
     const showAsciiWarning = React.useCallback(() => {
       const now = Date.now();
