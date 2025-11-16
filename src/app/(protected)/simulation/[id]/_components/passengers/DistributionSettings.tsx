@@ -40,6 +40,7 @@ import PercentageControl, {
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
+import { allocateFlightsSequential } from "./utils/flightAllocation";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
@@ -417,112 +418,16 @@ export default function DistributionSettings({
   // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
   const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
 
-  // 규칙의 조건을 column -> values 형태로 정규화 (originalConditions 우선)
-  const getConditionMap = useCallback((rule: Rule) => {
-    if (rule.originalConditions && typeof rule.originalConditions === "object") {
-      return rule.originalConditions;
-    }
-
-    const conditionMap: Record<string, string[]> = {};
-    rule.conditions.forEach((condition) => {
-      const parts = condition.split(": ");
-      if (parts.length === 2) {
-        const displayLabel = parts[0];
-        const value = parts[1];
-        const columnKey = getColumnName(displayLabel);
-
-        if (!conditionMap[columnKey]) {
-          conditionMap[columnKey] = [];
-        }
-        if (!conditionMap[columnKey].includes(value)) {
-          conditionMap[columnKey].push(value);
-        }
-      }
-    });
-    return conditionMap;
-  }, []);
-
-  // 조건 맵과 parquetMetadata로 매칭되는 항공편 Set 계산 (없으면 null 반환)
-  const getMatchingFlights = useCallback(
-    (conditionMap: Record<string, string[]>) => {
-      if (!parquetMetadata || parquetMetadata.length === 0) return null;
-
-      const setsByColumn: Array<Set<string>> = [];
-
-      Object.entries(conditionMap).forEach(([columnKey, values]) => {
-        // 동일 컬럼 또는 동일 라벨을 가진 컬럼을 우선 찾음
-        const columnData =
-          parquetMetadata.find((item) => item.column === columnKey) ||
-          parquetMetadata.find(
-            (item) => getColumnLabel(item.column) === getColumnLabel(columnKey)
-          );
-
-        if (!columnData) return;
-
-        const flightsInColumn = new Set<string>();
-        values.forEach((value) => {
-          const flightsForValue = columnData.values?.[value]?.flights;
-          if (flightsForValue) {
-            flightsForValue.forEach((flight) => flightsInColumn.add(flight));
-          }
-        });
-
-        if (flightsInColumn.size > 0) {
-          setsByColumn.push(flightsInColumn);
-        }
-      });
-
-      if (setsByColumn.length === 0) return null;
-      if (setsByColumn.length === 1) return setsByColumn[0];
-
-      // AND 조건: 컬럼별 세트의 교집합
-      let intersection = setsByColumn[0];
-      for (let i = 1; i < setsByColumn.length; i++) {
-        intersection = new Set(
-          [...intersection].filter((flight) => setsByColumn[i].has(flight))
-        );
-      }
-      return intersection;
-    },
-    [parquetMetadata]
-  );
-
   // 조건 겹침을 고려한 순차적 항공편 수 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
-    const sequentialCounts: Record<string, number> = {};
-    const usedFlightIds = new Set<string>();
-    let totalUsedFlights = 0;
-
-    // 각 규칙을 순서대로 적용 (위에서부터 소비)
-    createdRules.forEach((rule) => {
-      const conditionMap = getConditionMap(rule);
-      const matchingFlights = getMatchingFlights(conditionMap);
-
-      let actualCount = 0;
-
-      if (matchingFlights) {
-        // 아직 사용되지 않은 항공편만 추출
-        const availableFlights = [...matchingFlights].filter(
-          (flight) => !usedFlightIds.has(flight)
-        );
-        actualCount = availableFlights.length;
-        availableFlights.forEach((flight) => usedFlightIds.add(flight));
-      } else {
-        // 메타데이터가 없으면 보수적으로 순차 차감
-        const remainingTotal = TOTAL_FLIGHTS - totalUsedFlights;
-        actualCount = Math.max(
-          0,
-          Math.min(rule.flightCount, remainingTotal)
-        );
-      }
-
-      sequentialCounts[rule.id] = Math.max(0, actualCount);
-      totalUsedFlights += actualCount;
-    });
-
-    const totalFlightsUsed =
-      usedFlightIds.size > 0 ? usedFlightIds.size : totalUsedFlights;
-    const remainingFlights = Math.max(0, TOTAL_FLIGHTS - totalFlightsUsed);
+    const allocation = allocateFlightsSequential(
+      createdRules,
+      parquetMetadata,
+      TOTAL_FLIGHTS
+    );
+    const sequentialCounts = allocation.actualCounts;
+    const remainingFlights = allocation.remainingFlights;
+    const totalFlightsUsed = allocation.usedFlights;
 
     return {
       sequentialCounts,
@@ -530,7 +435,7 @@ export default function DistributionSettings({
       usedFlights: totalFlightsUsed,
       totalFlights: TOTAL_FLIGHTS,
     };
-  }, [createdRules, getConditionMap, getMatchingFlights, TOTAL_FLIGHTS]);
+  }, [createdRules, parquetMetadata, TOTAL_FLIGHTS]);
 
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
