@@ -417,98 +417,120 @@ export default function DistributionSettings({
   // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
   const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
 
+  // 규칙의 조건을 column -> values 형태로 정규화 (originalConditions 우선)
+  const getConditionMap = useCallback((rule: Rule) => {
+    if (rule.originalConditions && typeof rule.originalConditions === "object") {
+      return rule.originalConditions;
+    }
+
+    const conditionMap: Record<string, string[]> = {};
+    rule.conditions.forEach((condition) => {
+      const parts = condition.split(": ");
+      if (parts.length === 2) {
+        const displayLabel = parts[0];
+        const value = parts[1];
+        const columnKey = getColumnName(displayLabel);
+
+        if (!conditionMap[columnKey]) {
+          conditionMap[columnKey] = [];
+        }
+        if (!conditionMap[columnKey].includes(value)) {
+          conditionMap[columnKey].push(value);
+        }
+      }
+    });
+    return conditionMap;
+  }, []);
+
+  // 조건 맵과 parquetMetadata로 매칭되는 항공편 Set 계산 (없으면 null 반환)
+  const getMatchingFlights = useCallback(
+    (conditionMap: Record<string, string[]>) => {
+      if (!parquetMetadata || parquetMetadata.length === 0) return null;
+
+      const setsByColumn: Array<Set<string>> = [];
+
+      Object.entries(conditionMap).forEach(([columnKey, values]) => {
+        // 동일 컬럼 또는 동일 라벨을 가진 컬럼을 우선 찾음
+        const columnData =
+          parquetMetadata.find((item) => item.column === columnKey) ||
+          parquetMetadata.find(
+            (item) => getColumnLabel(item.column) === getColumnLabel(columnKey)
+          );
+
+        if (!columnData) return;
+
+        const flightsInColumn = new Set<string>();
+        values.forEach((value) => {
+          const flightsForValue = columnData.values?.[value]?.flights;
+          if (flightsForValue) {
+            flightsForValue.forEach((flight) => flightsInColumn.add(flight));
+          }
+        });
+
+        if (flightsInColumn.size > 0) {
+          setsByColumn.push(flightsInColumn);
+        }
+      });
+
+      if (setsByColumn.length === 0) return null;
+      if (setsByColumn.length === 1) return setsByColumn[0];
+
+      // AND 조건: 컬럼별 세트의 교집합
+      let intersection = setsByColumn[0];
+      for (let i = 1; i < setsByColumn.length; i++) {
+        intersection = new Set(
+          [...intersection].filter((flight) => setsByColumn[i].has(flight))
+        );
+      }
+      return intersection;
+    },
+    [parquetMetadata]
+  );
+
   // 조건 겹침을 고려한 순차적 항공편 수 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
     const sequentialCounts: Record<string, number> = {};
+    const usedFlightIds = new Set<string>();
     let totalUsedFlights = 0;
 
-    // 각 규칙을 순서대로 적용
-    createdRules.forEach((rule, index) => {
-      let availableCount = rule.flightCount;
+    // 각 규칙을 순서대로 적용 (위에서부터 소비)
+    createdRules.forEach((rule) => {
+      const conditionMap = getConditionMap(rule);
+      const matchingFlights = getMatchingFlights(conditionMap);
 
-      // 이전 규칙들과의 겹침 확인
-      for (let prevIndex = 0; prevIndex < index; prevIndex++) {
-        const prevRule = createdRules[prevIndex];
-        const prevActualCount = sequentialCounts[prevRule.id] || 0;
+      let actualCount = 0;
 
-        if (prevActualCount > 0) {
-          // 조건 겹침 확인 (정확한 교집합 계산)
-          const currentConditions = rule.conditions;
-          const prevConditions = prevRule.conditions;
-
-          // 겹치는 조건들 찾기
-          const intersection = currentConditions.filter((condition) =>
-            prevConditions.includes(condition)
-          );
-
-          if (intersection.length > 0) {
-            // OR 조건을 고려한 정확한 겹침 계산
-            // 예: Rule 1 (Airline A) = 118편 사용
-            //     Rule 2 (Airline B | Airline A + A21N | A333 | B77W) = 95편 요청
-            //     겹치는 부분: Airline A 조건만 겹침
-            //     사용 가능한 부분: Airline B 조건은 여전히 사용 가능
-
-            // 이전 규칙이 현재 규칙에 완전히 포함되는 경우만 제외
-            const isPrevCompletelyIncluded = prevConditions.every((condition) =>
-              currentConditions.includes(condition)
-            );
-
-            if (isPrevCompletelyIncluded) {
-              // 이전 규칙이 현재 규칙에 완전히 포함되는 경우에만 해당 부분 제외
-              // 하지만 OR 조건이 있으면 일부는 여전히 사용 가능할 수 있음
-
-              // 겹치는 비율을 더 정확하게 계산
-              // 전체 조건 중에서 겹치는 조건의 비율로 계산
-              const totalConditions = currentConditions.length;
-              const overlappingConditions = intersection.length;
-
-              // OR 조건을 고려한 겹침 비율 (보수적으로 계산)
-              let overlapRatio;
-              if (overlappingConditions === totalConditions) {
-                // 모든 조건이 겹치면 완전히 제외
-                overlapRatio = 1.0;
-              } else {
-                // 일부만 겹치면 OR 조건을 고려해서 비례적으로 계산
-                // 더 관대하게 계산 (OR 조건에서는 대안이 있기 때문)
-                overlapRatio =
-                  overlappingConditions /
-                  Math.max(totalConditions * 2, prevConditions.length * 2);
-              }
-
-              const reduction = Math.floor(prevActualCount * overlapRatio);
-              availableCount = Math.max(0, availableCount - reduction);
-            } else {
-              // 이전 규칙이 현재 규칙에 부분적으로만 겹치는 경우
-              // OR 조건을 고려해서 매우 관대하게 계산
-              const overlapRatio =
-                intersection.length /
-                (currentConditions.length + prevConditions.length);
-              const reduction = Math.floor(
-                prevActualCount * overlapRatio * 0.5
-              ); // 50% 할인
-              availableCount = Math.max(0, availableCount - reduction);
-            }
-          }
-        }
+      if (matchingFlights) {
+        // 아직 사용되지 않은 항공편만 추출
+        const availableFlights = [...matchingFlights].filter(
+          (flight) => !usedFlightIds.has(flight)
+        );
+        actualCount = availableFlights.length;
+        availableFlights.forEach((flight) => usedFlightIds.add(flight));
+      } else {
+        // 메타데이터가 없으면 보수적으로 순차 차감
+        const remainingTotal = TOTAL_FLIGHTS - totalUsedFlights;
+        actualCount = Math.max(
+          0,
+          Math.min(rule.flightCount, remainingTotal)
+        );
       }
 
-      // 전체 남은 항공편 수를 초과하지 않도록 제한
-      const remainingTotal = TOTAL_FLIGHTS - totalUsedFlights;
-      availableCount = Math.min(availableCount, remainingTotal);
-
-      sequentialCounts[rule.id] = Math.max(0, availableCount);
-      totalUsedFlights += availableCount;
+      sequentialCounts[rule.id] = Math.max(0, actualCount);
+      totalUsedFlights += actualCount;
     });
 
-    const remainingFlights = Math.max(0, TOTAL_FLIGHTS - totalUsedFlights);
+    const totalFlightsUsed =
+      usedFlightIds.size > 0 ? usedFlightIds.size : totalUsedFlights;
+    const remainingFlights = Math.max(0, TOTAL_FLIGHTS - totalFlightsUsed);
 
     return {
       sequentialCounts,
       remainingFlights,
-      usedFlights: totalUsedFlights,
+      usedFlights: totalFlightsUsed,
       totalFlights: TOTAL_FLIGHTS,
     };
-  }, [createdRules]); // createdRules가 변경될 때만 재계산
+  }, [createdRules, getConditionMap, getMatchingFlights, TOTAL_FLIGHTS]);
 
   // 드래그 앤 드랍 핸들러들
   const handleDragStart = (e: React.DragEvent, ruleId: string) => {
