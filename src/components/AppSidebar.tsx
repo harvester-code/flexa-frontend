@@ -127,6 +127,35 @@ function AppSidebar() {
     });
   };
 
+  // 🎯 Role 기반 메뉴 필터링 및 환경별 메뉴 필터링
+  const filteredMenuSections = menuSections.map((section) => {
+    if (section.title === 'Main') {
+      // viewer role인 경우 Simulation 메뉴 아이템 제거
+      const filteredItems = section.items.filter((item) => {
+        if (item.href === '/simulation') {
+          // operator 또는 admin만 Simulation 메뉴 표시
+          return userInfo?.role === 'operator' || userInfo?.role === 'admin';
+        }
+        return true;
+      });
+      return { ...section, items: filteredItems };
+    }
+    
+    if (section.title === 'Development') {
+      // 🎯 Development 섹션은 개발 환경에서만 표시
+      const filteredItems = section.items.filter((item) => {
+        if (item.href === '/components') {
+          // 개발 환경에서만 Components 메뉴 표시
+          return process.env.NODE_ENV === 'development';
+        }
+        return true;
+      });
+      return { ...section, items: filteredItems };
+    }
+    
+    return section;
+  });
+
   return (
     <aside
       className={cn(
@@ -177,47 +206,54 @@ function AppSidebar() {
 
       {/* 🎯 Navigation Menu - Section-based grouping */}
       <nav className="flex-1 space-y-6 p-4">
-        {menuSections.map((section, index) => (
-          <div key={section.title} className={cn('space-y-2', index > 0 && 'pt-12')}>
-            {/* Section title */}
-            {!isCollapsed && (
-              <div className="mb-3">
-                <h3 className="px-2 text-xs font-normal uppercase tracking-wide text-default-500">{section.title}</h3>
-                <div className="mt-2 h-px bg-border opacity-50" />
+        {filteredMenuSections.map((section, index) => {
+          // 빈 섹션은 렌더링하지 않음
+          if (section.items.length === 0) {
+            return null;
+          }
+
+          return (
+            <div key={section.title} className={cn('space-y-2', index > 0 && 'pt-12')}>
+              {/* Section title */}
+              {!isCollapsed && (
+                <div className="mb-3">
+                  <h3 className="px-2 text-xs font-normal uppercase tracking-wide text-default-500">{section.title}</h3>
+                  <div className="mt-2 h-px bg-border opacity-50" />
+                </div>
+              )}
+
+              {/* Section divider for collapsed state */}
+              {isCollapsed && <div className="mb-3 h-px bg-border opacity-30" />}
+
+              {/* Section menu items */}
+              <div className="space-y-1">
+                <Suspense
+                  fallback={section.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.href}
+                        variant="ghost"
+                        asChild
+                        className={cn(
+                          'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
+                          isCollapsed && 'justify-center px-2'
+                        )}
+                      >
+                        <Link href={item.href}>
+                          <Icon className="h-5 w-5" />
+                          {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
+                        </Link>
+                      </Button>
+                    );
+                  })}
+                >
+                  <MenuItems section={section} isCollapsed={isCollapsed} />
+                </Suspense>
               </div>
-            )}
-
-            {/* Section divider for collapsed state */}
-            {isCollapsed && <div className="mb-3 h-px bg-border opacity-30" />}
-
-            {/* Section menu items */}
-            <div className="space-y-1">
-              <Suspense
-                fallback={section.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.href}
-                      variant="ghost"
-                      asChild
-                      className={cn(
-                        'h-10 w-full justify-start text-sm font-medium text-default-900 hover:bg-primary-50 hover:text-primary-900',
-                        isCollapsed && 'justify-center px-2'
-                      )}
-                    >
-                      <Link href={item.href}>
-                        <Icon className="h-5 w-5" />
-                        {!isCollapsed && <span className="ml-3 font-medium">{item.label}</span>}
-                      </Link>
-                    </Button>
-                  );
-                })}
-              >
-                <MenuItems section={section} isCollapsed={isCollapsed} />
-              </Suspense>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* 🎯 Profile Dropdown with shadcn DropdownMenu */}

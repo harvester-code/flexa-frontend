@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { Clock, Save, Trash2 } from "lucide-react";
 import { APIRequestLog } from "@/types/simulationTypes";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
+import { useUser } from "@/queries/userQueries";
 import { timeToRelativeTime } from "@/lib/utils";
 import SimulationLoading from "../_components/SimulationLoading";
 import JSONDebugViewer from "./_components/shared/DebugViewer";
@@ -61,7 +63,9 @@ export default function SimulationDetail({
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[]>>;
 }) {
+  const router = useRouter();
   const { toast } = useToast();
+  const { data: user, isLoading: isUserLoading } = useUser();
 
   // ✅ simulationId를 맨 위로 이동 (다른 훅들보다 먼저)
   const simulationId = use(params).id;
@@ -142,6 +146,20 @@ export default function SimulationDetail({
     () => (lastSavedAt ? dayjs(lastSavedAt).format("YYYY-MM-DD HH:mm") : ""),
     [lastSavedAt]
   );
+
+  // 🎯 Role 기반 접근 제어: viewer는 Simulation 상세 페이지 접근 불가
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      if (user.role === 'viewer') {
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to access this page.',
+          variant: 'destructive',
+        });
+        router.push('/home');
+      }
+    }
+  }, [user, isUserLoading, router, toast]);
 
   useEffect(() => {
     if (queryScenarioAirport && !storeAirport) {
@@ -481,6 +499,11 @@ export default function SimulationDetail({
       { label: displayName },
     ];
   }, [displayScenarioName]);
+
+  // viewer인 경우 페이지 렌더링 방지
+  if (!isUserLoading && user?.role === 'viewer') {
+    return null;
+  }
 
   return (
     <>

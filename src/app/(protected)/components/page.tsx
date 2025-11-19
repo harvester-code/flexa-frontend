@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import type { Config, Data, Layout } from 'plotly.js';
 import { Calendar as CalendarIcon, Check, ChevronsUpDown, Save } from 'lucide-react';
@@ -117,6 +118,8 @@ const histogramShowcaseData = [
 const baseChartConfig: Partial<Config> = { displayModeBar: false, responsive: true };
 
 export default function ComponentsPage() {
+  const router = useRouter();
+
   // DatePicker for showcase
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [openDatePicker, setOpenDatePicker] = useState(false);
@@ -137,6 +140,18 @@ export default function ComponentsPage() {
   // Checkbox states for showcase
   const [isChecked, setIsChecked] = useState(false);
   const [isCheckedDisabled, setIsCheckedDisabled] = useState(true);
+
+  // 🎯 개발 환경에서만 Components 페이지 접근 허용
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') {
+      router.push('/home');
+    }
+  }, [router]);
+
+  // 개발 환경이 아니면 페이지 렌더링 방지
+  if (process.env.NODE_ENV !== 'development') {
+    return null;
+  }
 
   const frameworks = [
     { value: 'next.js', label: 'Next.js' },
