@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
 import { useUser } from '@/queries/userQueries';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import {
   DropdownMenu,
@@ -92,6 +93,7 @@ function MenuItems({ section, isCollapsed }: { section: (typeof menuSections)[0]
 
 function AppSidebar() {
   const { data: userInfo } = useUser();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
   // 🎯 shadcn 기반 상태 관리 - 초기값은 false로 설정 (hydration 문제 방지)
@@ -117,6 +119,10 @@ function AppSidebar() {
   }, [isCollapsed, isInitialized]);
 
   const handleSignOut = () => {
+    // 로그아웃 처리
+    // 서버 액션이 즉시 리다이렉트하므로, 쿼리 캐시는 제거하지 않습니다.
+    // 로그인 페이지로 리다이렉트되면 사이드바가 렌더링되지 않으므로 "User" 표시 문제가 없습니다.
+    // 다음 로그인 시 useUser의 staleTime: 0 설정으로 자동으로 최신 데이터를 가져옵니다.
     startTransition(() => {
       signOutAction();
     });

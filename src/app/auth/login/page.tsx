@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { signInAction } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
@@ -12,11 +13,14 @@ import { SubmitButton } from '@/components/ui/SubmitButton';
 function LoginForm() {
   const [state, formAction] = useActionState(signInAction, null);
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // 로그인 페이지 진입 시 모든 쿼리 캐시 제거 (이전 사용자 정보 제거)
+    queryClient.removeQueries({ queryKey: ['user'] });
+  }, [queryClient]);
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-gradient-to-b from-primary/15 via-background to-primary/10 xl:justify-between">
