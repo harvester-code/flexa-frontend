@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { ScenariosDataResponse, ScenarioData } from '@/types/homeTypes';
 import { fetchScenarios } from '@/services/simulationService';
+import { useUser } from './userQueries';
 
 const useScenarios = () => {
+  const { data: userInfo } = useUser();
+  
   const response = useQuery({
-    queryKey: ['scenarios'],
+    queryKey: ['scenarios', userInfo?.id], // user_id를 쿼리 키에 포함하여 사용자별 캐시 자동 분리
     queryFn: async (): Promise<ScenariosDataResponse> => {
       try {
         const { data } = await fetchScenarios();
@@ -23,6 +26,8 @@ const useScenarios = () => {
         throw error instanceof Error ? error : new Error('Failed to fetch scenarios');
       }
     },
+    enabled: !!userInfo?.id, // user_id가 있을 때만 쿼리 실행
+    // staleTime, gcTime은 전역 기본값 사용 (5분 캐싱)
   });
 
   return {

@@ -119,10 +119,9 @@ function AppSidebar() {
   }, [isCollapsed, isInitialized]);
 
   const handleSignOut = () => {
-    // 로그아웃 처리
-    // 서버 액션이 즉시 리다이렉트하므로, 쿼리 캐시는 제거하지 않습니다.
-    // 로그인 페이지로 리다이렉트되면 사이드바가 렌더링되지 않으므로 "User" 표시 문제가 없습니다.
-    // 다음 로그인 시 useUser의 staleTime: 0 설정으로 자동으로 최신 데이터를 가져옵니다.
+    // 로그아웃 시 모든 쿼리 캐시 제거 (다음 로그인 시 깨끗한 상태)
+    queryClient.clear();
+    
     startTransition(() => {
       signOutAction();
     });

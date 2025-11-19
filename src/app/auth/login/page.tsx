@@ -18,7 +18,7 @@ function LoginForm() {
 
   useEffect(() => {
     setMounted(true);
-    // 로그인 페이지 진입 시 모든 쿼리 캐시 제거 (이전 사용자 정보 제거)
+    // 로그인 페이지 진입 시 user 쿼리만 제거 (시나리오는 user_id가 쿼리 키에 포함되어 자동 분리됨)
     queryClient.removeQueries({ queryKey: ['user'] });
   }, [queryClient]);
 

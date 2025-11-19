@@ -52,10 +52,8 @@ const useUser = () => {
   return useQuery({
     queryKey: ['user'],
     queryFn: fetchUser,
-    staleTime: 0, // 항상 최신 데이터 가져오기 (로그인/로그아웃 시 즉시 반영)
-    gcTime: 0, // 캐시 시간 0으로 설정하여 즉시 제거
-    refetchOnMount: true, // 컴포넌트 마운트 시 항상 최신 데이터 가져오기
-    refetchOnWindowFocus: false, // 윈도우 포커스 시 refetch 비활성화 (불필요한 요청 방지)
+    // staleTime, gcTime은 전역 기본값 사용 (5분 캐싱)
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 refetch 비활성화
   });
 };
 
