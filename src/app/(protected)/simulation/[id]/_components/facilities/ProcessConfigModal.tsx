@@ -1,21 +1,24 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { Building2, MapPin, Plus, Save, Tag, X } from 'lucide-react';
-import { ProcessStep } from '@/types/simulationTypes';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
-import { formatProcessName } from '@/lib/utils';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Building2, MapPin, Plus, Save, Tag, X } from "lucide-react";
+import { ProcessStep } from "@/types/simulationTypes";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { formatProcessName } from "@/lib/utils";
 
 // 시설 타입 정의
 type FacilityItem = {
   name: string;
   isActive: boolean;
 };
-
-
 
 interface ProcessConfigModalProps {
   isOpen: boolean;
@@ -33,7 +36,7 @@ interface ProcessConfigModalProps {
     defaultFacilityCount: number;
     zoneFacilityCounts: Record<string, number>;
   }) => void;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
   parquetMetadata?: any; // 🆕 동적 조건 데이터
 }
@@ -46,74 +49,94 @@ export default function ProcessConfigModal({
   mode,
   processFlow = [], // 🆕 현재 프로세스 플로우
 }: ProcessConfigModalProps) {
-  const [processName, setProcessName] = useState('');
-  const [facilitiesInput, setFacilitiesInput] = useState('');
+  const [processName, setProcessName] = useState("");
+  const [facilitiesInput, setFacilitiesInput] = useState("");
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
-  const [defaultFacilityCount, setDefaultFacilityCount] = useState<string>('');
-  const [zoneFacilityCounts, setZoneFacilityCounts] = useState<Record<string, number>>({});
+  const [defaultFacilityCount, setDefaultFacilityCount] = useState<string>("");
+  const [zoneFacilityCounts, setZoneFacilityCounts] = useState<
+    Record<string, number>
+  >({});
   const [editingZone, setEditingZone] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
+  const [editingValue, setEditingValue] = useState<string>("");
+  const editingZoneRef = useRef<string | null>(null); // stale closure 방지용
+
   const applyDefaultCountToZones = useCallback(
     (value: string) => {
-      const parsed = parseInt(value || '0');
+      const parsed = parseInt(value || "0");
       const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
       setDefaultFacilityCount(count.toString());
-      const updatedCounts: Record<string, number> = {};
-      facilities.forEach((facility) => {
-        updatedCounts[facility.name] = count;
+      // 기존 zoneFacilityCounts를 보존하면서, 새로 추가된 존에만 기본값 적용
+      setZoneFacilityCounts((prev) => {
+        const updatedCounts: Record<string, number> = { ...prev };
+        facilities.forEach((facility) => {
+          // 기존에 값이 설정되지 않은 존에만 기본값 적용
+          if (!(facility.name in updatedCounts)) {
+            updatedCounts[facility.name] = count;
+          }
+        });
+        return updatedCounts;
       });
-      setZoneFacilityCounts(updatedCounts);
     },
     [facilities]
   );
 
-
   // Zone별 시설 개수 변경 함수
-  const handleZoneCountChange = useCallback((zoneName: string, count: number) => {
-    setZoneFacilityCounts((prev) => ({
-      ...prev,
-      [zoneName]: Math.max(0, Math.min(50, count)), // 0~50 사이로 제한
-    }));
-  }, []);
+  const handleZoneCountChange = useCallback(
+    (zoneName: string, count: number) => {
+      setZoneFacilityCounts((prev) => ({
+        ...prev,
+        [zoneName]: Math.max(0, Math.min(50, count)), // 0~50 사이로 제한
+      }));
+    },
+    []
+  );
 
   // 인라인 편집 관련 함수들
   const startEditing = useCallback(
     (zoneName: string) => {
       const zoneCount = zoneFacilityCounts[zoneName];
       const currentCount =
-        typeof zoneCount === 'number'
+        typeof zoneCount === "number"
           ? zoneCount
           : defaultFacilityCount
             ? parseInt(defaultFacilityCount)
             : 10;
+      editingZoneRef.current = zoneName; // ref에 저장 (stale closure 방지)
       setEditingZone(zoneName);
       setEditingValue(currentCount.toString());
     },
     [zoneFacilityCounts, defaultFacilityCount]
   );
 
-  const finishEditing = useCallback(() => {
-    if (editingZone) {
-      const newCountRaw = editingValue.trim();
-      const parsed = parseInt(newCountRaw || '0');
-      const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
-      handleZoneCountChange(editingZone, count);
-    }
-    setEditingZone(null);
-    setEditingValue('');
-  }, [editingZone, editingValue, handleZoneCountChange]);
+  const finishEditing = useCallback(
+    (value?: string) => {
+      const zone = editingZoneRef.current; // ref에서 읽기 (항상 최신값)
+      if (zone) {
+        const newCountRaw = (value ?? "").trim();
+        const parsed = parseInt(newCountRaw || "0");
+        const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
+        handleZoneCountChange(zone, count);
+      }
+      editingZoneRef.current = null;
+      setEditingZone(null);
+      setEditingValue("");
+    },
+    [handleZoneCountChange]
+  );
 
   const cancelEditing = useCallback(() => {
+    editingZoneRef.current = null;
     setEditingZone(null);
-    setEditingValue('');
+    setEditingValue("");
   }, []);
 
   const handleEditKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
         e.preventDefault();
-        finishEditing();
-      } else if (e.key === 'Escape') {
+        const currentValue = (e.target as HTMLInputElement).value;
+        finishEditing(currentValue);
+      } else if (e.key === "Escape") {
         e.preventDefault();
         cancelEditing();
       }
@@ -126,36 +149,42 @@ export default function ProcessConfigModal({
     let expanded = input.toUpperCase(); // 모든 입력을 대문자로 변환
 
     // 범용적 숫자 범위 패턴 처리
-    expanded = expanded.replace(/(.*?)(\d+)~(\d+)/g, (match, beforeLastNum, startNum, endNum) => {
-      const start = parseInt(startNum);
-      const end = parseInt(endNum);
+    expanded = expanded.replace(
+      /(.*?)(\d+)~(\d+)/g,
+      (match, beforeLastNum, startNum, endNum) => {
+        const start = parseInt(startNum);
+        const end = parseInt(endNum);
 
-      if (start > end) return '';
+        if (start > end) return "";
 
-      const items: string[] = [];
-      for (let i = start; i <= end; i++) {
-        items.push(beforeLastNum + i);
+        const items: string[] = [];
+        for (let i = start; i <= end; i++) {
+          items.push(beforeLastNum + i);
+        }
+        return items.join(",");
       }
-      return items.join(',');
-    });
+    );
 
     // 알파벳 패턴 처리
-    expanded = expanded.replace(/([A-Za-z]*)([A-Z])~([A-Z])/g, (match, prefix, start, end) => {
-      const startCode = start.charCodeAt(0);
-      const endCode = end.charCodeAt(0);
+    expanded = expanded.replace(
+      /([A-Za-z]*)([A-Z])~([A-Z])/g,
+      (match, prefix, start, end) => {
+        const startCode = start.charCodeAt(0);
+        const endCode = end.charCodeAt(0);
 
-      if (startCode > endCode) return match;
+        if (startCode > endCode) return match;
 
-      const items: string[] = [];
-      for (let i = startCode; i <= endCode; i++) {
-        items.push(prefix + String.fromCharCode(i));
+        const items: string[] = [];
+        for (let i = startCode; i <= endCode; i++) {
+          items.push(prefix + String.fromCharCode(i));
+        }
+        return items.join(",");
       }
-      return items.join(',');
-    });
+    );
 
     // 최종 시설 목록 생성
     const facilityList = expanded
-      .split(',')
+      .split(",")
       .map((f) => f.trim())
       .filter((f) => f.length > 0)
       .map((name) => ({
@@ -166,23 +195,32 @@ export default function ProcessConfigModal({
     return facilityList;
   }, []);
 
-
-
   // Modal 열릴 때 데이터 초기화
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'edit' && processData) {
+      // 편집 상태 초기화
+      editingZoneRef.current = null;
+      setEditingZone(null);
+      setEditingValue("");
+
+      if (mode === "edit" && processData) {
         setProcessName(processData.name);
-        setFacilitiesInput(processData.facilities.join(','));
-        setFacilities(processData.facilities.map((name) => ({ name, isActive: true })));
-        setDefaultFacilityCount(processData.defaultFacilityCount ? processData.defaultFacilityCount.toString() : '');
+        setFacilitiesInput(processData.facilities.join(","));
+        setFacilities(
+          processData.facilities.map((name) => ({ name, isActive: true }))
+        );
+        setDefaultFacilityCount(
+          processData.defaultFacilityCount
+            ? processData.defaultFacilityCount.toString()
+            : ""
+        );
         setZoneFacilityCounts(processData.zoneFacilityCounts || {});
       } else {
         // 새로 생성하는 경우 초기화
-        setProcessName('');
-        setFacilitiesInput('');
+        setProcessName("");
+        setFacilitiesInput("");
         setFacilities([]);
-        setDefaultFacilityCount('');
+        setDefaultFacilityCount("");
         setZoneFacilityCounts({});
       }
     }
@@ -196,17 +234,23 @@ export default function ProcessConfigModal({
         const expandedFacilities = expandFacilityNames(value);
         setFacilities(expandedFacilities);
         // Zone Names가 입력되면 바로 기본값을 각 Zone에 적용
-        const newCounts: Record<string, number> = {};
-        expandedFacilities.forEach((facility) => {
-          newCounts[facility.name] = zoneFacilityCounts[facility.name] || (defaultFacilityCount ? parseInt(defaultFacilityCount) : 10);
+        // 함수형 업데이트를 사용하여 최신 zoneFacilityCounts와 defaultFacilityCount를 참조
+        setZoneFacilityCounts((prev) => {
+          const newCounts: Record<string, number> = {};
+          expandedFacilities.forEach((facility) => {
+            // 기존 값이 있으면 유지, 없으면 기본값 사용
+            newCounts[facility.name] =
+              prev[facility.name] ||
+              (defaultFacilityCount ? parseInt(defaultFacilityCount) : 10);
+          });
+          return newCounts;
         });
-        setZoneFacilityCounts(newCounts);
       } else {
         setFacilities([]);
         setZoneFacilityCounts({});
       }
     },
-    [expandFacilityNames, defaultFacilityCount, zoneFacilityCounts]
+    [expandFacilityNames, defaultFacilityCount]
   );
 
   // 저장 처리
@@ -215,11 +259,16 @@ export default function ProcessConfigModal({
 
     // Normalize zone counts so Create uses per-zone overrides (fallback to default)
     const normalizedZoneCounts: Record<string, number> = {};
-    const defaultCount = defaultFacilityCount ? parseInt(defaultFacilityCount) : 10;
+    const defaultCount = defaultFacilityCount
+      ? parseInt(defaultFacilityCount)
+      : 10;
     facilities.forEach((facility) => {
       const raw = zoneFacilityCounts[facility.name];
-      const parsed = typeof raw === 'number' ? raw : defaultCount;
-      normalizedZoneCounts[facility.name] = Math.max(0, Math.min(50, isNaN(parsed) ? defaultCount : parsed));
+      const parsed = typeof raw === "number" ? raw : defaultCount;
+      normalizedZoneCounts[facility.name] = Math.max(
+        0,
+        Math.min(50, isNaN(parsed) ? defaultCount : parsed)
+      );
     });
 
     onSave({
@@ -230,12 +279,19 @@ export default function ProcessConfigModal({
     });
 
     onClose();
-  }, [processName, facilities, defaultFacilityCount, zoneFacilityCounts, onSave, onClose]);
+  }, [
+    processName,
+    facilities,
+    defaultFacilityCount,
+    zoneFacilityCounts,
+    onSave,
+    onClose,
+  ]);
 
   // 엔터키 처리
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && processName.trim() && facilitiesInput.trim()) {
+      if (e.key === "Enter" && processName.trim() && facilitiesInput.trim()) {
         e.preventDefault();
         handleSave();
       }
@@ -266,7 +322,9 @@ export default function ProcessConfigModal({
                 type="text"
                 placeholder="e.g., Check In"
                 value={processName}
-                onChange={(e) => setProcessName((e.target as HTMLInputElement).value)}
+                onChange={(e) =>
+                  setProcessName((e.target as HTMLInputElement).value)
+                }
                 onKeyDown={handleKeyDown}
                 required
               />
@@ -282,7 +340,11 @@ export default function ProcessConfigModal({
                 type="text"
                 placeholder="e.g., A~E, Gate1~5"
                 value={facilitiesInput}
-                onChange={(e) => handleFacilityInputChange((e.target as HTMLInputElement).value)}
+                onChange={(e) =>
+                  handleFacilityInputChange(
+                    (e.target as HTMLInputElement).value
+                  )
+                }
                 onKeyDown={handleKeyDown}
                 required
               />
@@ -294,27 +356,33 @@ export default function ProcessConfigModal({
                 <Building2 className="mr-2 inline h-4 w-4" />
                 Facilities/Zone
               </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      value={defaultFacilityCount}
-                      onChange={(e) => {
-                        const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
-                        setDefaultFacilityCount(numericValue);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const raw = ((e.target as HTMLInputElement).value || '').replace(/[^0-9]/g, '');
-                          setDefaultFacilityCount(raw);
-                          applyDefaultCountToZones(raw);
-                        }
-                      }}
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="pr-8 text-center"
-                      placeholder="10"
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500">EA</span>
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={defaultFacilityCount}
+                  onChange={(e) => {
+                    const numericValue = (
+                      e.target as HTMLInputElement
+                    ).value.replace(/[^0-9]/g, "");
+                    setDefaultFacilityCount(numericValue);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const raw = (
+                        (e.target as HTMLInputElement).value || ""
+                      ).replace(/[^0-9]/g, "");
+                      setDefaultFacilityCount(raw);
+                      applyDefaultCountToZones(raw);
+                    }
+                  }}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="pr-8 text-center"
+                  placeholder="10"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                  EA
+                </span>
               </div>
             </div>
           </div>
@@ -324,7 +392,9 @@ export default function ProcessConfigModal({
             {processName && facilities.length > 0 ? (
               <>
                 <div className="mb-4 flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-900">{processName}</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {processName}
+                  </span>
                   <span className="text-sm text-gray-400">→</span>
                   <span className="text-sm text-gray-600">Zones</span>
                 </div>
@@ -332,51 +402,61 @@ export default function ProcessConfigModal({
                   {facilities.map((facility, index) => {
                     const zoneCount = zoneFacilityCounts[facility.name];
                     const count =
-                      typeof zoneCount === 'number'
+                      typeof zoneCount === "number"
                         ? zoneCount
                         : defaultFacilityCount
                           ? parseInt(defaultFacilityCount)
                           : 10;
                     const isEditing = editingZone === facility.name;
                     const colorClasses = [
-                      'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-                      'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-                      'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-                      'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
-                      'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
-                      'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
+                      "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
+                      "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700",
+                      "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
+                      "from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700",
+                      "from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700",
+                      "from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700",
                     ];
-                    const colorClass = colorClasses[index % colorClasses.length];
+                    const colorClass =
+                      colorClasses[index % colorClasses.length];
 
                     return (
                       <div
                         key={facility.name}
-                        className={`group relative flex h-16 w-16 flex-col items-center justify-center rounded-md bg-gradient-to-br ${colorClass} p-2 text-white shadow-sm transition-all duration-200 ${isEditing ? 'ring-2 ring-white ring-offset-2' : 'hover:scale-105 hover:shadow-md'}`}
-                        onClick={() => !isEditing && startEditing(facility.name)}
+                        className={`group relative flex h-16 w-16 flex-col items-center justify-center rounded-md bg-gradient-to-br ${colorClass} p-2 text-white shadow-sm transition-all duration-200 ${isEditing ? "ring-2 ring-white ring-offset-2" : "hover:scale-105 hover:shadow-md"}`}
+                        onClick={() =>
+                          !isEditing && startEditing(facility.name)
+                        }
                       >
-                        <div className="mb-1 text-xs font-semibold">{facility.name}</div>
+                        <div className="mb-1 text-xs font-semibold">
+                          {facility.name}
+                        </div>
                         <div className="flex items-center justify-center">
                           {isEditing ? (
                             <input
                               type="text"
                               value={editingValue}
                               onChange={(e) => {
-                                const numericValue = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '');
+                                const numericValue = (
+                                  e.target as HTMLInputElement
+                                ).value.replace(/[^0-9]/g, "");
                                 if (
-                                  numericValue === '' ||
-                                  (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 50)
+                                  numericValue === "" ||
+                                  (parseInt(numericValue) >= 0 &&
+                                    parseInt(numericValue) <= 50)
                                 ) {
                                   setEditingValue(numericValue);
-                                  if (editingZone) {
-                                    const parsed = parseInt(numericValue || '0');
-                                    const count = Math.max(0, Math.min(50, isNaN(parsed) ? 0 : parsed));
-                                    handleZoneCountChange(editingZone, count);
-                                  }
                                 }
                               }}
                               onKeyDown={handleEditKeyDown}
-                              onBlur={finishEditing}
-                              onFocus={(e) => (e.target as HTMLInputElement).select()}
+                              onBlur={(e) => {
+                                const currentValue = (
+                                  e.target as HTMLInputElement
+                                ).value;
+                                finishEditing(currentValue);
+                              }}
+                              onFocus={(e) =>
+                                (e.target as HTMLInputElement).select()
+                              }
                               className="w-6 rounded border-2 border-white bg-white/90 text-center text-xs font-bold text-gray-800 outline-none"
                               autoFocus
                             />
@@ -397,7 +477,9 @@ export default function ProcessConfigModal({
               </>
             ) : (
               <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-gray-400">Enter zone names to configure facilities</p>
+                <p className="text-sm text-gray-400">
+                  Enter zone names to configure facilities
+                </p>
               </div>
             )}
           </div>
@@ -409,7 +491,10 @@ export default function ProcessConfigModal({
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!processName.trim() || !facilitiesInput.trim()}>
+          <Button
+            onClick={handleSave}
+            disabled={!processName.trim() || !facilitiesInput.trim()}
+          >
             <Save className="mr-2 h-4 w-4" />
             Create Process
           </Button>

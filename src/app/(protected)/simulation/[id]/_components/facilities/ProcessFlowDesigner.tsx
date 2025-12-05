@@ -497,38 +497,34 @@ export default function ProcessFlowDesigner({
   );
 
   const finishEditingZone = useCallback(() => {
-    if (editingZone && editedProcess && selectedProcessIndex !== null) {
+    if (editingZone && editedProcess) {
       const newCount =
         editingValue === ""
           ? defaultFacilityCount || 1
           : parseInt(editingValue);
       const count = Math.max(1, Math.min(50, newCount));
 
-      // Get current process from processFlow for reference
-      const currentProcess = processFlow[selectedProcessIndex];
-      // Just get any existing facility data for period reference
-      const existingFacility = processFlow
-        .flatMap((p) => Object.values(p.zones || {}))
-        .flatMap((z: any) => z.facilities || [])
-        .find((f: any) => f?.operating_schedule?.time_blocks?.[0]?.period);
+      // Use the selected process (when editing) if available to preserve original data
+      const currentProcess =
+        selectedProcessIndex !== null
+          ? processFlow[selectedProcessIndex]
+          : null;
       const processFlowFacilities =
         currentProcess?.zones?.[editingZone]?.facilities || [];
       const editedFacilities =
-        editedProcess.zones[editingZone]?.facilities || [];
+        editedProcess.zones?.[editingZone]?.facilities || [];
 
       // Update the specific zone's facility count while preserving schedules
       const updatedZones = { ...editedProcess.zones };
       const facilities: any[] = [];
 
       for (let i = 1; i <= count; i++) {
-        // Priority: processFlow > editedProcess > new
+        // Priority: existing facilities from processFlow (when editing) > local edited data > new
         if (i <= processFlowFacilities.length) {
-          // Preserve from processFlow (original data)
           facilities.push({
             ...processFlowFacilities[i - 1],
           });
         } else if (i <= editedFacilities.length) {
-          // Preserve from edited process
           facilities.push({
             ...editedFacilities[i - 1],
           });
