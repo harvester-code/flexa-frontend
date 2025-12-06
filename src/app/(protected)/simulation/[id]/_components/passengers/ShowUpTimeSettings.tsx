@@ -13,10 +13,7 @@ import {
   XCircle,
   Plane,
 } from "lucide-react";
-import {
-  createPassengerShowUp,
-  saveScenarioMetadata,
-} from "@/services/simulationService";
+import { createPassengerShowUp } from "@/services/simulationService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -374,26 +371,7 @@ export default function ShowUpTimeSettings({
         requestBody
       );
 
-      // S3 저장 처리
-      try {
-        // 전체 메타데이터 수집
-        const completeMetadata = {
-          ...useSimulationStore.getState(),
-          savedAt: new Date().toISOString(),
-        };
-
-        // S3 저장 실행
-        const { data: saveResult } = await saveScenarioMetadata(
-          simulationId,
-          completeMetadata
-        );
-
-        // 저장 성공 시 lastSavedAt 업데이트
-        const savedTimestamp = new Date().toISOString();
-        useSimulationStore.getState().setLastSavedAt(savedTimestamp);
-      } catch (saveError) {
-        // 저장 실패는 조용히 처리
-      }
+      // S3 저장은 Save 버튼을 통해서만 수행됨
 
       toast({
         title: "Passenger Schedule Generated",

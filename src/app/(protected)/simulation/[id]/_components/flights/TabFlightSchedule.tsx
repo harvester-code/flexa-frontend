@@ -13,7 +13,6 @@ import {
 import {
   getFlightFilters,
   getFlightSchedules,
-  saveScenarioMetadata,
 } from "@/services/simulationService";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from "../../../_components/SimulationLoading";
@@ -477,23 +476,7 @@ function TabFlightSchedule({
 
         // 🆕 parquet_metadata는 하드코딩된 컬럼으로 대체됨 (제거됨)
 
-        // S3 저장 처리
-        try {
-          // 전체 메타데이터 수집
-          const completeMetadata = {
-            ...useSimulationStore.getState(),
-            savedAt: new Date().toISOString(),
-          };
-
-          // S3 저장 실행
-          const { data: saveResult } = await saveScenarioMetadata(simulationId, completeMetadata);
-
-          // 저장 성공 시 lastSavedAt 업데이트
-          const savedTimestamp = new Date().toISOString();
-          useSimulationStore.getState().setLastSavedAt(savedTimestamp);
-        } catch (saveError) {
-          // 저장 실패는 조용히 처리
-        }
+        // S3 저장은 Save 버튼을 통해서만 수행됨
 
         return data;
       } catch (error: any) {
