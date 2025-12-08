@@ -34,7 +34,10 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { runSimulation } from "@/services/simulationService";
+import {
+  runSimulation,
+  saveScenarioMetadata,
+} from "@/services/simulationService";
 import { useToast } from "@/hooks/useToast";
 import { createClient } from "@/lib/auth/client";
 import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
@@ -1158,6 +1161,21 @@ export default function ProcessFlowDesigner({
         status: "loading",
       });
 
+      // 🆕 시뮬레이션 실행 전 메타데이터 저장 (S3 저장 및 Supabase 업데이트)
+      const simulationState = useSimulationStore.getState();
+      const completeMetadata = {
+        ...simulationState,
+        terminalLayout: simulationState.terminalLayout || { zoneAreas: {} },
+        savedAt: new Date().toISOString(),
+        context: {
+          ...simulationState.context,
+          date:
+            simulationState.context.date ||
+            new Date().toISOString().split("T")[0],
+        },
+      };
+      await saveScenarioMetadata(simulationId, completeMetadata);
+
       const response = await runSimulation(
         simulationId,
         sanitizedProcessFlow,
@@ -1612,36 +1630,46 @@ export default function ProcessFlowDesigner({
                                           count < currentFacilityCount
                                         ) {
                                           // Decrease: Remove facilities from the end (제로 패딩 유지)
-                                          const digits = count.toString().length;
-                                          const reindexedFacilities = currentFacilities
-                                            .slice(0, count)
-                                            .map((f: any, idx: number) => {
-                                              const paddedIndex = (idx + 1).toString().padStart(digits, '0');
-                                              return {
-                                                ...f,
-                                                id: `${zoneName}_${paddedIndex}`,
-                                              };
-                                            });
-                                          
+                                          const digits =
+                                            count.toString().length;
+                                          const reindexedFacilities =
+                                            currentFacilities
+                                              .slice(0, count)
+                                              .map((f: any, idx: number) => {
+                                                const paddedIndex = (idx + 1)
+                                                  .toString()
+                                                  .padStart(digits, "0");
+                                                return {
+                                                  ...f,
+                                                  id: `${zoneName}_${paddedIndex}`,
+                                                };
+                                              });
+
                                           updatedZones[zoneName] = {
                                             facilities: reindexedFacilities,
                                           };
                                         } else {
                                           // Increase: Reformat existing IDs and add new facilities
-                                          const digits = count.toString().length; // 최종 개수 기준으로 자릿수 결정
-                                          
+                                          const digits =
+                                            count.toString().length; // 최종 개수 기준으로 자릿수 결정
+
                                           // 기존 시설들의 ID를 제로 패딩으로 리포맷
-                                          const reformattedFacilities = currentFacilities.map(
-                                            (f: any, idx: number) => {
-                                              const paddedIndex = (idx + 1).toString().padStart(digits, '0');
-                                              return {
-                                                ...f,
-                                                id: `${zoneName}_${paddedIndex}`,
-                                              };
-                                            }
-                                          );
-                                          
-                                          const newFacilities = [...reformattedFacilities];
+                                          const reformattedFacilities =
+                                            currentFacilities.map(
+                                              (f: any, idx: number) => {
+                                                const paddedIndex = (idx + 1)
+                                                  .toString()
+                                                  .padStart(digits, "0");
+                                                return {
+                                                  ...f,
+                                                  id: `${zoneName}_${paddedIndex}`,
+                                                };
+                                              }
+                                            );
+
+                                          const newFacilities = [
+                                            ...reformattedFacilities,
+                                          ];
 
                                           // Find the highest existing ID number
                                           const existingIds =
@@ -1702,8 +1730,10 @@ export default function ProcessFlowDesigner({
                                               maxId +
                                               (i - currentFacilityCount) +
                                               1;
-                                            const paddedId = newId.toString().padStart(digits, '0');
-                                            
+                                            const paddedId = newId
+                                              .toString()
+                                              .padStart(digits, "0");
+
                                             newFacilities.push({
                                               id: `${zoneName}_${paddedId}`,
                                               operating_schedule: {
@@ -1902,12 +1932,11 @@ export default function ProcessFlowDesigner({
                                   );
                                   const processTime =
                                     numericValue === ""
-                                      ? 1
+                                      ? null
                                       : parseInt(numericValue);
                                   setEditedProcess({
                                     ...editedProcess,
-                                    process_time_seconds:
-                                      processTime >= 1 ? processTime : 1,
+                                    process_time_seconds: processTime,
                                   });
                                 }}
                                 onClick={(e) =>
