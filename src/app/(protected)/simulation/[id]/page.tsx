@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import { Clock, Save, Trash2 } from "lucide-react";
+import { Clock, Save, Trash2, Bot } from "lucide-react";
 import { APIRequestLog } from "@/types/simulationTypes";
 import {
   deleteScenarioMetadata,
@@ -38,6 +38,7 @@ import TabDefault from "./_components/shared/TabDefault";
 import TabFlightSchedule from "./_components/flights/TabFlightSchedule";
 import TabPassengerSchedule from "./_components/passengers/TabPassengerSchedule";
 import TabProcessingProcedures from "./_components/facilities/TabProcessingProcedures";
+import AIChatSidebar from "./_components/facilities/AIChatSidebar";
 import { useLoadScenarioData } from "./_hooks/useLoadScenarioData";
 import { useScenarioProfileStore, useSimulationStore } from "./_stores";
 
@@ -48,11 +49,7 @@ const tabs: { text: string; number: number }[] = [
 ];
 
 // Scenario name display defaults to the simulation ID when no name is available
-function ScenarioNameDisplay({
-  label,
-}: {
-  label: string;
-}) {
+function ScenarioNameDisplay({ label }: { label: string }) {
   return <dd suppressHydrationWarning>{label}</dd>;
 }
 
@@ -71,7 +68,7 @@ export default function SimulationDetail({
   const simulationId = use(params).id;
 
   const resolvedSearchParams = use(
-    searchParams ?? Promise.resolve({} as Record<string, string | string[]>)
+    searchParams ?? Promise.resolve({} as Record<string, string | string[]>),
   );
 
   const queryScenarioName = useMemo(() => {
@@ -96,7 +93,7 @@ export default function SimulationDetail({
 
   // 개별 store에서 필요한 데이터만 직접 가져오기
   const currentScenarioTab = useScenarioProfileStore(
-    (s) => s.currentScenarioTab
+    (s) => s.currentScenarioTab,
   );
   const scenarioName = useScenarioProfileStore((s) => s.scenarioName);
   const scenarioHistory = useScenarioProfileStore((s) => s.scenarioHistory);
@@ -115,48 +112,48 @@ export default function SimulationDetail({
   }, [queryScenarioName, scenarioName, simulationId]);
 
   const setCurrentScenarioTab = useScenarioProfileStore(
-    (s) => s.setCurrentScenarioTab
+    (s) => s.setCurrentScenarioTab,
   );
   const loadScenarioProfileMetadata = useScenarioProfileStore(
-    (s) => s.loadMetadata
+    (s) => s.loadMetadata,
   );
 
   const flightScheduleCompleted = useSimulationStore(
-    (s) => s.workflow.step1Completed
+    (s) => s.workflow.step1Completed,
   );
   const passengerScheduleCompleted = useSimulationStore(
-    (s) => s.workflow.step2Completed
+    (s) => s.workflow.step2Completed,
   );
   const appliedFilterResult = useSimulationStore(
-    (s) => s.flight.appliedFilterResult
+    (s) => s.flight.appliedFilterResult,
   );
   const passengerChartResult = useSimulationStore(
-    (s) => s.passenger.chartResult
+    (s) => s.passenger.chartResult,
   );
   const storeAirport = useSimulationStore((s) => s.context.airport);
   const setStoreAirport = useSimulationStore((s) => s.setAirport);
   const lastSavedAt = useSimulationStore(
-    (s) => s.savedAt || s.context.lastSavedAt || null
+    (s) => s.savedAt || s.context.lastSavedAt || null,
   );
   const lastSavedRelative = useMemo(
     () => (lastSavedAt ? timeToRelativeTime(lastSavedAt) : ""),
-    [lastSavedAt]
+    [lastSavedAt],
   );
   const lastSavedTooltip = useMemo(
     () => (lastSavedAt ? dayjs(lastSavedAt).format("YYYY-MM-DD HH:mm") : ""),
-    [lastSavedAt]
+    [lastSavedAt],
   );
 
   // 🎯 Role 기반 접근 제어: viewer는 Simulation 상세 페이지 접근 불가
   useEffect(() => {
     if (!isUserLoading && user) {
-      if (user.role === 'viewer') {
+      if (user.role === "viewer") {
         toast({
-          title: 'Access Denied',
-          description: 'You do not have permission to access this page.',
-          variant: 'destructive',
+          title: "Access Denied",
+          description: "You do not have permission to access this page.",
+          variant: "destructive",
         });
-        router.push('/home');
+        router.push("/home");
       }
     }
   }, [user, isUserLoading, router, toast]);
@@ -189,11 +186,10 @@ export default function SimulationDetail({
       ) {
         // 🔄 시설 ID 마이그레이션: A_1 → A_01
         if (metadata.process_flow && Array.isArray(metadata.process_flow)) {
-          const { migrateProcessFlowFacilityIds } = await import(
-            "./_components/facilities/helpers"
-          );
+          const { migrateProcessFlowFacilityIds } =
+            await import("./_components/facilities/helpers");
           metadata.process_flow = migrateProcessFlowFacilityIds(
-            metadata.process_flow
+            metadata.process_flow,
           );
         }
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
@@ -368,10 +364,11 @@ export default function SimulationDetail({
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [apiRequestLog, setApiRequestLog] = useState<APIRequestLog | null>(
-    null
+    null,
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
 
   // 🆕 통합 Store 액션들
   const setLastSavedAt = useSimulationStore((s) => s.setLastSavedAt);
@@ -421,7 +418,7 @@ export default function SimulationDetail({
 
       const { data: saveResult } = await saveScenarioMetadata(
         simulationId,
-        completeMetadata
+        completeMetadata,
       );
 
       // 🆕 저장 성공 시 lastSavedAt 업데이트
@@ -472,7 +469,7 @@ export default function SimulationDetail({
       // 탭 인덱스를 step 번호로 변환 (0-based → 1-based)
       setCurrentStep(tabIndex + 1);
     },
-    [setCurrentScenarioTab, setCurrentStep]
+    [setCurrentScenarioTab, setCurrentStep],
   );
 
   // ✅ S3 메타데이터 로드 기능 활성화 (초기 로드용)
@@ -501,7 +498,7 @@ export default function SimulationDetail({
   }, [displayScenarioName]);
 
   // viewer인 경우 페이지 렌더링 방지
-  if (!isUserLoading && user?.role === 'viewer') {
+  if (!isUserLoading && user?.role === "viewer") {
     return null;
   }
 
@@ -510,106 +507,123 @@ export default function SimulationDetail({
       <TheContentHeader text="Simulation" breadcrumbs={breadcrumbs} />
       <div className="mx-auto max-w-page px-page-x pb-page-b">
         <div className="mt-[15px] flex justify-between">
-        <div className="flex items-center gap-3">
-          <dl className="sub-title">
-            <Suspense fallback={<dd>{displayScenarioName}</dd>}>
-              <ScenarioNameDisplay label={displayScenarioName} />
-            </Suspense>
-          </dl>
-          {latestHistory?.checkpoint && (
-            <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-default-500">
-              {timeToRelativeTime(latestHistory?.checkpoint)}
-            </span>
-          )}
-          {lastSavedRelative && (
-            <span
-              className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm font-medium text-primary"
-              title={lastSavedTooltip}
-            >
-              <Clock className="h-4 w-4" />
-              Updated {lastSavedRelative}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <dl className="sub-title">
+              <Suspense fallback={<dd>{displayScenarioName}</dd>}>
+                <ScenarioNameDisplay label={displayScenarioName} />
+              </Suspense>
+            </dl>
+            {latestHistory?.checkpoint && (
+              <span className="rounded-md bg-gray-100 px-2 py-1 text-sm text-default-500">
+                {timeToRelativeTime(latestHistory?.checkpoint)}
+              </span>
+            )}
+            {lastSavedRelative && (
+              <span
+                className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm font-medium text-primary"
+                title={lastSavedTooltip}
+              >
+                <Clock className="h-4 w-4" />
+                Updated {lastSavedRelative}
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={handleTempSave} disabled={isSaving}>
+              <Save size={16} />
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isDeleting}>
+                  <Trash2 size={16} />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Metadata</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this scenario&rsquo;s
+                    metadata?
+                    <br />
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className={buttonVariants({ variant: "destructive" })}
+                    onClick={handleDeleteMetadata}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={handleTempSave} disabled={isSaving}>
-            <Save size={16} />
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={isDeleting}>
-                <Trash2 size={16} />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Metadata</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this scenario&rsquo;s metadata?
-                  <br />
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className={buttonVariants({ variant: "destructive" })}
-                  onClick={handleDeleteMetadata}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-
-      <TabDefault
-        className={`mt-[40px]`}
-        currentTab={currentScenarioTab}
-        availableTabs={getAvailableTabs()}
-        tabCount={tabs.length}
-        tabs={tabs.map((tab) => ({ text: tab.text }))}
-        onTabChange={handleTabChange}
-      />
-
-      {isInitialized ? (
-        <React.Fragment key={simulationId}>
-          <TabFlightSchedule
-            visible={currentScenarioTab === 0}
-            simulationId={simulationId}
-            apiRequestLog={apiRequestLog}
-            setApiRequestLog={setApiRequestLog}
-          />
-          <TabPassengerSchedule
-            visible={currentScenarioTab === 1}
-            simulationId={simulationId}
-            apiRequestLog={apiRequestLog}
-            setApiRequestLog={setApiRequestLog}
-          />
-          <TabProcessingProcedures
-            visible={currentScenarioTab === 2}
-            simulationId={simulationId}
-            apiRequestLog={apiRequestLog}
-            setApiRequestLog={setApiRequestLog}
-          />
-        </React.Fragment>
-      ) : (
-        <SimulationLoading minHeight="min-h-[200px]" />
-      )}
-
-      {/* 개발 환경에서만 Debug Viewer 표시 */}
-      {process.env.NODE_ENV === "development" && (
-        <JSONDebugViewer
-          visible={true}
-          simulationId={simulationId}
-          apiRequestLog={apiRequestLog}
+        <TabDefault
+          className={`mt-[40px]`}
+          currentTab={currentScenarioTab}
+          availableTabs={getAvailableTabs()}
+          tabCount={tabs.length}
+          tabs={tabs.map((tab) => ({ text: tab.text }))}
+          onTabChange={handleTabChange}
         />
-      )}
+
+        {isInitialized ? (
+          <React.Fragment key={simulationId}>
+            <TabFlightSchedule
+              visible={currentScenarioTab === 0}
+              simulationId={simulationId}
+              apiRequestLog={apiRequestLog}
+              setApiRequestLog={setApiRequestLog}
+            />
+            <TabPassengerSchedule
+              visible={currentScenarioTab === 1}
+              simulationId={simulationId}
+              apiRequestLog={apiRequestLog}
+              setApiRequestLog={setApiRequestLog}
+            />
+            <TabProcessingProcedures
+              visible={currentScenarioTab === 2}
+              simulationId={simulationId}
+              apiRequestLog={apiRequestLog}
+              setApiRequestLog={setApiRequestLog}
+            />
+          </React.Fragment>
+        ) : (
+          <SimulationLoading minHeight="min-h-[200px]" />
+        )}
+
+        {/* 개발 환경에서만 Debug Viewer 표시 */}
+        {process.env.NODE_ENV === "development" && (
+          <JSONDebugViewer
+            visible={true}
+            simulationId={simulationId}
+            apiRequestLog={apiRequestLog}
+          />
+        )}
+
+        {/* Floating AI Assistant Button */}
+        <button
+          onClick={() => setIsAIChatOpen(true)}
+          className="fixed bottom-6 right-6 z-30 flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
+          title="Open AI Assistant"
+        >
+          <Bot className="h-5 w-5" />
+        </button>
+
+        {/* AI Chat Sidebar */}
+        <AIChatSidebar
+          isOpen={isAIChatOpen}
+          onClose={() => setIsAIChatOpen(false)}
+          simulationId={simulationId}
+        />
       </div>
     </>
   );
