@@ -1033,15 +1033,15 @@ dl.process-item-title {
 
 /* HomeCss.css */
 .chart-header-container {
-  @apply flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between;
+  @apply flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-y-3;
 }
 
 .chart-header-selects {
-  @apply flex flex-wrap gap-4 lg:flex-nowrap;
+  @apply flex min-w-0 flex-1 flex-wrap gap-4 lg:flex-nowrap;
 }
 
 .chart-header-buttons {
-  @apply flex items-center self-center lg:self-auto;
+  @apply flex min-w-0 max-w-full items-center self-stretch overflow-x-auto lg:self-auto lg:ml-auto lg:w-auto;
 }
 
 /* HomeDetails.css */
