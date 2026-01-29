@@ -61,6 +61,10 @@ export default function AIChatPanel({ simulationId }: AIChatPanelProps) {
     try {
       const { data } = await executeCommand(simulationId, {
         content: userMessage.content,
+        conversation_history: messages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
         model: "gpt-4o-2024-08-06",
         temperature: 0.1,
       });

@@ -2,8 +2,14 @@ import { createAPIService } from "@/lib/axios";
 
 const api = createAPIService("ai-agent");
 
+export interface Message {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
 export interface ExecuteCommandRequest {
   content: string;
+  conversation_history?: Message[];
   model?: string;
   temperature?: number;
 }
