@@ -7,9 +7,35 @@ export interface Message {
   content: string;
 }
 
+export interface SimulationState {
+  airport: string;
+  date: string;
+  flight_selected: number;
+  flight_total: number;
+  airline_names: string[];
+  airlines_mapping: Record<string, string>;
+  passenger: {
+    total: number;
+    configured: boolean;
+    pax_generation: any;  // rules 포함한 전체 구조
+    pax_demographics: any;  // nationality, profile rules 포함
+    pax_arrival_patterns: any;  // rules 포함
+    chartResult: any;  // chart_x_data, chart_y_data 포함
+  };
+  process_count: number;
+  process_names: string[];
+  process_flow: any[];  // 전체 process_flow 데이터 (zones, facilities, time_blocks 포함)
+  workflow: {
+    flights_completed: boolean;
+    passengers_completed: boolean;
+    current_step: number;
+  };
+}
+
 export interface ExecuteCommandRequest {
   content: string;
   conversation_history?: Message[];
+  simulation_state?: SimulationState;
   model?: string;
   temperature?: number;
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/hooks/useToast";
 import { executeCommand } from "@/services/aiAgentService";
+import { useSimulationStore } from "../../_stores";
 
 interface Message {
   id: string;
@@ -35,6 +36,21 @@ export default function AIChatPanel({ simulationId }: AIChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // 🆕 Zustand store에서 실시간 시뮬레이션 상태 가져오기
+  const airport = useSimulationStore((s) => s.context.airport);
+  const date = useSimulationStore((s) => s.context.date);
+  const flightSelectedConditions = useSimulationStore((s) => s.flight.selectedConditions);
+  const flightTotal = useSimulationStore((s) => s.flight.appliedFilterResult?.total || 0);
+  const airlines = useSimulationStore((s) => s.flight.airlines);
+  const passengerChartResult = useSimulationStore((s) => s.passenger.chartResult);
+  const paxGeneration = useSimulationStore((s) => s.passenger.pax_generation);
+  const paxDemographics = useSimulationStore((s) => s.passenger.pax_demographics);
+  const paxArrivalPatterns = useSimulationStore((s) => s.passenger.pax_arrival_patterns);
+  const processFlow = useSimulationStore((s) => s.process_flow);
+  const step1Completed = useSimulationStore((s) => s.workflow.step1Completed);
+  const step2Completed = useSimulationStore((s) => s.workflow.step2Completed);
+  const currentStep = useSimulationStore((s) => s.workflow.currentStep);
+
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,12 +75,59 @@ export default function AIChatPanel({ simulationId }: AIChatPanelProps) {
     setIsLoading(true);
 
     try {
+      // 🆕 실시간 시뮬레이션 상태 전송 (전체 passenger 데이터 포함)
+      const simulationState = {
+        // 기본 정보
+        airport: airport || "Not set",
+        date: date || "Not set",
+
+        // 항공편 정보
+        flight_selected: flightSelectedConditions?.expected_flights?.selected || 0,
+        flight_total: flightSelectedConditions?.expected_flights?.total || 0,
+        airline_names: airlines ? Object.values(airlines) : [],
+        airlines_mapping: airlines || {},  // 코드 → 이름 매핑
+
+        // 승객 정보 (전체 데이터)
+        passenger: {
+          total: passengerChartResult?.total || 0,
+          configured: !!passengerChartResult,
+
+          // 탑승률 (rules 포함)
+          pax_generation: paxGeneration || { default: { load_factor: null }, rules: [] },
+
+          // 인구통계 (nationality, profile - rules 포함)
+          pax_demographics: paxDemographics || {
+            nationality: { available_values: [], default: {}, rules: [] },
+            profile: { available_values: [], default: {}, rules: [] }
+          },
+
+          // 도착 패턴 (rules 포함)
+          pax_arrival_patterns: paxArrivalPatterns || { default: { mean: null, std: null }, rules: [] },
+
+          // 차트 결과 (시간대별 상세 데이터)
+          chartResult: passengerChartResult || null,
+        },
+
+        // 프로세스 (전체 데이터)
+        process_count: processFlow.length,
+        process_names: processFlow.map((p) => p.name),
+        process_flow: processFlow,  // 전체 process_flow 데이터 (zones, facilities, time_blocks 포함)
+
+        // 워크플로우
+        workflow: {
+          flights_completed: step1Completed,
+          passengers_completed: step2Completed,
+          current_step: currentStep,
+        },
+      };
+
       const { data } = await executeCommand(simulationId, {
         content: userMessage.content,
         conversation_history: messages.map((msg) => ({
           role: msg.role,
           content: msg.content,
         })),
+        simulation_state: simulationState, // 👈 실시간 상태 전달
         model: "gpt-4o-2024-08-06",
         temperature: 0.1,
       });
