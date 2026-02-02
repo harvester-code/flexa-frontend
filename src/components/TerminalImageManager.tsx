@@ -422,19 +422,30 @@ function TerminalImageManager({
     setError(null);
 
     try {
-      // Try different extensions in order
-      const extensions = ["jpg", "jpeg", "png", "svg", "webp"];
+      // First, list files in the bucket to find the correct file
+      const filePrefix = `${airportCode}-${terminalCode}`;
+      const { data: listData, error: listError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .list("", {
+          search: filePrefix,
+        });
 
-      for (const ext of extensions) {
-        const fileName = getImageFileName(airportCode, terminalCode, ext);
-        const { data, error: signedUrlError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(fileName, 3600);
+      if (!listError && listData && listData.length > 0) {
+        // Find exact match with any extension
+        const matchingFile = listData.find((file) =>
+          file.name.startsWith(filePrefix + ".")
+        );
 
-        if (!signedUrlError && data) {
-          setImageUrl(data.signedUrl);
-          setIsLoading(false);
-          return;
+        if (matchingFile) {
+          const { data, error: signedUrlError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .createSignedUrl(matchingFile.name, 3600);
+
+          if (!signedUrlError && data) {
+            setImageUrl(data.signedUrl);
+            setIsLoading(false);
+            return;
+          }
         }
       }
 

@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useTransition } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -167,40 +166,32 @@ function AppSidebar() {
       <div className="flex h-16 items-center px-4">
         <Link
           href="/home"
-          className={cn(
-            'flex w-full items-center transition-all',
-            isCollapsed ? 'justify-center' : 'justify-center'
-          )}
+          className="flex w-full items-center justify-center transition-all"
         >
-          {isCollapsed ? (
-            <Image
+          <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/logo/BI_symbol.svg"
               alt="Flexa"
               width={32}
               height={32}
-              priority
               className="h-8 w-8"
             />
-          ) : (
-            <div className="flex items-center gap-4">
-              <Image
-                src="/logo/BI_symbol.svg"
-                alt="Flexa symbol"
-                width={32}
-                height={32}
-                priority
-                className="h-8 w-8"
-              />
-              <Image
+            <div
+              className={cn(
+                'transition-all duration-300 overflow-hidden',
+                isCollapsed ? 'w-0 opacity-0' : 'w-[96px] opacity-100'
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/logo/BI_lettering.svg"
                 alt="Flexa lettering"
                 width={96}
                 height={24}
-                priority
-                className="h-6 w-auto"
               />
             </div>
-          )}
+          </div>
         </Link>
       </div>
 
