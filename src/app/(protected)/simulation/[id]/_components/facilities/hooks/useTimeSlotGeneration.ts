@@ -46,11 +46,12 @@ export function useTimeSlotGeneration({
       );
 
       if (firstPassengerIndex !== -1 && lastPassengerIndex !== -1) {
-        // Round start time down to 30-minute intervals
+        // Round start time down to timeUnit intervals
         const startDateTime = chartResult.chart_x_data[firstPassengerIndex];
         const [startDate, startTime] = startDateTime.split(" ");
         const [startHour, startMinute] = startTime.split(":").map(Number);
-        const roundedStartMinute = Math.floor(startMinute / 30) * 30;
+        const roundedStartMinute =
+          Math.floor(startMinute / unitMinutes) * unitMinutes;
         const roundedStartHour = startHour;
 
         // Check if start is from previous day

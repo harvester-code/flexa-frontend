@@ -19,6 +19,7 @@ import { useSelectionHandlers } from "./hooks/useSelectionHandlers";
 import { useScheduleInitialization } from "./hooks/useScheduleInitialization";
 import { useTimeSlotGeneration } from "./hooks/useTimeSlotGeneration";
 import { useFacilityScheduleSync } from "./hooks/useFacilityScheduleSync";
+import { useNormalizeAllSchedules } from "./hooks/useNormalizeAllSchedules";
 import { ScheduleContextMenu } from "./ScheduleContextMenu";
 import {
   Clock,
@@ -950,6 +951,17 @@ export default function OperatingScheduleEditor({
       }
     }
   }, [selectedProcessIndex, selectedZone, processFlow]); // 모든 의존성 포함
+
+  // Normalize ALL zones' time_blocks to current timeSlots range on mount/change
+  useNormalizeAllSchedules({
+    timeSlots,
+    isPreviousDay,
+    appliedTimeUnit,
+    processFlow,
+    isTimeSlotsFromChartData: !!(
+      chartResult?.chart_x_data && chartResult.chart_x_data.length > 0
+    ),
+  });
 
   // Use custom hook for facility schedule synchronization
   useFacilityScheduleSync({

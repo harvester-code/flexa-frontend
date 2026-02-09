@@ -993,7 +993,7 @@ export default function ProcessFlowDesigner({
               useSimulationStore.getState().passenger.chartResult;
             const chartXData = (chartResult as any)?.chart_x_data;
             if (chartXData && chartXData.length >= 2) {
-              period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
+              period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
             } else {
               const date =
                 useSimulationStore.getState().context.date ||
@@ -1701,7 +1701,7 @@ export default function ProcessFlowDesigner({
                                               chartXData &&
                                               chartXData.length >= 2
                                             ) {
-                                              period = `${chartXData[0]}-${chartXData[chartXData.length - 1]}`;
+                                              period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
                                             } else {
                                               const date =
                                                 useSimulationStore.getState()
