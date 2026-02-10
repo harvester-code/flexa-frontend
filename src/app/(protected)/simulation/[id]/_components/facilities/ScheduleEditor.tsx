@@ -1010,6 +1010,73 @@ export default function OperatingScheduleEditor({
           }
         }}
       >
+        {/* 제목과 전체화면 버튼 (한 줄) */}
+        <div className="mb-2 flex items-center justify-between border-l-4 border-primary pl-4">
+          <div>
+            <h3 className="text-lg font-semibold text-default-900">
+              Operating Schedule Editor
+            </h3>
+            <p className="text-sm text-default-500">
+              Configure time-based facility operations
+            </p>
+          </div>
+          {selectedZone && currentFacilities.length > 0 && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300 hover:border-gray-400 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                <Clock className="h-3.5 w-3.5 text-gray-600" />
+                <input
+                  id="time-unit"
+                  type="text"
+                  value={timeUnitInput}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                    setTimeUnitInput(numericValue);
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const value = parseInt(timeUnitInput) || 30;
+                      const clampedValue = Math.max(1, Math.min(60, value));
+                      if (clampedValue !== appliedTimeUnit) {
+                        if (
+                          Object.keys(cellBadges).length > 0 ||
+                          disabledCells.size > 0
+                        ) {
+                          setPendingTimeUnit(clampedValue);
+                          setShowTimeUnitConfirm(true);
+                        } else {
+                          setAppliedTimeUnit(clampedValue);
+                          setTimeUnitInput(clampedValue.toString());
+                        }
+                      }
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  onBlur={() => {
+                    const value = parseInt(timeUnitInput) || appliedTimeUnit;
+                    const clampedValue = Math.max(1, Math.min(60, value));
+                    setTimeUnitInput(clampedValue.toString());
+                  }}
+                  placeholder="30"
+                  title="Time interval in minutes (1-60). Press Enter to apply."
+                  className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-900 placeholder-gray-500"
+                />
+                <span className="text-xs text-gray-600 font-medium">min</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullScreen(true)}
+                className="flex items-center gap-2"
+              >
+                <Expand className="h-4 w-4" />
+                Full Screen
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* 2중 탭 */}
         <div className="mb-2 space-y-1">
           <div className="flex items-center">
@@ -1096,74 +1163,6 @@ export default function OperatingScheduleEditor({
           currentProcessTime={currentProcessTime}
         />
 
-        {/* 제목과 전체화면 버튼 */}
-        {selectedZone && currentFacilities.length > 0 && (
-          <div className="mt-4 mb-1 flex items-center justify-end">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300 hover:border-gray-400 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
-                <Clock className="h-3.5 w-3.5 text-gray-600" />
-                <input
-                  id="time-unit"
-                  type="text"
-                  value={timeUnitInput}
-                  onChange={(e) => {
-                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                    setTimeUnitInput(numericValue);
-                  }}
-                  onKeyDown={(e) => {
-                    // 키보드 이벤트가 테이블 단축키와 충돌하지 않도록 전파 중단
-                    e.stopPropagation();
-
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const value = parseInt(timeUnitInput) || 30;
-                      const clampedValue = Math.max(1, Math.min(60, value));
-
-                      // 값이 변경되었을 때만 처리
-                      if (clampedValue !== appliedTimeUnit) {
-                        // 데이터가 있으면 확인 다이얼로그 표시
-                        if (
-                          Object.keys(cellBadges).length > 0 ||
-                          disabledCells.size > 0
-                        ) {
-                          setPendingTimeUnit(clampedValue);
-                          setShowTimeUnitConfirm(true);
-                        } else {
-                          // 데이터가 없으면 바로 변경
-                          setAppliedTimeUnit(clampedValue);
-                          setTimeUnitInput(clampedValue.toString());
-                        }
-                      }
-
-                      // 입력 필드에서 포커스 제거
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                  onBlur={() => {
-                    // onBlur에서는 값만 정리하고 적용하지 않음
-                    const value = parseInt(timeUnitInput) || appliedTimeUnit;
-                    const clampedValue = Math.max(1, Math.min(60, value));
-                    setTimeUnitInput(clampedValue.toString());
-                  }}
-                  placeholder="30"
-                  title="Time interval in minutes (1-60). Press Enter to apply."
-                  className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-900 placeholder-gray-500"
-                />
-                <span className="text-xs text-gray-600 font-medium">min</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFullScreen(true)}
-                className="flex items-center gap-2"
-              >
-                <Expand className="h-4 w-4" />
-                Full Screen
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* 엑셀 그리드 테이블 */}
         <ExcelTable
           selectedZone={selectedZone}
@@ -1208,16 +1207,85 @@ export default function OperatingScheduleEditor({
               }
             }}
           >
-            <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-              <DialogTitle className="text-xl font-semibold">
-                Operating Schedule
-              </DialogTitle>
-              <DialogDescription>
-                Configure time-based facility operations for{" "}
-                {formatProcessName(processFlow[selectedProcessIndex]?.name)} in
-                zone {selectedZone}
-              </DialogDescription>
+            <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="text-xl font-semibold">
+                    Operating Schedule
+                  </DialogTitle>
+                  <DialogDescription>
+                    Configure time-based facility operations
+                  </DialogDescription>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300">
+                  <Clock className="h-3.5 w-3.5 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">{appliedTimeUnit}</span>
+                  <span className="text-xs text-gray-600 font-medium">min</span>
+                </div>
+              </div>
             </DialogHeader>
+
+            {/* Full Screen 내 2중 탭 */}
+            <div className="px-6 pb-2 shrink-0 space-y-1">
+              <div className="flex items-center">
+                <Tabs
+                  value={selectedProcessIndex.toString()}
+                  onValueChange={(value) =>
+                    setSelectedProcessIndex(parseInt(value))
+                  }
+                  className="flex-1"
+                >
+                  <TabsList
+                    className="grid w-full"
+                    style={{
+                      gridTemplateColumns: `repeat(${processFlow.length}, 1fr)`,
+                    }}
+                  >
+                    {processFlow.map((step, index) => (
+                      <TabsTrigger
+                        key={index}
+                        value={index.toString()}
+                        className="text-sm font-medium text-default-900"
+                      >
+                        {formatProcessName(step.name)}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {processFlow &&
+                processFlow[selectedProcessIndex] &&
+                processFlow[selectedProcessIndex].zones && (
+                  <div className="flex items-center">
+                    <Tabs
+                      value={selectedZone}
+                      onValueChange={setSelectedZone}
+                      className="flex-1"
+                    >
+                      <TabsList
+                        className="grid w-full"
+                        style={{
+                          gridTemplateColumns: `repeat(${Object.keys(processFlow[selectedProcessIndex].zones || {}).length}, 1fr)`,
+                        }}
+                      >
+                        {Object.keys(
+                          processFlow[selectedProcessIndex].zones || {}
+                        ).map((zoneName) => (
+                          <TabsTrigger
+                            key={zoneName}
+                            value={zoneName}
+                            className="text-sm font-medium text-default-900"
+                          >
+                            {zoneName}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                )}
+            </div>
+
             <div
               className="flex-1 min-h-0 px-6 pb-6 overflow-hidden"
               onClick={(e) => {

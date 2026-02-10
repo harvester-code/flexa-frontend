@@ -2174,27 +2174,13 @@ export default function ProcessFlowDesigner({
 
           {/* Operating Schedule Editor - Only show when there are processes */}
           {processFlow.length > 0 && (
-            <>
-              <div className="flex items-start justify-between border-l-4 border-primary pl-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-default-900">
-                    Operating Schedule Editor
-                  </h3>
-                  <p className="text-sm text-default-500">
-                    Configure time-based facility operations
-                  </p>
-                </div>
-              </div>
-
-              {/* Operating Schedule Editor Content */}
-              <div className="bg-white pt-1 pb-6">
-                <ScheduleEditor
-                  processFlow={processFlow}
-                  parquetMetadata={parquetMetadata}
-                  paxDemographics={paxDemographics}
-                />
-              </div>
-            </>
+            <div className="bg-white pt-1 pb-6">
+              <ScheduleEditor
+                processFlow={processFlow}
+                parquetMetadata={parquetMetadata}
+                paxDemographics={paxDemographics}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
