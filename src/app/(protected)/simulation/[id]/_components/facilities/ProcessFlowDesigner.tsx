@@ -1165,7 +1165,7 @@ export default function ProcessFlowDesigner({
       const simulationState = useSimulationStore.getState();
       const completeMetadata = {
         ...simulationState,
-        terminalLayout: simulationState.terminalLayout || { zoneAreas: {} },
+        terminalLayout: simulationState.terminalLayout || { imageUrl: null, zoneAreas: {} },
         savedAt: new Date().toISOString(),
         context: {
           ...simulationState.context,

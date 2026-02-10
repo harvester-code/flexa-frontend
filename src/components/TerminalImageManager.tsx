@@ -2,20 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import { Upload, Trash2, Image as ImageIcon, Check, Eraser } from "lucide-react";
+import { Image as ImageIcon, Check, Eraser, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/Button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/AlertDialog";
 import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/hooks/useToast";
 import { cn, formatProcessName } from "@/lib/utils";
@@ -24,6 +13,7 @@ import {
   type ZoneAreaRect,
 } from "@/app/(protected)/simulation/[id]/_stores";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
+import AirportImageGalleryDialog from "@/components/AirportImageGalleryDialog";
 
 const BUCKET_NAME = "airport-terminal-images";
 
@@ -60,14 +50,18 @@ function TerminalImageManager({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const supabase = createClient();
   const { toast } = useToast();
 
-  const hasIdentifiers = Boolean(airport && terminal);
+  const hasIdentifiers = Boolean(airport);
 
   const processFlow = useSimulationStore((s) => s.process_flow);
   const zoneAreas = useSimulationStore((s) => s.terminalLayout.zoneAreas);
+  const storeImageUrl = useSimulationStore((s) => s.terminalLayout.imageUrl);
+  const setTerminalLayoutImageUrl = useSimulationStore(
+    (s) => s.setTerminalLayoutImageUrl
+  );
   const setZoneArea = useSimulationStore((s) => s.setZoneArea);
   const removeZoneArea = useSimulationStore((s) => s.removeZoneArea);
 
@@ -390,195 +384,67 @@ function TerminalImageManager({
     });
   }, [removeZoneArea, selectedStep, stepGroups]);
 
-  // Generate image file name with extension
-  const getImageFileName = (
-    airportCode: string,
-    terminalCode: string,
-    extension: string = "jpg"
-  ) => {
-    return `${airportCode}-${terminalCode}.${extension}`;
-  };
+  // Load image from store imageUrl (storage key) via signed URL
+  const loadImageFromKey = useCallback(
+    async (imageKey: string) => {
+      setIsLoading(true);
+      setError(null);
 
-  // Get file extension from filename or mime type
-  const getFileExtension = (file: File): string => {
-    const fileName = file.name;
-    const extension = fileName.split(".").pop()?.toLowerCase();
-    if (extension) return extension;
-
-    // Fallback to mime type
-    const mimeMap: { [key: string]: string } = {
-      "image/jpeg": "jpg",
-      "image/jpg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/svg+xml": "svg",
-    };
-    return mimeMap[file.type] || "jpg";
-  };
-
-  // Load image (try multiple extensions)
-  const loadImage = async (airportCode: string, terminalCode: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // First, list files in the bucket to find the correct file
-      const filePrefix = `${airportCode}-${terminalCode}`;
-      const { data: listData, error: listError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .list("", {
-          search: filePrefix,
-        });
-
-      if (!listError && listData && listData.length > 0) {
-        // Find exact match with any extension
-        const matchingFile = listData.find((file) =>
-          file.name.startsWith(filePrefix + ".")
-        );
-
-        if (matchingFile) {
-          const { data, error: signedUrlError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .createSignedUrl(matchingFile.name, 3600);
-
-          if (!signedUrlError && data) {
-            setImageUrl(data.signedUrl);
-            setIsLoading(false);
-            return;
-          }
+      try {
+        // If it's already a full URL, use directly
+        if (/^https?:\/\//i.test(imageKey)) {
+          setImageUrl(imageKey);
+          return;
         }
+
+        const { data, error: signedUrlError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .createSignedUrl(imageKey, 3600);
+
+        if (!signedUrlError && data?.signedUrl) {
+          setImageUrl(data.signedUrl);
+        } else {
+          setImageUrl(null);
+          setError("Failed to load image from storage.");
+        }
+      } catch (err) {
+        console.error("Error loading image:", err);
+        setError(err instanceof Error ? err.message : "Failed to load image");
+        setImageUrl(null);
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [supabase]
+  );
 
-      setImageUrl(null);
-    } catch (err) {
-      console.error("Error loading image:", err);
-      setError(err instanceof Error ? err.message : "Failed to load image");
-      setImageUrl(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Upload image
-  const handleUpload = async (file: File) => {
-    if (!airport || !terminal) return;
-
-    setIsUploading(true);
-    setError(null);
-
-    try {
-      const extension = getFileExtension(file);
-      const fileName = getImageFileName(airport, terminal, extension);
-
-      // Delete all existing files with different extensions first
-      const extensions = ["jpg", "jpeg", "png", "svg", "webp"];
-      const filesToDelete = extensions.map((ext) =>
-        getImageFileName(airport, terminal, ext)
-      );
-
-      // Ignore delete errors (files may not exist)
-      await supabase.storage.from(BUCKET_NAME).remove(filesToDelete);
-
-      // Upload new image
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false, // No need to upsert since we deleted existing files
-          contentType: file.type,
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Reload image after successful upload
-      await loadImage(airport, terminal);
-      toast({
-        title: "Success",
-        description: `Image uploaded as ${fileName}`,
-      });
-    } catch (err) {
-      console.error("Error uploading image:", err);
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Delete image (try all possible extensions)
-  const handleDelete = async () => {
-    if (!airport || !terminal) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const extensions = ["jpg", "jpeg", "png", "svg", "webp"];
-      const filesToDelete = extensions.map((ext) =>
-        getImageFileName(airport, terminal, ext)
-      );
-
-      // Delete all possible variations
-      const { error: deleteError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(filesToDelete);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      // Fallback to default.jpg after successful deletion
-      await loadImage(airport, terminal);
-      toast({
-        title: "Success",
-        description: "Image deleted successfully!",
-      });
-    } catch (err) {
-      console.error("Error deleting image:", err);
-      setError(err instanceof Error ? err.message : "Delete failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // File selection handler
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate image file
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid File Type",
-        description: "Only image files are allowed.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File Too Large",
-        description: "File size cannot exceed 5MB.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    handleUpload(file);
-  };
-
-  // Load image when codes change
+  // When store imageUrl changes, load it
   useEffect(() => {
-    if (airport && terminal) {
-      loadImage(airport, terminal);
+    if (storeImageUrl) {
+      loadImageFromKey(storeImageUrl);
     } else {
       setImageUrl(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [airport, terminal]);
+  }, [storeImageUrl, loadImageFromKey]);
+
+  // Handle gallery selection
+  const handleImageSelect = (imageKey: string) => {
+    setTerminalLayoutImageUrl(imageKey);
+    toast({
+      title: "Image Selected",
+      description: `Terminal layout image set to ${imageKey}`,
+    });
+  };
+
+  // Handle removing the selected image
+  const handleImageRemove = () => {
+    setTerminalLayoutImageUrl(null);
+    setImageUrl(null);
+    toast({
+      title: "Image Removed",
+      description: "Terminal layout image has been removed from this scenario.",
+    });
+  };
 
   return (
     <div className={className}>
@@ -593,63 +459,25 @@ function TerminalImageManager({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <label>
+          {imageUrl && (
             <Button
-              variant="primary"
+              variant="destructive"
               size="sm"
-              disabled={isUploading}
-              asChild
+              onClick={handleImageRemove}
             >
-              <span>
-                <Upload />
-                {imageUrl
-                  ? isUploading
-                    ? "Updating..."
-                    : "Update"
-                  : isUploading
-                  ? "Uploading..."
-                  : "Upload"}
-              </span>
+              <Trash2 className="mr-1 h-4 w-4" />
+              Delete
             </Button>
-            <input
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
-              onChange={handleFileChange}
-              disabled={isUploading}
-              className="hidden"
-            />
-          </label>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={isLoading || !imageUrl}
-                variant="destructive"
-                size="sm"
-              >
-                <Trash2 />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Terminal Image</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action will remove the current terminal image. You can
-                  upload a new file afterwards.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          )}
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={!airport}
+            onClick={() => setGalleryOpen(true)}
+          >
+            <ImageIcon className="mr-1 h-4 w-4" />
+            {imageUrl ? "Change Image" : "Select Image"}
+          </Button>
         </div>
       </div>
       <div className="relative overflow-hidden rounded-lg bg-muted">
@@ -657,7 +485,7 @@ function TerminalImageManager({
           <div className="flex h-96 flex-col items-center justify-center gap-4">
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Select an airport and terminal to view the layout image.
+              Select an airport to view layout images.
             </p>
           </div>
         ) : isLoading ? (
@@ -914,7 +742,10 @@ function TerminalImageManager({
         ) : (
           <div className="flex h-96 flex-col items-center justify-center gap-4">
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No image available</p>
+            <p className="text-sm text-muted-foreground">
+              No image selected. Click &quot;Select Image&quot; above to choose
+              a terminal layout image.
+            </p>
           </div>
         )}
       </div>
@@ -923,6 +754,16 @@ function TerminalImageManager({
         <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
+      )}
+
+      {airport && (
+        <AirportImageGalleryDialog
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+          airportCode={airport}
+          currentImageKey={storeImageUrl}
+          onSelect={handleImageSelect}
+        />
       )}
     </div>
   );

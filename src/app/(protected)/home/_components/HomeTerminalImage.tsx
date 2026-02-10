@@ -274,7 +274,7 @@ function HomeTerminalImage({
   const metadataImage = effectiveLayout?.imageUrl ?? null;
 
   useEffect(() => {
-    if (!airport || !terminal) {
+    if (!airport) {
       setImageUrl(null);
       setImageError(null);
       setIsImageLoading(false);
@@ -287,40 +287,23 @@ function HomeTerminalImage({
       setIsImageLoading(true);
       setImageError(null);
 
-      const candidateKeys: string[] = [];
-
+      // 1) If metadata has a stored imageUrl (storage key), try it first
       if (metadataImage) {
-        candidateKeys.push(metadataImage);
-      }
-
-      const baseKey = `${airport}-${terminal}`;
-      IMAGE_EXTENSIONS.forEach((ext) => {
-        candidateKeys.push(`${baseKey}.${ext}`);
-      });
-
-      const uniqueCandidates = candidateKeys.filter(
-        (key, index) => key && candidateKeys.indexOf(key) === index
-      );
-
-      for (const candidate of uniqueCandidates) {
-        if (cancelled) {
+        if (/^https?:\/\//i.test(metadataImage)) {
+          if (!cancelled) {
+            setImageUrl(metadataImage);
+            setIsImageLoading(false);
+          }
           return;
         }
 
-        if (/^https?:\/\//i.test(candidate)) {
-          setImageUrl(candidate);
-          setIsImageLoading(false);
-          return;
+        const normalizedKey = metadataImage.replace(/^\/+/, "");
+        const keysToTry = [normalizedKey];
+        if (normalizedKey.startsWith(`${BUCKET_NAME}/`)) {
+          keysToTry.push(normalizedKey.replace(`${BUCKET_NAME}/`, ""));
         }
 
-        const normalizedCandidate = candidate.replace(/^\/+/, "");
-        const possibleKeys = [normalizedCandidate];
-
-        if (normalizedCandidate.startsWith(`${BUCKET_NAME}/`)) {
-          possibleKeys.push(normalizedCandidate.replace(`${BUCKET_NAME}/`, ""));
-        }
-
-        for (const key of possibleKeys) {
+        for (const key of keysToTry) {
           const { data, error } = await supabase.storage
             .from(BUCKET_NAME)
             .createSignedUrl(key, 3600);
@@ -333,6 +316,55 @@ function HomeTerminalImage({
             return;
           }
         }
+      }
+
+      // 2) Fallback: try {airport}-{terminal}.{ext} pattern
+      if (terminal) {
+        const baseKey = `${airport}-${terminal}`;
+        for (const ext of IMAGE_EXTENSIONS) {
+          if (cancelled) return;
+          const { data, error } = await supabase.storage
+            .from(BUCKET_NAME)
+            .createSignedUrl(`${baseKey}.${ext}`, 3600);
+
+          if (!error && data?.signedUrl) {
+            if (!cancelled) {
+              setImageUrl(data.signedUrl);
+              setIsImageLoading(false);
+            }
+            return;
+          }
+        }
+      }
+
+      // 3) Fallback: list any image for this airport code
+      try {
+        const { data: listData } = await supabase.storage
+          .from(BUCKET_NAME)
+          .list("", { sortBy: { column: "created_at", order: "desc" } });
+
+        if (listData) {
+          const airportPrefix = `${airport}-`;
+          const match = listData.find(
+            (f) =>
+              f.name.startsWith(airportPrefix) &&
+              !f.name.endsWith(".emptyFolderPlaceholder")
+          );
+
+          if (match) {
+            const { data } = await supabase.storage
+              .from(BUCKET_NAME)
+              .createSignedUrl(match.name, 3600);
+
+            if (data?.signedUrl && !cancelled) {
+              setImageUrl(data.signedUrl);
+              setIsImageLoading(false);
+              return;
+            }
+          }
+        }
+      } catch {
+        // ignore list errors
       }
 
       if (!cancelled) {

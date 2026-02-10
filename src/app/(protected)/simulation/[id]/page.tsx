@@ -194,10 +194,12 @@ export default function SimulationDetail({
         }
         // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
-        const metadataTerminalLayout =
-          metadata.terminalLayout && metadata.terminalLayout.zoneAreas
-            ? metadata.terminalLayout
-            : { zoneAreas: {} };
+        const metadataTerminalLayout = metadata.terminalLayout
+          ? {
+              imageUrl: metadata.terminalLayout.imageUrl ?? null,
+              zoneAreas: metadata.terminalLayout.zoneAreas ?? {},
+            }
+          : { imageUrl: null, zoneAreas: {} };
 
         // S3 데이터 + 액션들 조합
         const newState = {
@@ -257,6 +259,7 @@ export default function SimulationDetail({
           updateFacilitySchedule: currentStore.updateFacilitySchedule,
           toggleFacilityTimeBlock: currentStore.toggleFacilityTimeBlock,
           updateTravelTime: currentStore.updateTravelTime,
+          setTerminalLayoutImageUrl: currentStore.setTerminalLayoutImageUrl,
           setZoneArea: currentStore.setZoneArea,
           removeZoneArea: currentStore.removeZoneArea,
           clearAllZoneAreas: currentStore.clearAllZoneAreas,
@@ -350,7 +353,7 @@ export default function SimulationDetail({
           showUpResults: null,
         },
         process: { flow: [] },
-        terminalLayout: { zoneAreas: {} },
+        terminalLayout: { imageUrl: null, zoneAreas: {} },
         workflow: {
           currentStep: 1,
           step1Completed: false,

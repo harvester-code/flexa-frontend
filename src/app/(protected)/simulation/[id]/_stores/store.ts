@@ -249,6 +249,7 @@ export interface SimulationStoreState {
   passenger: PassengerData;
   process_flow: ProcessStep[];
   terminalLayout: {
+    imageUrl?: string | null;
     zoneAreas: Record<string, ZoneAreaRect>;
   };
   workflow: {
@@ -469,6 +470,7 @@ export interface SimulationStoreState {
     newProcessName: string
   ) => void;
   migratePercentageData: () => void;
+  setTerminalLayoutImageUrl: (imageUrl: string | null) => void;
   setZoneArea: (step: number, zoneName: string, rect: ZoneAreaRect) => void;
   removeZoneArea: (step: number, zoneName: string) => void;
   clearAllZoneAreas: () => void;
@@ -526,6 +528,7 @@ const createInitialState = (scenarioId?: string) => ({
   },
   process_flow: [],
   terminalLayout: {
+    imageUrl: null,
     zoneAreas: {},
   },
   workflow: {
@@ -1656,6 +1659,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
             });
           });
         });
+      }),
+
+    setTerminalLayoutImageUrl: (imageUrl) =>
+      set((state) => {
+        state.terminalLayout.imageUrl = imageUrl;
       }),
 
     setZoneArea: (step, zoneName, rect) =>
