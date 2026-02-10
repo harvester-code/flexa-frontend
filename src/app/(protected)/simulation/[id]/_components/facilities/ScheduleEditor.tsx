@@ -1217,9 +1217,45 @@ export default function OperatingScheduleEditor({
                     Configure time-based facility operations
                   </DialogDescription>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300">
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-md border border-gray-300 hover:border-gray-400 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
                   <Clock className="h-3.5 w-3.5 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">{appliedTimeUnit}</span>
+                  <input
+                    type="text"
+                    value={timeUnitInput}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                      setTimeUnitInput(numericValue);
+                    }}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const value = parseInt(timeUnitInput) || 30;
+                        const clampedValue = Math.max(1, Math.min(60, value));
+                        if (clampedValue !== appliedTimeUnit) {
+                          if (
+                            Object.keys(cellBadges).length > 0 ||
+                            disabledCells.size > 0
+                          ) {
+                            setPendingTimeUnit(clampedValue);
+                            setShowTimeUnitConfirm(true);
+                          } else {
+                            setAppliedTimeUnit(clampedValue);
+                            setTimeUnitInput(clampedValue.toString());
+                          }
+                        }
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    onBlur={() => {
+                      const value = parseInt(timeUnitInput) || appliedTimeUnit;
+                      const clampedValue = Math.max(1, Math.min(60, value));
+                      setTimeUnitInput(clampedValue.toString());
+                    }}
+                    placeholder="30"
+                    title="Time interval in minutes (1-60). Press Enter to apply."
+                    className="w-8 bg-transparent border-none outline-none text-sm text-center font-medium text-gray-900 placeholder-gray-500"
+                  />
                   <span className="text-xs text-gray-600 font-medium">min</span>
                 </div>
               </div>
