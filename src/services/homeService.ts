@@ -8,14 +8,17 @@ export const fetchStaticData = ({ scenarioId }: { scenarioId?: string }) => {
 
 export const fetchMetricsData = ({
   percentile,
+  percentileMode,
   scenarioId,
 }: {
   percentile: number | null;
+  percentileMode?: 'cumulative' | 'quantile';
   scenarioId?: string;
 }) => {
   return api.get(`/${scenarioId}/metrics`, {
     params: {
       percentile,
+      percentile_mode: percentileMode,
     },
   });
 };

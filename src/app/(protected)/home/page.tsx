@@ -20,9 +20,11 @@ import type {
 function HomePage() {
   const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
-  const [kpi, setKpi] = useState<{ type: "mean" | "top"; percentile?: number }>(
-    { type: "mean", percentile: 5 }
-  );
+  const [kpi, setKpi] = useState<{
+    type: "mean" | "top";
+    percentile?: number;
+    cumulative?: boolean;
+  }>({ type: "mean", percentile: 5, cumulative: true });
 
   // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const { data: staticData, isLoading: isStaticLoading } = useStaticData({
@@ -34,6 +36,12 @@ function HomePage() {
   const { data: metricsData, isLoading: isMetricsLoading } = useMetricsData({
     scenarioId: scenario?.scenario_id,
     percentile: kpi.type === "top" ? (kpi.percentile ?? null) : null,
+    percentileMode:
+      kpi.type === "top"
+        ? kpi.cumulative !== false
+          ? "cumulative"
+          : "quantile"
+        : undefined,
     enabled: !!scenario,
   });
 

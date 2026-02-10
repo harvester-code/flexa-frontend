@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
@@ -9,11 +9,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
 
 interface KpiSelectorValue {
   type: 'mean' | 'top';
   percentile?: number;
+  cumulative?: boolean;
 }
 
 interface HomeKpiSelectorProps {
@@ -26,6 +28,13 @@ const PRESET_PERCENTILES = [1, 5, 10, 20, 50];
 const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) => {
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customInput, setCustomInput] = useState('');
+  // 드롭다운 내부에서 토글 상태를 로컬로 관리 (항목 선택 시에만 반영)
+  const [localCumulative, setLocalCumulative] = useState(value.cumulative ?? true);
+
+  // 외부 value 변경 시 로컬 상태 동기화
+  useEffect(() => {
+    setLocalCumulative(value.cumulative ?? true);
+  }, [value.cumulative]);
 
   const handleMeanClick = () => {
     onChange({ type: 'mean' });
@@ -33,7 +42,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
   };
 
   const handlePresetClick = (percentile: number) => {
-    onChange({ type: 'top', percentile });
+    onChange({ type: 'top', percentile, cumulative: localCumulative });
     setIsCustomMode(false);
   };
 
@@ -75,7 +84,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
     const num = Number(customInput);
     // 유효한 정수이고 범위 내에 있을 때만 적용
     if (Number.isInteger(num) && num >= 1 && num <= 100) {
-      onChange({ type: 'top', percentile: num });
+      onChange({ type: 'top', percentile: num, cumulative: localCumulative });
       setIsCustomMode(false);
     } else if (customInput === '') {
       // 빈 값이면 그냥 닫기
@@ -126,7 +135,24 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
             <ChevronDown className="ml-1 h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          {/* Cumulative / Quantile 토글 */}
+          <div
+            className="flex items-center justify-between px-2 py-1.5"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <span className="text-xs text-muted-foreground">
+              {localCumulative ? 'Cumulative' : 'Quantile'}
+            </span>
+            <Switch
+              checked={localCumulative}
+              onCheckedChange={setLocalCumulative}
+              className="h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+          </div>
+          <DropdownMenuSeparator />
           {PRESET_PERCENTILES.map((percentile) => (
             <DropdownMenuItem
               key={percentile}

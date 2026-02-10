@@ -16,17 +16,19 @@ const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; en
 // KPI 메트릭 데이터 (summary, facility_details)
 const useMetricsData = ({
   percentile,
+  percentileMode,
   scenarioId,
   enabled = true,
 }: {
   percentile: number | null;
+  percentileMode?: 'cumulative' | 'quantile';
   scenarioId?: string;
   enabled?: boolean;
 }) => {
   return useQuery({
-    queryKey: ['home-metrics-data', scenarioId, percentile],
+    queryKey: ['home-metrics-data', scenarioId, percentile, percentileMode],
     queryFn: async () => {
-      const { data } = await fetchMetricsData({ percentile, scenarioId });
+      const { data } = await fetchMetricsData({ percentile, percentileMode, scenarioId });
       return data;
     },
     enabled: enabled && !!scenarioId,
