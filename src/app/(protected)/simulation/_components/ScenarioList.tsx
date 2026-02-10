@@ -17,11 +17,11 @@ import {
   Filter,
   Pencil,
   Plus,
+  Search,
   Trash2,
   Hash,
   Plane,
   Building2,
-  UserSquare2,
   Clock4,
   History,
   NotebookPen,
@@ -88,17 +88,11 @@ type SortField =
   | "name"
   | "airport"
   | "terminal"
-  | "editor"
   | "metadata_updated_at"
   | "simulation_end_at"
   | "memo"
   | "updated_at";
 type SortOrder = "asc" | "desc";
-
-// 테이블의 최소 높이 계산 (헤더 + 행)
-const TABLE_HEADER_HEIGHT = 60; // 헤더 행 높이
-const TABLE_ROW_HEIGHT = 64; // 각 행의 높이 (p-3 패딩 포함)
-const VISIBLE_ROW_COUNT = 10; // 고정 표시 행 수
 
 /**
  * 페이지네이션 범위를 계산하는 함수
@@ -217,6 +211,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>("updated_at");
@@ -281,6 +277,23 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
     let filtered = [...scenarios];
 
+    // 검색어 필터링 (Name, Airport, Terminal, Memo)
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter((scenario) => {
+        const name = (scenario.name || "").toLowerCase();
+        const airport = (scenario.airport || "").toLowerCase();
+        const terminal = (scenario.terminal || "").toLowerCase();
+        const memo = (scenario.memo || "").toLowerCase();
+        return (
+          name.includes(query) ||
+          airport.includes(query) ||
+          terminal.includes(query) ||
+          memo.includes(query)
+        );
+      });
+    }
+
     // 필터링
     if (selectedAirports.length > 0) {
       filtered = filtered.filter((scenario) =>
@@ -328,7 +341,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     });
 
     return filtered;
-  }, [scenarios, selectedAirports, selectedTerminals, sortField, sortOrder]);
+  }, [scenarios, searchQuery, selectedAirports, selectedTerminals, sortField, sortOrder]);
 
   useEffect(() => {
     if (selectedAirports.length === 0) return;
@@ -375,7 +388,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       currentPage * pageSize
     ) || [];
 
-  // 검색 핸들러
+  // 검색어 변경 핸들러
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
   // 페이지 크기 변경 핸들러
   const handlePageSizeChange = (value: string) => {
     setPageSize(parseInt(value));
@@ -607,37 +625,57 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       {/* 필터 섹션 */}
       <div className="mt-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-start gap-4">
-          {(airportOptions.length > 0 || terminalOptions.length > 0) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-48 justify-between"
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-default-700">
-                    <Filter className="h-4 w-4" />
-                    Filter
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    {appliedFilterCount > 0 && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                        {appliedFilterCount}
-                      </span>
-                    )}
-                    <ChevronDown className="h-4 w-4 text-default-500" />
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {airportOptions.length > 0 && (
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Plane className="h-3.5 w-3.5 text-default-500" />
-                        Airport
-                      </span>
-                    </DropdownMenuSubTrigger>
+          <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 justify-between"
+              >
+                <span className="flex items-center gap-1.5 text-sm font-medium text-default-700">
+                  <Filter className="h-4 w-4" />
+                  Filter
+                </span>
+                <span className="flex items-center gap-1.5 ml-2">
+                  {(appliedFilterCount > 0 || searchQuery.trim()) && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {appliedFilterCount + (searchQuery.trim() ? 1 : 0)}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-default-500" />
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {/* Search */}
+              <div className="px-2 py-1.5">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-default-400" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        setFilterOpen(false);
+                      }
+                    }}
+                    className="h-8 pl-7 text-sm"
+                  />
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+
+              {airportOptions.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Plane className="h-3.5 w-3.5 text-default-500" />
+                      Airport
+                    </span>
+                  </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-48">
                     {airportOptions.map((airport) => {
                       const isSelected = selectedAirports.includes(airport);
@@ -674,90 +712,92 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               {terminalOptions.length > 0 && (
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5 text-default-500" />
-                        Terminal
-                      </span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-48">
-                      {terminalOptions.map((terminal) => {
-                        const isSelected = selectedTerminals.includes(terminal);
-                        return (
-                          <DropdownMenuItem
-                            key={terminal}
-                            onSelect={(event) => {
-                              event.preventDefault();
-                            }}
-                            className={cn(
-                              "px-2 py-1.5",
-                              isSelected ? "bg-primary/10 text-primary-900" : ""
-                            )}
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-default-500" />
+                      Terminal
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-48">
+                    {terminalOptions.map((terminal) => {
+                      const isSelected = selectedTerminals.includes(terminal);
+                      return (
+                        <DropdownMenuItem
+                          key={terminal}
+                          onSelect={(event) => {
+                            event.preventDefault();
+                          }}
+                          className={cn(
+                            "px-2 py-1.5",
+                            isSelected ? "bg-primary/10 text-primary-900" : ""
+                          )}
+                        >
+                          <label
+                            htmlFor={`filter-terminal-${terminal}`}
+                            className="flex w-full cursor-pointer items-center gap-2"
                           >
-                            <label
-                              htmlFor={`filter-terminal-${terminal}`}
-                              className="flex w-full cursor-pointer items-center gap-2"
-                            >
-                              <Checkbox
-                                id={`filter-terminal-${terminal}`}
-                                checked={isSelected}
-                                onCheckedChange={() => toggleTerminalFilter(terminal)}
-                              />
-                              <span className="text-sm text-default-900">
-                                {terminal}
-                              </span>
-                            </label>
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                )}
-                {appliedFilterCount > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        clearAllFilters();
-                      }}
-                      className="text-sm text-default-600 hover:text-default-900"
-                    >
-                      Clear filters
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                            <Checkbox
+                              id={`filter-terminal-${terminal}`}
+                              checked={isSelected}
+                              onCheckedChange={() => toggleTerminalFilter(terminal)}
+                            />
+                            <span className="text-sm text-default-900">
+                              {terminal}
+                            </span>
+                          </label>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              {(appliedFilterCount > 0 || searchQuery.trim()) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      clearAllFilters();
+                      setSearchQuery("");
+                    }}
+                    className="text-sm text-default-600 hover:text-default-900"
+                  >
+                    Clear all
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <span className="hidden text-sm text-default-500 md:inline">
-            Rows per page
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-default-500">
+            {filteredScenarios.length} scenarios
           </span>
-          <Select
-            value={pageSize.toString()}
-            onValueChange={handlePageSizeChange}
-          >
-            <SelectTrigger className="w-24 justify-between">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2.5">
+            <span className="hidden text-sm text-default-500 md:inline">
+              Rows per page
+            </span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={handlePageSizeChange}
+            >
+              <SelectTrigger className="w-24 justify-between">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       <div
-        className="mt-2 overflow-x-auto overflow-y-auto"
-        style={{
-          height: `${TABLE_HEADER_HEIGHT + VISIBLE_ROW_COUNT * TABLE_ROW_HEIGHT}px`,
-        }}
+        className="mt-2 overflow-x-auto"
       >
         <table className="table-default">
           <thead>
@@ -816,16 +856,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <th className="px-3 text-left whitespace-nowrap">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort("editor")}
-                >
-                  <UserSquare2 className="h-3.5 w-3.5" />
-                  Editor
-                  {renderSortIcon("editor")}
-                </div>
-              </th>
-              <th className="px-3 text-left whitespace-nowrap">
-                <div
-                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("metadata_updated_at")}
                 >
                   <Clock4 className="h-3.5 w-3.5" />
@@ -870,7 +900,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
           <tbody className="min-h-24">
             {isLoading ? (
               <tr>
-                <td colSpan={10}>
+                <td colSpan={9}>
                   <SimulationLoading size={50} minHeight="h-64" />
                 </td>
               </tr>
@@ -981,42 +1011,39 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     </td>
 
                     <td className="px-3 whitespace-nowrap">
-                      {scenario.editor}
-                    </td>
-                    <td className="px-3 whitespace-nowrap">
                       {scenario.metadata_updated_at ? (
-                        <div className="flex flex-col leading-5">
-                          <span>
+                        <div className="flex flex-col leading-4">
+                          <span className="text-xs">
                             {dayjs(scenario.metadata_updated_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
-                          <span className="text-xs text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground text-center">
                             {dayjs(scenario.metadata_updated_at).format(
                               "HH:mm"
                             )}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-500 italic">
+                        <span className="text-xs text-gray-500 italic">
                           Never saved
                         </span>
                       )}
                     </td>
                     <td className="px-3 whitespace-nowrap">
                       {scenario.simulation_end_at ? (
-                        <div className="flex flex-col leading-5">
-                          <span>
+                        <div className="flex flex-col leading-4">
+                          <span className="text-xs">
                             {dayjs(scenario.simulation_end_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
-                          <span className="text-xs text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground text-center">
                             {dayjs(scenario.simulation_end_at).format("HH:mm")}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-500 italic">
+                        <span className="text-xs text-gray-500 italic">
                           {scenario.simulation_status === "processing"
                             ? "In progress"
                             : "Never run"}
@@ -1026,16 +1053,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
                     <td className="px-3 whitespace-nowrap">
                       {scenario.updated_at ? (
-                        <div className="flex flex-col leading-5">
-                          <span>
+                        <div className="flex flex-col leading-4">
+                          <span className="text-xs">
                             {dayjs(scenario.updated_at).format("YYYY-MM-DD")}
                           </span>
-                          <span className="text-xs text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground text-center">
                             {dayjs(scenario.updated_at).format("HH:mm")}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-500 italic">-</span>
+                        <span className="text-xs text-gray-500 italic">-</span>
                       )}
                     </td>
 
@@ -1095,7 +1122,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={10}>
+                <td colSpan={9}>
                   <div className="flex flex-1 flex-col items-center justify-center">
                     <p className="text-sm text-default-500">
                       No scenarios found.

@@ -45,6 +45,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select';
 import { Separator } from '@/components/ui/Separator';
 import { cn } from '@/lib/utils';
 import Spinner from '@/components/ui/Spinner';
@@ -60,6 +67,7 @@ interface HomeScenarioProps {
 }
 
 // 페이지당 표시할 시나리오 개수
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const DEFAULT_PAGE_SIZE = 10;
 
 /**
@@ -116,6 +124,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
 
 function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false, kpi, onKpiChange }: HomeScenarioProps) {
   const [isOpened, setIsOpened] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
@@ -249,144 +258,174 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
             {/* 필터 섹션 */}
             <div className="flex items-center justify-between gap-2.5 py-4">
               <div className="flex items-center gap-2.5">
-                  {/* Filter Dropdown */}
-                  {(airportOptions.length > 0 || terminalOptions.length > 0) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="outline" className="w-36 justify-between">
-                          <span className="flex items-center gap-1.5 text-sm font-medium text-default-700">
-                            <Filter className="h-4 w-4" />
-                            Filter
+                <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" className="h-9 justify-between">
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-default-700">
+                        <Filter className="h-4 w-4" />
+                        Filter
+                      </span>
+                      <span className="flex items-center gap-1.5 ml-2">
+                        {(appliedFilterCount > 0 || searchQuery.trim()) && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            {appliedFilterCount + (searchQuery.trim() ? 1 : 0)}
                           </span>
+                        )}
+                        <ChevronDown className="h-4 w-4 text-default-500" />
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {/* Search */}
+                    <div className="px-2 py-1.5">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-default-400" />
+                        <Input
+                          placeholder="Search..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') {
+                              setFilterOpen(false);
+                            }
+                          }}
+                          className="h-8 pl-7 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+
+                    {airportOptions.length > 0 && (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="justify-between">
                           <span className="flex items-center gap-1.5">
-                            {appliedFilterCount > 0 && (
-                              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                {appliedFilterCount}
-                              </span>
-                            )}
-                            <ChevronDown className="h-4 w-4 text-default-500" />
+                            <Plane className="h-3.5 w-3.5 text-default-500" />
+                            Airport
                           </span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-56">
-                        {airportOptions.length > 0 && (
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger className="justify-between">
-                              <span className="flex items-center gap-1.5">
-                                <Plane className="h-3.5 w-3.5 text-default-500" />
-                                Airport
-                              </span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="w-48">
-                              {airportOptions.map((airport) => {
-                                const isSelected = selectedAirports.includes(airport);
-                                return (
-                                  <DropdownMenuItem
-                                    key={airport}
-                                    onSelect={(event) => {
-                                      event.preventDefault();
-                                    }}
-                                    className={cn(
-                                      'px-2 py-1.5',
-                                      isSelected ? 'bg-primary/10 text-primary-900' : ''
-                                    )}
-                                  >
-                                    <label
-                                      htmlFor={`filter-airport-${airport}`}
-                                      className="flex w-full cursor-pointer items-center gap-2"
-                                    >
-                                      <Checkbox
-                                        id={`filter-airport-${airport}`}
-                                        checked={isSelected}
-                                        onCheckedChange={() => toggleAirportFilter(airport)}
-                                      />
-                                      <span className="text-sm text-default-900">{airport}</span>
-                                    </label>
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        )}
-                        {terminalOptions.length > 0 && (
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger className="justify-between">
-                              <span className="flex items-center gap-1.5">
-                                <Building2 className="h-3.5 w-3.5 text-default-500" />
-                                Terminal
-                              </span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="w-48">
-                              {terminalOptions.map((terminal) => {
-                                const isSelected = selectedTerminals.includes(terminal);
-                                return (
-                                  <DropdownMenuItem
-                                    key={terminal}
-                                    onSelect={(event) => {
-                                      event.preventDefault();
-                                    }}
-                                    className={cn(
-                                      'px-2 py-1.5',
-                                      isSelected ? 'bg-primary/10 text-primary-900' : ''
-                                    )}
-                                  >
-                                    <label
-                                      htmlFor={`filter-terminal-${terminal}`}
-                                      className="flex w-full cursor-pointer items-center gap-2"
-                                    >
-                                      <Checkbox
-                                        id={`filter-terminal-${terminal}`}
-                                        checked={isSelected}
-                                        onCheckedChange={() => toggleTerminalFilter(terminal)}
-                                      />
-                                      <span className="text-sm text-default-900">{terminal}</span>
-                                    </label>
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        )}
-                        {appliedFilterCount > 0 && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onSelect={(event) => {
-                                event.preventDefault();
-                                clearAllFilters();
-                              }}
-                              className="text-sm text-default-600 hover:text-default-900"
-                            >
-                              Clear all filters
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="w-48">
+                          {airportOptions.map((airport) => {
+                            const isSelected = selectedAirports.includes(airport);
+                            return (
+                              <DropdownMenuItem
+                                key={airport}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                }}
+                                className={cn(
+                                  'px-2 py-1.5',
+                                  isSelected ? 'bg-primary/10 text-primary-900' : ''
+                                )}
+                              >
+                                <label
+                                  htmlFor={`filter-airport-${airport}`}
+                                  className="flex w-full cursor-pointer items-center gap-2"
+                                >
+                                  <Checkbox
+                                    id={`filter-airport-${airport}`}
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleAirportFilter(airport)}
+                                  />
+                                  <span className="text-sm text-default-900">{airport}</span>
+                                </label>
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    )}
+                    {terminalOptions.length > 0 && (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-default-500" />
+                            Terminal
+                          </span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="w-48">
+                          {terminalOptions.map((terminal) => {
+                            const isSelected = selectedTerminals.includes(terminal);
+                            return (
+                              <DropdownMenuItem
+                                key={terminal}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                }}
+                                className={cn(
+                                  'px-2 py-1.5',
+                                  isSelected ? 'bg-primary/10 text-primary-900' : ''
+                                )}
+                              >
+                                <label
+                                  htmlFor={`filter-terminal-${terminal}`}
+                                  className="flex w-full cursor-pointer items-center gap-2"
+                                >
+                                  <Checkbox
+                                    id={`filter-terminal-${terminal}`}
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleTerminalFilter(terminal)}
+                                  />
+                                  <span className="text-sm text-default-900">{terminal}</span>
+                                </label>
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    )}
+                    {(appliedFilterCount > 0 || searchQuery.trim()) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            clearAllFilters();
+                            setSearchQuery('');
+                          }}
+                          className="text-sm text-default-600 hover:text-default-900"
+                        >
+                          Clear all
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
-              {/* Search */}
-              <div className="relative w-44">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-default-400" />
-                <Input
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm text-default-500">
+                  Rows per page
+                </span>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPageSize(parseInt(value));
                     setCurrentPage(1);
                   }}
-                  asciiOnly={false}
-                  size="sm"
-                  className="pl-7"
-                />
+                >
+                  <SelectTrigger className="w-20 h-9 justify-between">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {/* 테이블 영역 (스크롤 가능) */}
             <div className="flex-1 overflow-auto">
               <table className="table-default">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-background">
                   <tr className="border-b">
                     <th className="px-3 text-left whitespace-nowrap">
                       <div className="flex items-center gap-1 text-sm font-medium text-default-900">
@@ -486,29 +525,31 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
 
                         <td className="px-3 whitespace-nowrap">
                           {item.metadata_updated_at ? (
-                            <>
-                              {dayjs(item.metadata_updated_at).format('YYYY-MM-DD')}
-                              <br />
-                              <span className="text-xs text-default-500">
+                            <div className="flex flex-col leading-4">
+                              <span className="text-xs">
+                                {dayjs(item.metadata_updated_at).format('YYYY-MM-DD')}
+                              </span>
+                              <span className="text-[11px] text-default-500 text-center">
                                 {dayjs(item.metadata_updated_at).format('HH:mm')}
                               </span>
-                            </>
+                            </div>
                           ) : (
-                            <span className="text-sm italic text-default-400">Never saved</span>
+                            <span className="text-xs italic text-default-400">Never saved</span>
                           )}
                         </td>
 
                         <td className="px-3 whitespace-nowrap">
                           {item.simulation_end_at ? (
-                            <>
-                              {dayjs(item.simulation_end_at).format('YYYY-MM-DD')}
-                              <br />
-                              <span className="text-xs text-default-500">
+                            <div className="flex flex-col leading-4">
+                              <span className="text-xs">
+                                {dayjs(item.simulation_end_at).format('YYYY-MM-DD')}
+                              </span>
+                              <span className="text-[11px] text-default-500 text-center">
                                 {dayjs(item.simulation_end_at).format('HH:mm')}
                               </span>
-                            </>
+                            </div>
                           ) : (
-                            <span className="text-sm italic text-default-400">
+                            <span className="text-xs italic text-default-400">
                               {item.simulation_status === 'processing'
                                 ? 'In progress'
                                 : 'Never run'}
