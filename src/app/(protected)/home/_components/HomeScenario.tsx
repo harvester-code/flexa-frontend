@@ -445,14 +445,14 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                         Terminal
                       </div>
                     </th>
-                    <th className="px-3 text-left whitespace-nowrap">
-                      <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                    <th className="px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1 text-sm font-medium text-default-900">
                         <Clock4 className="h-3.5 w-3.5" />
                         Last Saved
                       </div>
                     </th>
-                    <th className="px-3 text-left whitespace-nowrap">
-                      <div className="flex items-center gap-1 text-sm font-medium text-default-900">
+                    <th className="px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1 text-sm font-medium text-default-900">
                         <History className="h-3.5 w-3.5" />
                         Last Run
                       </div>
@@ -523,13 +523,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                           {item.terminal}
                         </td>
 
-                        <td className="px-3 whitespace-nowrap">
+                        <td className="px-3 text-right whitespace-nowrap">
                           {item.metadata_updated_at ? (
-                            <div className="flex flex-col leading-4">
+                            <div className="flex flex-col items-end leading-4">
                               <span className="text-xs">
                                 {dayjs(item.metadata_updated_at).format('YYYY-MM-DD')}
                               </span>
-                              <span className="text-[11px] text-default-500 text-center">
+                              <span className="text-[11px] text-default-500">
                                 {dayjs(item.metadata_updated_at).format('HH:mm')}
                               </span>
                             </div>
@@ -538,13 +538,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                           )}
                         </td>
 
-                        <td className="px-3 whitespace-nowrap">
+                        <td className="px-3 text-right whitespace-nowrap">
                           {item.simulation_end_at ? (
-                            <div className="flex flex-col leading-4">
+                            <div className="flex flex-col items-end leading-4">
                               <span className="text-xs">
                                 {dayjs(item.simulation_end_at).format('YYYY-MM-DD')}
                               </span>
-                              <span className="text-[11px] text-default-500 text-center">
+                              <span className="text-[11px] text-default-500">
                                 {dayjs(item.simulation_end_at).format('HH:mm')}
                               </span>
                             </div>

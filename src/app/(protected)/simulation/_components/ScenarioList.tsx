@@ -853,9 +853,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("terminal")}
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap">
                 <div
-                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("metadata_updated_at")}
                 >
                   <Clock4 className="h-3.5 w-3.5" />
@@ -863,9 +863,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("metadata_updated_at")}
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap">
                 <div
-                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("simulation_end_at")}
                 >
                   <History className="h-3.5 w-3.5" />
@@ -873,9 +873,9 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("simulation_end_at")}
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap">
                 <div
-                  className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("updated_at")}
                 >
                   <NotebookPen className="h-3.5 w-3.5" />
@@ -1010,15 +1010,15 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
-                    <td className="px-3 whitespace-nowrap">
+                    <td className="px-3 text-right whitespace-nowrap">
                       {scenario.metadata_updated_at ? (
-                        <div className="flex flex-col leading-4">
+                        <div className="flex flex-col items-end leading-4">
                           <span className="text-xs">
                             {dayjs(scenario.metadata_updated_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
-                          <span className="text-[11px] text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground">
                             {dayjs(scenario.metadata_updated_at).format(
                               "HH:mm"
                             )}
@@ -1030,15 +1030,15 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="px-3 whitespace-nowrap">
+                    <td className="px-3 text-right whitespace-nowrap">
                       {scenario.simulation_end_at ? (
-                        <div className="flex flex-col leading-4">
+                        <div className="flex flex-col items-end leading-4">
                           <span className="text-xs">
                             {dayjs(scenario.simulation_end_at).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
-                          <span className="text-[11px] text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground">
                             {dayjs(scenario.simulation_end_at).format("HH:mm")}
                           </span>
                         </div>
@@ -1051,13 +1051,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
-                    <td className="px-3 whitespace-nowrap">
+                    <td className="px-3 text-right whitespace-nowrap">
                       {scenario.updated_at ? (
-                        <div className="flex flex-col leading-4">
+                        <div className="flex flex-col items-end leading-4">
                           <span className="text-xs">
                             {dayjs(scenario.updated_at).format("YYYY-MM-DD")}
                           </span>
-                          <span className="text-[11px] text-muted-foreground text-center">
+                          <span className="text-[11px] text-muted-foreground">
                             {dayjs(scenario.updated_at).format("HH:mm")}
                           </span>
                         </div>
