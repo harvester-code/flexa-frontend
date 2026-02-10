@@ -119,6 +119,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       if (!isValidSelection) {
         setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
       }
+    } else {
+      // 데이터가 없으면 선택값 초기화
+      setSelectedFacilityValue('');
     }
   }, [FACILITY_OPTIONS]);
 
@@ -263,7 +266,15 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   };
 
   useEffect(() => {
-    if (!hourlyTrendsData || !selectedFacilityValue || selectedZones.length === 0) return;
+    if (!hourlyTrendsData || !selectedFacilityValue || selectedZones.length === 0) {
+      // 데이터가 없으면 이전 상태 초기화
+      setLineChartData([]);
+      setChartLayout({
+        margin: { l: 60, r: 60, b: 60, t: 24 },
+        showlegend: false,
+      });
+      return;
+    }
 
     const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
 

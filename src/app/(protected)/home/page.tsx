@@ -17,8 +17,6 @@ import type {
   TerminalLayoutZoneRect,
 } from "@/types/terminalLayout";
 
-// FIXME: 데이터가 있는 시나리오 조회 후 데이터가 없는 시나리오 선택 시 차트 및 기타 데이터가 유지됨.
-
 function HomePage() {
   const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);

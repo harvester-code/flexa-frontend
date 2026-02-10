@@ -31,7 +31,13 @@ function HomeChartFlowChart({
   const [chartHeight, setChartHeight] = useState<number>(600);
 
   useEffect(() => {
-    if (!sankey) return;
+    if (!sankey) {
+      // 데이터가 없으면 이전 상태 초기화
+      setSankeyChartData([]);
+      setLayerTitles([]);
+      setProcessInfo(null);
+      return;
+    }
 
     // 새로운 구조 처리 - process_info가 있으면 새 구조, 없으면 기존 구조
     const layoutData = sankey.process_info

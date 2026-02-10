@@ -38,6 +38,9 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
       if (!isValidSelection) {
         setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
       }
+    } else {
+      // 데이터가 없으면 선택값 초기화
+      setSelectedFacilityValue('');
     }
   }, [FACILITY_OPTIONS]);
 
