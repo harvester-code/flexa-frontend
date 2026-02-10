@@ -18,12 +18,14 @@ import {
   History,
   Link2,
   Plane,
+  Search,
   StickyNote,
   XCircle,
 } from 'lucide-react';
 import { ScenarioData } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Input } from '@/components/ui/Input';
 import HomeKpiSelector from './HomeKpiSelector';
 import {
   Dialog,
@@ -43,13 +45,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select';
 import { Separator } from '@/components/ui/Separator';
 import { cn } from '@/lib/utils';
 import Spinner from '@/components/ui/Spinner';
@@ -64,8 +59,7 @@ interface HomeScenarioProps {
   onKpiChange: (kpi: { type: 'mean' | 'top'; percentile?: number }) => void;
 }
 
-// 페이지당 표시할 시나리오 개수 옵션
-const PAGE_SIZE_OPTIONS = [10, 25, 50];
+// 페이지당 표시할 시나리오 개수
 const DEFAULT_PAGE_SIZE = 10;
 
 /**
@@ -126,6 +120,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const hasAutoOpened = useRef(false);
   const availableScenarioCount = Array.isArray(data) ? data.length : 0;
 
@@ -156,6 +151,18 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   const filteredScenarios = useMemo(() => {
     let scenarios = data || [];
 
+    // 검색어 필터링 (Name, Airport, Terminal, Memo)
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      scenarios = scenarios.filter((s) => {
+        const name = (s.name || '').toLowerCase();
+        const airport = (s.airport || '').toLowerCase();
+        const terminal = (s.terminal || '').toLowerCase();
+        const memo = (s.memo || '').toLowerCase();
+        return name.includes(query) || airport.includes(query) || terminal.includes(query) || memo.includes(query);
+      });
+    }
+
     // Airport 필터링
     if (selectedAirports.length > 0) {
       scenarios = scenarios.filter((s) => selectedAirports.includes(s.airport));
@@ -167,7 +174,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
     }
 
     return scenarios;
-  }, [data, selectedAirports, selectedTerminals]);
+  }, [data, searchQuery, selectedAirports, selectedTerminals]);
 
   // 페이지네이션
   const totalPages = Math.ceil(filteredScenarios.length / pageSize);
@@ -176,11 +183,6 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   const selectScenario = (selectedScenario: ScenarioData) => {
     onSelectScenario(selectedScenario);
     setIsOpened(false);
-  };
-
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(parseInt(value));
-    setCurrentPage(1);
   };
 
   const toggleAirportFilter = (airport: string) => {
@@ -364,21 +366,20 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                   )}
               </div>
 
-              {/* Rows per page */}
-              <div className="flex items-center gap-2">
-                <span className="hidden text-sm text-default-500 md:inline">Rows per page</span>
-                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="w-24 justify-between">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Search */}
+              <div className="relative w-44">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-default-400" />
+                <Input
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  asciiOnly={false}
+                  size="sm"
+                  className="pl-7"
+                />
               </div>
             </div>
 

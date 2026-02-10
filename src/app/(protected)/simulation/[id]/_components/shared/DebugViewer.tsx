@@ -111,7 +111,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
   if (!visible) return null;
 
   return (
-    <div className="mt-8 border-t pt-6">
+    <div className="mt-8 pt-6">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-default-900">
           <Bug className="h-5 w-5" />

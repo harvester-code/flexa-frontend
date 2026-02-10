@@ -27,7 +27,8 @@ const useScenarios = () => {
       }
     },
     enabled: !!userInfo?.id, // user_id가 있을 때만 쿼리 실행
-    // staleTime, gcTime은 전역 기본값 사용 (5분 캐싱)
+    staleTime: 0, // 항상 최신 데이터 가져오기
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 리페치
   });
 
   return {

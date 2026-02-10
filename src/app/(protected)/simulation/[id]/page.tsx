@@ -613,13 +613,15 @@ export default function SimulationDetail({
         )}
 
         {/* Floating AI Assistant Button */}
-        <button
+        <Button
+          variant="primary"
+          size="icon"
           onClick={() => setIsAIChatOpen(true)}
-          className="fixed bottom-6 right-6 z-30 flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
+          className="fixed bottom-6 right-6 z-30 rounded-xl shadow-lg transition-all hover:scale-110 hover:shadow-xl"
           title="Open AI Assistant"
         >
           <Bot className="h-5 w-5" />
-        </button>
+        </Button>
 
         {/* AI Chat Sidebar */}
         <AIChatSidebar

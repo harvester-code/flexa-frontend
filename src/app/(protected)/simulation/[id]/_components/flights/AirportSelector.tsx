@@ -88,23 +88,34 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
     if (!debouncedSearchQuery) return [];
 
     const query = debouncedSearchQuery.toUpperCase();
-    const iataMatches: typeof airportFlat = [];
+    const exactMatch: typeof airportFlat = [];
+    const iataStartsWith: typeof airportFlat = [];
+    const iataContains: typeof airportFlat = [];
     const otherMatches: typeof airportFlat = [];
 
     for (const airport of airportFlat) {
-      if (airport.iata.includes(query)) {
-        iataMatches.push(airport);
-      } else if (
+      // 1순위: IATA 코드 정확 일치
+      if (airport.iata === query) {
+        exactMatch.push(airport);
+      }
+      // 2순위: IATA 코드가 검색어로 시작
+      else if (airport.iata.startsWith(query)) {
+        iataStartsWith.push(airport);
+      }
+      // 3순위: IATA 코드 부분 일치
+      else if (airport.iata.includes(query)) {
+        iataContains.push(airport);
+      }
+      // 4순위: 도시명/국가명 일치
+      else if (
         airport.city.toUpperCase().includes(query) ||
         airport.country.toUpperCase().includes(query)
       ) {
         otherMatches.push(airport);
       }
-
-      if (iataMatches.length + otherMatches.length >= MAX_SEARCH_RESULTS) break;
     }
 
-    return [...iataMatches, ...otherMatches].slice(0, MAX_SEARCH_RESULTS);
+    return [...exactMatch, ...iataStartsWith, ...iataContains, ...otherMatches].slice(0, MAX_SEARCH_RESULTS);
   }, [debouncedSearchQuery]);
 
   const handleSelect = (iata: string) => {

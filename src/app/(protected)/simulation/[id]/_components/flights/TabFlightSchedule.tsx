@@ -541,7 +541,7 @@ function TabFlightSchedule({
 
         {/* Load Data Section */}
         <CardContent className="space-y-6">
-          <div className="pb-4 border-b">
+          <div>
             <FlightDataLoader
               loadingFlightSchedule={loadingFlightSchedule}
               setIsSomethingChanged={setIsSomethingChanged}
