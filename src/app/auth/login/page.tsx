@@ -120,15 +120,6 @@ function LoginForm() {
               Sign In
             </SubmitButton>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm font-medium text-primary">
-              Don&rsquo;t have an account?{' '}
-              <Link href="/auth/register" className="font-semibold text-primary underline underline-offset-2">
-                Create account
-              </Link>
-            </p>
-          </div>
         </div>
 
         <p className="absolute bottom-4 left-0 right-0 text-center text-sm text-muted-foreground">
