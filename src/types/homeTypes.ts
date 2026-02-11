@@ -211,3 +211,125 @@ export interface FlightSummaryResponse {
   timeMetrics?: TimeMetrics;
   dwellTimes?: DwellTimes;
 }
+
+// ============================================================
+// KPI 선택 공용 타입
+// ============================================================
+
+export interface KpiValue {
+  type: 'mean' | 'top';
+  percentile?: number;
+  cumulative?: boolean;
+}
+
+// ============================================================
+// Home API 응답 타입 (/homes/{scenarioId}/static)
+// ============================================================
+
+export interface HomeStaticData {
+  flow_chart?: Record<string, unknown>;
+  histogram?: Record<string, unknown>;
+  sankey_diagram?: Record<string, unknown>;
+}
+
+// ============================================================
+// Home API 응답 타입 (/homes/{scenarioId}/metrics)
+// ============================================================
+
+/** 프로세스별 대기시간 정보 */
+export interface ProcessWaitingTime {
+  total: TimeHMS;
+  open_wait: TimeHMS;
+  queue_wait: TimeHMS;
+}
+
+/** 승객 경험 (Pax Experience) */
+export interface PaxExperience {
+  waiting_time: Record<string, ProcessWaitingTime>;
+  queue_length: Record<string, number>;
+}
+
+/** 시설 메트릭 (Efficiency) */
+export interface FacilityMetric {
+  process: string;
+  operating_rate: number;
+  utilization_rate: number;
+  total_rate: number;
+  zones?: Record<string, unknown>;
+}
+
+/** 승객 요약 (Throughputs) */
+export interface PassengerSummary {
+  total: number;
+  completed: number;
+  missed: number;
+}
+
+/** GDP 데이터 */
+export interface GdpData {
+  formatted: string;
+  year: number;
+}
+
+/** 공항 컨텍스트 (Economic Impact 출처 정보) */
+export interface AirportContext {
+  country_name: string;
+  gdp_ppp?: GdpData;
+  gdp?: GdpData;
+}
+
+/** 경제적 영향 (Monetary Value of Time) */
+export interface EconomicImpact {
+  total_wait_value: number;
+  process_time_value: number;
+  commercial_dwell_value: number;
+  airport_context?: AirportContext;
+}
+
+/** metrics API 전체 응답 (summary) */
+export interface HomeSummaryData {
+  pax_experience?: PaxExperience;
+  timeMetrics?: TimeMetrics;
+  dwellTimes?: DwellTimes;
+  facility_metrics?: FacilityMetric[];
+  passenger_summary?: PassengerSummary;
+  economic_impact?: EconomicImpact;
+}
+
+// ============================================================
+// Home API 응답 타입 - Facility Details
+// ============================================================
+
+/** 시설 세부 컴포넌트 */
+export interface FacilityDetailComponent {
+  title: string;
+  throughput: number;
+  queuePax: number;
+  waitTime: TimeHMS;
+  facility_effi: number;
+  workforce_effi: number;
+  opened: [number, number];
+}
+
+/** 시설 세부 카테고리 개요 */
+export interface FacilityDetailOverview {
+  throughput: number;
+  queuePax: number;
+  waitTime: TimeHMS;
+  facility_effi: number;
+  workforce_effi: number;
+  opened: [number, number];
+}
+
+/** 시설 세부 카테고리 */
+export interface FacilityDetailCategory {
+  category: string;
+  overview: FacilityDetailOverview;
+  components: FacilityDetailComponent[];
+}
+
+/** metrics API 전체 응답 */
+export interface HomeMetricsData {
+  summary: HomeSummaryData;
+  facility_details: FacilityDetailCategory[];
+}

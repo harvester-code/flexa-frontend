@@ -1,18 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Option } from '@/types/homeTypes';
-import { ScenarioData } from '@/types/homeTypes';
+import type { Option, ScenarioData, HomeSummaryData, FacilityMetric } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Clock, Timer, Building2, Plane, DollarSign, Users, UserCheck, Home, Hourglass, Gauge, Activity, Target } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
-import { capitalizeFirst, formatTimeTaken, formatUnit } from './HomeFormat';
+import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 import HomeSummaryCard from './HomeSummaryCard';
-import HomeTooltip from './HomeTooltip';
 
 const CHART_OPTIONS: Option[] = [
   { label: 'Wait Time', value: 'waiting_time' },
@@ -22,8 +19,8 @@ const CHART_OPTIONS: Option[] = [
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
   percentile: number | null;
-  data?: any; // 배치 API에서 받은 summary 데이터
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: HomeSummaryData;
+  isLoading?: boolean;
 }
 
 function HomeSummary({
@@ -46,7 +43,7 @@ function HomeSummary({
     const PRIMARY_COLOR_SCALES = ['#6b46c1', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'];
 
     // 8칸으로 펼치기: 각 프로세스마다 open_wait, queue_wait 2개
-    return Object.entries(processes).flatMap(([process, waitData]: [string, any], processIdx) => {
+    return Object.entries(processes).flatMap(([process, waitData], processIdx) => {
       const openSeconds = waitData.open_wait.hour * 3600 + waitData.open_wait.minute * 60 + waitData.open_wait.second;
       const queueSeconds = waitData.queue_wait.hour * 3600 + waitData.queue_wait.minute * 60 + waitData.queue_wait.second;
 
@@ -184,97 +181,13 @@ function HomeSummary({
       )}
 
       {/* Efficiency 섹션 */}
-      {summaryData?.facility_metrics && summaryData.facility_metrics.length > 0 && (() => {
-        // "total" process만 찾기
-        const totalMetrics = summaryData.facility_metrics.find((m: any) => m.process === 'total');
-        if (!totalMetrics) return null;
-
-        return (
-          <>
-            <div className="mt-3 mb-2 text-lg font-semibold">Efficiency</div>
-            <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
-              <HomeSummaryCard
-                icon={Gauge}
-                title={<span>Facility Effi.</span>}
-                value={
-                  <>
-                    {(totalMetrics.operating_rate * 100).toFixed(1)}
-                    {formatUnit('%', 'default', 'lg')}
-                  </>
-                }
-              />
-              <HomeSummaryCard
-                icon={Activity}
-                title={<span>Workforce Effi.</span>}
-                value={
-                  <>
-                    {(totalMetrics.utilization_rate * 100).toFixed(1)}
-                    {formatUnit('%', 'default', 'lg')}
-                  </>
-                }
-              />
-              <HomeSummaryCard
-                icon={Target}
-                title={<span>Overall Effi.</span>}
-                value={
-                  <>
-                    {(totalMetrics.total_rate * 100).toFixed(1)}
-                    {formatUnit('%', 'default', 'lg')}
-                  </>
-                }
-              />
-            </div>
-          </>
-        );
-      })()}
+      {summaryData?.facility_metrics && summaryData.facility_metrics.length > 0 && (
+        <EfficiencySection metrics={summaryData.facility_metrics} />
+      )}
 
       {/* Economic Impact 섹션 */}
       {summaryData?.economic_impact && (
-        <>
-          <div className="mt-3 mb-2 flex items-center justify-between">
-            <div className="text-lg font-semibold">Monetary Value of Time</div>
-            {summaryData.economic_impact.airport_context && (() => {
-              const ctx = summaryData.economic_impact.airport_context;
-              const gdpData = ctx.gdp_ppp || ctx.gdp;
-              const gdpType = ctx.gdp_ppp ? 'GDP PPP' : 'GDP';
-
-              return (
-                <div className="text-sm text-default-500">
-                  Based on {ctx.country_name} {gdpType} {gdpData?.formatted} ({gdpData?.year}) | Source: World Bank
-                </div>
-              );
-            })()}
-          </div>
-          <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
-            <HomeSummaryCard
-              icon={DollarSign}
-              title={<span>Cost of Waiting</span>}
-              value={
-                <span className="text-2xl text-red-600">
-                  -<span className="text-base">USD</span> {Math.round(Math.abs(summaryData.economic_impact.total_wait_value)).toLocaleString()}
-                </span>
-              }
-            />
-            <HomeSummaryCard
-              icon={DollarSign}
-              title={<span>Cost of Proc. & Wait</span>}
-              value={
-                <span className="text-2xl text-red-600">
-                  -<span className="text-base">USD</span> {Math.round(Math.abs(summaryData.economic_impact.process_time_value)).toLocaleString()}
-                </span>
-              }
-            />
-            <HomeSummaryCard
-              icon={DollarSign}
-              title={<span>Value of Comm. Dwell Time</span>}
-              value={
-                <span className="text-2xl text-green-600">
-                  +<span className="text-base">USD</span> {Math.round(summaryData.economic_impact.commercial_dwell_value).toLocaleString()}
-                </span>
-              }
-            />
-          </div>
-        </>
+        <EconomicImpactSection impact={summaryData.economic_impact} />
       )}
 
       {/* Pax Experience 섹션 */}
@@ -288,6 +201,99 @@ function HomeSummary({
         />
       </div>
       <TheHistogramChart chartData={selectedChartType === 'waiting_time' ? waitTimeChartData : queueLengthChartData} />
+    </>
+  );
+}
+
+/** Efficiency 섹션 (IIFE 제거하여 별도 컴포넌트로 추출) */
+function EfficiencySection({ metrics }: { metrics: FacilityMetric[] }) {
+  const totalMetrics = metrics.find((m) => m.process === 'total');
+  if (!totalMetrics) return null;
+
+  return (
+    <>
+      <div className="mt-3 mb-2 text-lg font-semibold">Efficiency</div>
+      <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+        <HomeSummaryCard
+          icon={Gauge}
+          title={<span>Facility Effi.</span>}
+          value={
+            <>
+              {(totalMetrics.operating_rate * 100).toFixed(1)}
+              {formatUnit('%', 'default', 'lg')}
+            </>
+          }
+        />
+        <HomeSummaryCard
+          icon={Activity}
+          title={<span>Workforce Effi.</span>}
+          value={
+            <>
+              {(totalMetrics.utilization_rate * 100).toFixed(1)}
+              {formatUnit('%', 'default', 'lg')}
+            </>
+          }
+        />
+        <HomeSummaryCard
+          icon={Target}
+          title={<span>Overall Effi.</span>}
+          value={
+            <>
+              {(totalMetrics.total_rate * 100).toFixed(1)}
+              {formatUnit('%', 'default', 'lg')}
+            </>
+          }
+        />
+      </div>
+    </>
+  );
+}
+
+/** Economic Impact 섹션 (IIFE 제거하여 별도 컴포넌트로 추출) */
+function EconomicImpactSection({ impact }: { impact: NonNullable<HomeSummaryData['economic_impact']> }) {
+  const ctx = impact.airport_context;
+  const gdpData = ctx?.gdp_ppp || ctx?.gdp;
+  const gdpType = ctx?.gdp_ppp ? 'GDP PPP' : 'GDP';
+
+  return (
+    <>
+      <div className="mt-3 mb-2 flex items-center justify-between">
+        <div className="text-lg font-semibold">Monetary Value of Time</div>
+        {ctx && gdpData && (
+          <div className="text-sm text-default-500">
+            Based on {ctx.country_name} {gdpType} {gdpData.formatted} ({gdpData.year}) | Source: World Bank
+          </div>
+        )}
+      </div>
+      <div className="mb-0 grid grid-cols-1 gap-3 overflow-auto md:grid-cols-2 lg:grid-cols-3">
+        <HomeSummaryCard
+          icon={DollarSign}
+          title={<span>Cost of Waiting</span>}
+          value={
+            <span className="text-2xl text-red-600">
+              -<span className="text-base">USD</span> {Math.round(Math.abs(impact.total_wait_value)).toLocaleString()}
+            </span>
+          }
+        />
+        <HomeSummaryCard
+          icon={DollarSign}
+          title={<span>Cost of Proc. & Wait</span>}
+          value={
+            <span className="text-2xl text-red-600">
+              -<span className="text-base">USD</span> {Math.round(Math.abs(impact.process_time_value)).toLocaleString()}
+            </span>
+          }
+        />
+        <HomeSummaryCard
+          icon={DollarSign}
+          title={<span>Value of Comm. Dwell Time</span>}
+          value={
+            <span className="text-2xl text-green-600">
+              +<span className="text-base">USD</span> {Math.round(impact.commercial_dwell_value).toLocaleString()}
+            </span>
+          }
+        />
+      </div>
     </>
   );
 }

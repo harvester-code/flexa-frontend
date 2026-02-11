@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import type { KpiValue } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import {
   DropdownMenu,
@@ -12,15 +13,9 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
 
-interface KpiSelectorValue {
-  type: 'mean' | 'top';
-  percentile?: number;
-  cumulative?: boolean;
-}
-
 interface HomeKpiSelectorProps {
-  value: KpiSelectorValue;
-  onChange: (val: KpiSelectorValue) => void;
+  value: KpiValue;
+  onChange: (val: KpiValue) => void;
 }
 
 const PRESET_PERCENTILES = [1, 5, 10, 20, 50];

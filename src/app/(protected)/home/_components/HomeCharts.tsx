@@ -1,16 +1,12 @@
-import { ScenarioData } from '@/types/homeTypes';
+import type { ScenarioData, HomeStaticData } from '@/types/homeTypes';
 import HomeChartFlowChart from './HomeChartFlowChart';
 import HomeChartHistogram from './HomeChartHistogram';
 import HomeChartHourlyTrends from './HomeChartHourlyTrends';
 
 interface HomeChartsProps {
   scenario: ScenarioData | null;
-  data?: {
-    flow_chart?: any;
-    histogram?: any;
-    sankey_diagram?: any;
-  }; // 배치 API에서 받은 차트 데이터들
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: HomeStaticData;
+  isLoading?: boolean;
 }
 
 export default function HomeCharts({

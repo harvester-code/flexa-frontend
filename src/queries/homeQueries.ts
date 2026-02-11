@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchStaticData, fetchMetricsData } from '@/services/homeService';
+import type { HomeStaticData, HomeMetricsData } from '@/types/homeTypes';
 
-// 정적 데이터 (KPI와 무관한 데이터: alert_issues, flow_chart, histogram, sankey_diagram)
+// 정적 데이터 (KPI와 무관한 데이터: flow_chart, histogram, sankey_diagram)
 const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
-  return useQuery({
+  return useQuery<HomeStaticData>({
     queryKey: ['home-static-data', scenarioId],
     queryFn: async () => {
-      const { data } = await fetchStaticData({ scenarioId });
+      const { data } = await fetchStaticData({ scenarioId: scenarioId! });
       return data;
     },
     enabled: enabled && !!scenarioId,
@@ -25,10 +26,10 @@ const useMetricsData = ({
   scenarioId?: string;
   enabled?: boolean;
 }) => {
-  return useQuery({
+  return useQuery<HomeMetricsData>({
     queryKey: ['home-metrics-data', scenarioId, percentile, percentileMode],
     queryFn: async () => {
-      const { data } = await fetchMetricsData({ percentile, percentileMode, scenarioId });
+      const { data } = await fetchMetricsData({ percentile, percentileMode, scenarioId: scenarioId! });
       return data;
     },
     enabled: enabled && !!scenarioId,

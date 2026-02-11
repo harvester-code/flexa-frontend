@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, LineChart, FileText, Image } from "lucide-react";
-import { ScenarioData } from "@/types/homeTypes";
+import { BarChart3, LineChart, FileText, Image, AlertTriangle } from "lucide-react";
+import type { ScenarioData, KpiValue } from "@/types/homeTypes";
 import { useStaticData, useMetricsData } from "@/queries/homeQueries";
 import { useScenarios } from "@/queries/simulationQueries";
 import TheContentHeader from "@/components/TheContentHeader";
@@ -20,20 +20,28 @@ import type {
 function HomePage() {
   const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
-  const [kpi, setKpi] = useState<{
-    type: "mean" | "top";
-    percentile?: number;
-    cumulative?: boolean;
-  }>({ type: "mean", percentile: 5, cumulative: true });
+  const [kpi, setKpi] = useState<KpiValue>({
+    type: "mean",
+    percentile: 5,
+    cumulative: true,
+  });
 
   // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
-  const { data: staticData, isLoading: isStaticLoading } = useStaticData({
+  const {
+    data: staticData,
+    isLoading: isStaticLoading,
+    isError: isStaticError,
+  } = useStaticData({
     scenarioId: scenario?.scenario_id,
     enabled: !!scenario,
   });
 
   // KPI 메트릭 데이터 (KPI 변경 시 재요청)
-  const { data: metricsData, isLoading: isMetricsLoading } = useMetricsData({
+  const {
+    data: metricsData,
+    isLoading: isMetricsLoading,
+    isError: isMetricsError,
+  } = useMetricsData({
     scenarioId: scenario?.scenario_id,
     percentile: kpi.type === "top" ? (kpi.percentile ?? null) : null,
     percentileMode:
@@ -44,12 +52,6 @@ function HomePage() {
         : undefined,
     enabled: !!scenario,
   });
-
-  // 전체 데이터 조합
-  const allHomeData = {
-    ...staticData,
-    ...metricsData,
-  };
 
   const terminalLayoutData = useMemo<ScenarioTerminalLayout | null>(() => {
     const rawLayout = (staticData as unknown as { terminalLayout?: unknown })
@@ -104,6 +106,17 @@ function HomePage() {
     };
   }, [staticData]);
 
+  // 에러 배너 컴포넌트
+  const errorBanner = (isStaticError || isMetricsError) && (
+    <div className="mt-4 flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+      <span>
+        Failed to load {isStaticError && isMetricsError ? "analysis data" : isStaticError ? "chart data" : "metrics data"}.
+        Please try refreshing the page.
+      </span>
+    </div>
+  );
+
   return (
     <>
       <TheContentHeader text="Home" />
@@ -118,6 +131,8 @@ function HomePage() {
           onKpiChange={setKpi}
         />
 
+        {errorBanner}
+
         <HomeAccordion
           title="Terminal Layout"
           icon={<Image className="h-5 w-5 text-primary" />}
@@ -127,7 +142,7 @@ function HomePage() {
           <HomeTerminalImage
             scenario={scenario}
             layoutData={terminalLayoutData}
-            flowChartData={allHomeData?.flow_chart ?? null}
+            flowChartData={staticData?.flow_chart ?? null}
           />
         </HomeAccordion>
 
@@ -140,7 +155,7 @@ function HomePage() {
           <HomeSummary
             scenario={scenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
-            data={allHomeData?.summary}
+            data={metricsData?.summary}
             isLoading={isMetricsLoading}
           />
         </HomeAccordion>
@@ -153,9 +168,9 @@ function HomePage() {
           <HomeCharts
             scenario={scenario}
             data={{
-              flow_chart: allHomeData?.flow_chart,
-              histogram: allHomeData?.histogram,
-              sankey_diagram: allHomeData?.sankey_diagram,
+              flow_chart: staticData?.flow_chart,
+              histogram: staticData?.histogram,
+              sankey_diagram: staticData?.sankey_diagram,
             }}
             isLoading={isStaticLoading}
           />
@@ -169,7 +184,7 @@ function HomePage() {
           <HomeDetails
             scenario={scenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
-            data={allHomeData?.facility_details}
+            data={metricsData?.facility_details}
             isLoading={isMetricsLoading}
           />
         </HomeAccordion>

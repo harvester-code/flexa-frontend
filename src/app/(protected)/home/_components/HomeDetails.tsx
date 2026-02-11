@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { pascalCase } from 'change-case';
-import { ChevronRight, Clock4, LockOpen } from 'lucide-react';
-import { ScenarioData } from '@/types/homeTypes';
+import { ChevronRight, LockOpen } from 'lucide-react';
+import type { ScenarioData, FacilityDetailCategory } from '@/types/homeTypes';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { formatImageSize, formatNumberWithComma, formatPercent, formatTimeTaken, formatUnit } from './HomeFormat';
+import { formatImageSize, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
@@ -16,8 +15,8 @@ import HomeTooltip from './HomeTooltip';
 interface HomeDetailsProps {
   scenario: ScenarioData | null;
   percentile: number | null;
-  data?: any; // 배치 API에서 받은 facility_details 데이터
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: FacilityDetailCategory[];
+  isLoading?: boolean;
 }
 
 // Tooltip helper

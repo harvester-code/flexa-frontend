@@ -1,9 +1,10 @@
 import { createAPIService } from '@/lib/axios';
+import type { HomeStaticData, HomeMetricsData } from '@/types/homeTypes';
 
 const api = createAPIService('homes');
 
-export const fetchStaticData = ({ scenarioId }: { scenarioId?: string }) => {
-  return api.get(`/${scenarioId}/static`);
+export const fetchStaticData = ({ scenarioId }: { scenarioId: string }) => {
+  return api.get<HomeStaticData>(`/${scenarioId}/static`);
 };
 
 export const fetchMetricsData = ({
@@ -13,9 +14,9 @@ export const fetchMetricsData = ({
 }: {
   percentile: number | null;
   percentileMode?: 'cumulative' | 'quantile';
-  scenarioId?: string;
+  scenarioId: string;
 }) => {
-  return api.get(`/${scenarioId}/metrics`, {
+  return api.get<HomeMetricsData>(`/${scenarioId}/metrics`, {
     params: {
       percentile,
       percentile_mode: percentileMode,

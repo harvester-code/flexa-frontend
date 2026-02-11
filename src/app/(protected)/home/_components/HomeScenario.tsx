@@ -22,7 +22,7 @@ import {
   StickyNote,
   XCircle,
 } from 'lucide-react';
-import { ScenarioData } from '@/types/homeTypes';
+import type { ScenarioData, KpiValue } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
@@ -62,8 +62,8 @@ interface HomeScenarioProps {
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
   isLoading?: boolean;
-  kpi: { type: 'mean' | 'top'; percentile?: number };
-  onKpiChange: (kpi: { type: 'mean' | 'top'; percentile?: number }) => void;
+  kpi: KpiValue;
+  onKpiChange: (kpi: KpiValue) => void;
 }
 
 // 페이지당 표시할 시나리오 개수
@@ -506,12 +506,6 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                             )}
 
                             <span className="truncate">{item.name}</span>
-
-                            {(item as any)?.isMaster && (
-                              <span className="ml-2 inline-flex flex-shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                Master
-                              </span>
-                            )}
                           </div>
                         </td>
 
@@ -581,14 +575,14 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
 
             {/* 페이지네이션 */}
             <div className="mt-6 flex justify-center border-t pt-4">
-              <div className="flex items-center gap-2">
+              <nav aria-label="Scenario pagination" className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    if (currentPage > 1) setCurrentPage(1);
-                  }}
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage <= 1}
                   type="button"
+                  aria-label="First page"
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
@@ -596,12 +590,10 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                    }
-                  }}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
                   type="button"
+                  aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -614,12 +606,10 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                    }
-                  }}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
                   type="button"
+                  aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -627,16 +617,14 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    if (currentPage < totalPages && totalPages > 1) {
-                      setCurrentPage(totalPages);
-                    }
-                  }}
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage >= totalPages}
                   type="button"
+                  aria-label="Last page"
                 >
                   <ChevronsRight className="h-4 w-4" />
                 </Button>
-              </div>
+              </nav>
             </div>
           </DialogContent>
         </Dialog>

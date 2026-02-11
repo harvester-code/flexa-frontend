@@ -3,6 +3,15 @@ import { createClient } from '@/lib/auth/client';
 
 const baseURL = process.env.NEXT_PUBLIC_FAST_API_URL_V1;
 
+// Supabase 클라이언트 싱글톤 (매 요청마다 새로 생성하지 않음)
+let _supabaseClient: ReturnType<typeof createClient> | null = null;
+const getSupabaseClient = () => {
+  if (!_supabaseClient) {
+    _supabaseClient = createClient();
+  }
+  return _supabaseClient;
+};
+
 const instanceWithAuth = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
@@ -12,7 +21,7 @@ const instanceWithAuth = axios.create({
 instanceWithAuth.interceptors.request.use(
   async (config) => {
     try {
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
 
       const {
         data: { session },
@@ -45,7 +54,25 @@ instanceWithAuth.interceptors.response.use(
   },
   async (error) => {
     if (error.response?.status === 401) {
-      // 여기서 토큰 리프레시 또는 로그인 리다이렉트를 할 수 있습니다
+      try {
+        const supabase = getSupabaseClient();
+        const { error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError) {
+          // 리프레시 실패 시 로그인 페이지로 리다이렉트
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
+        } else if (error.config && !error.config._retry) {
+          // 리프레시 성공 시 원래 요청 재시도 (1회만)
+          error.config._retry = true;
+          return instanceWithAuth(error.config);
+        }
+      } catch {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
+      }
     }
 
     return Promise.reject(error);
