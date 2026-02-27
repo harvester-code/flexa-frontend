@@ -18,7 +18,7 @@ import type {
 } from "@/types/terminalLayout";
 
 function HomePage() {
-  const { data: scenarios, isLoading: isScenariosLoading } = useScenarios();
+  const { data: scenarios, isLoading: isScenariosLoading, isFetching: isScenariosRefetching, refetch: refetchScenarios } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
   const [kpi, setKpi] = useState<KpiValue>({
     type: "mean",
@@ -126,7 +126,8 @@ function HomePage() {
           data={scenarios || []}
           scenario={scenario}
           onSelectScenario={setScenario}
-          isLoading={isScenariosLoading}
+          isLoading={isScenariosLoading || isScenariosRefetching}
+          onRefetch={refetchScenarios}
           kpi={kpi}
           onKpiChange={setKpi}
         />

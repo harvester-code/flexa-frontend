@@ -62,6 +62,7 @@ interface HomeScenarioProps {
   scenario: ScenarioData | null;
   onSelectScenario: Dispatch<SetStateAction<ScenarioData | null>>;
   isLoading?: boolean;
+  onRefetch?: () => void;
   kpi: KpiValue;
   onKpiChange: (kpi: KpiValue) => void;
 }
@@ -122,7 +123,7 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
   });
 };
 
-function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false, kpi, onKpiChange }: HomeScenarioProps) {
+function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false, onRefetch, kpi, onKpiChange }: HomeScenarioProps) {
   const [isOpened, setIsOpened] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -239,7 +240,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
             Review analysis results and insights for the selected simulation scenario
           </p>
         </div>
-        <Dialog open={isOpened} onOpenChange={setIsOpened}>
+        <Dialog open={isOpened} onOpenChange={(open) => { setIsOpened(open); if (open) onRefetch?.(); }}>
           <DialogTrigger asChild>
             <Button>
               <Link2 className="mr-2 h-4 w-4" />
