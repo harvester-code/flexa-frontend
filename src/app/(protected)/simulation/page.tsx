@@ -15,7 +15,7 @@ const SimulationPage = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: user, isLoading: isUserLoading } = useUser();
-  const { scenarios, isLoading: isScenariosLoading } = useScenarios();
+  const { scenarios, isLoading: isScenariosLoading, isFetching: isScenariosRefetching } = useScenarios();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -91,7 +91,7 @@ const SimulationPage = () => {
         <div className="mt-8">
         <ScenarioList
           scenarios={scenarios || []}
-          isLoading={isScenariosLoading}
+          isLoading={isScenariosLoading || isScenariosRefetching}
           onCreateScenario={handleCreateScenario}
           onDeleteScenario={handleDeleteScenario}
         />
