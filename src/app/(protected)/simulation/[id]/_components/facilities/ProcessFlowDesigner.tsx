@@ -375,7 +375,9 @@ export default function ProcessFlowDesigner({
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log(`[Realtime] simulation-${simulationId} status:`, status, err ?? '');
+      });
 
     // 클린업: 컴포넌트 언마운트 시 구독 해제 및 타이머 정리
     return () => {

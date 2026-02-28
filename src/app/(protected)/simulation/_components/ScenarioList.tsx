@@ -91,7 +91,7 @@ type SortField =
   | "metadata_updated_at"
   | "simulation_end_at"
   | "memo"
-  | "updated_at";
+  | "created_at";
 type SortOrder = "asc" | "desc";
 
 /**
@@ -215,7 +215,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("updated_at");
+  const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
@@ -320,7 +320,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       if (
         sortField === "metadata_updated_at" ||
         sortField === "simulation_end_at" ||
-        sortField === "updated_at"
+        sortField === "created_at"
       ) {
         // null/undefined/"Never saved"/"Never run" 값은 가장 마지막으로
         const aIsEmpty = !aValue;
@@ -876,11 +876,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               <th className="px-3 text-right whitespace-nowrap">
                 <div
                   className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort("updated_at")}
+                  onClick={() => handleSort("created_at")}
                 >
                   <NotebookPen className="h-3.5 w-3.5" />
-                  Updated At
-                  {renderSortIcon("updated_at")}
+                  Created At
+                  {renderSortIcon("created_at")}
                 </div>
               </th>
               <th className="px-3 text-left whitespace-nowrap">
@@ -1052,13 +1052,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                     </td>
 
                     <td className="px-3 text-right whitespace-nowrap">
-                      {scenario.updated_at ? (
+                      {scenario.created_at ? (
                         <div className="flex flex-col items-end leading-4">
                           <span className="text-xs">
-                            {dayjs(scenario.updated_at).format("YYYY-MM-DD")}
+                            {dayjs(scenario.created_at).format("YYYY-MM-DD")}
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            {dayjs(scenario.updated_at).format("HH:mm")}
+                            {dayjs(scenario.created_at).format("HH:mm")}
                           </span>
                         </div>
                       ) : (
