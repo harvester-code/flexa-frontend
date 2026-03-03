@@ -583,6 +583,58 @@ export default function OperatingScheduleEditor({
     toggleCellIds,
   });
 
+  // 🖱️ 드래그 중 document mousemove로 셀 추적 (빠른 드래그/가상 스크롤 대응)
+  useEffect(() => {
+    if (
+      !dragState.isActive ||
+      dragState.type !== "cell" ||
+      !dragState.start
+    ) {
+      return;
+    }
+
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const td = target?.closest?.("td[data-cell-id]") as
+        | (HTMLElement & { dataset: { row: string; col: string; cellId: string } })
+        | null;
+      if (!td?.dataset?.cellId) return;
+
+      const rowIndex = parseInt(td.dataset.row, 10);
+      const colIndex = parseInt(td.dataset.col, 10);
+      if (isNaN(rowIndex) || isNaN(colIndex)) return;
+
+      const rangeCells = generateCellRange(
+        dragState.start!.row,
+        rowIndex,
+        dragState.start!.col,
+        colIndex
+      );
+
+      if (dragState.isAdditive && dragState.originalSelection) {
+        setTempSelectedCells(
+          new Set([...dragState.originalSelection, ...rangeCells])
+        );
+      } else {
+        setTempSelectedCells(rangeCells);
+      }
+    };
+
+    document.addEventListener("mousemove", handleDocumentMouseMove, {
+      passive: true,
+    });
+    return () =>
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+  }, [
+    dragState.isActive,
+    dragState.type,
+    dragState.start,
+    dragState.isAdditive,
+    dragState.originalSelection,
+    generateCellRange,
+    setTempSelectedCells,
+  ]);
+
   // 🗂️ 카테고리 그룹 정의
   const getCategoryGroups = useCallback(() => {
     const groups: Array<{

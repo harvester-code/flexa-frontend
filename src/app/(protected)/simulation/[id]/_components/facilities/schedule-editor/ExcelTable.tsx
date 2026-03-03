@@ -3,6 +3,7 @@
 import React, { useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
+import { THEME_COLORS } from "@/styles/theme-colors";
 import { ExcelTableProps, CategoryBadge } from "./types";
 
 const ExcelTable: React.FC<ExcelTableProps> = React.memo(
@@ -94,13 +95,14 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
         const isLeftBorder = !selectedCells.has(leftCellId);
         const isRightBorder = !selectedCells.has(rightCellId);
 
-        // 각 방향별로 boxShadow 추가 - 복사한 셀이 있을 때는 선택 표시 숨김
+        // 각 방향별로 boxShadow 추가 - 선택 영역을 진한 보라색 테두리로 강조
         const shadows: string[] = [];
+        const borderColor = THEME_COLORS.selectionBorder;
         // Only show selection if no cells are being shown as copied
-        if (isTopBorder) shadows.push("inset 0 2px 0 0 #8b5cf6");
-        if (isBottomBorder) shadows.push("inset 0 -2px 0 0 #8b5cf6");
-        if (isLeftBorder) shadows.push("inset 2px 0 0 0 #8b5cf6");
-        if (isRightBorder) shadows.push("inset -2px 0 0 0 #8b5cf6");
+        if (isTopBorder) shadows.push(`inset 0 3px 0 0 ${borderColor}`);
+        if (isBottomBorder) shadows.push(`inset 0 -3px 0 0 ${borderColor}`);
+        if (isLeftBorder) shadows.push(`inset 3px 0 0 0 ${borderColor}`);
+        if (isRightBorder) shadows.push(`inset -3px 0 0 0 ${borderColor}`);
 
         if (shadows.length > 0) {
           styleMap.set(cellId, {
@@ -332,10 +334,13 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                       return (
                         <td
                           key={`${rowIndex}-${colIndex}`}
+                          data-row={rowIndex}
+                          data-col={colIndex}
+                          data-cell-id={cellId}
                           className={cn(
                             "cursor-pointer select-none p-1 border border-gray-200 relative",
                             isDisabled && "bg-gray-100",
-                            isSelected && !isDisabled && "bg-primary/10"
+                            isSelected && !isDisabled && "bg-schedule-selection"
                           )}
                           style={selectionStyles}
                           onMouseDown={(e) => {
@@ -387,9 +392,11 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                       style={
                                         isDisabled
                                           ? {
-                                              backgroundColor: "#d1d5db",
-                                              color: "#4b5563",
-                                              borderColor: "#9ca3af",
+                                              backgroundColor:
+                                                THEME_COLORS.disabledBg,
+                                              color: THEME_COLORS.disabledText,
+                                              borderColor:
+                                                THEME_COLORS.disabledBorder,
                                             }
                                           : badgeStyle
                                       }
@@ -441,16 +448,16 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                                 right: "2px",
                                 bottom: "2px",
                                 borderTop: copyBorderInfo.hasTop
-                                  ? "2px dashed #8b5cf6"
+                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
                                   : "none",
                                 borderBottom: copyBorderInfo.hasBottom
-                                  ? "2px dashed #8b5cf6"
+                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
                                   : "none",
                                 borderLeft: copyBorderInfo.hasLeft
-                                  ? "2px dashed #8b5cf6"
+                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
                                   : "none",
                                 borderRight: copyBorderInfo.hasRight
-                                  ? "2px dashed #8b5cf6"
+                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
                                   : "none",
                                 animation:
                                   "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",

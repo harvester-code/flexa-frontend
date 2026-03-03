@@ -40,7 +40,7 @@ import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
-import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
+import { THEME_COLORS } from "@/styles/theme-colors";
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import("react-plotly.js"), {
@@ -52,8 +52,7 @@ const Plot = dynamic(() => import("react-plotly.js"), {
   ),
 });
 
-// Use all colors from COMPONENT_TYPICAL_COLORS
-const COLORS = COMPONENT_TYPICAL_COLORS;
+const COLORS = THEME_COLORS.chartPalette;
 
 interface Rule {
   id: string;
@@ -626,15 +625,7 @@ export default function ShowUpTimeSettings({
   // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
   const combinedChartConfig = useMemo(() => {
     const traces: any[] = [];
-    const colors = [
-      "#8B5CF6",
-      "#06B6D4",
-      "#10B981",
-      "#F59E0B",
-      "#EF4444",
-      "#6366F1",
-      "#EC4899",
-    ];
+    const colors = [...THEME_COLORS.chartPalette];
 
     // 전체 범위 계산 (null이 아닌 분포들만 포함)
     const validMeans = [
@@ -765,7 +756,7 @@ export default function ShowUpTimeSettings({
       type: "scatter",
       mode: "lines",
       line: {
-        color: "#EF4444",
+        color: THEME_COLORS.chartDeparture,
         width: 2,
         dash: "dashdot",
       },
@@ -780,7 +771,7 @@ export default function ShowUpTimeSettings({
       type: "scatter",
       mode: "lines",
       line: {
-        color: "#2563EB",
+        color: THEME_COLORS.chartFinalArrival,
         width: 2,
         dash: "dash",
       },
@@ -801,7 +792,7 @@ export default function ShowUpTimeSettings({
         showgrid: true,
         zeroline: false, // trace로 그려서 파란색 선과 동일 길이 유지
         range: [rangeStart - 10, rangeEnd + 10], // 양쪽에 여백 추가
-        gridcolor: "#E5E7EB",
+        gridcolor: THEME_COLORS.chartGrid,
         tickmode: "array" as const,
         tickvals: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)]
           .map((_, i) => -i * 30)
@@ -821,7 +812,7 @@ export default function ShowUpTimeSettings({
         title: "", // 축 제목 제거
         showgrid: true,
         zeroline: false,
-        gridcolor: "#E5E7EB",
+        gridcolor: THEME_COLORS.chartGrid,
         tickformat: ".3f",
         tickfont: {
           size: 11,
@@ -836,13 +827,13 @@ export default function ShowUpTimeSettings({
         xanchor: "left",
         y: 0.98,
         yanchor: "top",
-        bgcolor: "rgba(255, 255, 255, 0.9)",
-        bordercolor: "#E5E7EB",
+        bgcolor: THEME_COLORS.chartLegendBg,
+        bordercolor: THEME_COLORS.chartLegendBorder,
         borderwidth: 1,
       },
       hovermode: "x unified",
-      plot_bgcolor: "rgba(0,0,0,0)",
-      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "transparent",
+      paper_bgcolor: "transparent",
     };
 
     return { data: traces, layout };
