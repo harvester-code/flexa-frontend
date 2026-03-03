@@ -95,7 +95,8 @@ export default function PassengerFilterConditions({
       settings: {
         airport: contextData.airport,
         date: contextData.date,
-        min_arrival_minutes: 15,
+        min_arrival_minutes:
+          passengerData.settings.min_arrival_minutes ?? 60,
       },
       pax_generation: {
         rules: passengerData.pax_generation.rules || [],

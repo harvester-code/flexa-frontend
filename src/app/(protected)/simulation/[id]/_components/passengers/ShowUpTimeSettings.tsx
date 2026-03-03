@@ -106,6 +106,10 @@ export default function ShowUpTimeSettings({
   const setPaxArrivalPatternDefault = useSimulationStore(
     (s) => s.setPaxArrivalPatternDefault
   );
+  const minArrivalMinutes = useSimulationStore(
+    (s) => s.passenger.settings.min_arrival_minutes
+  );
+  const setSettings = useSimulationStore((s) => s.setSettings);
 
   // 🆕 SimulationStore에서 passenger 데이터 및 context 가져오기
   const passengerData = useSimulationStore((state) => state.passenger);
@@ -162,6 +166,9 @@ export default function ShowUpTimeSettings({
           mean: 120,
           std: 30,
         });
+      }
+      if (minArrivalMinutes === null) {
+        setSettings({ min_arrival_minutes: 60 });
       }
     }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행
 
@@ -331,7 +338,7 @@ export default function ShowUpTimeSettings({
         settings: {
           airport: contextData.airport,
           date: contextData.date || new Date().toISOString().split("T")[0], // 빈 날짜면 오늘 날짜 사용
-          min_arrival_minutes: 15,
+          min_arrival_minutes: minArrivalMinutes ?? 60,
         },
         pax_generation: {
           rules: loadFactorData.rules || [],
@@ -614,6 +621,8 @@ export default function ShowUpTimeSettings({
     };
   }, [handleRuleSaved]);
 
+  const finalArrivalMinutes = minArrivalMinutes ?? 60;
+
   // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
   const combinedChartConfig = useMemo(() => {
     const traces: any[] = [];
@@ -674,7 +683,10 @@ export default function ShowUpTimeSettings({
       xValues.push(rangeStart + i * stepSize);
     }
 
-    // Default 분포 추가 (x축 값을 음수로 변환)
+    // Final Arrival Time 기준: 우측(출발에 가까운 부분)은 승객 생성 안 됨 → 곡선 숨김
+    const cutoffX = -finalArrivalMinutes;
+
+    // Default 분포 추가 (cutoff 우측은 데이터 제외 → 선 표시 안 함, 면적만 여객 생성 구간)
     if (
       defaultMean !== null &&
       defaultStd !== null &&
@@ -682,14 +694,15 @@ export default function ShowUpTimeSettings({
       !isNaN(defaultStd) &&
       defaultStd > 0
     ) {
-      const defaultY = xValues.map(
+      const defaultX = xValues.filter((x) => x <= cutoffX);
+      const defaultY = defaultX.map(
         (x) =>
           (1 / (defaultStd * Math.sqrt(2 * Math.PI))) *
-          Math.exp(-0.5 * Math.pow((x + defaultMean) / defaultStd, 2)) // x를 -defaultMean 중심으로 이동
+          Math.exp(-0.5 * Math.pow((x + defaultMean) / defaultStd, 2))
       );
 
       traces.push({
-        x: xValues,
+        x: defaultX,
         y: defaultY,
         type: "scatter",
         mode: "lines",
@@ -699,13 +712,13 @@ export default function ShowUpTimeSettings({
           width: 3,
         },
         fill: "tonexty",
-        fillcolor: `${colors[0]}15`,
+        fillcolor: `${colors[0]}50`, // 진한 색 - 여객 생성 구간 강조
         hovertemplate:
           "Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>",
       });
     }
 
-    // Rule 분포들 추가
+    // Rule 분포들 추가 (cutoff 우측은 데이터 제외)
     createdRules.forEach((rule, index) => {
       const mean = rule.parameters?.Mean;
       const std = rule.parameters?.Std;
@@ -719,14 +732,15 @@ export default function ShowUpTimeSettings({
         !isNaN(std) &&
         std > 0
       ) {
-        const ruleY = xValues.map(
+        const ruleX = xValues.filter((x) => x <= cutoffX);
+        const ruleY = ruleX.map(
           (x) =>
             (1 / (std * Math.sqrt(2 * Math.PI))) *
             Math.exp(-0.5 * Math.pow((x + mean) / std, 2))
         );
 
         traces.push({
-          x: xValues,
+          x: ruleX,
           y: ruleY,
           type: "scatter",
           mode: "lines",
@@ -736,14 +750,47 @@ export default function ShowUpTimeSettings({
             width: 2,
           },
           fill: "tonexty",
-          fillcolor: `${colors[(index + 1) % colors.length]}10`,
+          fillcolor: `${colors[(index + 1) % colors.length]}40`, // 진한 색 - 여객 생성 구간 강조
           hovertemplate:
             "Minutes before departure: %{x}<br>Probability: %{y:.4f}<extra></extra>",
         });
       }
     });
 
-    // 레이아웃 설정
+    // 참조선을 legend에만 표시하기 위해 trace로 추가 (선은 shapes로 유지, annotations 제거)
+    const maxY = 0.02;
+    traces.push({
+      x: [0, 0],
+      y: [0, maxY],
+      type: "scatter",
+      mode: "lines",
+      line: {
+        color: "#EF4444",
+        width: 2,
+        dash: "dashdot",
+      },
+      name: "Departure",
+      showlegend: true,
+      hoverinfo: "skip",
+      legendgroup: "ref",
+    });
+    traces.push({
+      x: [cutoffX, cutoffX],
+      y: [0, maxY],
+      type: "scatter",
+      mode: "lines",
+      line: {
+        color: "#2563EB",
+        width: 2,
+        dash: "dash",
+      },
+      name: `Final Arrival (${finalArrivalMinutes}min)`,
+      showlegend: true,
+      hoverinfo: "skip",
+      legendgroup: "ref",
+    });
+
+    // 레이아웃 설정 (annotations 제거 - legend에만 표시)
     const layout = {
       title: {
         text: "Passenger Arrival Distribution<br><sub>Time before scheduled departure</sub>",
@@ -752,11 +799,9 @@ export default function ShowUpTimeSettings({
       xaxis: {
         title: "", // 축 제목 제거
         showgrid: true,
-        zeroline: true,
+        zeroline: false, // trace로 그려서 파란색 선과 동일 길이 유지
         range: [rangeStart - 10, rangeEnd + 10], // 양쪽에 여백 추가
         gridcolor: "#E5E7EB",
-        zerolinecolor: "#EF4444", // 출발시각 빨간색
-        zerolinewidth: 2,
         tickmode: "array" as const,
         tickvals: [...Array(Math.ceil(Math.abs(rangeStart) / 30) + 1)]
           .map((_, i) => -i * 30)
@@ -798,67 +843,10 @@ export default function ShowUpTimeSettings({
       hovermode: "x unified",
       plot_bgcolor: "rgba(0,0,0,0)",
       paper_bgcolor: "rgba(0,0,0,0)",
-      annotations: [
-        {
-          x: 0,
-          y: -0.08,
-          xref: "x",
-          yref: "paper",
-          text: "✈️ Departure",
-          showarrow: false, // 화살표 제거
-          bgcolor: "#FEE2E2",
-          bordercolor: "#EF4444",
-          borderwidth: 1,
-          borderpad: 4,
-          font: {
-            color: "#EF4444",
-            size: 11,
-          },
-          xanchor: "center",
-        },
-        {
-          x: defaultMean ? -defaultMean : -120,
-          y: 0.5,
-          xref: "x",
-          yref: "paper",
-          text: `Peak Arrival<br>${defaultMean || 120}min before`,
-          showarrow: true,
-          arrowhead: 2,
-          arrowsize: 1,
-          arrowwidth: 1,
-          arrowcolor: colors[0],
-          ax: 0,
-          ay: -40,
-          bgcolor: "white",
-          bordercolor: colors[0],
-          borderwidth: 1,
-          borderpad: 4,
-          font: {
-            color: colors[0],
-            size: 11,
-          },
-        },
-      ],
-      shapes: [
-        // 출발 시각 수직선
-        {
-          type: "line" as const,
-          x0: 0,
-          x1: 0,
-          y0: 0,
-          y1: 1,
-          yref: "paper" as const,
-          line: {
-            color: "#EF4444",
-            width: 2,
-            dash: "dashdot" as const,
-          },
-        },
-      ],
     };
 
     return { data: traces, layout };
-  }, [defaultMean, defaultStd, createdRules]);
+  }, [defaultMean, defaultStd, createdRules, finalArrivalMinutes]);
 
   return (
     <div className="space-y-6">
@@ -1093,7 +1081,7 @@ export default function ShowUpTimeSettings({
             {/* Default Distribution Parameters */}
             <div className="mt-3">
               <div className="space-y-3">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Mean (minutes)
@@ -1133,6 +1121,22 @@ export default function ShowUpTimeSettings({
                           ? "border-red-500 bg-red-50"
                           : ""
                       }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Final Arrival Time
+                    </label>
+                    <IntegerNumberInput
+                      value={minArrivalMinutes ?? 60}
+                      onChange={(val) =>
+                        setSettings({ min_arrival_minutes: val })
+                      }
+                      placeholder="60"
+                      unit="min"
+                      min={1}
+                      max={999}
+                      className="border-blue-300 bg-blue-50/30 font-medium text-blue-700 focus:ring-blue-400 focus:border-blue-400"
                     />
                   </div>
                 </div>
