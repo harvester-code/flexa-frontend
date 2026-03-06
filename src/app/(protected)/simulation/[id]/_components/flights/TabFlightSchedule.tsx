@@ -1,27 +1,44 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Database } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dayjs from "dayjs";
+import { Calendar as CalendarIcon, ChevronDown, Database, Filter, Plane, Plus, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Badge } from "@/components/ui/Badge";
+import { Calendar } from "@/components/ui/Calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import {
   APIRequestLog,
-  AirlineInfo,
-  AvailableConditions,
-  SelectedConditions,
 } from "@/types/simulationTypes";
 import {
   getFlightFilters,
   getFlightSchedules,
 } from "@/services/simulationService";
-// useTabReset 제거 - 직접 리셋 로직으로 단순화
 import SimulationLoading from "../../../_components/SimulationLoading";
 import { useSimulationStore } from "../../_stores";
-// TabFlightScheduleChart와 TabFlightScheduleFilterConditions 삭제됨
 import FlightFilterConditions from "./FlightFilterConditions";
 import FlightDataLoader from "./FlightDataLoader";
-// TabFlightScheduleResponsePreview 제거됨
 import FlightResultChart from "./FlightResultChart";
+import Spinner from "@/components/ui/Spinner";
+import {
+  type SelectedFilter,
+  convertFilterToApiConditions,
+} from "./flight-utils";
+import airportFlat from "../../_json/airport_flat.json";
+
+// ==================== Types ====================
 
 interface TabFlightScheduleProps {
   simulationId: string;
@@ -30,25 +47,24 @@ interface TabFlightScheduleProps {
   setApiRequestLog: (log: APIRequestLog | null) => void;
 }
 
-interface ApplyFilterData {
-  total: number;
-  chart_x_data: string[];
-  chart_y_data: {
-    [category: string]: Array<{
-      name: string;
-      order: number;
-      y: number[];
-      acc_y: number[];
-    }>;
-  };
-  appliedAt: string;
-}
-
-interface FiltersData {
+interface TabFiltersData {
   total_flights: number;
   airlines: Record<string, string>;
-  filters: Record<string, unknown>;
+  filters: Record<string, any>;
 }
+
+interface AirportTab {
+  id: string;
+  airport: string;
+  date: string;
+  filtersData: TabFiltersData | null;
+  selectedFilter: SelectedFilter;
+  loading: boolean;
+  estimatedFiltered: number;
+  totalFlightsForMode: number;
+}
+
+// ==================== Component ====================
 
 function TabFlightSchedule({
   simulationId,
@@ -58,368 +74,254 @@ function TabFlightSchedule({
 }: TabFlightScheduleProps) {
   const { toast } = useToast();
 
-  // 표준화된 훅으로 데이터와 액션들 가져오기
-  // 🆕 1원칙: 통합 store에서만 데이터 가져오기
-  const airport = useSimulationStore((s) => s.context.airport);
-  const date = useSimulationStore((s) => s.context.date);
-
-  // 🆕 통합 Store 액션들 (airport, date 동기화용)
+  // Zustand store
+  const storeAirport = useSimulationStore((s) => s.context.airport);
+  const storeDate = useSimulationStore((s) => s.context.date);
   const setUnifiedAirport = useSimulationStore((s) => s.setAirport);
   const setUnifiedDate = useSimulationStore((s) => s.setDate);
   const setFlightFilters = useSimulationStore((s) => s.setFlightFilters);
   const resetFlightData = useSimulationStore((s) => s.resetFlightData);
-  const setAppliedFilterResult = useSimulationStore(
-    (s) => s.setAppliedFilterResult
-  );
+  const setAppliedFilterResult = useSimulationStore((s) => s.setAppliedFilterResult);
+  const setSelectedConditions = useSimulationStore((s) => s.setSelectedConditions);
+  const resetPassenger = useSimulationStore((s) => s.resetPassenger);
+  const resetProcessFlow = useSimulationStore((s) => s.resetProcessFlow);
 
-  // 🆕 zustand에서 flight 데이터 존재 여부 확인
-  const hasFlightData = useSimulationStore(
-    (s) => s.flight.total_flights !== null
-  );
+  // ==================== Tab State ====================
 
-  // Tab Reset 시스템 제거 - 단순화
+  const hasInitializedRef = useRef(false);
 
-  // 🚧 로컬 상태 제거 예정 - 통합 store 전환 중
+  const [airportTabs, setAirportTabs] = useState<AirportTab[]>(() => [{
+    id: "tab-1",
+    airport: storeAirport || "",
+    date: storeDate || dayjs().format("YYYY-MM-DD"),
+    filtersData: null,
+    selectedFilter: { mode: "departure", categories: {} },
+    loading: false,
+    estimatedFiltered: 0,
+    totalFlightsForMode: 0,
+  }]);
 
-  // UI 상태 관리 (최소화)
-  const [loadError, setLoadError] = useState(false);
-  const [loadingFlightSchedule, setLoadingFlightSchedule] = useState(false);
-  const [isSomethingChanged, setIsSomethingChanged] = useState(false);
-
-  // 🆕 airport/date는 Load 버튼 클릭 시에만 zustand에 저장
-  // (실시간 동기화 제거)
-
-  // 🆕 Apply Filter 응답 상태 관리
+  const [activeTabId, setActiveTabId] = useState("tab-1");
+  const [nextTabNum, setNextTabNum] = useState(2);
   const [applyFilterLoading, setApplyFilterLoading] = useState(false);
-  const [applyFilterData, setApplyFilterData] =
-    useState<ApplyFilterData | null>(null);
-  const [applyFilterError, setApplyFilterError] = useState<string | null>(null);
-  const [showConditions, setShowConditions] = useState(false);
 
-  // 🆕 새로운 필터 시스템용 데이터 state
-  const [filtersData, setFiltersData] = useState<FiltersData | null>(null);
+  // Modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [modalAirport, setModalAirport] = useState("");
+  const [modalDate, setModalDate] = useState("");
+  const [modalAirportPopoverOpen, setModalAirportPopoverOpen] = useState(false);
+  const [modalCustomInput, setModalCustomInput] = useState("");
+  const [modalDatePopoverOpen, setModalDatePopoverOpen] = useState(false);
 
-  // 터미널 표시 형태를 raw 값으로 변환하는 함수 (API 요청용)
-  const getTerminalRawValue = useCallback((displayName: string) => {
-    if (displayName === "Unknown") {
-      return "unknown";
+  const isMultiTab = airportTabs.length > 1;
+  const allTabsLoaded = airportTabs.every((t) => t.filtersData !== null);
+  const anyTabLoaded = airportTabs.some((t) => t.filtersData !== null);
+  const anyTabLoading = airportTabs.some((t) => t.loading);
+
+  const loadedTabs = useMemo(
+    () => airportTabs.filter((t) => t.filtersData !== null),
+    [airportTabs]
+  );
+
+  // Restore tab 1 from Zustand on first render (S3 restore)
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
+    const state = useSimulationStore.getState();
+    const flight = state.flight;
+
+    if (flight.total_flights) {
+      let restoredFilter: SelectedFilter = { mode: "departure", categories: {} };
+      if (flight.selectedConditions?.originalLocalState) {
+        restoredFilter = {
+          mode: flight.selectedConditions.type,
+          categories: flight.selectedConditions.originalLocalState as Record<string, any>,
+        };
+      } else if (flight.selectedConditions?.conditions) {
+        const cats: Record<string, any> = {};
+        flight.selectedConditions.conditions.forEach((c) => {
+          cats[c.field] = c.values;
+        });
+        restoredFilter = { mode: flight.selectedConditions.type, categories: cats };
+      }
+
+      setAirportTabs([{
+        id: "tab-1",
+        airport: state.context.airport,
+        date: state.context.date,
+        filtersData: {
+          total_flights: flight.total_flights,
+          airlines: flight.airlines || {},
+          filters: flight.filters || {},
+        },
+        selectedFilter: restoredFilter,
+        loading: false,
+        estimatedFiltered: flight.selectedConditions?.expected_flights?.selected || flight.total_flights,
+        totalFlightsForMode: flight.selectedConditions?.expected_flights?.total || flight.total_flights,
+      }]);
     }
-    // "Terminal 1" → "1"
-    const match = displayName.match(/Terminal\s+(.+)/);
-    return match ? match[1] : displayName;
   }, []);
 
-  // 🚧 buildConditions 제거 - 통합 store 전환 중
+  // Ensure active tab ID is always valid
+  useEffect(() => {
+    if (!airportTabs.find((t) => t.id === activeTabId) && airportTabs.length > 0) {
+      setActiveTabId(airportTabs[0].id);
+    }
+  }, [airportTabs, activeTabId]);
 
-  // API에서 데이터를 불러온다.
-  // isAirportOrDateChanged: true면 새로운 공항/날짜로 로드(빈 조건), false면 기존 데이터에 필터만 적용
-  const loadFlightSchedule = useCallback(
-    async (isAirportOrDateChanged: boolean = false) => {
-      if (!simulationId) return;
-      if (!airport) return;
+  // ==================== Tab Management ====================
 
-      setLoadError(false);
+  const addTab = useCallback(() => {
+    const newId = `tab-${nextTabNum}`;
+    setAirportTabs((prev) => [
+      ...prev,
+      {
+        id: newId,
+        airport: "",
+        date: dayjs().format("YYYY-MM-DD"),
+        filtersData: null,
+        selectedFilter: { mode: "departure", categories: {} },
+        loading: false,
+        estimatedFiltered: 0,
+        totalFlightsForMode: 0,
+      },
+    ]);
+    setActiveTabId(newId);
+    setNextTabNum((n) => n + 1);
+  }, [nextTabNum]);
 
-      // API 요청 파라미터와 타임스탬프를 미리 준비 (스코프 밖에서 정의)
-      const params = {
-        airport,
-        date,
-        conditions: [], // 🚧 buildConditions 제거 - 통합 store 전환 중
-      };
-      const timestamp = new Date().toISOString();
+  const removeTab = useCallback((tabId: string) => {
+    setAirportTabs((prev) => {
+      const filtered = prev.filter((t) => t.id !== tabId);
+      return filtered.length > 0 ? filtered : prev;
+    });
+  }, []);
 
-      try {
-        setLoadingFlightSchedule(true);
-        setApiRequestLog({
-          timestamp,
-          request: params,
-          response: null,
-          status: "loading",
-        });
+  // ==================== Per-Tab Update Helpers ====================
 
-        const { data } = await getFlightSchedules(simulationId, params);
+  const updateTab = useCallback((tabId: string, updates: Partial<AirportTab>) => {
+    setAirportTabs((prev) =>
+      prev.map((t) => (t.id === tabId ? { ...t, ...updates } : t))
+    );
+  }, []);
 
-        // API 응답 로그 업데이트 (timestamp 기준으로 새 객체 생성)
-        setApiRequestLog({
-          timestamp,
-          request: params,
-          response: data,
-          status: "success",
-        });
-
-        // Available conditions 추출 - 실제 API 응답 구조에 맞춤
-
-        // API 응답이 배열인지 객체인지 확인하고 처리
-        const allAirlines: Array<AirlineInfo> = [];
-        let typesData: {
-          International: AirlineInfo[];
-          Domestic: AirlineInfo[];
-        } = { International: [], Domestic: [] };
-        let terminalsData: { [terminalName: string]: AirlineInfo[] } = {};
-
-        // Case 1: 응답이 직접 항공사 배열인 경우
-        if (Array.isArray(data)) {
-          data.forEach((airline: AirlineInfo) => {
-            if (airline && airline.iata && airline.name) {
-              allAirlines.push({ iata: airline.iata, name: airline.name });
-            }
-          });
-        }
-        // Case 2: 기존 구조 (types, terminals 등이 있는 경우)
-        else if (data && typeof data === "object") {
-          typesData = (
-            data as {
-              types?: { International: AirlineInfo[]; Domestic: AirlineInfo[] };
-            }
-          )?.types || {
-            International: [],
-            Domestic: [],
-          };
-          terminalsData =
-            (data as { terminals?: { [terminalName: string]: AirlineInfo[] } })
-              ?.terminals || {};
-
-          // Types에서 항공사 정보 추출
-          const typesAirlines = [
-            ...Array.from(typesData.International || []),
-            ...Array.from(typesData.Domestic || []),
-          ];
-
-          typesAirlines.forEach((airline: AirlineInfo) => {
-            if (
-              airline &&
-              airline.iata &&
-              airline.name &&
-              !allAirlines.find(
-                (a) => a.iata === airline.iata && a.name === airline.name
-              )
-            ) {
-              allAirlines.push({ ...airline });
-            }
-          });
-
-          // Terminals에서 항공사 정보 추출
-          Object.values(terminalsData).forEach(
-            (terminalAirlines: AirlineInfo[]) => {
-              Array.from(terminalAirlines || []).forEach(
-                (airline: AirlineInfo) => {
-                  if (
-                    airline &&
-                    airline.iata &&
-                    airline.name &&
-                    !allAirlines.find(
-                      (a) => a.iata === airline.iata && a.name === airline.name
-                    )
-                  ) {
-                    allAirlines.push({ ...airline });
-                  }
-                }
-              );
-            }
-          );
-        }
-
-        // 항공사 리스트 정렬 (IATA 코드 기준) - null 값 안전 처리
-        allAirlines.sort((a, b) => {
-          const aIata = a.iata || "";
-          const bIata = b.iata || "";
-          return aIata.localeCompare(bIata);
-        });
-
-        // 터미널 리스트 생성 (unknown 제외하고 정렬)
-        const availableTerminals = Object.keys(terminalsData)
-          .filter((terminal) => terminal !== "unknown")
-          .sort((a, b) => {
-            // raw 값("1", "2")을 숫자로 정렬
-            const aNum = parseInt(a);
-            const bNum = parseInt(b);
-            if (!isNaN(aNum) && !isNaN(bNum)) {
-              return aNum - bNum;
-            }
-            return a.localeCompare(b);
-          });
-
-        // 🚧 기존 조건 처리 로직 제거 - 통합 store 전환 중
-
-        if (data?.chart_x_data && data?.chart_y_data) {
-          // 차트 데이터를 안전하게 복사하고 처리
-          const chartYDataCopy = JSON.parse(JSON.stringify(data.chart_y_data));
-
-          for (const criteriaCur in chartYDataCopy) {
-            const criteriaDataCur = chartYDataCopy[criteriaCur].sort(
-              (a, b) => a.order - b.order
-            );
-            const acc_y = Array(criteriaDataCur[0]?.y?.length || 0).fill(0);
-
-            for (const itemCur of criteriaDataCur) {
-              itemCur.acc_y = Array(itemCur.y?.length || 0).fill(0);
-
-              for (let i = 0; i < (itemCur.y?.length || 0); i++) {
-                acc_y[i] += itemCur.y[i] || 0;
-                itemCur.acc_y[i] = Number(acc_y[i]);
-              }
-            }
-          }
-
-          const newChartData = {
-            total: data?.total,
-            x: Array.from(data?.chart_x_data || []),
-            data: chartYDataCopy,
-          };
-          // 🚧 setChartData 제거 - 통합 store 전환 중
-
-          // 🚧 setIsCompleted 제거 - 통합 store 전환 중
-        }
-      } catch (error) {
-        // API 에러 로그 업데이트 (timestamp와 request 정보 유지)
-        setApiRequestLog({
-          timestamp,
-          request: params,
-          response: null,
-          status: "error",
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-
-        setLoadError(true);
-      } finally {
-        setIsSomethingChanged(false);
-        setLoadingFlightSchedule(false);
-      }
-    },
-    [simulationId, airport, date, setApiRequestLog]
+  const handleTabAirportChange = useCallback(
+    (tabId: string, airport: string) => updateTab(tabId, { airport }),
+    [updateTab]
   );
 
-  // 🚧 차트 관련 useEffect 제거 - 통합 store 전환 중
+  const handleTabDateChange = useCallback(
+    (tabId: string, date: string) => updateTab(tabId, { date }),
+    [updateTab]
+  );
 
-  // 데이터 로드 핸들러 - GET flight-filters로 변경
-  const handleLoadData = useCallback(
-    async (airport: string, date: string) => {
+  const handleTabFilterChange = useCallback(
+    (tabId: string, filter: SelectedFilter) => updateTab(tabId, { selectedFilter: filter }),
+    [updateTab]
+  );
+
+  const handleTabEstimatedChange = useCallback(
+    (tabId: string, estimated: number, total: number) =>
+      updateTab(tabId, { estimatedFiltered: estimated, totalFlightsForMode: total }),
+    [updateTab]
+  );
+
+  // ==================== Load Data Per Tab ====================
+
+  const handleLoadDataForTab = useCallback(
+    async (tabId: string, airport: string, date: string) => {
       if (!simulationId || !airport) return;
 
-      // 🚧 조건 초기화 제거 - 통합 store 전환 중
-      setShowConditions(false);
+      updateTab(tabId, { loading: true, airport, date });
 
-      // ✅ Apply Filter 결과 초기화 (기존 차트들 제거)
-      setApplyFilterData(null);
-      setApplyFilterError(null);
-      // 🚧 setChartData 제거 - 통합 store 전환 중
+      const timestamp = new Date().toISOString();
+      setApiRequestLog({
+        timestamp,
+        request: { method: "GET", endpoint: `/api/v1/simulations/${simulationId}/flight-filters`, params: { airport, date } },
+        response: null,
+        status: "loading",
+      });
 
       try {
-        setLoadingFlightSchedule(true);
-        setLoadError(false);
-
-        // 🆕 기존 flight 데이터 완전 초기화 (Filter Conditions가 로딩 상태로 전환됨)
-        resetFlightData();
-
-        // 🆕 airport/date는 이미 FlightDataLoader에서 저장됨
-
-        // ✅ Load 버튼 API 요청 로그 저장 (시작)
-        const timestamp = new Date().toISOString();
-
-        setApiRequestLog({
-          timestamp,
-          request: {
-            method: "GET",
-            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-            params: { airport, date },
-          },
-          response: null,
-          status: "loading",
-        });
-
-        // 🆕 GET flight-filters 호출 (URL 파라미터 방식)
         const { data } = await getFlightFilters(simulationId, airport, date);
 
-        // ✅ Load 버튼 API 요청 로그 저장 (성공)
         setApiRequestLog({
           timestamp,
-          request: {
-            method: "GET",
-            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-            params: { airport, date },
-          },
+          request: { method: "GET", endpoint: `/api/v1/simulations/${simulationId}/flight-filters`, params: { airport, date } },
           response: data,
           status: "success",
         });
 
-        // 🆕 새로운 필터 데이터 구조 처리
         if (data && data.filters) {
-          setFiltersData(data); // 🆕 필터 데이터 저장
-
-          // 🆕 통합 Store에도 저장
-          setFlightFilters({
+          const tabData: TabFiltersData = {
             total_flights: data.total_flights,
             airlines: data.airlines,
             filters: data.filters,
+          };
+
+          const defaultTotal = data.filters.departure?.total_flights || 0;
+
+          updateTab(tabId, {
+            filtersData: tabData,
+            loading: false,
+            selectedFilter: { mode: "departure", categories: {} },
+            estimatedFiltered: defaultTotal,
+            totalFlightsForMode: defaultTotal,
           });
 
-          setShowConditions(true);
-
-          // 🚧 setIsCompleted 제거 - 통합 store 전환 중
+          if (!isMultiTab) {
+            resetFlightData();
+            setUnifiedAirport(airport);
+            setUnifiedDate(date);
+            setFlightFilters(tabData);
+          }
+        } else {
+          updateTab(tabId, { loading: false });
         }
       } catch (error: any) {
-        // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = "Failed to load flight data";
+        if (error?.response?.status === 503) errorMessage = "Server is temporarily overloaded. Please try again in a moment.";
+        else if (error?.response?.status === 504 || error?.code === "ECONNABORTED") errorMessage = "Request timed out.";
 
-        if (error?.response?.status === 503) {
-          errorMessage =
-            "Server is temporarily overloaded. Please try again in a moment.";
-        } else if (
-          error?.response?.status === 504 ||
-          error?.code === "ECONNABORTED"
-        ) {
-          errorMessage =
-            "Request timed out. Please check your connection and try again.";
-        }
+        updateTab(tabId, { loading: false });
 
-        setLoadError(true);
-
-        // ✅ Load 버튼 API 요청 로그 저장 (에러)
         setApiRequestLog({
           timestamp: new Date().toISOString(),
-          request: {
-            method: "GET",
-            endpoint: `/api/v1/simulations/${simulationId}/flight-filters`,
-            params: { airport, date },
-          },
+          request: { method: "GET", endpoint: `/api/v1/simulations/${simulationId}/flight-filters`, params: { airport, date } },
           response: null,
           status: "error",
           error: errorMessage,
         });
-      } finally {
-        setLoadingFlightSchedule(false);
+
+        toast({ title: "Load Failed", description: errorMessage, variant: "destructive" });
       }
     },
-    [simulationId, setApiRequestLog, resetFlightData, setFlightFilters]
+    [simulationId, isMultiTab, setApiRequestLog, updateTab, resetFlightData, setUnifiedAirport, setUnifiedDate, setFlightFilters, toast]
   );
 
-  // 🆕 새로운 Apply Filter 핸들러 (새 필터 시스템용) - 응답 반환 + 자동 저장
-  const handleApplyFiltersNew = useCallback(
-    async (
-      type: string,
-      conditions: Array<{ field: string; values: string[] }>
-    ) => {
-      // Store에서 현재 airport, date 가져오기
-      const currentAirport = useSimulationStore.getState().context.airport;
-      const currentDate = useSimulationStore.getState().context.date;
+  // ==================== Apply Filter (Single Tab) ====================
 
-      if (!simulationId || !currentAirport) return null;
+  const handleSingleTabApplyFilter = useCallback(
+    async (type: string, conditions: Array<{ field: string; values: string[] }>) => {
+      const tab = airportTabs.find((t) => t.id === activeTabId);
+      if (!simulationId || !tab?.airport) return null;
 
-      const params = {
-        airport: currentAirport,
-        date: currentDate,
-        type, // 🆕 1단계에서 선택한 mode 값
-        conditions, // 🆕 새로운 조건 형식
-      };
+      resetPassenger();
+      resetProcessFlow();
+
+      setSelectedConditions({
+        type: type as "departure" | "arrival",
+        conditions,
+        expected_flights: { selected: tab.estimatedFiltered, total: tab.totalFlightsForMode },
+        originalLocalState: tab.selectedFilter.categories,
+      });
+
+      const params = { airport: tab.airport, date: tab.date, type, conditions };
 
       try {
-        // 🆕 먼저 appliedFilterResult를 초기상태로 리셋
         setAppliedFilterResult(null);
-
-        // ✅ Apply Filter 전용 로딩 상태 사용 (Filter Conditions는 변화 없음)
         setApplyFilterLoading(true);
-        setApplyFilterError(null);
-        setApplyFilterData(null);
 
         setApiRequestLog({
           timestamp: new Date().toISOString(),
@@ -428,7 +330,6 @@ function TabFlightSchedule({
           status: "loading",
         });
 
-        // 🆕 기존 POST flight-schedules 호출 (필터링된 실제 데이터)
         const { data } = await getFlightSchedules(simulationId, params);
 
         setApiRequestLog({
@@ -438,14 +339,9 @@ function TabFlightSchedule({
           status: "success",
         });
 
-        // 🆕 차트 데이터 처리는 일단 제거 (응답 확인이 우선)
-        // if (data?.chart_x_data && data?.chart_y_data) { ... }
-
-        // ✅ Apply Filter 응답 상태에 저장
-        // 동적으로 모든 카테고리 처리
         const processedChartData: Record<string, any[]> = {};
         if (data.chart_y_data) {
-          Object.keys(data.chart_y_data).forEach(category => {
+          Object.keys(data.chart_y_data).forEach((category) => {
             processedChartData[category] = (data.chart_y_data[category] || []).map((item: any) => ({
               ...item,
               acc_y: item.acc_y || [],
@@ -453,53 +349,27 @@ function TabFlightSchedule({
           });
         }
 
-        setApplyFilterData({
-          total: data.total,
-          chart_x_data: data.chart_x_data,
-          chart_y_data: processedChartData,
-          appliedAt: new Date().toISOString(),
-        });
-
-        // 🆕 Apply Filter 응답을 zustand에 저장 + parquet_metadata 추가
         setAppliedFilterResult({
           total: data.total,
           chart_x_data: data.chart_x_data,
           chart_y_data: processedChartData,
           appliedAt: new Date().toISOString(),
-          // Use actual parquet_metadata from data, or empty array if not available
           parquet_metadata: (data as any).parquet_metadata || [],
         });
 
-        // 🎯 selectedConditions는 Filter Conditions UI 전용이므로 업데이트하지 않음
-        // 실제 결과는 appliedFilterResult에만 저장하여 차트에서 사용
-        // Filter Conditions 컴포넌트는 변화 없이 유지됨
-
-        // 🆕 parquet_metadata는 하드코딩된 컬럼으로 대체됨 (제거됨)
-
-        // S3 저장은 Save 버튼을 통해서만 수행됨
+        toast({
+          title: "Filter Applied",
+          description: `Successfully filtered ${(data.total || 0).toLocaleString()} flights`,
+          variant: "default",
+        });
 
         return data;
       } catch (error: any) {
-        // 🎯 503 에러에 대한 사용자 친화적 메시지
         let errorMessage = "Unknown error";
-
-        if (error?.response?.status === 503) {
-          errorMessage =
-            "Server is temporarily overloaded. The request contains too much data to process. Try applying more specific filters or try again in a moment.";
-        } else if (error?.response?.status === 504) {
-          errorMessage =
-            "Request timed out. Please try with more specific filter conditions.";
-        } else if (error?.code === "ECONNABORTED") {
-          errorMessage =
-            "Request timed out. Please try with more specific filter conditions.";
-        } else if (error?.response?.data?.detail) {
-          errorMessage = error.response.data.detail;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-
-        // ✅ Apply Filter 에러 상태에 저장
-        setApplyFilterError(errorMessage);
+        if (error?.response?.status === 503) errorMessage = "Server is temporarily overloaded.";
+        else if (error?.response?.status === 504 || error?.code === "ECONNABORTED") errorMessage = "Request timed out.";
+        else if (error?.response?.data?.detail) errorMessage = error.response.data.detail;
+        else if (error?.message) errorMessage = error.message;
 
         setApiRequestLog({
           timestamp: new Date().toISOString(),
@@ -511,21 +381,172 @@ function TabFlightSchedule({
 
         throw error;
       } finally {
-        // ✅ Apply Filter 전용 로딩 완료
         setApplyFilterLoading(false);
       }
     },
-    [simulationId, setApiRequestLog, setAppliedFilterResult, toast]
+    [simulationId, airportTabs, activeTabId, resetPassenger, resetProcessFlow, setSelectedConditions, setAppliedFilterResult, setApiRequestLog, toast]
   );
 
-  // ✅ Hook 호출 후 조건부 렌더링 (Rules of Hooks 준수)
-  if (!visible) {
-    return null;
-  }
+  // ==================== Aggregated Summary ====================
+
+  const aggregatedSummary = useMemo(() => {
+    let estimated = 0;
+    let total = 0;
+    let loadedCount = 0;
+    airportTabs.forEach((tab) => {
+      if (tab.filtersData) {
+        estimated += tab.estimatedFiltered;
+        total += tab.totalFlightsForMode;
+        loadedCount++;
+      }
+    });
+    return { estimated, total, loadedCount };
+  }, [airportTabs]);
+
+  // ==================== Modal: Open & Confirm ====================
+
+  const openConfirmModal = useCallback(() => {
+    const loaded = airportTabs.filter((t) => t.filtersData);
+    if (loaded.length === 0) return;
+
+    setModalAirport(loaded[0].airport);
+    setModalDate(loaded[0].date);
+    setShowConfirmModal(true);
+  }, [airportTabs]);
+
+  const isModalValid = useMemo(() => {
+    return modalAirport.trim().length > 0 && modalDate.length > 0;
+  }, [modalAirport, modalDate]);
+
+  // ==================== Apply Filter (Multi-Tab Global) ====================
+
+  const executeGlobalApplyFilter = useCallback(async (representativeAirport: string, representativeDate: string) => {
+    const loaded = airportTabs.filter((t) => t.filtersData);
+    if (loaded.length === 0) return;
+
+    setApplyFilterLoading(true);
+
+    try {
+      resetPassenger();
+      resetProcessFlow();
+
+      setUnifiedAirport(representativeAirport);
+      setUnifiedDate(representativeDate);
+
+      const allResults = await Promise.all(
+        loaded.map(async (tab) => {
+          const conditions = convertFilterToApiConditions(tab.selectedFilter, tab.filtersData);
+          const params = { airport: tab.airport, date: tab.date, type: tab.selectedFilter.mode, conditions };
+          const { data } = await getFlightSchedules(simulationId, params);
+          return data;
+        })
+      );
+
+      let totalFlights = 0;
+      const mergedParquetMetadata: any[] = [];
+      let mergedChartXData: string[] = [];
+      const mergedChartYData: Record<string, any[]> = {};
+
+      allResults.forEach((data) => {
+        totalFlights += data.total || 0;
+        if (data.parquet_metadata) {
+          if (Array.isArray(data.parquet_metadata)) {
+            mergedParquetMetadata.push(...data.parquet_metadata);
+          } else {
+            mergedParquetMetadata.push(data.parquet_metadata);
+          }
+        }
+        if (data.chart_x_data && data.chart_x_data.length > mergedChartXData.length) {
+          mergedChartXData = data.chart_x_data;
+        }
+        if (data.chart_y_data) {
+          Object.keys(data.chart_y_data).forEach((category) => {
+            if (!mergedChartYData[category]) mergedChartYData[category] = [];
+            mergedChartYData[category].push(
+              ...(data.chart_y_data[category] || []).map((item: any) => ({
+                ...item,
+                acc_y: item.acc_y || [],
+              }))
+            );
+          });
+        }
+      });
+
+      const combinedFiltersData = {
+        total_flights: totalFlights,
+        airlines: loaded.reduce((acc, tab) => ({ ...acc, ...(tab.filtersData?.airlines || {}) }), {} as Record<string, string>),
+        filters: loaded[0].filtersData?.filters || {},
+      };
+      setFlightFilters(combinedFiltersData);
+
+      setAppliedFilterResult({
+        total: totalFlights,
+        chart_x_data: mergedChartXData,
+        chart_y_data: mergedChartYData,
+        appliedAt: new Date().toISOString(),
+        parquet_metadata: mergedParquetMetadata,
+      });
+
+      const allConditions = loaded.flatMap((tab) =>
+        convertFilterToApiConditions(tab.selectedFilter, tab.filtersData)
+      );
+      setSelectedConditions({
+        type: loaded[0].selectedFilter.mode as "departure" | "arrival",
+        conditions: allConditions,
+        expected_flights: { selected: aggregatedSummary.estimated, total: aggregatedSummary.total },
+      });
+
+      toast({
+        title: "Filter Applied",
+        description: `Successfully filtered ${totalFlights.toLocaleString()} flights across ${loaded.length} airports`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Filter Failed",
+        description: error instanceof Error ? error.message : "Failed to apply filters",
+        variant: "destructive",
+      });
+    } finally {
+      setApplyFilterLoading(false);
+    }
+  }, [
+    simulationId, airportTabs, aggregatedSummary,
+    resetPassenger, resetProcessFlow, setUnifiedAirport, setUnifiedDate,
+    setFlightFilters, setAppliedFilterResult, setSelectedConditions, toast,
+  ]);
+
+  const handleModalConfirm = useCallback(() => {
+    const airport = modalAirport.trim().toUpperCase();
+    if (!airport || !modalDate) return;
+    setShowConfirmModal(false);
+    executeGlobalApplyFilter(airport, modalDate);
+  }, [modalAirport, modalDate, executeGlobalApplyFilter]);
+
+  // ==================== Clear All ====================
+
+  const handleGlobalClearAll = useCallback(() => {
+    setAirportTabs((prev) =>
+      prev.map((t) => ({
+        ...t,
+        selectedFilter: { mode: "departure" as const, categories: {} },
+        estimatedFiltered: t.filtersData?.filters?.departure?.total_flights || 0,
+        totalFlightsForMode: t.filtersData?.filters?.departure?.total_flights || 0,
+      }))
+    );
+    setSelectedConditions({ type: "departure", conditions: [], originalLocalState: {} });
+  }, [setSelectedConditions]);
+
+  // ==================== Render ====================
+
+  if (!visible) return null;
+
+  // Unique airports/dates from loaded tabs (for modal selectors)
+  const uniqueAirports = [...new Set(loadedTabs.map((t) => t.airport))];
+  const uniqueDates = [...new Set(loadedTabs.map((t) => t.date))];
 
   return (
     <div className="space-y-6 pt-8">
-      {/* 하나의 카드로 통합된 Flight Schedule Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-lg">
@@ -539,46 +560,330 @@ function TabFlightSchedule({
           </CardTitle>
         </CardHeader>
 
-        {/* Load Data Section */}
         <CardContent className="space-y-6">
-          <div>
-            <FlightDataLoader
-              loadingFlightSchedule={loadingFlightSchedule}
-              setIsSomethingChanged={setIsSomethingChanged}
-              onLoadData={handleLoadData}
-              isEmbedded={true}
-            />
+          {/* Airport Tabs Bar */}
+          <div className="flex items-center gap-1 border-b">
+            {airportTabs.map((tab, index) => {
+              const isActive = tab.id === activeTabId;
+              const label = tab.airport
+                ? `${tab.airport} (${dayjs(tab.date).format("MM/DD")})`
+                : `Airport ${index + 1}`;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTabId(tab.id)}
+                  className={`
+                    relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors
+                    ${isActive
+                      ? "text-primary border-b-2 border-primary -mb-px"
+                      : "text-muted-foreground hover:text-foreground"
+                    }
+                  `}
+                >
+                  {tab.loading && <Spinner size={12} className="shrink-0" />}
+                  {!tab.loading && tab.filtersData && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
+                  )}
+                  <span className="truncate max-w-[160px]">{label}</span>
+                  {isMultiTab && (
+                    <X
+                      className="h-3 w-3 text-muted-foreground hover:text-destructive ml-1 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTab(tab.id);
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+            <button
+              onClick={addTab}
+              disabled={!allTabsLoaded}
+              className={`flex items-center gap-1 px-3 py-2 text-sm transition-colors ${
+                allTabsLoaded
+                  ? "text-muted-foreground hover:text-primary cursor-pointer"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          {/* Filter Conditions Section - zustand 데이터 존재할 때만 표시 */}
-          {hasFlightData && !loadingFlightSchedule && (
-            <FlightFilterConditions
-              loading={false}
-              onApplyFilter={handleApplyFiltersNew}
-              isEmbedded={true}
-            />
+          {/* Tab Contents */}
+          {airportTabs.map((tab) => {
+            const isActive = tab.id === activeTabId;
+            return (
+              <div key={tab.id} className={isActive ? "" : "hidden"}>
+                <FlightDataLoader
+                  controlledAirport={tab.airport}
+                  controlledDate={tab.date}
+                  onAirportChange={(a) => handleTabAirportChange(tab.id, a)}
+                  onDateChange={(d) => handleTabDateChange(tab.id, d)}
+                  skipStoreSync={isMultiTab}
+                  loadingFlightSchedule={tab.loading}
+                  setIsSomethingChanged={() => {}}
+                  onLoadData={(a, d) => handleLoadDataForTab(tab.id, a, d)}
+                  isEmbedded={true}
+                />
+
+                {tab.filtersData && !tab.loading && (
+                  <div className="mt-6">
+                    <FlightFilterConditions
+                      key={`filter-${tab.id}`}
+                      controlled={true}
+                      overrideFlightData={tab.filtersData}
+                      initialSelectedFilter={tab.selectedFilter}
+                      onFilterChange={(f) => handleTabFilterChange(tab.id, f)}
+                      onEstimatedFlightsChange={(est, tot) => handleTabEstimatedChange(tab.id, est, tot)}
+                      showActions={!isMultiTab}
+                      loading={false}
+                      onApplyFilter={handleSingleTabApplyFilter}
+                      isEmbedded={true}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Aggregated Selection Summary (multi-tab only) */}
+          {isMultiTab && anyTabLoaded && (
+            <>
+              <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="rounded-full bg-primary/20 p-1">
+                        <Filter className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-sm font-semibold text-primary">Selection Summary</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {aggregatedSummary.loadedCount} airport{aggregatedSummary.loadedCount > 1 ? "s" : ""}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      {loadedTabs.map((tab) => (
+                        <div key={tab.id} className="text-xs text-muted-foreground flex items-center gap-2">
+                          <span className="font-mono">{tab.airport}</span>
+                          <span>
+                            {tab.estimatedFiltered.toLocaleString()} / {tab.totalFlightsForMode.toLocaleString()} flights
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">Combined Flights</div>
+                    <div className="text-lg font-bold text-primary">
+                      {aggregatedSummary.estimated.toLocaleString()} / {aggregatedSummary.total.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div></div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleGlobalClearAll}>
+                    Clear All
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={openConfirmModal}
+                    disabled={applyFilterLoading || !anyTabLoaded}
+                    className="overflow-hidden"
+                  >
+                    <span className="flex items-center">
+                      {applyFilterLoading ? (
+                        <>
+                          <Spinner size={16} className="mr-2 shrink-0" />
+                          <span className="truncate">Filtering...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Search className="mr-2 h-4 w-4 shrink-0" />
+                          <span className="truncate">Filter All Airports</span>
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
-      {/* ✨ 공통 로딩 상태 기반 조건부 렌더링 */}
-      {loadingFlightSchedule || applyFilterLoading ? (
+      {/* Loading / Chart */}
+      {anyTabLoading || applyFilterLoading ? (
         <div className="mt-6">
           <SimulationLoading minHeight="min-h-[400px]" size={70} />
         </div>
       ) : (
-        <>
-          {/* Apply Filter 결과 표시 - 성공 시 차트, 에러 시 에러 메시지 */}
-          {/* 🎯 Zustand에서 appliedFilterResult가 있으면 자동으로 차트 표시 */}
-          <FlightResultChart />
-
-          {/* TabFlightScheduleResponsePreview 제거 - 불필요한 컴포넌트 */}
-        </>
+        <FlightResultChart />
       )}
 
+      {/* ==================== Confirm Modal ==================== */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="sm:max-w-[680px]">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Plane className="h-5 w-5 text-primary" />
+              </div>
+              <div className="space-y-1 text-left">
+                <DialogTitle>Representative Airport & Date</DialogTitle>
+                <DialogDescription>
+                  Select the representative values for downstream tabs.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Airport */}
+            <div className="grid gap-2">
+              <Label>Airport</Label>
+              <Popover open={modalAirportPopoverOpen} onOpenChange={(open) => {
+                setModalAirportPopoverOpen(open);
+                if (open) setModalCustomInput("");
+              }}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-primary" />
+                      <span className={modalAirport ? "font-semibold" : "text-muted-foreground"}>
+                        {modalAirport
+                          ? (() => {
+                              const info = airportFlat.find((a) => a.iata === modalAirport);
+                              return info ? `${info.iata} (${info.city}, ${info.country})` : modalAirport;
+                            })()
+                          : "Select airport..."}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="py-1">
+                    {uniqueAirports.map((code) => {
+                      const info = airportFlat.find((a) => a.iata === code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => {
+                            setModalAirport(code);
+                            setModalAirportPopoverOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-start gap-1.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted ${
+                            modalAirport === code ? "bg-primary/5 text-primary" : ""
+                          }`}
+                        >
+                          <span className="font-semibold">{code}</span>
+                          {info && (
+                            <span className="text-xs text-muted-foreground truncate">
+                              ({info.city}, {info.country})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="border-t px-3 py-2">
+                    <Input
+                      value={modalCustomInput}
+                      onChange={(e) => setModalCustomInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && modalCustomInput.trim().length > 0) {
+                          setModalAirport(modalCustomInput.trim().toUpperCase());
+                          setModalAirportPopoverOpen(false);
+                          setModalCustomInput("");
+                        }
+                      }}
+                      placeholder="Custom code (Enter)"
+                      maxLength={10}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Date */}
+            <div className="grid gap-2">
+              <Label>Date</Label>
+              <Popover open={modalDatePopoverOpen} onOpenChange={setModalDatePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {modalDate ? dayjs(modalDate).format("MMM DD, YYYY") : "Select date..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  {uniqueDates.length > 0 && (
+                    <div className="border-b p-2 flex flex-wrap gap-1.5">
+                      {uniqueDates.map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => {
+                            setModalDate(d);
+                            setModalDatePopoverOpen(false);
+                          }}
+                          className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
+                            modalDate === d
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:border-primary/50 hover:bg-muted"
+                          }`}
+                        >
+                          {dayjs(d).format("MMM DD, YYYY")}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Calendar
+                    mode="single"
+                    selected={modalDate ? dayjs(modalDate).toDate() : undefined}
+                    defaultMonth={modalDate ? dayjs(modalDate).toDate() : undefined}
+                    onSelect={(selected) => {
+                      if (selected) {
+                        setModalDate(dayjs(selected).format("YYYY-MM-DD"));
+                        setModalDatePopoverOpen(false);
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
+            <span className="text-xs text-muted-foreground shrink-0">Saved as:</span>
+            <span className="font-semibold text-primary">{modalAirport.trim().toUpperCase() || "—"}</span>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-medium">{modalDate ? dayjs(modalDate).format("MMM DD, YYYY") : "—"}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground">{aggregatedSummary.estimated.toLocaleString()} / {aggregatedSummary.total.toLocaleString()} flights from {aggregatedSummary.loadedCount} airports</span>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleModalConfirm} disabled={!isModalValid}>
+              <Search className="mr-2 h-4 w-4" />
+              Apply Filter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// React.memo로 컴포넌트 최적화 (props가 동일하면 리렌더링 방지)
 export default React.memo(TabFlightSchedule);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Building2, ChevronDown, Filter, Flag, MapPin, Plane, Search } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -16,6 +16,7 @@ import { useSimulationStore } from '../../_stores';
 import Spinner from '@/components/ui/Spinner';
 import {
   type TerminalAirlineCombo,
+  type SelectedFilter,
   convertTerminalAirlinesToApiCondition,
   createAllCombosForTerminal,
   createTerminalAirlineCombo,
@@ -66,22 +67,21 @@ interface RegionFilterOption {
   countries: Record<string, FilterOption>; // Country별 데이터
 }
 
-interface SelectedFilter {
-  mode: 'departure' | 'arrival';
-  categories: {
-    flight_type?: string[]; // 🆕 multiple selection: ['international', 'domestic']
-    departure_terminal?: string[]; // 🆕 multiple selection: ['1', '2', 'unknown']
-    arrival_terminal?: string[]; // 🆕 multiple selection: ['1', '2', 'unknown']
-    region?: string[]; // 🆕 multiple regions: ['Asia', 'Europe']
-    countries?: string[]; // 🆕 multiple countries: ['Korea', 'Japan', 'China']
-    terminal_airlines?: TerminalAirlineCombo[]; // 🆕 Terminal-Airline 조합: ['2_KE', '1_LJ', 'unknown_AA']
-  };
-}
-
 interface FlightFilterConditionsProps {
-  loading: boolean; // 로딩 상태만 props로 (UI 상태)
+  loading: boolean;
   onApplyFilter: (type: string, conditions: Array<{ field: string; values: string[] }>) => Promise<any>;
-  isEmbedded?: boolean; // 다른 컴포넌트 안에 임베드되었는지 여부
+  isEmbedded?: boolean;
+  // Multi-tab controlled mode
+  controlled?: boolean;
+  overrideFlightData?: {
+    total_flights: number | null;
+    airlines: Record<string, string> | null;
+    filters: Record<string, any> | null;
+  } | null;
+  initialSelectedFilter?: SelectedFilter;
+  onFilterChange?: (filter: SelectedFilter) => void;
+  onEstimatedFlightsChange?: (estimated: number, total: number) => void;
+  showActions?: boolean;
 }
 
 // ==================== Dropdown Component for Region Countries ====================
@@ -379,11 +379,21 @@ function TerminalAirlinesDropdown({
 }
 
 // ==================== Component ====================
-function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: FlightFilterConditionsProps) {
+function FlightFilterConditions({
+  loading,
+  onApplyFilter,
+  isEmbedded = false,
+  controlled = false,
+  overrideFlightData,
+  initialSelectedFilter,
+  onFilterChange,
+  onEstimatedFlightsChange,
+  showActions = true,
+}: FlightFilterConditionsProps) {
   const { toast } = useToast();
 
-  // 🆕 zustand에서 flight 데이터 구독
-  const flightData = useSimulationStore((state) => state.flight);
+  // Zustand 구독 (controlled 모드에서도 hook은 항상 호출 - Rules of Hooks)
+  const flightDataFromStore = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
   const resetPassenger = useSimulationStore((state) => state.resetPassenger);
@@ -392,39 +402,57 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
   const date = useSimulationStore((state) => state.context.date);
   const scenarioId = useSimulationStore((state) => state.context.scenarioId);
 
-  // ✅ Apply Filter 전용 로딩 상태 (Filter Conditions 전체와 독립적)
+  // Stable refs for callback props (prevents infinite loops from inline arrow functions)
+  const onFilterChangeRef = useRef(onFilterChange);
+  onFilterChangeRef.current = onFilterChange;
+  const onEstimatedFlightsChangeRef = useRef(onEstimatedFlightsChange);
+  onEstimatedFlightsChangeRef.current = onEstimatedFlightsChange;
+
   const [isApplying, setIsApplying] = useState(false);
 
-  // 🆕 데이터 구조를 기존 인터페이스에 맞게 변환
-  const filtersData: FlightFiltersApiResponse | null = flightData.total_flights
-    ? ({
-        airport,
-        date,
-        scenario_id: scenarioId,
-        total_flights: flightData.total_flights,
-        airlines: flightData.airlines || {},
-        filters: flightData.filters || { departure: {}, arrival: {} },
-      } as FlightFiltersApiResponse)
-    : null;
-  // ==================== Local State ====================
-  const [selectedFilter, setSelectedFilter] = useState<SelectedFilter>({
-    mode: 'departure', // default는 departure
-    categories: {},
-  });
+  // Memoize filtersData to prevent infinite render loops:
+  // Without this, a new object is created every render → getEstimatedFilteredFlights
+  // gets a new identity → useEffect fires → parent setState → re-render → loop
+  const srcTotalFlights = controlled ? overrideFlightData?.total_flights : flightDataFromStore.total_flights;
+  const srcAirlines = controlled ? overrideFlightData?.airlines : flightDataFromStore.airlines;
+  const srcFilters = controlled ? overrideFlightData?.filters : flightDataFromStore.filters;
 
-  // 🎯 페이지 로드 시 한 번만 복원하기 위한 플래그
-  const [hasRestoredFromZustand, setHasRestoredFromZustand] = useState(false);
+  const filtersData = useMemo<FlightFiltersApiResponse | null>(() => {
+    if (!srcTotalFlights) return null;
+    return {
+      airport,
+      date,
+      scenario_id: scenarioId,
+      total_flights: srcTotalFlights,
+      airlines: srcAirlines || {},
+      filters: srcFilters || { departure: {}, arrival: {} },
+    } as FlightFiltersApiResponse;
+  }, [srcTotalFlights, srcAirlines, srcFilters, airport, date, scenarioId]);
 
-  // 🎯 페이지 로드 시 한 번만 zustand에서 복원 (S3 복원용)
+  const [selectedFilter, setSelectedFilter] = useState<SelectedFilter>(
+    initialSelectedFilter || { mode: 'departure', categories: {} }
+  );
+
+  // Report filter changes to parent via ref (avoids infinite loop)
+  const prevSelectedFilterRef = useRef(selectedFilter);
   useEffect(() => {
+    if (!controlled) return;
+    if (prevSelectedFilterRef.current !== selectedFilter) {
+      prevSelectedFilterRef.current = selectedFilter;
+      onFilterChangeRef.current?.(selectedFilter);
+    }
+  }, [controlled, selectedFilter]);
+
+  const [hasRestoredFromZustand, setHasRestoredFromZustand] = useState(controlled ? true : false);
+
+  useEffect(() => {
+    if (controlled) return;
     if (selectedConditions && !hasRestoredFromZustand) {
       let categories: Record<string, any> = {};
 
-      // 🎯 원본 로컬 상태가 있으면 우선 사용 (정확한 복원)
       if (selectedConditions.originalLocalState) {
         categories = selectedConditions.originalLocalState;
       } else {
-        // 🎯 fallback: conditions에서 간단히 복원
         selectedConditions.conditions.forEach((condition) => {
           categories[condition.field] = condition.values;
         });
@@ -437,9 +465,9 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
         });
       }
 
-      setHasRestoredFromZustand(true); // 한 번만 복원
+      setHasRestoredFromZustand(true);
     }
-  }, [selectedConditions, hasRestoredFromZustand]);
+  }, [controlled, selectedConditions, hasRestoredFromZustand]);
 
   // 🆕 Region 드롭다운 open 상태는 DropdownMenu가 자체 관리
 
@@ -813,6 +841,14 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
     }
   }, [selectedFilter, filtersData]);
 
+  // controlled 모드: 예상 필터링 편수를 부모에 리포트 (ref로 infinite loop 방지)
+  useEffect(() => {
+    if (!controlled || !filtersData) return;
+    const estimated = parseInt(getEstimatedFilteredFlights()) || 0;
+    const total = filtersData.filters?.[selectedFilter.mode]?.total_flights || 0;
+    onEstimatedFlightsChangeRef.current?.(estimated, total);
+  }, [controlled, getEstimatedFilteredFlights, filtersData, selectedFilter.mode]);
+
   // 🆕 조건을 API 형식으로 변환하는 공통 함수
   const convertConditionsForAPI = useCallback((): Array<{ field: string; values: string[] }> => {
     const conditions: Array<{ field: string; values: string[] }> = [];
@@ -909,32 +945,29 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
     const conditions = convertConditionsForAPI();
 
     try {
-      // ✅ Apply Filter 시작 - 버튼 로딩 상태만 활성화
       setIsApplying(true);
 
-      // 🔄 새로운 필터 적용 전에 기존 승객 및 프로세스 데이터 리셋
-      resetPassenger();
-      resetProcessFlow();
-
-      // 🎯 Selected Flights 계산
       const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
-      const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
 
-      // 🎯 Filter Flights 클릭 시 zustand에 저장 (S3 저장용)
-      setSelectedConditions({
-        type: selectedFilter.mode as 'departure' | 'arrival',
-        conditions: conditions,
-        expected_flights: {
-          selected: totalFiltered,
-          total: totalAvailable,
-        },
-        // 🎯 원본 로컬 상태도 함께 저장 (복원용)
-        originalLocalState: selectedFilter.categories,
-      });
+      if (!controlled) {
+        resetPassenger();
+        resetProcessFlow();
+
+        const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+
+        setSelectedConditions({
+          type: selectedFilter.mode as 'departure' | 'arrival',
+          conditions: conditions,
+          expected_flights: {
+            selected: totalFiltered,
+            total: totalAvailable,
+          },
+          originalLocalState: selectedFilter.categories,
+        });
+      }
 
       const result = await onApplyFilter(selectedFilter.mode, conditions);
 
-      // 성공 시 토스트 알림 표시
       if (result) {
         toast({
           title: "Filter Applied",
@@ -965,20 +998,20 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
     toast,
   ]);
 
-  // 초기화
   const handleClearAll = useCallback(() => {
     setSelectedFilter({
       mode: 'departure',
       categories: {},
     });
 
-    // 🎯 Clear All 시 zustand도 함께 초기화
-    setSelectedConditions({
-      type: 'departure',
-      conditions: [],
-      originalLocalState: {},
-    });
-  }, [setSelectedConditions]);
+    if (!controlled) {
+      setSelectedConditions({
+        type: 'departure',
+        conditions: [],
+        originalLocalState: {},
+      });
+    }
+  }, [controlled, setSelectedConditions, setSelectedFilter]);
 
   // ==================== Computed Values ====================
 
@@ -1284,10 +1317,11 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
           </TabsContent>
         </Tabs>
 
-        {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
-        <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+        {showActions && (
+          <>
+            {/* 선택 상태 요약 */}
+            <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
               <div className="flex items-start gap-4">
-                {/* 선택 요약 - 항상 표시 */}
                 <div className="flex-1">
                   <div className="mb-2 flex items-center gap-2">
                     <div className="rounded-full bg-primary/20 p-1">
@@ -1295,7 +1329,6 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
                     </div>
                     <span className="text-sm font-semibold text-primary">Selection Summary</span>
                   </div>
-                  {/* 선택된 항목이 있을 때만 상세 내용 표시, 없으면 안내 메시지 */}
                   <div className="text-sm text-muted-foreground">
                     {Object.entries(selectedFilter.categories).some(([_, value]) =>
                       Array.isArray(value) ? value.length > 0 : !!value
@@ -1307,11 +1340,9 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
                   </div>
                 </div>
 
-                {/* 편수 통계 - 항상 표시 */}
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground">Selected Flights</div>
                   <div className="text-lg font-bold text-primary">
-                    {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
                     {(() => {
                       const totalFiltered = getEstimatedFilteredFlights();
                       const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
@@ -1322,11 +1353,9 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
               </div>
             </div>
 
-            {/* Selection Summary & Actions */}
+            {/* Action Buttons */}
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              {/* 왼쪽은 비워두고 버튼들은 오른쪽에 배치 */}
               <div></div>
-
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -1358,6 +1387,8 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
                 </Button>
               </div>
             </div>
+          </>
+        )}
       </div>
     );
   }
@@ -1406,80 +1437,76 @@ function FlightFilterConditions({ loading, onApplyFilter, isEmbedded = false }: 
               </TabsContent>
             </Tabs>
 
-            {/* 🆕 선택 상태 요약 (Apply 버튼 바로 위에 배치) */}
-            <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
-              <div className="flex items-start gap-4">
-                {/* 선택 요약 - 항상 표시 */}
-                <div className="flex-1">
-                  <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-primary/20 p-1">
-                      <Filter className="h-3 w-3 text-primary" />
+            {showActions && (
+              <>
+                <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="mb-2 flex items-center gap-2">
+                        <div className="rounded-full bg-primary/20 p-1">
+                          <Filter className="h-3 w-3 text-primary" />
+                        </div>
+                        <span className="text-sm font-semibold text-primary">Selection Summary</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {Object.entries(selectedFilter.categories).some(([_, value]) =>
+                          Array.isArray(value) ? value.length > 0 : !!value
+                        ) ? (
+                          <span>Filters applied</span>
+                        ) : (
+                          <span>No filters selected - showing all flights</span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-primary">Selection Summary</span>
-                  </div>
-                  {/* 선택된 항목이 있을 때만 상세 내용 표시, 없으면 안내 메시지 */}
-                  <div className="text-sm text-muted-foreground">
-                    {Object.entries(selectedFilter.categories).some(([_, value]) =>
-                      Array.isArray(value) ? value.length > 0 : !!value
-                    ) ? (
-                      <span>Filters applied</span>
-                    ) : (
-                      <span>No filters selected - showing all flights</span>
-                    )}
-                  </div>
-                </div>
 
-                {/* 편수 통계 - 항상 표시 */}
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Selected Flights</div>
-                  <div className="text-lg font-bold text-primary">
-                    {/* 🎯 항상 로컬 계산값 사용 (실시간 업데이트) */}
-                    {(() => {
-                      const totalFiltered = getEstimatedFilteredFlights();
-                      const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                      return `${totalFiltered.toLocaleString()} / ${totalAvailable.toLocaleString()}`;
-                    })()}
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground">Selected Flights</div>
+                      <div className="text-lg font-bold text-primary">
+                        {(() => {
+                          const totalFiltered = getEstimatedFilteredFlights();
+                          const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+                          return `${totalFiltered.toLocaleString()} / ${totalAvailable.toLocaleString()}`;
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Selection Summary & Actions */}
-            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              {/* 왼쪽은 비워두고 버튼들은 오른쪽에 배치 */}
-              <div></div>
+                <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div></div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleClearAll}
+                      disabled={Object.entries(selectedFilter.categories).every(([_, value]) =>
+                        Array.isArray(value) ? value.length === 0 : !value
+                      )}
+                    >
+                      Clear All
+                    </Button>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearAll}
-                  disabled={Object.entries(selectedFilter.categories).every(([_, value]) =>
-                    Array.isArray(value) ? value.length === 0 : !value
-                  )}
-                >
-                  Clear All
-                </Button>
-
-                <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying} className="overflow-hidden">
-                  <span className="flex items-center">
-                    {isApplying ? (
-                      <>
-                        <Spinner size={16} className="mr-2 shrink-0" />
-                        <span className="hidden sm:inline truncate">Filtering...</span>
-                        <span className="sm:hidden truncate">Filter</span>
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4 shrink-0" />
-                        <span className="hidden sm:inline truncate">Filter Flights</span>
-                        <span className="sm:hidden truncate">Filter</span>
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </div>
-            </div>
+                    <Button size="sm" onClick={handleApplyFilter} disabled={!canApplyFilter || isApplying} className="overflow-hidden">
+                      <span className="flex items-center">
+                        {isApplying ? (
+                          <>
+                            <Spinner size={16} className="mr-2 shrink-0" />
+                            <span className="hidden sm:inline truncate">Filtering...</span>
+                            <span className="sm:hidden truncate">Filter</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4 shrink-0" />
+                            <span className="hidden sm:inline truncate">Filter Flights</span>
+                            <span className="sm:hidden truncate">Filter</span>
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Card>

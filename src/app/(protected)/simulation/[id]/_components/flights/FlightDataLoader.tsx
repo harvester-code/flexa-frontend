@@ -16,7 +16,13 @@ interface FlightDataLoaderProps {
   loadingFlightSchedule: boolean;
   setIsSomethingChanged: (changed: boolean) => void;
   onLoadData: (airport: string, date: string) => void;
-  isEmbedded?: boolean; // 다른 컴포넌트 안에 임베드되었는지 여부
+  isEmbedded?: boolean;
+  // Multi-tab controlled mode
+  controlledAirport?: string;
+  controlledDate?: string;
+  onAirportChange?: (airport: string) => void;
+  onDateChange?: (date: string) => void;
+  skipStoreSync?: boolean;
 }
 
 function FlightDataLoader({
@@ -24,8 +30,12 @@ function FlightDataLoader({
   setIsSomethingChanged,
   onLoadData,
   isEmbedded = false,
+  controlledAirport,
+  controlledDate,
+  onAirportChange,
+  onDateChange,
+  skipStoreSync = false,
 }: FlightDataLoaderProps) {
-  // 🆕 초기값은 store에서 가져오되, 로컬 상태로 관리 (Load 버튼 클릭 시에만 저장)
   const storeAirport = useSimulationStore((s) => s.context.airport);
   const storeDate = useSimulationStore((s) => s.context.date);
   const setStoreAirport = useSimulationStore((s) => s.setAirport);
@@ -33,33 +43,60 @@ function FlightDataLoader({
   const resetPassenger = useSimulationStore((s) => s.resetPassenger);
   const resetProcessFlow = useSimulationStore((s) => s.resetProcessFlow);
 
-  // 로컬 상태로 관리 (초기값은 store에서 가져오기)
-  const [airport, setAirport] = useState(storeAirport);
-  const [date, setDate] = useState(storeDate);
+  const isControlled = controlledAirport !== undefined;
+  const [airport, setAirport] = useState(isControlled ? controlledAirport : storeAirport);
+  const [date, setDate] = useState(isControlled && controlledDate ? controlledDate : storeDate);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
 
   useEffect(() => {
-    setAirport(storeAirport);
-  }, [storeAirport]);
+    if (isControlled) {
+      setAirport(controlledAirport);
+    } else {
+      setAirport(storeAirport);
+    }
+  }, [isControlled, controlledAirport, storeAirport]);
 
-  // 임베드 모드일 때는 Card 래퍼 없이 내용만 렌더링
+  useEffect(() => {
+    if (isControlled && controlledDate) {
+      setDate(controlledDate);
+    }
+  }, [isControlled, controlledDate]);
+
+  const handleAirportChange = (value: string) => {
+    setIsSomethingChanged(airport !== value);
+    setAirport(value);
+    onAirportChange?.(value);
+  };
+
+  const handleDateChange = (selectedDate: Date) => {
+    const formatted = dayjs(selectedDate).format('YYYY-MM-DD');
+    setIsSomethingChanged(date !== formatted);
+    setDate(formatted);
+    onDateChange?.(formatted);
+    setOpenCalendarPopover(false);
+  };
+
+  const handleLoad = () => {
+    if (!skipStoreSync) {
+      resetPassenger();
+      resetProcessFlow();
+      setStoreAirport(airport);
+      setStoreDate(date);
+    }
+    onLoadData(airport, date);
+  };
+
   if (isEmbedded) {
     return (
       <div className="flex items-center gap-4">
-          {/* Airport Selection - 70% width */}
           <div className="flex-1">
             <AirportSelector
               value={airport}
-              onChange={(value) => {
-                setIsSomethingChanged(airport !== value);
-                setAirport(value);
-              }}
+              onChange={handleAirportChange}
             />
           </div>
 
-          {/* Date Selection and Load Button - Right side */}
           <div className="flex items-center gap-4">
-            {/* Date Selection */}
             <Popover open={openCalendarPopover} onOpenChange={setOpenCalendarPopover}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="default">
@@ -73,26 +110,15 @@ function FlightDataLoader({
                   selected={dayjs(date).toDate()}
                   defaultMonth={dayjs(date).toDate()}
                   onSelect={(selectedDate) => {
-                    if (selectedDate) {
-                      setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
-                      setDate(dayjs(selectedDate).format('YYYY-MM-DD'));
-                      setOpenCalendarPopover(false);
-                    }
+                    if (selectedDate) handleDateChange(selectedDate);
                   }}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
 
-            {/* Load Button */}
             <Button
-              onClick={() => {
-                resetPassenger();
-                resetProcessFlow();
-                setStoreAirport(airport);
-                setStoreDate(date);
-                onLoadData(airport, date);
-              }}
+              onClick={handleLoad}
               disabled={loadingFlightSchedule || !airport}
               className="min-w-24 overflow-hidden"
             >
@@ -131,20 +157,14 @@ function FlightDataLoader({
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4">
-          {/* Airport Selection - 70% width */}
           <div className="flex-1">
             <AirportSelector
               value={airport}
-              onChange={(value) => {
-                setIsSomethingChanged(airport !== value);
-                setAirport(value);
-              }}
+              onChange={handleAirportChange}
             />
           </div>
 
-          {/* Date Selection and Load Button - Right side */}
           <div className="flex items-center gap-4">
-            {/* Date Selection */}
             <Popover open={openCalendarPopover} onOpenChange={setOpenCalendarPopover}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="default">
@@ -158,26 +178,15 @@ function FlightDataLoader({
                   selected={dayjs(date).toDate()}
                   defaultMonth={dayjs(date).toDate()}
                   onSelect={(selectedDate) => {
-                    if (selectedDate) {
-                      setIsSomethingChanged(date !== dayjs(selectedDate).format('YYYY-MM-DD'));
-                      setDate(dayjs(selectedDate).format('YYYY-MM-DD'));
-                      setOpenCalendarPopover(false);
-                    }
+                    if (selectedDate) handleDateChange(selectedDate);
                   }}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
 
-            {/* Load Button */}
             <Button
-              onClick={() => {
-                resetPassenger();
-                resetProcessFlow();
-                setStoreAirport(airport);
-                setStoreDate(date);
-                onLoadData(airport, date);
-              }}
+              onClick={handleLoad}
               disabled={loadingFlightSchedule || !airport}
               className="min-w-24 overflow-hidden"
             >
