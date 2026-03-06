@@ -168,6 +168,27 @@ export interface ZoneAreaRect {
 }
 
 /**
+ * process_flow의 유효한 zone key set을 생성하고,
+ * zoneAreas에서 더 이상 유효하지 않은 고아 항목을 제거한다.
+ */
+const pruneOrphanedZoneAreas = (
+  processFlow: ProcessStep[],
+  zoneAreas: Record<string, ZoneAreaRect>
+) => {
+  const validKeys = new Set<string>();
+  for (const step of processFlow) {
+    for (const zoneName of Object.keys(step.zones || {})) {
+      validKeys.add(`${step.step}:${zoneName}`);
+    }
+  }
+  for (const key of Object.keys(zoneAreas)) {
+    if (!validKeys.has(key)) {
+      delete zoneAreas[key];
+    }
+  }
+};
+
+/**
  * Legacy procedures를 새로운 process_flow 형태로 변환하는 헬퍼 함수
  */
 const migrateProceduresToProcessFlow = (
@@ -1310,7 +1331,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setProcessFlow: (flow) =>
       set((state) => {
-        // 모든 프로세스 이름 정규화 및 올바른 키 순서로 저장
         state.process_flow = flow.map((process) => ({
           step: process.step,
           name: normalizeProcessName(process.name),
@@ -1320,26 +1340,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
           entry_conditions: process.entry_conditions || [],
           zones: process.zones || {},
         }));
+        pruneOrphanedZoneAreas(state.process_flow, state.terminalLayout.zoneAreas);
       }),
 
     convertFromProcedures: (procedures, entryType = "Entry") =>
       set((state) => {
         const convertedFlow = procedures
-          .sort((a, b) => a.order - b.order) // order 기준 정렬
+          .sort((a, b) => a.order - b.order)
           .map((procedure, index) => {
             const processStep: ProcessStep = {
               step: index,
-              name: normalizeProcessName(procedure.process), // "Visa-Check" -> "visa_check"
-              travel_time_minutes: 0, // 사용자가 UI에서 설정
+              name: normalizeProcessName(procedure.process),
+              travel_time_minutes: 0,
               entry_conditions: [],
               zones: {} as Record<string, SimulationZone>,
             };
 
-            // facility_names를 zones로 변환 (범용적 처리)
             procedure.facility_names.forEach((facilityName: string) => {
-              // Process Configuration에서는 zone만 생성, facilities는 빈 배열
               processStep.zones[facilityName] = {
-                facilities: [], // 빈 배열로 시작 - Facility Detail에서 개수 지정 시 채워짐
+                facilities: [],
               };
             });
 
@@ -1347,6 +1366,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           });
 
         state.process_flow = convertedFlow;
+        pruneOrphanedZoneAreas(state.process_flow, state.terminalLayout.zoneAreas);
       }),
 
     setProcessCompleted: (completed) =>
@@ -1364,7 +1384,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     loadProcessMetadata: (metadata) =>
       set((state) => {
-        // 기존 procedures 형태인 경우 자동 마이그레이션
         if (
           metadata.procedures &&
           Array.isArray(metadata.procedures) &&
@@ -1375,7 +1394,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
           );
           state.process_flow = convertedFlow;
         } else {
-          // 이미 새로운 형태인 경우 - 프로세스 이름 정규화 적용
           const normalizedMetadata = { ...metadata };
 
           if (
@@ -1385,7 +1403,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             normalizedMetadata.process_flow =
               normalizedMetadata.process_flow.map((process: ProcessStep) => ({
                 step: process.step,
-                name: normalizeProcessName(process.name), // 기존 데이터도 정규화
+                name: normalizeProcessName(process.name),
                 travel_time_minutes: process.travel_time_minutes || 0,
                 process_time_seconds:
                   process.process_time_seconds ?? null,
@@ -1397,6 +1415,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
               normalizedMetadata.process_flow as ProcessStep[];
           }
         }
+        pruneOrphanedZoneAreas(state.process_flow, state.terminalLayout.zoneAreas);
       }),
 
     setFacilitiesForZone: (processIndex, zoneName, count, processTimeSeconds) =>

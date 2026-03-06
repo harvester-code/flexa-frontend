@@ -15,6 +15,8 @@ const extractTerminalLayout = (metadata: unknown): ScenarioTerminalLayout | null
   const tabs = (metadataRecord.tabs as Record<string, unknown> | undefined) ?? {};
 
   let stepNames: Record<string, string> | undefined;
+  const validZoneKeys = new Set<string>();
+
   const processFlowRaw = metadataRecord.process_flow;
   if (Array.isArray(processFlowRaw)) {
     const mapping: Record<string, string> = {};
@@ -34,12 +36,21 @@ const extractTerminalLayout = (metadata: unknown): ScenarioTerminalLayout | null
       if (Number.isFinite(stepNumber) && stepName) {
         mapping[String(stepNumber)] = stepName;
       }
+
+      const zones = stepRecord.zones;
+      if (Number.isFinite(stepNumber) && zones && typeof zones === "object") {
+        for (const zoneName of Object.keys(zones as Record<string, unknown>)) {
+          validZoneKeys.add(`${stepNumber}:${zoneName}`);
+        }
+      }
     }
 
     if (Object.keys(mapping).length > 0) {
       stepNames = mapping;
     }
   }
+
+  const hasValidKeys = validZoneKeys.size > 0;
 
   const candidateSources: unknown[] = [
     metadataRecord.terminalLayout,
@@ -67,6 +78,10 @@ const extractTerminalLayout = (metadata: unknown): ScenarioTerminalLayout | null
     const zoneAreas: Record<string, TerminalLayoutZoneRect> = {};
 
     for (const [zoneKey, rawRect] of zoneAreasEntries) {
+      if (hasValidKeys && !validZoneKeys.has(zoneKey)) {
+        continue;
+      }
+
       const x = Number(rawRect.x);
       const y = Number(rawRect.y);
       const width = Number(rawRect.width);

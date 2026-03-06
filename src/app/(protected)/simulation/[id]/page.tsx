@@ -192,12 +192,32 @@ export default function SimulationDetail({
             metadata.process_flow,
           );
         }
-        // 현재 Store의 액션들만 보존하고 나머지는 S3 데이터로 교체
         const currentStore = useSimulationStore.getState();
+        const rawZoneAreas: Record<string, unknown> =
+          metadata.terminalLayout?.zoneAreas ?? {};
+
+        // process_flow 기준으로 유효한 zone key만 유지
+        const processFlow = Array.isArray(metadata.process_flow) ? metadata.process_flow : [];
+        if (processFlow.length > 0) {
+          const validKeys = new Set<string>();
+          for (const step of processFlow) {
+            if (step && typeof step === "object" && step.zones) {
+              for (const zoneName of Object.keys(step.zones)) {
+                validKeys.add(`${step.step}:${zoneName}`);
+              }
+            }
+          }
+          for (const key of Object.keys(rawZoneAreas)) {
+            if (!validKeys.has(key)) {
+              delete rawZoneAreas[key];
+            }
+          }
+        }
+
         const metadataTerminalLayout = metadata.terminalLayout
           ? {
               imageUrl: metadata.terminalLayout.imageUrl ?? null,
-              zoneAreas: metadata.terminalLayout.zoneAreas ?? {},
+              zoneAreas: rawZoneAreas,
             }
           : { imageUrl: null, zoneAreas: {} };
 
