@@ -77,6 +77,7 @@ function TabFlightSchedule({
   // Zustand store
   const storeAirport = useSimulationStore((s) => s.context.airport);
   const storeDate = useSimulationStore((s) => s.context.date);
+  const storeTotalFlights = useSimulationStore((s) => s.flight.total_flights);
   const setUnifiedAirport = useSimulationStore((s) => s.setAirport);
   const setUnifiedDate = useSimulationStore((s) => s.setDate);
   const setFlightFilters = useSimulationStore((s) => s.setFlightFilters);
@@ -123,15 +124,18 @@ function TabFlightSchedule({
     [airportTabs]
   );
 
-  // Restore tab 1 from Zustand on first render (S3 restore)
+  // Restore tab 1 from Zustand when store is hydrated (S3 restore)
   useEffect(() => {
     if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
+    if (!storeTotalFlights) return;
 
     const state = useSimulationStore.getState();
     const flight = state.flight;
 
-    if (flight.total_flights) {
+    setAirportTabs((prev) => {
+      const tab1 = prev.find((t) => t.id === "tab-1");
+      if (!tab1 || tab1.filtersData) return prev;
+
       let restoredFilter: SelectedFilter = { mode: "departure", categories: {} };
       if (flight.selectedConditions?.originalLocalState) {
         restoredFilter = {
@@ -146,22 +150,28 @@ function TabFlightSchedule({
         restoredFilter = { mode: flight.selectedConditions.type, categories: cats };
       }
 
-      setAirportTabs([{
-        id: "tab-1",
-        airport: state.context.airport,
-        date: state.context.date,
-        filtersData: {
-          total_flights: flight.total_flights,
-          airlines: flight.airlines || {},
-          filters: flight.filters || {},
-        },
-        selectedFilter: restoredFilter,
-        loading: false,
-        estimatedFiltered: flight.selectedConditions?.expected_flights?.selected || flight.total_flights,
-        totalFlightsForMode: flight.selectedConditions?.expected_flights?.total || flight.total_flights,
-      }]);
-    }
-  }, []);
+      hasInitializedRef.current = true;
+
+      return prev.map((t) =>
+        t.id === "tab-1"
+          ? {
+              ...t,
+              airport: state.context.airport,
+              date: state.context.date,
+              filtersData: {
+                total_flights: storeTotalFlights,
+                airlines: flight.airlines || {},
+                filters: flight.filters || {},
+              },
+              selectedFilter: restoredFilter,
+              loading: false,
+              estimatedFiltered: flight.selectedConditions?.expected_flights?.selected || storeTotalFlights,
+              totalFlightsForMode: flight.selectedConditions?.expected_flights?.total || storeTotalFlights,
+            }
+          : t
+      );
+    });
+  }, [storeTotalFlights]);
 
   // Ensure active tab ID is always valid
   useEffect(() => {
