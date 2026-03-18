@@ -492,24 +492,29 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     const paxUnitOptions = ['inflow', 'outflow', 'queue_length'];
 
-    // --- Calculate Max Value for Pax Units ---
+    // --- Calculate Max Value for Pax Units (per-axis independent ranges) ---
     const selectedPaxOptions = selectedOptionsWithAxis.filter((opt) => paxUnitOptions.includes(opt.value));
     if (selectedPaxOptions.length > 0) {
-      const dataToCompare = selectedPaxOptions.flatMap((opt) => sanitizedSeriesCache[opt.value] ?? []);
-
-      let maxPaxValue = dataToCompare.length > 0 ? Math.max(...dataToCompare) : 0;
-
-      const hasFlow = selectedPaxOptions.some((opt) => ['inflow', 'outflow'].includes(opt.value));
-      if (hasFlow && capacitySeries) {
-        const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
-        maxPaxValue = Math.max(maxPaxValue, capacityMax);
-      }
-
-      const paxRangeMax = maxPaxValue > 0 ? maxPaxValue * 1.1 : 10;
-
-      // Apply range to all selected pax axes
+      const paxByAxis = new Map<string | undefined, typeof selectedPaxOptions>();
       selectedPaxOptions.forEach((opt) => {
-        const axisToUpdate = opt.axis === 'y2' ? newLayout.yaxis2 : newLayout.yaxis;
+        const group = paxByAxis.get(opt.axis) ?? [];
+        group.push(opt);
+        paxByAxis.set(opt.axis, group);
+      });
+
+      paxByAxis.forEach((opts, axis) => {
+        const dataToCompare = opts.flatMap((opt) => sanitizedSeriesCache[opt.value] ?? []);
+        let maxPaxValue = dataToCompare.length > 0 ? Math.max(...dataToCompare) : 0;
+
+        const hasFlow = opts.some((opt) => ['inflow', 'outflow'].includes(opt.value));
+        if (hasFlow && capacitySeries) {
+          const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
+          maxPaxValue = Math.max(maxPaxValue, capacityMax);
+        }
+
+        const paxRangeMax = maxPaxValue > 0 ? maxPaxValue * 1.1 : 10;
+
+        const axisToUpdate = axis === 'y2' ? newLayout.yaxis2 : newLayout.yaxis;
         if (axisToUpdate) {
           axisToUpdate.range = [0, paxRangeMax];
           axisToUpdate.autorange = false;
