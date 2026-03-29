@@ -109,10 +109,11 @@ export interface ExcelTableProps {
   cellBadges: Record<string, CategoryBadge[]>;
   disabledCells: Set<string>;
   cellProcessTimes: Record<string, number>;
-  copiedCells?: Set<string>; // Cells that are currently copied
+  copiedCells?: Set<string>;
   isFullScreen?: boolean;
   virtualScroll: VirtualScrollConfig;
   handlers: TableHandlers;
   isPreviousDay?: boolean;
   currentProcessTime: number;
+  isDragging?: boolean;
 }

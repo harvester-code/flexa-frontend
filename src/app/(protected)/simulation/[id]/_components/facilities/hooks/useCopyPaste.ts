@@ -20,6 +20,7 @@ interface UseCopyPasteProps {
   currentFacilities: any[];
   setCellBadges: (badges: Record<string, CategoryBadge[]>) => void;
   setDisabledCells: (cells: Set<string>) => void;
+  setSelectedCells: (cells: Set<string>) => void;
   undoHistory: any;
 }
 
@@ -31,6 +32,7 @@ export const useCopyPaste = ({
   currentFacilities,
   setCellBadges,
   setDisabledCells,
+  setSelectedCells,
   undoHistory,
 }: UseCopyPasteProps) => {
   // Copy/Paste state management
@@ -263,9 +265,7 @@ export const useCopyPaste = ({
       // Update states
       setCellBadges(newBadges);
       setDisabledCells(newDisabledCells);
-
-      // Don't clear selection - keep the target cells selected
-      // Only hide marching ants (handled in handleKeyDown)
+      setSelectedCells(targetCells);
 
       // Add to history
       undoHistory.pushHistory({
@@ -283,7 +283,7 @@ export const useCopyPaste = ({
         ),
       });
     },
-    [cellBadges, disabledCells, setCellBadges, setDisabledCells, undoHistory]
+    [cellBadges, disabledCells, setCellBadges, setDisabledCells, setSelectedCells, undoHistory]
   );
 
   return {

@@ -514,8 +514,18 @@ export default function OperatingScheduleEditor({
     currentFacilities,
     setCellBadges,
     setDisabledCells,
+    setSelectedCells,
     undoHistory,
   });
+
+  // 존/프로세스 전환 시 복사 점선(marching ants) 초기화
+  const prevZoneKeyRef = useRef(zoneKey);
+  useEffect(() => {
+    if (prevZoneKeyRef.current !== zoneKey) {
+      prevZoneKeyRef.current = zoneKey;
+      setShowMarchingAnts(false);
+    }
+  }, [zoneKey, setShowMarchingAnts]);
 
   // 빈 스크롤 핸들러 (가상화 비활성화로 더 이상 필요 없음)
   const handleScroll = useCallback(() => {
@@ -584,6 +594,14 @@ export default function OperatingScheduleEditor({
   });
 
   // 🖱️ 드래그 중 document mousemove로 셀 추적 (빠른 드래그/가상 스크롤 대응)
+  // Throttled to avoid excessive state updates that cause cascading re-renders
+  const dragStartRef = useRef(dragState.start);
+  const dragAdditiveRef = useRef(dragState.isAdditive);
+  const dragOriginalRef = useRef(dragState.originalSelection);
+  dragStartRef.current = dragState.start;
+  dragAdditiveRef.current = dragState.isAdditive;
+  dragOriginalRef.current = dragState.originalSelection;
+
   useEffect(() => {
     if (
       !dragState.isActive ||
@@ -593,7 +611,18 @@ export default function OperatingScheduleEditor({
       return;
     }
 
-    const handleDocumentMouseMove = (e: MouseEvent) => {
+    let rafId: number | null = null;
+    let latestEvent: MouseEvent | null = null;
+
+    const processMouseMove = () => {
+      rafId = null;
+      if (!latestEvent) return;
+      const e = latestEvent;
+      latestEvent = null;
+
+      const start = dragStartRef.current;
+      if (!start) return;
+
       const target = document.elementFromPoint(e.clientX, e.clientY);
       const td = target?.closest?.("td[data-cell-id]") as
         | (HTMLElement & { dataset: { row: string; col: string; cellId: string } })
@@ -605,32 +634,39 @@ export default function OperatingScheduleEditor({
       if (isNaN(rowIndex) || isNaN(colIndex)) return;
 
       const rangeCells = generateCellRange(
-        dragState.start!.row,
+        start.row,
         rowIndex,
-        dragState.start!.col,
+        start.col,
         colIndex
       );
 
-      if (dragState.isAdditive && dragState.originalSelection) {
+      if (dragAdditiveRef.current && dragOriginalRef.current) {
         setTempSelectedCells(
-          new Set([...dragState.originalSelection, ...rangeCells])
+          new Set([...dragOriginalRef.current, ...rangeCells])
         );
       } else {
         setTempSelectedCells(rangeCells);
       }
     };
 
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      latestEvent = e;
+      if (rafId === null) {
+        rafId = requestAnimationFrame(processMouseMove);
+      }
+    };
+
     document.addEventListener("mousemove", handleDocumentMouseMove, {
       passive: true,
     });
-    return () =>
+    return () => {
       document.removeEventListener("mousemove", handleDocumentMouseMove);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [
     dragState.isActive,
     dragState.type,
     dragState.start,
-    dragState.isAdditive,
-    dragState.originalSelection,
     generateCellRange,
     setTempSelectedCells,
   ]);
@@ -1230,6 +1266,7 @@ export default function OperatingScheduleEditor({
           handlers={tableHandlers}
           isPreviousDay={isPreviousDay}
           currentProcessTime={currentProcessTime}
+          isDragging={dragState.isActive}
         />
 
         <TerminalImageManager
@@ -1397,6 +1434,7 @@ export default function OperatingScheduleEditor({
                 handlers={tableHandlers}
                 isPreviousDay={isPreviousDay}
                 currentProcessTime={currentProcessTime}
+                isDragging={dragState.isActive}
               />
             </div>
           </DialogContent>

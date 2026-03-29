@@ -1,10 +1,224 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
 import { THEME_COLORS } from "@/styles/theme-colors";
 import { ExcelTableProps, CategoryBadge } from "./types";
+
+const EMPTY_BADGES: CategoryBadge[] = [];
+const EMPTY_SET: ReadonlySet<string> = new Set<string>();
+
+interface BorderInfo {
+  hasTop: boolean;
+  hasBottom: boolean;
+  hasLeft: boolean;
+  hasRight: boolean;
+}
+
+interface TableCellProps {
+  cellId: string;
+  rowIndex: number;
+  colIndex: number;
+  isSelected: boolean;
+  isDisabled: boolean;
+  badges: CategoryBadge[];
+  effectiveProcessTime: number;
+  showProcessBadge: boolean;
+  isCustomProcessTime: boolean;
+  currentProcessTime: number;
+  copyBorderInfo: BorderInfo | null;
+  selectionBorderInfo: BorderInfo | null;
+  handlers: ExcelTableProps["handlers"];
+}
+
+function borderInfoEqual(a: BorderInfo | null, b: BorderInfo | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.hasTop === b.hasTop && a.hasBottom === b.hasBottom &&
+         a.hasLeft === b.hasLeft && a.hasRight === b.hasRight;
+}
+
+function tableCellAreEqual(prev: TableCellProps, next: TableCellProps): boolean {
+  if (
+    prev.cellId !== next.cellId ||
+    prev.isSelected !== next.isSelected ||
+    prev.isDisabled !== next.isDisabled ||
+    prev.effectiveProcessTime !== next.effectiveProcessTime ||
+    prev.showProcessBadge !== next.showProcessBadge ||
+    prev.isCustomProcessTime !== next.isCustomProcessTime ||
+    prev.currentProcessTime !== next.currentProcessTime ||
+    prev.badges !== next.badges ||
+    prev.handlers !== next.handlers
+  ) {
+    return false;
+  }
+  if (!borderInfoEqual(prev.copyBorderInfo, next.copyBorderInfo)) return false;
+  if (!borderInfoEqual(prev.selectionBorderInfo, next.selectionBorderInfo)) return false;
+  return true;
+}
+
+const TableCell = React.memo<TableCellProps>(
+  ({
+    cellId,
+    rowIndex,
+    colIndex,
+    isSelected,
+    isDisabled,
+    badges,
+    effectiveProcessTime,
+    showProcessBadge,
+    isCustomProcessTime,
+    currentProcessTime,
+    copyBorderInfo,
+    selectionBorderInfo,
+    handlers,
+  }) => {
+    const processBadgeClass = isDisabled
+      ? "bg-gray-200 text-gray-500 border-gray-400"
+      : !isCustomProcessTime
+        ? "bg-primary/15 text-primary border-primary/40"
+        : effectiveProcessTime > currentProcessTime
+          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+          : "bg-amber-100 text-amber-800 border-amber-300";
+
+    return (
+      <td
+        data-row={rowIndex}
+        data-col={colIndex}
+        data-cell-id={cellId}
+        className={cn(
+          "cursor-pointer select-none p-1 border border-gray-200 relative",
+          isDisabled && "bg-gray-100",
+          isSelected && !isDisabled && "bg-schedule-selection"
+        )}
+        onMouseDown={(e) => {
+          if (e.button !== 2) {
+            handlers.cell.onMouseDown(cellId, rowIndex, colIndex, e);
+          }
+        }}
+        onMouseEnter={(e) =>
+          handlers.cell.onMouseEnter(cellId, rowIndex, colIndex, e)
+        }
+        onMouseUp={handlers.cell.onMouseUp}
+        onContextMenu={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+          } else {
+            handlers.cell.onRightClick(e, cellId);
+          }
+        }}
+      >
+        <div className="flex h-8 flex-col items-center justify-center space-y-0.5">
+          <div className="flex items-center space-x-1">
+            {badges.length > 0 ? (
+              badges.map((categoryBadge, badgeIndex) => {
+                const badgeStyle =
+                  categoryBadge.style ||
+                  getBadgeColor(categoryBadge.colorIndex).style;
+                return (
+                  <span
+                    key={`${categoryBadge.category}-${badgeIndex}`}
+                    className={cn(
+                      "select-none rounded border px-1 text-[9px] font-medium leading-tight",
+                      isDisabled && "line-through decoration-2"
+                    )}
+                    style={
+                      isDisabled
+                        ? {
+                            backgroundColor: THEME_COLORS.disabledBg,
+                            color: THEME_COLORS.disabledText,
+                            borderColor: THEME_COLORS.disabledBorder,
+                          }
+                        : badgeStyle
+                    }
+                    title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                  >
+                    {categoryBadge.options
+                      .map((option) => option.slice(0, 3))
+                      .join("|")}
+                  </span>
+                );
+              })
+            ) : (
+              <span
+                className={cn(
+                  isDisabled
+                    ? "bg-gray-300 text-gray-600 border-gray-400"
+                    : "bg-primary/10 text-primary border-primary/20",
+                  "select-none rounded border px-1 text-[9px] font-medium leading-tight",
+                  isDisabled && "line-through decoration-2"
+                )}
+                title="All"
+              >
+                All
+              </span>
+            )}
+          </div>
+          {showProcessBadge && (
+            <div className="flex items-center">
+              <span
+                className={cn(
+                  "select-none rounded border px-1 text-[8px] font-semibold leading-tight",
+                  processBadgeClass
+                )}
+                title={`Process Time: ${effectiveProcessTime} seconds`}
+              >
+                {effectiveProcessTime}s
+              </span>
+            </div>
+          )}
+        </div>
+        {selectionBorderInfo && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              borderTop: selectionBorderInfo.hasTop
+                ? "2px solid #7c3aed"
+                : "none",
+              borderBottom: selectionBorderInfo.hasBottom
+                ? "2px solid #7c3aed"
+                : "none",
+              borderLeft: selectionBorderInfo.hasLeft
+                ? "2px solid #7c3aed"
+                : "none",
+              borderRight: selectionBorderInfo.hasRight
+                ? "2px solid #7c3aed"
+                : "none",
+            }}
+          />
+        )}
+        {copyBorderInfo && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: "2px",
+              left: "2px",
+              right: "2px",
+              bottom: "2px",
+              borderTop: copyBorderInfo.hasTop
+                ? `2px dashed ${THEME_COLORS.copyBorder}`
+                : "none",
+              borderBottom: copyBorderInfo.hasBottom
+                ? `2px dashed ${THEME_COLORS.copyBorder}`
+                : "none",
+              borderLeft: copyBorderInfo.hasLeft
+                ? `2px dashed ${THEME_COLORS.copyBorder}`
+                : "none",
+              borderRight: copyBorderInfo.hasRight
+                ? `2px dashed ${THEME_COLORS.copyBorder}`
+                : "none",
+              animation:
+                "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            }}
+          />
+        )}
+      </td>
+    );
+  },
+  tableCellAreEqual
+);
+TableCell.displayName = "TableCell";
 
 const ExcelTable: React.FC<ExcelTableProps> = React.memo(
   ({
@@ -15,13 +229,15 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
     cellBadges,
     disabledCells,
     cellProcessTimes,
-    copiedCells = new Set(),
+    copiedCells = EMPTY_SET,
     isFullScreen = false,
     virtualScroll,
     handlers,
     isPreviousDay = false,
     currentProcessTime,
+    isDragging = false,
   }) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const {
       visibleTimeSlots = timeSlots,
       startIndex = 0,
@@ -30,125 +246,131 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
       onScroll,
     } = virtualScroll;
 
-    // 선택된 행과 열 계산
-    const selectedRowsAndCols = useMemo(() => {
-      const selectedRows = new Set<number>();
-      const selectedCols = new Set<number>();
-
-      selectedCells.forEach((cellId) => {
-        const [rowStr, colStr] = cellId.split("-");
-        const rowIndex = parseInt(rowStr, 10);
-        const colIndex = parseInt(colStr, 10);
-
-        // 전체 행이 선택되었는지 확인
-        let isFullRowSelected = true;
-        for (let col = 0; col < currentFacilities.length; col++) {
-          if (!selectedCells.has(`${rowIndex}-${col}`)) {
-            isFullRowSelected = false;
-            break;
-          }
-        }
-        if (isFullRowSelected) selectedRows.add(rowIndex);
-
-        // 전체 열이 선택되었는지 확인
-        let isFullColSelected = true;
-        for (let row = 0; row < timeSlots.length; row++) {
-          if (!selectedCells.has(`${row}-${colIndex}`)) {
-            isFullColSelected = false;
-            break;
-          }
-        }
-        if (isFullColSelected) selectedCols.add(colIndex);
-      });
-
-      return { selectedRows, selectedCols };
-    }, [selectedCells, currentFacilities.length, timeSlots.length]);
-
-    // 🖼️ cellId 파싱 캐시 (성능 최적화)
-    const parseCellId = useMemo(() => {
-      const cache = new Map<string, [number, number]>();
-      return (cellId: string): [number, number] => {
-        if (!cache.has(cellId)) {
-          const [rowStr, colStr] = cellId.split("-");
-          cache.set(cellId, [parseInt(rowStr, 10), parseInt(colStr, 10)]);
-        }
-        return cache.get(cellId)!;
-      };
-    }, []);
-
-    // 🖼️ 선택된 셀의 boxShadow 스타일 계산 (기본 border와 충돌하지 않음)
-    const getSelectionStyles = useMemo(() => {
-      const styleMap = new Map<string, { boxShadow?: string }>();
-
-      // 선택된 영역의 경계를 찾아서 boxShadow로 표시
-      selectedCells.forEach((cellId) => {
-        const [rowIndex, colIndex] = parseCellId(cellId);
-
-        // 경계 확인
-        const topCellId = `${rowIndex - 1}-${colIndex}`;
-        const bottomCellId = `${rowIndex + 1}-${colIndex}`;
-        const leftCellId = `${rowIndex}-${colIndex - 1}`;
-        const rightCellId = `${rowIndex}-${colIndex + 1}`;
-
-        const isTopBorder = !selectedCells.has(topCellId);
-        const isBottomBorder = !selectedCells.has(bottomCellId);
-        const isLeftBorder = !selectedCells.has(leftCellId);
-        const isRightBorder = !selectedCells.has(rightCellId);
-
-        // 각 방향별로 boxShadow 추가 - 선택 영역을 진한 보라색 테두리로 강조
-        const shadows: string[] = [];
-        const borderColor = THEME_COLORS.selectionBorder;
-        // Only show selection if no cells are being shown as copied
-        if (isTopBorder) shadows.push(`inset 0 3px 0 0 ${borderColor}`);
-        if (isBottomBorder) shadows.push(`inset 0 -3px 0 0 ${borderColor}`);
-        if (isLeftBorder) shadows.push(`inset 3px 0 0 0 ${borderColor}`);
-        if (isRightBorder) shadows.push(`inset -3px 0 0 0 ${borderColor}`);
-
-        if (shadows.length > 0) {
-          styleMap.set(cellId, {
-            boxShadow: shadows.join(", "),
-          });
-        }
-      });
-
-      return (rowIndex: number, colIndex: number) => {
-        const cellId = `${rowIndex}-${colIndex}`;
-        return styleMap.get(cellId) || {};
-      };
-    }, [selectedCells, parseCellId]);
-
-    // Check if cell should show copy border overlay
-    const getCopyBorderInfo = useCallback(
-      (rowIndex: number, colIndex: number) => {
-        if (copiedCells.size === 0) return null;
-
-        const cellId = `${rowIndex}-${colIndex}`;
-        if (!copiedCells.has(cellId)) return null;
-
-        // Find bounds of copied region
-        let minRow = Infinity,
-          maxRow = -Infinity;
-        let minCol = Infinity,
-          maxCol = -Infinity;
-
-        Array.from(copiedCells).forEach((id) => {
-          const [r, c] = (id as string).split("-").map(Number);
-          minRow = Math.min(minRow, r);
-          maxRow = Math.max(maxRow, r);
-          minCol = Math.min(minCol, c);
-          maxCol = Math.max(maxCol, c);
-        });
-
-        // Check if cell is on the edge
-        return {
-          hasTop: rowIndex === minRow,
-          hasBottom: rowIndex === maxRow,
-          hasLeft: colIndex === minCol,
-          hasRight: colIndex === maxCol,
-        };
-      },
-      [copiedCells]
+    const midnightIndex = useMemo(
+      () => timeSlots.indexOf("00:00"),
+      [timeSlots]
     );
+
+    const { selectedRows, selectedCols, selectionBounds } = useMemo(() => {
+      const rows = new Set<number>();
+      const cols = new Set<number>();
+
+      if (selectedCells.size === 0) {
+        return { selectedRows: rows, selectedCols: cols, selectionBounds: null };
+      }
+
+      let minRow = Infinity, maxRow = -Infinity;
+      let minCol = Infinity, maxCol = -Infinity;
+
+      selectedCells.forEach((id) => {
+        const sep = id.indexOf("-");
+        const r = parseInt(id.slice(0, sep), 10);
+        const c = parseInt(id.slice(sep + 1), 10);
+        rows.add(r);
+        cols.add(c);
+        if (r < minRow) minRow = r;
+        if (r > maxRow) maxRow = r;
+        if (c < minCol) minCol = c;
+        if (c > maxCol) maxCol = c;
+      });
+
+      return {
+        selectedRows: rows,
+        selectedCols: cols,
+        selectionBounds: { minRow, maxRow, minCol, maxCol },
+      };
+    }, [selectedCells]);
+
+    // 드래그 중 테이블 가장자리 근처에서 자동 스크롤
+    const mousePosRef = useRef({ x: 0, y: 0 });
+
+    useEffect(() => {
+      if (!isDragging) return;
+
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        mousePosRef.current = { x: e.clientX, y: e.clientY };
+      };
+      document.addEventListener("mousemove", handleMouseMove, {
+        passive: true,
+      });
+
+      const EDGE_THRESHOLD = 50;
+      const MAX_SPEED = 18;
+
+      let rafId: number;
+      const scrollLoop = () => {
+        const rect = container.getBoundingClientRect();
+        const { x, y } = mousePosRef.current;
+
+        const distFromBottom = rect.bottom - y;
+        const distFromTop = y - rect.top;
+        const distFromRight = rect.right - x;
+        const distFromLeft = x - rect.left;
+
+        if (distFromBottom > 0 && distFromBottom < EDGE_THRESHOLD) {
+          container.scrollTop +=
+            MAX_SPEED * (1 - distFromBottom / EDGE_THRESHOLD);
+        } else if (distFromTop > 0 && distFromTop < EDGE_THRESHOLD) {
+          container.scrollTop -=
+            MAX_SPEED * (1 - distFromTop / EDGE_THRESHOLD);
+        }
+
+        if (distFromRight > 0 && distFromRight < EDGE_THRESHOLD) {
+          container.scrollLeft +=
+            MAX_SPEED * (1 - distFromRight / EDGE_THRESHOLD);
+        } else if (distFromLeft > 0 && distFromLeft < EDGE_THRESHOLD) {
+          container.scrollLeft -=
+            MAX_SPEED * (1 - distFromLeft / EDGE_THRESHOLD);
+        }
+
+        rafId = requestAnimationFrame(scrollLoop);
+      };
+      rafId = requestAnimationFrame(scrollLoop);
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        cancelAnimationFrame(rafId);
+      };
+    }, [isDragging]);
+
+    const copyBounds = useMemo(() => {
+      if (copiedCells.size === 0) return null;
+      let minRow = Infinity, maxRow = -Infinity;
+      let minCol = Infinity, maxCol = -Infinity;
+      copiedCells.forEach((id) => {
+        const sep = (id as string).indexOf("-");
+        const r = parseInt((id as string).slice(0, sep), 10);
+        const c = parseInt((id as string).slice(sep + 1), 10);
+        if (r < minRow) minRow = r;
+        if (r > maxRow) maxRow = r;
+        if (c < minCol) minCol = c;
+        if (c > maxCol) maxCol = c;
+      });
+      return { minRow, maxRow, minCol, maxCol };
+    }, [copiedCells]);
+
+    const getSelectionBorderInfo = (cellId: string, rowIndex: number, colIndex: number): BorderInfo | null => {
+      if (!selectionBounds || !selectedCells.has(cellId)) return null;
+      const hasTop = rowIndex === selectionBounds.minRow;
+      const hasBottom = rowIndex === selectionBounds.maxRow;
+      const hasLeft = colIndex === selectionBounds.minCol;
+      const hasRight = colIndex === selectionBounds.maxCol;
+      if (!hasTop && !hasBottom && !hasLeft && !hasRight) return null;
+      return { hasTop, hasBottom, hasLeft, hasRight };
+    };
+
+    const getCopyBorderInfo = (cellId: string, rowIndex: number, colIndex: number): BorderInfo | null => {
+      if (!copyBounds || !copiedCells.has(cellId)) return null;
+      const hasTop = rowIndex === copyBounds.minRow;
+      const hasBottom = rowIndex === copyBounds.maxRow;
+      const hasLeft = colIndex === copyBounds.minCol;
+      const hasRight = colIndex === copyBounds.maxCol;
+      if (!hasTop && !hasBottom && !hasLeft && !hasRight) return null;
+      return { hasTop, hasBottom, hasLeft, hasRight };
+    };
 
     if (!selectedZone || currentFacilities.length === 0) {
       if (selectedZone) {
@@ -168,6 +390,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
 
     return (
       <div
+        ref={scrollContainerRef}
         className={`rounded-lg border overflow-auto`}
         onScroll={onScroll}
         style={
@@ -176,7 +399,6 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
             : { height: 500, maxHeight: "70vh" }
         }
       >
-        {/* 🚀 가상화 스크롤 컨테이너 */}
         <div className="relative" style={{ height: "auto" }}>
           <table className="w-full table-auto text-xs border-separate border-spacing-0">
             <thead className="sticky top-0 bg-muted z-50">
@@ -185,7 +407,6 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   className="w-20 cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 overflow-hidden bg-purple-50 whitespace-nowrap text-ellipsis sticky top-0 left-0 z-[60] font-semibold"
                   onClick={handlers.timeHeader.onClick}
                   onContextMenu={(e) => {
-                    // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                     if (e.ctrlKey || e.metaKey) {
                       e.preventDefault();
                     } else {
@@ -200,30 +421,26 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                   <th
                     key={facility.id}
                     className={`cursor-pointer select-none border border-gray-200 p-2 text-center transition-colors hover:bg-primary/10 sticky top-0 ${
-                      selectedRowsAndCols.selectedCols.has(colIndex)
-                        ? "bg-primary/20"
+                      selectedCols.has(colIndex)
+                        ? "bg-purple-200"
                         : "bg-muted"
                     }`}
                     onMouseDown={(e) => {
-                      // 우클릭이 아닐 때만 드래그 처리
                       if (e.button !== 2) {
                         handlers.column.onMouseDown(colIndex, e);
                       }
                     }}
                     onMouseEnter={(e) => {
-                      // 우클릭 드래그가 아닐 때만 처리
                       if (e.buttons !== 2) {
                         handlers.column.onMouseEnter(colIndex, e);
                       }
                     }}
                     onMouseUp={(e) => {
-                      // 우클릭이 아닐 때만 처리
                       if (e.button !== 2) {
                         handlers.column.onMouseUp();
                       }
                     }}
                     onContextMenu={(e) => {
-                      // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
                       } else {
@@ -243,31 +460,27 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                 return (
                   <tr key={rowIndex} className="h-15">
                     <td
-                      className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium bg-purple-50 text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis sticky left-0 z-10 ${
-                        selectedRowsAndCols.selectedRows.has(rowIndex)
-                          ? "bg-primary/20"
-                          : ""
+                      className={`w-20 cursor-pointer select-none border border-gray-200 p-1 text-center text-xs font-medium text-gray-700 transition-colors hover:bg-purple-100 overflow-hidden whitespace-nowrap text-ellipsis sticky left-0 z-10 ${
+                        selectedRows.has(rowIndex)
+                          ? "bg-purple-200"
+                          : "bg-purple-50"
                       }`}
                       onMouseDown={(e) => {
-                        // 우클릭이 아닐 때만 드래그 처리
                         if (e.button !== 2) {
                           handlers.row.onMouseDown(rowIndex, e);
                         }
                       }}
                       onMouseEnter={(e) => {
-                        // 우클릭 드래그가 아닐 때만 처리
                         if (e.buttons !== 2) {
                           handlers.row.onMouseEnter(rowIndex, e);
                         }
                       }}
                       onMouseUp={(e) => {
-                        // 우클릭이 아닐 때만 처리
                         if (e.button !== 2) {
                           handlers.row.onMouseUp();
                         }
                       }}
                       onContextMenu={(e) => {
-                        // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
                         if (e.ctrlKey || e.metaKey) {
                           e.preventDefault();
                         } else {
@@ -278,8 +491,7 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                     >
                       <div className="flex items-center justify-center gap-1">
                         {isPreviousDay &&
-                          rowIndex <
-                            timeSlots.findIndex((t) => t === "00:00") && (
+                          rowIndex < midnightIndex && (
                             <span className="px-1 py-0.5 text-[9px] font-semibold bg-orange-100 text-orange-800 rounded">
                               D-1
                             </span>
@@ -289,182 +501,43 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
                     </td>
                     {currentFacilities.map((facility, colIndex) => {
                       const cellId = `${rowIndex}-${colIndex}`;
-                      const isSelected = selectedCells.has(cellId);
-                      const isDisabled = disabledCells.has(cellId);
-                      const isCopied = copiedCells.has(cellId);
-                      const badges = cellBadges[cellId] || [];
                       const cellProcessTime = cellProcessTimes[cellId];
                       const effectiveProcessTime =
                         typeof cellProcessTime === "number"
                           ? cellProcessTime
                           : currentProcessTime;
-                      const showProcessBadge =
-                        typeof effectiveProcessTime === "number" &&
-                        effectiveProcessTime > 0;
-                      const isCustomProcessTime =
-                        typeof cellProcessTime === "number" &&
-                        cellProcessTime !== currentProcessTime;
-                      const processBadgeClass = (() => {
-                        if (isDisabled) {
-                          return "bg-gray-200 text-gray-500 border-gray-400";
-                        }
-
-                        if (!isCustomProcessTime) {
-                          return "bg-primary/15 text-primary border-primary/40";
-                        }
-
-                        if (
-                          typeof effectiveProcessTime === "number" &&
-                          effectiveProcessTime > currentProcessTime
-                        ) {
-                          return "bg-emerald-100 text-emerald-800 border-emerald-300";
-                        }
-
-                        return "bg-amber-100 text-amber-800 border-amber-300";
-                      })();
-                      const selectionStyles = getSelectionStyles(
-                        rowIndex,
-                        colIndex
-                      );
-                      const copyBorderInfo = getCopyBorderInfo(
-                        rowIndex,
-                        colIndex
-                      );
 
                       return (
-                        <td
+                        <TableCell
                           key={`${rowIndex}-${colIndex}`}
-                          data-row={rowIndex}
-                          data-col={colIndex}
-                          data-cell-id={cellId}
-                          className={cn(
-                            "cursor-pointer select-none p-1 border border-gray-200 relative",
-                            isDisabled && "bg-gray-100",
-                            isSelected && !isDisabled && "bg-schedule-selection"
-                          )}
-                          style={selectionStyles}
-                          onMouseDown={(e) => {
-                            // 우클릭이 아닐 때만 드래그 처리
-                            if (e.button !== 2) {
-                              handlers.cell.onMouseDown(
-                                cellId,
-                                rowIndex,
-                                colIndex,
-                                e
-                              );
-                            }
-                          }}
-                          onMouseEnter={(e) =>
-                            handlers.cell.onMouseEnter(
-                              cellId,
-                              rowIndex,
-                              colIndex,
-                              e
-                            )
+                          cellId={cellId}
+                          rowIndex={rowIndex}
+                          colIndex={colIndex}
+                          isSelected={selectedCells.has(cellId)}
+                          isDisabled={disabledCells.has(cellId)}
+                          badges={cellBadges[cellId] || EMPTY_BADGES}
+                          effectiveProcessTime={effectiveProcessTime}
+                          showProcessBadge={
+                            typeof effectiveProcessTime === "number" &&
+                            effectiveProcessTime > 0
                           }
-                          onMouseUp={handlers.cell.onMouseUp}
-                          onContextMenu={(e) => {
-                            // Cmd/Ctrl 키와 함께 사용할 때 컨텍스트 메뉴 방지
-                            if (e.ctrlKey || e.metaKey) {
-                              e.preventDefault();
-                            } else {
-                              handlers.cell.onRightClick(e, cellId);
-                            }
-                          }}
-                        >
-                          <div className="flex h-8 flex-col items-center justify-center space-y-0.5">
-                            <div className="flex items-center space-x-1">
-                              {/* 카테고리 뱃지들 - 뱃지가 없으면 자동으로 All 표시 */}
-                              {badges.length > 0 ? (
-                                badges.map((categoryBadge, badgeIndex) => {
-                                  const badgeStyle =
-                                    categoryBadge.style ||
-                                    getBadgeColor(categoryBadge.colorIndex)
-                                      .style;
-                                  return (
-                                    <span
-                                      key={`${categoryBadge.category}-${badgeIndex}`}
-                                      className={cn(
-                                        "select-none rounded border px-1 text-[9px] font-medium leading-tight",
-                                        isDisabled &&
-                                          "line-through decoration-2"
-                                      )}
-                                      style={
-                                        isDisabled
-                                          ? {
-                                              backgroundColor:
-                                                THEME_COLORS.disabledBg,
-                                              color: THEME_COLORS.disabledText,
-                                              borderColor:
-                                                THEME_COLORS.disabledBorder,
-                                            }
-                                          : badgeStyle
-                                      }
-                                      title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
-                                    >
-                                      {categoryBadge.options
-                                        .map((option) => option.slice(0, 3))
-                                        .join("|")}
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span
-                                  className={cn(
-                                    isDisabled
-                                      ? "bg-gray-300 text-gray-600 border-gray-400"
-                                      : "bg-primary/10 text-primary border-primary/20",
-                                    "select-none rounded border px-1 text-[9px] font-medium leading-tight",
-                                    isDisabled && "line-through decoration-2"
-                                  )}
-                                  title="All"
-                                >
-                                  All
-                                </span>
-                              )}
-                            </div>
-                            {/* Process Time 뱃지 */}
-                            {showProcessBadge && (
-                              <div className="flex items-center">
-                                <span
-                                  className={cn(
-                                    "select-none rounded border px-1 text-[8px] font-semibold leading-tight",
-                                    processBadgeClass
-                                  )}
-                                  title={`Process Time: ${effectiveProcessTime} seconds`}
-                                >
-                                  {effectiveProcessTime}s
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          {/* Copy border overlay */}
-                          {copyBorderInfo && (
-                            <div
-                              className="absolute pointer-events-none"
-                              style={{
-                                top: "2px",
-                                left: "2px",
-                                right: "2px",
-                                bottom: "2px",
-                                borderTop: copyBorderInfo.hasTop
-                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
-                                  : "none",
-                                borderBottom: copyBorderInfo.hasBottom
-                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
-                                  : "none",
-                                borderLeft: copyBorderInfo.hasLeft
-                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
-                                  : "none",
-                                borderRight: copyBorderInfo.hasRight
-                                  ? `2px dashed ${THEME_COLORS.copyBorder}`
-                                  : "none",
-                                animation:
-                                  "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                              }}
-                            />
+                          isCustomProcessTime={
+                            typeof cellProcessTime === "number" &&
+                            cellProcessTime !== currentProcessTime
+                          }
+                          currentProcessTime={currentProcessTime}
+                          copyBorderInfo={getCopyBorderInfo(
+                            cellId,
+                            rowIndex,
+                            colIndex
                           )}
-                        </td>
+                          selectionBorderInfo={getSelectionBorderInfo(
+                            cellId,
+                            rowIndex,
+                            colIndex
+                          )}
+                          handlers={handlers}
+                        />
                       );
                     })}
                   </tr>
@@ -478,7 +551,6 @@ const ExcelTable: React.FC<ExcelTableProps> = React.memo(
   }
 );
 
-// React.memo displayName 설정
 ExcelTable.displayName = "ExcelTable";
 
 export default ExcelTable;
