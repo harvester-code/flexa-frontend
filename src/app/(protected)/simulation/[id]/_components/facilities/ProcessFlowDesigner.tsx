@@ -40,6 +40,7 @@ import {
 } from "@/services/simulationService";
 import { useToast } from "@/hooks/useToast";
 import { createClient } from "@/lib/auth/client";
+import { useSimulationNotificationStore } from "@/lib/simulationNotificationStore";
 import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -274,115 +275,70 @@ export default function ProcessFlowDesigner({
 }: ProcessFlowDesignerProps) {
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
+  const addPendingSimulation = useSimulationNotificationStore((s) => s.addPending);
 
   const paxDemographicsFromStore = useSimulationStore(
     (s) => s.passenger.pax_demographics
   );
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
 
-  // 🔔 Supabase Realtime: 시뮬레이션 상태 실시간 구독
+  // 🔔 Supabase Realtime: 이 시뮬레이션 페이지 전용 구독
+  // "processing" 상태 감지 + 15분 타임아웃 경고만 처리.
+  // completed/failed 알림은 SimulationWatcher가 글로벌로 담당.
   useEffect(() => {
     const supabase = createClient();
-    let timeoutId: NodeJS.Timeout | null = null;
+    let warningTimeoutId: NodeJS.Timeout | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    // Realtime 채널 생성 및 구독
-    const channel = supabase
-      .channel(`simulation-${simulationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "scenario_information",
-          filter: `scenario_id=eq.${simulationId}`,
-        },
-        (payload) => {
-          const newStatus = payload.new.simulation_status;
-          const oldStatus = payload.old?.simulation_status;
+    const setupTimer = setTimeout(() => {
+      channel = supabase
+        .channel(`simulation-${simulationId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "scenario_information",
+            filter: `scenario_id=eq.${simulationId}`,
+          },
+          (payload) => {
+            const newStatus = payload.new.simulation_status;
+            const oldStatus = payload.old?.simulation_status;
+            if (newStatus === oldStatus) return;
 
-          // 상태가 실제로 변경된 경우만 알림
-          if (newStatus !== oldStatus) {
             if (newStatus === "processing") {
-              const startTime = payload.new.simulation_start_at;
               toast({
                 title: "Simulation Processing",
-                description: startTime
-                  ? `Started at ${new Date(startTime).toLocaleString()}`
+                description: payload.new.simulation_start_at
+                  ? `Started at ${new Date(payload.new.simulation_start_at).toLocaleString()}`
                   : "Simulation is now running.",
               });
 
-              // 🔴 타임아웃 타이머 시작 (15분 = 900초)
-              if (timeoutId) clearTimeout(timeoutId);
-              timeoutId = setTimeout(
-                () => {
-                  toast({
-                    title: "⏰ Simulation Timeout Warning",
-                    description:
-                      "Simulation is taking longer than expected (15+ min). Check AWS CloudWatch logs or contact support.",
-                    variant: "destructive",
-                    duration: 10000, // 10초간 표시
-                  });
-                },
-                15 * 60 * 1000
-              ); // 15분
-            } else if (newStatus === "completed") {
-              // 타임아웃 타이머 취소
-              if (timeoutId) {
-                clearTimeout(timeoutId);
-                timeoutId = null;
+              if (warningTimeoutId) clearTimeout(warningTimeoutId);
+              warningTimeoutId = setTimeout(() => {
+                toast({
+                  title: "Simulation Timeout Warning",
+                  description: "Simulation is taking longer than expected (15+ min).",
+                  variant: "destructive",
+                  duration: 10000,
+                });
+              }, 15 * 60 * 1000);
+            } else if (newStatus === "completed" || newStatus === "failed") {
+              if (warningTimeoutId) {
+                clearTimeout(warningTimeoutId);
+                warningTimeoutId = null;
               }
-
-              const startTime = payload.new.simulation_start_at;
-              const endTime = payload.new.simulation_end_at;
-
-              // 실행 시간 계산
-              let durationText = "";
-              if (startTime && endTime) {
-                const duration =
-                  new Date(endTime).getTime() - new Date(startTime).getTime();
-                const minutes = Math.floor(duration / 60000);
-                const seconds = Math.floor((duration % 60000) / 1000);
-                durationText = ` (Duration: ${minutes}m ${seconds}s)`;
-              }
-
-              toast({
-                title: "Simulation Completed",
-                description: endTime
-                  ? `Completed at ${new Date(endTime).toLocaleString()}${durationText}`
-                  : "Simulation has been completed successfully.",
-              });
-              setIsRunningSimulation(false);
-            } else if (newStatus === "failed") {
-              // 타임아웃 타이머 취소
-              if (timeoutId) {
-                clearTimeout(timeoutId);
-                timeoutId = null;
-              }
-
-              const errorMsg = payload.new.simulation_error;
-              const endTime = payload.new.simulation_end_at;
-
-              toast({
-                title: "❌ Simulation Failed",
-                description: errorMsg
-                  ? `${errorMsg}${endTime ? ` at ${new Date(endTime).toLocaleString()}` : ""}`
-                  : "Failed to complete simulation. Please check CloudWatch logs or try again.",
-                variant: "destructive",
-                duration: 10000, // 10초간 표시
-              });
               setIsRunningSimulation(false);
             }
           }
-        }
-      )
-      .subscribe((status, err) => {
-        console.log(`[Realtime] simulation-${simulationId} status:`, status, err ?? '');
-      });
+        )
+        .subscribe();
+    }, 0);
 
-    // 클린업: 컴포넌트 언마운트 시 구독 해제 및 타이머 정리
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
+      clearTimeout(setupTimer);
+      if (warningTimeoutId) clearTimeout(warningTimeoutId);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [simulationId, toast]);
 
@@ -1193,8 +1149,12 @@ export default function ProcessFlowDesigner({
         status: "success",
       });
 
-      // ℹ️ Toast는 Realtime 구독에서 처리됨 (simulation_status = "processing" 감지)
-      // 중복 toast 방지를 위해 여기서는 표시하지 않음
+      toast({
+        title: "Simulation Processing",
+        description: "Simulation has been queued and is now running.",
+      });
+
+      addPendingSimulation(simulationId);
     } catch (error: any) {
       // Update with error
       const airport = useSimulationStore.getState().context.airport;
