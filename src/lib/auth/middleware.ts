@@ -35,7 +35,8 @@ export const updateSession = async (request: NextRequest) => {
     const isPublicRoute = request.nextUrl.pathname.startsWith('/auth') || request.nextUrl.pathname === '/';
     const isProtectedRoute = request.nextUrl.pathname.startsWith('/home') || 
                              request.nextUrl.pathname.startsWith('/profile') ||
-                             request.nextUrl.pathname.startsWith('/admin');
+                             request.nextUrl.pathname.startsWith('/admin') ||
+                             request.nextUrl.pathname.startsWith('/viewer');
 
     // 보호된 라우트에 비로그인 상태로 접근하는 경우만 리다이렉트
     if (isProtectedRoute && !user) {
