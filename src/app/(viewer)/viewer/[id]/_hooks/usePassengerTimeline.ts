@@ -8,7 +8,7 @@ export function usePassengerTimeline(scenarioId: string | null) {
     queryFn: async () => {
       if (!scenarioId) throw new Error("No scenario id");
       const res = await fetchPassengerTimelines({ scenarioId });
-      return (res as { data: PassengerTimelineData }).data ?? (res as PassengerTimelineData);
+      return res.data;
     },
     enabled: !!scenarioId,
     staleTime: 10 * 60 * 1000,
