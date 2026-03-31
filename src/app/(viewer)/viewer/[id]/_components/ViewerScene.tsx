@@ -17,20 +17,20 @@ import type {
 
 /* ─── constants ───────────────────────────────────────────────── */
 
-const GROUND_SIZE = 100;
 const HIDE_Y = -200;
 const PAX_Y = 0.4;
-const MAX_INSTANCES = 8000;
-const QUEUE_SPACING = 0.65;
+const ENTRANCE_X = 0;
+const MIN_COL_W = 0.8;
+const MIN_STEP_H = 22;
 
 const STEP_COLORS = [
   "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
 ];
 
 const C_OFF = new THREE.Color(0x000000);
-const C_WAIT = new THREE.Color(0xf59e0b);
-const C_PROC = new THREE.Color(0x10b981);
-const C_TRAV = new THREE.Color(0x3b82f6);
+const C_WAIT = new THREE.Color(0xe2e8f0);
+const C_PROC = new THREE.Color(0xff2d55);
+const C_TRAV = new THREE.Color(0x00e5ff);
 
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
@@ -42,15 +42,28 @@ const _q = new THREE.Quaternion().setFromAxisAngle(
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
+const DOT_SPACING = 0.55;
+const ROW_SPACING = 0.55;
+const DESK_H = 0.8;
+
 interface FacilityPos {
   x: number;
   z: number;
+  colW: number;
+  queueMaxZ: number;
+  deskW: number;
+  deskH: number;
   zoneName: string;
+  queueCols: number;
+  queueStartZ: number;
+  queueBaseX: number;
 }
 
 function buildFacilityLayout(
   zones: Record<string, TimelineZone>,
   zoneFacilities: Record<string, string[]>,
+  groundW: number,
+  groundH: number,
 ): Record<string, FacilityPos> {
   const layout: Record<string, FacilityPos> = {};
 
@@ -58,27 +71,41 @@ function buildFacilityLayout(
     const zone = zones[zoneName];
     if (!zone || facIds.length === 0) continue;
 
-    const cx = (zone.x - 0.5) * GROUND_SIZE;
-    const cz = (zone.y - 0.5) * GROUND_SIZE;
-    const sx = Math.max(zone.w * GROUND_SIZE, 2);
-    const sz = Math.max(zone.h * GROUND_SIZE, 2);
+    const cx = (zone.x - 0.5) * groundW;
+    const cz = (zone.y - 0.5) * groundH;
+    const sx = Math.max(zone.w * groundW, 2);
+    const sz = Math.max(zone.h * groundH, 2);
 
     const n = facIds.length;
-    // counter at the BOTTOM of the zone (high z = toward next process below)
+    const colW = (sx * 0.95) / n;
     const counterZ = cz + sz * 0.4;
+    const queueTopZ = cz - sz * 0.45;
+    const deskW = Math.min(colW * 0.8, 2.0);
+    const qCols = Math.max(1, Math.floor(deskW / DOT_SPACING));
+    const qStartZ = counterZ - DESK_H * 0.5 - 0.4;
 
     for (let i = 0; i < n; i++) {
-      const t = n === 1 ? 0.5 : i / (n - 1);
-      const fx = cx - sx * 0.45 + t * sx * 0.9;
-      layout[facIds[i]] = { x: fx, z: counterZ, zoneName };
+      const fx = cx - sx * 0.475 + (i + 0.5) * colW;
+      layout[facIds[i]] = {
+        x: fx,
+        z: counterZ,
+        colW,
+        queueMaxZ: queueTopZ,
+        deskW,
+        deskH: DESK_H,
+        zoneName,
+        queueCols: qCols,
+        queueStartZ: qStartZ,
+        queueBaseX: fx - (qCols - 1) * DOT_SPACING / 2,
+      };
     }
   }
 
   return layout;
 }
 
-function zoneCenter(zone: TimelineZone): [number, number] {
-  return [(zone.x - 0.5) * GROUND_SIZE, (zone.y - 0.5) * GROUND_SIZE];
+function zoneCenter(zone: TimelineZone, gw: number, gh: number): [number, number] {
+  return [(zone.x - 0.5) * gw, (zone.y - 0.5) * gh];
 }
 
 /* ─── scene-internal components ───────────────────────────────── */
@@ -118,17 +145,56 @@ function FacilityMarkers({
     return Object.entries(facilityLayout).map(([facId, pos]) => {
       const stepIdx = zoneStepMap[pos.zoneName] ?? 0;
       const color = STEP_COLORS[stepIdx % STEP_COLORS.length];
-      return { facId, x: pos.x, z: pos.z, color };
+      return { facId, ...pos, color };
     });
   }, [facilityLayout, zoneStepMap]);
 
+  const edgesGeos = useMemo(() => {
+    return markers.map((m) =>
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(m.deskW, 0.15, m.deskH)),
+    );
+  }, [markers]);
+
+  const shortLabels = useMemo(() => {
+    return markers.map((m) => {
+      const parts = m.facId.split(/[_\-]/);
+      return parts[parts.length - 1] || m.facId;
+    });
+  }, [markers]);
+
   return (
     <group>
-      {markers.map((m) => (
-        <mesh key={m.facId} position={[m.x, 0.05, m.z]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.25, 6]} />
-          <meshBasicMaterial color={m.color} transparent opacity={0.6} />
-        </mesh>
+      {markers.map((m, i) => (
+        <group key={m.facId} position={[m.x, 0, m.z]}>
+          {/* desk fill */}
+          <mesh position={[0, 0.08, 0]}>
+            <boxGeometry args={[m.deskW, 0.15, m.deskH]} />
+            <meshBasicMaterial color={m.color} transparent opacity={0.35} />
+          </mesh>
+          {/* desk border */}
+          <lineSegments position={[0, 0.08, 0]} geometry={edgesGeos[i]}>
+            <lineBasicMaterial color={m.color} transparent opacity={0.7} />
+          </lineSegments>
+          {/* facility ID label */}
+          <Html
+            position={[0, 0.5, 0]}
+            center
+            distanceFactor={45}
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            <div style={{
+              color: "#fff",
+              fontSize: "9px",
+              fontWeight: 600,
+              fontFamily: "monospace",
+              opacity: 0.7,
+              textShadow: "0 0 4px rgba(0,0,0,0.9)",
+              whiteSpace: "nowrap",
+            }}>
+              {shortLabels[i]}
+            </div>
+          </Html>
+        </group>
       ))}
     </group>
   );
@@ -136,67 +202,34 @@ function FacilityMarkers({
 
 /* ─── passenger dots with queue positioning ───────────────────── */
 
-const enum PaxState {
-  Hidden = 0,
-  Waiting = 1,
-  Processing = 2,
-  Traveling = 3,
-}
-
-interface QueueEntry {
-  meshIdx: number;
-  onPred: number;
-  state: PaxState;
-}
-
 function PassengerDots({
   timeline,
   facilityLayout,
+  groundW,
+  groundH,
 }: {
   timeline: PassengerTimelineData;
   facilityLayout: Record<string, FacilityPos>;
+  groundW: number;
+  groundH: number;
 }) {
   const total = timeline.passengers.length;
-  const count = Math.min(total, MAX_INSTANCES);
-  const sampleStep = total > MAX_INSTANCES ? Math.ceil(total / MAX_INSTANCES) : 1;
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   const geo = useMemo(() => new THREE.CircleGeometry(0.25, 6), []);
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), []);
-
-  const indices = useMemo(() => {
-    const arr: number[] = [];
-    for (let i = 0; i < total && arr.length < count; i += sampleStep) arr.push(i);
-    return arr;
-  }, [total, count, sampleStep]);
 
   const travelDur = useMemo(
     () => timeline.steps.map((s) => s.travel_minutes * 60),
     [timeline.steps],
   );
 
-  // Per-frame reusable buffers
-  const stateRef = useRef<Uint8Array>(new Uint8Array(0));
-  const onPredRef = useRef<Float32Array>(new Float32Array(0));
-  const facIdRef = useRef<string[]>([]);
-  const travelDataRef = useRef<Float32Array>(new Float32Array(0));
-  const travelFromRef = useRef<Float32Array>(new Float32Array(0));
-  const travelToRef = useRef<Float32Array>(new Float32Array(0));
-  const queueMapRef = useRef<Map<string, QueueEntry[]>>(new Map());
-
-  useEffect(() => {
-    stateRef.current = new Uint8Array(count);
-    onPredRef.current = new Float32Array(count);
-    facIdRef.current = new Array(count).fill("");
-    travelDataRef.current = new Float32Array(count);
-    travelFromRef.current = new Float32Array(count * 3);
-    travelToRef.current = new Float32Array(count * 3);
-  }, [count]);
+  const queueMapRef = useRef<Map<string, { ri: number; onPred: number }[]>>(new Map());
 
   useEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < total; i++) {
       _p.set(0, HIDE_Y, 0);
       _m.compose(_p, _q, _s);
       mesh.setMatrixAt(i, _m);
@@ -204,7 +237,7 @@ function PassengerDots({
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [count]);
+  }, [total]);
 
   useFrame(() => {
     const mesh = meshRef.current;
@@ -213,31 +246,58 @@ function PassengerDots({
     const t = useViewerStore.getState().currentTime;
     const pax = timeline.passengers;
     const zm = timeline.zones;
-    const states = stateRef.current;
-    const onPreds = onPredRef.current;
-    const facIds = facIdRef.current;
-    const travelFracs = travelDataRef.current;
-    const travelFrom = travelFromRef.current;
-    const travelTo = travelToRef.current;
     const queueMap = queueMapRef.current;
-
+    const entranceZ = -groundH / 2 + 2;
     queueMap.clear();
 
-    // ─── Pass 1: classify each passenger ───
-    for (let idx = 0; idx < count; idx++) {
-      const ri = indices[idx];
-      const evts: (PassengerStepEvent | null)[] = pax[ri];
-      states[idx] = PaxState.Hidden;
+    // ─── Single pass: classify and position every passenger ───
+    for (let ri = 0; ri < total; ri++) {
+      const entry = pax[ri];
+      if (!entry) { _hide(mesh, ri); continue; }
 
-      if (!evts) continue;
+      const isNew = typeof entry[0] === "number";
+      const showUpOff = isNew ? (entry[0] as number) : -1;
+      const evts = (isNew ? entry[1] : entry) as (PassengerStepEvent | null)[];
+      if (!evts || !Array.isArray(evts)) { _hide(mesh, ri); continue; }
 
+      let fei = -1;
+      for (let s = 0; s < evts.length; s++) { if (evts[s]) { fei = s; break; } }
+      if (fei < 0) { _hide(mesh, ri); continue; }
+
+      const fe = evts[fei]!;
+      const feOnP = fe[0];
+
+      // ── Entrance travel ──
+      if (showUpOff >= 0) {
+        const eDur = Math.max(feOnP - showUpOff, 60);
+        const eStart = feOnP - eDur;
+        if (t < eStart) { _hide(mesh, ri); continue; }
+        if (t < feOnP) {
+          const frac = eDur > 0 ? (t - eStart) / eDur : 1;
+          const fp = facilityLayout[fe[4] ?? ""];
+          const tx = fp ? fp.x : 0;
+          const tz = fp ? fp.z - 4 : entranceZ + 10;
+          _p.set(
+            ENTRANCE_X + (tx - ENTRANCE_X) * frac,
+            PAX_Y,
+            entranceZ + (tz - entranceZ) * frac,
+          );
+          _m.compose(_p, _q, _s);
+          mesh.setMatrixAt(ri, _m);
+          mesh.setColorAt(ri, C_TRAV);
+          continue;
+        }
+      }
+
+      // ── Step-by-step classification ──
+      let classified = false;
       for (let s = 0; s < evts.length; s++) {
         const ev = evts[s];
         if (!ev) continue;
-        const [onP, stO, dnO, _zk, facId] = ev;
+        const [onP, stO, dnO, , facId] = ev;
 
+        // Inter-step traveling
         if (t < onP) {
-          // traveling from previous step?
           let pd = -1, prevFac = "";
           for (let p = s - 1; p >= 0; p--) {
             const pe = evts[p];
@@ -246,105 +306,88 @@ function PassengerDots({
           if (pd >= 0 && t >= pd) {
             const dur = travelDur[s] || (onP - pd);
             const frac = dur > 0 ? Math.min((t - pd) / dur, 1) : 1;
-
             const prevPos = facilityLayout[prevFac];
             const nextPos = facilityLayout[facId ?? ""];
             if (prevPos && nextPos) {
-              states[idx] = PaxState.Traveling;
-              travelFracs[idx] = frac;
-              // depart from previous counter (bottom of prev zone)
-              travelFrom[idx * 3] = prevPos.x;
-              travelFrom[idx * 3 + 1] = PAX_Y;
-              travelFrom[idx * 3 + 2] = prevPos.z;
-              // arrive at back of next queue (above next counter)
-              travelTo[idx * 3] = nextPos.x;
-              travelTo[idx * 3 + 1] = PAX_Y;
-              travelTo[idx * 3 + 2] = nextPos.z - 4;
+              _p.set(
+                prevPos.x + (nextPos.x - prevPos.x) * frac,
+                PAX_Y,
+                prevPos.z + (nextPos.z - 4 - prevPos.z) * frac,
+              );
             } else {
-              // fallback: use zone centers
-              const prevZone = evts.slice(0, s).reverse().find(e => e)?.[3];
-              const nextZone = ev[3];
-              const [ax, az] = prevZone && zm[prevZone] ? zoneCenter(zm[prevZone]) : [0, 0];
-              const [bx, bz] = nextZone && zm[nextZone] ? zoneCenter(zm[nextZone]) : [0, 0];
-              states[idx] = PaxState.Traveling;
-              travelFracs[idx] = frac;
-              travelFrom[idx * 3] = ax; travelFrom[idx * 3 + 1] = PAX_Y; travelFrom[idx * 3 + 2] = az;
-              travelTo[idx * 3] = bx; travelTo[idx * 3 + 1] = PAX_Y; travelTo[idx * 3 + 2] = bz;
+              const pz = evts.slice(0, s).reverse().find(e => e)?.[3];
+              const nz = ev[3];
+              const [ax, az] = pz && zm[pz] ? zoneCenter(zm[pz], groundW, groundH) : [0, 0];
+              const [bx, bz] = nz && zm[nz] ? zoneCenter(zm[nz], groundW, groundH) : [0, 0];
+              _p.set(ax + (bx - ax) * frac, PAX_Y, az + (bz - az) * frac);
             }
+            _m.compose(_p, _q, _s);
+            mesh.setMatrixAt(ri, _m);
+            mesh.setColorAt(ri, C_TRAV);
+            classified = true;
           }
           break;
         }
 
+        // Waiting → collect for grid positioning later
         if (t >= onP && t < stO) {
-          states[idx] = PaxState.Waiting;
-          onPreds[idx] = onP;
-          facIds[idx] = facId ?? "";
+          const fid = facId ?? "";
+          if (fid) {
+            let q = queueMap.get(fid);
+            if (!q) { q = []; queueMap.set(fid, q); }
+            q.push({ ri, onPred: onP });
+          }
+          classified = true;
           break;
         }
 
+        // Processing → inside desk
         if (t >= stO && t < dnO) {
-          states[idx] = PaxState.Processing;
-          onPreds[idx] = onP;
-          facIds[idx] = facId ?? "";
+          const fp = facilityLayout[facId ?? ""];
+          if (fp) {
+            _p.set(fp.x, PAX_Y, fp.z);
+            _m.compose(_p, _q, _s);
+            mesh.setMatrixAt(ri, _m);
+            mesh.setColorAt(ri, C_PROC);
+          }
+          classified = true;
           break;
         }
 
         if (t >= dnO) {
           const isLast = !evts.slice(s + 1).some(e => e !== null);
-          if (isLast) { states[idx] = PaxState.Hidden; break; }
+          if (isLast) break;
         }
       }
 
-      // collect into facility queues
-      if (states[idx] === PaxState.Waiting || states[idx] === PaxState.Processing) {
-        const fid = facIds[idx];
-        if (fid) {
-          let q = queueMap.get(fid);
-          if (!q) { q = []; queueMap.set(fid, q); }
-          q.push({ meshIdx: idx, onPred: onPreds[idx], state: states[idx] });
-        }
-      }
+      if (!classified) { _hide(mesh, ri); }
     }
 
-    // ─── Pass 2: sort queues and assign positions ───
-    // Queue extends UPWARD (-z) from counter. Rank 0 = at counter (bottom), rank N = back of line (top)
+    // ─── Grid-based queue positioning for waiting passengers ───
     for (const [facId, queue] of queueMap) {
       queue.sort((a, b) => a.onPred - b.onPred);
 
-      const facPos = facilityLayout[facId];
-      if (!facPos) continue;
+      const fp = facilityLayout[facId];
+      if (!fp) continue;
+
+      const cols = fp.queueCols;
+      const availRows = Math.floor((fp.queueStartZ - fp.queueMaxZ) / ROW_SPACING);
+      const maxVisible = Math.max(availRows * cols, cols);
+      const rowSp = queue.length > maxVisible
+        ? (fp.queueStartZ - fp.queueMaxZ) / Math.ceil(queue.length / cols)
+        : ROW_SPACING;
+      const effRowSp = Math.max(rowSp, 0.15);
 
       for (let rank = 0; rank < queue.length; rank++) {
-        const entry = queue[rank];
-        const px = facPos.x;
-        const pz = facPos.z - rank * QUEUE_SPACING;
-        const col = entry.state === PaxState.Processing ? C_PROC : C_WAIT;
+        const col = rank % cols;
+        const row = Math.floor(rank / cols);
+        const px = fp.queueBaseX + col * DOT_SPACING;
+        const pz = fp.queueStartZ - row * effRowSp;
 
         _p.set(px, PAX_Y, pz);
         _m.compose(_p, _q, _s);
-        mesh.setMatrixAt(entry.meshIdx, _m);
-        mesh.setColorAt(entry.meshIdx, col);
-      }
-    }
-
-    // ─── Pass 3: set traveling + hidden positions ───
-    for (let idx = 0; idx < count; idx++) {
-      if (states[idx] === PaxState.Traveling) {
-        const f = travelFracs[idx];
-        const i3 = idx * 3;
-        const px = travelFrom[i3] + (travelTo[i3] - travelFrom[i3]) * f;
-        const py = travelFrom[i3 + 1] + (travelTo[i3 + 1] - travelFrom[i3 + 1]) * f;
-        const pz = travelFrom[i3 + 2] + (travelTo[i3 + 2] - travelFrom[i3 + 2]) * f;
-
-        _p.set(px, py, pz);
-        _m.compose(_p, _q, _s);
-        mesh.setMatrixAt(idx, _m);
-        mesh.setColorAt(idx, C_TRAV);
-      } else if (states[idx] === PaxState.Hidden) {
-        _p.set(0, HIDE_Y, 0);
-        _m.compose(_p, _q, _s);
-        mesh.setMatrixAt(idx, _m);
-        mesh.setColorAt(idx, C_OFF);
+        mesh.setMatrixAt(queue[rank].ri, _m);
+        mesh.setColorAt(queue[rank].ri, C_WAIT);
       }
     }
 
@@ -352,7 +395,14 @@ function PassengerDots({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   });
 
-  return <instancedMesh ref={meshRef} args={[geo, mat, count]} frustumCulled={false} />;
+  return <instancedMesh ref={meshRef} args={[geo, mat, total]} frustumCulled={false} />;
+}
+
+function _hide(mesh: THREE.InstancedMesh, idx: number) {
+  _p.set(0, HIDE_Y, 0);
+  _m.compose(_p, _q, _s);
+  mesh.setMatrixAt(idx, _m);
+  mesh.setColorAt(idx, C_OFF);
 }
 
 /* ─── main export ─────────────────────────────────────────────── */
@@ -370,41 +420,64 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
     if (timeline && timeline.passengers?.length > 0) setTimelineData(timeline);
   }, [timeline, setTimelineData]);
 
-  const facilityLayout = useMemo(() => {
-    if (!timelineData) return {};
-    return buildFacilityLayout(
-      timelineData.zones,
-      timelineData.zone_facilities ?? {},
-    );
-  }, [timelineData]);
-
   const zoneStepMap = useMemo(() => {
     if (!timelineData) return {};
     const m: Record<string, number> = {};
-    for (const pax of timelineData.passengers) {
-      if (!pax) continue;
-      for (let s = 0; s < pax.length; s++) {
-        const ev = pax[s];
+    for (const entry of timelineData.passengers) {
+      if (!entry) continue;
+      const isNew = typeof entry[0] === "number";
+      const evts = (isNew ? entry[1] : entry) as (PassengerStepEvent | null)[];
+      if (!evts || !Array.isArray(evts)) continue;
+      for (let s = 0; s < evts.length; s++) {
+        const ev = evts[s];
         if (ev && ev[3] && !(ev[3] in m)) m[ev[3]] = s;
       }
     }
     return m;
   }, [timelineData]);
 
+  const { groundW, groundH } = useMemo(() => {
+    if (!timelineData) return { groundW: 100, groundH: 100 };
+    const facCounts = timelineData.zone_facilities ?? {};
+    const nSteps = timelineData.steps.length || 1;
+
+    const stepFacTotals: Record<number, number> = {};
+    for (const [zoneName, facs] of Object.entries(facCounts)) {
+      const si = zoneStepMap[zoneName] ?? 0;
+      stepFacTotals[si] = (stepFacTotals[si] ?? 0) + facs.length;
+    }
+    const maxFacsPerRow = Math.max(...Object.values(stepFacTotals), 1);
+
+    const usable = 0.9;
+    const w = Math.max(maxFacsPerRow * MIN_COL_W / usable, 80);
+    const h = Math.max(nSteps * MIN_STEP_H / usable, 60);
+    return { groundW: w, groundH: h };
+  }, [timelineData, zoneStepMap]);
+
+  const facilityLayout = useMemo(() => {
+    if (!timelineData) return {};
+    return buildFacilityLayout(
+      timelineData.zones,
+      timelineData.zone_facilities ?? {},
+      groundW,
+      groundH,
+    );
+  }, [timelineData, groundW, groundH]);
+
   const zoneEntries = useMemo(() => {
     if (!timelineData) return [];
     const facCounts = timelineData.zone_facilities ?? {};
     return Object.entries(timelineData.zones).map(([name, z]) => ({
       name,
-      cx: (z.x - 0.5) * GROUND_SIZE,
-      cz: (z.y - 0.5) * GROUND_SIZE,
-      sx: Math.max(z.w * GROUND_SIZE, 2),
-      sz: Math.max(z.h * GROUND_SIZE, 2),
+      cx: (z.x - 0.5) * groundW,
+      cz: (z.y - 0.5) * groundH,
+      sx: Math.max(z.w * groundW, 2),
+      sz: Math.max(z.h * groundH, 2),
       color: STEP_COLORS[(zoneStepMap[name] ?? 0) % STEP_COLORS.length],
       facCount: facCounts[name]?.length ?? 0,
       stepName: timelineData.steps[zoneStepMap[name] ?? 0]?.name ?? "",
     }));
-  }, [timelineData, zoneStepMap]);
+  }, [timelineData, zoneStepMap, groundW, groundH]);
 
   const stepLabels = useMemo(() => {
     if (!timelineData) return [];
@@ -464,7 +537,7 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
   return (
     <div className="relative h-full w-full">
       <Canvas
-        camera={{ position: [0, 70, 60], fov: 50, near: 0.1, far: 500 }}
+        camera={{ position: [0, Math.max(groundW, groundH) * 0.4, groundH * 0.35], fov: 50, near: 0.1, far: Math.max(groundW, groundH) * 4 }}
         gl={{
           antialias: false,
           alpha: false,
@@ -484,10 +557,10 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
 
         {/* ground */}
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[GROUND_SIZE, GROUND_SIZE]} />
+          <planeGeometry args={[groundW, groundH]} />
           <meshBasicMaterial color="#1e293b" />
         </mesh>
-        <gridHelper args={[GROUND_SIZE, 10, "#475569", "#334155"]} position={[0, 0.01, 0]} />
+        <gridHelper args={[Math.max(groundW, groundH), 10, "#475569", "#334155"]} position={[0, 0.01, 0]} />
 
         {/* zone overlays with labels */}
         {zoneEntries.map((e) => (
@@ -502,22 +575,21 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
             </mesh>
             {/* zone label */}
             <Html
-              position={[0, 3, -e.sz / 2 - 0.5]}
+              position={[0, 3, -e.sz / 2 - 1.2]}
               center
-              distanceFactor={80}
+              distanceFactor={100}
               style={{ pointerEvents: "none", userSelect: "none" }}
             >
               <div style={{
                 color: e.color,
-                fontSize: "11px",
-                fontWeight: 600,
+                fontSize: "22px",
+                fontWeight: 700,
                 fontFamily: "monospace",
                 whiteSpace: "nowrap",
-                textShadow: "0 0 6px rgba(0,0,0,0.8)",
-                opacity: 0.9,
+                textShadow: "0 2px 12px rgba(0,0,0,0.95)",
               }}>
                 {e.name.replace(/_/g, " ")}
-                <span style={{ fontSize: "9px", opacity: 0.6, marginLeft: "4px" }}>
+                <span style={{ fontSize: "14px", opacity: 0.5, marginLeft: "6px" }}>
                   ({e.facCount})
                 </span>
               </div>
@@ -529,40 +601,67 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
         {stepLabels.map((sl) => (
           <Html
             key={`step-${sl.name}`}
-            position={[-GROUND_SIZE / 2 - 2, 2, sl.cz]}
+            position={[-groundW / 2 - 4, 2, sl.cz]}
             center
-            distanceFactor={80}
+            distanceFactor={90}
             style={{ pointerEvents: "none", userSelect: "none" }}
           >
             <div style={{
               color: sl.color,
-              fontSize: "13px",
-              fontWeight: 700,
+              fontSize: "24px",
+              fontWeight: 800,
               fontFamily: "monospace",
               whiteSpace: "nowrap",
               textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              textShadow: "0 0 8px rgba(0,0,0,0.9)",
-              borderLeft: `3px solid ${sl.color}`,
-              paddingLeft: "6px",
+              letterSpacing: "0.06em",
+              textShadow: "0 2px 14px rgba(0,0,0,0.95)",
+              borderLeft: `5px solid ${sl.color}`,
+              paddingLeft: "10px",
             }}>
               {sl.name.replace(/_/g, " ")}
             </div>
           </Html>
         ))}
 
+        {/* entrance zone at the top */}
+        <group position={[ENTRANCE_X, 0, -groundH / 2 + 2]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+            <planeGeometry args={[groundW * 0.4, 3]} />
+            <meshBasicMaterial color="#06b6d4" transparent opacity={0.1} depthWrite={false} />
+          </mesh>
+          <Html
+            position={[0, 2, -2.5]}
+            center
+            distanceFactor={100}
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            <div style={{
+              color: "#06b6d4",
+              fontSize: "26px",
+              fontWeight: 800,
+              fontFamily: "monospace",
+              whiteSpace: "nowrap",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              textShadow: "0 2px 14px rgba(0,0,0,0.95)",
+            }}>
+              ENTRANCE
+            </div>
+          </Html>
+        </group>
+
         {/* facility counter markers */}
         <FacilityMarkers facilityLayout={facilityLayout} zoneStepMap={zoneStepMap} />
 
         {/* passengers */}
-        <PassengerDots timeline={timelineData} facilityLayout={facilityLayout} />
+        <PassengerDots timeline={timelineData} facilityLayout={facilityLayout} groundW={groundW} groundH={groundH} />
 
         <OrbitControls
           makeDefault
           minPolarAngle={0.1}
           maxPolarAngle={Math.PI / 2.1}
           minDistance={10}
-          maxDistance={200}
+          maxDistance={Math.max(groundW, groundH) * 3}
           target={[0, 0, 0]}
           enableDamping
           dampingFactor={0.1}
