@@ -22,7 +22,7 @@ interface ViewerState {
 export const useViewerStore = create<ViewerState>((set, get) => ({
   timelineData: null,
   isPlaying: false,
-  playbackSpeed: 1,
+  playbackSpeed: 8,
   currentTime: 0,
   maxTime: 0,
   scenarioId: null,
@@ -61,7 +61,7 @@ export const useViewerStore = create<ViewerState>((set, get) => ({
     set({
       timelineData: null,
       isPlaying: false,
-      playbackSpeed: 1,
+      playbackSpeed: 8,
       currentTime: 0,
       maxTime: 0,
       scenarioId: null,

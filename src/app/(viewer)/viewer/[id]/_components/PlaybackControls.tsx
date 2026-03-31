@@ -9,7 +9,14 @@ import {
 } from "lucide-react";
 import { useViewerStore } from "../_stores/viewerStore";
 
-const SPEED_OPTIONS = [1, 2, 4, 8, 16, 32];
+const SPEED_OPTIONS = [
+  { value: 8,   label: "1x" },
+  { value: 16,  label: "2x" },
+  { value: 32,  label: "4x" },
+  { value: 64,  label: "8x" },
+  { value: 128, label: "16x" },
+  { value: 256, label: "32x" },
+];
 
 function formatTime(seconds: number): string {
   const totalMin = Math.floor(seconds / 60);
@@ -111,15 +118,15 @@ export default function PlaybackControls({ onBack }: PlaybackControlsProps) {
           <div className="flex items-center gap-0.5 rounded-full bg-white/5 px-1 py-0.5">
             {SPEED_OPTIONS.map((sp) => (
               <button
-                key={sp}
-                onClick={() => setSpeed(sp)}
+                key={sp.value}
+                onClick={() => setSpeed(sp.value)}
                 className={`rounded-full px-2 py-1 text-[11px] font-medium transition ${
-                  playbackSpeed === sp
+                  playbackSpeed === sp.value
                     ? "bg-blue-500 text-white"
                     : "text-white/50 hover:text-white"
                 }`}
               >
-                {sp}x
+                {sp.label}
               </button>
             ))}
           </div>
