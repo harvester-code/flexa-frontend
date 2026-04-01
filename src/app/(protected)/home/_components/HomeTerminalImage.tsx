@@ -2,8 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import type { CSSProperties } from "react";
+import { Box } from "lucide-react";
 import { ScenarioData } from "@/types/homeTypes";
 import HomeNoScenario from "./HomeNoScenario";
 import HomeLoading from "./HomeLoading";
@@ -149,6 +151,7 @@ function HomeTerminalImage({
   layoutData,
   flowChartData,
 }: HomeTerminalImageProps) {
+  const router = useRouter();
   const scenarioId = scenario?.scenario_id ?? null;
   const {
     data: metadataLayout,
@@ -436,17 +439,41 @@ function HomeTerminalImage({
   // 이미지가 없으면 간단한 안내 메시지 표시
   if (!imageSrc && imageError) {
     return (
-      <div className="py-3 text-sm text-muted-foreground">
-        No terminal layout image found. Upload in{" "}
-        <span className="font-semibold text-default-900">
-          Simulation → Terminal Waiting Area Editor
-        </span>
+      <div className="space-y-3">
+        {scenarioId && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => router.push(`/viewer/${scenarioId}`)}
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/40"
+            >
+              <Box className="h-4 w-4" />
+              Open 3D Viewer
+            </button>
+          </div>
+        )}
+        <div className="py-3 text-sm text-muted-foreground">
+          No terminal layout image found. Upload in{" "}
+          <span className="font-semibold text-default-900">
+            Simulation → Terminal Waiting Area Editor
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mt-4 mb-4 space-y-4">
+      {scenarioId && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => router.push(`/viewer/${scenarioId}`)}
+            className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/40"
+          >
+            <Box className="h-4 w-4" />
+            Open 3D Viewer
+          </button>
+        </div>
+      )}
       <div className="relative overflow-hidden rounded-lg border border-input bg-white shadow-sm">
         <div className="relative">
           {imageSrc ? (
