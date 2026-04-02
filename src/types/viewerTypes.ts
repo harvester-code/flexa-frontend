@@ -24,3 +24,7 @@ export interface PassengerTimelineData {
   zone_facilities: Record<string, string[]>;
   passengers: PassengerEntry[];
 }
+
+export const STEP_COLORS = [
+  "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
+] as const;

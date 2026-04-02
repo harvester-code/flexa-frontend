@@ -2,11 +2,7 @@
 
 import { useMemo } from "react";
 import { useViewerStore } from "../_stores/viewerStore";
-import type { PassengerStepEvent } from "@/types/viewerTypes";
-
-const STEP_COLORS = [
-  "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
-];
+import { STEP_COLORS } from "@/types/viewerTypes";
 
 interface StatsOverlayProps {
   scenarioId: string;
@@ -29,9 +25,8 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
 
     for (const entry of passengers) {
       if (!entry) continue;
-      const isNew = typeof entry[0] === "number";
-      const showUpOff = isNew ? (entry[0] as number) : -1;
-      const evts = (isNew ? entry[1] : entry) as (PassengerStepEvent | null)[];
+      const showUpOff = entry[0];
+      const evts = entry[1];
       if (!evts || !Array.isArray(evts)) continue;
 
       let isVisible = false;

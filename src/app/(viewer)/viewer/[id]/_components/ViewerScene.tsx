@@ -11,9 +11,9 @@ import { useViewerStore } from "../_stores/viewerStore";
 import { usePassengerTimeline } from "../_hooks/usePassengerTimeline";
 import type {
   PassengerTimelineData,
-  PassengerStepEvent,
   TimelineZone,
 } from "@/types/viewerTypes";
+import { STEP_COLORS } from "@/types/viewerTypes";
 
 /* ─── constants ───────────────────────────────────────────────── */
 
@@ -22,10 +22,6 @@ const PAX_Y = 0.4;
 const ENTRANCE_X = 0;
 const MIN_COL_W = 0.8;
 const MIN_STEP_H = 22;
-
-const STEP_COLORS = [
-  "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
-];
 
 const C_OFF = new THREE.Color(0x000000);
 const C_WAIT = new THREE.Color(0xe2e8f0);
@@ -45,6 +41,11 @@ const _q = new THREE.Quaternion().setFromAxisAngle(
 const DOT_SPACING = 0.55;
 const ROW_SPACING = 0.55;
 const DESK_H = 0.8;
+
+const stripZonePrefix = (key: string) => {
+  const idx = key.indexOf(":");
+  return idx >= 0 ? key.slice(idx + 1) : key;
+};
 
 interface FacilityPos {
   x: number;
@@ -255,9 +256,8 @@ function PassengerDots({
       const entry = pax[ri];
       if (!entry) { _hide(mesh, ri); continue; }
 
-      const isNew = typeof entry[0] === "number";
-      const showUpOff = isNew ? (entry[0] as number) : -1;
-      const evts = (isNew ? entry[1] : entry) as (PassengerStepEvent | null)[];
+      const showUpOff = entry[0];
+      const evts = entry[1];
       if (!evts || !Array.isArray(evts)) { _hide(mesh, ri); continue; }
 
       let fei = -1;
@@ -423,14 +423,10 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
   const zoneStepMap = useMemo(() => {
     if (!timelineData) return {};
     const m: Record<string, number> = {};
-    for (const entry of timelineData.passengers) {
-      if (!entry) continue;
-      const isNew = typeof entry[0] === "number";
-      const evts = (isNew ? entry[1] : entry) as (PassengerStepEvent | null)[];
-      if (!evts || !Array.isArray(evts)) continue;
-      for (let s = 0; s < evts.length; s++) {
-        const ev = evts[s];
-        if (ev && ev[3] && !(ev[3] in m)) m[ev[3]] = s;
+    for (const key of Object.keys(timelineData.zones)) {
+      const sep = key.indexOf(":");
+      if (sep >= 0) {
+        m[key] = parseInt(key.slice(0, sep), 10);
       }
     }
     return m;
@@ -588,7 +584,7 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
                 whiteSpace: "nowrap",
                 textShadow: "0 2px 12px rgba(0,0,0,0.95)",
               }}>
-                {e.name.replace(/_/g, " ")}
+                {stripZonePrefix(e.name).replace(/_/g, " ")}
                 <span style={{ fontSize: "14px", opacity: 0.5, marginLeft: "6px" }}>
                   ({e.facCount})
                 </span>
