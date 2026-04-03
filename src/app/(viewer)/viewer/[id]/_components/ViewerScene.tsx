@@ -158,8 +158,9 @@ function FacilityMarkers({
 
   const shortLabels = useMemo(() => {
     return markers.map((m) => {
-      const parts = m.facId.split(/[_\-]/);
-      return parts[parts.length - 1] || m.facId;
+      const raw = stripZonePrefix(m.facId);
+      const parts = raw.split(/[_\-]/);
+      return parts[parts.length - 1] || raw;
     });
   }, [markers]);
 
