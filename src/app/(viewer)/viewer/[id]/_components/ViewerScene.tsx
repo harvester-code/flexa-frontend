@@ -12,6 +12,7 @@ import { usePassengerTimeline } from "../_hooks/usePassengerTimeline";
 import type {
   PassengerTimelineData,
   TimelineZone,
+  FacilityTimeBlock,
 } from "@/types/viewerTypes";
 import { STEP_COLORS } from "@/types/viewerTypes";
 
@@ -25,6 +26,7 @@ const MIN_STEP_H = 22;
 
 const C_OFF = new THREE.Color(0x000000);
 const C_WAIT = new THREE.Color(0xe2e8f0);
+const C_BLOCK_WAIT = new THREE.Color(0x475569);
 const C_PROC = new THREE.Color(0xff2d55);
 const C_TRAV = new THREE.Color(0x00e5ff);
 
@@ -51,7 +53,6 @@ interface FacilityPos {
   x: number;
   z: number;
   colW: number;
-  queueMaxZ: number;
   deskW: number;
   deskH: number;
   zoneName: string;
@@ -80,7 +81,6 @@ function buildFacilityLayout(
     const n = facIds.length;
     const colW = (sx * 0.95) / n;
     const counterZ = cz + sz * 0.4;
-    const queueTopZ = cz - sz * 0.45;
     const deskW = Math.min(colW * 0.8, 2.0);
     const qCols = Math.max(1, Math.floor(deskW / DOT_SPACING));
     const qStartZ = counterZ - DESK_H * 0.5 - 0.4;
@@ -91,7 +91,6 @@ function buildFacilityLayout(
         x: fx,
         z: counterZ,
         colW,
-        queueMaxZ: queueTopZ,
         deskW,
         deskH: DESK_H,
         zoneName,
@@ -133,14 +132,48 @@ function AnimationDriver() {
   return null;
 }
 
-/* ─── facility counter markers ────────────────────────────────── */
+/* ─── helpers: facility schedule lookup ───────────────────────── */
+
+const C_FAC_ON = new THREE.Color(0x22c55e);
+const C_FAC_OFF = new THREE.Color(0xef4444);
+const C_FAC_BORDER_ON = new THREE.Color(0x16a34a);
+const C_FAC_BORDER_OFF = new THREE.Color(0xb91c1c);
+
+function isFacilityActive(
+  blocks: FacilityTimeBlock[] | undefined,
+  t: number,
+): boolean {
+  if (!blocks || blocks.length === 0) return true;
+  for (const [s, e, activate] of blocks) {
+    if (t >= s && t < e) return activate;
+  }
+  return false;
+}
+
+function isActiveWait(
+  blocks: FacilityTimeBlock[] | undefined,
+  t: number,
+  startTime: number,
+): boolean {
+  if (!blocks || blocks.length === 0) return true;
+  for (const [s, e, activate] of blocks) {
+    if (t >= s && t < e && activate) {
+      return startTime >= s && startTime < e;
+    }
+  }
+  return false;
+}
+
+/* ─── facility counter markers (time-aware on/off) ───────────── */
 
 function FacilityMarkers({
   facilityLayout,
   zoneStepMap,
+  facilitySchedules,
 }: {
   facilityLayout: Record<string, FacilityPos>;
   zoneStepMap: Record<string, number>;
+  facilitySchedules: Record<string, FacilityTimeBlock[]>;
 }) {
   const markers = useMemo(() => {
     return Object.entries(facilityLayout).map(([facId, pos]) => {
@@ -164,6 +197,26 @@ function FacilityMarkers({
     });
   }, [markers]);
 
+  const fillRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const borderRefs = useRef<(THREE.LineBasicMaterial | null)[]>([]);
+
+  useFrame(() => {
+    const t = useViewerStore.getState().currentTime;
+    for (let i = 0; i < markers.length; i++) {
+      const active = isFacilityActive(facilitySchedules[markers[i].facId], t);
+      const fill = fillRefs.current[i];
+      const border = borderRefs.current[i];
+      if (fill) {
+        fill.color.copy(active ? C_FAC_ON : C_FAC_OFF);
+        fill.opacity = active ? 0.45 : 0.2;
+      }
+      if (border) {
+        border.color.copy(active ? C_FAC_BORDER_ON : C_FAC_BORDER_OFF);
+        border.opacity = active ? 0.8 : 0.4;
+      }
+    }
+  });
+
   return (
     <group>
       {markers.map((m, i) => (
@@ -171,11 +224,21 @@ function FacilityMarkers({
           {/* desk fill */}
           <mesh position={[0, 0.08, 0]}>
             <boxGeometry args={[m.deskW, 0.15, m.deskH]} />
-            <meshBasicMaterial color={m.color} transparent opacity={0.35} />
+            <meshBasicMaterial
+              ref={(ref) => { fillRefs.current[i] = ref; }}
+              color={C_FAC_ON}
+              transparent
+              opacity={0.45}
+            />
           </mesh>
           {/* desk border */}
           <lineSegments position={[0, 0.08, 0]} geometry={edgesGeos[i]}>
-            <lineBasicMaterial color={m.color} transparent opacity={0.7} />
+            <lineBasicMaterial
+              ref={(ref) => { borderRefs.current[i] = ref; }}
+              color={C_FAC_BORDER_ON}
+              transparent
+              opacity={0.8}
+            />
           </lineSegments>
           {/* facility ID label */}
           <Html
@@ -226,7 +289,7 @@ function PassengerDots({
     [timeline.steps],
   );
 
-  const queueMapRef = useRef<Map<string, { ri: number; onPred: number }[]>>(new Map());
+  const queueMapRef = useRef<Map<string, { ri: number; onPred: number; stO: number }[]>>(new Map());
 
   useEffect(() => {
     const mesh = meshRef.current;
@@ -277,7 +340,7 @@ function PassengerDots({
           const frac = eDur > 0 ? (t - eStart) / eDur : 1;
           const fp = facilityLayout[fe[4] ?? ""];
           const tx = fp ? fp.x : 0;
-          const tz = fp ? fp.z - 4 : entranceZ + 10;
+          const tz = fp ? fp.z : entranceZ + 10;
           _p.set(
             ENTRANCE_X + (tx - ENTRANCE_X) * frac,
             PAX_Y,
@@ -313,7 +376,7 @@ function PassengerDots({
               _p.set(
                 prevPos.x + (nextPos.x - prevPos.x) * frac,
                 PAX_Y,
-                prevPos.z + (nextPos.z - 4 - prevPos.z) * frac,
+                prevPos.z + (nextPos.z - prevPos.z) * frac,
               );
             } else {
               const pz = evts.slice(0, s).reverse().find(e => e)?.[3];
@@ -336,7 +399,7 @@ function PassengerDots({
           if (fid) {
             let q = queueMap.get(fid);
             if (!q) { q = []; queueMap.set(fid, q); }
-            q.push({ ri, onPred: onP });
+            q.push({ ri, onPred: onP, stO });
           }
           classified = true;
           break;
@@ -365,6 +428,7 @@ function PassengerDots({
     }
 
     // ─── Grid-based queue positioning for waiting passengers ───
+    const schedules = timeline.facility_schedules;
     for (const [facId, queue] of queueMap) {
       queue.sort((a, b) => a.onPred - b.onPred);
 
@@ -372,23 +436,19 @@ function PassengerDots({
       if (!fp) continue;
 
       const cols = fp.queueCols;
-      const availRows = Math.floor((fp.queueStartZ - fp.queueMaxZ) / ROW_SPACING);
-      const maxVisible = Math.max(availRows * cols, cols);
-      const rowSp = queue.length > maxVisible
-        ? (fp.queueStartZ - fp.queueMaxZ) / Math.ceil(queue.length / cols)
-        : ROW_SPACING;
-      const effRowSp = Math.max(rowSp, 0.15);
 
+      const facBlocks = schedules?.[facId];
       for (let rank = 0; rank < queue.length; rank++) {
         const col = rank % cols;
         const row = Math.floor(rank / cols);
         const px = fp.queueBaseX + col * DOT_SPACING;
-        const pz = fp.queueStartZ - row * effRowSp;
+        const pz = fp.queueStartZ - row * ROW_SPACING;
 
         _p.set(px, PAX_Y, pz);
         _m.compose(_p, _q, _s);
         mesh.setMatrixAt(queue[rank].ri, _m);
-        mesh.setColorAt(queue[rank].ri, C_WAIT);
+        const color = isActiveWait(facBlocks, t, queue[rank].stO) ? C_WAIT : C_BLOCK_WAIT;
+        mesh.setColorAt(queue[rank].ri, color);
       }
     }
 
@@ -437,6 +497,7 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
     if (!timelineData) return { groundW: 100, groundH: 100 };
     const facCounts = timelineData.zone_facilities ?? {};
     const nSteps = timelineData.steps.length || 1;
+    const zmq = timelineData.zone_max_queue ?? {};
 
     const stepFacTotals: Record<number, number> = {};
     for (const [zoneName, facs] of Object.entries(facCounts)) {
@@ -447,7 +508,20 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
 
     const usable = 0.9;
     const w = Math.max(maxFacsPerRow * MIN_COL_W / usable, 80);
-    const h = Math.max(nSteps * MIN_STEP_H / usable, 60);
+
+    let totalH = 0;
+    for (let si = 0; si < nSteps; si++) {
+      let stepMaxQ = 0;
+      for (const [zoneName, q] of Object.entries(zmq)) {
+        if (zoneStepMap[zoneName] === si) stepMaxQ = Math.max(stepMaxQ, q);
+      }
+      const estCols = 3;
+      const queueRows = Math.ceil(stepMaxQ / estCols);
+      const dampened = Math.log2(queueRows + 2) * 10;
+      const neededH = dampened * ROW_SPACING + DESK_H + 4;
+      totalH += Math.max(neededH, MIN_STEP_H);
+    }
+    const h = Math.max(totalH / usable, 60);
     return { groundW: w, groundH: h };
   }, [timelineData, zoneStepMap]);
 
@@ -648,7 +722,11 @@ export default function ViewerScene({ scenarioId }: ViewerSceneProps) {
         </group>
 
         {/* facility counter markers */}
-        <FacilityMarkers facilityLayout={facilityLayout} zoneStepMap={zoneStepMap} />
+        <FacilityMarkers
+          facilityLayout={facilityLayout}
+          zoneStepMap={zoneStepMap}
+          facilitySchedules={timelineData.facility_schedules ?? {}}
+        />
 
         {/* passengers */}
         <PassengerDots timeline={timelineData} facilityLayout={facilityLayout} groundW={groundW} groundH={groundH} />

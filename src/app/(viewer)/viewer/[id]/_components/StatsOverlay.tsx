@@ -129,6 +129,7 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
       <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/10 pt-2">
         {[
           { label: "Waiting", color: "#e2e8f0" },
+          { label: "Block Wait", color: "#475569" },
           { label: "Processing", color: "#ff2d55" },
           { label: "Traveling", color: "#00e5ff" },
         ].map((item) => (
@@ -136,6 +137,20 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
             <span
               className="inline-block h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: item.color }}
+            />
+            <span className="text-[9px] text-white/40">{item.label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+        {[
+          { label: "Facility ON", color: "#22c55e" },
+          { label: "Facility OFF", color: "#ef4444" },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-1">
+            <span
+              className="inline-block h-1.5 w-3 rounded-sm"
+              style={{ backgroundColor: item.color, opacity: 0.7 }}
             />
             <span className="text-[9px] text-white/40">{item.label}</span>
           </div>
