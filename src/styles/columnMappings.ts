@@ -8,8 +8,7 @@ const COLUMN_LABEL_MAP: Record<string, string> = {
   // Airlines & Aircraft
   operating_carrier_iata: "Airline",
   operating_carrier_name: "Airline",
-  aircraft_type_icao: "Aircraft Type",
-  aircraft_type: "Aircraft Type",
+  aircraft_type_name: "Aircraft Type",
 
   // Flight
   flight_type: "Flight Type",
@@ -48,7 +47,7 @@ export function getColumnName(label: string): string {
     // Build reverse map, preferring primary fields
     const primaryFields = [
       'operating_carrier_iata', // prefer IATA over name for Airline
-      'aircraft_type', // prefer short form
+      'aircraft_type_name', // prefer full name for Aircraft Type
       'nationality', // prefer short form
       'profile', // prefer for Passenger Type storage
     ];
@@ -81,7 +80,7 @@ export type ColumnLabel = typeof COLUMN_LABEL_MAP[keyof typeof COLUMN_LABEL_MAP]
 // 중복 제거를 위해 COLUMN_LABEL_MAP의 값들을 기반으로 생성
 export const LABELS = {
   AIRLINE: COLUMN_LABEL_MAP.operating_carrier_iata,
-  AIRCRAFT_TYPE: COLUMN_LABEL_MAP.aircraft_type,
+  AIRCRAFT_TYPE: COLUMN_LABEL_MAP.aircraft_type_name,
   FLIGHT_TYPE: COLUMN_LABEL_MAP.flight_type,
   ARRIVAL_AIRPORT: COLUMN_LABEL_MAP.arrival_airport_iata,
   DEPARTURE_AIRPORT: COLUMN_LABEL_MAP.departure_airport_iata,

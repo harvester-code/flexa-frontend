@@ -487,7 +487,7 @@ export default function ProfileCriteriaSettings({
   const getColumnCategory = (columnKey: string): string | null => {
     if (
       columnKey === 'operating_carrier_name' ||
-      columnKey === 'aircraft_type_icao' ||
+      columnKey === 'aircraft_type_name' ||
       columnKey === 'total_seats' ||
       columnKey === 'flight_type'
     ) {
