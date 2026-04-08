@@ -651,16 +651,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
           chartResult: undefined, // 차트 결과도 초기화
         });
 
-        // ✅ flight 데이터 리셋 시 process_flow도 완전 초기화
-        state.process_flow = [];
-
-        // ✅ flight 데이터 리셋 시 workflow도 완전 리셋 (step2, step3도 false로)
+        // flight/passenger 리셋 시 workflow 단계만 초기화 (process_flow, terminalLayout은 유지)
         state.workflow.step1Completed = false;
         state.workflow.step2Completed = false;
-        state.workflow.availableSteps = [1]; // 첫 번째 단계만 접근 가능
-
-        // ✅ 관련 존 영역도 초기화
-        state.terminalLayout.zoneAreas = {};
+        state.workflow.availableSteps = [1];
       }),
 
     setSelectedConditions: (selectedConditions) =>
