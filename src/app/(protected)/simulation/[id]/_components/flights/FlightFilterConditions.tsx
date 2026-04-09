@@ -418,14 +418,24 @@ function FlightFilterConditions({
   const srcFilters = controlled ? overrideFlightData?.filters : flightDataFromStore.filters;
 
   const filtersData = useMemo<FlightFiltersApiResponse | null>(() => {
-    if (!srcTotalFlights) return null;
+    if (!srcFilters) return null;
+
+    const depTotal = srcFilters.departure?.total_flights;
+    const arrTotal = srcFilters.arrival?.total_flights;
+    const hasNumericDep = typeof depTotal === 'number';
+    const hasNumericArr = typeof arrTotal === 'number';
+    if (!hasNumericDep && !hasNumericArr) return null;
+
+    const total_flights =
+      typeof srcTotalFlights === 'number' ? srcTotalFlights : (depTotal ?? 0);
+
     return {
       airport,
       date,
       scenario_id: scenarioId,
-      total_flights: srcTotalFlights,
+      total_flights,
       airlines: srcAirlines || {},
-      filters: srcFilters || { departure: {}, arrival: {} },
+      filters: srcFilters,
     } as FlightFiltersApiResponse;
   }, [srcTotalFlights, srcAirlines, srcFilters, airport, date, scenarioId]);
 
