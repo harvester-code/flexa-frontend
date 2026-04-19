@@ -96,6 +96,8 @@ export default function OperatingScheduleEditor({
   const storeTerminal = useSimulationStore((s) => s.context.terminal);
   const setStoreAirport = useSimulationStore((s) => s.setAirport);
   const setStoreTerminal = useSimulationStore((s) => s.setTerminal);
+  const storeScheduleInterval = useSimulationStore((s) => s.schedule_interval_minutes);
+  const setStoreScheduleInterval = useSimulationStore((s) => s.setScheduleIntervalMinutes);
 
   useEffect(() => {
     if (!scenarioId) return;
@@ -221,11 +223,22 @@ export default function OperatingScheduleEditor({
   // 전체화면 상태
   const [isFullScreen, setIsFullScreen] = useState(false);
 
-  // Time Unit 상태 (기본값 30분)
-  const [timeUnitInput, setTimeUnitInput] = useState<string>("30");
-  const [appliedTimeUnit, setAppliedTimeUnit] = useState<number>(30);
+  // Time Unit 상태 (스토어 값 우선, 없으면 기본값 30분)
+  const initialInterval = storeScheduleInterval ?? 30;
+  const [timeUnitInput, setTimeUnitInput] = useState<string>(initialInterval.toString());
+  const [appliedTimeUnit, setAppliedTimeUnit] = useState<number>(initialInterval);
   const [pendingTimeUnit, setPendingTimeUnit] = useState<number | null>(null);
   const [showTimeUnitConfirm, setShowTimeUnitConfirm] = useState(false);
+
+  // 스토어의 schedule_interval_minutes가 바뀌면(메타데이터 로드 시 등) 로컬 상태 동기화
+  // appliedTimeUnit은 의도적으로 deps에서 제외 — storeScheduleInterval 변화 시에만 동기화
+  useEffect(() => {
+    if (storeScheduleInterval !== null && storeScheduleInterval !== appliedTimeUnit) {
+      setAppliedTimeUnit(storeScheduleInterval);
+      setTimeUnitInput(storeScheduleInterval.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeScheduleInterval]);
 
   // 뱃지 상태 관리 - Zone별로 저장하여 탭 전환 시에도 유지
   const [allZoneBadges, setAllZoneBadges] = useState<
@@ -1041,13 +1054,19 @@ export default function OperatingScheduleEditor({
   }, [selectedProcessIndex, selectedZone, processFlow]); // 모든 의존성 포함
 
   // Normalize ALL zones' time_blocks to current timeSlots range on mount/change
+  // storeScheduleInterval가 아직 appliedTimeUnit에 반영되지 않은 상태(로딩 직후 한 프레임)에서
+  // 잘못된 interval로 정규화가 실행되는 것을 방지하기 위해 동기화 완료 후에만 허용
+  const intervalSynced =
+    storeScheduleInterval === null || storeScheduleInterval === appliedTimeUnit;
   useNormalizeAllSchedules({
     timeSlots,
     isPreviousDay,
     appliedTimeUnit,
     processFlow,
     isTimeSlotsFromChartData: !!(
-      chartResult?.chart_x_data && chartResult.chart_x_data.length > 0
+      chartResult?.chart_x_data &&
+      chartResult.chart_x_data.length > 0 &&
+      intervalSynced
     ),
   });
 
@@ -1136,6 +1155,7 @@ export default function OperatingScheduleEditor({
                         } else {
                           setAppliedTimeUnit(clampedValue);
                           setTimeUnitInput(clampedValue.toString());
+                          setStoreScheduleInterval(clampedValue);
                         }
                       }
                       (e.target as HTMLInputElement).blur();
@@ -1331,6 +1351,7 @@ export default function OperatingScheduleEditor({
                           } else {
                             setAppliedTimeUnit(clampedValue);
                             setTimeUnitInput(clampedValue.toString());
+                            setStoreScheduleInterval(clampedValue);
                           }
                         }
                         (e.target as HTMLInputElement).blur();
@@ -1452,6 +1473,7 @@ export default function OperatingScheduleEditor({
                 if (pendingTimeUnit) {
                   // Confirm 버튼 클릭과 동일한 동작
                   setAppliedTimeUnit(pendingTimeUnit);
+                  setStoreScheduleInterval(pendingTimeUnit);
                   setShowTimeUnitConfirm(false);
                   setPendingTimeUnit(null);
                 }
@@ -1480,6 +1502,7 @@ export default function OperatingScheduleEditor({
                   if (pendingTimeUnit) {
                     setAppliedTimeUnit(pendingTimeUnit);
                     setTimeUnitInput(pendingTimeUnit.toString());
+                    setStoreScheduleInterval(pendingTimeUnit);
                     // Clear data if exists
                     if (
                       Object.keys(cellBadges).length > 0 ||

@@ -280,9 +280,11 @@ export interface SimulationStoreState {
     availableSteps: number[];
   };
   savedAt: string | null;
+  schedule_interval_minutes: number | null;
 
   // Actions - 사용자가 하나씩 지정할 예정
   resetStore: () => void;
+  setScheduleIntervalMinutes: (minutes: number) => void;
 
   // Context 관련 액션들
   setScenarioId: (scenarioId: string) => void;
@@ -559,6 +561,7 @@ const createInitialState = (scenarioId?: string) => ({
     availableSteps: [1],
   },
   savedAt: null,
+  schedule_interval_minutes: null,
 });
 
 // ==================== Store ====================
@@ -1374,6 +1377,11 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         // ✅ process_flow 리셋 시 관련 workflow 상태도 초기화
         state.terminalLayout.zoneAreas = {};
+      }),
+
+    setScheduleIntervalMinutes: (minutes) =>
+      set((state) => {
+        state.schedule_interval_minutes = minutes;
       }),
 
     loadProcessMetadata: (metadata) =>
