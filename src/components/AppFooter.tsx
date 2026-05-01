@@ -39,7 +39,7 @@ const AppFooter: React.FC = () => (
         </nav>
 
         <div className="text-xs text-default-500">
-          © 2025 Flexa. All rights reserved.
+          © 2026 Flexa. All rights reserved.
         </div>
       </div>
     </div>
