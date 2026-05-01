@@ -679,6 +679,7 @@ export default function ProcessFlowDesigner({
   // Handle cancel - reset to original values
   const handleCancel = () => {
     // Clear selection and reset all states
+    onProcessSelect(null);
     setIsCreatingNew(false);
     setIsAddProcessDisabled(false);
     setEditedProcess(null);
