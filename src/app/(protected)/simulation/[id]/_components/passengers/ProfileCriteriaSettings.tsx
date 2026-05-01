@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle, ChevronDown, Search, XCircle } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronRight, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 // import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
@@ -42,6 +42,7 @@ export default function ProfileCriteriaSettings({
   const [propertyValues, setPropertyValues] = useState<Record<string, number>>({});
   const [isValidDistribution, setIsValidDistribution] = useState(true);
   const [currentTotal, setCurrentTotal] = useState(100);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // 주어진 apiField/value가 parquetMetadata에 존재하는 컬럼 키로 매칭되도록 보정
   const resolveColumnKey = useCallback(
@@ -265,24 +266,50 @@ export default function ProfileCriteriaSettings({
       const selectedKeys = Object.keys(selectedItems).filter((key) => selectedItems[key]);
 
       selectedKeys.forEach((key) => {
-        const [columnKey, value] = key.split(':');
+        const colonIdx = key.indexOf(':');
+        const columnKey = key.slice(0, colonIdx);
+        const apiValue = key.slice(colonIdx + 1);
 
-        // 선택된 값을 그대로 사용 (하드코딩 제거)
-        const apiField = columnKey;
-        const apiValue = value;
-
-        if (!conditions[apiField]) {
-          conditions[apiField] = [];
+        if (!conditions[columnKey]) {
+          conditions[columnKey] = [];
         }
-        if (!conditions[apiField].includes(apiValue)) {
-          conditions[apiField].push(apiValue);
+        if (!conditions[columnKey].includes(apiValue)) {
+          conditions[columnKey].push(apiValue);
         }
 
         // 표시용 조건 문자열 생성 (배지 형태로 저장)
-        const displayField = getColumnLabel(apiField);
+        const displayField = getColumnLabel(columnKey);
         const conditionString = `${displayField}: ${apiValue}`;
         conditionStrings.push(conditionString);
       });
+
+      // 편명(flight_number)만 선택된 경우 — 부모 항공사를 배지용 문자열에 추가
+      if (conditions['flight_number'] && !conditions['operating_carrier_name']) {
+        const flightNumberMeta = parquetMetadata.find((item) => item.column === 'flight_number');
+        const airlineMeta = parquetMetadata.find((item) => item.column === 'operating_carrier_name');
+        if (flightNumberMeta && airlineMeta) {
+          // flightId → airline 역방향 맵
+          const flightToAirline: Record<string, string> = {};
+          Object.entries(airlineMeta.values).forEach(([airline, data]) => {
+            data.flights.forEach((fid) => { flightToAirline[fid] = airline; });
+          });
+          // 선택된 편명들의 부모 항공사 수집
+          const derivedAirlines = new Set<string>();
+          conditions['flight_number'].forEach((fnNo) => {
+            const fnData = flightNumberMeta.values[fnNo];
+            if (fnData) {
+              fnData.flights.forEach((fid) => {
+                const airline = flightToAirline[fid];
+                if (airline) derivedAirlines.add(airline);
+              });
+            }
+          });
+          // conditionStrings에만 추가 (실제 API conditions에는 추가 안 함)
+          derivedAirlines.forEach((airline) => {
+            conditionStrings.push(`Airline: ${airline}`);
+          });
+        }
+      }
 
       // 🎯 3. 규칙 추가 또는 수정
       const isEditMode = editingRuleIndex !== undefined && editingRuleIndex !== null;
@@ -659,17 +686,95 @@ export default function ProfileCriteriaSettings({
     return allFlights.size;
   }, [parquetMetadata]);
 
-  // 🎯 단순한 핸들러들
-  const handleItemToggle = (itemKey: string) => {
-    setSelectedItems((prev) => ({
-      ...prev,
-      [itemKey]: !prev[itemKey],
-    }));
-  };
+  // 특정 값에 속하는 편명 목록 조회 (flight_number 컬럼과 교차, 라우트 포함)
+  const getFlightNumbersForValue = useCallback(
+    (columnKey: string, value: string): Array<{ flightNo: string; count: number; route: string }> => {
+      const columnData = parquetMetadata.find((item) => item.column === columnKey);
+      const flightNumberData = parquetMetadata.find((item) => item.column === 'flight_number');
+      if (!columnData || !flightNumberData) return [];
+
+      // flightId → arr/arrCity 역방향 맵 빌드
+      const flightToArr: Record<string, string> = {};
+      const flightToArrCity: Record<string, string> = {};
+      parquetMetadata.find((item) => item.column === 'arrival_airport_iata')
+        ?.values && Object.entries(
+          parquetMetadata.find((item) => item.column === 'arrival_airport_iata')!.values
+        ).forEach(([arr, data]) => data.flights.forEach((fid) => { flightToArr[fid] = arr; }));
+      parquetMetadata.find((item) => item.column === 'arrival_city')
+        ?.values && Object.entries(
+          parquetMetadata.find((item) => item.column === 'arrival_city')!.values
+        ).forEach(([city, data]) => data.flights.forEach((fid) => { flightToArrCity[fid] = city; }));
+
+      const itemFlightSet = new Set(columnData.values[value]?.flights || []);
+      return Object.entries(flightNumberData.values)
+        .map(([flightNo, data]) => {
+          const matched = data.flights.filter((f) => itemFlightSet.has(f));
+          if (matched.length === 0) return null;
+          const arr = flightToArr[matched[0]] ?? '?';
+          const arrCity = flightToArrCity[matched[0]];
+          const route = arrCity ? `${arr} (${arrCity})` : arr;
+          return { flightNo, count: matched.length, route };
+        })
+        .filter((e): e is { flightNo: string; count: number; route: string } => e !== null)
+        .sort((a, b) => a.flightNo.localeCompare(b.flightNo));
+    },
+    [parquetMetadata]
+  );
+
+  // 부모 항목의 체크 상태 계산 (true / false / 'indeterminate')
+  const getParentCheckState = useCallback(
+    (columnKey: string, value: string): boolean | 'indeterminate' => {
+      const flightNumbers = getFlightNumbersForValue(columnKey, value);
+      if (flightNumbers.length === 0) return selectedItems[`${columnKey}:${value}`] || false;
+
+      const checkedCount = flightNumbers.filter(({ flightNo }) => selectedItems[`flight_number:${flightNo}`]).length;
+      if (checkedCount === 0) return false;
+      if (checkedCount === flightNumbers.length) return true;
+      return 'indeterminate';
+    },
+    [selectedItems, getFlightNumbersForValue]
+  );
+
+  // 🎯 토글 핸들러 — 부모 체크 시 자식 편명 cascade
+  const handleItemToggle = useCallback(
+    (itemKey: string) => {
+      const colonIdx = itemKey.indexOf(':');
+      const columnKey = itemKey.slice(0, colonIdx);
+      const value = itemKey.slice(colonIdx + 1);
+
+      setSelectedItems((prev) => {
+        const next = { ...prev };
+        const flightNumberData = parquetMetadata.find((item) => item.column === 'flight_number');
+        const hasChildren = !!flightNumberData && columnKey !== 'flight_number';
+
+        if (hasChildren) {
+          // 현재 부모 상태 기반으로 cascade 방향 결정
+          const flightNumbers = getFlightNumbersForValue(columnKey, value);
+          const checkedCount = flightNumbers.filter(({ flightNo }) => prev[`flight_number:${flightNo}`]).length;
+          const nextChecked = checkedCount < flightNumbers.length; // 일부라도 미선택이면 전체 선택
+
+          next[itemKey] = nextChecked;
+          flightNumbers.forEach(({ flightNo }) => {
+            next[`flight_number:${flightNo}`] = nextChecked;
+          });
+        } else {
+          next[itemKey] = !prev[itemKey];
+        }
+
+        return next;
+      });
+    },
+    [parquetMetadata, getFlightNumbersForValue]
+  );
 
   const handleColumnSelect = (columnKey: string) => {
     setSelectedColumn((prev) => (prev === columnKey ? null : columnKey));
     setSearchQuery(''); // 컬럼 변경 시 검색어 리셋
+    setExpandedItems({}); // 컬럼 변경 시 아코디언 초기화
+  };
+
+  const handleToggleExpand = (itemKey: string) => {
+    setExpandedItems((prev) => ({ ...prev, [itemKey]: !prev[itemKey] }));
   };
 
   const handleClearAll = () => {
@@ -830,20 +935,64 @@ export default function ProfileCriteriaSettings({
                           ) : (
                             filteredValues.map((value) => {
                               const itemKey = `${selectedColumn}:${value}`;
-                              const isSelected = selectedItems[itemKey] || false;
                               const flightCount = columnData.values[value].flights.length;
+                              const isExpanded = expandedItems[itemKey] || false;
+                              const flightNumberData = parquetMetadata.find((item) => item.column === 'flight_number');
+                              const hasFlightNumbers = !!flightNumberData && selectedColumn !== 'flight_number';
+                              const checkState = hasFlightNumbers
+                                ? getParentCheckState(selectedColumn, value)
+                                : (selectedItems[itemKey] || false);
 
                               return (
-                                <div key={value} className="flex items-center space-x-2 py-1 text-sm">
-                                  <Checkbox
-                                    id={itemKey}
-                                    checked={isSelected}
-                                    onCheckedChange={() => handleItemToggle(itemKey)}
-                                  />
-                                  <label htmlFor={itemKey} className="text-default-700 flex-1 cursor-pointer truncate">
-                                    {value}
-                                  </label>
-                                  <span className="text-default-400 text-xs font-medium">{flightCount} flights</span>
+                                <div key={value}>
+                                  <div className="flex items-center space-x-2 py-1 text-sm">
+                                    <Checkbox
+                                      id={itemKey}
+                                      checked={checkState}
+                                      onCheckedChange={() => handleItemToggle(itemKey)}
+                                    />
+                                    <label htmlFor={itemKey} className="text-default-700 flex-1 cursor-pointer truncate">
+                                      {value}
+                                    </label>
+                                    <span className="text-default-400 text-xs font-medium">{flightCount} flights</span>
+                                    {hasFlightNumbers && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleExpand(itemKey)}
+                                        className="text-default-400 hover:text-default-600 ml-1 flex-shrink-0"
+                                        title="Show flight numbers"
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronDown className="h-3.5 w-3.5" />
+                                        ) : (
+                                          <ChevronRight className="h-3.5 w-3.5" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* 아코디언: 편명 목록 */}
+                                  {isExpanded && hasFlightNumbers && (
+                                    <div className="mb-1 ml-6 space-y-0.5 rounded bg-gray-50 px-2 py-1.5">
+                                      {getFlightNumbersForValue(selectedColumn, value).map(({ flightNo, route }) => {
+                                        const fnKey = `flight_number:${flightNo}`;
+                                        const isFnSelected = selectedItems[fnKey] || false;
+                                        return (
+                                          <div key={flightNo} className="flex items-center space-x-2 py-0.5 text-xs">
+                                            <Checkbox
+                                              id={fnKey}
+                                              checked={isFnSelected}
+                                              onCheckedChange={() => handleItemToggle(fnKey)}
+                                            />
+                                            <label htmlFor={fnKey} className="text-default-600 flex-1 cursor-pointer font-mono">
+                                              {flightNo}
+                                            </label>
+                                            <span className="text-default-400 font-medium">{route}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })
