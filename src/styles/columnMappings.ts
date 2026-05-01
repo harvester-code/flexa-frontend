@@ -11,6 +11,7 @@ const COLUMN_LABEL_MAP: Record<string, string> = {
   aircraft_type_name: "Aircraft Type",
 
   // Flight
+  flight_number: "Flight Number",
   flight_type: "Flight Type",
   total_seats: "Total Seats",
 
@@ -80,6 +81,7 @@ export type ColumnLabel = typeof COLUMN_LABEL_MAP[keyof typeof COLUMN_LABEL_MAP]
 // 중복 제거를 위해 COLUMN_LABEL_MAP의 값들을 기반으로 생성
 export const LABELS = {
   AIRLINE: COLUMN_LABEL_MAP.operating_carrier_iata,
+  FLIGHT_NUMBER: COLUMN_LABEL_MAP.flight_number,
   AIRCRAFT_TYPE: COLUMN_LABEL_MAP.aircraft_type_name,
   FLIGHT_TYPE: COLUMN_LABEL_MAP.flight_type,
   ARRIVAL_AIRPORT: COLUMN_LABEL_MAP.arrival_airport_iata,

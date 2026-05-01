@@ -724,7 +724,7 @@ export default function OperatingScheduleEditor({
       }
     }
 
-    const flightCategories = ["Airline", "Aircraft Type", "Flight Type"];
+    const flightCategories = ["Airline", "Flight Number", "Aircraft Type", "Flight Type"];
     const arrivalCategories = [
       "Arrival Airport",
       "Arrival Country",

@@ -1,9 +1,10 @@
-import { Plane, Navigation, MapPin, Globe, Users } from "lucide-react";
+import { Plane, Hash, Navigation, MapPin, Globe, Users } from "lucide-react";
 import { getColumnLabel, getStorageFieldName as getStorageField, LABELS } from "@/styles/columnMappings";
 
 // Icon mapping for categories
 const CATEGORY_ICON_MAP: Record<string, any> = {
   [LABELS.AIRLINE]: Plane,
+  [LABELS.FLIGHT_NUMBER]: Hash,
   [LABELS.AIRCRAFT_TYPE]: Plane,
   [LABELS.FLIGHT_TYPE]: Navigation,
   [LABELS.ARRIVAL_AIRPORT]: MapPin,
@@ -47,6 +48,7 @@ export const getCategoryColorIndex = (category: string): number => {
   // Predefined color indices for each category (skipping primary color)
   const CATEGORY_COLOR_INDICES: Record<string, number> = {
     [LABELS.AIRLINE]: adjustColorIndex(0),
+    [LABELS.FLIGHT_NUMBER]: adjustColorIndex(11),
     [LABELS.AIRCRAFT_TYPE]: adjustColorIndex(1),
     [LABELS.FLIGHT_TYPE]: adjustColorIndex(2),
     [LABELS.ARRIVAL_AIRPORT]: adjustColorIndex(3),
