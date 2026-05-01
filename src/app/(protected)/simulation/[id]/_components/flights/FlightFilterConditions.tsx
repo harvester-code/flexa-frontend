@@ -24,6 +24,9 @@ import {
   parseTerminalAirlineCombo,
   removeCombo,
   removeCombosByTerminal,
+  createAirlineFlightId,
+  parseAirlineFlightId,
+  airlineFlightIdToIntersectionKey,
 } from './flight-utils';
 
 // ==================== Types ====================
@@ -367,7 +370,110 @@ function TerminalAirlinesDropdown({
                   htmlFor={`airline-${terminalName}-${airlineCode}`}
                   className="flex-1 cursor-pointer text-sm"
                 >
-                  {airlineCode} - {airlineName} | {airlineData.count.toLocaleString()} flights
+                  {airlineName} | {airlineData.count.toLocaleString()} flights
+                </Label>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================== Dropdown Component for Airline Flight Numbers ====================
+interface AirlineFlightNumbersDropdownProps {
+  airlineCode: string;
+  airlineName: string;
+  /** API 응답의 flight_numbers – 이미 "PR221" 형식의 문자열 배열 */
+  flightNumbers: string[];
+  /** airline_flight_ids 상태 – "airlineCode||flightId" 형식 */
+  selectedFlightIds: string[];
+  handleFlightNumberToggle: (airlineCode: string, flightId: string, checked: boolean) => void;
+}
+
+function AirlineFlightNumbersDropdown({
+  airlineCode,
+  airlineName,
+  flightNumbers,
+  selectedFlightIds,
+  handleFlightNumberToggle,
+}: AirlineFlightNumbersDropdownProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const sortedFlightNumbers = useMemo(
+    () => [...flightNumbers].sort((a, b) => a.localeCompare(b)),
+    [flightNumbers]
+  );
+
+  const filteredFlightNumbers = useMemo(() => {
+    if (!searchQuery) return sortedFlightNumbers;
+    const q = searchQuery.toLowerCase();
+    return sortedFlightNumbers.filter((fn) => fn.toLowerCase().includes(q));
+  }, [sortedFlightNumbers, searchQuery]);
+
+  const areAllSelected = useMemo(() => {
+    if (filteredFlightNumbers.length === 0) return false;
+    return filteredFlightNumbers.every((fn) =>
+      selectedFlightIds.includes(createAirlineFlightId(airlineCode, fn))
+    );
+  }, [filteredFlightNumbers, selectedFlightIds, airlineCode]);
+
+  const handleSelectAll = (checked: boolean) => {
+    filteredFlightNumbers.forEach((fn) => {
+      const isSelected = selectedFlightIds.includes(createAirlineFlightId(airlineCode, fn));
+      if (checked && !isSelected) handleFlightNumberToggle(airlineCode, fn, true);
+      else if (!checked && isSelected) handleFlightNumberToggle(airlineCode, fn, false);
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between border-b px-2 py-1">
+        <div className="text-xs font-medium text-muted-foreground truncate flex-1 mr-2">
+          {airlineName} flight numbers
+        </div>
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          <Checkbox
+            id={`select-all-fn-${airlineCode}`}
+            checked={areAllSelected}
+            onCheckedChange={(checked) => handleSelectAll(checked === true)}
+          />
+          <Label htmlFor={`select-all-fn-${airlineCode}`} className="cursor-pointer text-xs font-medium">
+            Select All
+          </Label>
+        </div>
+      </div>
+
+      <div className="px-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search flight numbers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="max-h-48 overflow-y-auto space-y-1">
+        {filteredFlightNumbers.length === 0 ? (
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">No flights found</div>
+        ) : (
+          filteredFlightNumbers.map((fn) => {
+            const internalId = createAirlineFlightId(airlineCode, fn);
+            const isSelected = selectedFlightIds.includes(internalId);
+            return (
+              <div key={fn} className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50">
+                <Checkbox
+                  id={`fn-${airlineCode}-${fn}`}
+                  checked={isSelected}
+                  onCheckedChange={(checked) => handleFlightNumberToggle(airlineCode, fn, !!checked)}
+                />
+                <Label htmlFor={`fn-${airlineCode}-${fn}`} className="flex-1 cursor-pointer text-sm font-mono">
+                  {fn}
                 </Label>
               </div>
             );
@@ -686,6 +792,93 @@ function FlightFilterConditions({
     []
   );
 
+  // ==================== Airline Filter Handlers ====================
+
+  // 항공사 전체 선택/해제
+  const handleAirlineFilterToggle = useCallback(
+    (airlineCode: string, allFlightIds: string[], checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const currentAirlines = prev.categories.selected_airlines || [];
+        const currentFlightIds = prev.categories.airline_flight_ids || [];
+        const prefix = `${airlineCode}||`;
+
+        if (checked) {
+          const newAirlines = currentAirlines.includes(airlineCode)
+            ? currentAirlines
+            : [...currentAirlines, airlineCode];
+          const newFlightIds = [
+            ...currentFlightIds.filter((id) => !id.startsWith(prefix)),
+            ...allFlightIds.map((fn) => createAirlineFlightId(airlineCode, fn)),
+          ];
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_airlines: newAirlines,
+              airline_flight_ids: newFlightIds,
+            },
+          };
+        } else {
+          const newAirlines = currentAirlines.filter((c) => c !== airlineCode);
+          const newFlightIds = currentFlightIds.filter((id) => !id.startsWith(prefix));
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_airlines: newAirlines.length > 0 ? newAirlines : undefined,
+              airline_flight_ids: newFlightIds.length > 0 ? newFlightIds : undefined,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
+  // 특정 편번호 선택/해제
+  const handleFlightNumberToggle = useCallback(
+    (airlineCode: string, flightId: string, checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const currentAirlines = prev.categories.selected_airlines || [];
+        const currentFlightIds = prev.categories.airline_flight_ids || [];
+        const internalId = createAirlineFlightId(airlineCode, flightId);
+        const prefix = `${airlineCode}||`;
+
+        if (checked) {
+          const newFlightIds = currentFlightIds.includes(internalId)
+            ? currentFlightIds
+            : [...currentFlightIds, internalId];
+          const newAirlines = currentAirlines.includes(airlineCode)
+            ? currentAirlines
+            : [...currentAirlines, airlineCode];
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_airlines: newAirlines,
+              airline_flight_ids: newFlightIds,
+            },
+          };
+        } else {
+          const newFlightIds = currentFlightIds.filter((id) => id !== internalId);
+          const hasRemaining = newFlightIds.some((id) => id.startsWith(prefix));
+          const newAirlines = hasRemaining
+            ? currentAirlines
+            : currentAirlines.filter((c) => c !== airlineCode);
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_airlines: newAirlines.length > 0 ? newAirlines : undefined,
+              airline_flight_ids: newFlightIds.length > 0 ? newFlightIds : undefined,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
   // 카테고리 값 선택/해제 (기존 로직: terminal, flight_type용)
   const handleCategoryValueChange = useCallback((category: string, value: string, checked: boolean) => {
     setSelectedFilter((prev) => {
@@ -786,7 +979,36 @@ function FlightFilterConditions({
         conditionFlightSets.push(terminalFlightIds);
       }
 
-      // 3. Location (Region/Country) 조건 (airline_code + flight_number 조합)
+      // 3. Airline / 특정 편번호 조건
+      const airlineFlightIds = categories.airline_flight_ids;
+      if (airlineFlightIds && airlineFlightIds.length > 0) {
+        // "airlineCode||flightId" → "airlineCode_flightId" 변환
+        const airlineFlightSet = new Set<string>(
+          airlineFlightIds
+            .map((id) => airlineFlightIdToIntersectionKey(id))
+            .filter(Boolean) as string[]
+        );
+        conditionFlightSets.push(airlineFlightSet);
+      } else {
+        const selectedAirlines = categories.selected_airlines;
+        if (selectedAirlines && selectedAirlines.length > 0) {
+          const airlineFlightSet = new Set<string>();
+          const terminalField2 = `${selectedFilter.mode}_terminal`;
+          const terminalOptions2 = modeFilters[terminalField2];
+          if (terminalOptions2) {
+            Object.values(terminalOptions2).forEach((td: any) => {
+              Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
+                if (selectedAirlines.includes(code)) {
+                  data.flight_numbers.forEach((fn: number) => airlineFlightSet.add(`${code}_${fn}`));
+                }
+              });
+            });
+          }
+          if (airlineFlightSet.size > 0) conditionFlightSets.push(airlineFlightSet);
+        }
+      }
+
+      // 4. Location (Region/Country) 조건 (airline_code + flight_number 조합)
       const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
       const regionOptions = modeFilters[regionField];
 
@@ -916,6 +1138,20 @@ function FlightFilterConditions({
           const apiCondition = convertTerminalAirlinesToApiCondition(value);
           if (apiCondition) {
             conditions.push(apiCondition);
+          }
+        } else if (category === 'airline_flight_ids' && Array.isArray(value) && value.length > 0) {
+          // "airlineCode||flightId" → flightId 부분만 추출하여 flight_number 조건으로 전송
+          const flightNumbers = value
+            .map((id) => parseAirlineFlightId(id)?.flightId ?? null)
+            .filter(Boolean) as string[];
+          if (flightNumbers.length > 0) {
+            conditions.push({ field: 'flight_number', values: flightNumbers });
+          }
+        } else if (category === 'selected_airlines') {
+          // selected_airlines 는 airline_flight_ids 가 없을 때 fallback
+          const airlineFlightIds = selectedFilter.categories.airline_flight_ids || [];
+          if (airlineFlightIds.length === 0 && Array.isArray(value) && value.length > 0) {
+            conditions.push({ field: 'operating_carrier_iata', values: value });
           }
         } else if (Array.isArray(value) && value.length > 0) {
           // 배열인 경우 (Type, Terminal - 다중 선택)
@@ -1128,90 +1364,175 @@ function FlightFilterConditions({
             // 🆕 Terminal 카테고리: Location과 동일한 드롭다운 스타일
             const isTerminalCategory = category.includes('terminal');
             if (isTerminalCategory) {
+              // ── Airline 섹션을 위한 집계: 모든 터미널의 항공사 데이터 합산
+              // flight_numbers 는 이미 "PR221" 형태의 문자열 배열
+              const aggregatedAirlines: Record<string, { count: number; flightNumbers: Set<string> }> = {};
+              Object.values(options).forEach((terminalData: any) => {
+                Object.entries(terminalData.airlines).forEach(([code, data]: [string, any]) => {
+                  if (!aggregatedAirlines[code]) {
+                    aggregatedAirlines[code] = { count: 0, flightNumbers: new Set() };
+                  }
+                  data.flight_numbers.forEach((fn: string) => aggregatedAirlines[code].flightNumbers.add(fn));
+                });
+              });
+              // count 는 중복 제거된 편수로 재계산
+              Object.keys(aggregatedAirlines).forEach((code) => {
+                aggregatedAirlines[code].count = aggregatedAirlines[code].flightNumbers.size;
+              });
+
+              const sortedAggregatedAirlines = Object.entries(aggregatedAirlines).sort(
+                ([, a], [, b]) => b.count - a.count
+              );
+
+              const currentSelectedAirlines = selectedFilter.categories.selected_airlines || [];
+              const currentAirlineFlightIds = selectedFilter.categories.airline_flight_ids || [];
+
               return (
-                <div key={category} className="space-y-3">
-                  <div className="border-b pb-2">
-                    <Label className="text-sm font-medium">Terminal</Label>
+                <React.Fragment key={category}>
+                  {/* ── Terminal 섹션 ── */}
+                  <div className="space-y-3">
+                    <div className="border-b pb-2">
+                      <Label className="text-sm font-medium">Terminal</Label>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {Object.entries(options).map(([terminalName, terminalData]: [string, any]) => {
+                        const currentTerminals = (selectedFilter.categories[category] as string[]) || [];
+                        const currentTerminalAirlines = selectedFilter.categories.terminal_airlines || [];
+                        const allAirlinesInTerminal = Object.keys(terminalData.airlines);
+
+                        const selectedAirlinesInTerminal = allAirlinesInTerminal.filter((airlineCode) =>
+                          currentTerminalAirlines.includes(createTerminalAirlineCombo(terminalName, airlineCode))
+                        );
+
+                        const isTerminalSelected = currentTerminals.includes(terminalName);
+                        const isTerminalFullySelected =
+                          selectedAirlinesInTerminal.length === allAirlinesInTerminal.length;
+                        const isTerminalPartiallySelected =
+                          selectedAirlinesInTerminal.length > 0 && !isTerminalFullySelected;
+
+                        const selectedFlights = selectedAirlinesInTerminal.reduce((total, airlineCode) => {
+                          return total + (terminalData.airlines[airlineCode]?.count || 0);
+                        }, 0);
+
+                        return (
+                          <div key={terminalName} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`terminal-${terminalName}`}
+                              checked={isTerminalSelected}
+                              ref={(el) => {
+                                if (el && 'indeterminate' in el) {
+                                  (el as any).indeterminate = isTerminalPartiallySelected;
+                                }
+                              }}
+                              onCheckedChange={(checked) => handleTerminalToggle(terminalName, terminalData, !!checked)}
+                            />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
+                                >
+                                  <span className="cursor-pointer">
+                                    {getValueDisplayName(category, terminalName)} | {
+                                      selectedFlights > 0 && selectedFlights < terminalData.total_flights
+                                        ? `${selectedFlights.toLocaleString()} / ${terminalData.total_flights.toLocaleString()} flights`
+                                        : `${terminalData.total_flights.toLocaleString()} flights`
+                                    }
+                                  </span>
+                                  <ChevronDown className="ml-2 h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="max-h-96 w-80 p-2" align="start" side="bottom">
+                                <TerminalAirlinesDropdown
+                                  terminalName={terminalName}
+                                  terminalData={terminalData}
+                                  currentTerminalAirlines={selectedFilter.categories.terminal_airlines || []}
+                                  currentTerminals={(selectedFilter.categories[category] as string[]) || []}
+                                  airlinesMapping={airlinesMapping}
+                                  handleAirlineToggle={handleAirlineToggle}
+                                  handleTerminalToggle={handleTerminalToggle}
+                                  getValueDisplayName={getValueDisplayName}
+                                  category={category}
+                                />
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {Object.entries(options).map(([terminalName, terminalData]: [string, any]) => {
-                      const currentTerminals = (selectedFilter.categories[category] as string[]) || [];
-                      const currentTerminalAirlines = selectedFilter.categories.terminal_airlines || [];
-                      const allAirlinesInTerminal = Object.keys(terminalData.airlines);
+                  {/* ── Airline 섹션 (Terminal 바로 다음) ── */}
+                  {sortedAggregatedAirlines.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="border-b pb-2">
+                        <Label className="text-sm font-medium">Airline</Label>
+                      </div>
 
-                      // 🆕 Terminal-Airline 조합으로 선택된 항공사 찾기
-                      const selectedAirlinesInTerminal = allAirlinesInTerminal.filter((airlineCode) =>
-                        currentTerminalAirlines.includes(createTerminalAirlineCombo(terminalName, airlineCode))
-                      );
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {sortedAggregatedAirlines.map(([airlineCode, airlineData]) => {
+                          const airlineName = airlinesMapping[airlineCode] || airlineCode;
+                          const allFlightIds = Array.from(airlineData.flightNumbers); // string[]
+                          const prefix = `${airlineCode}||`;
+                          const selectedFlightIdsForAirline = currentAirlineFlightIds.filter((id) =>
+                            id.startsWith(prefix)
+                          );
+                          const isAirlineSelected = currentSelectedAirlines.includes(airlineCode);
+                          const isAirlineFullySelected =
+                            selectedFlightIdsForAirline.length === allFlightIds.length;
+                          const isAirlinePartiallySelected =
+                            selectedFlightIdsForAirline.length > 0 && !isAirlineFullySelected;
 
-                      // Terminal 선택 로직: 하나라도 선택되면 체크 표시
-                      const isTerminalSelected = currentTerminals.includes(terminalName);
-                      const isTerminalFullySelected =
-                        selectedAirlinesInTerminal.length === allAirlinesInTerminal.length;
-                      const isTerminalPartiallySelected =
-                        selectedAirlinesInTerminal.length > 0 && !isTerminalFullySelected;
+                          const selectedCount = selectedFlightIdsForAirline.length;
 
-                      // 선택된 편수 계산
-                      const selectedFlights = selectedAirlinesInTerminal.reduce((total, airlineCode) => {
-                        return total + (terminalData.airlines[airlineCode]?.count || 0);
-                      }, 0);
-
-                      return (
-                        <div key={terminalName} className="flex items-center space-x-2">
-                          {/* Terminal 체크박스 */}
-                          <Checkbox
-                            id={`terminal-${terminalName}`}
-                            checked={isTerminalSelected}
-                            ref={(el) => {
-                              if (el && 'indeterminate' in el) {
-                                (el as any).indeterminate = isTerminalPartiallySelected;
-                              }
-                            }}
-                            onCheckedChange={(checked) => handleTerminalToggle(terminalName, terminalData, !!checked)}
-                          />
-
-                          {/* Terminal 라벨 + 드롭다운 (팝업 방식) */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
-                              >
-                                <span className="cursor-pointer">
-                                  {getValueDisplayName(category, terminalName)} | {
-                                    selectedFlights > 0 && selectedFlights < terminalData.total_flights
-                                      ? `${selectedFlights.toLocaleString()} / ${terminalData.total_flights.toLocaleString()} flights`
-                                      : `${terminalData.total_flights.toLocaleString()} flights`
+                          return (
+                            <div key={airlineCode} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`airline-filter-${airlineCode}`}
+                                checked={isAirlineSelected}
+                                ref={(el) => {
+                                  if (el && 'indeterminate' in el) {
+                                    (el as any).indeterminate = isAirlinePartiallySelected;
                                   }
-                                </span>
-                                <ChevronDown className="ml-2 h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-
-                            <DropdownMenuContent
-                              className="max-h-96 w-80 p-2"
-                              align="start"
-                              side="bottom"
-                            >
-                              <TerminalAirlinesDropdown
-                                terminalName={terminalName}
-                                terminalData={terminalData}
-                                currentTerminalAirlines={currentTerminalAirlines}
-                                currentTerminals={currentTerminals}
-                                airlinesMapping={airlinesMapping}
-                                handleAirlineToggle={handleAirlineToggle}
-                                handleTerminalToggle={handleTerminalToggle}
-                                getValueDisplayName={getValueDisplayName}
-                                category={category}
+                                }}
+                                onCheckedChange={(checked) =>
+                                  handleAirlineFilterToggle(airlineCode, allFlightIds, !!checked)
+                                }
                               />
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent"
+                                  >
+                                    <span className="cursor-pointer">
+                                      {airlineName} | {
+                                        selectedCount > 0 && !isAirlineFullySelected
+                                          ? `${selectedCount} / ${airlineData.count.toLocaleString()} flights`
+                                          : `${airlineData.count.toLocaleString()} flights`
+                                      }
+                                    </span>
+                                    <ChevronDown className="ml-2 h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="max-h-96 w-80 p-2" align="start" side="bottom">
+                                  <AirlineFlightNumbersDropdown
+                                    airlineCode={airlineCode}
+                                    airlineName={airlineName}
+                                    flightNumbers={allFlightIds}
+                                    selectedFlightIds={currentAirlineFlightIds}
+                                    handleFlightNumberToggle={handleFlightNumberToggle}
+                                  />
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
               );
             }
 
@@ -1257,6 +1578,8 @@ function FlightFilterConditions({
       handleCountryToggle,
       handleTerminalToggle,
       handleAirlineToggle,
+      handleAirlineFilterToggle,
+      handleFlightNumberToggle,
       getSelectedFlightsCount,
       getEstimatedFilteredFlights,
       airlinesMapping,

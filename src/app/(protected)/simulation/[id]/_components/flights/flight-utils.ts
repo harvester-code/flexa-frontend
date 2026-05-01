@@ -20,6 +20,10 @@ export interface SelectedFilter {
     region?: string[];
     countries?: string[];
     terminal_airlines?: TerminalAirlineCombo[];
+    /** 선택된 항공사 IATA 코드 배열 (UI 체크 상태 관리용) */
+    selected_airlines?: string[];
+    /** 선택된 항공편 ID 배열 – 형식: "airlineCode_rawFlightNum" (예: "KE_72") */
+    airline_flight_ids?: string[];
     [key: string]: string[] | TerminalAirlineCombo[] | undefined;
   };
 }
@@ -70,6 +74,41 @@ export const removeCombo = (
 export const createAllCombosForTerminal = (terminal: string, airlineCodes: string[]): TerminalAirlineCombo[] => {
   return airlineCodes.map((airline) => createTerminalAirlineCombo(terminal, airline));
 };
+
+// ==================== Airline 필터 유틸리티 ====================
+// airline_flight_ids 내부 형식: "airlineCode||flightId"  (예: "PR||PR221")
+// - 표시용: flightId 부분만 사용 ("PR221")
+// - 교집합 계산: "airlineCode_flightId" 형식으로 변환 ("PR_PR221")  ← 기존 다른 집합과 동일
+// - API 조건: flightId 부분만 사용 ("PR221")
+
+/** "airlineCode||flightId" 형식의 내부 ID 생성 */
+export function createAirlineFlightId(airlineCode: string, flightId: string): string {
+  return `${airlineCode}||${flightId}`;
+}
+
+/** "airlineCode||flightId" 형식을 분해하여 반환 */
+export function parseAirlineFlightId(id: string): { airline: string; flightId: string } | null {
+  const sep = id.indexOf('||');
+  if (sep < 1) return null;
+  const airline = id.slice(0, sep);
+  const flightId = id.slice(sep + 2);
+  if (!airline || !flightId) return null;
+  return { airline, flightId };
+}
+
+/** 내부 ID → 기존 교집합 집합 형식 ("airlineCode_flightId") */
+export function airlineFlightIdToIntersectionKey(id: string): string | null {
+  const parsed = parseAirlineFlightId(id);
+  if (!parsed) return null;
+  return `${parsed.airline}_${parsed.flightId}`;
+}
+
+// formatFlightNumber 는 더 이상 필요 없지만 하위 호환용으로 유지
+export function formatFlightNumber(airlineCode: string, rawFlightNum: number): string {
+  const numStr = String(rawFlightNum).replace(/^0+/, '') || '0';
+  const padded = numStr.length >= 3 ? numStr : numStr.padStart(3, '0');
+  return `${airlineCode}${padded}`;
+}
 
 // ==================== API 변환 함수들 ====================
 
@@ -152,6 +191,20 @@ export function convertFilterToApiConditions(
       } else if (category === 'terminal_airlines' && Array.isArray(value) && value.length > 0) {
         const apiCondition = convertTerminalAirlinesToApiCondition(value);
         if (apiCondition) conditions.push(apiCondition);
+      } else if (category === 'airline_flight_ids' && Array.isArray(value) && value.length > 0) {
+        // "airlineCode||flightId" → flightId 부분만 추출하여 flight_number 조건으로 전송
+        const flightNumbers = value
+          .map((id) => parseAirlineFlightId(id)?.flightId ?? null)
+          .filter(Boolean) as string[];
+        if (flightNumbers.length > 0) {
+          conditions.push({ field: 'flight_number', values: flightNumbers });
+        }
+      } else if (category === 'selected_airlines') {
+        // selected_airlines 는 airline_flight_ids 가 없을 때 fallback
+        const airlineFlightIds = selectedFilter.categories.airline_flight_ids || [];
+        if (airlineFlightIds.length === 0 && Array.isArray(value) && value.length > 0) {
+          conditions.push({ field: 'operating_carrier_iata', values: value });
+        }
       } else if (Array.isArray(value) && value.length > 0) {
         conditions.push({ field: category, values: value });
       } else if (typeof value === 'string') {
@@ -216,6 +269,36 @@ export function computeEstimatedFilteredFlights(
         }
       });
       conditionFlightSets.push(terminalFlightIds);
+    }
+
+    // Airline / specific flight-number filter
+    const airlineFlightIds = categories.airline_flight_ids;
+    if (airlineFlightIds && airlineFlightIds.length > 0) {
+      // "airlineCode||flightId" → "airlineCode_flightId" (기존 집합과 동일 형식)
+      const airlineFlightSet = new Set<string>(
+        airlineFlightIds
+          .map((id) => airlineFlightIdToIntersectionKey(id))
+          .filter(Boolean) as string[]
+      );
+      conditionFlightSets.push(airlineFlightSet);
+    } else {
+      const selectedAirlines = categories.selected_airlines;
+      if (selectedAirlines && selectedAirlines.length > 0) {
+        // 선택된 항공사의 모든 편을 터미널 데이터에서 집계
+        const airlineFlightSet = new Set<string>();
+        const terminalField = `${selectedFilter.mode}_terminal`;
+        const terminalOptions = modeFilters[terminalField];
+        if (terminalOptions) {
+          Object.values(terminalOptions).forEach((terminalData: any) => {
+            Object.entries(terminalData.airlines).forEach(([code, data]: [string, any]) => {
+              if (selectedAirlines.includes(code)) {
+                data.flight_numbers.forEach((fn: number) => airlineFlightSet.add(`${code}_${fn}`));
+              }
+            });
+          });
+        }
+        if (airlineFlightSet.size > 0) conditionFlightSets.push(airlineFlightSet);
+      }
     }
 
     // Location (Region/Country)
