@@ -435,10 +435,11 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     const yaxisAssignment = [undefined, 'y2'] as const;
 
-    // Inflow+Outflow 동시 선택 여부 확인
     const selectedOptionValues = chartOption1.map((i) => CHART_OPTIONS[i].value);
-    const bothInflowOutflow =
-      selectedOptionValues.includes('inflow') && selectedOptionValues.includes('outflow');
+    // pax 단위 메트릭(inflow/outflow/queue_length) 2개가 동시 선택된 경우 축 범위 동기화
+    const paxMetrics = ['inflow', 'outflow', 'queue_length'];
+    const bothArePaxMetrics =
+      chartOption1.length === 2 && selectedOptionValues.every((v) => paxMetrics.includes(v));
 
     chartOption1.forEach((activeIndex, i) => {
       const option = CHART_OPTIONS[activeIndex];
@@ -500,11 +501,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     // --- Calculate Max Value for Pax Units (per-axis independent ranges) ---
     const selectedPaxOptions = selectedOptionsWithAxis.filter((opt) => paxUnitOptions.includes(opt.value));
     if (selectedPaxOptions.length > 0) {
-      // Inflow+Outflow 동시 선택 시: 두 값 중 큰 쪽을 기준으로 양쪽 축 모두 동일한 범위 적용
-      if (bothInflowOutflow) {
-        const allPaxData = ['inflow', 'outflow'].flatMap((key) => sanitizedSeriesCache[key] ?? []);
+      // pax 단위 메트릭 2개 동시 선택 시: 큰 값 기준으로 양쪽 축 모두 동일한 범위 적용
+      if (bothArePaxMetrics) {
+        const allPaxData = selectedOptionValues.flatMap((key) => sanitizedSeriesCache[key] ?? []);
         let maxPaxValue = allPaxData.length > 0 ? Math.max(...allPaxData) : 0;
-        if (capacitySeries) {
+        // capacity는 inflow/outflow가 포함된 경우에만 표시되므로 그때만 반영
+        const hasFlowMetric = selectedOptionValues.some((v) => ['inflow', 'outflow'].includes(v));
+        if (hasFlowMetric && capacitySeries) {
           const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
           maxPaxValue = Math.max(maxPaxValue, capacityMax);
         }
