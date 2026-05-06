@@ -435,6 +435,11 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     const yaxisAssignment = [undefined, 'y2'] as const;
 
+    // Inflow+Outflow 동시 선택 여부 확인
+    const selectedOptionValues = chartOption1.map((i) => CHART_OPTIONS[i].value);
+    const bothInflowOutflow =
+      selectedOptionValues.includes('inflow') && selectedOptionValues.includes('outflow');
+
     chartOption1.forEach((activeIndex, i) => {
       const option = CHART_OPTIONS[activeIndex];
       if (!option) return;
@@ -495,31 +500,50 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     // --- Calculate Max Value for Pax Units (per-axis independent ranges) ---
     const selectedPaxOptions = selectedOptionsWithAxis.filter((opt) => paxUnitOptions.includes(opt.value));
     if (selectedPaxOptions.length > 0) {
-      const paxByAxis = new Map<string | undefined, typeof selectedPaxOptions>();
-      selectedPaxOptions.forEach((opt) => {
-        const group = paxByAxis.get(opt.axis) ?? [];
-        group.push(opt);
-        paxByAxis.set(opt.axis, group);
-      });
-
-      paxByAxis.forEach((opts, axis) => {
-        const dataToCompare = opts.flatMap((opt) => sanitizedSeriesCache[opt.value] ?? []);
-        let maxPaxValue = dataToCompare.length > 0 ? Math.max(...dataToCompare) : 0;
-
-        const hasFlow = opts.some((opt) => ['inflow', 'outflow'].includes(opt.value));
-        if (hasFlow && capacitySeries) {
+      // Inflow+Outflow 동시 선택 시: 두 값 중 큰 쪽을 기준으로 양쪽 축 모두 동일한 범위 적용
+      if (bothInflowOutflow) {
+        const allPaxData = ['inflow', 'outflow'].flatMap((key) => sanitizedSeriesCache[key] ?? []);
+        let maxPaxValue = allPaxData.length > 0 ? Math.max(...allPaxData) : 0;
+        if (capacitySeries) {
           const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
           maxPaxValue = Math.max(maxPaxValue, capacityMax);
         }
-
         const paxRangeMax = maxPaxValue > 0 ? maxPaxValue * 1.1 : 10;
-
-        const axisToUpdate = axis === 'y2' ? newLayout.yaxis2 : newLayout.yaxis;
-        if (axisToUpdate) {
-          axisToUpdate.range = [0, paxRangeMax];
-          axisToUpdate.autorange = false;
+        if (newLayout.yaxis) {
+          newLayout.yaxis.range = [0, paxRangeMax];
+          (newLayout.yaxis as any).autorange = false;
         }
-      });
+        if (newLayout.yaxis2) {
+          (newLayout.yaxis2 as any).range = [0, paxRangeMax];
+          (newLayout.yaxis2 as any).autorange = false;
+        }
+      } else {
+        const paxByAxis = new Map<string | undefined, typeof selectedPaxOptions>();
+        selectedPaxOptions.forEach((opt) => {
+          const group = paxByAxis.get(opt.axis) ?? [];
+          group.push(opt);
+          paxByAxis.set(opt.axis, group);
+        });
+
+        paxByAxis.forEach((opts, axis) => {
+          const dataToCompare = opts.flatMap((opt) => sanitizedSeriesCache[opt.value] ?? []);
+          let maxPaxValue = dataToCompare.length > 0 ? Math.max(...dataToCompare) : 0;
+
+          const hasFlow = opts.some((opt) => ['inflow', 'outflow'].includes(opt.value));
+          if (hasFlow && capacitySeries) {
+            const capacityMax = Math.max(...capacitySeries.filter((v) => typeof v === 'number'));
+            maxPaxValue = Math.max(maxPaxValue, capacityMax);
+          }
+
+          const paxRangeMax = maxPaxValue > 0 ? maxPaxValue * 1.1 : 10;
+
+          const axisToUpdate = axis === 'y2' ? newLayout.yaxis2 : newLayout.yaxis;
+          if (axisToUpdate) {
+            axisToUpdate.range = [0, paxRangeMax];
+            axisToUpdate.autorange = false;
+          }
+        });
+      }
     }
 
     // --- Calculate and Apply Max Value for Wait Time Unit ---
