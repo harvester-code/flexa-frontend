@@ -15,6 +15,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -82,8 +83,7 @@ function LoginForm() {
                     <AlertCircle className="h-4 w-4 text-destructive" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-destructive mb-1">Unable to sign in</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{state.error.message}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">Incorrect password. Please try again.</p>
                   </div>
                 </div>
               </div>
@@ -96,6 +96,8 @@ function LoginForm() {
               name="email"
               type="email"
               placeholder="Enter your Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
 
