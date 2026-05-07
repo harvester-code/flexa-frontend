@@ -21,7 +21,6 @@ import {
   createAllCombosForTerminal,
   createTerminalAirlineCombo,
   filterCombosByTerminal,
-  parseTerminalAirlineCombo,
   removeCombo,
   removeCombosByTerminal,
   createAirlineFlightId,
