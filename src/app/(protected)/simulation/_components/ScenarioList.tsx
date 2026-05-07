@@ -1066,7 +1066,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
 
-                    <td className="px-3 align-top">
+                    <td className="px-3">
                       {isEditing ? (
                         <Input
                           value={editingScenario?.memo || ""}

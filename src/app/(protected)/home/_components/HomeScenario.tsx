@@ -552,7 +552,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                           )}
                         </td>
 
-                        <td className="px-3 align-top">
+                        <td className="px-3">
                           <span className="block max-w-xs truncate" title={item.memo || ''}>
                             {item.memo || '-'}
                           </span>
