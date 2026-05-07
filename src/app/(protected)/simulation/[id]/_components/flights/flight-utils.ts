@@ -24,6 +24,10 @@ export interface SelectedFilter {
     selected_airlines?: string[];
     /** 선택된 항공편 ID 배열 – 형식: "airlineCode_rawFlightNum" (예: "KE_72") */
     airline_flight_ids?: string[];
+    /** 선택된 항공기 등급 배열 – "A"~"F" 또는 "0" (Unknown) */
+    selected_aircraft_classes?: string[];
+    /** 선택된 항공기 기종 ID – 형식: "className||typeName" (예: "A||Boeing 747-400") */
+    aircraft_type_flight_ids?: string[];
     [key: string]: string[] | TerminalAirlineCombo[] | undefined;
   };
 }
@@ -205,6 +209,20 @@ export function convertFilterToApiConditions(
         if (airlineFlightIds.length === 0 && Array.isArray(value) && value.length > 0) {
           conditions.push({ field: 'operating_carrier_iata', values: value });
         }
+      } else if (category === 'aircraft_type_flight_ids' && Array.isArray(value) && value.length > 0) {
+        // "className||typeName" → typeName 부분만 추출하여 aircraft_type_name 조건으로 전송
+        const typeNames = value
+          .map((id) => { const sep = id.indexOf('||'); return sep > -1 ? id.slice(sep + 2) : null; })
+          .filter(Boolean) as string[];
+        if (typeNames.length > 0) {
+          conditions.push({ field: 'aircraft_type_name', values: typeNames });
+        }
+      } else if (category === 'selected_aircraft_classes') {
+        // aircraft_type_flight_ids 가 없을 때 fallback
+        const typeIds = selectedFilter.categories.aircraft_type_flight_ids || [];
+        if (typeIds.length === 0 && Array.isArray(value) && value.length > 0) {
+          conditions.push({ field: 'aircraft_class', values: value });
+        }
       } else if (Array.isArray(value) && value.length > 0) {
         conditions.push({ field: category, values: value });
       } else if (typeof value === 'string') {
@@ -245,8 +263,8 @@ export function computeEstimatedFilteredFlights(
       selectedTypes.forEach((flightType) => {
         if (modeFilters.flight_type?.[flightType]) {
           Object.entries(modeFilters.flight_type[flightType].airlines).forEach(
-            ([airlineCode, airlineData]: [string, any]) => {
-              airlineData.flight_numbers.forEach((fn: number) => typeFlightIds.add(`${airlineCode}_${fn}`));
+            ([, airlineData]: [string, any]) => {
+              airlineData.flight_numbers.forEach((fn: any) => typeFlightIds.add(String(fn)));
             }
           );
         }
@@ -265,26 +283,24 @@ export function computeEstimatedFilteredFlights(
         if (!parsed) return;
         const airlineData = terminalOptions?.[parsed.terminal]?.airlines?.[parsed.airline];
         if (airlineData) {
-          airlineData.flight_numbers.forEach((fn: number) => terminalFlightIds.add(`${parsed.airline}_${fn}`));
+          airlineData.flight_numbers.forEach((fn: any) => terminalFlightIds.add(String(fn)));
         }
       });
       conditionFlightSets.push(terminalFlightIds);
     }
 
-    // Airline / specific flight-number filter
+    // Airline / specific flight-number filter (예외: "airlineCode||flightId" 형태로 저장됨)
     const airlineFlightIds = categories.airline_flight_ids;
     if (airlineFlightIds && airlineFlightIds.length > 0) {
-      // "airlineCode||flightId" → "airlineCode_flightId" (기존 집합과 동일 형식)
       const airlineFlightSet = new Set<string>(
         airlineFlightIds
-          .map((id) => airlineFlightIdToIntersectionKey(id))
+          .map((id) => parseAirlineFlightId(id)?.flightId)
           .filter(Boolean) as string[]
       );
       conditionFlightSets.push(airlineFlightSet);
     } else {
       const selectedAirlines = categories.selected_airlines;
       if (selectedAirlines && selectedAirlines.length > 0) {
-        // 선택된 항공사의 모든 편을 터미널 데이터에서 집계
         const airlineFlightSet = new Set<string>();
         const terminalField = `${selectedFilter.mode}_terminal`;
         const terminalOptions = modeFilters[terminalField];
@@ -292,12 +308,49 @@ export function computeEstimatedFilteredFlights(
           Object.values(terminalOptions).forEach((terminalData: any) => {
             Object.entries(terminalData.airlines).forEach(([code, data]: [string, any]) => {
               if (selectedAirlines.includes(code)) {
-                data.flight_numbers.forEach((fn: number) => airlineFlightSet.add(`${code}_${fn}`));
+                data.flight_numbers.forEach((fn: any) => airlineFlightSet.add(String(fn)));
               }
             });
           });
         }
         if (airlineFlightSet.size > 0) conditionFlightSets.push(airlineFlightSet);
+      }
+    }
+
+    // Aircraft Class (type-level IDs take priority)
+    const aircraftTypeFlightIds = categories.aircraft_type_flight_ids;
+    if (aircraftTypeFlightIds && aircraftTypeFlightIds.length > 0) {
+      const classOptions = modeFilters.aircraft_class;
+      const classFlightIds = new Set<string>();
+      if (classOptions) {
+        aircraftTypeFlightIds.forEach((id) => {
+          const sep = id.indexOf('||');
+          if (sep < 0) return;
+          const cls = id.slice(0, sep);
+          const typeName = id.slice(sep + 2);
+          const typeData = classOptions[cls]?.aircraft_types?.[typeName];
+          if (typeData) {
+            typeData.flight_numbers.forEach((fn: string) => classFlightIds.add(fn));
+          }
+        });
+      }
+      if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
+    } else {
+      const selectedClasses = categories.selected_aircraft_classes;
+      if (selectedClasses && selectedClasses.length > 0) {
+        const classFlightIds = new Set<string>();
+        const classOptions = modeFilters.aircraft_class;
+        if (classOptions) {
+          selectedClasses.forEach((cls) => {
+            const classData = classOptions[cls];
+            if (classData?.aircraft_types) {
+              Object.values(classData.aircraft_types).forEach((typeData: any) => {
+                typeData.flight_numbers.forEach((fn: string) => classFlightIds.add(fn));
+              });
+            }
+          });
+        }
+        if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
       }
     }
 
@@ -323,9 +376,9 @@ export function computeEstimatedFilteredFlights(
           targetCountries.forEach((countryName) => {
             const countryData = regionData.countries[countryName];
             if (countryData?.airlines) {
-              Object.entries(countryData.airlines).forEach(([airlineCode, airlineData]: [string, any]) => {
-                airlineData.flight_numbers.forEach((fn: number) =>
-                  locationFlightIds.add(`${airlineCode}_${fn}`)
+              Object.entries(countryData.airlines).forEach(([, airlineData]: [string, any]) => {
+                airlineData.flight_numbers.forEach((fn: any) =>
+                  locationFlightIds.add(String(fn))
                 );
               });
             }

@@ -26,7 +26,6 @@ import {
   removeCombosByTerminal,
   createAirlineFlightId,
   parseAirlineFlightId,
-  airlineFlightIdToIntersectionKey,
 } from './flight-utils';
 
 // ==================== Types ====================
@@ -43,12 +42,14 @@ interface FlightFiltersApiResponse {
       departure_terminal?: Record<string, FilterOption>;
       arrival_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
       flight_type?: Record<string, FilterOption>;
+      aircraft_class?: Record<string, AircraftClassFilterOption>;
     };
     arrival: {
       total_flights: number; // ✅ 백엔드에서 계산된 값
       arrival_terminal?: Record<string, FilterOption>;
       departure_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
       flight_type?: Record<string, FilterOption>;
+      aircraft_class?: Record<string, AircraftClassFilterOption>;
     };
   };
 }
@@ -68,6 +69,12 @@ interface FilterOption {
 interface RegionFilterOption {
   total_flights: number;
   countries: Record<string, FilterOption>; // Country별 데이터
+}
+
+// 🆕 Aircraft Class 필터 타입
+interface AircraftClassFilterOption {
+  total_flights: number;
+  aircraft_types: Record<string, { count: number; flight_numbers: string[] }>;
 }
 
 interface FlightFilterConditionsProps {
@@ -484,6 +491,107 @@ function AirlineFlightNumbersDropdown({
   );
 }
 
+// ==================== Dropdown Component for Aircraft Class Types ====================
+interface ClassAircraftTypesDropdownProps {
+  cls: string;
+  displayCls: string;
+  aircraftTypes: Record<string, { count: number; flight_numbers: string[] }>;
+  selectedTypeIds: string[];
+  handleAircraftTypeToggle: (cls: string, typeName: string, checked: boolean) => void;
+}
+
+function ClassAircraftTypesDropdown({
+  cls,
+  displayCls,
+  aircraftTypes,
+  selectedTypeIds,
+  handleAircraftTypeToggle,
+}: ClassAircraftTypesDropdownProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const sortedTypes = useMemo(
+    () => Object.entries(aircraftTypes).sort(([, a], [, b]) => b.count - a.count),
+    [aircraftTypes]
+  );
+
+  const filteredTypes = useMemo(() => {
+    if (!searchQuery) return sortedTypes;
+    const q = searchQuery.toLowerCase();
+    return sortedTypes.filter(([name]) => name.toLowerCase().includes(q));
+  }, [sortedTypes, searchQuery]);
+
+  const prefix = `${cls}||`;
+
+  const areAllSelected = useMemo(() => {
+    if (filteredTypes.length === 0) return false;
+    return filteredTypes.every(([name]) => selectedTypeIds.includes(`${prefix}${name}`));
+  }, [filteredTypes, selectedTypeIds, prefix]);
+
+  const handleSelectAll = (checked: boolean) => {
+    filteredTypes.forEach(([name]) => {
+      const isSelected = selectedTypeIds.includes(`${prefix}${name}`);
+      if (checked && !isSelected) handleAircraftTypeToggle(cls, name, true);
+      else if (!checked && isSelected) handleAircraftTypeToggle(cls, name, false);
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between border-b px-2 py-1">
+        <div className="text-xs font-medium text-muted-foreground truncate flex-1 mr-2">
+          Aircraft types in {displayCls}
+        </div>
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          <Checkbox
+            id={`select-all-cls-${cls}`}
+            checked={areAllSelected}
+            onCheckedChange={(checked) => handleSelectAll(checked === true)}
+          />
+          <Label htmlFor={`select-all-cls-${cls}`} className="cursor-pointer text-xs font-medium">
+            Select All
+          </Label>
+        </div>
+      </div>
+
+      <div className="px-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search aircraft types..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="max-h-48 overflow-y-auto space-y-1">
+        {filteredTypes.length === 0 ? (
+          <div className="px-2 py-4 text-center text-sm text-muted-foreground">No aircraft types found</div>
+        ) : (
+          filteredTypes.map(([name, data]) => {
+            const internalId = `${prefix}${name}`;
+            const isSelected = selectedTypeIds.includes(internalId);
+            return (
+              <div key={name} className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted/50">
+                <Checkbox
+                  id={`acft-type-${cls}-${name}`}
+                  checked={isSelected}
+                  onCheckedChange={(checked) => handleAircraftTypeToggle(cls, name, !!checked)}
+                />
+                <Label htmlFor={`acft-type-${cls}-${name}`} className="flex-1 cursor-pointer text-sm">
+                  {name} | {data.count.toLocaleString()} flights
+                </Label>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ==================== Component ====================
 function FlightFilterConditions({
   loading,
@@ -879,6 +987,69 @@ function FlightFilterConditions({
     []
   );
 
+  // 항공기 등급 전체 선택/해제
+  const handleClassToggle = useCallback(
+    (cls: string, allTypeNames: string[], checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const currentClasses = prev.categories.selected_aircraft_classes || [];
+        const currentTypeIds = prev.categories.aircraft_type_flight_ids || [];
+        const prefix = `${cls}||`;
+
+        if (checked) {
+          const newClasses = currentClasses.includes(cls) ? currentClasses : [...currentClasses, cls];
+          const newTypeIds = [
+            ...currentTypeIds.filter((id) => !id.startsWith(prefix)),
+            ...allTypeNames.map((name) => `${prefix}${name}`),
+          ];
+          return { ...prev, categories: { ...prev.categories, selected_aircraft_classes: newClasses, aircraft_type_flight_ids: newTypeIds } };
+        } else {
+          const newClasses = currentClasses.filter((c) => c !== cls);
+          const newTypeIds = currentTypeIds.filter((id) => !id.startsWith(prefix));
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_aircraft_classes: newClasses.length > 0 ? newClasses : undefined,
+              aircraft_type_flight_ids: newTypeIds.length > 0 ? newTypeIds : undefined,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
+  // 항공기 기종 개별 선택/해제
+  const handleAircraftTypeToggle = useCallback(
+    (cls: string, typeName: string, checked: boolean) => {
+      setSelectedFilter((prev) => {
+        const currentClasses = prev.categories.selected_aircraft_classes || [];
+        const currentTypeIds = prev.categories.aircraft_type_flight_ids || [];
+        const internalId = `${cls}||${typeName}`;
+        const prefix = `${cls}||`;
+
+        if (checked) {
+          const newTypeIds = currentTypeIds.includes(internalId) ? currentTypeIds : [...currentTypeIds, internalId];
+          const newClasses = currentClasses.includes(cls) ? currentClasses : [...currentClasses, cls];
+          return { ...prev, categories: { ...prev.categories, selected_aircraft_classes: newClasses, aircraft_type_flight_ids: newTypeIds } };
+        } else {
+          const newTypeIds = currentTypeIds.filter((id) => id !== internalId);
+          const hasRemaining = newTypeIds.some((id) => id.startsWith(prefix));
+          const newClasses = hasRemaining ? currentClasses : currentClasses.filter((c) => c !== cls);
+          return {
+            ...prev,
+            categories: {
+              ...prev.categories,
+              selected_aircraft_classes: newClasses.length > 0 ? newClasses : undefined,
+              aircraft_type_flight_ids: newTypeIds.length > 0 ? newTypeIds : undefined,
+            },
+          };
+        }
+      });
+    },
+    []
+  );
+
   // 카테고리 값 선택/해제 (기존 로직: terminal, flight_type용)
   const handleCategoryValueChange = useCallback((category: string, value: string, checked: boolean) => {
     setSelectedFilter((prev) => {
@@ -933,7 +1104,7 @@ function FlightFilterConditions({
     const conditionFlightSets: Set<string>[] = [];
 
     try {
-      // 1. Flight Type 조건 (airline_code + flight_number 조합) - 다중 선택 지원
+      // 1. Flight Type 조건
       const selectedTypes = categories.flight_type;
       if (selectedTypes && selectedTypes.length > 0) {
         const typeFlightIds = new Set<string>();
@@ -942,9 +1113,9 @@ function FlightFilterConditions({
           if (modeFilters.flight_type?.[flightType]) {
             const typeAirlines = modeFilters.flight_type[flightType].airlines;
 
-            Object.entries(typeAirlines).forEach(([airlineCode, airlineData]: [string, any]) => {
-              airlineData.flight_numbers.forEach((flightNumber: number) => {
-                typeFlightIds.add(`${airlineCode}_${flightNumber}`);
+            Object.entries(typeAirlines).forEach(([, airlineData]: [string, any]) => {
+              airlineData.flight_numbers.forEach((fn: any) => {
+                typeFlightIds.add(String(fn));
               });
             });
           }
@@ -953,14 +1124,13 @@ function FlightFilterConditions({
         conditionFlightSets.push(typeFlightIds);
       }
 
-      // 2. Terminal 조건 (airline_code + flight_number 조합) - Terminal-Airline 조합 방식
+      // 2. Terminal 조건
       const terminalField = `${selectedFilter.mode}_terminal`;
       const selectedTerminalAirlines = categories.terminal_airlines;
       if (selectedTerminalAirlines && selectedTerminalAirlines.length > 0) {
         const terminalFlightIds = new Set<string>();
         const terminalOptions = modeFilters[terminalField];
 
-        // 선택된 Terminal-Airline 조합에서 flight_numbers 수집
         selectedTerminalAirlines.forEach((terminalAirlineCombo) => {
           const parsed = parseTerminalAirlineCombo(terminalAirlineCombo);
           if (!parsed) return;
@@ -970,8 +1140,8 @@ function FlightFilterConditions({
           const airlineData = terminalData?.airlines?.[airlineCode];
 
           if (airlineData) {
-            airlineData.flight_numbers.forEach((flightNumber: number) => {
-              terminalFlightIds.add(`${airlineCode}_${flightNumber}`);
+            airlineData.flight_numbers.forEach((fn: any) => {
+              terminalFlightIds.add(String(fn));
             });
           }
         });
@@ -979,13 +1149,12 @@ function FlightFilterConditions({
         conditionFlightSets.push(terminalFlightIds);
       }
 
-      // 3. Airline / 특정 편번호 조건
+      // 3. Airline / 특정 편번호 조건 (예외: "airlineCode||flightId" 형태로 저장됨)
       const airlineFlightIds = categories.airline_flight_ids;
       if (airlineFlightIds && airlineFlightIds.length > 0) {
-        // "airlineCode||flightId" → "airlineCode_flightId" 변환
         const airlineFlightSet = new Set<string>(
           airlineFlightIds
-            .map((id) => airlineFlightIdToIntersectionKey(id))
+            .map((id) => parseAirlineFlightId(id)?.flightId)
             .filter(Boolean) as string[]
         );
         conditionFlightSets.push(airlineFlightSet);
@@ -999,7 +1168,7 @@ function FlightFilterConditions({
             Object.values(terminalOptions2).forEach((td: any) => {
               Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
                 if (selectedAirlines.includes(code)) {
-                  data.flight_numbers.forEach((fn: number) => airlineFlightSet.add(`${code}_${fn}`));
+                  data.flight_numbers.forEach((fn: any) => airlineFlightSet.add(String(fn)));
                 }
               });
             });
@@ -1008,7 +1177,44 @@ function FlightFilterConditions({
         }
       }
 
-      // 4. Location (Region/Country) 조건 (airline_code + flight_number 조합)
+      // 4. Aircraft Class 조건
+      const aircraftTypeFlightIds = categories.aircraft_type_flight_ids;
+      if (aircraftTypeFlightIds && aircraftTypeFlightIds.length > 0) {
+        const classOptions = modeFilters.aircraft_class;
+        const classFlightIds = new Set<string>();
+        if (classOptions) {
+          aircraftTypeFlightIds.forEach((id) => {
+            const sep = id.indexOf('||');
+            if (sep < 0) return;
+            const cls = id.slice(0, sep);
+            const typeName = id.slice(sep + 2);
+            const typeData = classOptions[cls]?.aircraft_types?.[typeName];
+            if (typeData) {
+              typeData.flight_numbers.forEach((fn: any) => classFlightIds.add(String(fn)));
+            }
+          });
+        }
+        if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
+      } else {
+        const selectedClasses = categories.selected_aircraft_classes;
+        if (selectedClasses && selectedClasses.length > 0) {
+          const classFlightIds = new Set<string>();
+          const classOptions = modeFilters.aircraft_class;
+          if (classOptions) {
+            selectedClasses.forEach((cls) => {
+              const classData = classOptions[cls];
+              if (classData?.aircraft_types) {
+                Object.values(classData.aircraft_types).forEach((typeData: any) => {
+                  typeData.flight_numbers.forEach((fn: any) => classFlightIds.add(String(fn)));
+                });
+              }
+            });
+          }
+          if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
+        }
+      }
+
+      // 5. Location (Region/Country) 조건
       const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
       const regionOptions = modeFilters[regionField];
 
@@ -1022,19 +1228,17 @@ function FlightFilterConditions({
             const allCountriesInRegion = Object.keys(regionData.countries);
             const selectedCountriesInRegion = currentCountries.filter((c) => allCountriesInRegion.includes(c));
 
-            // 전체 Region 또는 일부 Country 선택에 따른 처리
             const targetCountries =
               selectedCountriesInRegion.length === 0 || selectedCountriesInRegion.length === allCountriesInRegion.length
                 ? allCountriesInRegion
                 : selectedCountriesInRegion;
 
-            // 해당 국가들의 항공편 식별자 수집
             targetCountries.forEach((countryName) => {
               const countryData = regionData.countries[countryName];
               if (countryData?.airlines) {
-                Object.entries(countryData.airlines).forEach(([airlineCode, airlineData]: [string, any]) => {
-                  airlineData.flight_numbers.forEach((flightNumber: number) => {
-                    locationFlightIds.add(`${airlineCode}_${flightNumber}`);
+                Object.entries(countryData.airlines).forEach(([, airlineData]: [string, any]) => {
+                  airlineData.flight_numbers.forEach((fn: any) => {
+                    locationFlightIds.add(String(fn));
                   });
                 });
               }
@@ -1565,6 +1769,71 @@ function FlightFilterConditions({
               </div>
             );
           })}
+
+          {/* ── Aircraft Class 섹션 ── */}
+          {modeFilters.aircraft_class && Object.keys(modeFilters.aircraft_class).length > 0 && (
+            <div className="space-y-3">
+              <div className="border-b pb-2">
+                <Label className="text-sm font-medium">Class</Label>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(modeFilters.aircraft_class as Record<string, any>).map(([cls, clsData]: [string, any]) => {
+                  const selectedClasses = selectedFilter.categories.selected_aircraft_classes || [];
+                  const currentTypeIds = selectedFilter.categories.aircraft_type_flight_ids || [];
+                  const prefix = `${cls}||`;
+                  const selectedTypeIdsForClass = currentTypeIds.filter((id) => id.startsWith(prefix));
+                  const allTypeNames = Object.keys(clsData.aircraft_types || {});
+                  const isClassSelected = selectedClasses.includes(cls);
+                  const isClassFullySelected = allTypeNames.length > 0 && selectedTypeIdsForClass.length === allTypeNames.length;
+                  const isClassPartiallySelected = selectedTypeIdsForClass.length > 0 && !isClassFullySelected;
+                  // 선택된 기종들의 편수 합계
+                  const selectedCount = selectedTypeIdsForClass.reduce((sum, id) => {
+                    const typeName = id.slice(prefix.length);
+                    return sum + (clsData.aircraft_types?.[typeName]?.count || 0);
+                  }, 0);
+                  const displayCls = cls === '0' ? 'Unknown' : `Class ${cls}`;
+
+                  return (
+                    <div key={cls} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`aircraft-class-${cls}`}
+                        checked={isClassSelected}
+                        ref={(el) => {
+                          if (el && 'indeterminate' in el) {
+                            (el as any).indeterminate = isClassPartiallySelected;
+                          }
+                        }}
+                        onCheckedChange={(checked) => handleClassToggle(cls, allTypeNames, !!checked)}
+                      />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-auto justify-start p-0 text-sm font-normal hover:bg-transparent">
+                            <span className="cursor-pointer">
+                              {displayCls} | {
+                                selectedCount > 0 && !isClassFullySelected
+                                  ? `${selectedCount} / ${clsData.total_flights.toLocaleString()} flights`
+                                  : `${clsData.total_flights.toLocaleString()} flights`
+                              }
+                            </span>
+                            <ChevronDown className="ml-2 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="max-h-96 w-80 p-2" align="start" side="bottom">
+                          <ClassAircraftTypesDropdown
+                            cls={cls}
+                            displayCls={displayCls}
+                            aircraftTypes={clsData.aircraft_types || {}}
+                            selectedTypeIds={currentTypeIds}
+                            handleAircraftTypeToggle={handleAircraftTypeToggle}
+                          />
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       );
     },
@@ -1583,6 +1852,9 @@ function FlightFilterConditions({
       getSelectedFlightsCount,
       getEstimatedFilteredFlights,
       airlinesMapping,
+      setSelectedFilter,
+      handleClassToggle,
+      handleAircraftTypeToggle,
     ]
   );
 
