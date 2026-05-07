@@ -7,6 +7,7 @@ interface CopyPasteData {
     col: number;
     badges: CategoryBadge[];
     disabled: boolean;
+    processTime?: number;
   }>;
   shape: { rows: number; cols: number };
   startCell: { row: number; col: number };
@@ -16,10 +17,12 @@ interface UseCopyPasteProps {
   selectedCells: Set<string>;
   cellBadges: Record<string, CategoryBadge[]>;
   disabledCells: Set<string>;
+  cellProcessTimes: Record<string, number>;
   timeSlots: string[];
   currentFacilities: any[];
   setCellBadges: (badges: Record<string, CategoryBadge[]>) => void;
   setDisabledCells: (cells: Set<string>) => void;
+  setCellProcessTimes: (updater: ((prev: Record<string, number>) => Record<string, number>) | Record<string, number>) => void;
   setSelectedCells: (cells: Set<string>) => void;
   undoHistory: any;
 }
@@ -28,10 +31,12 @@ export const useCopyPaste = ({
   selectedCells,
   cellBadges,
   disabledCells,
+  cellProcessTimes,
   timeSlots,
   currentFacilities,
   setCellBadges,
   setDisabledCells,
+  setCellProcessTimes,
   setSelectedCells,
   undoHistory,
 }: UseCopyPasteProps) => {
@@ -61,6 +66,7 @@ export const useCopyPaste = ({
         col,
         badges: cellBadges[cellId] || [],
         disabled: disabledCells.has(cellId),
+        processTime: cellProcessTimes[cellId],
       };
     });
 
@@ -83,7 +89,7 @@ export const useCopyPaste = ({
 
     // Show marching ants
     setShowMarchingAnts(true);
-  }, [selectedCells, cellBadges, disabledCells]);
+  }, [selectedCells, cellBadges, disabledCells, cellProcessTimes]);
 
   // Handle paste operation
   const handlePaste = useCallback(() => {
@@ -178,13 +184,14 @@ export const useCopyPaste = ({
     (targetCells: Set<string>, copiedData: any) => {
       const previousStates = new Map<
         string,
-        { badges: CategoryBadge[]; disabled: boolean }
+        { badges: CategoryBadge[]; disabled: boolean; processTime?: number }
       >();
       const targetCellsArray = Array.from(targetCells).map((cellId) => {
         const [row, col] = cellId.split("-").map(Number);
         previousStates.set(cellId, {
           badges: cellBadges[cellId] || [],
           disabled: disabledCells.has(cellId),
+          processTime: cellProcessTimes[cellId],
         });
         return { row, col, cellId };
       });
@@ -196,6 +203,7 @@ export const useCopyPaste = ({
       // Apply paste
       const newBadges = { ...cellBadges };
       const newDisabledCells = new Set(disabledCells);
+      const newProcessTimes = { ...cellProcessTimes };
 
       targetCellsArray.forEach((target) => {
         let sourceCellData:
@@ -204,6 +212,7 @@ export const useCopyPaste = ({
               col: number;
               badges: CategoryBadge[];
               disabled: boolean;
+              processTime?: number;
             }
           | undefined = undefined;
 
@@ -259,12 +268,20 @@ export const useCopyPaste = ({
           } else {
             newDisabledCells.delete(target.cellId);
           }
+
+          // Apply process time
+          if (sourceCellData.processTime !== undefined) {
+            newProcessTimes[target.cellId] = sourceCellData.processTime;
+          } else {
+            delete newProcessTimes[target.cellId];
+          }
         }
       });
 
       // Update states
       setCellBadges(newBadges);
       setDisabledCells(newDisabledCells);
+      setCellProcessTimes(newProcessTimes);
       setSelectedCells(targetCells);
 
       // Add to history
@@ -278,12 +295,13 @@ export const useCopyPaste = ({
             {
               badges: newBadges[cellId] || [],
               disabled: newDisabledCells.has(cellId),
+              processTime: newProcessTimes[cellId],
             },
           ])
         ),
       });
     },
-    [cellBadges, disabledCells, setCellBadges, setDisabledCells, setSelectedCells, undoHistory]
+    [cellBadges, disabledCells, cellProcessTimes, setCellBadges, setDisabledCells, setCellProcessTimes, setSelectedCells, undoHistory]
   );
 
   return {

@@ -523,10 +523,12 @@ export default function OperatingScheduleEditor({
     selectedCells,
     cellBadges,
     disabledCells,
+    cellProcessTimes,
     timeSlots,
     currentFacilities,
     setCellBadges,
     setDisabledCells,
+    setCellProcessTimes,
     setSelectedCells,
     undoHistory,
   });
