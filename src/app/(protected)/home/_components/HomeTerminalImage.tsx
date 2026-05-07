@@ -443,7 +443,7 @@ function HomeTerminalImage({
         {scenarioId && (
           <div className="flex justify-end">
             <button
-              onClick={() => router.push(`/viewer/${scenarioId}`)}
+              onClick={() => window.open(`/viewer/${scenarioId}`, "_blank")}
               className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/40"
             >
               <Box className="h-4 w-4" />
@@ -466,7 +466,7 @@ function HomeTerminalImage({
       {scenarioId && (
         <div className="flex justify-end">
           <button
-            onClick={() => router.push(`/viewer/${scenarioId}`)}
+            onClick={() => window.open(`/viewer/${scenarioId}`, "_blank")}
             className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/40"
           >
             <Box className="h-4 w-4" />
