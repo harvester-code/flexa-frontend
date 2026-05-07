@@ -9,6 +9,7 @@ const COLUMN_LABEL_MAP: Record<string, string> = {
   operating_carrier_iata: "Airline",
   operating_carrier_name: "Airline",
   aircraft_type_name: "Aircraft Type",
+  aircraft_class: "Aircraft Class",
 
   // Flight
   flight_number: "Flight Number",
