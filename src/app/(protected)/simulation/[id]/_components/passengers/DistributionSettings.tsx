@@ -337,9 +337,11 @@ export default function DistributionSettings({
   const [draggingRuleId, setDraggingRuleId] = useState<string | null>(null);
   const [dragOverRuleId, setDragOverRuleId] = useState<string | null>(null);
 
-  // 첫글자 대문자로 변환하는 헬퍼 함수
+  // 전체가 소문자인 경우에만 첫 글자를 대문자로 변환 (대문자가 하나라도 있으면 의도적인 입력으로 간주)
   const capitalizeFirst = (str: string) => {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    const hasUpperCase = str !== str.toLowerCase();
+    if (hasUpperCase) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
   // 균등 분배 조정 로직
