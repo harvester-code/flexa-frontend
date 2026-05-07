@@ -238,6 +238,123 @@ export function convertFilterToApiConditions(
  * 특정 필터 상태에서 예상 필터링 항공편 수를 계산하는 순수 함수.
  * FlightFilterConditions의 getEstimatedFilteredFlights와 동일한 로직.
  */
+/**
+ * 각 필터 카테고리 선택값을 flight ID 집합으로 변환한다.
+ * Airline만 예외적으로 "airlineCode||flightId" 형태로 저장되며,
+ * 나머지는 모두 raw flight ID(예: "KE712")를 key로 사용한다.
+ */
+export function buildConditionFlightSets(
+  modeFilters: any,
+  categories: Record<string, any>,
+  mode: string
+): Set<string>[] {
+  const sets: Set<string>[] = [];
+  const tf = `${mode}_terminal`;
+
+  const flightTypes: string[]          = categories.flight_type             ?? [];
+  const terminalAirlines: string[]     = categories.terminal_airlines        ?? [];
+  const airlineFlightIds: string[]     = categories.airline_flight_ids       ?? [];
+  const selectedAirlines: string[]     = categories.selected_airlines        ?? [];
+  const aircraftTypeIds: string[]      = categories.aircraft_type_flight_ids ?? [];
+  const selectedClasses: string[]      = categories.selected_aircraft_classes ?? [];
+  const regions: string[]              = categories.region                   ?? [];
+  const countries: string[]            = categories.countries                ?? [];
+
+  // 1. Flight Type
+  if (flightTypes.length > 0) {
+    const s = new Set<string>();
+    flightTypes.forEach((ft) => {
+      Object.values(modeFilters.flight_type?.[ft]?.airlines ?? {}).forEach((ad: any) =>
+        ad.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+      );
+    });
+    sets.push(s);
+  }
+
+  // 2. Terminal-Airline
+  if (terminalAirlines.length > 0) {
+    const s = new Set<string>();
+    terminalAirlines.forEach((combo) => {
+      const parsed = parseTerminalAirlineCombo(combo);
+      if (!parsed) return;
+      const ad = modeFilters[tf]?.[parsed.terminal]?.airlines?.[parsed.airline];
+      if (ad) ad.flight_numbers.forEach((fn: any) => s.add(String(fn)));
+    });
+    sets.push(s);
+  }
+
+  // 3. Airline (예외: "airlineCode||flightId" 형태로 저장됨)
+  if (airlineFlightIds.length > 0) {
+    const s = new Set<string>(
+      airlineFlightIds.map((id) => parseAirlineFlightId(id)?.flightId).filter(Boolean) as string[]
+    );
+    sets.push(s);
+  } else if (selectedAirlines.length > 0) {
+    const s = new Set<string>();
+    Object.values(modeFilters[tf] ?? {}).forEach((td: any) => {
+      Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
+        if (selectedAirlines.includes(code))
+          data.flight_numbers.forEach((fn: any) => s.add(String(fn)));
+      });
+    });
+    if (s.size > 0) sets.push(s);
+  }
+
+  // 4. Aircraft Class (기종 단위 우선, 없으면 등급 단위)
+  if (aircraftTypeIds.length > 0) {
+    const s = new Set<string>();
+    aircraftTypeIds.forEach((id) => {
+      const sep = id.indexOf('||');
+      if (sep < 0) return;
+      const cls = id.slice(0, sep);
+      const typeName = id.slice(sep + 2);
+      modeFilters.aircraft_class?.[cls]?.aircraft_types?.[typeName]?.flight_numbers
+        ?.forEach((fn: any) => s.add(String(fn)));
+    });
+    if (s.size > 0) sets.push(s);
+  } else if (selectedClasses.length > 0) {
+    const s = new Set<string>();
+    selectedClasses.forEach((cls) => {
+      Object.values(modeFilters.aircraft_class?.[cls]?.aircraft_types ?? {}).forEach((td: any) =>
+        td.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+      );
+    });
+    if (s.size > 0) sets.push(s);
+  }
+
+  // 5. Location (Region/Country)
+  const regionField = mode === 'departure' ? 'arrival_region' : 'departure_region';
+  const regionOptions = modeFilters[regionField];
+  if (regions.length > 0 && regionOptions) {
+    const s = new Set<string>();
+    regions.forEach((rName) => {
+      const rData = regionOptions[rName];
+      if (!rData) return;
+      const allC = Object.keys(rData.countries);
+      const selC = countries.filter((c) => allC.includes(c));
+      const targets = selC.length === 0 || selC.length === allC.length ? allC : selC;
+      targets.forEach((cn) => {
+        Object.values(rData.countries[cn]?.airlines ?? {}).forEach((ad: any) =>
+          ad.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+        );
+      });
+    });
+    if (s.size > 0) sets.push(s);
+  }
+
+  return sets;
+}
+
+/** 여러 집합의 교집합을 계산한다. 집합이 없으면 null 반환. */
+export function intersectSets<T>(sets: Set<T>[]): Set<T> | null {
+  if (sets.length === 0) return null;
+  let result = sets[0];
+  for (let i = 1; i < sets.length; i++) {
+    result = new Set([...result].filter((id) => sets[i].has(id)));
+  }
+  return result;
+}
+
 export function computeEstimatedFilteredFlights(
   selectedFilter: SelectedFilter,
   filtersData: { filters: Record<string, any> } | null
@@ -248,153 +365,13 @@ export function computeEstimatedFilteredFlights(
   const total = modeFilters.total_flights || 0;
   const categories = selectedFilter.categories;
 
-  const hasFilters = Object.values(categories).some((value) =>
-    Array.isArray(value) ? value.length > 0 : !!value
-  );
+  const hasFilters = Object.values(categories).some((v) => (Array.isArray(v) ? v.length > 0 : !!v));
   if (!hasFilters) return { estimated: total, total };
 
-  const conditionFlightSets: Set<string>[] = [];
-
   try {
-    // Flight Type
-    const selectedTypes = categories.flight_type;
-    if (selectedTypes && selectedTypes.length > 0) {
-      const typeFlightIds = new Set<string>();
-      selectedTypes.forEach((flightType) => {
-        if (modeFilters.flight_type?.[flightType]) {
-          Object.entries(modeFilters.flight_type[flightType].airlines).forEach(
-            ([, airlineData]: [string, any]) => {
-              airlineData.flight_numbers.forEach((fn: any) => typeFlightIds.add(String(fn)));
-            }
-          );
-        }
-      });
-      conditionFlightSets.push(typeFlightIds);
-    }
-
-    // Terminal-Airline combos
-    const terminalField = `${selectedFilter.mode}_terminal`;
-    const selectedTerminalAirlines = categories.terminal_airlines;
-    if (selectedTerminalAirlines && selectedTerminalAirlines.length > 0) {
-      const terminalFlightIds = new Set<string>();
-      const terminalOptions = modeFilters[terminalField];
-      selectedTerminalAirlines.forEach((combo) => {
-        const parsed = parseTerminalAirlineCombo(combo);
-        if (!parsed) return;
-        const airlineData = terminalOptions?.[parsed.terminal]?.airlines?.[parsed.airline];
-        if (airlineData) {
-          airlineData.flight_numbers.forEach((fn: any) => terminalFlightIds.add(String(fn)));
-        }
-      });
-      conditionFlightSets.push(terminalFlightIds);
-    }
-
-    // Airline / specific flight-number filter (예외: "airlineCode||flightId" 형태로 저장됨)
-    const airlineFlightIds = categories.airline_flight_ids;
-    if (airlineFlightIds && airlineFlightIds.length > 0) {
-      const airlineFlightSet = new Set<string>(
-        airlineFlightIds
-          .map((id) => parseAirlineFlightId(id)?.flightId)
-          .filter(Boolean) as string[]
-      );
-      conditionFlightSets.push(airlineFlightSet);
-    } else {
-      const selectedAirlines = categories.selected_airlines;
-      if (selectedAirlines && selectedAirlines.length > 0) {
-        const airlineFlightSet = new Set<string>();
-        const terminalField = `${selectedFilter.mode}_terminal`;
-        const terminalOptions = modeFilters[terminalField];
-        if (terminalOptions) {
-          Object.values(terminalOptions).forEach((terminalData: any) => {
-            Object.entries(terminalData.airlines).forEach(([code, data]: [string, any]) => {
-              if (selectedAirlines.includes(code)) {
-                data.flight_numbers.forEach((fn: any) => airlineFlightSet.add(String(fn)));
-              }
-            });
-          });
-        }
-        if (airlineFlightSet.size > 0) conditionFlightSets.push(airlineFlightSet);
-      }
-    }
-
-    // Aircraft Class (type-level IDs take priority)
-    const aircraftTypeFlightIds = categories.aircraft_type_flight_ids;
-    if (aircraftTypeFlightIds && aircraftTypeFlightIds.length > 0) {
-      const classOptions = modeFilters.aircraft_class;
-      const classFlightIds = new Set<string>();
-      if (classOptions) {
-        aircraftTypeFlightIds.forEach((id) => {
-          const sep = id.indexOf('||');
-          if (sep < 0) return;
-          const cls = id.slice(0, sep);
-          const typeName = id.slice(sep + 2);
-          const typeData = classOptions[cls]?.aircraft_types?.[typeName];
-          if (typeData) {
-            typeData.flight_numbers.forEach((fn: string) => classFlightIds.add(fn));
-          }
-        });
-      }
-      if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
-    } else {
-      const selectedClasses = categories.selected_aircraft_classes;
-      if (selectedClasses && selectedClasses.length > 0) {
-        const classFlightIds = new Set<string>();
-        const classOptions = modeFilters.aircraft_class;
-        if (classOptions) {
-          selectedClasses.forEach((cls) => {
-            const classData = classOptions[cls];
-            if (classData?.aircraft_types) {
-              Object.values(classData.aircraft_types).forEach((typeData: any) => {
-                typeData.flight_numbers.forEach((fn: string) => classFlightIds.add(fn));
-              });
-            }
-          });
-        }
-        if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
-      }
-    }
-
-    // Location (Region/Country)
-    const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
-    const regionOptions = modeFilters[regionField];
-    if (categories.region && categories.region.length > 0 && regionOptions) {
-      const locationFlightIds = new Set<string>();
-      categories.region.forEach((regionName) => {
-        const regionData = regionOptions[regionName];
-        if (regionData) {
-          const currentCountries = categories.countries || [];
-          const allCountriesInRegion = Object.keys(regionData.countries);
-          const selectedCountriesInRegion = currentCountries.filter((c: string) =>
-            allCountriesInRegion.includes(c)
-          );
-          const targetCountries =
-            selectedCountriesInRegion.length === 0 ||
-            selectedCountriesInRegion.length === allCountriesInRegion.length
-              ? allCountriesInRegion
-              : selectedCountriesInRegion;
-
-          targetCountries.forEach((countryName) => {
-            const countryData = regionData.countries[countryName];
-            if (countryData?.airlines) {
-              Object.entries(countryData.airlines).forEach(([, airlineData]: [string, any]) => {
-                airlineData.flight_numbers.forEach((fn: any) =>
-                  locationFlightIds.add(String(fn))
-                );
-              });
-            }
-          });
-        }
-      });
-      if (locationFlightIds.size > 0) conditionFlightSets.push(locationFlightIds);
-    }
-
-    if (conditionFlightSets.length === 0) return { estimated: total, total };
-    if (conditionFlightSets.length === 1) return { estimated: conditionFlightSets[0].size, total };
-
-    let intersection = conditionFlightSets[0];
-    for (let i = 1; i < conditionFlightSets.length; i++) {
-      intersection = new Set([...intersection].filter((id) => conditionFlightSets[i].has(id)));
-    }
+    const sets = buildConditionFlightSets(modeFilters, categories, selectedFilter.mode);
+    const intersection = intersectSets(sets);
+    if (!intersection) return { estimated: total, total };
     return { estimated: intersection.size, total };
   } catch {
     return { estimated: total, total };

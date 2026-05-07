@@ -26,6 +26,8 @@ import {
   removeCombosByTerminal,
   createAirlineFlightId,
   parseAirlineFlightId,
+  buildConditionFlightSets,
+  intersectSets,
 } from './flight-utils';
 
 // ==================== Types ====================
@@ -1104,190 +1106,20 @@ function FlightFilterConditions({
   // 🆕 편명 교집합으로 정확한 필터링 편수 계산 (간단한 버전)
   const getEstimatedFilteredFlights = useCallback((): string => {
     if (!filtersData?.filters?.[selectedFilter.mode]) return '0';
-
     const modeFilters = filtersData.filters[selectedFilter.mode];
+    const total = modeFilters.total_flights || 0;
     const categories = selectedFilter.categories;
 
-    // 선택된 조건이 없으면 전체 편수 반환
-    const hasFilters = Object.values(categories).some((value) => (Array.isArray(value) ? value.length > 0 : !!value));
-    if (!hasFilters) {
-      return (modeFilters.total_flights || 0).toString();
-    }
-
-    // 🎯 각 조건별 항공편 식별자 집합 수집 (airline_code + flight_number)
-    const conditionFlightSets: Set<string>[] = [];
+    const hasFilters = Object.values(categories).some((v) => (Array.isArray(v) ? v.length > 0 : !!v));
+    if (!hasFilters) return total.toString();
 
     try {
-      // 1. Flight Type 조건
-      const selectedTypes = categories.flight_type;
-      if (selectedTypes && selectedTypes.length > 0) {
-        const typeFlightIds = new Set<string>();
-
-        selectedTypes.forEach((flightType) => {
-          if (modeFilters.flight_type?.[flightType]) {
-            const typeAirlines = modeFilters.flight_type[flightType].airlines;
-
-            Object.entries(typeAirlines).forEach(([, airlineData]: [string, any]) => {
-              airlineData.flight_numbers.forEach((fn: any) => {
-                typeFlightIds.add(String(fn));
-              });
-            });
-          }
-        });
-
-        conditionFlightSets.push(typeFlightIds);
-      }
-
-      // 2. Terminal 조건
-      const terminalField = `${selectedFilter.mode}_terminal`;
-      const selectedTerminalAirlines = categories.terminal_airlines;
-      if (selectedTerminalAirlines && selectedTerminalAirlines.length > 0) {
-        const terminalFlightIds = new Set<string>();
-        const terminalOptions = modeFilters[terminalField];
-
-        selectedTerminalAirlines.forEach((terminalAirlineCombo) => {
-          const parsed = parseTerminalAirlineCombo(terminalAirlineCombo);
-          if (!parsed) return;
-
-          const { terminal: terminalName, airline: airlineCode } = parsed;
-          const terminalData = terminalOptions?.[terminalName];
-          const airlineData = terminalData?.airlines?.[airlineCode];
-
-          if (airlineData) {
-            airlineData.flight_numbers.forEach((fn: any) => {
-              terminalFlightIds.add(String(fn));
-            });
-          }
-        });
-
-        conditionFlightSets.push(terminalFlightIds);
-      }
-
-      // 3. Airline / 특정 편번호 조건 (예외: "airlineCode||flightId" 형태로 저장됨)
-      const airlineFlightIds = categories.airline_flight_ids;
-      if (airlineFlightIds && airlineFlightIds.length > 0) {
-        const airlineFlightSet = new Set<string>(
-          airlineFlightIds
-            .map((id) => parseAirlineFlightId(id)?.flightId)
-            .filter(Boolean) as string[]
-        );
-        conditionFlightSets.push(airlineFlightSet);
-      } else {
-        const selectedAirlines = categories.selected_airlines;
-        if (selectedAirlines && selectedAirlines.length > 0) {
-          const airlineFlightSet = new Set<string>();
-          const terminalField2 = `${selectedFilter.mode}_terminal`;
-          const terminalOptions2 = modeFilters[terminalField2];
-          if (terminalOptions2) {
-            Object.values(terminalOptions2).forEach((td: any) => {
-              Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
-                if (selectedAirlines.includes(code)) {
-                  data.flight_numbers.forEach((fn: any) => airlineFlightSet.add(String(fn)));
-                }
-              });
-            });
-          }
-          if (airlineFlightSet.size > 0) conditionFlightSets.push(airlineFlightSet);
-        }
-      }
-
-      // 4. Aircraft Class 조건
-      const aircraftTypeFlightIds = categories.aircraft_type_flight_ids;
-      if (aircraftTypeFlightIds && aircraftTypeFlightIds.length > 0) {
-        const classOptions = modeFilters.aircraft_class;
-        const classFlightIds = new Set<string>();
-        if (classOptions) {
-          aircraftTypeFlightIds.forEach((id) => {
-            const sep = id.indexOf('||');
-            if (sep < 0) return;
-            const cls = id.slice(0, sep);
-            const typeName = id.slice(sep + 2);
-            const typeData = classOptions[cls]?.aircraft_types?.[typeName];
-            if (typeData) {
-              typeData.flight_numbers.forEach((fn: any) => classFlightIds.add(String(fn)));
-            }
-          });
-        }
-        if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
-      } else {
-        const selectedClasses = categories.selected_aircraft_classes;
-        if (selectedClasses && selectedClasses.length > 0) {
-          const classFlightIds = new Set<string>();
-          const classOptions = modeFilters.aircraft_class;
-          if (classOptions) {
-            selectedClasses.forEach((cls) => {
-              const classData = classOptions[cls];
-              if (classData?.aircraft_types) {
-                Object.values(classData.aircraft_types).forEach((typeData: any) => {
-                  typeData.flight_numbers.forEach((fn: any) => classFlightIds.add(String(fn)));
-                });
-              }
-            });
-          }
-          if (classFlightIds.size > 0) conditionFlightSets.push(classFlightIds);
-        }
-      }
-
-      // 5. Location (Region/Country) 조건
-      const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
-      const regionOptions = modeFilters[regionField];
-
-      if (categories.region && categories.region.length > 0 && regionOptions) {
-        const locationFlightIds = new Set<string>();
-
-        categories.region.forEach((regionName) => {
-          const regionData = regionOptions[regionName];
-          if (regionData) {
-            const currentCountries = categories.countries || [];
-            const allCountriesInRegion = Object.keys(regionData.countries);
-            const selectedCountriesInRegion = currentCountries.filter((c) => allCountriesInRegion.includes(c));
-
-            const targetCountries =
-              selectedCountriesInRegion.length === 0 || selectedCountriesInRegion.length === allCountriesInRegion.length
-                ? allCountriesInRegion
-                : selectedCountriesInRegion;
-
-            targetCountries.forEach((countryName) => {
-              const countryData = regionData.countries[countryName];
-              if (countryData?.airlines) {
-                Object.entries(countryData.airlines).forEach(([, airlineData]: [string, any]) => {
-                  airlineData.flight_numbers.forEach((fn: any) => {
-                    locationFlightIds.add(String(fn));
-                  });
-                });
-              }
-            });
-          }
-        });
-
-        if (locationFlightIds.size > 0) {
-          conditionFlightSets.push(locationFlightIds);
-        }
-      }
-
-      // 🔄 교집합 계산
-      if (conditionFlightSets.length === 0) {
-        return (modeFilters.total_flights || 0).toString();
-      }
-
-      // 단일 조건일 때는 교집합 계산 없이 바로 반환
-      if (conditionFlightSets.length === 1) {
-        return conditionFlightSets[0].size.toString();
-      }
-
-      // 다중 조건일 때만 교집합 계산
-      let intersectionFlights = conditionFlightSets[0];
-
-      for (let i = 1; i < conditionFlightSets.length; i++) {
-        intersectionFlights = new Set(
-          [...intersectionFlights].filter((flightId) => conditionFlightSets[i].has(flightId))
-        );
-      }
-
-      return intersectionFlights.size.toString();
-    } catch (error) {
-      // 에러 시 기본값 반환
-      return (modeFilters.total_flights || 0).toString();
+      const sets = buildConditionFlightSets(modeFilters, categories, selectedFilter.mode);
+      const intersection = intersectSets(sets);
+      if (!intersection) return total.toString();
+      return intersection.size.toString();
+    } catch {
+      return total.toString();
     }
   }, [selectedFilter, filtersData]);
 
@@ -1491,102 +1323,13 @@ function FlightFilterConditions({
     if (!hasFilters) return [];
 
     try {
-      const conditionFlightSets: Set<string>[] = [];
+      const sets = buildConditionFlightSets(modeFilters, categories, selectedFilter.mode);
+      const intersected = intersectSets(sets);
+      if (!intersected || intersected.size === 0) return [];
+
       const tf = `${selectedFilter.mode}_terminal`;
-
-      // optional 필드 기본값 처리
-      const flightTypes = categories.flight_type ?? [];
-      const terminalAirlines = categories.terminal_airlines ?? [];
-      const airlineFlightIds = categories.airline_flight_ids ?? [];
-      const selectedAirlines = categories.selected_airlines ?? [];
-      const aircraftTypeFlightIds = categories.aircraft_type_flight_ids ?? [];
-      const selectedClasses = categories.selected_aircraft_classes ?? [];
-      const regions = categories.region ?? [];
-
-      // 1. Type
-      if (flightTypes.length > 0) {
-        const s = new Set<string>();
-        flightTypes.forEach((ft: string) => {
-          Object.values(modeFilters.flight_type?.[ft]?.airlines ?? {}).forEach((ad: any) => {
-            ad.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-          });
-        });
-        conditionFlightSets.push(s);
-      }
-      // 2. Terminal
-      if (terminalAirlines.length > 0) {
-        const s = new Set<string>();
-        terminalAirlines.forEach((combo: string) => {
-          const parsed = parseTerminalAirlineCombo(combo);
-          if (!parsed) return;
-          const ad = modeFilters[tf]?.[parsed.terminal]?.airlines?.[parsed.airline];
-          if (ad) ad.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-        });
-        conditionFlightSets.push(s);
-      }
-      // 3. Airline (예외: 저장 형식이 "airlineCode||flightId")
-      if (airlineFlightIds.length > 0) {
-        const s = new Set<string>(
-          airlineFlightIds.map((id: string) => parseAirlineFlightId(id)?.flightId).filter(Boolean) as string[]
-        );
-        conditionFlightSets.push(s);
-      } else if (selectedAirlines.length > 0) {
-        const s = new Set<string>();
-        if (modeFilters[tf]) {
-          Object.values(modeFilters[tf]).forEach((td: any) => {
-            Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
-              if (selectedAirlines.includes(code))
-                data.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-            });
-          });
-        }
-        if (s.size > 0) conditionFlightSets.push(s);
-      }
-      // 4. Aircraft Class
-      if (aircraftTypeFlightIds.length > 0) {
-        const s = new Set<string>();
-        aircraftTypeFlightIds.forEach((id: string) => {
-          const sep = id.indexOf('||');
-          if (sep < 0) return;
-          const cls = id.slice(0, sep), typeName = id.slice(sep + 2);
-          modeFilters.aircraft_class?.[cls]?.aircraft_types?.[typeName]?.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-        });
-        if (s.size > 0) conditionFlightSets.push(s);
-      } else if (selectedClasses.length > 0) {
-        const s = new Set<string>();
-        selectedClasses.forEach((cls: string) => {
-          Object.values(modeFilters.aircraft_class?.[cls]?.aircraft_types ?? {}).forEach((td: any) => {
-            td.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-          });
-        });
-        if (s.size > 0) conditionFlightSets.push(s);
-      }
-      // 5. Location
       const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
       const regionOptions = modeFilters[regionField];
-      if (regions.length > 0 && regionOptions) {
-        const s = new Set<string>();
-        regions.forEach((rName: string) => {
-          const rData = regionOptions[rName];
-          if (!rData) return;
-          const allC = Object.keys(rData.countries);
-          const selC = (categories.countries ?? []).filter((c: string) => allC.includes(c));
-          const targets = selC.length === 0 || selC.length === allC.length ? allC : selC;
-          targets.forEach((cn: string) => {
-            Object.values(rData.countries[cn]?.airlines ?? {}).forEach((ad: any) => {
-              ad.flight_numbers.forEach((fn: any) => s.add(String(fn)));
-            });
-          });
-        });
-        if (s.size > 0) conditionFlightSets.push(s);
-      }
-
-      if (conditionFlightSets.length === 0) return [];
-      let intersected = conditionFlightSets[0];
-      for (let i = 1; i < conditionFlightSets.length; i++) {
-        intersected = new Set([...intersected].filter((id) => conditionFlightSets[i].has(id)));
-      }
-      if (intersected.size === 0) return [];
 
       // 역방향 조회: flight ID → 메타정보
       const flightMeta = new Map<string, FlightDetail>();
@@ -1690,7 +1433,153 @@ function FlightFilterConditions({
   // 필터 적용 가능 여부 - 모드는 항상 선택되어 있으므로 true
   const canApplyFilter = true;
 
-  // ==================== Render Helper ====================
+  // ==================== Render Helpers ====================
+
+  const renderSelectionSummary = useCallback(() => {
+    const hasFilters = Object.values(selectedFilter.categories).some((v) =>
+      Array.isArray(v) ? v.length > 0 : !!v
+    );
+    const totalFiltered = getEstimatedFilteredFlights();
+    const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
+
+    const TABLE_COLS: { col: keyof FlightDetail; label: string }[] = [
+      { col: 'flightId',     label: 'Flight No.'  },
+      { col: 'airline',      label: 'Airline'     },
+      { col: 'destination',  label: 'Destination' },
+      { col: 'terminal',     label: 'Terminal'    },
+      { col: 'flightType',   label: 'Type'        },
+      { col: 'aircraftType', label: 'Aircraft'    },
+      { col: 'aircraftClass', label: 'Class'      },
+    ];
+
+    const q = summarySearch.trim().toLowerCase();
+    const filtered = intersectedFlightDetails.filter((fd) =>
+      !q ||
+      fd.flightId.toLowerCase().includes(q) ||
+      fd.airline.toLowerCase().includes(q) ||
+      fd.airlineName.toLowerCase().includes(q) ||
+      (fd.destination   ?? '').toLowerCase().includes(q) ||
+      (fd.terminal      ?? '').toLowerCase().includes(q) ||
+      (fd.aircraftType  ?? '').toLowerCase().includes(q) ||
+      (fd.aircraftClass ?? '').toLowerCase().includes(q)
+    );
+    const sorted = [...filtered].sort((a, b) => {
+      const av = (a[summarySort.col] ?? '') as string;
+      const bv = (b[summarySort.col] ?? '') as string;
+      return summarySort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    const handleColClick = (col: keyof FlightDetail) =>
+      setSummarySort((prev) =>
+        prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }
+      );
+    const SortIcon = ({ col }: { col: keyof FlightDetail }) =>
+      summarySort.col === col ? (
+        <span className="ml-0.5">{summarySort.dir === 'asc' ? '↑' : '↓'}</span>
+      ) : null;
+
+    return (
+      <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="rounded-full bg-primary/20 p-1">
+              <Filter className="h-3 w-3 text-primary" />
+            </div>
+            <span className="text-sm font-semibold text-primary">Selection Summary</span>
+            <span className="text-xs text-muted-foreground">
+              {hasFilters ? 'Filters applied' : 'No filters selected – showing all flights'}
+            </span>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-xs text-muted-foreground">Selected Flights</div>
+            <div className="text-lg font-bold text-primary">
+              {parseInt(totalFiltered).toLocaleString()} / {totalAvailable.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        {hasFilters && intersectedFlightDetails.length > 0 && (
+          <div className="rounded-md border bg-background overflow-hidden text-xs">
+            <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+              <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search flights, airline, destination, aircraft…"
+                value={summarySearch}
+                onChange={(e) => setSummarySearch(e.target.value)}
+                className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+              />
+              {summarySearch && (
+                <button
+                  onClick={() => setSummarySearch('')}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  ✕
+                </button>
+              )}
+              <span className="shrink-0 text-muted-foreground">
+                {filtered.length.toLocaleString()} / {intersectedFlightDetails.length.toLocaleString()}
+              </span>
+            </div>
+            <div className="max-h-64 overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[700px] border-collapse">
+                <thead className="sticky top-0 z-10 bg-muted/60">
+                  <tr>
+                    {TABLE_COLS.map(({ col, label }) => (
+                      <th
+                        key={col}
+                        onClick={() => handleColClick(col)}
+                        className="cursor-pointer whitespace-nowrap border-b px-3 py-1.5 text-left font-medium text-muted-foreground hover:text-foreground select-none"
+                      >
+                        {label}<SortIcon col={col} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-4 text-center text-muted-foreground">No results</td>
+                    </tr>
+                  ) : (
+                    sorted.map((fd) => (
+                      <tr key={fd.flightId} className="border-b last:border-b-0 hover:bg-muted/20">
+                        <td className="whitespace-nowrap px-3 py-1.5 font-mono font-semibold">{fd.flightId}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5">
+                          <span className="font-medium">{fd.airline}</span>
+                          {fd.airlineName && fd.airlineName !== fd.airline && (
+                            <span className="ml-1 text-muted-foreground">· {fd.airlineName}</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.destination ?? '—'}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.terminal ?? '—'}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.flightType ?? '—'}</td>
+                        <td className="max-w-[180px] truncate px-3 py-1.5 text-muted-foreground" title={fd.aircraftType ?? undefined}>{fd.aircraftType ?? '—'}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5">
+                          {fd.aircraftClass ? (
+                            <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${fd.aircraftClass === 'Unknown' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
+                              {fd.aircraftClass}
+                            </span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [
+    selectedFilter,
+    filtersData,
+    getEstimatedFilteredFlights,
+    intersectedFlightDetails,
+    summarySearch,
+    summarySort,
+    setSummarySort,
+  ]);
 
   const renderFilterOptions = useCallback(
     (mode: string, modeFilters: any) => {
@@ -2146,148 +2035,7 @@ function FlightFilterConditions({
         {showActions && (
           <>
             {/* 선택 상태 요약 */}
-            {(() => {
-              const hasFilters = Object.entries(selectedFilter.categories).some(([, value]) =>
-                Array.isArray(value) ? value.length > 0 : !!value
-              );
-              const totalFiltered = getEstimatedFilteredFlights();
-              const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-              const grouped = intersectedFlightDetails.reduce<Record<string, FlightDetail[]>>((acc, fd) => {
-                const key = fd.airline || fd.flightId.slice(0, 2);
-                (acc[key] ??= []).push(fd);
-                return acc;
-              }, {});
-
-              return (
-                <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-full bg-primary/20 p-1">
-                        <Filter className="h-3 w-3 text-primary" />
-                      </div>
-                      <span className="text-sm font-semibold text-primary">Selection Summary</span>
-                      <span className="text-xs text-muted-foreground">
-                        {hasFilters ? 'Filters applied' : 'No filters selected – showing all flights'}
-                      </span>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs text-muted-foreground">Selected Flights</div>
-                      <div className="text-lg font-bold text-primary">
-                        {parseInt(totalFiltered).toLocaleString()} / {totalAvailable.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {hasFilters && intersectedFlightDetails.length > 0 && (() => {
-                    const q = summarySearch.trim().toLowerCase();
-                    const filtered = intersectedFlightDetails.filter((fd) =>
-                      !q ||
-                      fd.flightId.toLowerCase().includes(q) ||
-                      fd.airline.toLowerCase().includes(q) ||
-                      fd.airlineName.toLowerCase().includes(q) ||
-                      (fd.destination ?? '').toLowerCase().includes(q) ||
-                      (fd.terminal ?? '').toLowerCase().includes(q) ||
-                      (fd.aircraftType ?? '').toLowerCase().includes(q) ||
-                      (fd.aircraftClass ?? '').toLowerCase().includes(q)
-                    );
-                    const sorted = [...filtered].sort((a, b) => {
-                      const av = (a[summarySort.col] ?? '') as string;
-                      const bv = (b[summarySort.col] ?? '') as string;
-                      return summarySort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-                    });
-                    const handleColClick = (col: keyof FlightDetail) => {
-                      setSummarySort((prev) =>
-                        prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }
-                      );
-                    };
-                    const SortIcon = ({ col }: { col: keyof FlightDetail }) =>
-                      summarySort.col === col ? (
-                        <span className="ml-0.5">{summarySort.dir === 'asc' ? '↑' : '↓'}</span>
-                      ) : null;
-
-                    return (
-                      <div className="rounded-md border bg-background overflow-hidden text-xs">
-                        {/* Search bar */}
-                        <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
-                          <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          <input
-                            type="text"
-                            placeholder="Search flights, airline, destination, aircraft…"
-                            value={summarySearch}
-                            onChange={(e) => setSummarySearch(e.target.value)}
-                            className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
-                          />
-                          {summarySearch && (
-                            <button onClick={() => setSummarySearch('')} className="shrink-0 text-muted-foreground hover:text-foreground">✕</button>
-                          )}
-                          <span className="shrink-0 text-muted-foreground">
-                            {filtered.length.toLocaleString()} / {intersectedFlightDetails.length.toLocaleString()}
-                          </span>
-                        </div>
-                        {/* Table with horizontal scroll */}
-                        <div className="max-h-64 overflow-y-auto overflow-x-auto">
-                          <table className="w-full min-w-[700px] border-collapse">
-                            <thead className="sticky top-0 z-10 bg-muted/60">
-                              <tr>
-                                {(
-                                  [
-                                    { col: 'flightId' as keyof FlightDetail, label: 'Flight No.' },
-                                    { col: 'airline' as keyof FlightDetail, label: 'Airline' },
-                                    { col: 'destination' as keyof FlightDetail, label: 'Destination' },
-                                    { col: 'terminal' as keyof FlightDetail, label: 'Terminal' },
-                                    { col: 'flightType' as keyof FlightDetail, label: 'Type' },
-                                    { col: 'aircraftType' as keyof FlightDetail, label: 'Aircraft' },
-                                    { col: 'aircraftClass' as keyof FlightDetail, label: 'Class' },
-                                  ] as { col: keyof FlightDetail; label: string }[]
-                                ).map(({ col, label }) => (
-                                  <th
-                                    key={col}
-                                    onClick={() => handleColClick(col)}
-                                    className="cursor-pointer whitespace-nowrap border-b px-3 py-1.5 text-left font-medium text-muted-foreground hover:text-foreground select-none"
-                                  >
-                                    {label}<SortIcon col={col} />
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sorted.length === 0 ? (
-                                <tr>
-                                  <td colSpan={7} className="px-3 py-4 text-center text-muted-foreground">No results</td>
-                                </tr>
-                              ) : (
-                                sorted.map((fd) => (
-                                  <tr key={fd.flightId} className="border-b last:border-b-0 hover:bg-muted/20">
-                                    <td className="whitespace-nowrap px-3 py-1.5 font-mono font-semibold">{fd.flightId}</td>
-                                    <td className="whitespace-nowrap px-3 py-1.5">
-                                      <span className="font-medium">{fd.airline}</span>
-                                      {fd.airlineName && fd.airlineName !== fd.airline && (
-                                        <span className="ml-1 text-muted-foreground">· {fd.airlineName}</span>
-                                      )}
-                                    </td>
-                                    <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.destination ?? '—'}</td>
-                                    <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.terminal ?? '—'}</td>
-                                    <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.flightType ?? '—'}</td>
-                                    <td className="max-w-[180px] truncate px-3 py-1.5 text-muted-foreground" title={fd.aircraftType ?? undefined}>{fd.aircraftType ?? '—'}</td>
-                                    <td className="whitespace-nowrap px-3 py-1.5">
-                                      {fd.aircraftClass ? (
-                                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${fd.aircraftClass === 'Unknown' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
-                                          {fd.aircraftClass}
-                                        </span>
-                                      ) : '—'}
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              );
-            })()}
+            {renderSelectionSummary()}
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -2375,146 +2123,7 @@ function FlightFilterConditions({
 
             {showActions && (
               <>
-                {(() => {
-                  const hasFilters = Object.entries(selectedFilter.categories).some(([, value]) =>
-                    Array.isArray(value) ? value.length > 0 : !!value
-                  );
-                  const totalFiltered = getEstimatedFilteredFlights();
-                  const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
-                  const grouped = intersectedFlightDetails.reduce<Record<string, FlightDetail[]>>((acc, fd) => {
-                    const key = fd.airline || fd.flightId.slice(0, 2);
-                    (acc[key] ??= []).push(fd);
-                    return acc;
-                  }, {});
-
-                  return (
-                    <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="rounded-full bg-primary/20 p-1">
-                            <Filter className="h-3 w-3 text-primary" />
-                          </div>
-                          <span className="text-sm font-semibold text-primary">Selection Summary</span>
-                          <span className="text-xs text-muted-foreground">
-                            {hasFilters ? 'Filters applied' : 'No filters selected – showing all flights'}
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-xs text-muted-foreground">Selected Flights</div>
-                          <div className="text-lg font-bold text-primary">
-                            {parseInt(totalFiltered).toLocaleString()} / {totalAvailable.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      {hasFilters && intersectedFlightDetails.length > 0 && (() => {
-                        const q = summarySearch.trim().toLowerCase();
-                        const filtered = intersectedFlightDetails.filter((fd) =>
-                          !q ||
-                          fd.flightId.toLowerCase().includes(q) ||
-                          fd.airline.toLowerCase().includes(q) ||
-                          fd.airlineName.toLowerCase().includes(q) ||
-                          (fd.destination ?? '').toLowerCase().includes(q) ||
-                          (fd.terminal ?? '').toLowerCase().includes(q) ||
-                          (fd.aircraftType ?? '').toLowerCase().includes(q) ||
-                          (fd.aircraftClass ?? '').toLowerCase().includes(q)
-                        );
-                        const sorted = [...filtered].sort((a, b) => {
-                          const av = (a[summarySort.col] ?? '') as string;
-                          const bv = (b[summarySort.col] ?? '') as string;
-                          return summarySort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-                        });
-                        const handleColClick = (col: keyof FlightDetail) => {
-                          setSummarySort((prev) =>
-                            prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }
-                          );
-                        };
-                        const SortIcon = ({ col }: { col: keyof FlightDetail }) =>
-                          summarySort.col === col ? (
-                            <span className="ml-0.5">{summarySort.dir === 'asc' ? '↑' : '↓'}</span>
-                          ) : null;
-
-                        return (
-                          <div className="rounded-md border bg-background overflow-hidden text-xs">
-                            <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
-                              <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
-                              <input
-                                type="text"
-                                placeholder="Search flights, airline, destination, aircraft…"
-                                value={summarySearch}
-                                onChange={(e) => setSummarySearch(e.target.value)}
-                                className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
-                              />
-                              {summarySearch && (
-                                <button onClick={() => setSummarySearch('')} className="shrink-0 text-muted-foreground hover:text-foreground">✕</button>
-                              )}
-                              <span className="shrink-0 text-muted-foreground">
-                                {filtered.length.toLocaleString()} / {intersectedFlightDetails.length.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="max-h-64 overflow-y-auto overflow-x-auto">
-                              <table className="w-full min-w-[700px] border-collapse">
-                                <thead className="sticky top-0 z-10 bg-muted/60">
-                                  <tr>
-                                    {(
-                                      [
-                                        { col: 'flightId' as keyof FlightDetail, label: 'Flight No.' },
-                                        { col: 'airline' as keyof FlightDetail, label: 'Airline' },
-                                        { col: 'destination' as keyof FlightDetail, label: 'Destination' },
-                                        { col: 'terminal' as keyof FlightDetail, label: 'Terminal' },
-                                        { col: 'flightType' as keyof FlightDetail, label: 'Type' },
-                                        { col: 'aircraftType' as keyof FlightDetail, label: 'Aircraft' },
-                                        { col: 'aircraftClass' as keyof FlightDetail, label: 'Class' },
-                                      ] as { col: keyof FlightDetail; label: string }[]
-                                    ).map(({ col, label }) => (
-                                      <th
-                                        key={col}
-                                        onClick={() => handleColClick(col)}
-                                        className="cursor-pointer whitespace-nowrap border-b px-3 py-1.5 text-left font-medium text-muted-foreground hover:text-foreground select-none"
-                                      >
-                                        {label}<SortIcon col={col} />
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {sorted.length === 0 ? (
-                                    <tr>
-                                      <td colSpan={7} className="px-3 py-4 text-center text-muted-foreground">No results</td>
-                                    </tr>
-                                  ) : (
-                                    sorted.map((fd) => (
-                                      <tr key={fd.flightId} className="border-b last:border-b-0 hover:bg-muted/20">
-                                        <td className="whitespace-nowrap px-3 py-1.5 font-mono font-semibold">{fd.flightId}</td>
-                                        <td className="whitespace-nowrap px-3 py-1.5">
-                                          <span className="font-medium">{fd.airline}</span>
-                                          {fd.airlineName && fd.airlineName !== fd.airline && (
-                                            <span className="ml-1 text-muted-foreground">· {fd.airlineName}</span>
-                                          )}
-                                        </td>
-                                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.destination ?? '—'}</td>
-                                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.terminal ?? '—'}</td>
-                                        <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{fd.flightType ?? '—'}</td>
-                                        <td className="max-w-[180px] truncate px-3 py-1.5 text-muted-foreground" title={fd.aircraftType ?? undefined}>{fd.aircraftType ?? '—'}</td>
-                                        <td className="whitespace-nowrap px-3 py-1.5">
-                                          {fd.aircraftClass ? (
-                                            <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${fd.aircraftClass === 'Unknown' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
-                                              {fd.aircraftClass}
-                                            </span>
-                                          ) : '—'}
-                                        </td>
-                                      </tr>
-                                    ))
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })()}
+                {renderSelectionSummary()}
 
                 <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <div></div>
