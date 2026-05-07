@@ -1,20 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { Option, ScenarioData, HomeSummaryData, FacilityMetric } from '@/types/homeTypes';
+import { useMemo } from 'react';
+import type { ScenarioData, HomeSummaryData, FacilityMetric } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Clock, Timer, Building2, Plane, DollarSign, Users, UserCheck, Home, Hourglass, Gauge, Activity, Target } from 'lucide-react';
-import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 import HomeSummaryCard from './HomeSummaryCard';
-
-const CHART_OPTIONS: Option[] = [
-  { label: 'Wait Time', value: 'waiting_time' },
-  { label: 'Queue Pax', value: 'queue_length' },
-];
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
@@ -33,55 +27,47 @@ function HomeSummary({
   const summaryData = data;
   const isLoading = propIsLoading || false;
 
-  const [selectedChartType, setSelectedChartType] = useState(CHART_OPTIONS[0].value);
-
   const waitTimeChartData = useMemo(() => {
     if (!summaryData?.pax_experience?.waiting_time) return [];
 
     const processes = summaryData.pax_experience.waiting_time;
-    const GRAY_COLOR = '#9ca3af'; // gray-400 (Open Wait)
+    const queueLengths = summaryData.pax_experience.queue_length ?? {};
+    const GRAY_COLOR = '#9ca3af';
     const PRIMARY_COLOR_SCALES = ['#6b46c1', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'];
 
-    // 8칸으로 펼치기: 각 프로세스마다 open_wait, queue_wait 2개
     return Object.entries(processes).flatMap(([process, waitData], processIdx) => {
       const openSeconds = waitData.open_wait.hour * 3600 + waitData.open_wait.minute * 60 + waitData.open_wait.second;
       const queueSeconds = waitData.queue_wait.hour * 3600 + waitData.queue_wait.minute * 60 + waitData.queue_wait.second;
+      const queuePax = queueLengths[process];
+      const groupLabel = queuePax != null
+        ? `${process} (${queuePax.toLocaleString()} Pax)`
+        : process;
 
       return [
         {
-          title: process,
+          title: 'Pre-open',
+          group: process,
+          groupLabel,
           value: formatTimeTaken(waitData.open_wait, 'histogram'),
           width: openSeconds > 0 ? openSeconds : 0.001,
-          color: GRAY_COLOR, // Open Wait는 회색
+          color: GRAY_COLOR,
         },
         {
-          title: process,
+          title: 'In-service',
+          group: process,
+          groupLabel,
           value: formatTimeTaken(waitData.queue_wait, 'histogram'),
           width: queueSeconds > 0 ? queueSeconds : 0.001,
-          color: PRIMARY_COLOR_SCALES[processIdx % PRIMARY_COLOR_SCALES.length], // Queue Wait는 보라색
+          color: PRIMARY_COLOR_SCALES[processIdx % PRIMARY_COLOR_SCALES.length],
         },
       ];
     });
   }, [summaryData]);
 
-  const queueLengthChartData = useMemo(() => {
-    if (!summaryData?.pax_experience?.queue_length) return [];
-
-    const processes = summaryData.pax_experience.queue_length;
-    const entries = Object.entries(processes as Record<string, number>);
-    const allZero = entries.every(([, value]) => value === 0);
-
-    return entries.map(([process, value]) => ({
-      title: process,
-      value: (
-        <>
-          {value.toLocaleString()}
-          {formatUnit('pax', 'histogram')}
-        </>
-      ),
-      width: value > 0 ? value : allZero ? 1 : 0.001,
-    }));
-  }, [summaryData]);
+  const WAIT_TIME_LEGEND = [
+    { color: '#9ca3af', label: 'Pre-open' },
+    { color: '#7c3aed', label: 'In-service' },
+  ];
 
   if (!scenario) {
     return <HomeNoScenario />;
@@ -191,16 +177,21 @@ function HomeSummary({
       )}
 
       {/* Pax Experience 섹션 */}
-      <div className="mt-3 mb-2 flex items-center justify-between">
-        <div className="text-lg font-semibold">Pax Experience</div>
-        <ToggleButtonGroup
-          options={CHART_OPTIONS}
-          selectedValue={selectedChartType}
-          onSelect={(opt) => setSelectedChartType(opt.value)}
-          labelExtractor={(opt) => opt.label}
-        />
+      <div className="mt-3 mb-1 flex items-center justify-between">
+        <div>
+          <div className="text-lg font-semibold">Pax Experience</div>
+          <div className="text-xs text-default-500">Average wait time per process</div>
+        </div>
+        <div className="flex items-center gap-4">
+          {WAIT_TIME_LEGEND.map((item, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 flex-shrink-0 rounded-sm" style={{ background: item.color }} />
+              <span className="text-xs text-default-600">{item.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
-      <TheHistogramChart chartData={selectedChartType === 'waiting_time' ? waitTimeChartData : queueLengthChartData} />
+      <TheHistogramChart chartData={waitTimeChartData} />
     </>
   );
 }

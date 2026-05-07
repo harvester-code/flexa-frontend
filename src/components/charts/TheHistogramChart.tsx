@@ -1,10 +1,8 @@
-import { capitalCase } from 'change-case';
 import { capitalizeFirst } from '@/app/(protected)/home/_components/HomeFormat';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 
 // Primary 색상의 밝기 변화로 구분 (보라색 계열)
-// 어두운 색에서 밝은 색으로 그라데이션
 const PRIMARY_COLOR_SCALES = [
   '#6b46c1', // violet-600 (가장 진한)
   '#7c3aed', // violet-500
@@ -31,20 +29,16 @@ function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): numb
   const donorSegments: number[] = [];
 
   percents.forEach((p, i) => {
-    // 0%인 항목은 너비를 조정하지 않습니다.
     if (p > 0 && p < minPercent) {
       amountToRaise += minPercent - p;
       segmentsToRaise.push(i);
     } else if (p > minPercent) {
-      // 10% 초과분만 '기부 가능'한 양으로 계산합니다.
       donatablePool += p - minPercent;
       donorSegments.push(i);
     }
   });
 
-  // '기부 가능한' 총량이 '필요한' 총량보다 클 경우에만 안전하게 조정을 실행합니다.
   if (amountToRaise > 0 && donatablePool > amountToRaise) {
-    // 기여는 각자의 '여유분'에 비례하여 이루어집니다.
     donorSegments.forEach((i) => {
       const surplus = percents[i] - minPercent;
       const contributionRatio = surplus / donatablePool;
@@ -55,9 +49,7 @@ function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): numb
       percents[i] = minPercent;
     });
   }
-  // 만약 기부 가능한 양이 충분하지 않으면, 왜곡을 피하기 위해 아무것도 하지 않고 원본 비율을 유지합니다.
 
-  // 부동소수점 계산으로 인한 오차를 가장 큰 항목에 더하여 보정합니다.
   const finalSum = percents.reduce((a, b) => a + b, 0);
   if (Math.abs(finalSum - 100) > 0.01) {
     let maxIdx = -1;
@@ -76,59 +68,142 @@ function formatHistogramWidth(rawWidths: number[], minPercent: number = 5): numb
   return percents;
 }
 
+interface ChartDataItem {
+  title: string;
+  value: React.ReactNode;
+  width: number;
+  color?: string;
+  group?: string;
+  groupLabel?: string;
+}
+
+interface LegendItem {
+  color: string;
+  label: string;
+}
+
 interface TheHistogramChartProps {
-  chartData: {
-    title: string;
-    value: React.ReactNode;
-    width: number;
-    color?: string; // 커스텀 색상 (optional)
-  }[];
+  chartData: ChartDataItem[];
+  legend?: LegendItem[];
   className?: string;
 }
 
-function TheHistogramChart({ chartData, className }: TheHistogramChartProps) {
+function TheHistogramChart({ chartData, legend, className }: TheHistogramChartProps) {
   const filteredChartData = chartData?.filter(({ width }) => width > 0);
-
-  // width 보정: 최소값 미만은 minPercent로 올리고, 초과분은 가장 큰 값에서만 차감
   const rawWidths = filteredChartData.map((d) => d.width);
   const fixedWidths = formatHistogramWidth(rawWidths, 7);
 
+  const isGrouped = filteredChartData.some((d) => d.group);
+
+  if (isGrouped) {
+    // 연속된 같은 group끼리 묶기
+    type GroupEntry = { groupName: string; displayLabel: string; items: ChartDataItem[]; widths: number[] };
+    const groups: GroupEntry[] = [];
+
+    filteredChartData.forEach((item, idx) => {
+      const groupName = item.group ?? item.title;
+      const displayLabel = item.groupLabel ?? groupName;
+      const last = groups[groups.length - 1];
+      if (last && last.groupName === groupName) {
+        last.items.push(item);
+        last.widths.push(fixedWidths[idx]);
+      } else {
+        groups.push({ groupName, displayLabel, items: [item], widths: [fixedWidths[idx]] });
+      }
+    });
+
+    return (
+      <TooltipProvider delayDuration={0}>
+        {legend && legend.length > 0 && (
+          <div className="mb-2 flex items-center justify-end gap-4">
+            {legend.map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <span
+                  className="inline-block h-3 w-3 flex-shrink-0 rounded-sm"
+                  style={{ background: item.color }}
+                />
+                <span className="text-xs text-default-600">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className={cn('flex w-full min-w-0 gap-1 text-center', className)}>
+          {groups.map((group, gIdx) => {
+            const totalGroupWidthPct = group.widths.reduce((a, b) => a + b, 0);
+
+            return (
+              <div key={gIdx} style={{ width: `${totalGroupWidthPct}%` }} className="min-w-0 flex-shrink-0">
+                <div className="flex overflow-hidden rounded-lg">
+                  {group.items.map((item, iIdx) => {
+                    const barWidthPct = (group.widths[iIdx] / totalGroupWidthPct) * 100;
+                    const backgroundColor = item.color ?? PRIMARY_COLOR_SCALES[gIdx % PRIMARY_COLOR_SCALES.length];
+
+                    return (
+                      <Tooltip key={iIdx}>
+                        <TooltipTrigger asChild>
+                          <div
+                            style={{ width: `${barWidthPct}%`, background: backgroundColor }}
+                            className="flex min-w-0 cursor-pointer items-center justify-center truncate p-4 text-xl font-bold text-white transition-opacity hover:opacity-90"
+                          >
+                            <span className="tracking-wide">{item.value}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" align="center">
+                          <div className="text-center">
+                            <div className="font-semibold">{capitalizeFirst(group.groupName)}</div>
+                            <div className="text-xs text-default-400">{item.title}</div>
+                            <div className="text-sm">{item.value}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 truncate text-xs font-medium text-default-600">
+                  {capitalizeFirst(group.displayLabel)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  // 기존 비그룹 모드
   return (
     <TooltipProvider delayDuration={0}>
       <div className={cn('flex w-full min-w-0 overflow-hidden text-center', className)}>
-        {chartData &&
-          filteredChartData.map(({ title, value, color }, idx) => {
-            const width = fixedWidths[idx];
-            // 커스텀 색상이 있으면 사용, 없으면 기본 색상 사용
-            const backgroundColor = color || PRIMARY_COLOR_SCALES[idx % PRIMARY_COLOR_SCALES.length];
+        {filteredChartData.map(({ title, value, color }, idx) => {
+          const width = fixedWidths[idx];
+          const backgroundColor = color ?? PRIMARY_COLOR_SCALES[idx % PRIMARY_COLOR_SCALES.length];
 
-            return (
-              <Tooltip key={idx}>
-                <TooltipTrigger asChild>
-                  <div style={{ width: `${width}%` }} className="min-w-0 cursor-pointer">
-                    <div
-                      className={cn(
-                        'flex items-center justify-center truncate p-4 text-xl font-bold text-white transition-opacity hover:opacity-90',
-                        idx === 0 ? 'rounded-l-lg' : '',
-                        idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
-                      )}
-                      style={{ background: backgroundColor }}
-                    >
-                      <span className="tracking-wide">{value}</span>
-                    </div>
-
-                    <p className="mt-1.5 truncate text-xs font-medium text-default-600">{capitalizeFirst(title)}</p>
+          return (
+            <Tooltip key={idx}>
+              <TooltipTrigger asChild>
+                <div style={{ width: `${width}%` }} className="min-w-0 cursor-pointer">
+                  <div
+                    className={cn(
+                      'flex items-center justify-center truncate p-4 text-xl font-bold text-white transition-opacity hover:opacity-90',
+                      idx === 0 ? 'rounded-l-lg' : '',
+                      idx === filteredChartData.length - 1 ? 'rounded-r-lg' : ''
+                    )}
+                    style={{ background: backgroundColor }}
+                  >
+                    <span className="tracking-wide">{value}</span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center">
-                  <div className="text-center">
-                    <div className="font-semibold">{capitalizeFirst(title)}</div>
-                    <div className="text-sm">{value}</div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+                  <p className="mt-1.5 truncate text-xs font-medium text-default-600">{capitalizeFirst(title)}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center">
+                <div className="text-center">
+                  <div className="font-semibold">{capitalizeFirst(title)}</div>
+                  <div className="text-sm">{value}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </TooltipProvider>
   );
