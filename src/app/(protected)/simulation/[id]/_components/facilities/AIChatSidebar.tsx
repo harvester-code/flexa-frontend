@@ -18,14 +18,6 @@ export default function AIChatSidebar({
 }: AIChatSidebarProps) {
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40 transition-opacity"
-          onClick={onClose}
-        />
-      )}
-
       {/* Sidebar */}
       <div
         className={`fixed top-4 right-4 bottom-4 w-[500px] bg-white rounded-lg shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
