@@ -331,31 +331,19 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
       if (!selectedAirlines.includes('all') && zoneData.airlines) {
         // 선택된 항공사들의 데이터 합산
-        const metrics = ['inflow', 'outflow', 'queue_length', 'waiting_time'];
-        metrics.forEach(metric => {
+        ['inflow', 'outflow', 'queue_length', 'capacity'].forEach(metric => {
           dataToUse[metric] = new Array(times.length).fill(0);
         });
+        // waiting_time 가중평균을 위한 분자(가중합) 누적 배열
+        const waitingTimeWeightedSum = new Array(times.length).fill(0);
+        const waitingTimeInflowSum = new Array(times.length).fill(0);
 
-        let airlineCount = 0;
         selectedAirlines.forEach(airlineCode => {
           const airlineData = zoneData.airlines[airlineCode];
           if (!airlineData) return;
 
-          airlineCount++;
-
-          // inflow, outflow는 합산
-          ['inflow', 'outflow'].forEach(key => {
-            if (airlineData[key]) {
-              // 필터링된 times 길이만큼만 사용
-              const slicedData = airlineData[key].slice(0, times.length);
-              dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
-                val + (slicedData[idx] || 0)
-              );
-            }
-          });
-
-          // queue_length, waiting_time은 합산 (나중에 평균)
-          ['queue_length', 'waiting_time'].forEach(key => {
+          // inflow, outflow, queue_length, capacity는 합산
+          ['inflow', 'outflow', 'queue_length', 'capacity'].forEach(key => {
             if (airlineData[key]) {
               const slicedData = airlineData[key].slice(0, times.length);
               dataToUse[key] = dataToUse[key].map((val: number, idx: number) =>
@@ -363,16 +351,28 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
               );
             }
           });
+
+          // waiting_time은 inflow 가중합 누적 (Σ waiting_time_i × inflow_i)
+          if (airlineData.waiting_time && airlineData.inflow) {
+            const slicedWt = airlineData.waiting_time.slice(0, times.length);
+            const slicedInflow = airlineData.inflow.slice(0, times.length);
+            slicedWt.forEach((wt: number, idx: number) => {
+              const w = slicedInflow[idx] || 0;
+              waitingTimeWeightedSum[idx] += wt * w;
+              waitingTimeInflowSum[idx] += w;
+            });
+          }
         });
 
-        // queue_length, waiting_time 평균 계산
-        if (airlineCount > 0) {
-          dataToUse.queue_length = dataToUse.queue_length.map((val: number) => val / airlineCount);
-          dataToUse.waiting_time = dataToUse.waiting_time.map((val: number) => val / airlineCount);
-        }
+        // waiting_time = Σ(wt × inflow) / Σ(inflow), inflow가 0이면 0
+        dataToUse.waiting_time = waitingTimeWeightedSum.map((weightedSum: number, idx: number) =>
+          waitingTimeInflowSum[idx] > 0 ? weightedSum / waitingTimeInflowSum[idx] : 0
+        );
 
-        // capacity는 zone 전체 값 사용 (필터링된 길이로)
-        dataToUse.capacity = zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [];
+        // capacity: 항공사별 합산값이 없으면 zone 전체 값으로 fallback
+        if (dataToUse.capacity.every((v: number) => v === 0)) {
+          dataToUse.capacity = zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [];
+        }
       } else {
         // 전체 항공사 또는 airlines 데이터가 없는 경우
         // 모든 배열을 필터링된 times 길이로 자르기
@@ -804,47 +804,49 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
           // 항공사별 데이터 집계 헬퍼 함수
           const aggregateAirlineData = (airlinesData: Record<string, any>, timeLength: number) => {
-            const result = {
+            const result: Record<string, number[]> = {
               inflow: new Array(timeLength).fill(0),
               outflow: new Array(timeLength).fill(0),
               queue_length: new Array(timeLength).fill(0),
               waiting_time: new Array(timeLength).fill(0),
+              capacity: new Array(timeLength).fill(0),
             };
+            // waiting_time 가중평균을 위한 누적 배열
+            const waitingTimeWeightedSum = new Array(timeLength).fill(0);
+            const waitingTimeInflowSum = new Array(timeLength).fill(0);
 
-            let airlineCount = 0;
             selectedAirlines.forEach((airlineCode) => {
               const airlineData = airlinesData[airlineCode];
               if (airlineData) {
-                airlineCount++;
-                // inflow, outflow는 합산
-                ['inflow', 'outflow'].forEach((key) => {
+                // inflow, outflow, queue_length, capacity는 합산
+                ['inflow', 'outflow', 'queue_length', 'capacity'].forEach((key) => {
                   if (airlineData[key]) {
                     airlineData[key].forEach((value: number, idx: number) => {
                       if (idx < timeLength) {
-                        result[key as 'inflow' | 'outflow'][idx] += value;
+                        result[key][idx] += value;
                       }
                     });
                   }
                 });
-                // queue_length, waiting_time은 합산 후 평균
-                ['queue_length', 'waiting_time'].forEach((key) => {
-                  if (airlineData[key]) {
-                    airlineData[key].forEach((value: number, idx: number) => {
-                      if (idx < timeLength) {
-                        result[key as 'queue_length' | 'waiting_time'][idx] += value;
-                      }
-                    });
-                  }
-                });
+                // waiting_time은 inflow 가중합 누적
+                if (airlineData.waiting_time && airlineData.inflow) {
+                  airlineData.waiting_time.forEach((wt: number, idx: number) => {
+                    if (idx < timeLength) {
+                      const w = (airlineData.inflow[idx] || 0);
+                      waitingTimeWeightedSum[idx] += wt * w;
+                      waitingTimeInflowSum[idx] += w;
+                    }
+                  });
+                }
               }
             });
 
-            // queue_length, waiting_time 평균 계산
-            if (airlineCount > 0) {
-              result.queue_length = result.queue_length.map(v => Math.round(v / airlineCount));
-              result.waiting_time = result.waiting_time.map(v => Math.round(v / airlineCount));
-            }
+            // waiting_time = Σ(wt × inflow) / Σ(inflow)
+            result.waiting_time = waitingTimeWeightedSum.map((weightedSum, idx) =>
+              waitingTimeInflowSum[idx] > 0 ? Math.round(weightedSum / waitingTimeInflowSum[idx]) : 0
+            );
 
+            // capacity: 항공사별 합산값이 없으면 0 유지
             return result;
           };
 
@@ -876,7 +878,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 filteredFacilityData[key] = {
                   ...zoneData,
                   ...facilityMetrics,
-                  capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+                  capacity: (isAirlineFiltered && facilityMetrics.capacity?.some((v: number) => v > 0))
+                    ? facilityMetrics.capacity
+                    : (zoneData.capacity ? zoneData.capacity.slice(0, times.length) : []),
                 };
               }
             });
@@ -913,7 +917,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                     tempFacilityData[facilityName] = {
                       ...facData,
                       ...facilityMetrics,
-                      capacity: facData.capacity ? facData.capacity.slice(0, times.length) : [],
+                      capacity: (isAirlineFiltered && facilityMetrics.capacity?.some((v: number) => v > 0))
+                        ? facilityMetrics.capacity
+                        : (facData.capacity ? facData.capacity.slice(0, times.length) : []),
                     };
                   }
                 });
@@ -938,7 +944,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 tempFacilityData[zoneName] = {
                   ...zoneData,
                   ...facilityMetrics,
-                  capacity: zoneData.capacity ? zoneData.capacity.slice(0, times.length) : [],
+                  capacity: (isAirlineFiltered && facilityMetrics.capacity?.some((v: number) => v > 0))
+                    ? facilityMetrics.capacity
+                    : (zoneData.capacity ? zoneData.capacity.slice(0, times.length) : []),
                 };
               }
             });
