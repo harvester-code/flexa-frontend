@@ -55,6 +55,7 @@ import {
 import { Separator } from '@/components/ui/Separator';
 import { cn } from '@/lib/utils';
 import Spinner from '@/components/ui/Spinner';
+import { useNotificationStore } from '@/lib/notificationStore';
 
 interface HomeScenarioProps {
   className?: string;
@@ -124,6 +125,17 @@ const renderPaginationButtons = (currentPage: number, totalPages: number, onPage
 };
 
 function HomeScenario({ className, data, scenario, onSelectScenario, isLoading = false, onRefetch, kpi, onKpiChange }: HomeScenarioProps) {
+  const notifications = useNotificationStore((state) => state.notifications);
+  const latestNotificationMap = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const n of notifications) {
+      if (!map[n.scenario_id]) {
+        map[n.scenario_id] = n.simulation_end_at;
+      }
+    }
+    return map;
+  }, [notifications]);
+
   const [isOpened, setIsOpened] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -534,13 +546,13 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                         </td>
 
                         <td className="px-3 text-right whitespace-nowrap">
-                          {item.simulation_end_at ? (
+                          {latestNotificationMap[item.scenario_id] ? (
                             <div className="flex flex-col items-end leading-4">
                               <span className="text-xs">
-                                {dayjs(item.simulation_end_at).format('YYYY-MM-DD')}
+                                {dayjs(latestNotificationMap[item.scenario_id]).format('YYYY-MM-DD')}
                               </span>
                               <span className="text-[11px] text-default-500">
-                                {dayjs(item.simulation_end_at).format('HH:mm')}
+                                {dayjs(latestNotificationMap[item.scenario_id]).format('HH:mm')}
                               </span>
                             </div>
                           ) : (
@@ -653,8 +665,8 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">Last Run:</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                    {scenario.simulation_end_at
-                      ? dayjs(scenario.simulation_end_at).format('YYYY-MM-DD HH:mm')
+                    {latestNotificationMap[scenario.scenario_id]
+                      ? dayjs(latestNotificationMap[scenario.scenario_id]).format('YYYY-MM-DD HH:mm')
                       : scenario.simulation_status === 'processing'
                         ? 'In progress'
                         : 'Never run'}

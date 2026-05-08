@@ -62,6 +62,7 @@ import { useToast } from "@/hooks/useToast";
 import Spinner from "@/components/ui/Spinner";
 import { cn } from "@/lib/utils";
 import SimulationLoading from "./SimulationLoading";
+import { useNotificationStore } from "@/lib/notificationStore";
 
 interface EditingScenario {
   id: string;
@@ -197,6 +198,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigateToScenario = useScenarioNavigation();
+  const notifications = useNotificationStore((state) => state.notifications);
+  const latestNotificationMap = React.useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const n of notifications) {
+      if (!map[n.scenario_id]) {
+        map[n.scenario_id] = n.simulation_end_at;
+      }
+    }
+    return map;
+  }, [notifications]);
 
   const [isScenarioSelected, setIsScenarioSelected] = useState<boolean[]>([]);
   const [editingScenario, setEditingScenario] =
@@ -1031,15 +1042,15 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                       )}
                     </td>
                     <td className="px-3 text-right whitespace-nowrap">
-                      {scenario.simulation_end_at ? (
+                      {latestNotificationMap[scenario.scenario_id] ? (
                         <div className="flex flex-col items-end leading-4">
                           <span className="text-xs">
-                            {dayjs(scenario.simulation_end_at).format(
+                            {dayjs(latestNotificationMap[scenario.scenario_id]).format(
                               "YYYY-MM-DD"
                             )}
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            {dayjs(scenario.simulation_end_at).format("HH:mm")}
+                            {dayjs(latestNotificationMap[scenario.scenario_id]).format("HH:mm")}
                           </span>
                         </div>
                       ) : (

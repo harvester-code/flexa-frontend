@@ -22,6 +22,7 @@ interface NotificationState {
   setNotifications: (notifications: SimulationNotification[]) => void;
   prependNotification: (notification: SimulationNotification) => void;
   markAllRead: () => void;
+  getLatestByScenarioId: (scenarioId: string) => SimulationNotification | undefined;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -54,5 +55,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       ),
       unreadCount: 0,
     }));
+  },
+
+  getLatestByScenarioId: (scenarioId: string) => {
+    // notifications are ordered newest first
+    return get().notifications.find((n) => n.scenario_id === scenarioId);
   },
 }));
