@@ -7,6 +7,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/Breadcrumb';
+import NotificationBell from '@/components/NotificationBell';
 
 interface BreadcrumbItem {
   label: string;
@@ -19,7 +20,6 @@ interface ContentsHeaderProps {
 }
 
 export default function ContentsHeader({ text, breadcrumbs }: ContentsHeaderProps) {
-  // If breadcrumbs are not provided, create a default one with Flexa and current page
   const defaultBreadcrumbs: BreadcrumbItem[] = [
     { label: 'Flexa', href: '/' },
     { label: text },
@@ -29,7 +29,7 @@ export default function ContentsHeader({ text, breadcrumbs }: ContentsHeaderProp
 
   return (
     <div className="border-b border-input">
-      <div className="mx-auto max-w-page px-page-x py-6">
+      <div className="mx-auto flex max-w-page items-center justify-between px-page-x py-6">
         <Breadcrumb>
           <BreadcrumbList>
             {items.map((item, index) => (
@@ -46,6 +46,7 @@ export default function ContentsHeader({ text, breadcrumbs }: ContentsHeaderProp
             ))}
           </BreadcrumbList>
         </Breadcrumb>
+        <NotificationBell />
       </div>
     </div>
   );

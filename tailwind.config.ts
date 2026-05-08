@@ -48,6 +48,20 @@ export default {
         'page-x': '1.875rem', // 24.375px (13px 기준) - 좌우 패딩
         'page-b': '6rem', // 78px (13px 기준) - 하단 패딩
       },
+      keyframes: {
+        ring: {
+          '0%':   { transform: 'rotate(0deg)' },
+          '10%':  { transform: 'rotate(18deg)' },
+          '30%':  { transform: 'rotate(-16deg)' },
+          '50%':  { transform: 'rotate(12deg)' },
+          '70%':  { transform: 'rotate(-8deg)' },
+          '90%':  { transform: 'rotate(4deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
+      },
+      animation: {
+        ring: 'ring 0.7s ease-in-out',
+      },
       borderRadius: {
         md: 'calc(var(--radius) - 2px)',
         xl: 'var(--rounded-xl)',
