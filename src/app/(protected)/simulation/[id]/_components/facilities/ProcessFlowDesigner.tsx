@@ -40,7 +40,6 @@ import {
 } from "@/services/simulationService";
 import { useToast } from "@/hooks/useToast";
 import { createClient } from "@/lib/auth/client";
-import { useSimulationNotificationStore } from "@/lib/simulationNotificationStore";
 import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -275,8 +274,6 @@ export default function ProcessFlowDesigner({
 }: ProcessFlowDesignerProps) {
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
-  const addPendingSimulation = useSimulationNotificationStore((s) => s.addPending);
-
   const paxDemographicsFromStore = useSimulationStore(
     (s) => s.passenger.pax_demographics
   );
@@ -1155,7 +1152,6 @@ export default function ProcessFlowDesigner({
         description: "Simulation has been queued and is now running.",
       });
 
-      addPendingSimulation(simulationId);
     } catch (error: any) {
       // Update with error
       const airport = useSimulationStore.getState().context.airport;
