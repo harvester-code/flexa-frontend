@@ -2,16 +2,12 @@
 
 import React from 'react';
 import { APIRequestLog } from '@/types/simulationTypes';
+import { SimulationTabProps } from '../types';
 import { useSimulationStore } from '../../_stores';
 import PassengerFilterConditions from './PassengerFilterConditions';
 import PassengerResultChart from './PassengerResultChart';
 
-interface TabPassengerScheduleProps {
-  simulationId: string;
-  visible: boolean;
-  apiRequestLog: APIRequestLog | null;
-  setApiRequestLog: (log: APIRequestLog | null) => void;
-}
+interface TabPassengerScheduleProps extends SimulationTabProps {}
 
 interface AirlineShowUpTime {
   iata: string;

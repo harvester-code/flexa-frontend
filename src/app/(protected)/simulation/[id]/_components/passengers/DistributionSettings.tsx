@@ -23,17 +23,11 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
 import RuleConditionBadges from "./RuleConditionBadges";
+import RuleDefaultRow from "./RuleDefaultRow";
 import { Button } from "@/components/ui/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { useSimulationStore } from "../../_stores";
-import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import RuleEditModal from "./RuleEditModal";
 import PercentageControl, {
   getDistributionTotal,
   isValidDistribution,
@@ -42,7 +36,9 @@ import PercentageControl, {
 // 기존 InteractivePercentageBar와 동일한 색상 팔레트
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
+import { capitalizeIfAllLower } from "@/lib/string";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
+import { usePassengerRuleDnD } from "./usePassengerRuleDnD";
 import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
@@ -56,14 +52,10 @@ interface SavedRulePayload {
   originalConditions?: Record<string, string[]>;
 }
 
-interface Rule {
-  id: string;
-  name: string;
-  conditions: string[];
-  originalConditions?: Record<string, string[]>; // 🆕 원본 조건 객체 (복구 시 정확한 컬럼 키 사용)
-  flightCount: number;
+import { PassengerRuleBase } from "./types";
+
+interface Rule extends PassengerRuleBase {
   distribution?: Record<string, number>;
-  isExpanded?: boolean;
 }
 
 interface DistributionSettingsProps {
@@ -325,16 +317,10 @@ export default function DistributionSettings({
     payload: string[];
   } | null>(null);
 
-  // 드래그 앤 드랍 상태
-  const [draggingRuleId, setDraggingRuleId] = useState<string | null>(null);
-  const [dragOverRuleId, setDragOverRuleId] = useState<string | null>(null);
-
-  // 전체가 소문자인 경우에만 첫 글자를 대문자로 변환 (대문자가 하나라도 있으면 의도적인 입력으로 간주)
-  const capitalizeFirst = (str: string) => {
-    const hasUpperCase = str !== str.toLowerCase();
-    if (hasUpperCase) return str;
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
+  const { getDragProps, getDragClassName } = usePassengerRuleDnD({
+    rules: createdRules,
+    onReorder: reorderRules,
+  });
 
   // 균등 분배 조정 로직
 
@@ -345,7 +331,7 @@ export default function DistributionSettings({
     // 콤마로 구분해서 여러 개 처리
     const newProperties = newPropertyName
       .split(",")
-      .map((prop) => capitalizeFirst(prop.trim()))
+      .map((prop) => capitalizeIfAllLower(prop.trim()))
       .filter((prop) => prop.length > 0 && !definedProperties.includes(prop));
 
     if (newProperties.length > 0) {
@@ -432,66 +418,6 @@ export default function DistributionSettings({
   }, [createdRules, parquetMetadata, TOTAL_FLIGHTS]);
 
   // 드래그 앤 드랍 핸들러들
-  const handleDragStart = (e: React.DragEvent, ruleId: string) => {
-    setDraggingRuleId(ruleId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", ruleId);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnter = (e: React.DragEvent, ruleId: string) => {
-    e.preventDefault();
-    if (draggingRuleId !== ruleId) {
-      setDragOverRuleId(ruleId);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    // 실제로 영역을 벗어났는지 확인 (자식 요소로 이동한 경우 제외)
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverRuleId(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetRuleId: string) => {
-    e.preventDefault();
-
-    if (!draggingRuleId || draggingRuleId === targetRuleId) {
-      return;
-    }
-
-    const dragIndex = createdRules.findIndex(
-      (rule) => rule.id === draggingRuleId
-    );
-    const dropIndex = createdRules.findIndex(
-      (rule) => rule.id === targetRuleId
-    );
-
-    if (dragIndex === -1 || dropIndex === -1) return;
-
-    const newRules = [...createdRules];
-    const draggedRule = newRules[dragIndex];
-
-    // 배열에서 드래그된 항목 제거
-    newRules.splice(dragIndex, 1);
-    // 새 위치에 삽입
-    newRules.splice(dropIndex, 0, draggedRule);
-
-    // Store 업데이트
-    reorderRules(newRules);
-    setDraggingRuleId(null);
-    setDragOverRuleId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggingRuleId(null);
-    setDragOverRuleId(null);
-  };
-
   // 확인창 처리
   const handleConfirmChanges = () => {
     if (pendingAction) {
@@ -719,14 +645,8 @@ export default function DistributionSettings({
             {createdRules.map((rule) => (
               <div
                 key={rule.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, rule.id)}
-                onDragOver={handleDragOver}
-                onDragEnter={(e) => handleDragEnter(e, rule.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, rule.id)}
-                onDragEnd={handleDragEnd}
-                className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? "scale-95 opacity-50" : ""} ${dragOverRuleId === rule.id ? "border-purple-400 bg-purple-50" : ""} hover:shadow-md`}
+                {...getDragProps(rule.id)}
+                className={getDragClassName(rule.id, "cursor-move rounded-lg border bg-white px-4 py-3 transition-all hover:shadow-md")}
               >
                 {/* Rule Header */}
                 <div className="pointer-events-none flex items-center justify-between">
@@ -834,25 +754,11 @@ export default function DistributionSettings({
         {/* Default Rule 카드 - 항상 표시 */}
         {definedProperties.length > 0 && (
           <div className="mt-4">
-            {/* Default Section - 항상 표시되고 삭제 불가 */}
-            <div className="rounded-lg border bg-white px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge className="border-0 bg-green-100 text-green-700">
-                    Default
-                  </Badge>
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-700">
-                      {flightCalculations.remainingFlights}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      / {flightCalculations.totalFlights}
-                    </span>
-                    <span className="text-sm text-gray-500">flights</span>
-                  </div>
-                </div>
-              </div>
-
+          {/* Default Section - 항상 표시되고 삭제 불가 */}
+            <RuleDefaultRow
+              remainingFlights={flightCalculations.remainingFlights}
+              totalFlights={flightCalculations.totalFlights}
+            >
               {/* Default Distribution Bar */}
               <div className="mt-3">
                 <PercentageControl
@@ -885,41 +791,24 @@ export default function DistributionSettings({
                   )}
                 </div>
               </div>
-            </div>
+            </RuleDefaultRow>
           </div>
         )}
       </div>
 
       {/* Create New Rule Modal */}
-      <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingRuleId
-                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || "Rule"}`
-                : "Create New Rule"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingRuleId
-                ? `Modify the flight conditions and ${isNationality ? "nationality" : "profile"} distribution for this rule.`
-                : `Select flight conditions and assign ${isNationality ? "nationality" : "profile"} distribution values.`}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-4">
-            <ProfileCriteriaSettings
-              parquetMetadata={parquetMetadata}
-              definedProperties={definedProperties}
-              configType={configType}
-              editingRule={
-                editingRuleId
-                  ? createdRules.find((rule) => rule.id === editingRuleId)
-                  : undefined
-              }
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RuleEditModal
+        open={isRuleModalOpen}
+        onOpenChange={setIsRuleModalOpen}
+        editingRuleId={editingRuleId}
+        editingRuleName={createdRules.find((r) => r.id === editingRuleId)?.name}
+        editDescription={`Modify the flight conditions and ${isNationality ? "nationality" : "profile"} distribution for this rule.`}
+        createDescription={`Select flight conditions and assign ${isNationality ? "nationality" : "profile"} distribution values.`}
+        parquetMetadata={parquetMetadata}
+        definedProperties={definedProperties}
+        configType={configType}
+        editingRule={editingRuleId ? createdRules.find((r) => r.id === editingRuleId) : undefined}
+      />
 
       {/* Property Change Confirmation Alert Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

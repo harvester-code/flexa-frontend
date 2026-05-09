@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Building2, MapPin, Plus, Save, Tag, X } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
+import { FacilityItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -14,11 +15,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { formatProcessName } from "@/lib/utils";
 
-// 시설 타입 정의
-type FacilityItem = {
-  name: string;
-  isActive: boolean;
-};
+// FacilityItem은 ../types에서 import
 
 interface ProcessConfigModalProps {
   isOpen: boolean;

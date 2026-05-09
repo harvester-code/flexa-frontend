@@ -2,24 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { EntryCondition, APIRequestLog } from "@/types/simulationTypes";
+import { SimulationTabProps, FacilityItem } from "../types";
 import { useToast } from "@/hooks/useToast";
 import { useSimulationStore } from "../../_stores";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import ProcessConfigModal from "./ProcessConfigModal";
 import ProcessFlowDesigner from "./ProcessFlowDesigner";
 
-// 시설 타입 정의
-type FacilityItem = {
-  name: string;
-  isActive: boolean;
-};
-
-interface TabProcessingProceduresProps {
-  simulationId: string;
-  visible: boolean;
-  apiRequestLog: APIRequestLog | null;
-  setApiRequestLog: (log: APIRequestLog | null) => void;
-}
+interface TabProcessingProceduresProps extends SimulationTabProps {}
 
 export default function TabProcessingProcedures({
   simulationId,

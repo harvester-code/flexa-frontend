@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { Calendar as CalendarIcon, ChevronDown, Database, Filter, Plane, Plus, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Badge } from "@/components/ui/Badge";
@@ -22,11 +22,13 @@ import {
 import {
   APIRequestLog,
 } from "@/types/simulationTypes";
+import { SimulationTabProps } from "../types";
 import {
   getFlightFilters,
   getFlightSchedules,
 } from "@/services/simulationService";
 import SimulationLoading from "../../../_components/SimulationLoading";
+import SimulationCardHeader from "../SimulationCardHeader";
 import { useSimulationStore } from "../../_stores";
 import FlightFilterConditions from "./FlightFilterConditions";
 import FlightDataLoader from "./FlightDataLoader";
@@ -35,17 +37,14 @@ import Spinner from "@/components/ui/Spinner";
 import {
   type SelectedFilter,
   convertFilterToApiConditions,
+  extractHttpErrorMessage,
+  normalizeChartYItem,
 } from "./flight-utils";
 import airportFlat from "../../_json/airport_flat.json";
 
 // ==================== Types ====================
 
-interface TabFlightScheduleProps {
-  simulationId: string;
-  visible: boolean;
-  apiRequestLog: APIRequestLog | null;
-  setApiRequestLog: (log: APIRequestLog | null) => void;
-}
+interface TabFlightScheduleProps extends SimulationTabProps {}
 
 interface TabFiltersData {
   total_flights: number;
@@ -290,9 +289,7 @@ function TabFlightSchedule({
           updateTab(tabId, { loading: false });
         }
       } catch (error: any) {
-        let errorMessage = "Failed to load flight data";
-        if (error?.response?.status === 503) errorMessage = "Server is temporarily overloaded. Please try again in a moment.";
-        else if (error?.response?.status === 504 || error?.code === "ECONNABORTED") errorMessage = "Request timed out.";
+        const errorMessage = extractHttpErrorMessage(error, "Failed to load flight data");
 
         updateTab(tabId, { loading: false });
 
@@ -352,10 +349,7 @@ function TabFlightSchedule({
         const processedChartData: Record<string, any[]> = {};
         if (data.chart_y_data) {
           Object.keys(data.chart_y_data).forEach((category) => {
-            processedChartData[category] = (data.chart_y_data[category] || []).map((item: any) => ({
-              ...item,
-              acc_y: item.acc_y || [],
-            }));
+            processedChartData[category] = (data.chart_y_data[category] || []).map(normalizeChartYItem);
           });
         }
 
@@ -375,11 +369,7 @@ function TabFlightSchedule({
 
         return data;
       } catch (error: any) {
-        let errorMessage = "Unknown error";
-        if (error?.response?.status === 503) errorMessage = "Server is temporarily overloaded.";
-        else if (error?.response?.status === 504 || error?.code === "ECONNABORTED") errorMessage = "Request timed out.";
-        else if (error?.response?.data?.detail) errorMessage = error.response.data.detail;
-        else if (error?.message) errorMessage = error.message;
+        const errorMessage = extractHttpErrorMessage(error);
 
         setApiRequestLog({
           timestamp: new Date().toISOString(),
@@ -473,10 +463,7 @@ function TabFlightSchedule({
           Object.keys(data.chart_y_data).forEach((category) => {
             if (!mergedChartYData[category]) mergedChartYData[category] = [];
             mergedChartYData[category].push(
-              ...(data.chart_y_data[category] || []).map((item: any) => ({
-                ...item,
-                acc_y: item.acc_y || [],
-              }))
+              ...(data.chart_y_data[category] || []).map(normalizeChartYItem)
             );
           });
         }
@@ -558,17 +545,12 @@ function TabFlightSchedule({
   return (
     <div className="space-y-6 pt-8">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-lg">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <Database className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-default-900">Flight Schedule</div>
-              <p className="text-sm font-normal text-default-500">Load and filter flight schedule data</p>
-            </div>
-          </CardTitle>
-        </CardHeader>
+        <SimulationCardHeader
+          icon={Database}
+          title="Flight Schedule"
+          description="Load and filter flight schedule data"
+          iconSize="sm"
+        />
 
         <CardContent className="space-y-6">
           {/* Airport Tabs Bar */}

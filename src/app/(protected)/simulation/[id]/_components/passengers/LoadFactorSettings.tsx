@@ -13,21 +13,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
-import { Badge } from "@/components/ui/Badge";
 import RuleConditionBadges from "./RuleConditionBadges";
+import RuleDefaultRow from "./RuleDefaultRow";
+import { PassengerRuleBase } from "./types";
 import { Button } from "@/components/ui/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { LoadFactorSlider } from "@/components/ui/LoadFactorSlider";
 import { useSimulationStore } from "../../_stores";
-import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import RuleEditModal from "./RuleEditModal";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
+import { sentenceCase } from "@/lib/string";
+import { usePassengerRuleDnD } from "./usePassengerRuleDnD";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
 import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 // Removed import for conversion functions - no longer needed
@@ -36,14 +32,8 @@ import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
 
-interface Rule {
-  id: string;
-  name: string;
-  conditions: string[];
-  flightCount: number;
-  loadFactor?: number; // 🔄 distribution → loadFactor (단순 백분율 값)
-  originalConditions?: Record<string, string[]>; // 실제 컬럼 키 유지용
-  isExpanded?: boolean;
+interface Rule extends PassengerRuleBase {
+  loadFactor?: number;
 }
 
 interface LoadFactorSettingsProps {
@@ -285,14 +275,10 @@ export default function LoadFactorSettings({
     payload: string[];
   } | null>(null);
 
-  // 드래그 앤 드랍 상태
-  const [draggingRuleId, setDraggingRuleId] = useState<string | null>(null);
-  const [dragOverRuleId, setDragOverRuleId] = useState<string | null>(null);
-
-  // 첫글자 대문자로 변환하는 헬퍼 함수
-  const capitalizeFirst = (str: string) => {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  };
+  const { getDragProps, getDragClassName } = usePassengerRuleDnD({
+    rules: createdRules,
+    onReorder: reorderLoadFactorRules,
+  });
 
   // Load Factor는 고정 속성이므로 조정 로직 불필요
   // const adjustDistributionsForNewProperties = () => {};
@@ -343,67 +329,6 @@ export default function LoadFactorSettings({
       totalFlights: TOTAL_FLIGHTS,
     };
   }, [createdRules, parquetMetadata, TOTAL_FLIGHTS]); // parquetMetadata도 의존성에 추가
-
-  // 드래그 앤 드랍 핸들러들
-  const handleDragStart = (e: React.DragEvent, ruleId: string) => {
-    setDraggingRuleId(ruleId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", ruleId);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnter = (e: React.DragEvent, ruleId: string) => {
-    e.preventDefault();
-    if (draggingRuleId !== ruleId) {
-      setDragOverRuleId(ruleId);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    // 실제로 영역을 벗어났는지 확인 (자식 요소로 이동한 경우 제외)
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverRuleId(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetRuleId: string) => {
-    e.preventDefault();
-
-    if (!draggingRuleId || draggingRuleId === targetRuleId) {
-      return;
-    }
-
-    const dragIndex = createdRules.findIndex(
-      (rule) => rule.id === draggingRuleId
-    );
-    const dropIndex = createdRules.findIndex(
-      (rule) => rule.id === targetRuleId
-    );
-
-    if (dragIndex === -1 || dropIndex === -1) return;
-
-    const newRules = [...createdRules];
-    const draggedRule = newRules[dragIndex];
-
-    // 배열에서 드래그된 항목 제거
-    newRules.splice(dragIndex, 1);
-    // 새 위치에 삽입
-    newRules.splice(dropIndex, 0, draggedRule);
-
-    // Store 업데이트
-    reorderLoadFactorRules(newRules);
-    setDraggingRuleId(null);
-    setDragOverRuleId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggingRuleId(null);
-    setDragOverRuleId(null);
-  };
 
   // 확인창 처리 (Load Factor는 속성 고정이므로 단순화)
   const handleConfirmChanges = () => {
@@ -515,14 +440,8 @@ export default function LoadFactorSettings({
           {createdRules.map((rule) => (
             <div
               key={rule.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, rule.id)}
-              onDragOver={handleDragOver}
-              onDragEnter={(e) => handleDragEnter(e, rule.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, rule.id)}
-              onDragEnd={handleDragEnd}
-              className={`cursor-move rounded-lg border bg-white px-4 py-3 transition-all ${draggingRuleId === rule.id ? "scale-95 opacity-50" : ""} ${dragOverRuleId === rule.id ? "border-purple-400 bg-purple-50" : ""} hover:shadow-md`}
+                {...getDragProps(rule.id)}
+                className={getDragClassName(rule.id, "cursor-move rounded-lg border bg-white px-4 py-3 transition-all hover:shadow-md")}
             >
               {/* Rule Header */}
               <div className="pointer-events-none flex items-center justify-between">
@@ -605,24 +524,10 @@ export default function LoadFactorSettings({
           ))}
 
           {/* Default Rule - 항상 표시 */}
-          <div className="rounded-lg border bg-white px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge className="pointer-events-none border-0 bg-green-100 text-green-700">
-                  Default
-                </Badge>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-700">
-                    {flightCalculations.remainingFlights}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    / {flightCalculations.totalFlights}
-                  </span>
-                  <span className="text-sm text-gray-500">flights</span>
-                </div>
-              </div>
-            </div>
-
+          <RuleDefaultRow
+            remainingFlights={flightCalculations.remainingFlights}
+            totalFlights={flightCalculations.totalFlights}
+          >
             {/* Default Load Factor Input */}
             <div className="mt-3">
               <div className="flex items-center gap-4">
@@ -640,40 +545,23 @@ export default function LoadFactorSettings({
                 </div>
               </div>
             </div>
-          </div>
+          </RuleDefaultRow>
         </div>
       </div>
 
       {/* Create New Rule Modal */}
-      <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingRuleId
-                ? `Update ${createdRules.find((rule) => rule.id === editingRuleId)?.name || "Rule"}`
-                : "Create New Rule"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingRuleId
-                ? "Modify the flight conditions and load factor value for this rule."
-                : "Select flight conditions and assign load factor value."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-4">
-            <ProfileCriteriaSettings
-              parquetMetadata={parquetMetadata}
-              definedProperties={definedProperties}
-              configType="load_factor"
-              editingRule={
-                editingRuleId
-                  ? createdRules.find((rule) => rule.id === editingRuleId)
-                  : undefined
-              }
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RuleEditModal
+        open={isRuleModalOpen}
+        onOpenChange={setIsRuleModalOpen}
+        editingRuleId={editingRuleId}
+        editingRuleName={createdRules.find((r) => r.id === editingRuleId)?.name}
+        editDescription="Modify the flight conditions and load factor value for this rule."
+        createDescription="Select flight conditions and assign load factor value."
+        parquetMetadata={parquetMetadata}
+        definedProperties={definedProperties}
+        configType="load_factor"
+        editingRule={editingRuleId ? createdRules.find((r) => r.id === editingRuleId) : undefined}
+      />
 
       {/* Property Change Confirmation Alert Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
