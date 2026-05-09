@@ -340,3 +340,17 @@ export function intersectSets<T>(sets: Set<T>[]): Set<T> | null {
   }
   return result;
 }
+
+/** Axios/fetch 에러에서 사람이 읽기 쉬운 메시지를 추출한다. */
+export function extractHttpErrorMessage(error: any, fallback = "Unknown error"): string {
+  if (error?.response?.status === 503) return "Server is temporarily overloaded.";
+  if (error?.response?.status === 504 || error?.code === "ECONNABORTED") return "Request timed out.";
+  if (error?.response?.data?.detail) return error.response.data.detail;
+  if (error?.message) return error.message;
+  return fallback;
+}
+
+/** chart_y_data 항목을 acc_y 필드가 보장되도록 정규화한다. */
+export function normalizeChartYItem(item: any): any {
+  return { ...item, acc_y: item.acc_y || [] };
+}
