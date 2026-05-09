@@ -100,20 +100,6 @@ export function parseAirlineFlightId(id: string): { airline: string; flightId: s
   return { airline, flightId };
 }
 
-/** 내부 ID → 기존 교집합 집합 형식 ("airlineCode_flightId") */
-export function airlineFlightIdToIntersectionKey(id: string): string | null {
-  const parsed = parseAirlineFlightId(id);
-  if (!parsed) return null;
-  return `${parsed.airline}_${parsed.flightId}`;
-}
-
-// formatFlightNumber 는 더 이상 필요 없지만 하위 호환용으로 유지
-export function formatFlightNumber(airlineCode: string, rawFlightNum: number): string {
-  const numStr = String(rawFlightNum).replace(/^0+/, '') || '0';
-  const padded = numStr.length >= 3 ? numStr : numStr.padStart(3, '0');
-  return `${airlineCode}${padded}`;
-}
-
 // ==================== API 변환 함수들 ====================
 
 /**
@@ -353,27 +339,4 @@ export function intersectSets<T>(sets: Set<T>[]): Set<T> | null {
     result = new Set([...result].filter((id) => sets[i].has(id)));
   }
   return result;
-}
-
-export function computeEstimatedFilteredFlights(
-  selectedFilter: SelectedFilter,
-  filtersData: { filters: Record<string, any> } | null
-): { estimated: number; total: number } {
-  if (!filtersData?.filters?.[selectedFilter.mode]) return { estimated: 0, total: 0 };
-
-  const modeFilters = filtersData.filters[selectedFilter.mode];
-  const total = modeFilters.total_flights || 0;
-  const categories = selectedFilter.categories;
-
-  const hasFilters = Object.values(categories).some((v) => (Array.isArray(v) ? v.length > 0 : !!v));
-  if (!hasFilters) return { estimated: total, total };
-
-  try {
-    const sets = buildConditionFlightSets(modeFilters, categories, selectedFilter.mode);
-    const intersection = intersectSets(sets);
-    if (!intersection) return { estimated: total, total };
-    return { estimated: intersection.size, total };
-  } catch {
-    return { estimated: total, total };
-  }
 }

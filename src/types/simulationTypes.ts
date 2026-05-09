@@ -4,12 +4,6 @@ export type CellStyle = Record<string, string | number | undefined>;
 // Common Types
 // =======================================================================
 
-export interface Option {
-  label: string;
-  value: string;
-  [key: string]: string | undefined;
-}
-
 // =======================================================================
 // Condition Types
 // =======================================================================
@@ -28,14 +22,14 @@ export interface OperatorItem extends DropdownItem {
   multiSelect: boolean;
 }
 
-export interface ConditionData {
+interface ConditionData {
   logicItems: DropdownItem[];
   criteriaItems: DropdownItem[];
   operatorItems: { [criteriaId: string]: OperatorItem[] };
   valueItems: { [criteriaId: string]: DropdownItem[] };
 }
 
-export interface ConditionParams {
+interface ConditionParams {
   name: string;
   operator: string[];
   value: string[];
@@ -53,7 +47,7 @@ export interface SimplifiedCondition {
   values: string[];
 }
 
-export interface ConditionState {
+interface ConditionState {
   index?: number;
   conditions: Condition[];
   mean?: number;
@@ -167,14 +161,14 @@ export interface ChartData {
 // Domain Types
 // =======================================================================
 
-export interface ScenarioOverview {
+interface ScenarioOverview {
   matrix: Array<{
     name: string;
     value: string;
   }>;
 }
 
-export interface FlightSchedule {
+interface FlightSchedule {
   airport: string;
   date: string;
   type: "departure" | "arrival";
@@ -208,7 +202,7 @@ export interface AirlineInfo {
 }
 
 // New JSON structure for show_up_pax.json
-export interface PassengerScheduleShowUpPax {
+interface PassengerScheduleShowUpPax {
   settings: Record<string, any>;
   pax_demographics: Record<string, any>;
   pax_arrival_patterns: {
@@ -229,7 +223,7 @@ export interface PassengerScheduleShowUpPax {
   isCompleted: boolean;
 }
 
-export interface AirportProcessing {
+interface AirportProcessing {
   process_flow: ProcessStep[];
   isCompleted: boolean;
 }
@@ -271,7 +265,7 @@ export interface PassengerCondition {
   values: string[];
 }
 
-export interface FacilityCapacity {
+interface FacilityCapacity {
   selectedNodes: number[];
   settings: Record<string, FacilityCapacitySetting>;
   isCompleted: boolean;
@@ -284,32 +278,11 @@ export interface FacilityCapacitySetting {
 }
 
 // =======================================================================
-// Filter Types
-// =======================================================================
-
-export interface Filter {
-  logic: string;
-  criteria: string;
-  operator: string;
-  value: string[];
-}
-
-export interface FilterOptions {
-  logicItems: Array<{ id: string; text: string; fullText?: string }>;
-  criteriaItems: Array<{ id: string; text: string; fullText?: string }>;
-  operatorItems: {
-    [key: string]: Array<{ id: string; text: string; multiSelect: boolean }>;
-  };
-  valueItems: {
-    [key: string]: Array<{ id: string; text: string; fullText?: string }>;
-  };
-}
-
 // =======================================================================
 // Grid Types
 // =======================================================================
 
-export interface AllocationTableHeader {
+interface AllocationTableHeader {
   text: string;
   value: string;
   width: number;
@@ -317,7 +290,7 @@ export interface AllocationTableHeader {
   style?: CellStyle;
 }
 
-export interface AllocationTableRow {
+interface AllocationTableRow {
   id: string;
   data: { [key: string]: string | number };
 }
@@ -344,7 +317,7 @@ export interface APIRequestLog {
 // Simulation Run Types
 // =======================================================================
 
-export interface SimulationRunRequest {
+interface SimulationRunRequest {
   setting: {
     airport: string;
     date: string;

@@ -18,11 +18,6 @@ export function formatNumberWithComma(value: number | string): string {
   return value;
 }
 
-export function formatPercent(value: number | string): string {
-  if (typeof value === 'number') return `${Math.round(value)}%`;
-  if (!isNaN(Number(value))) return `${Math.round(Number(value))}%`;
-  return value as string;
-}
 
 export function formatTimeTaken(
   time?: { hour?: number; minute?: number; second?: number },

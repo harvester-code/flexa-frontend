@@ -79,16 +79,10 @@ export function getZoneGradientStyle(index: number): React.CSSProperties {
   };
 }
 
-// Legacy function for backward compatibility - returns empty className
-export function getZoneGradient(index: number): string {
-  // Returns empty string since we're using inline styles now
-  return "";
-}
-
 // Utility functions for color manipulation
 export function getColorByIndex(index: number) {
   return COMPONENT_TYPICAL_COLORS[index % COMPONENT_TYPICAL_COLORS.length];
 }
 
 // Type exports
-export type ComponentTypicalColor = (typeof COMPONENT_TYPICAL_COLORS)[number];
+

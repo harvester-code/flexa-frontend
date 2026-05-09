@@ -66,7 +66,7 @@ export interface FacilityChartsStep {
   facilityCharts: FacilityChartData[];
 }
 
-export interface FacilityChartsResponse {
+interface FacilityChartsResponse {
   steps: FacilityChartsStep[];
 }
 
@@ -102,7 +102,7 @@ export interface DestinationPassengerSummary {
   airports: number;
 }
 
-export interface PassengerSummaryResponse {
+interface PassengerSummaryResponse {
   totals: PassengerSummaryTotals;
   dimensions: {
     carrier: CarrierPassengerSummary[];
@@ -200,7 +200,7 @@ export interface DwellTimes {
   airport_dwell_time: TimeHMS;
 }
 
-export interface FlightSummaryResponse {
+interface FlightSummaryResponse {
   totals: FlightSummaryTotals;
   hours: FlightHourSummary[];
   classDistribution: FlightClassDistribution[];

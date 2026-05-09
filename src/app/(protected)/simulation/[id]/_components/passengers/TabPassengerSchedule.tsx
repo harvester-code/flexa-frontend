@@ -13,7 +13,7 @@ interface TabPassengerScheduleProps {
   setApiRequestLog: (log: APIRequestLog | null) => void;
 }
 
-export interface AirlineShowUpTime {
+interface AirlineShowUpTime {
   iata: string;
   name: string;
   meanMinutes: number;

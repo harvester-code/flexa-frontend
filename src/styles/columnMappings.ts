@@ -76,7 +76,7 @@ export function getColumnName(label: string): string {
 getColumnName.reverseMap = null as Record<string, string> | null;
 
 // Export type for the labels
-export type ColumnLabel = typeof COLUMN_LABEL_MAP[keyof typeof COLUMN_LABEL_MAP];
+type ColumnLabel = typeof COLUMN_LABEL_MAP[keyof typeof COLUMN_LABEL_MAP];
 
 // Common label constants derived from COLUMN_LABEL_MAP
 // 중복 제거를 위해 COLUMN_LABEL_MAP의 값들을 기반으로 생성
