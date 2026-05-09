@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart3 } from "lucide-react";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { useSimulationStore } from "../../_stores";
+import SimulationCardHeader from "../SimulationCardHeader";
 
 const BarChart = dynamic(() => import("@/components/charts/BarChart"), {
   ssr: false,
@@ -296,21 +297,11 @@ export default function PassengerResultChart() {
 
   return (
     <Card className="mt-6">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <CardTitle className="text-lg font-semibold text-default-900">
-              Passenger Schedule Chart
-            </CardTitle>
-            <p className="text-sm text-default-500">
-              Visual representation of passenger show-up time data
-            </p>
-          </div>
-        </div>
-      </CardHeader>
+      <SimulationCardHeader
+        icon={BarChart3}
+        title="Passenger Schedule Chart"
+        description="Visual representation of passenger show-up time data"
+      />
 
       <CardContent>
         {/* Total Passengers and Category Selector in one row */}

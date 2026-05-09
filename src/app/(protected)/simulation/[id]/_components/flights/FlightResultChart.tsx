@@ -5,9 +5,10 @@ import dynamic from 'next/dynamic';
 import { BarChart3 } from 'lucide-react';
 import { COMPONENT_TYPICAL_COLORS } from '@/styles/colors';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useSimulationStore } from '../../_stores';
+import SimulationCardHeader from '../SimulationCardHeader';
 
 const BarChart = dynamic(() => import('@/components/charts/BarChart'), { ssr: false });
 
@@ -120,19 +121,11 @@ export default function FlightResultChart() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <CardTitle className="text-lg font-semibold text-default-900">
-              Flight Schedule by {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-            </CardTitle>
-            <p className="text-sm text-default-500">Visual overview of flight schedules</p>
-          </div>
-        </div>
-      </CardHeader>
+      <SimulationCardHeader
+        icon={BarChart3}
+        title={`Flight Schedule by ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
+        description="Visual overview of flight schedules"
+      />
 
       <CardContent>
         {/* Total Flights and Category Selector in one row */}

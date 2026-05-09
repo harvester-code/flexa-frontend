@@ -5,7 +5,7 @@ import { ParquetMetadataItem } from "@/types/parquet";
 import { Check, CheckCircle, Play, Users, X, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/hooks/useToast";
 import Spinner from "@/components/ui/Spinner";
@@ -13,6 +13,7 @@ import { useSimulationStore } from "../../_stores";
 import DistributionSettings from "./DistributionSettings";
 import LoadFactorSettings from "./LoadFactorSettings";
 import ShowUpTimeSettings from "./ShowUpTimeSettings";
+import SimulationCardHeader from "../SimulationCardHeader";
 
 interface PassengerFilterConditionsProps {
   parquetMetadata: ParquetMetadataItem[];
@@ -182,21 +183,11 @@ export default function PassengerFilterConditions({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <Users className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="text-lg font-semibold text-default-900">
-              Configure Passenger Data
-            </div>
-            <p className="text-sm font-normal text-default-500">
-              Configure passenger profiles with properties
-            </p>
-          </div>
-
-          {/* Generate Pax Button */}
+      <SimulationCardHeader
+        icon={Users}
+        title="Configure Passenger Data"
+        description="Configure passenger profiles with properties"
+        actions={
           <Button
             onClick={handleGeneratePax}
             disabled={!canGeneratePax || isGenerating}
@@ -214,8 +205,8 @@ export default function PassengerFilterConditions({
               </>
             )}
           </Button>
-        </CardTitle>
-      </CardHeader>
+        }
+      />
       <CardContent>
         <Tabs
           defaultValue="nationality"
