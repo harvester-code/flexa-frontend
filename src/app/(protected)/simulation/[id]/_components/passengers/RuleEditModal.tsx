@@ -18,7 +18,7 @@ interface RuleEditModalProps {
   parquetMetadata?: ParquetMetadataItem[];
   definedProperties: string[];
   configType?: string;
-  editingRule?: Record<string, unknown>;
+  editingRule?: any;
 }
 
 export default function RuleEditModal({
@@ -48,7 +48,7 @@ export default function RuleEditModal({
         </DialogHeader>
         <div className="mt-4">
           <ProfileCriteriaSettings
-            parquetMetadata={parquetMetadata}
+            parquetMetadata={parquetMetadata ?? []}
             definedProperties={definedProperties}
             configType={configType}
             editingRule={editingRule}

@@ -1,8 +1,8 @@
-import { type ReactNode, type ElementType } from "react";
+import React, { type ReactNode } from "react";
 import { CardHeader, CardTitle } from "@/components/ui/Card";
 
 interface SimulationCardHeaderProps {
-  icon: ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
