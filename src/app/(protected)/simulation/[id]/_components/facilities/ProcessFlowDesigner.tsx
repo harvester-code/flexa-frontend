@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { ParquetMetadataItem } from "@/types/parquet";
 import {
   DndContext,
   closestCenter,
@@ -72,17 +73,6 @@ import {
 } from "@/styles/colors";
 
 // Parquet Metadata 타입 정의 (ScheduleEditor와 동일)
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
-
 interface ProcessFlowDesignerProps {
   // Data
   processFlow: ProcessStep[];

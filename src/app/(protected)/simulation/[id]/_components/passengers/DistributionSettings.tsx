@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ParquetMetadataItem } from "@/types/parquet";
 import {
   AlertTriangle,
   CheckCircle,
@@ -21,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
+import RuleConditionBadges from "./RuleConditionBadges";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -41,6 +43,7 @@ import PercentageControl, {
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
+import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 
 // Use all colors from COMPONENT_TYPICAL_COLORS
 const COLORS = COMPONENT_TYPICAL_COLORS;
@@ -61,17 +64,6 @@ interface Rule {
   flightCount: number;
   distribution?: Record<string, number>;
   isExpanded?: boolean;
-}
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
 }
 
 interface DistributionSettingsProps {
@@ -418,7 +410,7 @@ export default function DistributionSettings({
   }, []);
 
   // 🔧 전체 항공편 수를 zustand store에서 가져오기 (기본값 0)
-  const TOTAL_FLIGHTS = totalFlightsFromStore || 0;
+  const TOTAL_FLIGHTS = countUniqueFlightsFromParquet(parquetMetadata) || totalFlightsFromStore || 0;
 
   // 조건 겹침을 고려한 순차적 항공편 수 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
@@ -516,24 +508,6 @@ export default function DistributionSettings({
   };
 
   // 조건들을 카테고리별로 그룹화하는 함수 (메모이제이션)
-  const groupConditionsByCategory = useCallback((conditions: string[]) => {
-    const groups: Record<string, string[]> = {};
-
-    conditions.forEach((condition) => {
-      const parts = condition.split(": ");
-      if (parts.length === 2) {
-        const category = parts[0]; // "Airline", "Aircraft Type", etc.
-        const value = parts[1]; // Value from condition
-
-        if (!groups[category]) {
-          groups[category] = [];
-        }
-        groups[category].push(value);
-      }
-    });
-
-    return groups;
-  }, []);
 
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
@@ -814,45 +788,7 @@ export default function DistributionSettings({
                 </div>
 
                 {/* Rule Conditions - 카테고리별 배지 형태 */}
-                {rule.conditions.length > 0 && (() => {
-                  const grouped = groupConditionsByCategory(rule.conditions);
-                  const visibleEntries = Object.entries(grouped).filter(([cat]) => cat !== "Flight Number");
-                  const flightNumbers = grouped["Flight Number"] ?? [];
-
-                  let badgeEntries: [string, string[]][] = visibleEntries;
-
-                  if (visibleEntries.length === 0 && flightNumbers.length > 0) {
-                    const fnMeta = parquetMetadata?.find((item) => item.column === 'flight_number');
-                    const airlineMeta = parquetMetadata?.find((item) => item.column === 'operating_carrier_name');
-                    if (fnMeta && airlineMeta) {
-                      const flightToAirline: Record<string, string> = {};
-                      Object.entries(airlineMeta.values).forEach(([airline, data]) => {
-                        data.flights.forEach((fid) => { flightToAirline[fid] = airline; });
-                      });
-                      const airlines = new Set<string>();
-                      flightNumbers.forEach((fnNo) => {
-                        fnMeta.values[fnNo]?.flights.forEach((fid) => {
-                          const a = flightToAirline[fid];
-                          if (a) airlines.add(a);
-                        });
-                      });
-                      badgeEntries = [...airlines].map((a) => [a, [a]]);
-                    }
-                  }
-
-                  if (badgeEntries.length === 0) return null;
-                  return (
-                    <div className="mt-2">
-                      <div className="flex flex-wrap gap-2">
-                        {badgeEntries.map(([category, values]) => (
-                          <Badge key={category} variant="secondary" className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700">
-                            {(values as string[]).join(" | ")}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <RuleConditionBadges conditions={rule.conditions} parquetMetadata={parquetMetadata} />
 
                 {/* Distribution Bar */}
                 {rule.distribution && (
@@ -974,7 +910,7 @@ export default function DistributionSettings({
             <ProfileCriteriaSettings
               parquetMetadata={parquetMetadata}
               definedProperties={definedProperties}
-              configType="nationality"
+              configType={configType}
               editingRule={
                 editingRuleId
                   ? createdRules.find((rule) => rule.id === editingRuleId)

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ParquetMetadataItem } from "@/types/parquet";
 import dynamic from "next/dynamic";
 import {
   AlertTriangle,
@@ -25,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
+import RuleConditionBadges from "./RuleConditionBadges";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -40,6 +42,7 @@ import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
+import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 import { THEME_COLORS } from "@/styles/theme-colors";
 
 // Plotly를 동적으로 로드 (SSR 문제 방지)
@@ -62,17 +65,6 @@ interface Rule {
   parameters?: { Mean: number; Std: number }; // 🔄 distribution → parameters (평균, 표준편차)
   originalConditions?: Record<string, string[]>; // 실제 컬럼 키 유지용
   isExpanded?: boolean;
-}
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
 }
 
 interface ShowUpTimeSettingsProps {
@@ -431,21 +423,7 @@ export default function ShowUpTimeSettings({
   // Load Factor에서 복사된 불필요한 함수 → 제거됨
 
   // 전체 항공편 수 (parquet_metadata에서 계산)
-  const TOTAL_FLIGHTS = useMemo(() => {
-    if (!parquetMetadata || parquetMetadata.length === 0) return 0;
-
-    // parquet_metadata에서 모든 flight들을 수집하여 중복 제거 후 개수 계산
-    const allFlights = new Set<string>();
-    parquetMetadata.forEach((item) => {
-      Object.values(item.values).forEach((valueData) => {
-        valueData.flights.forEach((flight) => {
-          allFlights.add(flight);
-        });
-      });
-    });
-
-    return allFlights.size;
-  }, [parquetMetadata]);
+  const TOTAL_FLIGHTS = useMemo(() => countUniqueFlightsFromParquet(parquetMetadata), [parquetMetadata]);
 
   // 순차적 limited 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
@@ -531,24 +509,6 @@ export default function ShowUpTimeSettings({
   // handleCancelChanges도 제거됨
 
   // 조건들을 카테고리별로 그룹화하는 함수 (메모이제이션)
-  const groupConditionsByCategory = useCallback((conditions: string[]) => {
-    const groups: Record<string, string[]> = {};
-
-    conditions.forEach((condition) => {
-      const parts = condition.split(": ");
-      if (parts.length === 2) {
-        const category = parts[0]; // Category name
-        const value = parts[1]; // Category value
-
-        if (!groups[category]) {
-          groups[category] = [];
-        }
-        groups[category].push(value);
-      }
-    });
-
-    return groups;
-  }, []);
 
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
@@ -934,45 +894,7 @@ export default function ShowUpTimeSettings({
               </div>
 
               {/* Rule Conditions - 카테고리별 배지 형태 */}
-              {rule.conditions.length > 0 && (() => {
-                const grouped = groupConditionsByCategory(rule.conditions);
-                const visibleEntries = Object.entries(grouped).filter(([cat]) => cat !== "Flight Number");
-                const flightNumbers = grouped["Flight Number"] ?? [];
-
-                let badgeEntries: [string, string[]][] = visibleEntries;
-
-                if (visibleEntries.length === 0 && flightNumbers.length > 0) {
-                  const fnMeta = parquetMetadata?.find((item) => item.column === 'flight_number');
-                  const airlineMeta = parquetMetadata?.find((item) => item.column === 'operating_carrier_name');
-                  if (fnMeta && airlineMeta) {
-                    const flightToAirline: Record<string, string> = {};
-                    Object.entries(airlineMeta.values).forEach(([airline, data]) => {
-                      data.flights.forEach((fid) => { flightToAirline[fid] = airline; });
-                    });
-                    const airlines = new Set<string>();
-                    flightNumbers.forEach((fnNo) => {
-                      fnMeta.values[fnNo]?.flights.forEach((fid) => {
-                        const a = flightToAirline[fid];
-                        if (a) airlines.add(a);
-                      });
-                    });
-                    badgeEntries = [...airlines].map((a) => [a, [a]]);
-                  }
-                }
-
-                if (badgeEntries.length === 0) return null;
-                return (
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {badgeEntries.map(([category, values]) => (
-                        <Badge key={category} variant="secondary" className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700">
-                          {(values as string[]).join(" | ")}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+              <RuleConditionBadges conditions={rule.conditions} parquetMetadata={parquetMetadata} />
 
               {/* Distribution Bar */}
               {rule.parameters && (

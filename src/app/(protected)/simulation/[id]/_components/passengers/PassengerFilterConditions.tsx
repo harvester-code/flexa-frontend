@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { ParquetMetadataItem } from "@/types/parquet";
 import { Check, CheckCircle, Play, Users, X, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
 import { Button } from "@/components/ui/Button";
@@ -12,17 +13,6 @@ import { useSimulationStore } from "../../_stores";
 import DistributionSettings from "./DistributionSettings";
 import LoadFactorSettings from "./LoadFactorSettings";
 import ShowUpTimeSettings from "./ShowUpTimeSettings";
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
 
 interface PassengerFilterConditionsProps {
   parquetMetadata: ParquetMetadataItem[];

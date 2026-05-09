@@ -1,17 +1,7 @@
 "use client";
 
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices?: number[];
-    }
-  >;
-}
+import { ParquetMetadataItem } from "@/types/parquet";
 
 export interface FlightRuleLike {
   id: string;

@@ -1,21 +1,12 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { ParquetMetadataItem } from '@/types/parquet';
 import { ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { getColumnLabel as mapColumnLabel } from '@/styles/columnMappings';
 
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
 
 // 🆕 추가 메타데이터 타입 정의 (pax_demographics용)
 interface AdditionalMetadataItem {

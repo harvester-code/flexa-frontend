@@ -1,24 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ParquetMetadataItem } from '@/types/parquet';
 import { CheckCircle, ChevronDown, ChevronRight, Search, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 // import { useSimulationStore } from '../_stores'; // 🔴 zustand 연결 제거
 import { DistributionDialog } from './DistributionDialog';
 import { getColumnLabel, getColumnName } from '@/styles/columnMappings';
+import { resolveColumnKey as resolveColumnKeyFn } from './utils/flightAllocation';
+import { countUniqueFlightsFromParquet } from './utils/ruleConditions';
 import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from '../shared/ValueSetters';
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
 
 interface ProfileCriteriaSettingsProps {
   parquetMetadata: ParquetMetadataItem[];
@@ -46,27 +38,7 @@ export default function ProfileCriteriaSettings({
 
   // 주어진 apiField/value가 parquetMetadata에 존재하는 컬럼 키로 매칭되도록 보정
   const resolveColumnKey = useCallback(
-    (apiField: string, value: string) => {
-      // 1) 동일 컬럼이 존재하고 값이 있으면 그대로 사용
-      const direct = parquetMetadata.find(
-        (item) => item.column === apiField && item.values?.[value]
-      );
-      if (direct) return apiField;
-
-      // 2) 같은 라벨을 가진 컬럼 중 값이 존재하는 첫 번째 컬럼을 사용 (예: iata <-> name)
-      const label = getColumnLabel(apiField);
-      const fallback = parquetMetadata.find(
-        (item) => getColumnLabel(item.column) === label && item.values?.[value]
-      );
-      if (fallback) return fallback.column;
-
-      // 3) 값이 존재하는 아무 컬럼이나 찾아서 사용 (최후 fallback)
-      const anyMatch = parquetMetadata.find((item) => item.values?.[value]);
-      if (anyMatch) return anyMatch.column;
-
-      // 4) 없으면 원래 키 유지
-      return apiField;
-    },
+    (apiField: string, value: string) => resolveColumnKeyFn(parquetMetadata, apiField, value),
     [parquetMetadata]
   );
 
@@ -672,19 +644,10 @@ export default function ProfileCriteriaSettings({
   }, [selectedItems, parquetMetadata]);
 
   // 전체 항공편 수 계산 (parquetMetadata에서)
-  const totalFlights = useMemo(() => {
-    if (!parquetMetadata || parquetMetadata.length === 0) return 0;
-
-    const allFlights = new Set<string>();
-    parquetMetadata.forEach((item) => {
-      Object.values(item.values).forEach((valueData) => {
-        valueData.flights.forEach((flight) => {
-          allFlights.add(flight);
-        });
-      });
-    });
-    return allFlights.size;
-  }, [parquetMetadata]);
+  const totalFlights = useMemo(
+    () => countUniqueFlightsFromParquet(parquetMetadata),
+    [parquetMetadata]
+  );
 
   // 특정 값에 속하는 편명 목록 조회 (flight_number 컬럼과 교차, 라우트 포함)
   const getFlightNumbersForValue = useCallback(

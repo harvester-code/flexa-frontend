@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ParquetMetadataItem } from "@/types/parquet";
 import { AlertTriangle, Edit, Plus, Trash2, X } from "lucide-react";
 import {
   AlertDialog,
@@ -13,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
+import RuleConditionBadges from "./RuleConditionBadges";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -27,6 +29,7 @@ import { useSimulationStore } from "../../_stores";
 import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
 import { getColumnLabel, getColumnName } from "@/styles/columnMappings";
 import { allocateFlightsSequential } from "./utils/flightAllocation";
+import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 // Removed import for conversion functions - no longer needed
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 
@@ -41,17 +44,6 @@ interface Rule {
   loadFactor?: number; // 🔄 distribution → loadFactor (단순 백분율 값)
   originalConditions?: Record<string, string[]>; // 실제 컬럼 키 유지용
   isExpanded?: boolean;
-}
-
-interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
 }
 
 interface LoadFactorSettingsProps {
@@ -333,21 +325,7 @@ export default function LoadFactorSettings({
   // Show-up Time처럼 복사된 불필요한 분배 함수 → 제거됨
 
   // 전체 항공편 수 (parquet_metadata에서 계산)
-  const TOTAL_FLIGHTS = useMemo(() => {
-    if (!parquetMetadata || parquetMetadata.length === 0) return 0;
-
-    // parquet_metadata에서 모든 flight들을 수집하여 중복 제거 후 개수 계산
-    const allFlights = new Set<string>();
-    parquetMetadata.forEach((item) => {
-      Object.values(item.values).forEach((valueData) => {
-        valueData.flights.forEach((flight) => {
-          allFlights.add(flight);
-        });
-      });
-    });
-
-    return allFlights.size;
-  }, [parquetMetadata]);
+  const TOTAL_FLIGHTS = useMemo(() => countUniqueFlightsFromParquet(parquetMetadata), [parquetMetadata]);
 
   // 순차적 limited 계산 (메모이제이션)
   const flightCalculations = useMemo(() => {
@@ -439,24 +417,6 @@ export default function LoadFactorSettings({
   };
 
   // 조건들을 카테고리별로 그룹화하는 함수 (메모이제이션)
-  const groupConditionsByCategory = useCallback((conditions: string[]) => {
-    const groups: Record<string, string[]> = {};
-
-    conditions.forEach((condition) => {
-      const parts = condition.split(": ");
-      if (parts.length === 2) {
-        const category = parts[0]; // "Airline", "Aircraft Type", etc.
-        const value = parts[1]; // Value from condition
-
-        if (!groups[category]) {
-          groups[category] = [];
-        }
-        groups[category].push(value);
-      }
-    });
-
-    return groups;
-  }, []);
 
   // Rule 편집 시작
   const handleEditRule = (ruleId: string) => {
@@ -524,17 +484,6 @@ export default function LoadFactorSettings({
       delete (window as any).handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
-
-  // 퍼센트 총합 검증 (메모이제이션)
-  const isValidDistribution = useCallback((values: Record<string, number>) => {
-    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
-    return Math.abs(total - 100) < 0.1; // 소수점 오차 고려
-  }, []);
-
-  // 총합 계산 (메모이제이션)
-  const getDistributionTotal = useCallback((values: Record<string, number>) => {
-    return Object.values(values).reduce((sum, value) => sum + value, 0);
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -631,45 +580,7 @@ export default function LoadFactorSettings({
               </div>
 
               {/* Rule Conditions - 카테고리별 배지 형태 */}
-              {rule.conditions.length > 0 && (() => {
-                const grouped = groupConditionsByCategory(rule.conditions);
-                const visibleEntries = Object.entries(grouped).filter(([cat]) => cat !== "Flight Number");
-                const flightNumbers = grouped["Flight Number"] ?? [];
-
-                let badgeEntries: [string, string[]][] = visibleEntries;
-
-                if (visibleEntries.length === 0 && flightNumbers.length > 0) {
-                  const fnMeta = parquetMetadata?.find((item) => item.column === 'flight_number');
-                  const airlineMeta = parquetMetadata?.find((item) => item.column === 'operating_carrier_name');
-                  if (fnMeta && airlineMeta) {
-                    const flightToAirline: Record<string, string> = {};
-                    Object.entries(airlineMeta.values).forEach(([airline, data]) => {
-                      data.flights.forEach((fid) => { flightToAirline[fid] = airline; });
-                    });
-                    const airlines = new Set<string>();
-                    flightNumbers.forEach((fnNo) => {
-                      fnMeta.values[fnNo]?.flights.forEach((fid) => {
-                        const a = flightToAirline[fid];
-                        if (a) airlines.add(a);
-                      });
-                    });
-                    badgeEntries = [...airlines].map((a) => [a, [a]]);
-                  }
-                }
-
-                if (badgeEntries.length === 0) return null;
-                return (
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {badgeEntries.map(([category, values]) => (
-                        <Badge key={category} variant="secondary" className="border-0 bg-blue-100 px-3 py-1 text-xs text-blue-700">
-                          {(values as string[]).join(" | ")}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+              <RuleConditionBadges conditions={rule.conditions} parquetMetadata={parquetMetadata} />
 
               {/* Load Factor Input */}
               <div className="mt-3">

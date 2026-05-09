@@ -1,17 +1,8 @@
 import React from "react";
 import { ProcessStep } from "@/types/simulationTypes";
+import { ParquetMetadataItem } from "@/types/parquet";
 
-// Parquet Metadata 타입 정의 (SearchCriteriaSelector와 동일)
-export interface ParquetMetadataItem {
-  column: string;
-  values: Record<
-    string,
-    {
-      flights: string[];
-      indices: number[];
-    }
-  >;
-}
+export type { ParquetMetadataItem };
 
 export interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
