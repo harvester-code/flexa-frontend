@@ -7,22 +7,25 @@ interface LineChartProps {
   chartData: Plotly.Data[];
   chartLayout: Partial<Plotly.Layout>;
   config?: Partial<Plotly.Config>;
+  preserveAxisTickFormat?: boolean;
 }
 
-function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
+function LineChart({ chartData, chartLayout, config = {}, preserveAxisTickFormat = false }: LineChartProps) {
   const chartRef = useRef(null);
 
   useEffect(() => {
     if (chartRef.current) {
+      const yAxis = typeof chartLayout?.yaxis === 'object' ? chartLayout.yaxis : {};
+      const xAxis = typeof chartLayout?.xaxis === 'object' ? chartLayout.xaxis : {};
       const mergedLayout = {
         ...chartLayout,
         yaxis: {
-          ...(typeof chartLayout?.yaxis === 'object' ? chartLayout.yaxis : {}),
-          tickformat: ',d',
+          ...yAxis,
+          tickformat: preserveAxisTickFormat ? ((yAxis as any)?.tickformat ?? ',d') : ',d',
         },
         xaxis: {
-          ...(typeof chartLayout?.xaxis === 'object' ? chartLayout.xaxis : {}),
-          tickformat: '%H:%M',
+          ...xAxis,
+          tickformat: preserveAxisTickFormat ? ((xAxis as any)?.tickformat ?? '%H:%M') : '%H:%M',
         },
         ...(chartLayout?.yaxis2
           ? {
@@ -39,9 +42,10 @@ function LineChart({ chartData, chartLayout, config = {} }: LineChartProps) {
         ...config,
       });
     }
-  }, [chartData, chartLayout, config]);
+  }, [chartData, chartLayout, config, preserveAxisTickFormat]);
 
   return <div ref={chartRef}></div>;
 }
 
+export type { LineChartProps };
 export default LineChart;

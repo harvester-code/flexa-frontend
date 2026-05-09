@@ -50,14 +50,7 @@ export function formatTimeTaken(
   );
 }
 
-export function capitalizeFirst(str: string): string {
-  if (!str) return '';
-  return str
-    .replace(/_/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+export { titleCaseWords as capitalizeFirst } from '@/lib/string';
 
 export function formatUnit(
   unit: string,
