@@ -3,8 +3,8 @@ import dynamic from "next/dynamic";
 import { ScenarioData } from "@/types/homeTypes";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { formatFlowChartLayout } from "./HomeFormat";
-import HomeLoading from "./HomeLoading";
-import HomeNoScenario from "./HomeNoScenario";
+import HomeChartGuard from "./HomeChartGuard";
+import HomeChartSection from "./HomeChartSection";
 
 const SankeyChart = dynamic(() => import("@/components/charts/SankeyChart"), {
   ssr: false,
@@ -106,20 +106,9 @@ function HomeChartFlowChart({
     setLayerTitles(layerTitles);
     setProcessInfo(processInfo);
   }, [sankey]);
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-  if (isSankeyChartLoading) {
-    return <HomeLoading />;
-  }
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-lg font-semibold">
-          Flow Chart
-        </h5>
-      </div>
-      <div className="flex flex-col rounded-md border border-input bg-white p-5">
+    <HomeChartGuard scenario={scenario} isLoading={!!isSankeyChartLoading}>
+      <HomeChartSection title="Flow Chart">
         <div className="relative mb-4 h-12 w-full">
           {layerTitles.map((title, i) => {
             const isLast = i === layerTitles.length - 1;
@@ -171,8 +160,8 @@ function HomeChartFlowChart({
             }}
           />
         </div>
-      </div>
-    </div>
+      </HomeChartSection>
+    </HomeChartGuard>
   );
 }
 

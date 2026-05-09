@@ -7,9 +7,7 @@ import type { ScenarioData, FacilityDetailCategory } from '@/types/homeTypes';
 import { PassengerQueue, PassengerThroughput, RatioIcon01, RatioIcon02, WaitTime } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatImageSize, formatNumberWithComma, formatTimeTaken, formatUnit } from './HomeFormat';
-import HomeLoading from './HomeLoading';
-import HomeNoData from './HomeNoData';
-import HomeNoScenario from './HomeNoScenario';
+import HomeChartGuard from './HomeChartGuard';
 import HomeTooltip from './HomeTooltip';
 
 interface HomeDetailsProps {
@@ -42,20 +40,9 @@ function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: H
     });
   };
 
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-
-  if (isLoading) {
-    return <HomeLoading />;
-  }
-
-  if (!details) {
-    return <HomeNoData />;
-  }
-
   return (
-    <div className="detail-list">
+    <HomeChartGuard scenario={scenario} isLoading={isLoading} data={details}>
+      <div className="detail-list">
       {details && Array.isArray(details) &&
         details.map(({ category, components, overview }, i) => (
           <div className="detail-item" key={i}>
@@ -296,6 +283,7 @@ function HomeDetails({ scenario, percentile, data, isLoading: propIsLoading }: H
           </div>
         ))}
     </div>
+    </HomeChartGuard>
   );
 }
 

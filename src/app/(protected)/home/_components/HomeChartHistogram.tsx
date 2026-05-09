@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst, formatUnit } from './HomeFormat';
-import HomeLoading from './HomeLoading';
-import HomeNoScenario from './HomeNoScenario';
+import HomeChartGuard from './HomeChartGuard';
+import HomeChartSection from './HomeChartSection';
 import TheDropdownMenu from './TheDropdownMenu';
 
 interface HomeChartHistogramProps {
@@ -110,19 +110,9 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
       .filter(({ width }) => width > 0);
   }, [histogramData, selectedFacilityValue, selectedZoneValue, selectedChartType]);
 
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-  if (isHistogramLoading) {
-    return <HomeLoading />;
-  }
-
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-lg font-semibold">Histogram</h5>
-      </div>
-      <div className="flex flex-col rounded-md border border-input bg-white p-5">
+    <HomeChartGuard scenario={scenario} isLoading={!!isHistogramLoading}>
+      <HomeChartSection title="Histogram">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <TheDropdownMenu
@@ -150,8 +140,8 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
           </div>
         </div>
         <TheHistogramChart className="mt-10 rounded-md bg-white" chartData={histogramChartData} />
-      </div>
-    </div>
+      </HomeChartSection>
+    </HomeChartGuard>
   );
 }
 

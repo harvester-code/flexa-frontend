@@ -7,12 +7,24 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
 import { capitalizeFirst } from './HomeFormat';
-import HomeLoading from './HomeLoading';
-import HomeNoScenario from './HomeNoScenario';
-import TheDropdownMenu from './TheDropdownMenu';
+import HomeChartGuard from './HomeChartGuard';
+import HomeChartSection from './HomeChartSection';
 import HomeFacilityHeatmap from './HomeFacilityHeatmap';
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false });
+
+function filterDayTimes(rawTimes: unknown): string[] {
+  const allTimes: string[] = Array.isArray(rawTimes) ? rawTimes : [];
+  return allTimes.filter((timeStr, idx) => {
+    if (idx === 0) return true;
+    const currentTime = new Date(timeStr);
+    const prevTime = new Date(allTimes[idx - 1]);
+    if (currentTime.getHours() < prevTime.getHours()) {
+      return currentTime.getHours() === 0 && currentTime.getMinutes() === 0;
+    }
+    return true;
+  });
+}
 
 const CHART_OPTION_COLORS: Record<string, string> = {
   inflow: '#06b6d4',     // cyan-500
@@ -276,26 +288,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       return;
     }
 
-    const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
-
-    // 자정(00:00) 포함, 그 이후 데이터 제거 - 당일까지만 표시
-    const times = allTimes.filter((timeStr, idx) => {
-      if (idx === 0) return true; // 첫 시간은 무조건 포함
-
-      const currentTime = new Date(timeStr);
-      const prevTime = new Date(allTimes[idx - 1]);
-
-      // 00:00은 포함, 그 이후(00:15 등)부터 제외
-      if (currentTime.getHours() < prevTime.getHours()) {
-        // 00:00은 포함
-        if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
-          return true;
-        }
-        return false; // 다음날 데이터 제외
-      }
-
-      return true;
-    });
+    const times = filterDayTimes(hourlyTrendsData.times);
 
     const facilityData = hourlyTrendsData[selectedFacilityValue];
     const dataSource = facilityData?.data || facilityData;
@@ -625,19 +618,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     return `${selectedAirlines.length} airlines`;
   }, [selectedAirlines, AIRLINE_OPTIONS]);
 
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-  if (isFlowChartLoading) {
-    return <HomeLoading />;
-  }
-
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between pl-5">
-        <h5 className="flex h-[50px] items-center text-lg font-semibold">Hourly Trends</h5>
-      </div>
-      <div className="flex flex-col rounded-md border border-input bg-white p-5">
+    <HomeChartGuard scenario={scenario} isLoading={!!isFlowChartLoading}>
+      <HomeChartSection title="Hourly Trends">
         <div className="chart-header-container">
           <div className="chart-header-selects">
             <div ref={dropdownRef} className="relative min-w-48 flex-1">
@@ -768,26 +751,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
         {/* Facility-level Heatmap */}
         {hourlyTrendsData && selectedFacilityValue && (() => {
-          const allTimes = Array.isArray(hourlyTrendsData.times) ? hourlyTrendsData.times : [];
-
-          // 자정(00:00) 포함, 그 이후 데이터 제거 - 당일까지만 표시
-          const times = allTimes.filter((timeStr, idx) => {
-            if (idx === 0) return true;
-
-            const currentTime = new Date(timeStr);
-            const prevTime = new Date(allTimes[idx - 1]);
-
-            // 00:00은 포함, 그 이후(00:15 등)부터 제외
-            if (currentTime.getHours() < prevTime.getHours()) {
-              // 00:00은 포함
-              if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
-                return true;
-              }
-              return false;
-            }
-
-            return true;
-          });
+          const times = filterDayTimes(hourlyTrendsData.times);
 
           const facilityData = hourlyTrendsData[selectedFacilityValue];
           const dataSource = facilityData?.data || facilityData;
@@ -968,8 +932,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             />
           );
         })()}
-      </div>
-    </div>
+      </HomeChartSection>
+    </HomeChartGuard>
   );
 }
 

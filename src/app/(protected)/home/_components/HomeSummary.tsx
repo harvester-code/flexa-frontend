@@ -5,9 +5,7 @@ import type { ScenarioData, HomeSummaryData, FacilityMetric } from '@/types/home
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Clock, Timer, Building2, Plane, DollarSign, Users, UserCheck, Home, Hourglass, Gauge, Activity, Target } from 'lucide-react';
 import { formatTimeTaken, formatUnit } from './HomeFormat';
-import HomeLoading from './HomeLoading';
-import HomeNoData from './HomeNoData';
-import HomeNoScenario from './HomeNoScenario';
+import HomeChartGuard from './HomeChartGuard';
 import HomeSummaryCard from './HomeSummaryCard';
 
 interface HomeSummaryProps {
@@ -69,20 +67,8 @@ function HomeSummary({
     { color: '#7c3aed', label: 'In-service' },
   ];
 
-  if (!scenario) {
-    return <HomeNoScenario />;
-  }
-
-  if (isLoading) {
-    return <HomeLoading />;
-  }
-
-  if (!summaryData) {
-    return <HomeNoData />;
-  }
-
   return (
-    <>
+    <HomeChartGuard scenario={scenario} isLoading={isLoading} data={summaryData}>
       {/* Throughputs 섹션 */}
       {summaryData?.passenger_summary && (
         <>
@@ -192,7 +178,7 @@ function HomeSummary({
         </div>
       </div>
       <TheHistogramChart chartData={waitTimeChartData} />
-    </>
+    </HomeChartGuard>
   );
 }
 
