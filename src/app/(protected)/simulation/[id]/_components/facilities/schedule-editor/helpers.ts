@@ -1,5 +1,4 @@
 import React from "react";
-import { getBadgeColor } from "@/styles/colors";
 import { ParquetMetadataItem, CategoryBadge, TimeBlock } from "./types";
 import {
   getCategoryNameFromField,

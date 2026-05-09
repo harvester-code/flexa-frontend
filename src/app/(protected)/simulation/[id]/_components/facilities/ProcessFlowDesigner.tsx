@@ -68,7 +68,6 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import {
   getBadgeColor,
-  getZoneGradient,
   getZoneGradientStyle,
 } from "@/styles/colors";
 
