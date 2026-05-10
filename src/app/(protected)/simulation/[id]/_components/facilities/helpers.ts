@@ -126,11 +126,14 @@ export function calcOperatingPeriod(
 ): string | null {
   if (!date) return null;
 
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const localDateStr = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
   if (!chartResult?.chart_x_data || chartResult.chart_x_data.length === 0) {
     const nextDay = new Date(date + "T00:00:00");
     nextDay.setDate(nextDay.getDate() + 1);
-    const nextDayStr = nextDay.toISOString().split("T")[0];
-    return `${date} 00:00:00-${nextDayStr} 00:00:00`;
+    return `${date} 00:00:00-${localDateStr(nextDay)} 00:00:00`;
   }
 
   const firstTime = chartResult.chart_x_data[0];
@@ -144,7 +147,7 @@ export function calcOperatingPeriod(
   } else {
     const lastDateObj = new Date(lastDate + "T00:00:00");
     lastDateObj.setDate(lastDateObj.getDate() + 1);
-    endDateTime = `${lastDateObj.toISOString().split("T")[0]} 00:00:00`;
+    endDateTime = `${localDateStr(lastDateObj)} 00:00:00`;
   }
 
   return `${startDateTime}-${endDateTime}`;
@@ -155,28 +158,26 @@ export function calcOperatingPeriod(
  *
  * 1. 날짜 시프트: sourceDate(프리셋 저장 시 비행일) → targetDate 로 오프셋 계산 후 모든 period 날짜 이동
  *    sourceDate가 null이면 heuristic(findPresetFlightDate)으로 폴백합니다.
- * 2. 클리핑/패딩: targetPeriod(새 시나리오 운영 윈도우) 기준으로
- *    - 부족한 슬롯 → 기본값(All 조건, 동일 process_time_seconds) 으로 채움
- *    - 넘치는 슬롯 → 제거
+ * 2. 경계값 확장: targetPeriod(새 시나리오 운영 윈도우) 기준으로
+ *    - 프리셋 범위보다 앞쪽 → 가장 첫 번째 블록의 값으로 확장
+ *    - 프리셋 범위보다 뒤쪽 → 가장 마지막 블록의 값으로 확장
+ *    - 시간 단위는 건드리지 않음 (useNormalizeAllSchedules가 담당)
  *    targetPeriod가 null이면 날짜 시프트만 수행합니다.
  *
- * @param processFlow     프리셋의 process_flow
- * @param targetDate      새 시나리오의 비행일 (YYYY-MM-DD)
- * @param sourceDate      프리셋이 저장될 때의 비행일 (reference_date). null이면 heuristic 사용.
- * @param targetPeriod    새 시나리오의 운영 윈도우 ("YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS")
- * @param intervalMinutes 스케줄 슬롯 간격 (기본 30분)
+ * @param processFlow  프리셋의 process_flow
+ * @param targetDate   새 시나리오의 비행일 (YYYY-MM-DD)
+ * @param sourceDate   프리셋이 저장될 때의 비행일 (reference_date). null이면 heuristic 사용.
+ * @param targetPeriod 새 시나리오의 운영 윈도우 ("YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS")
  */
 export function remapPresetDates(
   processFlow: any[],
   targetDate: string | null,
   sourceDate: string | null = null,
   targetPeriod: string | null = null,
-  intervalMinutes = 30,
 ): any[] {
   if (!Array.isArray(processFlow) || !targetDate) return processFlow;
 
   // ── 1. 날짜 오프셋 계산 ──────────────────────────────────────────────────
-  // sourceDate(reference_date)가 있으면 그대로 사용, 없으면 heuristic으로 추정
   const presetFlightDate = sourceDate ?? findPresetFlightDate(processFlow);
   const offsetDays = presetFlightDate
     ? Math.round(
@@ -187,7 +188,6 @@ export function remapPresetDates(
 
   // ── 2. 운영 윈도우 파싱 ─────────────────────────────────────────────────
   const windowMs = targetPeriod ? parsePeriodMs(targetPeriod) : null;
-  const intervalMs = intervalMinutes * 60 * 1000;
 
   return processFlow.map((process) => {
     const updatedZones: Record<string, any> = {};
@@ -202,65 +202,83 @@ export function remapPresetDates(
           period: shiftPeriod(block.period || "", offsetDays),
         }));
 
-        // 클리핑/패딩이 필요 없으면 날짜 시프트만 반환
-        if (!windowMs) {
+        // 경계값 확장이 필요 없으면 날짜 시프트만 반환
+        if (!windowMs || shiftedBlocks.length === 0) {
           return { ...facility, operating_schedule: { time_blocks: shiftedBlocks } };
         }
 
         const [windowStartMs, windowEndMs] = windowMs;
 
-        // ── Step B: 슬롯 목록 생성 ──────────────────────────────────────
-        const slots = generateSlots(windowStartMs, windowEndMs, intervalMs);
+        // ── Step B: 블록을 startMs 기준으로 정렬 ────────────────────────
+        const parsedBlocks = shiftedBlocks
+          .map((block) => {
+            const parsed = parsePeriodMs(block.period || "");
+            if (!parsed) return null;
+            return { startMs: parsed[0], endMs: parsed[1], block };
+          })
+          .filter(Boolean) as { startMs: number; endMs: number; block: any }[];
 
-        // ── Step C: 프리셋 블록의 유효 범위([startMs, endMs]) 목록 ──────
-        // 블록이 큰 범위 하나일 수도, 30분짜리 다수일 수도 있음
-        const presetRanges: { startMs: number; endMs: number; block: any }[] = [];
-        shiftedBlocks.forEach((block) => {
-          const parsed = parsePeriodMs(block.period || "");
-          if (!parsed) return;
-          presetRanges.push({ startMs: parsed[0], endMs: parsed[1], block });
-        });
+        if (parsedBlocks.length === 0) {
+          return { ...facility, operating_schedule: { time_blocks: shiftedBlocks } };
+        }
 
-        // ── Step D: 기본 process_time_seconds 결정 ──────────────────────
-        // 프리셋에서 가장 많이 쓰인 값 사용, 없으면 6s
-        const ptsCounts = new Map<number, number>();
-        shiftedBlocks.forEach((b) => {
-          const pts = b.process_time_seconds ?? 6;
-          ptsCounts.set(pts, (ptsCounts.get(pts) ?? 0) + 1);
-        });
-        let defaultPts = 6;
-        let maxCount = 0;
-        ptsCounts.forEach((count, pts) => {
-          if (count > maxCount) { maxCount = count; defaultPts = pts; }
-        });
+        parsedBlocks.sort((a, b) => a.startMs - b.startMs);
+        const firstParsed = parsedBlocks[0];
+        const lastParsed = parsedBlocks[parsedBlocks.length - 1];
 
-        // ── Step E: 슬롯별 time_block 조립 ─────────────────────────────
-        // 슬롯이 어떤 프리셋 블록의 '범위 내'에 있으면 그 블록의 조건 사용.
-        // 하나의 큰 블록(전체 구간)이 있어도 각 30분 슬롯으로 분할해 적용.
-        const newBlocks = slots.map(([slotStart, slotEnd]) => {
-          // 이 슬롯을 커버하는 프리셋 블록 탐색
-          // 조건: presetBlock.startMs <= slotStart && presetBlock.endMs >= slotEnd
-          const covering = presetRanges.find(
-            (r) => r.startMs <= slotStart && r.endMs >= slotEnd,
-          );
+        let resultBlocks = [...shiftedBlocks];
 
-          if (covering) {
-            // 커버 블록의 조건은 유지하되 period만 이 슬롯으로 교체
-            return {
-              ...covering.block,
-              period: `${formatDatetime(new Date(slotStart))}-${formatDatetime(new Date(slotEnd))}`,
-            };
-          }
-
-          // 커버 블록 없음 → 기본값(All)
-          return {
-            period: `${formatDatetime(new Date(slotStart))}-${formatDatetime(new Date(slotEnd))}`,
-            process_time_seconds: defaultPts,
-            passenger_conditions: [],
+        // ── Step C: 앞쪽 경계값 확장 ────────────────────────────────────
+        // 운영 윈도우가 첫 블록보다 일찍 시작하면, 첫 블록을 윈도우 시작까지 확장
+        if (windowStartMs < firstParsed.startMs) {
+          const extendedFirst = {
+            ...firstParsed.block,
+            period: `${formatDatetime(new Date(windowStartMs))}-${formatDatetime(new Date(firstParsed.endMs))}`,
           };
-        });
+          // 기존 첫 블록을 교체
+          resultBlocks = [
+            extendedFirst,
+            ...shiftedBlocks.filter((b) => {
+              const p = parsePeriodMs(b.period || "");
+              return p ? p[0] !== firstParsed.startMs : true;
+            }),
+          ];
+        }
 
-        return { ...facility, operating_schedule: { time_blocks: newBlocks } };
+        // ── Step D: 뒤쪽 경계값 확장 ────────────────────────────────────
+        // 운영 윈도우가 마지막 블록보다 늦게 끝나면, 마지막 블록을 윈도우 끝까지 확장
+        if (windowEndMs > lastParsed.endMs) {
+          // resultBlocks에서 마지막 블록 찾아 교체
+          const lastBlockPeriodStart = formatDatetime(new Date(lastParsed.startMs));
+          const extendedLast = {
+            ...lastParsed.block,
+            period: `${lastBlockPeriodStart}-${formatDatetime(new Date(windowEndMs))}`,
+          };
+          resultBlocks = resultBlocks.map((b) => {
+            const p = parsePeriodMs(b.period || "");
+            return p && p[0] === lastParsed.startMs ? extendedLast : b;
+          });
+        }
+
+        // ── Step E: 윈도우 바깥 블록 클리핑 ─────────────────────────────
+        // 윈도우 범위를 완전히 벗어난 블록 제거, 걸쳐있는 블록은 클리핑
+        resultBlocks = resultBlocks
+          .map((b) => {
+            const p = parsePeriodMs(b.period || "");
+            if (!p) return b;
+            const [bStart, bEnd] = p;
+            if (bEnd <= windowStartMs || bStart >= windowEndMs) return null; // 완전히 밖
+            const clippedStart = Math.max(bStart, windowStartMs);
+            const clippedEnd = Math.min(bEnd, windowEndMs);
+            if (clippedStart === bStart && clippedEnd === bEnd) return b; // 변경 없음
+            return {
+              ...b,
+              period: `${formatDatetime(new Date(clippedStart))}-${formatDatetime(new Date(clippedEnd))}`,
+            };
+          })
+          .filter(Boolean) as any[];
+
+        return { ...facility, operating_schedule: { time_blocks: resultBlocks } };
       });
 
       updatedZones[zoneName] = { ...zone, facilities: updatedFacilities };

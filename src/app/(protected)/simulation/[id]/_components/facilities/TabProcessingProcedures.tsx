@@ -9,7 +9,7 @@ import { useSimulationStore } from "../../_stores";
 import ProcessConfigModal from "./ProcessConfigModal";
 import ProcessFlowDesigner from "./ProcessFlowDesigner";
 import FacilityPresetModal from "./FacilityPresetModal";
-import { remapPresetDates } from "./helpers";
+import { remapPresetDates, calcOperatingPeriod } from "./helpers";
 
 interface TabProcessingProceduresProps extends SimulationTabProps {}
 
@@ -26,6 +26,10 @@ export default function TabProcessingProcedures({
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
   const scenarioDate = useSimulationStore((s) => s.context.date);
+  const chartResult = useSimulationStore((s) => s.passenger.chartResult);
+  const incrementFacilityPresetVersion = useSimulationStore((s) => s.incrementFacilityPresetVersion);
+  const storeScheduleInterval = useSimulationStore((s) => s.schedule_interval_minutes);
+  const setScheduleIntervalMinutes = useSimulationStore((s) => s.setScheduleIntervalMinutes);
   // Process completed state removed as it's no longer needed
   const isCompleted = false; // Always false as step3Completed is removed
   const appliedFilterResult = useSimulationStore(
@@ -283,10 +287,18 @@ export default function TabProcessingProcedures({
         onClose={() => setShowPresetModal(false)}
         currentProcessFlow={processFlow as any}
         referenceDate={scenarioDate}
-        onLoadPreset={(newFlow, presetReferenceDate) => {
-          // presetReferenceDate → scenarioDate 로 날짜만 shift (조건값/process_time 등 그대로 유지)
-          const shifted = remapPresetDates(newFlow, scenarioDate, presetReferenceDate, null);
+        scheduleIntervalMinutes={storeScheduleInterval}
+        onLoadPreset={(newFlow, presetReferenceDate, presetIntervalMinutes) => {
+          // 새 시나리오의 운영 윈도우를 계산하여 경계값 확장에 활용
+          const targetPeriod = calcOperatingPeriod(chartResult, scenarioDate);
+          const shifted = remapPresetDates(newFlow, scenarioDate, presetReferenceDate, targetPeriod);
+          // 프리셋의 시간 단위 복원 (저장된 값이 있는 경우에만)
+          if (presetIntervalMinutes != null) {
+            setScheduleIntervalMinutes(presetIntervalMinutes);
+          }
           setProcessFlow(shifted as any);
+          // presetVersion 증가 → useNormalizeAllSchedules가 새 시간 단위로 재정규화
+          incrementFacilityPresetVersion();
           setSelectedProcessIndex(null);
         }}
       />

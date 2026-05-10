@@ -14,6 +14,7 @@ interface UseNormalizeAllSchedulesProps {
   appliedTimeUnit: number;
   processFlow: ProcessStep[];
   isTimeSlotsFromChartData: boolean;
+  facilityPresetVersion?: number;
 }
 
 /**
@@ -35,6 +36,7 @@ export function useNormalizeAllSchedules({
   appliedTimeUnit,
   processFlow,
   isTimeSlotsFromChartData,
+  facilityPresetVersion = 0,
 }: UseNormalizeAllSchedulesProps) {
   const { initializeDisabledCellsFromPeriods } = useScheduleInitialization();
   const lastSignatureRef = useRef("");
@@ -64,7 +66,7 @@ export function useNormalizeAllSchedules({
         ),
       0
     );
-    const signature = `${timeSlots[0]}|${timeSlots[timeSlots.length - 1]}|${timeSlots.length}|${isPreviousDay}|${appliedTimeUnit}|${zoneCount}|${facilityCount}`;
+    const signature = `${timeSlots[0]}|${timeSlots[timeSlots.length - 1]}|${timeSlots.length}|${isPreviousDay}|${appliedTimeUnit}|${zoneCount}|${facilityCount}|v${facilityPresetVersion}`;
     if (lastSignatureRef.current === signature) {
       return;
     }
@@ -162,6 +164,7 @@ export function useNormalizeAllSchedules({
     isPreviousDay,
     appliedTimeUnit,
     processFlow,
+    facilityPresetVersion,
     initializeDisabledCellsFromPeriods,
   ]);
 }

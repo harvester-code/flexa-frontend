@@ -1203,31 +1203,43 @@ export default function ProcessFlowDesigner({
                 </p>
               </div>
             </div>
-            {/* 🆕 Run Simulation Button */}
-            <Button
-              onClick={handleRunSimulation}
-              disabled={!canRunSimulation || isRunningSimulation}
-              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRunningSimulation ? (
-                <>
-                  <Spinner size={16} />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Play size={16} />
-                  Run Simulation
-                </>
+            {/* Run Simulation + Presets buttons */}
+            <div className="flex items-center gap-2">
+              {onOpenPresetModal && (
+                <Button
+                  variant="outline"
+                  onClick={onOpenPresetModal}
+                  className="flex items-center gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Presets
+                </Button>
               )}
-            </Button>
+              <Button
+                onClick={handleRunSimulation}
+                disabled={!canRunSimulation || isRunningSimulation}
+                className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRunningSimulation ? (
+                  <>
+                    <Spinner size={16} />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} />
+                    Run Simulation
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Divider */}
           <hr className="border-gray-200" />
 
-          {/* 🆕 Process Configuration Description */}
+          {/* Process Configuration Description */}
           <div className="flex items-center justify-between border-l-4 border-primary pl-4">
             <div>
               <h3 className="text-lg font-semibold text-default-900">
@@ -1237,17 +1249,6 @@ export default function ProcessFlowDesigner({
                 Define the passenger flow sequence and facility requirements
               </p>
             </div>
-            {onOpenPresetModal && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
-                onClick={onOpenPresetModal}
-              >
-                <BookOpen className="h-4 w-4" />
-                Presets
-              </Button>
-            )}
           </div>
 
           {/* Left-Right Split Layout */}

@@ -443,8 +443,11 @@ export interface SimulationStoreState {
   resetPassenger: () => void;
   loadPassengerMetadata: (metadata: Record<string, unknown>) => void;
   setPassengerChartResult: (chartData: PassengerData["chartResult"]) => void;
+  loadPassengerPreset: (data: Partial<Omit<PassengerData, "chartResult">>) => void;
 
   // ==================== Processing Procedures Actions ====================
+  facilityPresetVersion: number;
+  incrementFacilityPresetVersion: () => void;
   setProcessFlow: (flow: ProcessStep[]) => void;
   convertFromProcedures: (
     procedures: Array<{
@@ -1311,6 +1314,39 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.passenger.chartResult = chartData;
       }),
 
+    loadPassengerPreset: (data) =>
+      set((state) => {
+        if (data.settings) {
+          Object.assign(state.passenger.settings, data.settings);
+        }
+        if (data.pax_demographics) {
+          state.passenger.pax_demographics = {
+            ...state.passenger.pax_demographics,
+            ...data.pax_demographics,
+          };
+        }
+        if (data.pax_generation) {
+          state.passenger.pax_generation = {
+            ...state.passenger.pax_generation,
+            ...data.pax_generation,
+          };
+        }
+        if (data.pax_arrival_patterns) {
+          state.passenger.pax_arrival_patterns = {
+            ...state.passenger.pax_arrival_patterns,
+            ...data.pax_arrival_patterns,
+          };
+        }
+        // Reset chart result since passenger data changed
+        state.passenger.chartResult = undefined;
+        state.workflow.step2Completed = false;
+        if (state.workflow.availableSteps.includes(3)) {
+          state.workflow.availableSteps = state.workflow.availableSteps.filter(
+            (step) => step !== 3
+          );
+        }
+      }),
+
     // 🆕 여객 차트 결과 초기화 및 Step 2 완료 상태 해제
     clearPassengerChartResult: () =>
       set((state) => {
@@ -1325,6 +1361,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
       }),
 
     // ==================== Processing Procedures Actions ====================
+
+    facilityPresetVersion: 0,
+
+    incrementFacilityPresetVersion: () =>
+      set((state) => {
+        state.facilityPresetVersion = (state.facilityPresetVersion ?? 0) + 1;
+      }),
 
     setProcessFlow: (flow) =>
       set((state) => {

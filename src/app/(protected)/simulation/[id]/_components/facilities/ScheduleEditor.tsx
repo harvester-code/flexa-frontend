@@ -52,6 +52,7 @@ import {
   calculatePeriodsFromDisabledCells,
 } from "./schedule-editor/helpers";
 import ExcelTable from "./schedule-editor/ExcelTable";
+import { getCategoryNameFromField } from "./schedule-editor/badgeMappings";
 import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useSimulationStore } from "../../_stores";
 import TerminalImageManager from "@/components/TerminalImageManager";
@@ -98,6 +99,7 @@ export default function OperatingScheduleEditor({
   const setStoreTerminal = useSimulationStore((s) => s.setTerminal);
   const storeScheduleInterval = useSimulationStore((s) => s.schedule_interval_minutes);
   const setStoreScheduleInterval = useSimulationStore((s) => s.setScheduleIntervalMinutes);
+  const facilityPresetVersion = useSimulationStore((s) => s.facilityPresetVersion);
 
   useEffect(() => {
     if (!scenarioId) return;
@@ -305,22 +307,36 @@ export default function OperatingScheduleEditor({
     return result;
   }, [cellBadges, validOptionsMap]);
 
-  // 불일치 요약: 전체 zone/process의 카테고리별 없는 값 목록
+  // 불일치 요약: processFlow 전체를 직접 스캔 (탭 방문 여부와 무관하게 모든 조건 포함)
+  // 구조: { category → Map<value, Set<"ProcessName / ZoneName">> }
   const invalidConditionsSummary = useMemo(() => {
-    const summary: Record<string, Set<string>> = {};
-    Object.values(allZoneBadges).forEach((zoneBadges) => {
-      Object.values(zoneBadges).flat().forEach((badge) => {
-        const validSet = validOptionsMap[badge.category];
-        badge.options.forEach((opt) => {
-          if (!validSet || !validSet.has(opt)) {
-            if (!summary[badge.category]) summary[badge.category] = new Set();
-            summary[badge.category].add(opt);
-          }
+    const summary: Record<string, Map<string, Set<string>>> = {};
+
+    processFlow.forEach((process: any) => {
+      const processLabel = formatProcessName(process.name) || process.name || "Unknown";
+      Object.entries(process.zones || {}).forEach(([zoneName, zone]: [string, any]) => {
+        const location = `${processLabel} / ${zoneName}`;
+        (zone.facilities || []).forEach((facility: any) => {
+          const timeBlocks: any[] = facility?.operating_schedule?.time_blocks || [];
+          timeBlocks.forEach((block) => {
+            (block.passenger_conditions || []).forEach((condition: any) => {
+              const categoryName = getCategoryNameFromField(condition.field);
+              const validSet = validOptionsMap[categoryName];
+              (condition.values || []).forEach((val: string) => {
+                if (!validSet || !validSet.has(val)) {
+                  if (!summary[categoryName]) summary[categoryName] = new Map();
+                  if (!summary[categoryName].has(val)) summary[categoryName].set(val, new Set());
+                  summary[categoryName].get(val)!.add(location);
+                }
+              });
+            });
+          });
         });
       });
     });
+
     return summary;
-  }, [allZoneBadges, validOptionsMap]);
+  }, [processFlow, validOptionsMap]);
 
   // 현재 Zone의 비활성화된 셀 가져오기 (메모이제이션으로 최적화)
   const disabledCells = useMemo(
@@ -423,8 +439,6 @@ export default function OperatingScheduleEditor({
   // Get initialization functions from hook
   const {
     initializeDisabledCellsFromPeriods,
-    getCategoryNameFromField,
-    getCategoryFieldName,
   } = useScheduleInitialization();
 
   // 🔄 실행 취소/재실행 히스토리 관리
@@ -1118,6 +1132,7 @@ export default function OperatingScheduleEditor({
       chartResult.chart_x_data.length > 0 &&
       intervalSynced
     ),
+    facilityPresetVersion,
   });
 
   // Use custom hook for facility schedule synchronization
@@ -1242,7 +1257,7 @@ export default function OperatingScheduleEditor({
               ⚠ The following conditions are not available in this scenario and are shown in gray:
             </p>
             <div className="space-y-1.5">
-              {Object.entries(invalidConditionsSummary).map(([category, values]) => {
+              {Object.entries(invalidConditionsSummary).map(([category, valuesMap]) => {
                 const TAB_LABEL: Record<string, string> = {
                   "Passenger Type": "Pax Profile tab",
                   "Nationality": "Nationality tab",
@@ -1252,12 +1267,16 @@ export default function OperatingScheduleEditor({
                   <div key={category} className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs font-medium text-red-700 min-w-fit">{label}</span>
                     <span className="text-xs text-red-400">→</span>
-                    {Array.from(values).map((val) => (
+                    {Array.from(valuesMap.entries()).map(([val, locations]) => (
                       <span
                         key={val}
-                        className="rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-600"
+                        className="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-1.5 py-0.5"
+                        title={`Found in: ${Array.from(locations).join(", ")}`}
                       >
-                        {val}
+                        <span className="text-[10px] font-semibold text-red-600">{val}</span>
+                        <span className="text-[9px] text-red-400 font-normal">
+                          {Array.from(locations).join(", ")}
+                        </span>
                       </span>
                     ))}
                   </div>

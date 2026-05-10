@@ -37,7 +37,9 @@ interface FacilityPresetModalProps {
   currentProcessFlow: ProcessStep[];
   /** Flight date of the current scenario (YYYY-MM-DD). Stored as reference_date when saving a preset. */
   referenceDate: string | null;
-  onLoadPreset: (processFlow: ProcessStep[], referenceDate: string | null) => void;
+  /** Current schedule interval (minutes). Stored with the preset so the grid unit is restored on load. */
+  scheduleIntervalMinutes: number | null;
+  onLoadPreset: (processFlow: ProcessStep[], referenceDate: string | null, scheduleIntervalMinutes: number | null) => void;
 }
 
 type ModalView = "list" | "save";
@@ -48,6 +50,7 @@ export default function FacilityPresetModal({
   onClose,
   currentProcessFlow,
   referenceDate,
+  scheduleIntervalMinutes,
   onLoadPreset,
 }: FacilityPresetModalProps) {
   const { toast } = useToast();
@@ -107,6 +110,7 @@ export default function FacilityPresetModal({
         name: newPresetName.trim(),
         process_flow: currentProcessFlow as unknown as Record<string, unknown>[],
         reference_date: referenceDate,
+        schedule_interval_minutes: scheduleIntervalMinutes,
       });
       setPresets((prev) => [res.data, ...prev]);
       toast({ title: "Preset saved", description: `"${res.data.name}" has been saved.` });
@@ -133,6 +137,7 @@ export default function FacilityPresetModal({
       await updateFacilityPreset(overwritingPreset.preset_id, {
         process_flow: currentProcessFlow as unknown as Record<string, unknown>[],
         reference_date: referenceDate,
+        schedule_interval_minutes: scheduleIntervalMinutes,
       });
       setPresets((prev) =>
         prev.map((p) =>
@@ -195,7 +200,7 @@ export default function FacilityPresetModal({
   };
 
   const handleLoadPreset = (preset: FacilityPreset) => {
-    onLoadPreset(preset.process_flow as unknown as ProcessStep[], preset.reference_date);
+    onLoadPreset(preset.process_flow as unknown as ProcessStep[], preset.reference_date, preset.schedule_interval_minutes);
     toast({ title: "Preset loaded", description: `"${preset.name}" applied to current scenario.` });
     setLoadingPreset(null);
     onClose();
