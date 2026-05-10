@@ -105,6 +105,18 @@ export function useNormalizeAllSchedules({
             prevDayStr
           );
 
+        // 현재 timeSlots 범위와 기존 period가 전혀 매칭되지 않으면
+        // (예: 다른 날짜의 프리셋을 불러온 경우) 정규화를 건너뜁니다.
+        // badges와 processTimes가 모두 비어있으면 기존 데이터를 보존합니다.
+        const hasAnyMatch =
+          Object.keys(badges).length > 0 ||
+          Object.keys(processTimes).length > 0 ||
+          disabledCells.size > 0;
+
+        if (!hasAnyMatch) {
+          return;
+        }
+
         // 2단계: grid 상태 → 정규화된 time_blocks로 재계산
         facilities.forEach((facility, facilityIndex) => {
           const existingBlocks =

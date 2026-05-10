@@ -8,6 +8,8 @@ import { useSimulationStore } from "../../_stores";
 // useTabReset 제거 - 직접 리셋 로직으로 단순화
 import ProcessConfigModal from "./ProcessConfigModal";
 import ProcessFlowDesigner from "./ProcessFlowDesigner";
+import FacilityPresetModal from "./FacilityPresetModal";
+import { remapPresetDates } from "./helpers";
 
 interface TabProcessingProceduresProps extends SimulationTabProps {}
 
@@ -23,6 +25,7 @@ export default function TabProcessingProcedures({
   >(null);
   // 🆕 통합 Store에서 직접 데이터 가져오기
   const processFlow = useSimulationStore((s) => s.process_flow);
+  const scenarioDate = useSimulationStore((s) => s.context.date);
   // Process completed state removed as it's no longer needed
   const isCompleted = false; // Always false as step3Completed is removed
   const appliedFilterResult = useSimulationStore(
@@ -46,11 +49,15 @@ export default function TabProcessingProcedures({
 
   const { toast } = useToast();
 
+
   // 더 이상 변환 함수가 필요없음 - zustand의 process_flow를 직접 사용
 
   // 더 이상 필요없음 - zustand의 process_flow를 직접 조작
 
   // zustand의 process_flow를 직접 사용
+
+  // Preset modal state
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   // Modal state
   const [showProcessModal, setShowProcessModal] = useState(false);
@@ -256,6 +263,7 @@ export default function TabProcessingProcedures({
         onReorderProcesses={handleReorderProcesses}
         setProcessFlow={setProcessFlow}
         onCreateProcess={handleDirectCreateProcess}
+        onOpenPresetModal={() => setShowPresetModal(true)}
       />
 
       {/* Process Configuration Modal */}
@@ -265,8 +273,22 @@ export default function TabProcessingProcedures({
         processData={editingProcessData}
         onSave={handleSaveProcess}
         mode={modalMode}
-        processFlow={processFlow} // 🆕 현재 프로세스 플로우 전달
-        parquetMetadata={parquetMetadata} // 🆕 동적 조건 데이터 전달
+        processFlow={processFlow}
+        parquetMetadata={parquetMetadata}
+      />
+
+      {/* Facility Preset Modal */}
+      <FacilityPresetModal
+        isOpen={showPresetModal}
+        onClose={() => setShowPresetModal(false)}
+        currentProcessFlow={processFlow as any}
+        referenceDate={scenarioDate}
+        onLoadPreset={(newFlow, presetReferenceDate) => {
+          // presetReferenceDate → scenarioDate 로 날짜만 shift (조건값/process_time 등 그대로 유지)
+          const shifted = remapPresetDates(newFlow, scenarioDate, presetReferenceDate, null);
+          setProcessFlow(shifted as any);
+          setSelectedProcessIndex(null);
+        }}
       />
     </div>
   );

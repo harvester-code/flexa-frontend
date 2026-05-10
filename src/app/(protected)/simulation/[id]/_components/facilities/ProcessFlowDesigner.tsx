@@ -20,6 +20,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  BookOpen,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -90,6 +91,7 @@ interface ProcessFlowDesignerProps {
   onReorderProcesses?: (newProcessFlow: ProcessStep[]) => void; // New prop for reordering
   onCreateProcess?: (newProcess: ProcessStep) => void; // New prop for creating process
   setProcessFlow: (processFlow: ProcessStep[]) => void; // Add setProcessFlow
+  onOpenPresetModal?: () => void;
 }
 
 // Sortable Process Card Component
@@ -260,6 +262,7 @@ export default function ProcessFlowDesigner({
   onReorderProcesses,
   onCreateProcess,
   setProcessFlow,
+  onOpenPresetModal,
 }: ProcessFlowDesignerProps) {
   const { toast } = useToast();
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
@@ -1225,7 +1228,7 @@ export default function ProcessFlowDesigner({
           <hr className="border-gray-200" />
 
           {/* 🆕 Process Configuration Description */}
-          <div className="flex items-start justify-between border-l-4 border-primary pl-4">
+          <div className="flex items-center justify-between border-l-4 border-primary pl-4">
             <div>
               <h3 className="text-lg font-semibold text-default-900">
                 Process Configuration
@@ -1234,6 +1237,17 @@ export default function ProcessFlowDesigner({
                 Define the passenger flow sequence and facility requirements
               </p>
             </div>
+            {onOpenPresetModal && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                onClick={onOpenPresetModal}
+              >
+                <BookOpen className="h-4 w-4" />
+                Presets
+              </Button>
+            )}
           </div>
 
           {/* Left-Right Split Layout */}
@@ -2138,7 +2152,7 @@ export default function ProcessFlowDesigner({
         open={isEntryConditionDialogOpen}
         onOpenChange={setIsEntryConditionDialogOpen}
       >
-        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-primary" />
