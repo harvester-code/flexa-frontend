@@ -719,7 +719,7 @@ function TabFlightSchedule({
 
       {/* ==================== Confirm Modal ==================== */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-        <DialogContent className="sm:max-w-[680px]">
+        <DialogContent className="sm:max-w-[680px]" aria-describedby={undefined}>
           <DialogHeader>
             <div className="flex items-start gap-3">
               <div className="rounded-full bg-primary/10 p-2">

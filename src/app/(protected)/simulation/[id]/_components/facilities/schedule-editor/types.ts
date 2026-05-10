@@ -24,6 +24,8 @@ export interface CategoryBadge {
   options: string[];
   colorIndex: number; // 색상 인덱스 추가
   style?: React.CSSProperties; // 인라인 스타일 추가
+  /** true이면 현재 시나리오에 존재하지 않는 값을 포함한 뱃지 */
+  isInvalid?: boolean;
 }
 
 // TimeBlock 타입 정의 (타입 안전성 향상)

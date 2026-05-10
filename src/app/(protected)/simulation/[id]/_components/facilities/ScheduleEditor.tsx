@@ -274,6 +274,54 @@ export default function OperatingScheduleEditor({
     [allZoneBadges, zoneKey]
   );
 
+  // 현재 시나리오의 유효한 옵션 맵 (카테고리 → Set<value>)
+  const validOptionsMap = useMemo(() => {
+    const categories = createDynamicConditionCategories(
+      parquetMetadata,
+      paxDemographics,
+      flightAirlines
+    );
+    const map: Record<string, Set<string>> = {};
+    Object.entries(categories).forEach(([cat, data]) => {
+      map[cat] = new Set(data.options);
+    });
+    return map;
+  }, [parquetMetadata, paxDemographics, flightAirlines]);
+
+  // isInvalid 태깅된 cellBadges (ExcelTable 렌더링용)
+  const displayCellBadges = useMemo(() => {
+    const result: Record<string, import("./schedule-editor/types").CategoryBadge[]> = {};
+    Object.entries(cellBadges).forEach(([cellId, badges]) => {
+      result[cellId] = badges.map((badge) => {
+        const validSet = validOptionsMap[badge.category];
+        if (!validSet) {
+          // 카테고리 자체가 없으면 invalid
+          return { ...badge, isInvalid: true };
+        }
+        const hasInvalid = badge.options.some((opt) => !validSet.has(opt));
+        return hasInvalid ? { ...badge, isInvalid: true } : badge;
+      });
+    });
+    return result;
+  }, [cellBadges, validOptionsMap]);
+
+  // 불일치 요약: 전체 zone/process의 카테고리별 없는 값 목록
+  const invalidConditionsSummary = useMemo(() => {
+    const summary: Record<string, Set<string>> = {};
+    Object.values(allZoneBadges).forEach((zoneBadges) => {
+      Object.values(zoneBadges).flat().forEach((badge) => {
+        const validSet = validOptionsMap[badge.category];
+        badge.options.forEach((opt) => {
+          if (!validSet || !validSet.has(opt)) {
+            if (!summary[badge.category]) summary[badge.category] = new Set();
+            summary[badge.category].add(opt);
+          }
+        });
+      });
+    });
+    return summary;
+  }, [allZoneBadges, validOptionsMap]);
+
   // 현재 Zone의 비활성화된 셀 가져오기 (메모이제이션으로 최적화)
   const disabledCells = useMemo(
     () => allZoneDisabledCells[zoneKey] || new Set<string>(),
@@ -1187,6 +1235,38 @@ export default function OperatingScheduleEditor({
           )}
         </div>
 
+        {/* 불일치 조건 요약 패널 */}
+        {Object.keys(invalidConditionsSummary).length > 0 && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="mb-2 text-xs font-semibold text-red-700">
+              ⚠ The following conditions are not available in this scenario and are shown in gray:
+            </p>
+            <div className="space-y-1.5">
+              {Object.entries(invalidConditionsSummary).map(([category, values]) => {
+                const TAB_LABEL: Record<string, string> = {
+                  "Passenger Type": "Pax Profile tab",
+                  "Nationality": "Nationality tab",
+                };
+                const label = TAB_LABEL[category] ?? category;
+                return (
+                  <div key={category} className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-medium text-red-700 min-w-fit">{label}</span>
+                    <span className="text-xs text-red-400">→</span>
+                    {Array.from(values).map((val) => (
+                      <span
+                        key={val}
+                        className="rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-600"
+                      >
+                        {val}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 2중 탭 */}
         <div className="mb-2 space-y-1">
           <div className="flex items-center">
@@ -1261,7 +1341,7 @@ export default function OperatingScheduleEditor({
           }
           categoryGroups={getCategoryGroups()}
           conditionCategories={CONDITION_CATEGORIES}
-          cellBadges={cellBadges}
+          cellBadges={displayCellBadges}
           onToggleBadgeOption={handleToggleBadgeOption}
           onSelectAllCategories={handleSelectAllCategories}
           onClearAllBadges={handleClearAllBadges}
@@ -1279,7 +1359,7 @@ export default function OperatingScheduleEditor({
           currentFacilities={currentFacilities}
           timeSlots={timeSlots}
           selectedCells={displaySelectedCells}
-          cellBadges={cellBadges}
+          cellBadges={displayCellBadges}
           disabledCells={disabledCells}
           cellProcessTimes={cellProcessTimes}
           copiedCells={copiedCells}
@@ -1311,6 +1391,7 @@ export default function OperatingScheduleEditor({
         >
           <DialogContent
             className="max-w-[95vw] h-[95vh] p-0 flex flex-col"
+            aria-describedby={undefined}
             onInteractOutside={(e) => {
               // 컨텍스트 메뉴가 열려있을 때는 외부 상호작용 차단
               if (contextMenu.show) {
@@ -1448,7 +1529,7 @@ export default function OperatingScheduleEditor({
                 currentFacilities={currentFacilities}
                 timeSlots={timeSlots}
                 selectedCells={displaySelectedCells}
-                cellBadges={cellBadges}
+                cellBadges={displayCellBadges}
                 disabledCells={disabledCells}
                 cellProcessTimes={cellProcessTimes}
                 copiedCells={copiedCells}

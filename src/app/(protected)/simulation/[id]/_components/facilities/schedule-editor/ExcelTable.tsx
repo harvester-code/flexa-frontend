@@ -116,6 +116,11 @@ const TableCell = React.memo<TableCellProps>(
                 const badgeStyle =
                   categoryBadge.style ||
                   getBadgeColor(categoryBadge.colorIndex).style;
+                const invalidStyle: React.CSSProperties = {
+                  backgroundColor: "#f3f4f6",
+                  color: "#9ca3af",
+                  borderColor: "#d1d5db",
+                };
                 return (
                   <span
                     key={`${categoryBadge.category}-${badgeIndex}`}
@@ -130,9 +135,15 @@ const TableCell = React.memo<TableCellProps>(
                             color: THEME_COLORS.disabledText,
                             borderColor: THEME_COLORS.disabledBorder,
                           }
-                        : badgeStyle
+                        : categoryBadge.isInvalid
+                          ? invalidStyle
+                          : badgeStyle
                     }
-                    title={`${categoryBadge.category}: ${categoryBadge.options.join("|")}`}
+                    title={
+                      categoryBadge.isInvalid
+                        ? `⚠ Not available in current scenario — ${categoryBadge.category}: ${categoryBadge.options.join("|")}`
+                        : `${categoryBadge.category}: ${categoryBadge.options.join("|")}`
+                    }
                   >
                     {categoryBadge.options
                       .map((option) => option.slice(0, 3))
