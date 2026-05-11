@@ -642,11 +642,19 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setSelectedConditions: (selectedConditions) =>
       set((state) => {
-        // Trim all string values to remove API-side trailing/leading spaces
-        // (e.g. terminal keys returned as "3 " → "3", combos "3 _5J" → "3_5J")
-        const trimStrings = (val: unknown): unknown => {
+        // Normalize a terminal_airlines combo: "3 _5J" → "3_5J"
+        const normalizeCombo = (s: string): string => {
+          const idx = s.lastIndexOf("_");
+          if (idx === -1) return s.trim();
+          return `${s.slice(0, idx).trim()}_${s.slice(idx + 1).trim()}`;
+        };
+
+        const trimField = (key: string, val: unknown): unknown => {
+          if (key === "terminal_airlines" && Array.isArray(val)) {
+            return val.map((v) => (typeof v === "string" ? normalizeCombo(v) : v));
+          }
           if (typeof val === "string") return val.trim();
-          if (Array.isArray(val)) return val.map(trimStrings);
+          if (Array.isArray(val)) return val.map((v) => (typeof v === "string" ? v.trim() : v));
           return val;
         };
 
@@ -655,7 +663,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
             ? Object.fromEntries(
                 Object.entries(selectedConditions.originalLocalState).map(([k, v]) => [
                   k,
-                  trimStrings(v),
+                  trimField(k, v),
                 ])
               )
             : selectedConditions.originalLocalState;

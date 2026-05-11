@@ -222,14 +222,28 @@ export default function SimulationDetail({
           : { imageUrl: null, zoneAreas: {} };
 
         // Trim any trailing/leading spaces in selectedConditions saved from old data
+        // terminal_airlines combos like "3 _5J" (space before _) are normalized per-segment
         if (metadata.flight?.selectedConditions) {
           const sc = metadata.flight.selectedConditions;
-          const trimStr = (v: unknown): unknown =>
-            typeof v === "string" ? v.trim() : Array.isArray(v) ? v.map(trimStr) : v;
+
+          const normalizeCombo = (s: string): string => {
+            const idx = s.lastIndexOf("_");
+            if (idx === -1) return s.trim();
+            return `${s.slice(0, idx).trim()}_${s.slice(idx + 1).trim()}`;
+          };
+
+          const trimField = (key: string, val: unknown): unknown => {
+            if (key === "terminal_airlines" && Array.isArray(val)) {
+              return val.map((v: unknown) => (typeof v === "string" ? normalizeCombo(v) : v));
+            }
+            if (typeof val === "string") return val.trim();
+            if (Array.isArray(val)) return val.map((v: unknown) => (typeof v === "string" ? v.trim() : v));
+            return val;
+          };
 
           if (sc.originalLocalState) {
             sc.originalLocalState = Object.fromEntries(
-              Object.entries(sc.originalLocalState).map(([k, v]) => [k, trimStr(v)])
+              Object.entries(sc.originalLocalState).map(([k, v]) => [k, trimField(k, v)])
             );
           }
           if (Array.isArray(sc.conditions)) {
