@@ -268,10 +268,15 @@ function TabFlightSchedule({
 
           const defaultTotal = data.filters.departure?.total_flights || 0;
 
+          // 기존 selectedConditions에서 UI 체크박스 상태 복원
+          const prevConditions = useSimulationStore.getState().flight.selectedConditions;
+          const restoredCategories = prevConditions?.originalLocalState ?? {};
+          const restoredMode = (prevConditions?.type as "departure" | "arrival") ?? "departure";
+
           updateTab(tabId, {
             filtersData: tabData,
             loading: false,
-            selectedFilter: { mode: "departure", categories: {} },
+            selectedFilter: { mode: restoredMode, categories: restoredCategories },
             estimatedFiltered: defaultTotal,
             totalFlightsForMode: defaultTotal,
           });
@@ -281,6 +286,30 @@ function TabFlightSchedule({
             setUnifiedAirport(airport);
             setUnifiedDate(date);
             setFlightFilters(tabData);
+
+            // 기존 선택 조건과 새 filters 비교 → 없어진 값 mismatch 경고
+            if (prevConditions?.conditions?.length) {
+              const newFilters = data.filters[prevConditions.type] || {};
+              const missingItems: string[] = [];
+
+              prevConditions.conditions.forEach(({ field, values }) => {
+                const availableKeys = Object.keys(newFilters[field] || {}).map((v) => v.trim());
+                values.forEach((v) => {
+                  if (!availableKeys.includes(v.trim())) {
+                    missingItems.push(`${field}: "${v.trim()}"`);
+                  }
+                });
+              });
+
+              if (missingItems.length > 0) {
+                toast({
+                  title: "일부 필터 조건이 새 데이터에 없습니다",
+                  description: missingItems.join(" · "),
+                  variant: "destructive",
+                  duration: 6000,
+                });
+              }
+            }
           }
         } else {
           updateTab(tabId, { loading: false });

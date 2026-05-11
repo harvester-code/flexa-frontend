@@ -616,7 +616,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     resetFlightData: () =>
       set((state) => {
-        state.flight.selectedConditions = null;
+        // selectedConditions는 유지 — Load 후 새 filters와 비교해 mismatch 경고 표시
         state.flight.appliedFilterResult = null;
         state.flight.total_flights = null;
         state.flight.airlines = null;
