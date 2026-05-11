@@ -461,6 +461,18 @@ export default function OperatingScheduleEditor({
 
   // Generate Pax 재실행 시 시간 범위 변화에 따라 Facility 설정 경계값 확장/클리핑
   const prevChartRangeRef = useRef<string>("");
+  const chartWasClearedRef = useRef<boolean>(false);
+
+  // chartResult가 clear(undefined)되면 ref를 "CLEARED" sentinel로 리셋
+  // → Generate Pax 후 범위가 동일하더라도 경계 확장이 반드시 실행되도록 함
+  useEffect(() => {
+    if (!chartResult?.chart_x_data?.length) {
+      if (prevChartRangeRef.current !== "") {
+        chartWasClearedRef.current = true;
+      }
+    }
+  }, [chartResult]);
+
   useEffect(() => {
     if (!chartResult?.chart_x_data?.length || processFlow.length === 0) return;
 
@@ -468,15 +480,21 @@ export default function OperatingScheduleEditor({
     const last = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
     const rangeKey = `${first}|${last}`;
 
-    // 이전과 동일한 범위면 스킵 (초기 로드 포함)
-    if (prevChartRangeRef.current === rangeKey) return;
+    const wasCleared = chartWasClearedRef.current;
     const isInitialLoad = prevChartRangeRef.current === "";
-    prevChartRangeRef.current = rangeKey;
+    const isSameRange = prevChartRangeRef.current === rangeKey;
 
-    // 초기 로드는 경계 조정 불필요 (useNormalizeAllSchedules가 처리)
+    // 같은 범위여도 chartResult가 cleared된 뒤 복원된 경우엔 경계 확장 필요
+    if (isSameRange && !wasCleared) return;
+
+    prevChartRangeRef.current = rangeKey;
+    chartWasClearedRef.current = false;
+
+    // 최초 로드: useNormalizeAllSchedules가 처리하므로 경계 조정 불필요
     if (isInitialLoad) return;
 
-    // Generate Pax로 시간 범위가 변경된 경우 → 경계값 확장/클리핑 적용
+    // Generate Pax로 시간 범위가 변경(또는 동일하더라도 cleared 후 복원)된 경우
+    // → 경계값 확장/클리핑 적용
     const newPeriod = calcOperatingPeriod(chartResult, contextDate);
     if (!newPeriod || !contextDate) return;
 
