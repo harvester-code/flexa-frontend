@@ -83,9 +83,6 @@ function TabFlightSchedule({
   const resetFlightData = useSimulationStore((s) => s.resetFlightData);
   const setAppliedFilterResult = useSimulationStore((s) => s.setAppliedFilterResult);
   const setSelectedConditions = useSimulationStore((s) => s.setSelectedConditions);
-  const resetPassenger = useSimulationStore((s) => s.resetPassenger);
-  const resetProcessFlow = useSimulationStore((s) => s.resetProcessFlow);
-
   // ==================== Tab State ====================
 
   const hasInitializedRef = useRef(false);
@@ -314,9 +311,6 @@ function TabFlightSchedule({
       const tab = airportTabs.find((t) => t.id === activeTabId);
       if (!simulationId || !tab?.airport) return null;
 
-      resetPassenger();
-      resetProcessFlow();
-
       setSelectedConditions({
         type: type as "departure" | "arrival",
         conditions,
@@ -384,7 +378,7 @@ function TabFlightSchedule({
         setApplyFilterLoading(false);
       }
     },
-    [simulationId, airportTabs, activeTabId, resetPassenger, resetProcessFlow, setSelectedConditions, setAppliedFilterResult, setApiRequestLog, toast]
+    [simulationId, airportTabs, activeTabId, setSelectedConditions, setAppliedFilterResult, setApiRequestLog, toast]
   );
 
   // ==================== Aggregated Summary ====================
@@ -427,9 +421,6 @@ function TabFlightSchedule({
     setApplyFilterLoading(true);
 
     try {
-      resetPassenger();
-      resetProcessFlow();
-
       setUnifiedAirport(representativeAirport);
       setUnifiedDate(representativeDate);
 
@@ -509,7 +500,7 @@ function TabFlightSchedule({
     }
   }, [
     simulationId, airportTabs, aggregatedSummary,
-    resetPassenger, resetProcessFlow, setUnifiedAirport, setUnifiedDate,
+    setUnifiedAirport, setUnifiedDate,
     setFlightFilters, setAppliedFilterResult, setSelectedConditions, toast,
   ]);
 
