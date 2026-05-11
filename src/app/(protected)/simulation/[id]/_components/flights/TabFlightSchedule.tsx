@@ -101,6 +101,7 @@ function TabFlightSchedule({
   const [activeTabId, setActiveTabId] = useState("tab-1");
   const [nextTabNum, setNextTabNum] = useState(2);
   const [applyFilterLoading, setApplyFilterLoading] = useState(false);
+  const [filterMissingItems, setFilterMissingItems] = useState<string[]>([]);
 
   // Modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -287,29 +288,20 @@ function TabFlightSchedule({
             setUnifiedDate(date);
             setFlightFilters(tabData);
 
-            // 기존 선택 조건과 새 filters 비교 → 없어진 값 mismatch 경고
+            // Compare saved conditions vs new filters with trim() → show inline warning
+            const missing: string[] = [];
             if (prevConditions?.conditions?.length) {
               const newFilters = data.filters[prevConditions.type] || {};
-              const missingItems: string[] = [];
-
               prevConditions.conditions.forEach(({ field, values }) => {
                 const availableKeys = Object.keys(newFilters[field] || {}).map((v) => v.trim());
                 values.forEach((v) => {
                   if (!availableKeys.includes(v.trim())) {
-                    missingItems.push(`${field}: "${v.trim()}"`);
+                    missing.push(`${field}: "${v.trim()}"`);
                   }
                 });
               });
-
-              if (missingItems.length > 0) {
-                toast({
-                  title: "일부 필터 조건이 새 데이터에 없습니다",
-                  description: missingItems.join(" · "),
-                  variant: "destructive",
-                  duration: 6000,
-                });
-              }
             }
+            setFilterMissingItems(missing);
           }
         } else {
           updateTab(tabId, { loading: false });
@@ -638,6 +630,24 @@ function TabFlightSchedule({
                   onLoadData={(a, d) => handleLoadDataForTab(tab.id, a, d)}
                   isEmbedded={true}
                 />
+
+                {!isMultiTab && filterMissingItems.length > 0 && (
+                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                    <p className="mb-2 text-xs font-semibold text-red-700">
+                      ⚠ The following filter conditions are no longer available in the updated flight data:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {filterMissingItems.map((item) => (
+                        <span
+                          key={item}
+                          className="inline-flex items-center rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-600"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {tab.filtersData && !tab.loading && (
                   <div className="mt-6">
