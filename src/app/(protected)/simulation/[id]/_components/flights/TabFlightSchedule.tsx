@@ -272,18 +272,22 @@ function TabFlightSchedule({
 
           const defaultTotal = data.filters.departure?.total_flights || 0;
 
-          // Restore UI checkbox state from saved selectedConditions
+          // Preserve current UI checkbox state across Load
+          // currentTab.selectedFilter already holds what the user had checked
+          // (initialized from selectedConditions on page load, then updated on each interaction)
+          const currentTab = airportTabs.find((t) => t.id === tabId);
+          const preservedFilter =
+            currentTab?.selectedFilter ?? { mode: "departure" as const, categories: {} };
+
+          // prevConditions is used for mismatch comparison below
           const prevConditions = useSimulationStore.getState().flight.selectedConditions;
-          const restoredCategories = prevConditions?.originalLocalState ?? {};
-          const restoredMode = (prevConditions?.type as "departure" | "arrival") ?? "departure";
 
           // Increment filterLoadKey to force FlightFilterConditions remount so
           // initialSelectedFilter is re-applied (useState ignores prop changes otherwise)
-          const currentTab = airportTabs.find((t) => t.id === tabId);
           updateTab(tabId, {
             filtersData: tabData,
             loading: false,
-            selectedFilter: { mode: restoredMode, categories: restoredCategories },
+            selectedFilter: preservedFilter,
             estimatedFiltered: defaultTotal,
             totalFlightsForMode: defaultTotal,
             filterLoadKey: (currentTab?.filterLoadKey ?? 0) + 1,
@@ -383,7 +387,7 @@ function TabFlightSchedule({
         toast({ title: "Load Failed", description: errorMessage, variant: "destructive" });
       }
     },
-    [simulationId, isMultiTab, setApiRequestLog, updateTab, resetFlightData, setUnifiedAirport, setUnifiedDate, setFlightFilters, toast]
+    [simulationId, isMultiTab, airportTabs, setApiRequestLog, updateTab, resetFlightData, setUnifiedAirport, setUnifiedDate, setFlightFilters, toast]
   );
 
   // ==================== Apply Filter (Single Tab) ====================
