@@ -101,7 +101,6 @@ function TabFlightSchedule({
   const [activeTabId, setActiveTabId] = useState("tab-1");
   const [nextTabNum, setNextTabNum] = useState(2);
   const [applyFilterLoading, setApplyFilterLoading] = useState(false);
-  const [filterMissingItems, setFilterMissingItems] = useState<string[]>([]);
 
   // Modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -133,19 +132,7 @@ function TabFlightSchedule({
       const tab1 = prev.find((t) => t.id === "tab-1");
       if (!tab1 || tab1.filtersData) return prev;
 
-      let restoredFilter: SelectedFilter = { mode: "departure", categories: {} };
-      if (flight.selectedConditions?.originalLocalState) {
-        restoredFilter = {
-          mode: flight.selectedConditions.type,
-          categories: flight.selectedConditions.originalLocalState as Record<string, any>,
-        };
-      } else if (flight.selectedConditions?.conditions) {
-        const cats: Record<string, any> = {};
-        flight.selectedConditions.conditions.forEach((c) => {
-          cats[c.field] = c.values;
-        });
-        restoredFilter = { mode: flight.selectedConditions.type, categories: cats };
-      }
+      const restoredFilter: SelectedFilter = { mode: "departure", categories: {} };
 
       hasInitializedRef.current = true;
 
@@ -269,15 +256,10 @@ function TabFlightSchedule({
 
           const defaultTotal = data.filters.departure?.total_flights || 0;
 
-          // 기존 selectedConditions에서 UI 체크박스 상태 복원
-          const prevConditions = useSimulationStore.getState().flight.selectedConditions;
-          const restoredCategories = (prevConditions?.originalLocalState ?? {}) as Record<string, any>;
-          const restoredMode = (prevConditions?.type as "departure" | "arrival") ?? "departure";
-
           updateTab(tabId, {
             filtersData: tabData,
             loading: false,
-            selectedFilter: { mode: restoredMode, categories: restoredCategories },
+            selectedFilter: { mode: "departure", categories: {} },
             estimatedFiltered: defaultTotal,
             totalFlightsForMode: defaultTotal,
           });
@@ -287,75 +269,6 @@ function TabFlightSchedule({
             setUnifiedAirport(airport);
             setUnifiedDate(date);
             setFlightFilters(tabData);
-
-            // Compare saved conditions vs new filters (trim both sides) → show inline warning
-            const missing: string[] = [];
-            if (prevConditions?.conditions?.length) {
-              const newModeFilters = data.filters[prevConditions.type] || {};
-
-              // Airlines are nested: { departure_terminal: { "1": { airlines: { "5J": {...} } } } }
-              const allAvailableAirlines = new Set<string>();
-              // Flight numbers are also nested: terminal.airlines[code].flight_numbers[]
-              const allAvailableFlightNumbers = new Set<string>();
-              Object.values(newModeFilters).forEach((fieldData: any) => {
-                if (fieldData && typeof fieldData === "object") {
-                  Object.values(fieldData).forEach((terminalData: any) => {
-                    if (terminalData?.airlines && typeof terminalData.airlines === "object") {
-                      Object.entries(terminalData.airlines).forEach(([code, airlineData]: [string, any]) => {
-                        allAvailableAirlines.add(code.trim());
-                        (airlineData?.flight_numbers ?? []).forEach((fn: string) =>
-                          allAvailableFlightNumbers.add(fn.trim())
-                        );
-                      });
-                    }
-                  });
-                }
-              });
-
-              // Countries are nested under regions: arrival_region.Asia.countries.Japan
-              const collectCountries = (regionField: string): Set<string> => {
-                const set = new Set<string>();
-                const regionData = newModeFilters[regionField] || {};
-                Object.values(regionData).forEach((rv: any) => {
-                  if (rv?.countries && typeof rv.countries === "object") {
-                    Object.keys(rv.countries).forEach((c) => set.add(c.trim()));
-                  }
-                });
-                return set;
-              };
-
-              prevConditions.conditions.forEach(({ field, values }) => {
-                let availableSet: Set<string> | null = null;
-
-                if (field === "operating_carrier_iata") {
-                  availableSet = allAvailableAirlines;
-                } else if (field === "flight_number") {
-                  availableSet = allAvailableFlightNumbers;
-                } else if (field === "arrival_country") {
-                  availableSet = collectCountries("arrival_region");
-                } else if (field === "departure_country") {
-                  availableSet = collectCountries("departure_region");
-                } else {
-                  // Top-level key: terminal, region, flight_type, aircraft_class, etc.
-                  availableSet = new Set(
-                    Object.keys(newModeFilters[field] || {}).map((v) => v.trim())
-                  );
-                }
-
-                const label =
-                  field === "operating_carrier_iata" ? "Airline"
-                  : field === "flight_number" ? "Flight No."
-                  : field === "arrival_country" || field === "departure_country" ? "Country"
-                  : field;
-
-                values.forEach((v) => {
-                  if (!availableSet!.has(v.trim())) {
-                    missing.push(`${label}: "${v.trim()}"`);
-                  }
-                });
-              });
-            }
-            setFilterMissingItems(missing);
           }
         } else {
           updateTab(tabId, { loading: false });
@@ -684,24 +597,6 @@ function TabFlightSchedule({
                   onLoadData={(a, d) => handleLoadDataForTab(tab.id, a, d)}
                   isEmbedded={true}
                 />
-
-                {!isMultiTab && filterMissingItems.length > 0 && (
-                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-                    <p className="mb-2 text-xs font-semibold text-red-700">
-                      ⚠ The following filter conditions are no longer available in the updated flight data:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {filterMissingItems.map((item) => (
-                        <span
-                          key={item}
-                          className="inline-flex items-center rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-600"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {tab.filtersData && !tab.loading && (
                   <div className="mt-6">

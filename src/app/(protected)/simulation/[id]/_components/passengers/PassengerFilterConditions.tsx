@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { ParquetMetadataItem } from "@/types/parquet";
 import { BookOpen, CheckCircle, Play, Users, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
@@ -9,6 +9,16 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/hooks/useToast";
 import Spinner from "@/components/ui/Spinner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/AlertDialog";
 import { useSimulationStore } from "../../_stores";
 import DistributionSettings from "./DistributionSettings";
 import LoadFactorSettings from "./LoadFactorSettings";
@@ -17,6 +27,7 @@ import SimulationCardHeader from "../SimulationCardHeader";
 import PassengerPresetModal from "./PassengerPresetModal";
 import { PassengerPresetData } from "@/types/passengerPresetTypes";
 import { getCategoryNameFromField } from "../facilities/schedule-editor/badgeMappings";
+import { remapPresetDates, calcOperatingPeriod } from "../facilities/helpers";
 
 interface PassengerFilterConditionsProps {
   parquetMetadata: ParquetMetadataItem[];
@@ -53,6 +64,23 @@ export default function PassengerFilterConditions({
   const setPassengerChartResult = useSimulationStore(
     (state) => state.setPassengerChartResult
   );
+
+  // 시설 process_flow 조정을 위한 store 접근
+  const processFlow = useSimulationStore((state) => state.process_flow);
+  const setProcessFlow = useSimulationStore((state) => state.setProcessFlow);
+
+  // 승객 rule 배열 통째로 교체 액션 (잘못된 조건 제거용)
+  const reorderPaxGenerationRules = useSimulationStore((s) => s.reorderPaxGenerationRules);
+  const reorderNationalityRules = useSimulationStore((s) => s.reorderNationalityRules);
+  const reorderProfileRules = useSimulationStore((s) => s.reorderProfileRules);
+  const setPaxArrivalPatternRules = useSimulationStore((s) => s.setPaxArrivalPatternRules);
+
+  // 잘못된 조건 제거 확인 모달
+  const [pendingPassengerConditionRemoval, setPendingPassengerConditionRemoval] = useState<{
+    category: string;
+    value: string;
+    locations: string[];
+  } | null>(null);
 
   // 활성화 조건 확인: load_factor와 show-up-time default 값이 null이 아닌지
   const canGeneratePax =
@@ -128,7 +156,7 @@ export default function PassengerFilterConditions({
       const response = await createPassengerShowUp(simulationId, requestBody);
 
       // 🔧 백엔드 응답 구조에 맞춰 데이터 매핑
-      setPassengerChartResult({
+      const newChartData = {
         total: response.data.total || 0,
         chart_x_data: response.data.chart_x_data || [],
         chart_y_data: response.data.chart_y_data || undefined,
@@ -141,7 +169,24 @@ export default function PassengerFilterConditions({
                 response.data.summary.min_arrival_minutes || 15,
             }
           : undefined,
-      });
+      };
+
+      // 🔄 Generate Pax 결과로 새 타임라인이 생기면, 기존 시설 time_block 경계를 자동 확장
+      // Preset 로드 시와 동일한 원리: 앞/뒤가 짧은 블록을 새 타임라인 경계까지 늘려줌
+      if (processFlow.length > 0 && contextData.date) {
+        const newTargetPeriod = calcOperatingPeriod(newChartData, contextData.date);
+        if (newTargetPeriod) {
+          const adjustedFlow = remapPresetDates(
+            processFlow,
+            contextData.date,
+            contextData.date, // sourceDate = targetDate → 날짜 시프트 없음, 경계 확장만 수행
+            newTargetPeriod,
+          );
+          setProcessFlow(adjustedFlow);
+        }
+      }
+
+      setPassengerChartResult(newChartData);
 
       // 🔍 API 성공 로그
       setApiRequestLog?.({
@@ -222,6 +267,45 @@ export default function PassengerFilterConditions({
 
     return summary;
   }, [passengerData, rawFieldValidMap]);
+
+  // 잘못된 조건 값을 4개 섹션 전체에서 제거
+  // chartResult는 유지 — 잘못된 조건은 이미 Generate Pax 결과에 영향 없었으므로
+  const handleConfirmPassengerConditionRemoval = useCallback(() => {
+    if (!pendingPassengerConditionRemoval) return;
+    const { category, value } = pendingPassengerConditionRemoval;
+
+    /** 단일 rules 배열에서 해당 value 제거 후 반환. 조건이 빈 rule은 제거. */
+    function cleanRules<T extends { conditions?: Record<string, string[]> }>(rules: T[]): T[] {
+      return rules
+        .map((rule) => {
+          const newConditions: Record<string, string[]> = {};
+          Object.entries(rule.conditions || {}).forEach(([field, values]) => {
+            if (getCategoryNameFromField(field) !== category) {
+              newConditions[field] = values;
+              return;
+            }
+            const filtered = values.filter((v) => v !== value);
+            if (filtered.length > 0) newConditions[field] = filtered;
+          });
+          return { ...rule, conditions: newConditions };
+        })
+        .filter((rule) => Object.keys(rule.conditions || {}).length > 0);
+    }
+
+    reorderPaxGenerationRules(cleanRules(passengerData.pax_generation.rules || []) as any);
+    reorderNationalityRules(cleanRules(passengerData.pax_demographics.nationality.rules || []) as any);
+    reorderProfileRules(cleanRules(passengerData.pax_demographics.profile.rules || []) as any);
+    setPaxArrivalPatternRules(cleanRules(passengerData.pax_arrival_patterns.rules || []) as any);
+
+    setPendingPassengerConditionRemoval(null);
+  }, [
+    pendingPassengerConditionRemoval,
+    passengerData,
+    reorderPaxGenerationRules,
+    reorderNationalityRules,
+    reorderProfileRules,
+    setPaxArrivalPatternRules,
+  ]);
 
   const handleLoadPreset = (data: PassengerPresetData) => {
     loadPassengerPreset(data as any);
@@ -310,16 +394,19 @@ export default function PassengerFilterConditions({
                   <span className="text-xs font-medium text-red-700 min-w-fit">{category}</span>
                   <span className="text-xs text-red-400">→</span>
                   {Array.from(valuesMap.entries()).map(([val, locations]) => (
-                    <span
+                    <button
                       key={val}
-                      className="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-1.5 py-0.5"
-                      title={`Found in: ${Array.from(locations).join(", ")}`}
+                      type="button"
+                      onClick={() => setPendingPassengerConditionRemoval({ category, value: val, locations: Array.from(locations) })}
+                      className="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-1.5 py-0.5 hover:bg-red-50 hover:border-red-400 transition-colors cursor-pointer"
+                      title={`Click to remove "${val}" from all passenger rules`}
                     >
                       <span className="text-[10px] font-semibold text-red-600">{val}</span>
                       <span className="text-[9px] text-red-400 font-normal">
                         {Array.from(locations).join(", ")}
                       </span>
-                    </span>
+                      <span className="text-[10px] text-red-400 ml-0.5">×</span>
+                    </button>
                   ))}
                 </div>
               ))}
@@ -386,6 +473,34 @@ export default function PassengerFilterConditions({
         </Tabs>
       </CardContent>
     </Card>
+
+    {/* 잘못된 조건 제거 확인 모달 */}
+    <AlertDialog
+      open={!!pendingPassengerConditionRemoval}
+      onOpenChange={(open) => !open && setPendingPassengerConditionRemoval(null)}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove Condition?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Remove &quot;{pendingPassengerConditionRemoval?.value}&quot; from all passenger rules?
+            {pendingPassengerConditionRemoval && pendingPassengerConditionRemoval.locations.length > 0 && (
+              <> Found in: {pendingPassengerConditionRemoval.locations.join(", ")}.</>
+            )}
+            {" "}Rules that only contained this condition will be deleted entirely.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmPassengerConditionRemoval}
+            className="bg-red-600 text-white hover:bg-red-700"
+          >
+            Remove
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

@@ -233,6 +233,13 @@ export default function OperatingScheduleEditor({
   const [pendingTimeUnit, setPendingTimeUnit] = useState<number | null>(null);
   const [showTimeUnitConfirm, setShowTimeUnitConfirm] = useState(false);
 
+  // 잘못된 조건 제거 확인 모달
+  const [pendingConditionRemoval, setPendingConditionRemoval] = useState<{
+    category: string;
+    value: string;
+    locations: string[];
+  } | null>(null);
+
   // 스토어의 schedule_interval_minutes가 바뀌면(메타데이터 로드 시 등) 로컬 상태 동기화
   // appliedTimeUnit은 의도적으로 deps에서 제외 — storeScheduleInterval 변화 시에만 동기화
   useEffect(() => {
@@ -458,6 +465,44 @@ export default function OperatingScheduleEditor({
   const contextDate = useSimulationStore((s) => s.context.date);
   const setProcessFlow = useSimulationStore((s) => s.setProcessFlow);
   const incrementFacilityPresetVersion = useSimulationStore((s) => s.incrementFacilityPresetVersion);
+
+  // 잘못된 조건 값을 processFlow 전체에서 제거하고 normalization 트리거
+  const handleConfirmConditionRemoval = useCallback(() => {
+    if (!pendingConditionRemoval) return;
+    const { category, value } = pendingConditionRemoval;
+
+    const updatedFlow = processFlow.map((process) => ({
+      ...process,
+      zones: Object.fromEntries(
+        Object.entries(process.zones || {}).map(([zoneName, zone]: [string, any]) => [
+          zoneName,
+          {
+            ...zone,
+            facilities: (zone.facilities || []).map((facility: any) => ({
+              ...facility,
+              operating_schedule: {
+                ...facility.operating_schedule,
+                time_blocks: (facility.operating_schedule?.time_blocks || []).map((block: any) => {
+                  const newConditions = (block.passenger_conditions || [])
+                    .map((cond: any) => {
+                      if (getCategoryNameFromField(cond.field) !== category) return cond;
+                      const newValues = (cond.values || []).filter((v: string) => v !== value);
+                      return newValues.length > 0 ? { ...cond, values: newValues } : null;
+                    })
+                    .filter(Boolean);
+                  return { ...block, passenger_conditions: newConditions };
+                }),
+              },
+            })),
+          },
+        ])
+      ),
+    }));
+
+    setProcessFlow(updatedFlow as any);
+    incrementFacilityPresetVersion();
+    setPendingConditionRemoval(null);
+  }, [pendingConditionRemoval, processFlow, setProcessFlow, incrementFacilityPresetVersion]);
 
   // Generate Pax 재실행 시 시간 범위 변화에 따라 Facility 설정 경계값 확장/클리핑
   const prevChartRangeRef = useRef<string>("");
@@ -1334,16 +1379,19 @@ export default function OperatingScheduleEditor({
                     <span className="text-xs font-medium text-red-700 min-w-fit">{label}</span>
                     <span className="text-xs text-red-400">→</span>
                     {Array.from(valuesMap.entries()).map(([val, locations]) => (
-                      <span
+                      <button
                         key={val}
-                        className="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-1.5 py-0.5"
-                        title={`Found in: ${Array.from(locations).join(", ")}`}
+                        type="button"
+                        onClick={() => setPendingConditionRemoval({ category, value: val, locations: Array.from(locations) })}
+                        className="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-1.5 py-0.5 hover:bg-red-50 hover:border-red-400 transition-colors cursor-pointer"
+                        title={`Click to remove "${val}" from all facility conditions`}
                       >
                         <span className="text-[10px] font-semibold text-red-600">{val}</span>
                         <span className="text-[9px] text-red-400 font-normal">
                           {Array.from(locations).join(", ")}
                         </span>
-                      </span>
+                        <span className="text-[10px] text-red-400 ml-0.5">×</span>
+                      </button>
                     ))}
                   </div>
                 );
@@ -1628,6 +1676,34 @@ export default function OperatingScheduleEditor({
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Invalid Condition Removal Confirmation Dialog */}
+        <AlertDialog
+          open={!!pendingConditionRemoval}
+          onOpenChange={(open) => !open && setPendingConditionRemoval(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Condition?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Remove &quot;{pendingConditionRemoval?.value}&quot; from all facility conditions?
+                {pendingConditionRemoval && pendingConditionRemoval.locations.length > 0 && (
+                  <> Affected: {pendingConditionRemoval.locations.join(", ")}.</>
+                )}
+                {" "}If a time block had only this condition, it will become available to all passengers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmConditionRemoval}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Time Unit Change Confirmation Dialog */}
         <AlertDialog
