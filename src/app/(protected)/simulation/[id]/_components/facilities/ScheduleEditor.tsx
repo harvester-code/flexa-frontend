@@ -481,20 +481,17 @@ export default function OperatingScheduleEditor({
     const rangeKey = `${first}|${last}`;
 
     const wasCleared = chartWasClearedRef.current;
-    const isInitialLoad = prevChartRangeRef.current === "";
     const isSameRange = prevChartRangeRef.current === rangeKey;
 
-    // 같은 범위여도 chartResult가 cleared된 뒤 복원된 경우엔 경계 확장 필요
+    // 동일한 범위이고 cleared 이력도 없으면 스킵 (불필요한 재실행 방지)
     if (isSameRange && !wasCleared) return;
 
     prevChartRangeRef.current = rangeKey;
     chartWasClearedRef.current = false;
 
-    // 최초 로드: useNormalizeAllSchedules가 처리하므로 경계 조정 불필요
-    if (isInitialLoad) return;
-
-    // Generate Pax로 시간 범위가 변경(또는 동일하더라도 cleared 후 복원)된 경우
-    // → 경계값 확장/클리핑 적용
+    // Preset 로딩과 동일한 원리:
+    // processFlow가 chart 범위를 커버하지 못하는 슬롯은 경계값으로 확장/클리핑
+    // (최초 탭 진입, Generate Pax, cleared 후 복원 모두 포함)
     const newPeriod = calcOperatingPeriod(chartResult, contextDate);
     if (!newPeriod || !contextDate) return;
 
