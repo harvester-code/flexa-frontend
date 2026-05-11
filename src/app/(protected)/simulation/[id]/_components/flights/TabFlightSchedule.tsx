@@ -288,45 +288,71 @@ function TabFlightSchedule({
             setUnifiedDate(date);
             setFlightFilters(tabData);
 
-            // Compare saved conditions vs new filters with trim() → show inline warning
+            // Compare saved conditions vs new filters (trim both sides) → show inline warning
             const missing: string[] = [];
             if (prevConditions?.conditions?.length) {
               const newModeFilters = data.filters[prevConditions.type] || {};
 
-              // Collect all airline IATA codes from nested terminal structures
-              // Structure: { departure_terminal: { "1": { airlines: { "5J": {...} } } } }
+              // Airlines are nested: { departure_terminal: { "1": { airlines: { "5J": {...} } } } }
               const allAvailableAirlines = new Set<string>();
+              // Flight numbers are also nested: terminal.airlines[code].flight_numbers[]
+              const allAvailableFlightNumbers = new Set<string>();
               Object.values(newModeFilters).forEach((fieldData: any) => {
                 if (fieldData && typeof fieldData === "object") {
                   Object.values(fieldData).forEach((terminalData: any) => {
                     if (terminalData?.airlines && typeof terminalData.airlines === "object") {
-                      Object.keys(terminalData.airlines).forEach((code) =>
-                        allAvailableAirlines.add(code.trim())
-                      );
+                      Object.entries(terminalData.airlines).forEach(([code, airlineData]: [string, any]) => {
+                        allAvailableAirlines.add(code.trim());
+                        (airlineData?.flight_numbers ?? []).forEach((fn: string) =>
+                          allAvailableFlightNumbers.add(fn.trim())
+                        );
+                      });
                     }
                   });
                 }
               });
 
+              // Countries are nested under regions: arrival_region.Asia.countries.Japan
+              const collectCountries = (regionField: string): Set<string> => {
+                const set = new Set<string>();
+                const regionData = newModeFilters[regionField] || {};
+                Object.values(regionData).forEach((rv: any) => {
+                  if (rv?.countries && typeof rv.countries === "object") {
+                    Object.keys(rv.countries).forEach((c) => set.add(c.trim()));
+                  }
+                });
+                return set;
+              };
+
               prevConditions.conditions.forEach(({ field, values }) => {
+                let availableSet: Set<string> | null = null;
+
                 if (field === "operating_carrier_iata") {
-                  // Airlines are nested under terminals — compare against aggregated set
-                  values.forEach((v) => {
-                    if (!allAvailableAirlines.has(v.trim())) {
-                      missing.push(`Airline: "${v.trim()}"`);
-                    }
-                  });
+                  availableSet = allAvailableAirlines;
+                } else if (field === "flight_number") {
+                  availableSet = allAvailableFlightNumbers;
+                } else if (field === "arrival_country") {
+                  availableSet = collectCountries("arrival_region");
+                } else if (field === "departure_country") {
+                  availableSet = collectCountries("departure_region");
                 } else {
-                  // Other fields (terminal, region, etc.) are top-level keys
-                  const availableKeys = Object.keys(newModeFilters[field] || {}).map((v) =>
-                    v.trim()
+                  // Top-level key: terminal, region, flight_type, aircraft_class, etc.
+                  availableSet = new Set(
+                    Object.keys(newModeFilters[field] || {}).map((v) => v.trim())
                   );
-                  values.forEach((v) => {
-                    if (!availableKeys.includes(v.trim())) {
-                      missing.push(`${field}: "${v.trim()}"`);
-                    }
-                  });
                 }
+
+                const label =
+                  field === "operating_carrier_iata" ? "Airline"
+                  : field === "flight_number" ? "Flight No."
+                  : field === "arrival_country" || field === "departure_country" ? "Country"
+                  : field;
+
+                values.forEach((v) => {
+                  if (!availableSet!.has(v.trim())) {
+                    missing.push(`${label}: "${v.trim()}"`);
+                  }
+                });
               });
             }
             setFilterMissingItems(missing);
