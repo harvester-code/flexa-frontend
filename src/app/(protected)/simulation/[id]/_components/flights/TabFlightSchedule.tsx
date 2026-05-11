@@ -61,6 +61,7 @@ interface AirportTab {
   loading: boolean;
   estimatedFiltered: number;
   totalFlightsForMode: number;
+  filterLoadKey: number; // incremented on each Load to force FlightFilterConditions remount
 }
 
 // ==================== Component ====================
@@ -96,6 +97,7 @@ function TabFlightSchedule({
     loading: false,
     estimatedFiltered: 0,
     totalFlightsForMode: 0,
+    filterLoadKey: 0,
   }]);
 
   const [activeTabId, setActiveTabId] = useState("tab-1");
@@ -192,6 +194,7 @@ function TabFlightSchedule({
         loading: false,
         estimatedFiltered: 0,
         totalFlightsForMode: 0,
+        filterLoadKey: 0,
       },
     ]);
     setActiveTabId(newId);
@@ -269,17 +272,21 @@ function TabFlightSchedule({
 
           const defaultTotal = data.filters.departure?.total_flights || 0;
 
-          // 기존 selectedConditions에서 UI 체크박스 상태 복원
+          // Restore UI checkbox state from saved selectedConditions
           const prevConditions = useSimulationStore.getState().flight.selectedConditions;
           const restoredCategories = prevConditions?.originalLocalState ?? {};
           const restoredMode = (prevConditions?.type as "departure" | "arrival") ?? "departure";
 
+          // Increment filterLoadKey to force FlightFilterConditions remount so
+          // initialSelectedFilter is re-applied (useState ignores prop changes otherwise)
+          const currentTab = airportTabs.find((t) => t.id === tabId);
           updateTab(tabId, {
             filtersData: tabData,
             loading: false,
             selectedFilter: { mode: restoredMode, categories: restoredCategories },
             estimatedFiltered: defaultTotal,
             totalFlightsForMode: defaultTotal,
+            filterLoadKey: (currentTab?.filterLoadKey ?? 0) + 1,
           });
 
           if (!isMultiTab) {
@@ -706,7 +713,7 @@ function TabFlightSchedule({
                 {tab.filtersData && !tab.loading && (
                   <div className="mt-6">
                     <FlightFilterConditions
-                      key={`filter-${tab.id}`}
+                      key={`filter-${tab.id}-${tab.filterLoadKey}`}
                       controlled={true}
                       overrideFlightData={tab.filtersData}
                       initialSelectedFilter={tab.selectedFilter}
