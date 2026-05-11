@@ -211,6 +211,7 @@ export default function AIChatPanel({ simulationId }: AIChatPanelProps) {
                 </div>
               )}
               <p
+                suppressHydrationWarning
                 className={`mt-1 text-xs ${
                   message.role === "user"
                     ? "text-primary-200"
