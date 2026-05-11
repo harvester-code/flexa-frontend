@@ -642,7 +642,34 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setSelectedConditions: (selectedConditions) =>
       set((state) => {
-        state.flight.selectedConditions = selectedConditions;
+        // Trim all string values to remove API-side trailing/leading spaces
+        // (e.g. terminal keys returned as "3 " → "3", combos "3 _5J" → "3_5J")
+        const trimStrings = (val: unknown): unknown => {
+          if (typeof val === "string") return val.trim();
+          if (Array.isArray(val)) return val.map(trimStrings);
+          return val;
+        };
+
+        const trimmedLocalState: Record<string, unknown> | undefined =
+          selectedConditions.originalLocalState
+            ? Object.fromEntries(
+                Object.entries(selectedConditions.originalLocalState).map(([k, v]) => [
+                  k,
+                  trimStrings(v),
+                ])
+              )
+            : selectedConditions.originalLocalState;
+
+        const trimmedConditions = selectedConditions.conditions.map((c) => ({
+          ...c,
+          values: c.values.map((v) => v.trim()),
+        }));
+
+        state.flight.selectedConditions = {
+          ...selectedConditions,
+          conditions: trimmedConditions,
+          originalLocalState: trimmedLocalState,
+        };
       }),
 
     // 🆕 편의 액션들 구현 - API 바디 형태 조작

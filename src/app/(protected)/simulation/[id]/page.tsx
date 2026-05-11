@@ -221,6 +221,25 @@ export default function SimulationDetail({
             }
           : { imageUrl: null, zoneAreas: {} };
 
+        // Trim any trailing/leading spaces in selectedConditions saved from old data
+        if (metadata.flight?.selectedConditions) {
+          const sc = metadata.flight.selectedConditions;
+          const trimStr = (v: unknown): unknown =>
+            typeof v === "string" ? v.trim() : Array.isArray(v) ? v.map(trimStr) : v;
+
+          if (sc.originalLocalState) {
+            sc.originalLocalState = Object.fromEntries(
+              Object.entries(sc.originalLocalState).map(([k, v]) => [k, trimStr(v)])
+            );
+          }
+          if (Array.isArray(sc.conditions)) {
+            sc.conditions = sc.conditions.map((c: any) => ({
+              ...c,
+              values: Array.isArray(c.values) ? c.values.map((v: string) => v.trim()) : c.values,
+            }));
+          }
+        }
+
         // S3 데이터 + 액션들 조합
         const newState = {
           // 데이터는 S3에서 받은 것으로 덮어쓰기
