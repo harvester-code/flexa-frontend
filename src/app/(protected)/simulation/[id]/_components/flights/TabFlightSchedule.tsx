@@ -291,14 +291,42 @@ function TabFlightSchedule({
             // Compare saved conditions vs new filters with trim() → show inline warning
             const missing: string[] = [];
             if (prevConditions?.conditions?.length) {
-              const newFilters = data.filters[prevConditions.type] || {};
+              const newModeFilters = data.filters[prevConditions.type] || {};
+
+              // Collect all airline IATA codes from nested terminal structures
+              // Structure: { departure_terminal: { "1": { airlines: { "5J": {...} } } } }
+              const allAvailableAirlines = new Set<string>();
+              Object.values(newModeFilters).forEach((fieldData: any) => {
+                if (fieldData && typeof fieldData === "object") {
+                  Object.values(fieldData).forEach((terminalData: any) => {
+                    if (terminalData?.airlines && typeof terminalData.airlines === "object") {
+                      Object.keys(terminalData.airlines).forEach((code) =>
+                        allAvailableAirlines.add(code.trim())
+                      );
+                    }
+                  });
+                }
+              });
+
               prevConditions.conditions.forEach(({ field, values }) => {
-                const availableKeys = Object.keys(newFilters[field] || {}).map((v) => v.trim());
-                values.forEach((v) => {
-                  if (!availableKeys.includes(v.trim())) {
-                    missing.push(`${field}: "${v.trim()}"`);
-                  }
-                });
+                if (field === "operating_carrier_iata") {
+                  // Airlines are nested under terminals — compare against aggregated set
+                  values.forEach((v) => {
+                    if (!allAvailableAirlines.has(v.trim())) {
+                      missing.push(`Airline: "${v.trim()}"`);
+                    }
+                  });
+                } else {
+                  // Other fields (terminal, region, etc.) are top-level keys
+                  const availableKeys = Object.keys(newModeFilters[field] || {}).map((v) =>
+                    v.trim()
+                  );
+                  values.forEach((v) => {
+                    if (!availableKeys.includes(v.trim())) {
+                      missing.push(`${field}: "${v.trim()}"`);
+                    }
+                  });
+                }
               });
             }
             setFilterMissingItems(missing);
