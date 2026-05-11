@@ -77,6 +77,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
 import { fetchScenarios } from "@/services/simulationService";
+import { calcOperatingPeriod, remapPresetDates } from "./helpers";
 
 // 상수들
 
@@ -455,6 +456,35 @@ export default function OperatingScheduleEditor({
   // passenger chartResult 가져오기
   const chartResult = useSimulationStore((s) => s.passenger.chartResult);
   const contextDate = useSimulationStore((s) => s.context.date);
+  const setProcessFlow = useSimulationStore((s) => s.setProcessFlow);
+  const incrementFacilityPresetVersion = useSimulationStore((s) => s.incrementFacilityPresetVersion);
+
+  // Generate Pax 재실행 시 시간 범위 변화에 따라 Facility 설정 경계값 확장/클리핑
+  const prevChartRangeRef = useRef<string>("");
+  useEffect(() => {
+    if (!chartResult?.chart_x_data?.length || processFlow.length === 0) return;
+
+    const first = chartResult.chart_x_data[0];
+    const last = chartResult.chart_x_data[chartResult.chart_x_data.length - 1];
+    const rangeKey = `${first}|${last}`;
+
+    // 이전과 동일한 범위면 스킵 (초기 로드 포함)
+    if (prevChartRangeRef.current === rangeKey) return;
+    const isInitialLoad = prevChartRangeRef.current === "";
+    prevChartRangeRef.current = rangeKey;
+
+    // 초기 로드는 경계 조정 불필요 (useNormalizeAllSchedules가 처리)
+    if (isInitialLoad) return;
+
+    // Generate Pax로 시간 범위가 변경된 경우 → 경계값 확장/클리핑 적용
+    const newPeriod = calcOperatingPeriod(chartResult, contextDate);
+    if (!newPeriod || !contextDate) return;
+
+    // sourceDate = targetDate = contextDate → 날짜 시프트 없이 경계 조정만 수행
+    const adjusted = remapPresetDates(processFlow, contextDate, contextDate, newPeriod);
+    setProcessFlow(adjusted as any);
+    incrementFacilityPresetVersion();
+  }, [chartResult?.chart_x_data]);
 
   // Generate time slots using custom hook
   const { timeSlots, isPreviousDay } = useTimeSlotGeneration({

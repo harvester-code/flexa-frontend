@@ -622,8 +622,6 @@ function FlightFilterConditions({
   const flightDataFromStore = useSimulationStore((state) => state.flight);
   const selectedConditions = useSimulationStore((state) => state.flight.selectedConditions);
   const setSelectedConditions = useSimulationStore((state) => state.setSelectedConditions);
-  const resetPassenger = useSimulationStore((state) => state.resetPassenger);
-  const resetProcessFlow = useSimulationStore((state) => state.resetProcessFlow);
   const airport = useSimulationStore((state) => state.context.airport);
   const date = useSimulationStore((state) => state.context.date);
   const scenarioId = useSimulationStore((state) => state.context.scenarioId);
@@ -1245,9 +1243,6 @@ function FlightFilterConditions({
       const totalFiltered = parseInt(getEstimatedFilteredFlights()) || 0;
 
       if (!controlled) {
-        resetPassenger();
-        resetProcessFlow();
-
         const totalAvailable = filtersData?.filters?.[selectedFilter.mode]?.total_flights || 0;
 
         setSelectedConditions({
@@ -1288,8 +1283,6 @@ function FlightFilterConditions({
     getEstimatedFilteredFlights,
     filtersData,
     setSelectedConditions,
-    resetPassenger,
-    resetProcessFlow,
     toast,
   ]);
 
