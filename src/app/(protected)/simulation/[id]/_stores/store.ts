@@ -626,9 +626,18 @@ export const useSimulationStore = create<SimulationStoreState>()(
         // mismatch 경고 패널(Passenger/Facility 탭)이 자동으로 유효하지 않은 조건을 표시함
         state.passenger.chartResult = undefined;
 
-        state.workflow.step1Completed = false;
+        // Generate Pax 재실행 필요 → step2 미완료, Facilities(step3) 접근 차단
         state.workflow.step2Completed = false;
-        state.workflow.availableSteps = [1];
+        state.workflow.availableSteps = state.workflow.availableSteps.filter(
+          (step) => step !== 3
+        );
+
+        // Passenger 탭(step2)은 항상 접근 가능하도록 유지
+        // → 기존 설정값 확인 및 mismatch 경고 확인 가능
+        if (!state.workflow.availableSteps.includes(2)) {
+          state.workflow.availableSteps.push(2);
+          state.workflow.availableSteps.sort((a, b) => a - b);
+        }
       }),
 
     setSelectedConditions: (selectedConditions) =>
