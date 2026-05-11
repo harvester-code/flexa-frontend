@@ -40,8 +40,6 @@ function FlightDataLoader({
   const storeDate = useSimulationStore((s) => s.context.date);
   const setStoreAirport = useSimulationStore((s) => s.setAirport);
   const setStoreDate = useSimulationStore((s) => s.setDate);
-  const resetPassenger = useSimulationStore((s) => s.resetPassenger);
-  const resetProcessFlow = useSimulationStore((s) => s.resetProcessFlow);
 
   const isControlled = controlledAirport !== undefined;
   const [airport, setAirport] = useState(isControlled ? controlledAirport : storeAirport);
@@ -78,8 +76,6 @@ function FlightDataLoader({
 
   const handleLoad = () => {
     if (!skipStoreSync) {
-      resetPassenger();
-      resetProcessFlow();
       setStoreAirport(airport);
       setStoreDate(date);
     }

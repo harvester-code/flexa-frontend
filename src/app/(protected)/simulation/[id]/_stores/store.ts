@@ -622,42 +622,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.flight.airlines = null;
         state.flight.filters = null;
 
-        // ✅ flight 데이터 리셋 시 passenger 데이터도 완전 초기화
-        Object.assign(state.passenger, {
-          settings: {
-            min_arrival_minutes: null,
-          },
-          pax_generation: {
-            rules: [],
-            default: {
-              load_factor: null,
-              flightCount: 0,
-            },
-          },
-          pax_demographics: {
-            nationality: {
-              available_values: [],
-              rules: [],
-              default: { flightCount: 0 },
-            },
-            profile: {
-              available_values: [],
-              rules: [],
-              default: { flightCount: 0 },
-            },
-          },
-          pax_arrival_patterns: {
-            rules: [],
-            default: {
-              mean: null,
-              std: null,
-              flightCount: 0,
-            },
-          },
-          chartResult: undefined, // 차트 결과도 초기화
-        });
+        // flight 재로드 시 시뮬레이션 결과만 초기화 — Passenger/Facility 설정은 유지
+        // mismatch 경고 패널(Passenger/Facility 탭)이 자동으로 유효하지 않은 조건을 표시함
+        state.passenger.chartResult = undefined;
 
-        // flight/passenger 리셋 시 workflow 단계만 초기화 (process_flow, terminalLayout은 유지)
         state.workflow.step1Completed = false;
         state.workflow.step2Completed = false;
         state.workflow.availableSteps = [1];
