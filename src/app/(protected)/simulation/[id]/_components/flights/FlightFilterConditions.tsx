@@ -421,7 +421,7 @@ function AirlineFlightNumbersDropdown({
   const [searchQuery, setSearchQuery] = useState('');
 
   const sortedFlightNumbers = useMemo(
-    () => [...flightNumbers].sort((a, b) => a.localeCompare(b)),
+    () => [...flightNumbers].map(String).sort((a, b) => a.localeCompare(b)),
     [flightNumbers]
   );
 
