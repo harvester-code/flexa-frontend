@@ -489,14 +489,35 @@ export default function OperatingScheduleEditor({
     prevChartRangeRef.current = rangeKey;
     chartWasClearedRef.current = false;
 
-    // Preset 로딩과 동일한 원리:
-    // processFlow가 chart 범위를 커버하지 못하는 슬롯은 경계값으로 확장/클리핑
-    // (최초 탭 진입, Generate Pax, cleared 후 복원 모두 포함)
     const newPeriod = calcOperatingPeriod(chartResult, contextDate);
     if (!newPeriod || !contextDate) return;
 
+    // Debug: log inputs/outputs to diagnose boundary extension
+    const firstBlock = processFlow[0]
+      ? Object.values((processFlow[0] as any).zones || {})[0]
+      : null;
+    const firstFacility = firstBlock ? (firstBlock as any).facilities?.[0] : null;
+    const firstBlockPeriod = firstFacility?.operating_schedule?.time_blocks?.[0]?.period;
+    console.group("[ScheduleEditor] boundary extension");
+    console.log("contextDate:", contextDate);
+    console.log("chart_x_data first/last:", chartResult.chart_x_data[0], "/", chartResult.chart_x_data[chartResult.chart_x_data.length - 1]);
+    console.log("newPeriod (window):", newPeriod);
+    console.log("first block period:", firstBlockPeriod ?? "(no blocks)");
+    console.log("processFlow[0] keys:", Object.keys(processFlow[0] || {}));
+
     // sourceDate = targetDate = contextDate → 날짜 시프트 없이 경계 조정만 수행
     const adjusted = remapPresetDates(processFlow, contextDate, contextDate, newPeriod);
+
+    const adjFirstBlock = adjusted[0]
+      ? Object.values((adjusted[0] as any).zones || {})[0]
+      : null;
+    const adjFirstFacility = adjFirstBlock ? (adjFirstBlock as any).facilities?.[0] : null;
+    const adjFirstBlockPeriod = adjFirstFacility?.operating_schedule?.time_blocks?.[0]?.period;
+    console.log("adjusted first block period:", adjFirstBlockPeriod ?? "(empty after remap)");
+    console.log("total blocks before:", firstFacility?.operating_schedule?.time_blocks?.length);
+    console.log("total blocks after:", adjFirstFacility?.operating_schedule?.time_blocks?.length);
+    console.groupEnd();
+
     setProcessFlow(adjusted as any);
     incrementFacilityPresetVersion();
   }, [chartResult?.chart_x_data]);

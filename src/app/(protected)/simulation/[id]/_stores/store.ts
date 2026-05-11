@@ -642,42 +642,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setSelectedConditions: (selectedConditions) =>
       set((state) => {
-        // Normalize a terminal_airlines combo: "3 _5J" → "3_5J"
-        const normalizeCombo = (s: string): string => {
-          const idx = s.lastIndexOf("_");
-          if (idx === -1) return s.trim();
-          return `${s.slice(0, idx).trim()}_${s.slice(idx + 1).trim()}`;
-        };
-
-        const trimField = (key: string, val: unknown): unknown => {
-          if (key === "terminal_airlines" && Array.isArray(val)) {
-            return val.map((v) => (typeof v === "string" ? normalizeCombo(v) : v));
-          }
-          if (typeof val === "string") return val.trim();
-          if (Array.isArray(val)) return val.map((v) => (typeof v === "string" ? v.trim() : v));
-          return val;
-        };
-
-        const trimmedLocalState: Record<string, unknown> | undefined =
-          selectedConditions.originalLocalState
-            ? Object.fromEntries(
-                Object.entries(selectedConditions.originalLocalState).map(([k, v]) => [
-                  k,
-                  trimField(k, v),
-                ])
-              )
-            : selectedConditions.originalLocalState;
-
-        const trimmedConditions = selectedConditions.conditions.map((c) => ({
-          ...c,
-          values: c.values.map((v) => v.trim()),
-        }));
-
-        state.flight.selectedConditions = {
-          ...selectedConditions,
-          conditions: trimmedConditions,
-          originalLocalState: trimmedLocalState,
-        };
+        state.flight.selectedConditions = selectedConditions;
       }),
 
     // 🆕 편의 액션들 구현 - API 바디 형태 조작

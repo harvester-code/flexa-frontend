@@ -221,39 +221,6 @@ export default function SimulationDetail({
             }
           : { imageUrl: null, zoneAreas: {} };
 
-        // Trim any trailing/leading spaces in selectedConditions saved from old data
-        // terminal_airlines combos like "3 _5J" (space before _) are normalized per-segment
-        if (metadata.flight?.selectedConditions) {
-          const sc = metadata.flight.selectedConditions;
-
-          const normalizeCombo = (s: string): string => {
-            const idx = s.lastIndexOf("_");
-            if (idx === -1) return s.trim();
-            return `${s.slice(0, idx).trim()}_${s.slice(idx + 1).trim()}`;
-          };
-
-          const trimField = (key: string, val: unknown): unknown => {
-            if (key === "terminal_airlines" && Array.isArray(val)) {
-              return val.map((v: unknown) => (typeof v === "string" ? normalizeCombo(v) : v));
-            }
-            if (typeof val === "string") return val.trim();
-            if (Array.isArray(val)) return val.map((v: unknown) => (typeof v === "string" ? v.trim() : v));
-            return val;
-          };
-
-          if (sc.originalLocalState) {
-            sc.originalLocalState = Object.fromEntries(
-              Object.entries(sc.originalLocalState).map(([k, v]) => [k, trimField(k, v)])
-            );
-          }
-          if (Array.isArray(sc.conditions)) {
-            sc.conditions = sc.conditions.map((c: any) => ({
-              ...c,
-              values: Array.isArray(c.values) ? c.values.map((v: string) => v.trim()) : c.values,
-            }));
-          }
-        }
-
         // S3 데이터 + 액션들 조합
         const newState = {
           // 데이터는 S3에서 받은 것으로 덮어쓰기

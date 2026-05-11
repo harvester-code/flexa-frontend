@@ -61,7 +61,6 @@ interface AirportTab {
   loading: boolean;
   estimatedFiltered: number;
   totalFlightsForMode: number;
-  filterLoadKey: number; // incremented on each Load to force FlightFilterConditions remount
 }
 
 // ==================== Component ====================
@@ -97,7 +96,6 @@ function TabFlightSchedule({
     loading: false,
     estimatedFiltered: 0,
     totalFlightsForMode: 0,
-    filterLoadKey: 0,
   }]);
 
   const [activeTabId, setActiveTabId] = useState("tab-1");
@@ -194,7 +192,6 @@ function TabFlightSchedule({
         loading: false,
         estimatedFiltered: 0,
         totalFlightsForMode: 0,
-        filterLoadKey: 0,
       },
     ]);
     setActiveTabId(newId);
@@ -272,25 +269,17 @@ function TabFlightSchedule({
 
           const defaultTotal = data.filters.departure?.total_flights || 0;
 
-          // Preserve current UI checkbox state across Load
-          // currentTab.selectedFilter already holds what the user had checked
-          // (initialized from selectedConditions on page load, then updated on each interaction)
-          const currentTab = airportTabs.find((t) => t.id === tabId);
-          const preservedFilter =
-            currentTab?.selectedFilter ?? { mode: "departure" as const, categories: {} };
-
-          // prevConditions is used for mismatch comparison below
+          // 기존 selectedConditions에서 UI 체크박스 상태 복원
           const prevConditions = useSimulationStore.getState().flight.selectedConditions;
+          const restoredCategories = (prevConditions?.originalLocalState ?? {}) as Record<string, any>;
+          const restoredMode = (prevConditions?.type as "departure" | "arrival") ?? "departure";
 
-          // Increment filterLoadKey to force FlightFilterConditions remount so
-          // initialSelectedFilter is re-applied (useState ignores prop changes otherwise)
           updateTab(tabId, {
             filtersData: tabData,
             loading: false,
-            selectedFilter: preservedFilter,
+            selectedFilter: { mode: restoredMode, categories: restoredCategories },
             estimatedFiltered: defaultTotal,
             totalFlightsForMode: defaultTotal,
-            filterLoadKey: (currentTab?.filterLoadKey ?? 0) + 1,
           });
 
           if (!isMultiTab) {
@@ -387,7 +376,7 @@ function TabFlightSchedule({
         toast({ title: "Load Failed", description: errorMessage, variant: "destructive" });
       }
     },
-    [simulationId, isMultiTab, airportTabs, setApiRequestLog, updateTab, resetFlightData, setUnifiedAirport, setUnifiedDate, setFlightFilters, toast]
+    [simulationId, isMultiTab, setApiRequestLog, updateTab, resetFlightData, setUnifiedAirport, setUnifiedDate, setFlightFilters, toast]
   );
 
   // ==================== Apply Filter (Single Tab) ====================
@@ -717,7 +706,7 @@ function TabFlightSchedule({
                 {tab.filtersData && !tab.loading && (
                   <div className="mt-6">
                     <FlightFilterConditions
-                      key={`filter-${tab.id}-${tab.filterLoadKey}`}
+                      key={`filter-${tab.id}`}
                       controlled={true}
                       overrideFlightData={tab.filtersData}
                       initialSelectedFilter={tab.selectedFilter}
