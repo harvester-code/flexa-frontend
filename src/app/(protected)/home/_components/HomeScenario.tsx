@@ -700,14 +700,12 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                   </span>
                 </div>
               </div>
-              {process.env.NODE_ENV === 'development' && (
-                <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">Scenario ID:</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
                     {scenario.scenario_id}
                   </span>
                 </div>
-              )}
             </div>
           </div>
         </div>
