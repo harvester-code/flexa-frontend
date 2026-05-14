@@ -794,8 +794,8 @@ export default function ProcessFlowDesigner({
 
     // If zone names have changed, rebuild zones object
     if (
-      JSON.stringify(newZoneNames.sort()) !==
-      JSON.stringify(currentZoneNames.sort())
+      JSON.stringify([...newZoneNames].sort()) !==
+      JSON.stringify([...currentZoneNames].sort())
     ) {
       const newZones: any = {};
       // Match zones by index position to maintain data integrity
