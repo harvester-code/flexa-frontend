@@ -679,25 +679,35 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
             </div>
 
             {/* Second Row: Airport, Terminal, Date */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Airport:</span>
-                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                  {scenario.airport}
-                </span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Airport:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.airport}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Terminal:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.terminal}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Date:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
+                    {scenario.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('YYYY-MM-DD') : 'N/A'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Terminal:</span>
-                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                  {scenario.terminal}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Date:</span>
-                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
-                  {scenario.target_flight_schedule_date ? dayjs(scenario.target_flight_schedule_date).format('YYYY-MM-DD') : 'N/A'}
-                </span>
-              </div>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Scenario ID:</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                    {scenario.scenario_id}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

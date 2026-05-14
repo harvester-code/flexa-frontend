@@ -26,6 +26,8 @@ import {
   History,
   NotebookPen,
   StickyNote,
+  Check,
+  X,
 } from "lucide-react";
 import { modifyScenario, copyScenario } from "@/services/simulationService";
 import {
@@ -213,7 +215,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [editingScenario, setEditingScenario] =
     useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [copyingScenario, setCopyingScenario] = useState<any>(null);
   const [copyName, setCopyName] = useState("");
@@ -482,13 +483,11 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const saveEdit = async () => {
     if (!editingScenario) return;
 
-    // 원본 시나리오 찾기
     const originalScenario = filteredScenarios.find(
       (s) => s.scenario_id === editingScenario.id
     );
     if (!originalScenario) return;
 
-    // 🔧 변경사항 확인 - 안전한 비교 로직
     const normalize = (value: string | null | undefined) =>
       (value || "").trim();
 
@@ -504,13 +503,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       cancelEdit();
       return;
     }
-
-    // 확인 다이얼로그 표시
-    setShowUpdateDialog(true);
-  };
-
-  const executeUpdateScenario = async () => {
-    if (!editingScenario) return;
 
     try {
       await modifyScenario(
@@ -535,8 +527,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
         description: "Failed to update scenario. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setShowUpdateDialog(false);
     }
   };
 
@@ -810,7 +800,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
       <div
         className="mt-2 overflow-x-auto"
       >
-        <table className="table-default">
+        <table className="table-default table-fixed w-full">
           <thead>
             <tr className="border-b">
               <th className="w-10">
@@ -834,7 +824,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         />
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-left whitespace-nowrap w-[220px]">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("name")}
@@ -844,7 +834,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("name")}
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-left whitespace-nowrap w-20">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("airport")}
@@ -854,7 +844,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("airport")}
                 </div>
               </th>
-              <th className="px-3 text-center whitespace-nowrap">
+              <th className="px-3 text-center whitespace-nowrap w-24">
                 <div
                   className="flex items-center justify-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("terminal")}
@@ -864,7 +854,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("terminal")}
                 </div>
               </th>
-              <th className="px-3 text-right whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap w-28">
                 <div
                   className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("metadata_updated_at")}
@@ -874,7 +864,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("metadata_updated_at")}
                 </div>
               </th>
-              <th className="px-3 text-right whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap w-28">
                 <div
                   className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("simulation_end_at")}
@@ -884,7 +874,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("simulation_end_at")}
                 </div>
               </th>
-              <th className="px-3 text-right whitespace-nowrap">
+              <th className="px-3 text-right whitespace-nowrap w-28">
                 <div
                   className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("created_at")}
@@ -894,7 +884,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("created_at")}
                 </div>
               </th>
-              <th className="px-3 text-left whitespace-nowrap">
+              <th className="px-3 text-left whitespace-nowrap w-[180px]">
                 <div
                   className="flex items-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleSort("memo")}
@@ -962,7 +952,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="flex-none w-56 max-w-sm px-2 py-1"
+                          className="w-full px-2 py-1"
                           autoFocus
                         />
                       ) : (
@@ -996,7 +986,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="flex-none w-32 px-2 py-1"
+                          className="w-full px-2 py-1"
                         />
                       ) : (
                         scenario.airport
@@ -1014,7 +1004,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="flex-none w-20 px-2 py-1 text-center"
+                          className="w-full px-2 py-1 text-center"
                         />
                       ) : (
                         scenario.terminal
@@ -1088,7 +1078,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )
                           }
                           onKeyDown={handleKeyDown}
-                          className="flex-none w-64 max-w-md px-2 py-1"
+                          className="w-full px-2 py-1"
                         />
                       ) : (
                         <span
@@ -1099,32 +1089,46 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="px-3 text-center">
+                    <td className="w-20 px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="link"
-                          className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
-                          title={isEditing ? "Cancel" : "Edit"}
-                          onClick={() =>
-                            isEditing ? cancelEdit() : startEdit(scenario)
-                          }
-                        >
-                          <Pencil
-                            className={cn(
-                              "size-4",
-                              isEditing ? "text-default-500" : "text-primary"
-                            )}
-                          />
-                        </Button>
-                        {!isEditing && (
-                          <Button
-                            variant="link"
-                            className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
-                            title="Copy"
-                            onClick={() => handleCopyClick(scenario)}
-                          >
-                            <Copy className="size-4 text-primary" />
-                          </Button>
+                        {isEditing ? (
+                          <>
+                            <Button
+                              variant="link"
+                              className="btn-more rounded p-2 transition-colors hover:bg-green-50"
+                              title="Save"
+                              onClick={() => saveEdit()}
+                            >
+                              <Check className="size-4 text-green-600" />
+                            </Button>
+                            <Button
+                              variant="link"
+                              className="btn-more rounded p-2 transition-colors hover:bg-red-50"
+                              title="Cancel"
+                              onClick={() => cancelEdit()}
+                            >
+                              <X className="size-4 text-red-500" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="link"
+                              className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
+                              title="Edit"
+                              onClick={() => startEdit(scenario)}
+                            >
+                              <Pencil className="size-4 text-primary" />
+                            </Button>
+                            <Button
+                              variant="link"
+                              className="btn-more rounded p-2 transition-colors hover:bg-blue-50"
+                              title="Copy"
+                              onClick={() => handleCopyClick(scenario)}
+                            >
+                              <Copy className="size-4 text-primary" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -1228,26 +1232,6 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               onClick={handleDeleteConfirm}
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Update Scenario Confirmation Dialog */}
-      <AlertDialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Update Scenario</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to update this scenario?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowUpdateDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={executeUpdateScenario}>
-              Update
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
