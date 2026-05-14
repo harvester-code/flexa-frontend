@@ -274,6 +274,8 @@ export interface AirportContext {
   country_name: string;
   gdp_ppp?: GdpData;
   gdp?: GdpData;
+  gdp_ppp_per_capita?: GdpData;
+  gdp_per_capita?: GdpData;
 }
 
 /** 경제적 영향 (Monetary Value of Time) */
@@ -330,4 +332,41 @@ export interface FacilityDetailCategory {
 export interface HomeMetricsData {
   summary: HomeSummaryData;
   facility_details: FacilityDetailCategory[];
+}
+
+// ============================================================
+// Missed Flights Analysis
+// ============================================================
+
+export interface MissedFlightStepStats {
+  missed_avg_seconds: number | null;
+  completed_avg_seconds: number | null;
+  /** "no_facility" = 카운터 자체 없음, "cascading" = 이전 step 실패로 진입 불가 */
+  failure_type: 'no_facility' | 'cascading' | null;
+  no_facility_count: number;
+  cascading_count: number;
+  arrival_range: { earliest: string; latest: string } | null;
+}
+
+export interface MissedFlightItem {
+  flight_key: string;
+  carrier: string;
+  carrier_name: string | null;
+  flight_number: string | null;
+  departure_time: string | null;
+  departure_date: string | null;
+  total: number;
+  failed: number;
+  failed_rate: number;
+  risk_level: 'high' | 'medium' | 'low';
+  time_budget_seconds: number | null;
+  steps: Record<string, MissedFlightStepStats>;
+  bottleneck_step: string | null;
+  first_failed_step: string | null;
+  no_facility_count: number;
+  cascading_count: number;
+}
+
+export interface MissedFlightsData {
+  flights: MissedFlightItem[];
 }

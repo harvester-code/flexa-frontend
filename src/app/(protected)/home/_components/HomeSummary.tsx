@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ScenarioData, HomeSummaryData, FacilityMetric } from '@/types/homeTypes';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Clock, Timer, Building2, Plane, DollarSign, Users, UserCheck, Home, Hourglass, Gauge, Activity, Target } from 'lucide-react';
 import { formatTimeTaken, formatUnit } from './HomeFormat';
 import HomeChartGuard from './HomeChartGuard';
 import HomeSummaryCard from './HomeSummaryCard';
+import MissedPaxModal from './MissedPaxModal';
+import { useMissedFlightsData } from '@/queries/homeQueries';
 
 interface HomeSummaryProps {
   scenario: ScenarioData | null;
@@ -21,9 +23,14 @@ function HomeSummary({
   data,
   isLoading: propIsLoading,
 }: HomeSummaryProps) {
-  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
   const summaryData = data;
   const isLoading = propIsLoading || false;
+
+  const [missedModalOpen, setMissedModalOpen] = useState(false);
+  const { data: missedFlightsData, isLoading: isMissedLoading } = useMissedFlightsData({
+    scenarioId: scenario?.scenario_id,
+    enabled: missedModalOpen,
+  });
 
   const waitTimeChartData = useMemo(() => {
     if (!summaryData?.pax_experience?.waiting_time) return [];
@@ -69,6 +76,14 @@ function HomeSummary({
 
   return (
     <HomeChartGuard scenario={scenario} isLoading={isLoading} data={summaryData}>
+      <MissedPaxModal
+        open={missedModalOpen}
+        onClose={() => setMissedModalOpen(false)}
+        data={missedFlightsData}
+        isLoading={isMissedLoading}
+        totalMissed={summaryData?.passenger_summary?.missed ?? 0}
+      />
+
       {/* Throughputs 섹션 */}
       {summaryData?.passenger_summary && (
         <>
@@ -103,6 +118,8 @@ function HomeSummary({
                   {formatUnit('pax', 'default', 'lg')}
                 </>
               }
+              valueClassName="text-2xl font-semibold text-destructive"
+              onClick={() => setMissedModalOpen(true)}
             />
           </div>
         </>
@@ -229,16 +246,15 @@ function EfficiencySection({ metrics }: { metrics: FacilityMetric[] }) {
 /** Economic Impact 섹션 (IIFE 제거하여 별도 컴포넌트로 추출) */
 function EconomicImpactSection({ impact }: { impact: NonNullable<HomeSummaryData['economic_impact']> }) {
   const ctx = impact.airport_context;
-  const gdpData = ctx?.gdp_ppp || ctx?.gdp;
-  const gdpType = ctx?.gdp_ppp ? 'GDP PPP' : 'GDP';
+  const perCapitaData = ctx?.gdp_ppp_per_capita || ctx?.gdp_per_capita;
 
   return (
     <>
       <div className="mt-3 mb-2 flex items-center justify-between">
         <div className="text-lg font-semibold">Monetary Value of Time</div>
-        {ctx && gdpData && (
+        {ctx && perCapitaData && (
           <div className="text-sm text-default-500">
-            Based on {ctx.country_name} {gdpType} {gdpData.formatted} ({gdpData.year}) | Source: World Bank
+            Based on GDP per Capita of {ctx.country_name} {perCapitaData.formatted} ({perCapitaData.year}) | Source: World Bank
           </div>
         )}
       </div>
