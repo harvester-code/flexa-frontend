@@ -19,26 +19,6 @@ const SimulationPage = () => {
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  // Check session and role
-  React.useEffect(() => {
-    const checkSession = async () => {
-      const { createClient } = await import('@/lib/auth/client');
-      const supabase = createClient();
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error('Session check error:', error);
-      }
-
-      if (!session) {
-        router.push('/auth/login');
-        return;
-      }
-    };
-
-    checkSession();
-  }, [router]);
-
   // 🎯 Role 기반 접근 제어: viewer는 Simulation 페이지 접근 불가
   React.useEffect(() => {
     if (!isUserLoading && user) {
