@@ -487,6 +487,7 @@ export default function ProfileCriteriaSettings({
     if (
       columnKey === 'operating_carrier_name' ||
       columnKey === 'aircraft_type_name' ||
+      columnKey === 'aircraft_class' ||
       columnKey === 'total_seats' ||
       columnKey === 'flight_type'
     ) {
@@ -839,10 +840,19 @@ export default function ProfileCriteriaSettings({
                     return flightsB - flightsA; // 항공편 수 기준 내림차순
                   });
 
-                  // 검색어에 따른 필터링
-                  const filteredValues = sortedValues.filter((value) =>
-                    value.toLowerCase().includes(searchQuery.toLowerCase())
-                  );
+                  const childFlightNumberData = parquetMetadata.find((item) => item.column === 'flight_number');
+                  const hasChildFlightNumbers = !!childFlightNumberData && selectedColumn !== 'flight_number';
+
+                  // 검색어에 따른 필터링 (부모 값 + 자식 편명/루트 포함)
+                  const filteredValues = sortedValues.filter((value) => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    if (value.toLowerCase().includes(q)) return true;
+                    if (!hasChildFlightNumbers) return false;
+                    return getFlightNumbersForValue(selectedColumn, value).some(
+                      ({ flightNo, route }) => flightNo.toLowerCase().includes(q) || route.toLowerCase().includes(q)
+                    );
+                  });
 
                   const isAllSelected = isAllSelectedInColumn(selectedColumn, filteredValues);
 
@@ -899,9 +909,19 @@ export default function ProfileCriteriaSettings({
                             filteredValues.map((value) => {
                               const itemKey = `${selectedColumn}:${value}`;
                               const flightCount = columnData.values[value].flights.length;
-                              const isExpanded = expandedItems[itemKey] || false;
+                              const isManuallyExpanded = expandedItems[itemKey] || false;
                               const flightNumberData = parquetMetadata.find((item) => item.column === 'flight_number');
                               const hasFlightNumbers = !!flightNumberData && selectedColumn !== 'flight_number';
+                              // 검색어가 자식 편명/루트에 매칭되면 자동 펼침
+                              const isSearchExpanded =
+                                !!searchQuery &&
+                                hasFlightNumbers &&
+                                !value.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                                getFlightNumbersForValue(selectedColumn, value).some(({ flightNo, route }) => {
+                                  const q = searchQuery.toLowerCase();
+                                  return flightNo.toLowerCase().includes(q) || route.toLowerCase().includes(q);
+                                });
+                              const isExpanded = isManuallyExpanded || isSearchExpanded;
                               const checkState = hasFlightNumbers
                                 ? getParentCheckState(selectedColumn, value)
                                 : (selectedItems[itemKey] || false);
@@ -937,7 +957,15 @@ export default function ProfileCriteriaSettings({
                                   {/* 아코디언: 편명 목록 */}
                                   {isExpanded && hasFlightNumbers && (
                                     <div className="mb-1 ml-6 space-y-0.5 rounded bg-gray-50 px-2 py-1.5">
-                                      {getFlightNumbersForValue(selectedColumn, value).map(({ flightNo, route }) => {
+                                      {getFlightNumbersForValue(selectedColumn, value)
+                                        .filter(({ flightNo, route }) => {
+                                          if (!searchQuery) return true;
+                                          // 부모가 매칭되면 자식은 모두 표시
+                                          if (value.toLowerCase().includes(searchQuery.toLowerCase())) return true;
+                                          const q = searchQuery.toLowerCase();
+                                          return flightNo.toLowerCase().includes(q) || route.toLowerCase().includes(q);
+                                        })
+                                        .map(({ flightNo, route }) => {
                                         const fnKey = `flight_number:${flightNo}`;
                                         const isFnSelected = selectedItems[fnKey] || false;
                                         return (
