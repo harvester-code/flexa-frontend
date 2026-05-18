@@ -1,13 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { ScenariosDataResponse, ScenarioData } from '@/types/homeTypes';
 import { fetchScenarios } from '@/services/simulationService';
-import { useUser } from './userQueries';
+import { createClient } from '@/lib/auth/client';
+
+const supabase = createClient();
 
 const useScenarios = () => {
-  const { data: userInfo } = useUser();
-  
+  // getSession()은 로컬 스토리지 읽기 (~1ms) — getUser() 외부 API 호출(~40ms) 불필요
+  const { data: userId } = useQuery({
+    queryKey: ['auth-session-uid'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.user?.id ?? null;
+    },
+    staleTime: 60_000, // 세션 user ID는 자주 바뀌지 않음
+  });
+
   const response = useQuery({
-    queryKey: ['scenarios', userInfo?.id], // user_id를 쿼리 키에 포함하여 사용자별 캐시 자동 분리
+    queryKey: ['scenarios', userId],
     queryFn: async (): Promise<ScenariosDataResponse> => {
       try {
         const { data } = await fetchScenarios();
@@ -26,14 +36,14 @@ const useScenarios = () => {
         throw error instanceof Error ? error : new Error('Failed to fetch scenarios');
       }
     },
-    enabled: !!userInfo?.id, // user_id가 있을 때만 쿼리 실행
-    staleTime: 0, // 항상 최신 데이터 가져오기
-    refetchOnMount: true, // 컴포넌트 마운트 시 항상 리페치
+    enabled: !!userId,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   return {
     ...response,
-    scenarios: response?.data || [],
+    scenarios: response?.data ?? [],
   };
 };
 

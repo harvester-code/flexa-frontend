@@ -4,17 +4,15 @@ import type { User, UserRole } from '@/types/userTypes';
 
 const supabase = createClient();
 
-const fetchUserId = async () => {
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data.user?.id;
-};
-
 const fetchUser = async () => {
-  const userId = await fetchUserId();
+  // getSession()은 로컬 스토리지 읽기 (~1ms) — getUser() 외부 Supabase API 호출(~40ms) 대체
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw new Error(sessionError.message);
+  }
+
+  const userId = session?.user?.id;
 
   if (!userId) {
     throw new Error('존재하지 않는 유저입니다.');
