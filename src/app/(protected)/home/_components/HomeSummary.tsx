@@ -111,7 +111,16 @@ function HomeSummary({
             />
             <HomeSummaryCard
               icon={Home}
-              title={<span>Missed Pax</span>}
+              title={
+                <span className="flex items-center gap-1.5">
+                  Missed Pax
+                  {process.env.NODE_ENV === 'development' && (
+                    <span className="rounded border border-dashed border-default-300 px-1 py-0.5 text-[10px] font-medium text-default-400">
+                      DEV
+                    </span>
+                  )}
+                </span>
+              }
               value={
                 <>
                   {summaryData.passenger_summary.missed.toLocaleString()}
@@ -119,7 +128,7 @@ function HomeSummary({
                 </>
               }
               valueClassName="text-2xl font-semibold text-destructive"
-              onClick={() => setMissedModalOpen(true)}
+              onClick={process.env.NODE_ENV === 'development' ? () => setMissedModalOpen(true) : undefined}
             />
           </div>
         </>
