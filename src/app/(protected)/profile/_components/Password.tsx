@@ -65,20 +65,10 @@ export default function Password() {
   const fetchLoginHistory = async () => {
     try {
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (userError) {
-        toast({
-          variant: 'destructive',
-          title: '로그인 기록 조회 실패',
-          description: '사용자 정보를 가져올 수 없습니다.',
-        });
-        return;
-      }
-
-      if (!user) {
+      if (!session?.user) {
         toast({
           variant: 'destructive',
           title: '로그인 기록 조회 실패',
@@ -90,7 +80,7 @@ export default function Password() {
       const { data, error } = await supabase
         .from('user_login_history')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -161,8 +151,9 @@ export default function Password() {
 
     try {
       // 먼저 현재 비밀번호로 로그인 시도하여 확인
+      const { data: { session: authSession } } = await supabase.auth.getSession();
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: (await supabase.auth.getUser()).data.user?.email || '',
+        email: authSession?.user?.email || '',
         password: currentPassword,
       });
 
