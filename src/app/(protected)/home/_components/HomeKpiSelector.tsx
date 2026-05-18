@@ -144,7 +144,7 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
             <Switch
               checked={localCumulative}
               onCheckedChange={setLocalCumulative}
-              className="h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+              className="h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-2"
             />
           </div>
           <DropdownMenuSeparator />
