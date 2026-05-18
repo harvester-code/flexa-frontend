@@ -338,14 +338,38 @@ export interface HomeMetricsData {
 // Missed Flights Analysis
 // ============================================================
 
+export interface StepSaturation {
+  total_counters: number;
+  occupied_counters: number;
+  all_occupied: boolean;
+  competing_pax: number;
+}
+
+export interface FacilityBreakdownItem {
+  pax_count: number;
+  zone: string | null;
+  first_served: string | null;         // "HH:MM" 실제 첫 처리 시작 (parquet 실측)
+  last_served: string | null;          // "HH:MM" 실제 마지막 처리 완료 (parquet 실측)
+  process_time_s: number | null;       // seconds per pax
+  avg_queue_wait_s: number | null;     // 이 시설 이용 승객의 평균 큐 대기시간 (초)
+  arrival_range: { earliest: string; latest: string } | null;  // _no_counter only
+}
+
 export interface MissedFlightStepStats {
   missed_avg_seconds: number | null;
   completed_avg_seconds: number | null;
-  /** "no_facility" = 카운터 자체 없음, "cascading" = 이전 step 실패로 진입 불가 */
+  avg_margin_after_s: number | null;
   failure_type: 'no_facility' | 'cascading' | null;
-  no_facility_count: number;
-  cascading_count: number;
+  no_facility_count: number;           // 이전 호환 (no_counter + timing)
+  no_counter_count: number;            // ② 시간 있음, 카운터 없음
+  timing_count: number;                // ③ 도착했으나 출발 전 처리 불가
+  cascading_count: number;             // ① 이전 스텝 실패로 진입 불가
   arrival_range: { earliest: string; latest: string } | null;
+  no_counter_arrival: { earliest: string; latest: string } | null;
+  timing_arrival: { earliest: string; latest: string } | null;
+  eligible_count: number | null;
+  saturation: StepSaturation | null;
+  facility_breakdown: Record<string, FacilityBreakdownItem>;
 }
 
 export interface MissedFlightItem {

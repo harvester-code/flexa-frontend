@@ -167,7 +167,7 @@ function useScenarioNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const navigateToScenario = (
+  const buildScenarioUrl = (
     scenarioId: string,
     options?: ScenarioNavigationOptions
   ) => {
@@ -182,13 +182,19 @@ function useScenarioNavigation() {
     }
 
     const queryString = params.toString();
-    const url = queryString
+    return queryString
       ? `${pathname}/${scenarioId}?${queryString}`
       : `${pathname}/${scenarioId}`;
-    router.push(url);
   };
 
-  return navigateToScenario;
+  const navigateToScenario = (
+    scenarioId: string,
+    options?: ScenarioNavigationOptions
+  ) => {
+    router.push(buildScenarioUrl(scenarioId, options));
+  };
+
+  return { navigateToScenario, buildScenarioUrl };
 }
 
 const ScenarioListContent: React.FC<ScenarioListProps> = ({
@@ -199,7 +205,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const navigateToScenario = useScenarioNavigation();
+  const { navigateToScenario, buildScenarioUrl } = useScenarioNavigation();
   const notifications = useNotificationStore((state) => state.notifications);
   const latestNotificationMap = React.useMemo(() => {
     const map: Record<string, string | null> = {};
@@ -554,10 +560,13 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   };
 
   const handleScenarioClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
     scenarioId: string,
     scenarioName?: string,
     airport?: string
   ) => {
+    if (e.metaKey || e.ctrlKey) return; // 새 탭 동작을 브라우저에 위임
+    e.preventDefault();
     setNavigatingToId(scenarioId);
     navigateToScenario(scenarioId, { scenarioName, airport });
   };
@@ -956,10 +965,12 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                           autoFocus
                         />
                       ) : (
-                        <div
+                        <a
+                          href={buildScenarioUrl(scenario.scenario_id, { scenarioName: scenario.name, airport: scenario.airport })}
                           className="flex cursor-pointer items-center gap-1.5 hover:font-semibold"
-                          onClick={() =>
+                          onClick={(e) =>
                             handleScenarioClick(
+                              e,
                               scenario.scenario_id,
                               scenario.name,
                               scenario.airport
@@ -972,7 +983,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                             )}
                             <span className="truncate">{scenario.name}</span>
                           </span>
-                        </div>
+                        </a>
                       )}
                     </td>
                     <td className="px-3 whitespace-nowrap">

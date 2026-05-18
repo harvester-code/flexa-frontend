@@ -1,5 +1,5 @@
 import { createAPIService } from '@/lib/axios';
-import type { HomeStaticData, HomeMetricsData } from '@/types/homeTypes';
+import type { HomeStaticData, HomeMetricsData, MissedFlightsData } from '@/types/homeTypes';
 import type { PassengerTimelineData } from '@/types/viewerTypes';
 
 const api = createAPIService('homes');
@@ -33,4 +33,8 @@ export const fetchPassengerTimelines = ({
   return api.get<PassengerTimelineData>(
     `/${scenarioId}/passenger-timelines`,
   );
+};
+
+export const fetchMissedFlightsData = ({ scenarioId }: { scenarioId: string }) => {
+  return api.get<MissedFlightsData>(`/${scenarioId}/missed-flights`);
 };

@@ -8,6 +8,7 @@ interface HomeSummaryCardProps {
   kpiType?: 'mean' | 'top'; // for Wait Time/Queue Pax badge
   percentile?: number;
   valueClassName?: string;
+  onClick?: () => void;
 }
 
 function HomeSummaryCard({
@@ -17,10 +18,14 @@ function HomeSummaryCard({
   kpiType,
   percentile,
   valueClassName,
+  onClick,
 }: HomeSummaryCardProps) {
   const resolvedValueClassName = valueClassName ?? 'text-2xl font-semibold text-default-900';
   return (
-    <div className="rounded border border-input bg-white px-4 py-3">
+    <div
+      className={`rounded border border-input bg-white px-4 py-3${onClick ? ' cursor-pointer transition-colors hover:border-primary hover:bg-primary-50' : ''}`}
+      onClick={onClick}
+    >
       <p className="mb-4 flex items-center gap-2 text-sm font-medium text-default-900">
         {title}
         {kpiType && (

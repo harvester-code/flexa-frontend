@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchStaticData, fetchMetricsData } from '@/services/homeService';
-import type { HomeStaticData, HomeMetricsData } from '@/types/homeTypes';
+import { fetchStaticData, fetchMetricsData, fetchMissedFlightsData } from '@/services/homeService';
+import type { HomeStaticData, HomeMetricsData, MissedFlightsData } from '@/types/homeTypes';
 
 // 정적 데이터 (KPI와 무관한 데이터: flow_chart, histogram, sankey_diagram)
 const useStaticData = ({ scenarioId, enabled = true }: { scenarioId?: string; enabled?: boolean }) => {
@@ -36,4 +36,22 @@ const useMetricsData = ({
   });
 };
 
-export { useStaticData, useMetricsData };
+// Failed 승객 항공편별 분석 (modal open 시 lazy fetch)
+const useMissedFlightsData = ({
+  scenarioId,
+  enabled = true,
+}: {
+  scenarioId?: string;
+  enabled?: boolean;
+}) => {
+  return useQuery<MissedFlightsData>({
+    queryKey: ['home-missed-flights', scenarioId],
+    queryFn: async () => {
+      const { data } = await fetchMissedFlightsData({ scenarioId: scenarioId! });
+      return data;
+    },
+    enabled: enabled && !!scenarioId,
+  });
+};
+
+export { useStaticData, useMetricsData, useMissedFlightsData };
