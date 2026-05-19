@@ -37,8 +37,6 @@ const useScenarios = () => {
       }
     },
     enabled: !!userId,
-    staleTime: 0,
-    refetchOnMount: true,
   });
 
   return {
