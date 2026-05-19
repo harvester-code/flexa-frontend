@@ -17,24 +17,22 @@ export function useDebounce<T extends (...args: any[]) => any>(
   }, []);
 
   const debouncedCallback = useCallback(
-    ((...args: any[]) => {
+    (...args: Parameters<T>) => {
       lastArgsRef.current = args;
       isPendingRef.current = true;
-      
-      // Clear existing timeout
+
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      // Set new timeout
       timeoutRef.current = setTimeout(() => {
         callback(...lastArgsRef.current);
         isPendingRef.current = false;
         timeoutRef.current = null;
       }, delay);
-    }) as T,
+    },
     [callback, delay]
-  );
+  ) as T;
 
   return [debouncedCallback, cancel];
 }

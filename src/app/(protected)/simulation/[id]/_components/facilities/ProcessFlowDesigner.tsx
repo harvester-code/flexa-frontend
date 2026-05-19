@@ -298,9 +298,7 @@ export default function ProcessFlowDesigner({
             if (newStatus === "processing") {
               toast({
                 title: "Simulation Processing",
-                description: payload.new.simulation_start_at
-                  ? `Started at ${new Date(payload.new.simulation_start_at).toLocaleString()}`
-                  : "Simulation is now running.",
+                description: "Simulation is now running.",
               });
 
               if (warningTimeoutId) clearTimeout(warningTimeoutId);

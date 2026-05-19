@@ -12,6 +12,8 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
   const timelineData = useViewerStore((s) => s.timelineData);
   const currentTime = useViewerStore((s) => s.currentTime);
 
+  const throttledTime = Math.floor(currentTime / 2);
+
   const stats = useMemo(() => {
     if (!timelineData) return null;
 
@@ -64,7 +66,7 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
     const total = passengers.length;
 
     return { visible, perStep, total };
-  }, [timelineData, Math.floor(currentTime / 2)]);
+  }, [timelineData, throttledTime, currentTime]);
 
   if (!stats) return null;
 
