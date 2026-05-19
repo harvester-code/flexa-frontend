@@ -76,7 +76,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { cn, formatProcessName } from "@/lib/utils";
 import { getBadgeColor } from "@/styles/colors";
-import { fetchScenarios } from "@/services/simulationService";
+import { useScenarios } from "@/queries/simulationQueries";
 import { calcOperatingPeriod, remapPresetDates } from "./helpers";
 
 // 상수들
@@ -101,44 +101,25 @@ export default function OperatingScheduleEditor({
   const storeScheduleInterval = useSimulationStore((s) => s.schedule_interval_minutes);
   const setStoreScheduleInterval = useSimulationStore((s) => s.setScheduleIntervalMinutes);
   const facilityPresetVersion = useSimulationStore((s) => s.facilityPresetVersion);
+  const { scenarios } = useScenarios();
 
   useEffect(() => {
     if (!scenarioId) return;
     if (storeAirport && storeTerminal) return;
 
-    let cancelled = false;
+    const matched = scenarios.find((item) => item.scenario_id === scenarioId);
+    if (!matched) return;
 
-    const ensureScenarioBasics = async () => {
-      try {
-        const response = await fetchScenarios();
-        const scenarios = response.data || [];
-        const matched = scenarios.find(
-          (item) => item.scenario_id === scenarioId
-        );
+    if (!storeAirport && matched.airport) {
+      setStoreAirport(matched.airport);
+    }
 
-        if (!matched || cancelled) {
-          return;
-        }
-
-        if (!storeAirport && matched.airport) {
-          setStoreAirport(matched.airport);
-        }
-
-        if (!storeTerminal && matched.terminal) {
-          setStoreTerminal(matched.terminal);
-        }
-      } catch (error) {
-        console.error("Failed to load scenario context:", error);
-      }
-    };
-
-    ensureScenarioBasics();
-
-    return () => {
-      cancelled = true;
-    };
+    if (!storeTerminal && matched.terminal) {
+      setStoreTerminal(matched.terminal);
+    }
   }, [
     scenarioId,
+    scenarios,
     storeAirport,
     storeTerminal,
     setStoreAirport,
