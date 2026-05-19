@@ -195,7 +195,19 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
       scenarios = scenarios.filter((s) => selectedTerminals.includes(s.terminal));
     }
 
-    return scenarios;
+    return [...scenarios].sort((a, b) => {
+      const aTime = a.metadata_updated_at
+        ? new Date(a.metadata_updated_at).getTime()
+        : 0;
+      const bTime = b.metadata_updated_at
+        ? new Date(b.metadata_updated_at).getTime()
+        : 0;
+
+      if (aTime === 0 && bTime === 0) return 0;
+      if (aTime === 0) return 1;
+      if (bTime === 0) return -1;
+      return bTime - aTime;
+    });
   }, [data, searchQuery, selectedAirports, selectedTerminals]);
 
   // 페이지네이션

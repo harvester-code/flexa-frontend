@@ -233,7 +233,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortField, setSortField] = useState<SortField>("metadata_updated_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
@@ -262,15 +262,21 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     return Array.from(uniqueTerminals).sort((a, b) => a.localeCompare(b));
   }, [scenarios]);
 
+  const DATE_SORT_FIELDS: SortField[] = [
+    "metadata_updated_at",
+    "simulation_end_at",
+    "created_at",
+  ];
+
   // 정렬 핸들러
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       // 같은 필드를 클릭하면 순서 반전
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // 다른 필드를 클릭하면 해당 필드로 오름차순
+      // 날짜 필드는 최신순(desc)부터, 그 외는 오름차순
       setSortField(field);
-      setSortOrder("asc");
+      setSortOrder(DATE_SORT_FIELDS.includes(field) ? "desc" : "asc");
     }
   };
 
