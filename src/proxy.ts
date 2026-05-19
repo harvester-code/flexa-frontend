@@ -32,7 +32,6 @@ export async function proxy(request: NextRequest) {
   const isProtectedRoute =
     pathname.startsWith('/home') ||
     pathname.startsWith('/simulation') ||
-    pathname.startsWith('/profile') ||
     pathname.startsWith('/components') ||
     pathname.startsWith('/viewer');
 

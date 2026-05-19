@@ -6,14 +6,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
-  Bell,
-  CreditCard,
   Home,
   Layers,
   LogOut,
   PanelLeftDashed,
   Settings,
-  User,
   UserPen,
 } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
@@ -24,7 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
@@ -262,37 +258,16 @@ function AppSidebar() {
                 <UserPen className="h-3 w-3" />
               </div>
               {!isCollapsed && (
-                <div className="ml-3 text-left">
-                  <div className="text-sm font-semibold text-default-900">{userInfo?.fullName || 'User'}</div>
-                  <div className="text-xs font-medium text-default-500">{userInfo?.email || 'user@example.com'}</div>
+                <div className="ml-3 min-w-0 text-left">
+                  <div className="truncate text-sm font-semibold text-default-900">
+                    {userInfo?.email || 'user@example.com'}
+                  </div>
                 </div>
               )}
             </Button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="start" side="right" className="w-52">
-            <DropdownMenuItem asChild>
-              <Link
-                href="/profile"
-                className="flex items-center text-sm font-normal text-default-900 hover:text-primary-900"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem className="text-sm font-normal text-default-900 hover:text-primary-900">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Billing
-            </DropdownMenuItem>
-
-            <DropdownMenuItem className="text-sm font-normal text-default-900 hover:text-primary-900">
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
             <DropdownMenuItem
               onClick={handleSignOut}
               disabled={isPending}
