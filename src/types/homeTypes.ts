@@ -14,15 +14,11 @@ export interface ScenarioData {
   is_active: boolean;
   memo: string;
   name: string;
-  status: 'yet' | 'running' | 'done';
   target_flight_schedule_date: string | null;
   terminal: string;
   updated_at: string;
   user_id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  simulation_status: 'processing' | 'completed' | 'failed' | null;
+  simulation_status: 'pending' | 'processing' | 'completed' | 'failed';
   metadata_updated_at: string | null;
   has_simulation_data?: boolean; // S3에 simulation-pax.parquet 파일 존재 여부
 }
