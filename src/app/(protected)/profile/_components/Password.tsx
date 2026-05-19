@@ -1,120 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Eye, EyeOff, History, Monitor, Save, X } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Circle, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
 import { ToastAction } from '@/components/ui/Toast';
 import { useToast } from '@/hooks/useToast';
 import { createClient } from '@/lib/auth/client';
 
-interface LoginHistoryItem {
-  id: string;
-  created_at: string;
-  ip_address: string;
-  user_agent: string;
-  session_id: string;
-  factor_type: string;
-}
-
-// TODO: 헤당 컴포넌트 다시 점검하기
 export default function Password() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loginHistory, setLoginHistory] = useState<LoginHistoryItem[]>([]);
-  const [currentSession, setCurrentSession] = useState<string | null>(null);
   const { toast } = useToast();
   const supabase = createClient();
   const [isPasswordValid, setIsPasswordValid] = useState(true);
 
-  // 현재 세션 조회
-  useEffect(() => {
-    const getCurrentSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          // 현재 활성화된 세션 목록 조회
-          const { data: sessionData } = await supabase
-            .from('user_login_history')
-            .select('session_id')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (sessionData) {
-            setCurrentSession((sessionData as any).session_id);
-          }
-        } else {
-          setCurrentSession(null);
-        }
-      } catch (error) {
-        setCurrentSession(null);
-      }
-    };
-    getCurrentSession();
-  }, []);
-
-  // 로그인 히스토리 가져오기
-  const fetchLoginHistory = async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        toast({
-          variant: 'destructive',
-          title: '로그인 기록 조회 실패',
-          description: '로그인이 필요합니다.',
-        });
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('user_login_history')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        toast({
-          variant: 'destructive',
-          title: '로그인 기록 조회 실패',
-          description: error.message,
-        });
-        return;
-      }
-
-      setLoginHistory(data || []);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: '로그인 기록 조회 실패',
-        description: error.message || '로그인 기록을 가져오는 중 오류가 발생했습니다.',
-      });
-    }
-  };
-
-  // 컴포넌트 마운트 시와 세션 변경 시 로그인 히스토리 가져오기
-  useEffect(() => {
-    fetchLoginHistory();
-  }, [currentSession]);
-
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // 폼 기본 동작 방지
+    e.preventDefault();
     handleUpdatePassword();
   };
 
   const handleUpdatePassword = async () => {
-    // 유효성 검사
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         variant: 'destructive',
@@ -125,7 +33,6 @@ export default function Password() {
       return;
     }
 
-    // 비밀번호 일치 여부 검사
     if (newPassword !== confirmPassword) {
       toast({
         variant: 'destructive',
@@ -136,7 +43,6 @@ export default function Password() {
       return;
     }
 
-    // 비밀번호 유효성 검사 추가
     if (!validatePassword(newPassword)) {
       toast({
         variant: 'destructive',
@@ -150,8 +56,9 @@ export default function Password() {
     setIsLoading(true);
 
     try {
-      // 먼저 현재 비밀번호로 로그인 시도하여 확인
-      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession();
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: authSession?.user?.email || '',
         password: currentPassword,
@@ -167,7 +74,7 @@ export default function Password() {
         setIsLoading(false);
         return;
       }
-      // 비밀번호 변경
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -175,13 +82,12 @@ export default function Password() {
       if (error) {
         throw error;
       }
-      // 성공 메시지
+
       toast({
         variant: 'default',
         title: '비밀번호 변경 완료',
         description: '비밀번호가 성공적으로 변경되었습니다.',
       });
-      // 입력 필드 초기화
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -196,21 +102,18 @@ export default function Password() {
     }
   };
 
-  // 입력값 초기화 함수
   const handleCancel = () => {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
   };
 
-  // 비밀번호 유효성 검사 함수
-  const validatePassword = (newPassword: string) => {
-    const hasMinLength = newPassword.length >= 6;
-    const hasLetterAndNumber = /^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword);
+  const validatePassword = (password: string) => {
+    const hasMinLength = password.length >= 6;
+    const hasLetterAndNumber = /^(?=.*[A-Za-z])(?=.*\d)/.test(password);
     return hasMinLength && hasLetterAndNumber;
   };
 
-  // 비밀번호 입력 핸들러
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setNewPassword(newValue);
@@ -252,7 +155,6 @@ export default function Password() {
                 value={currentPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
               />
-              {/* Error message는 상태에 따라 동적으로 표시하도록 개선 필요 */}
             </div>
           </div>
           <div className="form-item">
@@ -310,50 +212,10 @@ export default function Password() {
                 value={confirmPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               />
-              {/* Error message는 상태에 따라 동적으로 표시하도록 개선 필요 */}
             </div>
           </div>
-        </div>
-        <div className="mt-16 flex items-start justify-between">
-          <dl className="flex flex-col gap-2">
-            <dt className="flex items-center gap-2 text-lg font-semibold text-default-900">
-              <History className="h-5 w-5" />
-              로그인 기록
-            </dt>
-            <dd className="text-sm font-normal">최근 로그인한 기기 목록입니다.</dd>
-          </dl>
         </div>
       </form>
-      <div className="profile-form mt-20">
-        {loginHistory.map((history) => (
-          <div key={history.id} className="form-item pl-6">
-            <div className="flex items-center gap-6">
-              <Monitor className="h-7 w-7 text-muted-foreground" />
-              <dl className="flex flex-col gap-2">
-                <dt className="flex items-center gap-3 text-lg font-semibold text-default-900">
-                  {history.user_agent?.split('/')?.[0] || '알 수 없는 기기'}
-                  {history.session_id === currentSession && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-input bg-white px-2 text-xs font-medium text-default-900">
-                      <Circle className="h-4 w-4 fill-primary text-primary" />
-                      <span>현재 기기</span>
-                    </span>
-                  )}
-                </dt>
-                <dd className="text-sm">
-                  {history.ip_address}, {history.user_agent} •{' '}
-                  {new Date(history.created_at).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        ))}
-      </div>
     </>
   );
 }
