@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { createScenario } from "@/services/simulationService";
-import { useUser } from "@/queries/userQueries";
 import { Button } from "@/components/ui/Button";
 import { PlaneTakeoff } from "lucide-react";
 import {
@@ -62,7 +61,6 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const { data: userInfo } = useUser();
   const { toast } = useToast();
 
   const updateField = (key: keyof FormData, value: string) => {
@@ -121,7 +119,6 @@ const CreateScenario: React.FC<CreateScenarioProps> = ({
         name: formData.scenarioName,
         airport: formData.airport.trim() || null,
         terminal: formData.terminal.trim() || null,
-        editor: userInfo?.fullName || "",
         memo: formData.memo.trim() || null,
       });
 

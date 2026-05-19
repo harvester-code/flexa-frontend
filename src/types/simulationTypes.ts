@@ -62,7 +62,6 @@ export interface CreateScenarioParams {
   name: string;
   airport: string | null;
   terminal: string | null;
-  editor: string;
   memo: string | null;
 }
 

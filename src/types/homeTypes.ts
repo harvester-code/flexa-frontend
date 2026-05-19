@@ -9,7 +9,6 @@ export interface Option {
 export interface ScenarioData {
   airport: string;
   created_at: string;
-  editor: string;
   id: string;
   scenario_id: string;
   is_active: boolean;
@@ -20,17 +19,16 @@ export interface ScenarioData {
   terminal: string;
   updated_at: string;
   user_id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
   simulation_status: 'processing' | 'completed' | 'failed' | null;
   metadata_updated_at: string | null;
   has_simulation_data?: boolean; // S3에 simulation-pax.parquet 파일 존재 여부
 }
 
 // Home 도메인에서 사용하는 시나리오 응답 타입 (단순화됨)
-export type ScenariosDataResponse = Array<ScenarioData & {
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-}>;
+export type ScenariosDataResponse = Array<ScenarioData>;
 
 export interface FacilityChartSeries {
   label: string;
