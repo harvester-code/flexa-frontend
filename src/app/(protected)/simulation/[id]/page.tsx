@@ -111,6 +111,14 @@ export default function SimulationDetail({
     return simulationId;
   }, [queryScenarioName, scenarioName, simulationId]);
 
+  useEffect(() => {
+    const defaultTitle = "Flexa | WaitFree Airport";
+    document.title = `Flexa | ${displayScenarioName}`;
+    return () => {
+      document.title = defaultTitle;
+    };
+  }, [displayScenarioName]);
+
   const setCurrentScenarioTab = useScenarioProfileStore(
     (s) => s.setCurrentScenarioTab,
   );
