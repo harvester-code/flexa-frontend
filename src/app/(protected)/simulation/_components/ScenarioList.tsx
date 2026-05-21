@@ -25,6 +25,7 @@ import {
   Clock4,
   History,
   NotebookPen,
+  Calendar,
   StickyNote,
   Check,
   X,
@@ -91,6 +92,7 @@ type SortField =
   | "name"
   | "airport"
   | "terminal"
+  | "target_flight_schedule_date"
   | "metadata_updated_at"
   | "simulation_end_at"
   | "memo"
@@ -342,6 +344,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
       // 날짜 필드 처리
       if (
+        sortField === "target_flight_schedule_date" ||
         sortField === "metadata_updated_at" ||
         sortField === "simulation_end_at" ||
         sortField === "created_at"
@@ -869,6 +872,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                   {renderSortIcon("terminal")}
                 </div>
               </th>
+              <th className="px-3 text-center whitespace-nowrap w-28">
+                <div
+                  className="flex items-center justify-center gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("target_flight_schedule_date")}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  Target Date
+                  {renderSortIcon("target_flight_schedule_date")}
+                </div>
+              </th>
               <th className="px-3 text-right whitespace-nowrap w-28">
                 <div
                   className="flex items-center justify-end gap-1 text-sm font-medium text-default-900 cursor-pointer hover:text-primary transition-colors"
@@ -916,7 +929,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
           <tbody className="min-h-24">
             {isLoading ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <SimulationLoading size={50} minHeight="h-64" />
                 </td>
               </tr>
@@ -1025,6 +1038,16 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         />
                       ) : (
                         scenario.terminal
+                      )}
+                    </td>
+
+                    <td className="px-3 text-center whitespace-nowrap">
+                      {scenario.target_flight_schedule_date ? (
+                        <span className="text-xs">
+                          {dayjs(scenario.target_flight_schedule_date).format("YYYY-MM-DD")}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic">N/A</span>
                       )}
                     </td>
 
@@ -1154,7 +1177,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="flex flex-1 flex-col items-center justify-center">
                     <p className="text-sm text-default-500">
                       No scenarios found.

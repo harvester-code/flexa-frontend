@@ -469,6 +469,12 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                         Terminal
                       </div>
                     </th>
+                    <th className="px-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1 text-sm font-medium text-default-900">
+                        <Calendar className="h-3.5 w-3.5" />
+                        Target Date
+                      </div>
+                    </th>
                     <th className="px-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1 text-sm font-medium text-default-900">
                         <Clock4 className="h-3.5 w-3.5" />
@@ -492,7 +498,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                 <tbody className="min-h-24">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="flex flex-col items-center justify-center py-12">
                           <Spinner size={48} className="mx-auto mb-4" />
                           <p className="text-lg font-medium">Loading scenarios...</p>
@@ -541,6 +547,16 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                           {item.terminal}
                         </td>
 
+                        <td className="px-3 text-center whitespace-nowrap">
+                          {item.target_flight_schedule_date ? (
+                            <span className="text-xs">
+                              {dayjs(item.target_flight_schedule_date).format('YYYY-MM-DD')}
+                            </span>
+                          ) : (
+                            <span className="text-xs italic text-default-400">N/A</span>
+                          )}
+                        </td>
+
                         <td className="px-3 text-right whitespace-nowrap">
                           {item.metadata_updated_at ? (
                             <div className="flex flex-col items-end leading-4">
@@ -584,7 +600,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="flex flex-col items-center justify-center py-12">
                           <Ban className="mx-auto mb-4 h-12 w-12" />
                           <p className="text-lg font-medium">No data</p>
