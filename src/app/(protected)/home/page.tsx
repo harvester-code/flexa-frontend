@@ -26,6 +26,10 @@ function HomePage() {
     cumulative: true,
   });
 
+  const isAnalysisReady =
+    scenario?.simulation_status === "completed" &&
+    scenario?.has_simulation_data !== false;
+
   // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const {
     data: staticData,
@@ -33,7 +37,7 @@ function HomePage() {
     isError: isStaticError,
   } = useStaticData({
     scenarioId: scenario?.scenario_id,
-    enabled: !!scenario,
+    enabled: !!scenario && isAnalysisReady,
   });
 
   // KPI 메트릭 데이터 (KPI 변경 시 재요청)
@@ -50,7 +54,7 @@ function HomePage() {
           ? "cumulative"
           : "quantile"
         : undefined,
-    enabled: !!scenario,
+    enabled: !!scenario && isAnalysisReady,
   });
 
   const terminalLayoutData = useMemo<ScenarioTerminalLayout | null>(() => {

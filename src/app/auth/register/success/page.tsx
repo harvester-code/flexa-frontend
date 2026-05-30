@@ -5,9 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Mail } from 'lucide-react';
-import { signUpAction } from '@/actions/auth';
 import { Button } from '@/components/ui/Button';
-import { SubmitButton } from '@/components/ui/SubmitButton';
 
 function RegisterSuccessContent() {
   const searchParams = useSearchParams();
@@ -48,12 +46,9 @@ function RegisterSuccessContent() {
 
           <div className="space-y-4">
             <p className="text-sm text-default-900">Didn&rsquo;t receive the email?</p>
-            <form>
-              <input type="hidden" name="email" value={email || ''} />
-              <SubmitButton variant="primary" formAction={undefined} className="w-full" pendingText="Resending...">
-                Resend Verification Email
-              </SubmitButton>
-            </form>
+            <p className="text-sm text-muted-foreground">
+              Check your spam folder or sign up again from the registration page.
+            </p>
           </div>
 
           <Button asChild variant="ghost">
