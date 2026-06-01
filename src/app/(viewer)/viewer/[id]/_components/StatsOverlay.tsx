@@ -66,7 +66,7 @@ export default function StatsOverlay({ scenarioId }: StatsOverlayProps) {
     const total = passengers.length;
 
     return { visible, perStep, total };
-  }, [timelineData, throttledTime, currentTime]);
+  }, [timelineData, currentTime]);
 
   if (!stats) return null;
 

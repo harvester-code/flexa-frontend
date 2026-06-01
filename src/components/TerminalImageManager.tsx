@@ -351,7 +351,6 @@ function TerminalImageManager({
       selectedZone,
       setZoneArea,
       startPoint,
-      toast,
     ]
   );
 
@@ -665,6 +664,7 @@ function TerminalImageManager({
               ref={imageContainerRef}
               className="relative overflow-hidden rounded-lg bg-white"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element -- zone overlay editor needs native img sizing */}
               <img
                 src={imageUrl}
                 alt={`${airport} ${terminal} Terminal Layout`}

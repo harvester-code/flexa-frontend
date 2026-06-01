@@ -327,7 +327,7 @@ export default function SimulationDetail({
       } else {
       }
     } catch (error) {}
-  }, []);
+  }, [simulationId]);
 
   // 탭 접근성 계산 - 버튼 클릭 기반으로 변경
   const getAvailableTabs = () => {
@@ -384,17 +384,16 @@ export default function SimulationDetail({
     if (isInitialized) {
       const workflow = useSimulationStore.getState().workflow;
       const availableSteps = workflow.availableSteps || [1];
+      const currentScenarioTab = useScenarioProfileStore.getState().currentScenarioTab;
 
-      // availableSteps의 마지막(최고) 단계로 초기 탭 설정
       const lastAvailableStep = Math.max(...availableSteps);
-      const targetTab = lastAvailableStep - 1; // 0-based 탭 인덱스
+      const targetTab = lastAvailableStep - 1;
 
-      // 현재 탭이 기본값(0)이고, 마지막 사용 가능한 탭이 다르면 업데이트
       if (currentScenarioTab === 0 && targetTab !== 0 && targetTab <= 2) {
         useScenarioProfileStore.getState().setCurrentScenarioTab(targetTab);
       }
     }
-  }, [isInitialized]); // 🔧 isInitialized만 dependency로 유지 (안정성 확보)
+  }, [isInitialized]);
 
   // 🔧 탭 변경 시 currentStep 동기화 (별도 useEffect)
   useEffect(() => {
