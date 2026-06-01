@@ -1,8 +1,10 @@
 [build]
 builder = "nixpacks"
+# package.json build copies .next/static + public into standalone (required for CSS/JS)
+buildCommand = "npm run build"
 
 [deploy]
-startCommand = "HOSTNAME=0.0.0.0 node .next/standalone/server.js"
+startCommand = "HOSTNAME=0.0.0.0 npm run start:standalone"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
