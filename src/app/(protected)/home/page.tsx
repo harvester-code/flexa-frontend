@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BarChart3, LineChart, FileText, Image, AlertTriangle } from "lucide-react";
 import type { ScenarioData, KpiValue } from "@/types/homeTypes";
+import { isHomeAnalysisReady } from "@/types/homeTypes";
 import { useStaticData, useMetricsData } from "@/queries/homeQueries";
 import { useScenarios } from "@/queries/simulationQueries";
 import TheContentHeader from "@/components/TheContentHeader";
@@ -26,9 +27,7 @@ function HomePage() {
     cumulative: true,
   });
 
-  const isAnalysisReady =
-    scenario?.simulation_status === "completed" &&
-    scenario?.has_simulation_data !== false;
+  const isAnalysisReady = isHomeAnalysisReady(scenario);
 
   // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const {

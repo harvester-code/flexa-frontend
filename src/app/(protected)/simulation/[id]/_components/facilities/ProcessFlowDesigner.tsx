@@ -291,11 +291,22 @@ export default function ProcessFlowDesigner({
             filter: `scenario_id=eq.${simulationId}`,
           },
           (payload) => {
-            const newStatus = payload.new.simulation_status;
-            const oldStatus = payload.old?.simulation_status;
-            if (newStatus === oldStatus) return;
+            const newStatus = payload.new.simulation_status as string | undefined;
+            const oldStatus = payload.old?.simulation_status as string | undefined;
+            const newCacheStatus = payload.new.home_cache_status as string | undefined;
+            const oldCacheStatus = payload.old?.home_cache_status as string | undefined;
+            const statusUnchanged =
+              newStatus === oldStatus && newCacheStatus === oldCacheStatus;
+            if (statusUnchanged) return;
 
-            if (newStatus === "processing") {
+            const pipelineProcessing =
+              newStatus === "processing" || newCacheStatus === "processing";
+            const pipelineDone =
+              newCacheStatus === "completed" ||
+              newStatus === "failed" ||
+              newCacheStatus === "failed";
+
+            if (pipelineProcessing && newStatus === "processing") {
               toast({
                 title: "Simulation Processing",
                 description: "Simulation is now running.",
@@ -310,7 +321,7 @@ export default function ProcessFlowDesigner({
                   duration: 10000,
                 });
               }, 15 * 60 * 1000);
-            } else if (newStatus === "completed" || newStatus === "failed") {
+            } else if (pipelineDone) {
               if (warningTimeoutId) {
                 clearTimeout(warningTimeoutId);
                 warningTimeoutId = null;

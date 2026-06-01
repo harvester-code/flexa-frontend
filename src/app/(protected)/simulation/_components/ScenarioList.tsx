@@ -1085,7 +1085,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
                         </div>
                       ) : (
                         <span className="text-xs text-gray-500 italic">
-                          {scenario.simulation_status === "processing"
+                          {(scenario.simulation_status === "processing" ||
+                            scenario.home_cache_status === "processing")
                             ? "In progress"
                             : "Never run"}
                         </span>

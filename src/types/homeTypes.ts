@@ -19,8 +19,35 @@ export interface ScenarioData {
   updated_at: string;
   user_id: string;
   simulation_status: 'pending' | 'processing' | 'completed' | 'failed';
+  home_cache_status?: 'pending' | 'processing' | 'completed' | 'failed';
   metadata_updated_at: string | null;
   has_simulation_data?: boolean; // S3에 simulation-pax.parquet 파일 존재 여부
+  has_home_static_cache?: boolean; // S3에 home-static-response JSON 존재 여부
+}
+
+/** 홈 분석 API 호출 가능 여부 (시뮬 parquet + home static JSON 준비 완료) */
+export function isHomeAnalysisReady(scenario: ScenarioData | null | undefined): boolean {
+  if (!scenario) return false;
+  return (
+    scenario.simulation_status === 'completed' &&
+    scenario.home_cache_status === 'completed' &&
+    scenario.has_simulation_data !== false &&
+    scenario.has_home_static_cache !== false
+  );
+}
+
+/** Run simulation 파이프라인 진행 중 (시뮬 또는 홈 캐시) */
+export function isSimulationPipelineActive(scenario: {
+  simulation_status?: string;
+  home_cache_status?: string;
+}): boolean {
+  if (scenario.simulation_status === 'failed' || scenario.home_cache_status === 'failed') {
+    return false;
+  }
+  if (scenario.home_cache_status === 'completed') return false;
+  return (
+    scenario.simulation_status === 'processing' || scenario.home_cache_status === 'processing'
+  );
 }
 
 // Home 도메인에서 사용하는 시나리오 응답 타입 (단순화됨)

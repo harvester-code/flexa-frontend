@@ -1,12 +1,15 @@
 'use client';
 
 import { create } from 'zustand';
+import { countUnreadNotificationGroups } from '@/lib/notificationGroups';
 
 export interface SimulationNotification {
   id: string;
   scenario_id: string;
   scenario_name: string | null;
   status: 'completed' | 'failed';
+  /** L1 parquet = simulation, L2 home JSON = analysis. Legacy rows default to analysis. */
+  phase?: 'simulation' | 'analysis' | null;
   error_message: string | null;
   simulation_start_at: string | null;
   simulation_end_at: string | null;
@@ -34,17 +37,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     set({
       notifications,
       isLoaded: true,
-      unreadCount: notifications.filter((n) => !n.read_at).length,
+      unreadCount: countUnreadNotificationGroups(notifications),
     });
   },
 
   prependNotification: (notification) => {
     const exists = get().notifications.some((n) => n.id === notification.id);
     if (exists) return;
-    set((state) => ({
-      notifications: [notification, ...state.notifications],
-      unreadCount: state.unreadCount + (notification.read_at ? 0 : 1),
-    }));
+    const next = [notification, ...get().notifications];
+    set({
+      notifications: next,
+      unreadCount: countUnreadNotificationGroups(next),
+    });
   },
 
   markAllRead: () => {

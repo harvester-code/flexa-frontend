@@ -6,7 +6,7 @@ import { useNotificationStore, SimulationNotification } from '@/lib/notification
 
 /**
  * 앱 레이아웃 레벨에서 simulation_notifications 테이블을 구독.
- * - 마운트 시: DB에서 최근 50건 로드 (user_id 인덱스 활용)
+ * - 마운트 시: DB에서 최근 200건 로드 (Run 이력; user_id 인덱스 활용)
  * - Realtime: INSERT 이벤트 수신 시 store에 즉시 반영 (user_id 채널 필터)
  * UI는 NotificationBell이 담당.
  */
@@ -26,10 +26,10 @@ export default function SimulationWatcher() {
 
       supabase
         .from('simulation_notifications')
-        .select('id, scenario_id, scenario_name, status, error_message, simulation_start_at, simulation_end_at, created_at, read_at')
+        .select('id, scenario_id, scenario_name, status, phase, error_message, simulation_start_at, simulation_end_at, created_at, read_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(200)
         .then(({ data }) => {
           setNotifications((data as SimulationNotification[]) ?? []);
         });
@@ -48,7 +48,10 @@ export default function SimulationWatcher() {
             prependNotification(payload.new as SimulationNotification);
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
+          if (err) {
+            console.error('[SimulationWatcher] Realtime error:', err);
+          }
           console.log('[SimulationWatcher] Realtime status:', status);
         });
     };

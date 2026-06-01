@@ -23,6 +23,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { ScenarioData, KpiValue } from '@/types/homeTypes';
+import { isSimulationPipelineActive } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
@@ -584,7 +585,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                             </div>
                           ) : (
                             <span className="text-xs italic text-default-400">
-                              {item.simulation_status === 'processing'
+                              {isSimulationPipelineActive(item)
                                 ? 'In progress'
                                 : 'Never run'}
                             </span>
@@ -694,7 +695,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                   <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-medium">
                     {latestNotificationMap[scenario.scenario_id]
                       ? dayjs(latestNotificationMap[scenario.scenario_id]).format('YYYY-MM-DD HH:mm')
-                      : scenario.simulation_status === 'processing'
+                      : isSimulationPipelineActive(scenario)
                         ? 'In progress'
                         : 'Never run'}
                   </span>
