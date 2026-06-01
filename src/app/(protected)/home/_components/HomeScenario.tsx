@@ -23,7 +23,10 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { ScenarioData, KpiValue } from '@/types/homeTypes';
-import { isSimulationPipelineActive } from '@/types/homeTypes';
+import {
+  getHomeScenarioSelectState,
+  isSimulationPipelineActive,
+} from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
@@ -215,6 +218,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   const currentScenarios = filteredScenarios.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const selectScenario = (selectedScenario: ScenarioData) => {
+    if (getHomeScenarioSelectState(selectedScenario) !== 'ready') return;
     onSelectScenario(selectedScenario);
     setIsOpened(false);
   };
@@ -275,7 +279,9 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
           <DialogContent className="h-[800px] w-full max-w-[min(100vw-4rem,72rem)] flex flex-col">
             <DialogHeader>
               <DialogTitle>Select Scenario</DialogTitle>
-              <DialogDescription>Select the scenario you&apos;d like to review.</DialogDescription>
+              <DialogDescription>
+                Only scenarios with completed simulation and analysis (L2) can be selected.
+              </DialogDescription>
             </DialogHeader>
 
             <Separator />
@@ -508,35 +514,50 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                       </td>
                     </tr>
                   ) : currentScenarios.length > 0 ? (
-                    currentScenarios.map((item) => (
+                    currentScenarios.map((item) => {
+                      const selectState = getHomeScenarioSelectState(item);
+                      const isSelectable = selectState === 'ready';
+
+                      return (
                       <tr
                         key={item.scenario_id}
                         className={cn(
                           "border-b text-sm hover:bg-muted",
-                          item.has_simulation_data ? "" : "opacity-50"
+                          isSelectable ? "" : "opacity-50"
                         )}
                       >
                         <td className="px-3">
                           <div
                             className={cn(
                               'flex items-center gap-2.5',
-                              item.has_simulation_data
+                              isSelectable
                                 ? 'cursor-pointer hover:font-semibold'
-                                : 'cursor-not-allowed line-through'
+                                : 'cursor-not-allowed'
                             )}
                             onClick={() => {
-                              if (item.has_simulation_data) {
+                              if (isSelectable) {
                                 selectScenario(item);
                               }
                             }}
+                            title={
+                              selectState === 'processing'
+                                ? 'Simulation or analysis is still in progress'
+                                : selectState === 'unavailable'
+                                  ? 'Run simulation and wait for analysis to complete'
+                                  : undefined
+                            }
                           >
-                            {item.has_simulation_data ? (
+                            {selectState === 'ready' ? (
                               <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-primary" />
+                            ) : selectState === 'processing' ? (
+                              <Spinner size={20} className="flex-shrink-0 text-primary" />
                             ) : (
                               <XCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
                             )}
 
-                            <span className="truncate">{item.name}</span>
+                            <span className={cn('truncate', selectState === 'unavailable' && !item.has_simulation_data && 'line-through')}>
+                              {item.name}
+                            </span>
                           </div>
                         </td>
 
@@ -598,7 +619,8 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
                           </span>
                         </td>
                       </tr>
-                    ))
+                    );
+                    })
                   ) : (
                     <tr>
                       <td colSpan={7}>

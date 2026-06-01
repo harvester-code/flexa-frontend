@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BarChart3, LineChart, FileText, Image, AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BarChart3, LineChart, FileText, Image, AlertTriangle, Loader2 } from "lucide-react";
 import type { ScenarioData, KpiValue } from "@/types/homeTypes";
-import { isHomeAnalysisReady } from "@/types/homeTypes";
+import { isHomeAnalysisReady, isSimulationPipelineActive } from "@/types/homeTypes";
 import { useStaticData, useMetricsData } from "@/queries/homeQueries";
 import { useScenarios } from "@/queries/simulationQueries";
 import TheContentHeader from "@/components/TheContentHeader";
@@ -19,8 +19,33 @@ import type {
 } from "@/types/terminalLayout";
 
 function HomePage() {
-  const { data: scenarios, isLoading: isScenariosLoading, isFetching: isScenariosRefetching } = useScenarios();
+  const {
+    data: scenarios,
+    isLoading: isScenariosLoading,
+    isFetching: isScenariosRefetching,
+    refetch: refetchScenarios,
+  } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
+
+  // Home 진입 시 시나리오 플래그 최신화 (5분 stale 캐시로 L2 완료가 반영 안 되는 문제 방지)
+  useEffect(() => {
+    void refetchScenarios();
+  }, [refetchScenarios]);
+
+  // 선택된 시나리오 객체를 목록 최신 row와 동기화 (home_cache_status 등)
+  useEffect(() => {
+    if (!scenario?.scenario_id || !scenarios?.length) return;
+    const fresh = scenarios.find((s) => s.scenario_id === scenario.scenario_id);
+    if (!fresh) return;
+    if (
+      fresh.simulation_status !== scenario.simulation_status ||
+      fresh.home_cache_status !== scenario.home_cache_status ||
+      fresh.has_simulation_data !== scenario.has_simulation_data ||
+      fresh.has_home_static_cache !== scenario.has_home_static_cache
+    ) {
+      setScenario(fresh);
+    }
+  }, [scenarios, scenario]);
   const [kpi, setKpi] = useState<KpiValue>({
     type: "mean",
     percentile: 5,
@@ -109,16 +134,43 @@ function HomePage() {
     };
   }, [staticData]);
 
-  // 에러 배너 컴포넌트
-  const errorBanner = (isStaticError || isMetricsError) && (
-    <div className="mt-4 flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-      <span>
-        Failed to load {isStaticError && isMetricsError ? "analysis data" : isStaticError ? "chart data" : "metrics data"}.
-        Please try refreshing the page.
-      </span>
+  const waitingBanner = scenario && !isAnalysisReady && (
+    <div className="mt-4 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-default-700">
+      {isSimulationPipelineActive(scenario) ? (
+        <>
+          <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+          <span>
+            Simulation or analysis is still running. You can open this scenario after analysis (L2) completes.
+          </span>
+        </>
+      ) : (
+        <>
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <span>
+            Analysis data is not ready yet. Run simulation and wait for analysis to finish, then select this scenario again.
+          </span>
+        </>
+      )}
     </div>
   );
+
+  // 분석 준비 완료 후에만 API 실패를 에러로 표시 (준비 전 빈 화면/오탐 방지)
+  const errorBanner =
+    isAnalysisReady &&
+    (isStaticError || isMetricsError) && (
+      <div className="mt-4 flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+        <span>
+          Failed to load{" "}
+          {isStaticError && isMetricsError
+            ? "analysis data"
+            : isStaticError
+              ? "chart data"
+              : "metrics data"}
+          . Please try refreshing the page.
+        </span>
+      </div>
+    );
 
   return (
     <>
@@ -134,6 +186,7 @@ function HomePage() {
           onKpiChange={setKpi}
         />
 
+        {waitingBanner}
         {errorBanner}
 
         <HomeAccordion
@@ -144,8 +197,8 @@ function HomePage() {
         >
           <HomeTerminalImage
             scenario={scenario}
-            layoutData={terminalLayoutData}
-            flowChartData={staticData?.flow_chart ?? null}
+            layoutData={isAnalysisReady ? terminalLayoutData : null}
+            flowChartData={isAnalysisReady ? (staticData?.flow_chart ?? null) : null}
           />
         </HomeAccordion>
 
@@ -158,8 +211,8 @@ function HomePage() {
           <HomeSummary
             scenario={scenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
-            data={metricsData?.summary}
-            isLoading={isMetricsLoading}
+            data={isAnalysisReady ? metricsData?.summary : undefined}
+            isLoading={isAnalysisReady && isMetricsLoading}
           />
         </HomeAccordion>
 
@@ -170,12 +223,16 @@ function HomePage() {
         >
           <HomeCharts
             scenario={scenario}
-            data={{
-              flow_chart: staticData?.flow_chart,
-              histogram: staticData?.histogram,
-              sankey_diagram: staticData?.sankey_diagram,
-            }}
-            isLoading={isStaticLoading}
+            data={
+              isAnalysisReady
+                ? {
+                    flow_chart: staticData?.flow_chart,
+                    histogram: staticData?.histogram,
+                    sankey_diagram: staticData?.sankey_diagram,
+                  }
+                : undefined
+            }
+            isLoading={isAnalysisReady && isStaticLoading}
           />
         </HomeAccordion>
 
@@ -187,8 +244,8 @@ function HomePage() {
           <HomeDetails
             scenario={scenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
-            data={metricsData?.facility_details}
-            isLoading={isMetricsLoading}
+            data={isAnalysisReady ? metricsData?.facility_details : undefined}
+            isLoading={isAnalysisReady && isMetricsLoading}
           />
         </HomeAccordion>
       </div>

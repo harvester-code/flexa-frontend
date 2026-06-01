@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/auth/client';
 import { useNotificationStore, SimulationNotification } from '@/lib/notificationStore';
 
@@ -10,7 +11,14 @@ import { useNotificationStore, SimulationNotification } from '@/lib/notification
  * - Realtime: INSERT 이벤트 수신 시 store에 즉시 반영 (user_id 채널 필터)
  * UI는 NotificationBell이 담당.
  */
+function shouldRefreshScenariosAfterNotification(notification: SimulationNotification): boolean {
+  if (notification.status !== 'completed') return false;
+  const phase = notification.phase ?? 'analysis';
+  return phase === 'analysis';
+}
+
 export default function SimulationWatcher() {
+  const queryClient = useQueryClient();
   const setNotifications = useNotificationStore((s) => s.setNotifications);
   const prependNotification = useNotificationStore((s) => s.prependNotification);
 
@@ -45,7 +53,11 @@ export default function SimulationWatcher() {
             filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            prependNotification(payload.new as SimulationNotification);
+            const notification = payload.new as SimulationNotification;
+            prependNotification(notification);
+            if (shouldRefreshScenariosAfterNotification(notification)) {
+              void queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+            }
           }
         )
         .subscribe((status, err) => {
@@ -61,7 +73,7 @@ export default function SimulationWatcher() {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [setNotifications, prependNotification]);
+  }, [queryClient, setNotifications, prependNotification]);
 
   return null;
 }

@@ -36,6 +36,18 @@ export function isHomeAnalysisReady(scenario: ScenarioData | null | undefined): 
   );
 }
 
+/** Home 시나리오 선택 UI 상태 */
+export type HomeScenarioSelectState = 'ready' | 'processing' | 'unavailable';
+
+export function getHomeScenarioSelectState(
+  scenario: ScenarioData | null | undefined
+): HomeScenarioSelectState {
+  if (!scenario) return 'unavailable';
+  if (isHomeAnalysisReady(scenario)) return 'ready';
+  if (isSimulationPipelineActive(scenario)) return 'processing';
+  return 'unavailable';
+}
+
 /** Run simulation 파이프라인 진행 중 (시뮬 또는 홈 캐시) */
 export function isSimulationPipelineActive(scenario: {
   simulation_status?: string;
