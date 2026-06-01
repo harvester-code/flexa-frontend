@@ -1,0 +1,7 @@
+# Doppler — 배포/CI 기본 config (Git에 커밋)
+# Usage: doppler setup && doppler run -- npm run dev
+#
+# 로컬 개발: doppler 없이 npm run dev + .env.local (API URL 등)
+setup:
+  project: flexa
+  config: prd_frontend
