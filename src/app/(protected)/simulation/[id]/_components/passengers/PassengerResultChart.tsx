@@ -47,11 +47,15 @@ export default function PassengerResultChart() {
   );
 
   // 🔧 모든 Hook을 조건부 return 이전에 호출 (Rules of Hooks 준수)
-  const categories = passengerChartResult?.chart_y_data
-    ? Object.keys(passengerChartResult.chart_y_data).filter(
-        (key) => key && key.length > 0
-      )
-    : [];
+  const categories = useMemo(
+    () =>
+      passengerChartResult?.chart_y_data
+        ? Object.keys(passengerChartResult.chart_y_data).filter(
+            (key) => key && key.length > 0
+          )
+        : [],
+    [passengerChartResult]
+  );
   const validSelectedCategory = useMemo(() => {
     if (categories.includes(selectedCategory)) return selectedCategory;
     return categories.length > 0 ? categories[0] : 'airline';

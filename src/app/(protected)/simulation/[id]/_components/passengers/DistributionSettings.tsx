@@ -107,7 +107,10 @@ export default function DistributionSettings({
   // No value mappings needed - data is already in correct format
 
   // SimulationStore 데이터 변환
-  const definedProperties = demographicsData?.available_values || [];
+  const definedProperties = useMemo(
+    () => demographicsData?.available_values || [],
+    [demographicsData?.available_values]
+  );
   const createdRules: Rule[] = useMemo(() => {
     return (demographicsData?.rules || []).map((rule, index) => ({
       id: `rule-${index}`,
@@ -506,7 +509,7 @@ export default function DistributionSettings({
       setDefault(distribution);
     }
   }, [
-    definedProperties.length,
+    definedProperties,
     hasDefaultRule,
     calculateEqualDistribution,
     setDefault,

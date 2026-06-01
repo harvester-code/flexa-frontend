@@ -158,7 +158,7 @@ export default function ShowUpTimeSettings({
     }, 100); // 100ms 지연으로 탭이 완전히 렌더링된 후 실행
 
     return () => clearTimeout(timer);
-  }, []); // 컴포넌트 마운트 시 한 번만 실행
+  }, [defaultMean, defaultStd, minArrivalMinutes, setPaxArrivalPatternDefault, setSettings]);
 
   // 액션 어댑터들
   const addShowUpTimeRule = useCallback(
