@@ -12,12 +12,20 @@ import { resolveColumnKey as resolveColumnKeyFn } from './utils/flightAllocation
 import { countUniqueFlightsFromParquet } from './utils/ruleConditions';
 import { DistributionValueSetter, LoadFactorValueSetter, ShowUpTimeValueSetter } from '../shared/ValueSetters';
 
+export interface ProfileEditingRule {
+  loadFactor?: number;
+  parameters?: { Mean?: number; Std?: number };
+  distribution?: Record<string, number>;
+  originalConditions?: Record<string, string[]>;
+  conditions?: string[] | Record<string, string[]>;
+}
+
 interface ProfileCriteriaSettingsProps {
   parquetMetadata: ParquetMetadataItem[];
   definedProperties?: string[];
   configType?: string;
-  editingRule?: any; // 편집할 rule 데이터
-  editingRuleIndex?: number; // 편집할 rule의 인덱스
+  editingRule?: ProfileEditingRule;
+  editingRuleIndex?: number;
 }
 
 export default function ProfileCriteriaSettings({
@@ -68,7 +76,7 @@ export default function ProfileCriteriaSettings({
         const percentageValues: Record<string, number> = {};
         Object.keys(editingRule.distribution).forEach((key) => {
           // ✅ zustand 값 그대로 사용 - 변환하지 않음
-          percentageValues[key] = editingRule.distribution[key];
+          percentageValues[key] = editingRule.distribution![key];
         });
         setPropertyValues(percentageValues);
       }
@@ -79,7 +87,7 @@ export default function ProfileCriteriaSettings({
         const selectedItemsFromConditions: Record<string, boolean> = {};
         let firstColumnToSelect: string | null = null;
 
-        Object.entries(editingRule.originalConditions).forEach(([apiField, values]: [string, any]) => {
+        Object.entries(editingRule.originalConditions).forEach(([apiField, values]: [string, string[]]) => {
           if (Array.isArray(values)) {
             values.forEach((apiValue) => {
               const columnKey = resolveColumnKey(apiField, apiValue);
@@ -165,7 +173,7 @@ export default function ProfileCriteriaSettings({
         }
         // 🎯 conditions가 객체 형태인 경우 (원본 store 데이터)
         else if (typeof editingRule.conditions === 'object' && !Array.isArray(editingRule.conditions)) {
-          Object.entries(editingRule.conditions).forEach(([apiField, values]: [string, any]) => {
+          Object.entries(editingRule.conditions).forEach(([apiField, values]: [string, string[]]) => {
             if (Array.isArray(values)) {
               values.forEach((apiValue) => {
                 const columnKey = resolveColumnKey(apiField, apiValue);
@@ -298,8 +306,8 @@ export default function ProfileCriteriaSettings({
 
         // AddColumnTab (nationality)에 데이터 전달
 
-        if ((window as any).handleSimpleRuleSaved) {
-          (window as any).handleSimpleRuleSaved({
+        if (window.handleSimpleRuleSaved) {
+          window.handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues,
@@ -317,8 +325,8 @@ export default function ProfileCriteriaSettings({
 
         // AddColumnTab (profile)으로 데이터 전달
 
-        if (typeof (window as any).handleSimpleRuleSaved === 'function') {
-          (window as any).handleSimpleRuleSaved({
+        if (typeof window.handleSimpleRuleSaved === 'function') {
+          window.handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             distribution: propertyValues, // 0-100% 범위 그대로 전달
@@ -338,8 +346,8 @@ export default function ProfileCriteriaSettings({
 
         // SimpleLoadFactorTab에 데이터 전달
         // 값을 그대로 전달 (변환 없음)
-        if ((window as any).handleSimpleRuleSaved) {
-          (window as any).handleSimpleRuleSaved({
+        if (window.handleSimpleRuleSaved) {
+          window.handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             loadFactor: loadFactorValue, // 🆕 그대로 전달
@@ -354,8 +362,8 @@ export default function ProfileCriteriaSettings({
         };
 
         // SimpleShowUpTimeTab으로 데이터 전달
-        if (typeof (window as any).handleSimpleRuleSaved === 'function') {
-          (window as any).handleSimpleRuleSaved({
+        if (typeof window.handleSimpleRuleSaved === 'function') {
+          window.handleSimpleRuleSaved({
             conditions: conditionStrings,
             flightCount: flightCalculations.totalSelected,
             parameters: showUpTimeParameters, // 🆕 올바른 필드명
@@ -660,14 +668,18 @@ export default function ProfileCriteriaSettings({
       // flightId → arr/arrCity 역방향 맵 빌드
       const flightToArr: Record<string, string> = {};
       const flightToArrCity: Record<string, string> = {};
-      parquetMetadata.find((item) => item.column === 'arrival_airport_iata')
-        ?.values && Object.entries(
-          parquetMetadata.find((item) => item.column === 'arrival_airport_iata')!.values
-        ).forEach(([arr, data]) => data.flights.forEach((fid) => { flightToArr[fid] = arr; }));
-      parquetMetadata.find((item) => item.column === 'arrival_city')
-        ?.values && Object.entries(
-          parquetMetadata.find((item) => item.column === 'arrival_city')!.values
-        ).forEach(([city, data]) => data.flights.forEach((fid) => { flightToArrCity[fid] = city; }));
+      const arrivalAirportColumn = parquetMetadata.find((item) => item.column === 'arrival_airport_iata');
+      if (arrivalAirportColumn?.values) {
+        Object.entries(arrivalAirportColumn.values).forEach(([arr, data]) => {
+          data.flights.forEach((fid) => { flightToArr[fid] = arr; });
+        });
+      }
+      const arrivalCityColumn = parquetMetadata.find((item) => item.column === 'arrival_city');
+      if (arrivalCityColumn?.values) {
+        Object.entries(arrivalCityColumn.values).forEach(([city, data]) => {
+          data.flights.forEach((fid) => { flightToArrCity[fid] = city; });
+        });
+      }
 
       const itemFlightSet = new Set(columnData.values[value]?.flights || []);
       return Object.entries(flightNumberData.values)

@@ -7,7 +7,7 @@ import { useSimulationStore } from '../../_stores';
 import PassengerFilterConditions from './PassengerFilterConditions';
 import PassengerResultChart from './PassengerResultChart';
 
-interface TabPassengerScheduleProps extends SimulationTabProps {}
+type TabPassengerScheduleProps = SimulationTabProps;
 
 interface AirlineShowUpTime {
   iata: string;
@@ -32,9 +32,9 @@ export default function TabPassengerSchedule({
     <div className="pt-8">
       <div className="space-y-6">
         {/* 🎯 Configure Passenger Data - 독립적인 첫 번째 컴포넌트 */}
-        {(appliedFilterResult as any)?.parquet_metadata && (
+        {appliedFilterResult?.parquet_metadata && (
           <PassengerFilterConditions
-            parquetMetadata={(appliedFilterResult as any).parquet_metadata}
+            parquetMetadata={appliedFilterResult.parquet_metadata}
             simulationId={simulationId}
             apiRequestLog={apiRequestLog}
             setApiRequestLog={setApiRequestLog}

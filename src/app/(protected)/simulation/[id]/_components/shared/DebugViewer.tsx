@@ -4,17 +4,20 @@ import React, { useState } from 'react';
 import { Bug, ChevronRight, Copy, Download, Folder, Rocket, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useSimulationStore } from '../../_stores';
+import type { ApiLogPayload } from '@/types/api/common';
+
+interface ApiRequestLogEntry {
+  timestamp: string;
+  request?: ApiLogPayload;
+  response?: ApiLogPayload;
+  status: 'loading' | 'success' | 'error';
+  error?: string;
+}
 
 interface JSONDebugViewerProps {
   visible: boolean;
   simulationId: string; // 시나리오 ID 추가
-  apiRequestLog?: {
-    timestamp: string;
-    request?: any;
-    response?: any;
-    status: 'loading' | 'success' | 'error';
-    error?: string;
-  } | null;
+  apiRequestLog?: ApiRequestLogEntry | null;
 }
 
 export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }: JSONDebugViewerProps) {
@@ -34,7 +37,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
   };
 
   // JSON 클립보드 복사 함수
-  const copyToClipboard = async (data: any) => {
+  const copyToClipboard = async (data: unknown) => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
       // 복사 성공 시 사용자에게 알림 (선택적)
@@ -46,7 +49,7 @@ export default function JSONDebugViewer({ visible, simulationId, apiRequestLog }
 
   const renderJSONTreeSection = (
     title: string,
-    data: any,
+    data: unknown,
     collapsedKey: keyof typeof collapsed,
     bgColor: string = 'bg-gray-50'
   ) => {

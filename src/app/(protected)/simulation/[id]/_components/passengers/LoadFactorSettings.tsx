@@ -403,10 +403,10 @@ export default function LoadFactorSettings({
 
   // 전역 함수 등록 (메모리 누수 방지)
   useEffect(() => {
-    (window as any).handleSimpleRuleSaved = handleRuleSaved;
+    window.handleSimpleRuleSaved = (payload) => handleRuleSaved(payload as Parameters<typeof handleRuleSaved>[0]);
 
     return () => {
-      delete (window as any).handleSimpleRuleSaved;
+      delete window.handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
 

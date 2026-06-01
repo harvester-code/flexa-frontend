@@ -52,11 +52,10 @@ export default function PassengerResultChart() {
         (key) => key && key.length > 0
       )
     : [];
-  const validSelectedCategory = categories.includes(selectedCategory)
-    ? selectedCategory
-    : categories.length > 0
-      ? categories[0]
-      : "airline";
+  const validSelectedCategory = useMemo(() => {
+    if (categories.includes(selectedCategory)) return selectedCategory;
+    return categories.length > 0 ? categories[0] : 'airline';
+  }, [categories, selectedCategory]);
 
   // Plotly용 데이터 변환 (조건부 return 이전에 호출)
   const plotlyData = useMemo(() => {
@@ -340,7 +339,7 @@ export default function PassengerResultChart() {
           </div>
           {hasChartData && (
             <Select
-              value={selectedCategory}
+              value={validSelectedCategory}
               onValueChange={setSelectedCategory}
             >
               <SelectTrigger className="w-28">

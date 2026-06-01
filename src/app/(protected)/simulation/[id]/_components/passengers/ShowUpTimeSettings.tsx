@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ParquetMetadataItem } from "@/types/parquet";
 import dynamic from "next/dynamic";
+import type Plotly from "plotly.js-dist-min";
 import {
   AlertTriangle,
   CheckCircle,
@@ -40,7 +41,6 @@ import { allocateFlightsSequential } from "./utils/flightAllocation";
 import { countUniqueFlightsFromParquet } from "./utils/ruleConditions";
 import { THEME_COLORS } from "@/styles/theme-colors";
 
-// Plotly를 동적으로 로드 (SSR 문제 방지)
 const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
   loading: () => (
@@ -48,7 +48,12 @@ const Plot = dynamic(() => import("react-plotly.js"), {
       Loading chart...
     </div>
   ),
-});
+}) as React.ComponentType<{
+  data: Plotly.Data[];
+  layout: Partial<Plotly.Layout>;
+  config?: Partial<Plotly.Config>;
+  style?: React.CSSProperties;
+}>;
 
 const COLORS = THEME_COLORS.chartPalette;
 
@@ -497,10 +502,10 @@ export default function ShowUpTimeSettings({
 
   // 전역 함수 등록 (메모리 누수 방지)
   useEffect(() => {
-    (window as any).handleSimpleRuleSaved = handleRuleSaved;
+    window.handleSimpleRuleSaved = (payload) => handleRuleSaved(payload as Parameters<typeof handleRuleSaved>[0]);
 
     return () => {
-      delete (window as any).handleSimpleRuleSaved;
+      delete window.handleSimpleRuleSaved;
     };
   }, [handleRuleSaved]);
 
@@ -508,7 +513,7 @@ export default function ShowUpTimeSettings({
 
   // Combined Distribution Chart 데이터 및 레이아웃 생성 (메모이제이션)
   const combinedChartConfig = useMemo(() => {
-    const traces: any[] = [];
+    const traces: Plotly.Data[] = [];
     const colors = [...THEME_COLORS.chartPalette];
 
     // 전체 범위 계산 (null이 아닌 분포들만 포함)
@@ -1015,15 +1020,15 @@ export default function ShowUpTimeSettings({
             <h4 className="mb-4 text-lg font-medium text-gray-900">
               Show-up Time Distributions Comparison
             </h4>
-            {React.createElement(Plot as any, {
-              data: combinedChartConfig.data,
-              layout: combinedChartConfig.layout,
-              config: {
+            <Plot
+              data={combinedChartConfig.data}
+              layout={combinedChartConfig.layout as Partial<Plotly.Layout>}
+              config={{
                 displayModeBar: false,
                 responsive: true,
-              },
-              style: { width: "100%", height: "400px" },
-            })}
+              }}
+              style={{ width: "100%", height: "400px" }}
+            />
           </div>
         )}
 

@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import ProfileCriteriaSettings from "./ProfileCriteriaSettings";
+import ProfileCriteriaSettings, { type ProfileEditingRule } from "./ProfileCriteriaSettings";
 import { ParquetMetadataItem } from "@/types/parquet";
 
 interface RuleEditModalProps {
@@ -18,7 +18,7 @@ interface RuleEditModalProps {
   parquetMetadata?: ParquetMetadataItem[];
   definedProperties: string[];
   configType?: string;
-  editingRule?: any;
+  editingRule?: ProfileEditingRule;
 }
 
 export default function RuleEditModal({

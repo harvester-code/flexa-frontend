@@ -4,6 +4,8 @@ import React, { useMemo, useState, useCallback } from "react";
 import { ParquetMetadataItem } from "@/types/parquet";
 import { BookOpen, CheckCircle, Play, Users, XCircle } from "lucide-react";
 import { createPassengerShowUp } from "@/services/simulationService";
+import type { ShowUpPassengerRequest } from "@/types/api/simulations";
+import { APIRequestLog } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
@@ -26,20 +28,15 @@ import ShowUpTimeSettings from "./ShowUpTimeSettings";
 import SimulationCardHeader from "../SimulationCardHeader";
 import PassengerPresetModal from "./PassengerPresetModal";
 import { PassengerPresetData } from "@/types/passengerPresetTypes";
+import type { PassengerData } from "../../_stores/store";
 import { getCategoryNameFromField } from "../facilities/schedule-editor/badgeMappings";
 import { remapPresetDates, calcOperatingPeriod } from "../facilities/helpers";
 
 interface PassengerFilterConditionsProps {
   parquetMetadata: ParquetMetadataItem[];
   simulationId?: string;
-  apiRequestLog?: {
-    timestamp: string;
-    request?: any;
-    response?: any;
-    status: "loading" | "success" | "error";
-    error?: string;
-  } | null;
-  setApiRequestLog?: (log: any) => void;
+  apiRequestLog?: APIRequestLog | null;
+  setApiRequestLog?: (log: APIRequestLog | null) => void;
 }
 
 export default function PassengerFilterConditions({
@@ -106,7 +103,7 @@ export default function PassengerFilterConditions({
     }
 
     // API 요청 바디 구성
-    const requestBody = {
+    const requestBody: ShowUpPassengerRequest = {
       settings: {
         airport: contextData.airport,
         date: contextData.date,
@@ -292,10 +289,10 @@ export default function PassengerFilterConditions({
         .filter((rule) => Object.keys(rule.conditions || {}).length > 0);
     }
 
-    reorderPaxGenerationRules(cleanRules(passengerData.pax_generation.rules || []) as any);
-    reorderNationalityRules(cleanRules(passengerData.pax_demographics.nationality.rules || []) as any);
-    reorderProfileRules(cleanRules(passengerData.pax_demographics.profile.rules || []) as any);
-    setPaxArrivalPatternRules(cleanRules(passengerData.pax_arrival_patterns.rules || []) as any);
+    reorderPaxGenerationRules(cleanRules(passengerData.pax_generation.rules || []));
+    reorderNationalityRules(cleanRules(passengerData.pax_demographics.nationality.rules || []));
+    reorderProfileRules(cleanRules(passengerData.pax_demographics.profile.rules || []));
+    setPaxArrivalPatternRules(cleanRules(passengerData.pax_arrival_patterns.rules || []));
 
     setPendingPassengerConditionRemoval(null);
   }, [
@@ -308,7 +305,7 @@ export default function PassengerFilterConditions({
   ]);
 
   const handleLoadPreset = (data: PassengerPresetData) => {
-    loadPassengerPreset(data as any);
+    loadPassengerPreset(data as Partial<Omit<PassengerData, "chartResult">>);
   };
 
   // Build passenger data snapshot for saving (strip chartResult)
@@ -322,12 +319,18 @@ export default function PassengerFilterConditions({
       nationality: {
         available_values: passengerData.pax_demographics.nationality.available_values,
         rules: (passengerData.pax_demographics.nationality.rules || []).map(({ flightCount: _, ...r }) => r),
-        default: (() => { const { flightCount: _, ...d } = passengerData.pax_demographics.nationality.default as any; return d; })(),
+        default: (() => {
+          const { flightCount: _, ...d } = passengerData.pax_demographics.nationality.default;
+          return d;
+        })(),
       },
       profile: {
         available_values: passengerData.pax_demographics.profile.available_values,
         rules: (passengerData.pax_demographics.profile.rules || []).map(({ flightCount: _, ...r }) => r),
-        default: (() => { const { flightCount: _, ...d } = passengerData.pax_demographics.profile.default as any; return d; })(),
+        default: (() => {
+          const { flightCount: _, ...d } = passengerData.pax_demographics.profile.default;
+          return d;
+        })(),
       },
     },
     pax_arrival_patterns: {
