@@ -14,7 +14,8 @@
     "copy:standalone-assets": "mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public",
     "start": "next start",
     "start:standalone": "node .next/standalone/server.js",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write src/",
     "clean": "rm -rf .next node_modules package-lock.json"
   },

@@ -1,16 +1,12 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'node:module';
+import prettierConfig from 'eslint-config-prettier/flat';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+const require = createRequire(import.meta.url);
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript', 'prettier'),
+  ...require('eslint-config-next/core-web-vitals'),
+  ...require('eslint-config-next/typescript'),
+  prettierConfig,
   {
     rules: {
       '@typescript-eslint/no-unused-vars': 'off', // 사용되지 않는 변수 경고
