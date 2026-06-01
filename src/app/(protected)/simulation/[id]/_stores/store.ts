@@ -6,6 +6,8 @@ import type {
   ProcessStep,
   Zone as SimulationZone,
 } from "@/types/simulationTypes";
+import type { ChartData } from "@/types/api/common";
+import type { ParquetMetadataItem } from "@/types/parquet";
 // Removed convertToDecimal import - no longer converting to decimals
 
 // ==================== Passenger Types ====================
@@ -63,13 +65,7 @@ export interface PassengerData {
   chartResult?: {
     total: number;
     chart_x_data: string[];
-    chart_y_data?: {
-      [category: string]: Array<{
-        name: string;
-        order: number;
-        y: number[];
-      }>;
-    };
+    chart_y_data?: ChartData;
     summary?: {
       flights: number;
       avg_seats: number;
@@ -241,27 +237,10 @@ export interface SimulationStoreState {
     } | null;
     appliedFilterResult: {
       total: number;
-      chart_x_data: string[]; // ["00:00", "01:00", ...]
-      chart_y_data: {
-        [category: string]: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-      };
-      appliedAt: string;
-      // 🔧 Passenger Schedule 탭 활성화를 위한 parquet_metadata
-      parquet_metadata?: Array<{
-        column: string;
-        values: Record<
-          string,
-          {
-            flights: string[];
-            indices: number[];
-          }
-        >;
-      }>;
+      chart_x_data: string[];
+      chart_y_data: ChartData;
+      appliedAt?: string;
+      parquet_metadata?: ParquetMetadataItem[];
     } | null;
     total_flights: number | null;
     airlines: Record<string, string> | null;
@@ -322,30 +301,7 @@ export interface SimulationStoreState {
   clearAllConditions: () => void;
 
   setAppliedFilterResult: (
-    result: {
-      total: number;
-      chart_x_data: string[];
-      chart_y_data: {
-        [category: string]: Array<{
-          name: string;
-          order: number;
-          y: number[];
-          acc_y: number[];
-        }>;
-      };
-      appliedAt: string;
-      // 🔧 Passenger Schedule 탭 활성화를 위한 parquet_metadata
-      parquet_metadata?: Array<{
-        column: string;
-        values: Record<
-          string,
-          {
-            flights: string[];
-            indices: number[];
-          }
-        >;
-      }>;
-    } | null
+    result: NonNullable<SimulationStoreState['flight']['appliedFilterResult']> | null
   ) => void;
 
   // Workflow 관련 액션들

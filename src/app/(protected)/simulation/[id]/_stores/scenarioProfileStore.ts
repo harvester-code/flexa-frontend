@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import type { ScenarioProfileMetadata } from "@/types/api/simulations";
 
 interface ScenarioProfileState {
   scenarioName: string;
@@ -10,7 +11,7 @@ interface ScenarioProfileState {
   setScenarioName: (name: string) => void;
   setScenarioHistory: (history: string[]) => void;
   setCurrentScenarioTab: (tab: number) => void;
-  loadMetadata: (metadata: any) => void;
+  loadMetadata: (metadata: ScenarioProfileMetadata) => void;
   reset: () => void;
 }
 

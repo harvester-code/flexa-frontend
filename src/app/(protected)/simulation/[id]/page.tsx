@@ -11,7 +11,11 @@ import React, {
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { Clock, Save, Trash2, Bot } from "lucide-react";
-import { APIRequestLog } from "@/types/simulationTypes";
+import { APIRequestLog, MetadataLoadResponse, ScenarioMetadataPayload } from "@/types/simulationTypes";
+import {
+  buildScenarioMetadataPayload,
+  emptyScenarioMetadataPayload,
+} from "@/lib/scenarioMetadata";
 import {
   deleteScenarioMetadata,
   saveScenarioMetadata,
@@ -41,6 +45,7 @@ import TabProcessingProcedures from "./_components/facilities/TabProcessingProce
 import AIChatSidebar from "./_components/facilities/AIChatSidebar";
 import { useLoadScenarioData } from "./_hooks/useLoadScenarioData";
 import { useScenarioProfileStore, useSimulationStore } from "./_stores";
+import type { SimulationStoreState } from "./_stores/store";
 
 const tabs: { text: string; number: number }[] = [
   { text: "Flights", number: 0 },
@@ -173,7 +178,7 @@ export default function SimulationDetail({
   }, [queryScenarioAirport, setStoreAirport, storeAirport]);
 
   // S3 메타데이터를 모든 modular stores에 로드하는 함수
-  const loadCompleteS3Metadata = useCallback(async (data: any) => {
+  const loadCompleteS3Metadata = useCallback(async (data: MetadataLoadResponse) => {
     try {
       // 🔧 새로운 통합 Store 구조에 맞게 수정
       const metadata = data.metadata || {};
@@ -239,6 +244,11 @@ export default function SimulationDetail({
           context: {
             ...metadata.context,
             scenarioId: simulationId,
+            airport: metadata.context?.airport ?? "",
+            terminal: metadata.context?.terminal ?? "",
+            date:
+              metadata.context?.date ??
+              new Date().toISOString().split("T")[0],
           },
 
           // 액션들은 현재 store에서 그대로 유지
@@ -294,7 +304,7 @@ export default function SimulationDetail({
         };
 
         // 🚀 한 방에 갈아끼우기
-        useSimulationStore.setState(newState);
+        useSimulationStore.setState(newState as Partial<SimulationStoreState>);
 
         // ⏱️ 최신 저장 시각 동기화
         useSimulationStore.setState({ savedAt: savedTimestamp || null });
@@ -338,58 +348,12 @@ export default function SimulationDetail({
   };
 
   // 🆕 통합 Store에서 메타데이터 수집용 함수
-  const getCompleteMetadata = useCallback((scenarioId: string) => {
+  const getCompleteMetadata = useCallback((scenarioId: string): ScenarioMetadataPayload => {
     try {
-      // 통합 Store에서 전체 상태 가져오기
       const simulationState = useSimulationStore.getState();
-
-      // 현재 시간으로 savedAt 업데이트
-      const metadata = {
-        ...simulationState,
-        terminalLayout: simulationState.terminalLayout || { zoneAreas: {} },
-        savedAt: new Date().toISOString(),
-        // 날짜가 비어있으면 오늘 날짜로 설정
-        context: {
-          ...simulationState.context,
-          date:
-            simulationState.context.date ||
-            new Date().toISOString().split("T")[0],
-        },
-      };
-
-      return metadata;
-    } catch (error) {
-      const currentDate = new Date().toISOString().split("T")[0];
-      return {
-        context: {
-          scenarioId: scenarioId,
-          airport: "",
-          date: currentDate,
-          lastSavedAt: null,
-        },
-        flight: {
-          total_flights: null,
-          airlines: null,
-          filters: null,
-          selectedConditions: null,
-          appliedFilterResult: null,
-        },
-        passenger: {
-          settings: {},
-          demographics: {},
-          arrivalPatterns: {},
-          showUpResults: null,
-        },
-        process: { flow: [] },
-        terminalLayout: { imageUrl: null, zoneAreas: {} },
-        workflow: {
-          currentStep: 1,
-          step1Completed: false,
-          step2Completed: false,
-          availableSteps: [1],
-        },
-        savedAt: new Date().toISOString(),
-      };
+      return buildScenarioMetadataPayload(simulationState);
+    } catch {
+      return emptyScenarioMetadataPayload(scenarioId);
     }
   }, []);
 

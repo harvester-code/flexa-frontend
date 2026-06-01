@@ -1,9 +1,12 @@
 import { useEffect } from "react";
-import { loadScenarioMetadata } from "@/services/simulationService";
+import type {
+  MetadataLoadResponse,
+  ScenarioProfileMetadata,
+} from "@/types/api/simulations";
 
 interface UseLoadScenarioDataProps {
-  loadCompleteS3Metadata: (s3Response: any) => void;
-  loadScenarioProfileMetadata: (metadata: any) => void;
+  loadCompleteS3Metadata: (s3Response: MetadataLoadResponse) => void;
+  loadScenarioProfileMetadata: (metadata: ScenarioProfileMetadata) => void;
   setCurrentScenarioTab: (tab: number) => void;
   setIsInitialized: (initialized: boolean) => void;
 }
@@ -20,7 +23,6 @@ export function useLoadScenarioData(
   useEffect(() => {
     const loadScenario = async () => {
       try {
-        // 🎯 스마트 초기화: 시나리오 ID가 다를 때만 초기화
         const { useSimulationStore } = await import("../_stores/store");
         const currentState = useSimulationStore.getState();
         const currentScenarioId = currentState.context.scenarioId;
@@ -31,28 +33,26 @@ export function useLoadScenarioData(
         }
 
         const { data: s3Data } = await loadScenarioMetadata(simulationId);
+        const metadata = s3Data.metadata;
 
-        // 메타데이터가 있고 유효한 데이터가 있는 경우
         if (
-          s3Data.metadata &&
-          (s3Data.metadata.tabs ||
-            (s3Data.metadata as any).context ||
-            (s3Data.metadata as any).flight)
+          metadata &&
+          (metadata.tabs ||
+            metadata.context ||
+            metadata.flight ||
+            metadata.passenger ||
+            metadata.process_flow ||
+            metadata.workflow)
         ) {
-          // 기존 데이터가 있으면 zustand store에 복원
           loadCompleteS3Metadata(s3Data);
 
-          // ScenarioProfile 데이터가 있으면 별도 처리, 없으면 기본값 설정
-          if ((s3Data.metadata.tabs as any)?.scenarioProfile) {
-            loadScenarioProfileMetadata(
-              (s3Data.metadata.tabs as any).scenarioProfile
-            );
+          const profile = metadata.tabs?.scenarioProfile;
+          if (profile) {
+            loadScenarioProfileMetadata(profile);
           } else {
-            // 🎯 workflow의 availableSteps 마지막 값을 기본 탭으로 설정
-            const availableSteps = (s3Data.metadata as any).workflow
-              ?.availableSteps || [1];
+            const availableSteps = metadata.workflow?.availableSteps || [1];
             const lastAvailableStep = Math.max(...availableSteps);
-            const defaultTab = lastAvailableStep - 1; // 0-based 탭 인덱스로 변환
+            const defaultTab = lastAvailableStep - 1;
 
             loadScenarioProfileMetadata({
               checkpoint: "overview",
@@ -64,10 +64,7 @@ export function useLoadScenarioData(
             });
           }
         } else {
-          // 메타데이터가 없는 경우 (새 시나리오 또는 빈 메타데이터)
-
-          // 🔧 새 시나리오인 경우에만 탭을 0으로 초기화
-          if ((s3Data as any).is_new_scenario) {
+          if (s3Data.is_new_scenario) {
             setCurrentScenarioTab(0);
           }
 
@@ -80,17 +77,17 @@ export function useLoadScenarioData(
             currentScenarioTab: 0,
           });
         }
-      } catch (error: any) {
-        const isUnauthorized = error?.response?.status === 401;
-        const isServerError = error?.response?.status >= 500;
+      } catch (error: unknown) {
+        const status =
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          typeof (error as { response?: { status?: number } }).response?.status ===
+            "number"
+            ? (error as { response: { status: number } }).response.status
+            : undefined;
 
-        if (isUnauthorized) {
-        } else if (isServerError) {
-        } else {
-        }
-
-        // 인증 에러, 서버 에러, 또는 네트워크 오류 시 기본값으로 설정
-        // 🔧 에러 시에는 첫 번째 탭으로 시작 (안전한 기본값)
+        void status;
 
         loadScenarioProfileMetadata({
           checkpoint: "overview",
@@ -98,14 +95,14 @@ export function useLoadScenarioData(
           scenarioTerminal: "unknown",
           scenarioHistory: [],
           availableScenarioTab: 2,
-          currentScenarioTab: 0, // 에러 시 안전한 기본값
+          currentScenarioTab: 0,
         });
       } finally {
         setIsInitialized(true);
       }
     };
 
-    loadScenario();
+    void loadScenario();
   }, [
     simulationId,
     loadCompleteS3Metadata,
@@ -113,4 +110,11 @@ export function useLoadScenarioData(
     setCurrentScenarioTab,
     setIsInitialized,
   ]);
+}
+
+async function loadScenarioMetadata(simulationId: string) {
+  const { loadScenarioMetadata: loadMetadata } = await import(
+    "@/services/simulationService"
+  );
+  return loadMetadata(simulationId);
 }
