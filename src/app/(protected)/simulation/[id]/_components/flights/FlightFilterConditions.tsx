@@ -1267,6 +1267,7 @@ function FlightFilterConditions({
     filtersData,
     setSelectedConditions,
     toast,
+    controlled,
   ]);
 
   const handleClearAll = useCallback(() => {
@@ -1287,7 +1288,10 @@ function FlightFilterConditions({
   // ==================== Computed Values ====================
 
   // 전체 항공사 정보 (이름 매핑용)
-  const airlinesMapping = filtersData?.airlines || {};
+  const airlinesMapping = useMemo(
+    () => filtersData?.airlines || {},
+    [filtersData?.airlines]
+  );
 
   // 교집합 항공편 상세 정보 (Selection Summary 테이블용)
   const intersectedFlightDetails = useMemo((): FlightDetail[] => {
@@ -1941,9 +1945,7 @@ function FlightFilterConditions({
       handleAirlineFilterToggle,
       handleFlightNumberToggle,
       getSelectedFlightsCount,
-      getEstimatedFilteredFlights,
       airlinesMapping,
-      setSelectedFilter,
       handleClassToggle,
       handleAircraftTypeToggle,
     ]

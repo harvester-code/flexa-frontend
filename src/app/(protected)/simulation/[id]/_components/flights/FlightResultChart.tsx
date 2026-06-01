@@ -31,8 +31,14 @@ export default function FlightResultChart() {
 
   // 🎯 Zustand에서 직접 데이터 가져오기
   const appliedFilterResult = useSimulationStore((s) => s.flight.appliedFilterResult);
-  const chartYData = appliedFilterResult?.chart_y_data ?? {};
-  const chartXData = appliedFilterResult?.chart_x_data ?? [];
+  const chartYData = useMemo(
+    () => appliedFilterResult?.chart_y_data ?? {},
+    [appliedFilterResult?.chart_y_data]
+  );
+  const chartXData = useMemo(
+    () => appliedFilterResult?.chart_x_data ?? [],
+    [appliedFilterResult?.chart_x_data]
+  );
 
   // Plotly용 데이터 변환
   const { plotlyData, xAxisLabels } = useMemo(() => {
