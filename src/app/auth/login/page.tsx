@@ -9,17 +9,16 @@ import { signInAction } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
+import { useIsClient } from '@/lib/useIsClient';
 
 function LoginForm() {
   const [state, formAction] = useActionState(signInAction, null);
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    setMounted(true);
-    // 로그인 페이지 진입 시 user 쿼리만 제거 (시나리오는 user_id가 쿼리 키에 포함되어 자동 분리됨)
     queryClient.removeQueries({ queryKey: ['user'] });
   }, [queryClient]);
 

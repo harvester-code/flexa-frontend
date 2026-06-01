@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { signUpAction } from '@/actions/auth';
+import { signUpAction, type AuthActionState } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -24,8 +24,8 @@ export function RegisterForm() {
             <div className="flex-1">
               <p className="text-sm font-semibold text-destructive mb-1">Registration failed</p>
               <p className="text-sm text-muted-foreground leading-relaxed">{state.error.message}</p>
-              {(state.error as any)?.details && process.env.NODE_ENV === 'development' && (
-                <p className="mt-1 text-xs text-destructive/60">Debug: {(state.error as any)?.details}</p>
+              {state.error.details && process.env.NODE_ENV === 'development' && (
+                <p className="mt-1 text-xs text-destructive/60">Debug: {state.error.details}</p>
               )}
             </div>
           </div>

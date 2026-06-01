@@ -3,14 +3,14 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Mail, Shield } from 'lucide-react';
-import { forgotPasswordAction } from '@/actions/auth';
+import { forgotPasswordAction, type AuthActionState } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
 export default function ForgotPasswordPage() {
   const [state, formAction] = useActionState(
-    async (prevState: any, formData: FormData) => await forgotPasswordAction(formData),
+    async (_prevState: AuthActionState, formData: FormData) => await forgotPasswordAction(formData),
     { error: { message: '' } }
   );
 

@@ -3,14 +3,14 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Check, Key, Shield } from 'lucide-react';
-import { resetPasswordAction } from '@/actions/auth';
+import { resetPasswordAction, type AuthActionState } from '@/actions/auth';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
 export default function ResetPasswordPage() {
   const [state, formAction] = useActionState(
-    async (prevState: any, formData: FormData) => await resetPasswordAction(formData),
+    async (_prevState: AuthActionState, formData: FormData) => await resetPasswordAction(formData),
     { error: { message: '' } }
   );
 

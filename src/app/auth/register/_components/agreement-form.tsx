@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Label } from '@/components/ui/Label';
 
@@ -9,25 +9,24 @@ interface AgreementFormProps {
 }
 
 export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
-  const [agreeToAll, setAgreeToAll] = useState(false);
   const [termsOfUse, setTermsOfUse] = useState(false);
   const [privacyPolicy, setPrivacyPolicy] = useState(false);
-
-  useEffect(() => {
-    if (termsOfUse && privacyPolicy) {
-      setAgreeToAll(true);
-      onAgreeAll(true);
-    } else {
-      setAgreeToAll(false);
-      onAgreeAll(false);
-    }
-  }, [termsOfUse, privacyPolicy, onAgreeAll]);
+  const agreeToAll = termsOfUse && privacyPolicy;
 
   const handleAgreeToAll = (checked: boolean) => {
-    setAgreeToAll(checked);
     setTermsOfUse(checked);
     setPrivacyPolicy(checked);
     onAgreeAll(checked);
+  };
+
+  const handleTermsChange = (checked: boolean) => {
+    setTermsOfUse(checked);
+    onAgreeAll(checked && privacyPolicy);
+  };
+
+  const handlePrivacyChange = (checked: boolean) => {
+    setPrivacyPolicy(checked);
+    onAgreeAll(termsOfUse && checked);
   };
 
   return (
@@ -50,7 +49,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
           <Checkbox
             id="termsOfUse"
             checked={termsOfUse}
-            onCheckedChange={(checked) => setTermsOfUse(checked === true)}
+            onCheckedChange={(checked) => handleTermsChange(checked === true)}
           />
           <Label htmlFor="termsOfUse" className="cursor-pointer text-sm text-default-900">
             Terms of Use <span className="font-medium text-primary">(Required)</span>
@@ -61,7 +60,7 @@ export function AgreementForm({ onAgreeAll }: AgreementFormProps) {
           <Checkbox
             id="privacyPolicy"
             checked={privacyPolicy}
-            onCheckedChange={(checked) => setPrivacyPolicy(checked === true)}
+            onCheckedChange={(checked) => handlePrivacyChange(checked === true)}
           />
           <Label htmlFor="privacyPolicy" className="cursor-pointer text-sm text-default-900">
             Privacy Policy <span className="font-medium text-primary">(Required)</span>

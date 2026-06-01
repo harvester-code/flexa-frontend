@@ -5,9 +5,10 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/auth/server';
 
-interface AuthActionState {
+export interface AuthActionState {
   error?: {
     message: string;
+    details?: string;
   };
 }
 
