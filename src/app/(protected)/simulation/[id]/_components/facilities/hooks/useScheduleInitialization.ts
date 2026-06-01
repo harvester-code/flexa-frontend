@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { FacilityWithSchedule, CategoryBadge } from "../schedule-editor/types";
+import { FacilityWithSchedule, CategoryBadge, TimeBlock } from "../schedule-editor/types";
 import { getCategoryNameFromField, getCategoryFieldName, getCategoryColorIndex } from "../schedule-editor/badgeMappings";
 import { getBadgeColor } from "@/styles/colors";
 import { parsePeriodSafe } from "../schedule-editor/helpers";
@@ -44,7 +44,7 @@ export function useScheduleInitialization() {
         if (!facility?.operating_schedule?.time_blocks) return;
 
         // JSON의 time_blocks를 그대로 처리
-        facility.operating_schedule.time_blocks.forEach((block: any) => {
+        facility.operating_schedule.time_blocks.forEach((block: TimeBlock) => {
           if (!block.period) return;
 
           const parsed = parsePeriodSafe(block.period);
@@ -83,7 +83,7 @@ export function useScheduleInitialization() {
           }
 
           if (block.passenger_conditions?.length > 0) {
-            const badges: CategoryBadge[] = block.passenger_conditions.map((condition: any) => {
+            const badges: CategoryBadge[] = block.passenger_conditions.map((condition) => {
               const categoryName = getCategoryNameFromField(condition.field);
               const colorIndex = getCategoryColorIndex(categoryName);
               const badgeColor = getBadgeColor(colorIndex);

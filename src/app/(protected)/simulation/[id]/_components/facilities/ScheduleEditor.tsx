@@ -30,18 +30,21 @@ import {
   Plane,
   Users,
 } from "lucide-react";
-import { ProcessStep } from "@/types/simulationTypes";
+import { ProcessStep, Zone, Facility, PassengerCondition } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
-import {
-  ParquetMetadataItem,
+import type {
+  ConditionCategoriesMap,
+  ProcessCategoriesMap,
+  CategoryBadge,
   OperatingScheduleEditorProps,
   BadgeCondition,
-  CategoryBadge,
   TimeBlock,
   FacilityWithSchedule,
   TableHandlers,
   VirtualScrollConfig,
   ExcelTableProps,
+  StateUpdater,
+  ScheduleContextMenuState,
 } from "./schedule-editor/types";
 import {
   createDynamicConditionCategories,
@@ -89,7 +92,7 @@ const BUFFER_SIZE = 3; // 앞뒤로 추가 렌더링할 행 수 (부드러운 �
 export default function OperatingScheduleEditor({
   processFlow,
   parquetMetadata = [],
-  paxDemographics = {},
+  paxDemographics,
 }: OperatingScheduleEditorProps) {
   // ✈️ 항공사 매핑 데이터 가져오기
   const flightAirlines = useSimulationStore((s) => s.flight.airlines);
@@ -301,14 +304,14 @@ export default function OperatingScheduleEditor({
   const invalidConditionsSummary = useMemo(() => {
     const summary: Record<string, Map<string, Set<string>>> = {};
 
-    processFlow.forEach((process: any) => {
+    processFlow.forEach((process: ProcessStep) => {
       const processLabel = formatProcessName(process.name) || process.name || "Unknown";
-      Object.entries(process.zones || {}).forEach(([zoneName, zone]: [string, any]) => {
+      Object.entries(process.zones || {}).forEach(([zoneName, zone]: [string, Zone]) => {
         const location = `${processLabel} / ${zoneName}`;
-        (zone.facilities || []).forEach((facility: any) => {
-          const timeBlocks: any[] = facility?.operating_schedule?.time_blocks || [];
+        (zone.facilities || []).forEach((facility: Facility) => {
+          const timeBlocks: TimeBlock[] = facility?.operating_schedule?.time_blocks || [];
           timeBlocks.forEach((block) => {
-            (block.passenger_conditions || []).forEach((condition: any) => {
+            (block.passenger_conditions || []).forEach((condition: PassengerCondition) => {
               const categoryName = getCategoryNameFromField(condition.field);
               const validSet = validOptionsMap[categoryName];
               (condition.values || []).forEach((val: string) => {
@@ -341,7 +344,7 @@ export default function OperatingScheduleEditor({
 
   // 현재 Zone의 뱃지 업데이트 함수 (안전한 업데이트)
   const setCellBadges = useCallback(
-    (updater: any) => {
+    (updater: StateUpdater<Record<string, CategoryBadge[]>>) => {
       setAllZoneBadges((prev) => {
         const newBadges =
           typeof updater === "function"
@@ -362,7 +365,7 @@ export default function OperatingScheduleEditor({
 
   // 현재 Zone의 비활성화된 셀 업데이트 함수 (안전한 업데이트)
   const setDisabledCells = useCallback(
-    (updater: any) => {
+    (updater: StateUpdater<Set<string>>) => {
       setAllZoneDisabledCells((prev) => {
         const currentSet = prev[zoneKey] || new Set<string>();
         const newSet =
@@ -392,7 +395,7 @@ export default function OperatingScheduleEditor({
 
   // 현재 Zone의 process times 업데이트 함수 (안전한 업데이트)
   const setCellProcessTimes = useCallback(
-    (updater: any) => {
+    (updater: StateUpdater<Record<string, number>>) => {
       setAllZoneProcessTimes((prev) => {
         const newProcessTimes =
           typeof updater === "function"
@@ -412,13 +415,9 @@ export default function OperatingScheduleEditor({
   );
 
   // 우클릭 컨텍스트 메뉴 상태
-  const [contextMenu, setContextMenu] = useState<{
-    show: boolean;
-    cellId: string;
-    targetCells: string[];
-    x: number;
-    y: number;
-  }>({ show: false, cellId: "", targetCells: [], x: 0, y: 0 });
+  const [contextMenu, setContextMenu] = useState<ScheduleContextMenuState>(
+    { show: false, cellId: "", targetCells: [], x: 0, y: 0 }
+  );
 
   // 초기 로드 상태 추적 - processIndex와 zone별로 추적
   const [initializedKeys, setInitializedKeys] = useState<Set<string>>(
@@ -455,22 +454,22 @@ export default function OperatingScheduleEditor({
     const updatedFlow = processFlow.map((process) => ({
       ...process,
       zones: Object.fromEntries(
-        Object.entries(process.zones || {}).map(([zoneName, zone]: [string, any]) => [
+        Object.entries(process.zones || {}).map(([zoneName, zone]: [string, Zone]) => [
           zoneName,
           {
             ...zone,
-            facilities: (zone.facilities || []).map((facility: any) => ({
+            facilities: (zone.facilities || []).map((facility: Facility) => ({
               ...facility,
               operating_schedule: {
                 ...facility.operating_schedule,
-                time_blocks: (facility.operating_schedule?.time_blocks || []).map((block: any) => {
+                time_blocks: (facility.operating_schedule?.time_blocks || []).map((block: TimeBlock) => {
                   const newConditions = (block.passenger_conditions || [])
-                    .map((cond: any) => {
+                    .map((cond: PassengerCondition) => {
                       if (getCategoryNameFromField(cond.field) !== category) return cond;
                       const newValues = (cond.values || []).filter((v: string) => v !== value);
                       return newValues.length > 0 ? { ...cond, values: newValues } : null;
                     })
-                    .filter(Boolean);
+                    .filter((cond): cond is PassengerCondition => cond !== null);
                   return { ...block, passenger_conditions: newConditions };
                 }),
               },
@@ -480,7 +479,7 @@ export default function OperatingScheduleEditor({
       ),
     }));
 
-    setProcessFlow(updatedFlow as any);
+    setProcessFlow(updatedFlow);
     incrementFacilityPresetVersion();
     setPendingConditionRemoval(null);
   }, [pendingConditionRemoval, processFlow, setProcessFlow, incrementFacilityPresetVersion]);
@@ -520,9 +519,9 @@ export default function OperatingScheduleEditor({
 
     // Debug: log inputs/outputs to diagnose boundary extension
     const firstBlock = processFlow[0]
-      ? Object.values((processFlow[0] as any).zones || {})[0]
+      ? Object.values(processFlow[0].zones || {})[0]
       : null;
-    const firstFacility = firstBlock ? (firstBlock as any).facilities?.[0] : null;
+    const firstFacility = firstBlock?.facilities?.[0] ?? null;
     const firstBlockPeriod = firstFacility?.operating_schedule?.time_blocks?.[0]?.period;
     console.group("[ScheduleEditor] boundary extension");
     console.log("contextDate:", contextDate);
@@ -535,16 +534,16 @@ export default function OperatingScheduleEditor({
     const adjusted = remapPresetDates(processFlow, contextDate, contextDate, newPeriod);
 
     const adjFirstBlock = adjusted[0]
-      ? Object.values((adjusted[0] as any).zones || {})[0]
+      ? Object.values(adjusted[0].zones || {})[0]
       : null;
-    const adjFirstFacility = adjFirstBlock ? (adjFirstBlock as any).facilities?.[0] : null;
+    const adjFirstFacility = adjFirstBlock?.facilities?.[0] ?? null;
     const adjFirstBlockPeriod = adjFirstFacility?.operating_schedule?.time_blocks?.[0]?.period;
     console.log("adjusted first block period:", adjFirstBlockPeriod ?? "(empty after remap)");
     console.log("total blocks before:", firstFacility?.operating_schedule?.time_blocks?.length);
     console.log("total blocks after:", adjFirstFacility?.operating_schedule?.time_blocks?.length);
     console.groupEnd();
 
-    setProcessFlow(adjusted as any);
+    setProcessFlow(adjusted);
     incrementFacilityPresetVersion();
   }, [chartResult?.chart_x_data]);
 
@@ -585,7 +584,7 @@ export default function OperatingScheduleEditor({
       return;
     }
 
-    const currentProcess = processFlow[selectedProcessIndex] as any;
+    const currentProcess = processFlow[selectedProcessIndex];
     const newProcessTime = currentProcess?.process_time_seconds;
 
     if (newProcessTime == null) {
@@ -845,12 +844,12 @@ export default function OperatingScheduleEditor({
     const groups: Array<{
       title: string;
       categories: string[];
-      categoryConfigs?: Record<string, any>;
+      categoryConfigs?: ProcessCategoriesMap;
     }> = [];
 
     // 🔄 Process 그룹 (후속 프로세스에서만 표시)
     if (selectedProcessIndex > 0 && processFlow && processFlow.length > 0) {
-      const processCategories: Record<string, any> = {};
+      const processCategories: ProcessCategoriesMap = {};
 
       // 현재 프로세스보다 앞선 모든 프로세스들
       for (let i = 0; i < selectedProcessIndex; i++) {
@@ -955,7 +954,7 @@ export default function OperatingScheduleEditor({
       selectedProcessIndex !== null &&
       selectedProcessIndex < processFlow.length
     ) {
-      const currentProcess = processFlow[selectedProcessIndex] as any;
+      const currentProcess = processFlow[selectedProcessIndex];
       const definedProcessTime = currentProcess?.process_time_seconds;
 
       if (
@@ -968,7 +967,7 @@ export default function OperatingScheduleEditor({
 
       const zoneEntries = Object.values(currentProcess?.zones || {});
       for (const zoneEntry of zoneEntries) {
-        const facilities = (zoneEntry as any)?.facilities || [];
+        const facilities = zoneEntry?.facilities || [];
         for (const facility of facilities) {
           const timeBlocks =
             facility?.operating_schedule?.time_blocks || [];

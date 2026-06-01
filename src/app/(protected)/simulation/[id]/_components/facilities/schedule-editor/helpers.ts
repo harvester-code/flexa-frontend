@@ -22,7 +22,7 @@ const LABEL_VALUES = new Set<string>(Object.values(LABELS));
 // 🎨 동적 카테고리 생성 함수 (SearchCriteriaSelector와 동일 로직)
 export const createDynamicConditionCategories = (
   parquetMetadata: ParquetMetadataItem[],
-  paxDemographics: PaxDemographicsMap,
+  paxDemographics: PaxDemographicsMap = {},
   flightAirlines?: Record<string, string> | null
 ) => {
   const categories: Record<

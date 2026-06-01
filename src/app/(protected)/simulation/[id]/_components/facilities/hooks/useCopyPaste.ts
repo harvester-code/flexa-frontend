@@ -1,5 +1,10 @@
 import { useCallback, useState, useMemo } from "react";
-import { CategoryBadge } from "../schedule-editor/types";
+import {
+  CategoryBadge,
+  FacilityWithSchedule,
+  StateUpdater,
+} from "../schedule-editor/types";
+import type { useUndoHistory } from "./useUndoHistory";
 
 interface CopyPasteData {
   cells: Array<{
@@ -19,12 +24,12 @@ interface UseCopyPasteProps {
   disabledCells: Set<string>;
   cellProcessTimes: Record<string, number>;
   timeSlots: string[];
-  currentFacilities: any[];
+  currentFacilities: FacilityWithSchedule[];
   setCellBadges: (badges: Record<string, CategoryBadge[]>) => void;
   setDisabledCells: (cells: Set<string>) => void;
-  setCellProcessTimes: (updater: ((prev: Record<string, number>) => Record<string, number>) | Record<string, number>) => void;
+  setCellProcessTimes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   setSelectedCells: (cells: Set<string>) => void;
-  undoHistory: any;
+  undoHistory: ReturnType<typeof useUndoHistory>;
 }
 
 export const useCopyPaste = ({
@@ -46,7 +51,7 @@ export const useCopyPaste = ({
   const [showPasteWarning, setShowPasteWarning] = useState(false);
   const [pendingPasteData, setPendingPasteData] = useState<{
     targetCells: Set<string>;
-    copiedData: any;
+    copiedData: CopyPasteData;
   } | null>(null);
 
   // Computed set of copied cells for visualization
@@ -90,6 +95,116 @@ export const useCopyPaste = ({
     // Show marching ants
     setShowMarchingAnts(true);
   }, [selectedCells, cellBadges, disabledCells, cellProcessTimes]);
+
+  const executePaste = useCallback(
+    (targetCells: Set<string>, pasteData: CopyPasteData) => {
+      const previousStates = new Map<
+        string,
+        { badges: CategoryBadge[]; disabled: boolean; processTime?: number }
+      >();
+      const targetCellsArray = Array.from(targetCells).map((cellId) => {
+        const [row, col] = cellId.split("-").map(Number);
+        previousStates.set(cellId, {
+          badges: cellBadges[cellId] || [],
+          disabled: disabledCells.has(cellId),
+          processTime: cellProcessTimes[cellId],
+        });
+        return { row, col, cellId };
+      });
+
+      const targetMinRow = Math.min(...targetCellsArray.map((c) => c.row));
+      const targetMinCol = Math.min(...targetCellsArray.map((c) => c.col));
+
+      const newBadges = { ...cellBadges };
+      const newDisabledCells = new Set(disabledCells);
+      const newProcessTimes = { ...cellProcessTimes };
+
+      targetCellsArray.forEach((target) => {
+        let sourceCellData:
+          | {
+              row: number;
+              col: number;
+              badges: CategoryBadge[];
+              disabled: boolean;
+              processTime?: number;
+            }
+          | undefined = undefined;
+
+        if (pasteData.shape.rows === 1 && pasteData.shape.cols === 1) {
+          sourceCellData = pasteData.cells[0];
+        } else if (pasteData.shape.rows === 1) {
+          const relativeCol =
+            (target.col - targetMinCol) % pasteData.shape.cols;
+          sourceCellData = pasteData.cells.find(
+            (c) =>
+              c.row === pasteData.startCell.row &&
+              c.col - pasteData.startCell.col === relativeCol
+          );
+        } else if (pasteData.shape.cols === 1) {
+          const relativeRow =
+            (target.row - targetMinRow) % pasteData.shape.rows;
+          sourceCellData = pasteData.cells.find(
+            (c) =>
+              c.col === pasteData.startCell.col &&
+              c.row - pasteData.startCell.row === relativeRow
+          );
+        } else {
+          const relativeRow =
+            (target.row - targetMinRow) % pasteData.shape.rows;
+          const relativeCol =
+            (target.col - targetMinCol) % pasteData.shape.cols;
+
+          sourceCellData = pasteData.cells.find(
+            (c) =>
+              c.row - pasteData.startCell.row === relativeRow &&
+              c.col - pasteData.startCell.col === relativeCol
+          );
+        }
+
+        if (sourceCellData) {
+          if (sourceCellData.badges.length > 0) {
+            newBadges[target.cellId] = [...sourceCellData.badges];
+          } else {
+            delete newBadges[target.cellId];
+          }
+
+          if (sourceCellData.disabled) {
+            newDisabledCells.add(target.cellId);
+          } else {
+            newDisabledCells.delete(target.cellId);
+          }
+
+          if (sourceCellData.processTime !== undefined) {
+            newProcessTimes[target.cellId] = sourceCellData.processTime;
+          } else {
+            delete newProcessTimes[target.cellId];
+          }
+        }
+      });
+
+      setCellBadges(newBadges);
+      setDisabledCells(newDisabledCells);
+      setCellProcessTimes(newProcessTimes);
+      setSelectedCells(targetCells);
+
+      undoHistory.pushHistory({
+        type: "paste",
+        targetCells: Array.from(targetCells),
+        previousStates,
+        newStates: new Map(
+          Array.from(targetCells).map((cellId) => [
+            cellId,
+            {
+              badges: newBadges[cellId] || [],
+              disabled: newDisabledCells.has(cellId),
+              processTime: newProcessTimes[cellId],
+            },
+          ])
+        ),
+      });
+    },
+    [cellBadges, disabledCells, cellProcessTimes, setCellBadges, setDisabledCells, setCellProcessTimes, setSelectedCells, undoHistory]
+  );
 
   // Handle paste operation
   const handlePaste = useCallback(() => {
@@ -177,132 +292,7 @@ export const useCopyPaste = ({
     // Size mismatch - show warning
     setPendingPasteData({ targetCells: selectedCells, copiedData });
     setShowPasteWarning(true);
-  }, [copiedData, selectedCells, timeSlots, currentFacilities]);
-
-  // Execute the paste operation
-  const executePaste = useCallback(
-    (targetCells: Set<string>, copiedData: any) => {
-      const previousStates = new Map<
-        string,
-        { badges: CategoryBadge[]; disabled: boolean; processTime?: number }
-      >();
-      const targetCellsArray = Array.from(targetCells).map((cellId) => {
-        const [row, col] = cellId.split("-").map(Number);
-        previousStates.set(cellId, {
-          badges: cellBadges[cellId] || [],
-          disabled: disabledCells.has(cellId),
-          processTime: cellProcessTimes[cellId],
-        });
-        return { row, col, cellId };
-      });
-
-      // Calculate offsets
-      const targetMinRow = Math.min(...targetCellsArray.map((c) => c.row));
-      const targetMinCol = Math.min(...targetCellsArray.map((c) => c.col));
-
-      // Apply paste
-      const newBadges = { ...cellBadges };
-      const newDisabledCells = new Set(disabledCells);
-      const newProcessTimes = { ...cellProcessTimes };
-
-      targetCellsArray.forEach((target) => {
-        let sourceCellData:
-          | {
-              row: number;
-              col: number;
-              badges: CategoryBadge[];
-              disabled: boolean;
-              processTime?: number;
-            }
-          | undefined = undefined;
-
-        // Pattern B: Single cell copy - use the same cell for all targets
-        if (copiedData.shape.rows === 1 && copiedData.shape.cols === 1) {
-          sourceCellData = copiedData.cells[0];
-        }
-        // Pattern D: Single row repeat
-        else if (copiedData.shape.rows === 1) {
-          const relativeCol =
-            (target.col - targetMinCol) % copiedData.shape.cols;
-          sourceCellData = copiedData.cells.find(
-            (c) =>
-              c.row === copiedData.startCell.row &&
-              c.col - copiedData.startCell.col === relativeCol
-          );
-        }
-        // Pattern D: Single column repeat
-        else if (copiedData.shape.cols === 1) {
-          const relativeRow =
-            (target.row - targetMinRow) % copiedData.shape.rows;
-          sourceCellData = copiedData.cells.find(
-            (c) =>
-              c.col === copiedData.startCell.col &&
-              c.row - copiedData.startCell.row === relativeRow
-          );
-        }
-        // Pattern A & C: Normal grid paste with wrapping
-        else {
-          const relativeRow =
-            (target.row - targetMinRow) % copiedData.shape.rows;
-          const relativeCol =
-            (target.col - targetMinCol) % copiedData.shape.cols;
-
-          sourceCellData = copiedData.cells.find(
-            (c) =>
-              c.row - copiedData.startCell.row === relativeRow &&
-              c.col - copiedData.startCell.col === relativeCol
-          );
-        }
-
-        if (sourceCellData) {
-          // Apply badges
-          if (sourceCellData.badges.length > 0) {
-            newBadges[target.cellId] = [...sourceCellData.badges];
-          } else {
-            delete newBadges[target.cellId];
-          }
-
-          // Apply disabled state
-          if (sourceCellData.disabled) {
-            newDisabledCells.add(target.cellId);
-          } else {
-            newDisabledCells.delete(target.cellId);
-          }
-
-          // Apply process time
-          if (sourceCellData.processTime !== undefined) {
-            newProcessTimes[target.cellId] = sourceCellData.processTime;
-          } else {
-            delete newProcessTimes[target.cellId];
-          }
-        }
-      });
-
-      // Update states
-      setCellBadges(newBadges);
-      setDisabledCells(newDisabledCells);
-      setCellProcessTimes(newProcessTimes);
-      setSelectedCells(targetCells);
-
-      // Add to history
-      undoHistory.pushHistory({
-        type: "paste",
-        targetCells: Array.from(targetCells),
-        previousStates,
-        newStates: new Map(
-          Array.from(targetCells).map((cellId) => [
-            cellId,
-            {
-              badges: newBadges[cellId] || [],
-              disabled: newDisabledCells.has(cellId),
-              processTime: newProcessTimes[cellId],
-            },
-          ])
-        ),
-      });
-    },
-    [cellBadges, disabledCells, cellProcessTimes, setCellBadges, setDisabledCells, setCellProcessTimes, setSelectedCells, undoHistory]
-  );
+  }, [copiedData, selectedCells, timeSlots, currentFacilities, executePaste]);
 
   return {
     // State

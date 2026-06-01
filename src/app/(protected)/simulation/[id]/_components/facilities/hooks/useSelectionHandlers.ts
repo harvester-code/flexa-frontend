@@ -1,9 +1,10 @@
 import { useCallback } from "react";
 import { useThrottle } from "./useThrottle";
+import type { ScheduleDragState } from "../schedule-editor/types";
 
 interface UseSelectionHandlersProps {
   selectedCells: Set<string>;
-  setSelectedCells: any;
+  setSelectedCells: React.Dispatch<React.SetStateAction<Set<string>>>;
   setTempSelectedCells: (cells: Set<string>) => void;
   shiftSelectStart: { row: number; col: number } | null;
   setShiftSelectStart: (start: { row: number; col: number } | null) => void;
@@ -11,9 +12,14 @@ interface UseSelectionHandlersProps {
   setLastSelectedRow: (row: number | null) => void;
   lastSelectedCol: number | null;
   setLastSelectedCol: (col: number | null) => void;
-  dragState: any;
-  setDragState: any;
-  createDragState: any;
+  dragState: ScheduleDragState;
+  setDragState: (state: ScheduleDragState) => void;
+  createDragState: (
+    type: "cell" | "row" | "column",
+    start: { row: number; col: number },
+    isAdditive?: boolean,
+    originalSelection?: Set<string> | null
+  ) => ScheduleDragState;
   finalizeDrag: () => void;
   generateCellRange: (startRow: number, endRow: number, startCol: number, endCol: number) => Set<string>;
   generateRowCells: (rowIndex: number) => Set<string>;
@@ -21,7 +27,11 @@ interface UseSelectionHandlersProps {
   generateRowRange: (startRow: number, endRow: number) => Set<string>;
   generateColumnRange: (startCol: number, endCol: number) => Set<string>;
   generateAllCells: () => Set<string>;
-  toggleCellIds: any;
+  toggleCellIds: (
+    cellIds: Set<string>,
+    prev: Set<string>,
+    isAdditive: boolean
+  ) => Set<string>;
 }
 
 export function useSelectionHandlers({

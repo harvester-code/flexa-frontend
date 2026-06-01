@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import type { CategoryBadge } from '../schedule-editor/types';
 
 export type HistoryAction =
   | {
@@ -10,14 +11,14 @@ export type HistoryAction =
   | {
       type: 'setBadges';
       cellIds: string[];
-      previousBadges: Map<string, any[]>;
-      newBadges: Map<string, any[]>;
+      previousBadges: Map<string, CategoryBadge[]>;
+      newBadges: Map<string, CategoryBadge[]>;
     }
   | {
       type: 'paste';
       targetCells: string[];
-      previousStates: Map<string, { badges: any[]; disabled: boolean }>;
-      newStates: Map<string, { badges: any[]; disabled: boolean }>;
+      previousStates: Map<string, { badges: CategoryBadge[]; disabled: boolean }>;
+      newStates: Map<string, { badges: CategoryBadge[]; disabled: boolean }>;
     };
 
 interface UseUndoHistoryProps {

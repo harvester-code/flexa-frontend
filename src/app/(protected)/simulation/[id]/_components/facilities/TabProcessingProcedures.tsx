@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { EntryCondition, APIRequestLog } from "@/types/simulationTypes";
+import { EntryCondition, APIRequestLog, ProcessStep, Zone } from "@/types/simulationTypes";
 import { SimulationTabProps, FacilityItem } from "../types";
 import { useToast } from "@/hooks/useToast";
 import { useSimulationStore } from "../../_stores";
@@ -11,7 +11,7 @@ import ProcessFlowDesigner from "./ProcessFlowDesigner";
 import FacilityPresetModal from "./FacilityPresetModal";
 import { remapPresetDates, calcOperatingPeriod } from "./helpers";
 
-interface TabProcessingProceduresProps extends SimulationTabProps {}
+type TabProcessingProceduresProps = SimulationTabProps;
 
 export default function TabProcessingProcedures({
   simulationId,
@@ -46,7 +46,7 @@ export default function TabProcessingProcedures({
   );
 
   // 🆕 parquet metadata 및 pax_demographics 추출
-  const parquetMetadata = (appliedFilterResult as any)?.parquet_metadata || [];
+  const parquetMetadata = appliedFilterResult?.parquet_metadata ?? [];
   const paxDemographics = useSimulationStore(
     (s) => s.passenger.pax_demographics
   );
@@ -121,7 +121,7 @@ export default function TabProcessingProcedures({
         name: normalizedName, // 정규화된 이름 사용
         travel_time_minutes: 0,
         entry_conditions: [],
-        zones: {} as Record<string, any>,
+        zones: {} as Record<string, Zone>,
       };
 
       // activeFacilities를 zones로 변환
@@ -157,7 +157,7 @@ export default function TabProcessingProcedures({
             newProcessFlow[editingProcessData.index].travel_time_minutes || 0,
           entry_conditions:
             newProcessFlow[editingProcessData.index].entry_conditions || [],
-          zones: {} as Record<string, any>,
+          zones: {} as Record<string, Zone>,
         };
 
         // activeFacilities를 zones로 변환
@@ -204,7 +204,7 @@ export default function TabProcessingProcedures({
   };
 
   // Handle reordering processes via drag and drop
-  const handleReorderProcesses = (newProcessFlow: any[]) => {
+  const handleReorderProcesses = (newProcessFlow: ProcessStep[]) => {
     // Ensure step numbers are correct
     const updatedFlow = newProcessFlow.map((process, index) => ({
       ...process,
@@ -214,7 +214,7 @@ export default function TabProcessingProcedures({
   };
 
   // Handle direct process creation (bypassing modal)
-  const handleDirectCreateProcess = (newProcess: any) => {
+  const handleDirectCreateProcess = (newProcess: ProcessStep) => {
     const normalizedName = normalizeProcessName(newProcess.name);
     const processToAdd = {
       ...newProcess,
@@ -232,7 +232,7 @@ export default function TabProcessingProcedures({
       const processTimeSeconds = newProcess.process_time_seconds;
 
       Object.entries(newProcess.zones).forEach(
-        ([zoneName, zone]: [string, any]) => {
+        ([zoneName, zone]: [string, Zone]) => {
           if (zone.facilities && zone.facilities.length > 0) {
             // Always pass processTimeSeconds, defaulting to 0 if not provided
             setFacilitiesForZone(
@@ -254,7 +254,7 @@ export default function TabProcessingProcedures({
     <div className="space-y-6 pt-8">
       {/* Process Flow Chart */}
       <ProcessFlowDesigner
-        processFlow={processFlow as any}
+        processFlow={processFlow}
         selectedProcessIndex={selectedProcessIndex}
         onProcessSelect={setSelectedProcessIndex}
         parquetMetadata={parquetMetadata}
@@ -285,7 +285,7 @@ export default function TabProcessingProcedures({
       <FacilityPresetModal
         isOpen={showPresetModal}
         onClose={() => setShowPresetModal(false)}
-        currentProcessFlow={processFlow as any}
+        currentProcessFlow={processFlow}
         referenceDate={scenarioDate}
         scheduleIntervalMinutes={storeScheduleInterval}
         onLoadPreset={(newFlow, presetReferenceDate, presetIntervalMinutes) => {
@@ -296,7 +296,7 @@ export default function TabProcessingProcedures({
           if (presetIntervalMinutes != null) {
             setScheduleIntervalMinutes(presetIntervalMinutes);
           }
-          setProcessFlow(shifted as any);
+          setProcessFlow(shifted);
           // presetVersion 증가 → useNormalizeAllSchedules가 새 시간 단위로 재정규화
           incrementFacilityPresetVersion();
           setSelectedProcessIndex(null);

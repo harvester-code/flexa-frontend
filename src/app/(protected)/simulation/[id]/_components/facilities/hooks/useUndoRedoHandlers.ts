@@ -1,12 +1,14 @@
 import { useCallback } from "react";
+import type { CategoryBadge } from "../schedule-editor/types";
+import type { HistoryAction } from "./useUndoHistory";
 
 interface UseUndoRedoHandlersProps {
   undoHistory: {
-    undo: () => any;
-    redo: () => any;
+    undo: () => HistoryAction | null;
+    redo: () => HistoryAction | null;
   };
   setDisabledCells: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setCellBadges: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
+  setCellBadges: React.Dispatch<React.SetStateAction<Record<string, CategoryBadge[]>>>;
 }
 
 export function useUndoRedoHandlers({

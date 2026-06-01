@@ -1,6 +1,19 @@
 import { useCallback } from "react";
 import React from "react";
 import { HistoryAction } from "./useUndoHistory";
+import type { CategoryBadge } from "../schedule-editor/types";
+
+interface CopyPasteData {
+  cells: Array<{
+    row: number;
+    col: number;
+    badges: CategoryBadge[];
+    disabled: boolean;
+    processTime?: number;
+  }>;
+  shape: { rows: number; cols: number };
+  startCell: { row: number; col: number };
+}
 
 interface UseKeyboardHandlersProps {
   selectedCells: Set<string>;
@@ -10,8 +23,8 @@ interface UseKeyboardHandlersProps {
   };
   disabledCells: Set<string>;
   setDisabledCells: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setCellBadges: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
-  cellBadges: Record<string, any[]>;
+  setCellBadges: React.Dispatch<React.SetStateAction<Record<string, CategoryBadge[]>>>;
+  cellBadges: Record<string, CategoryBadge[]>;
   cellProcessTimes: Record<string, number>;
   setCellProcessTimes: React.Dispatch<
     React.SetStateAction<Record<string, number>>
@@ -23,12 +36,12 @@ interface UseKeyboardHandlersProps {
   handleRedo: () => void;
   handleCopy: () => void;
   handlePaste: () => void;
-  copiedData: any;
+  copiedData: CopyPasteData | null;
   showMarchingAnts: boolean;
   setShowMarchingAnts: (show: boolean) => void;
-  setCopiedData: (data: any) => void;
+  setCopiedData: (data: CopyPasteData | null) => void;
   setSelectedCells: (cells: Set<string>) => void;
-  setShiftSelectStart: (start: any) => void;
+  setShiftSelectStart: (start: { row: number; col: number } | null) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -192,8 +205,8 @@ export function useKeyboardHandlers({
           const targetCells = Array.from(selectedCells);
 
           // 히스토리를 위한 이전 상태 저장
-          const previousBadges = new Map<string, any[]>();
-          const newBadges = new Map<string, any[]>();
+          const previousBadges = new Map<string, CategoryBadge[]>();
+          const newBadges = new Map<string, CategoryBadge[]>();
           targetCells.forEach((cellId) => {
             previousBadges.set(
               cellId,

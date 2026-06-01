@@ -1,9 +1,10 @@
 import { useCallback } from "react";
-import { CategoryBadge } from "../schedule-editor/types";
+import { CategoryBadge, ConditionCategoriesMap, FacilityWithSchedule } from "../schedule-editor/types";
 import { HistoryAction } from "./useUndoHistory";
 import { getBadgeColor } from "@/styles/colors";
 import { formatProcessName } from "@/lib/utils";
 import { Navigation } from "lucide-react";
+import type { ProcessStep } from "@/types/simulationTypes";
 
 interface UseBadgeHandlersProps {
   contextMenu: {
@@ -14,9 +15,9 @@ interface UseBadgeHandlersProps {
   undoHistory: {
     pushHistory: (action: HistoryAction) => void;
   };
-  CONDITION_CATEGORIES: Record<string, any>;
+  CONDITION_CATEGORIES: ConditionCategoriesMap;
   selectedProcessIndex: number;
-  processFlow: any[];
+  processFlow: ProcessStep[];
 }
 
 export function useBadgeHandlers({
@@ -76,7 +77,7 @@ export function useBadgeHandlers({
       if (!categoryConfig) return;
 
       // 히스토리를 위한 이전 상태 저장
-      const previousBadges = new Map<string, any[]>();
+      const previousBadges = new Map<string, CategoryBadge[]>();
       targetCells.forEach((cellId) => {
         previousBadges.set(
           cellId,
@@ -86,7 +87,7 @@ export function useBadgeHandlers({
 
       setCellBadges((prev) => {
         const updated = { ...prev };
-        const newBadges = new Map<string, any[]>();
+        const newBadges = new Map<string, CategoryBadge[]>();
 
         targetCells.forEach((cellId) => {
           let existingBadges = [...(updated[cellId] || [])];
@@ -192,7 +193,7 @@ export function useBadgeHandlers({
         ),
       }));
     },
-    []
+    [setCellBadges]
   );
 
   // 모든 뱃지 제거 핸들러 (선택된 모든 셀에서) - 빈 배열로 설정
@@ -201,7 +202,7 @@ export function useBadgeHandlers({
     if (targetCells.length === 0) return;
 
     // 히스토리를 위한 이전 상태 저장
-    const previousBadges = new Map<string, any[]>();
+    const previousBadges = new Map<string, CategoryBadge[]>();
     targetCells.forEach((cellId) => {
       previousBadges.set(
         cellId,
@@ -211,7 +212,7 @@ export function useBadgeHandlers({
 
     setCellBadges((prev) => {
       const updated = { ...prev };
-      const newBadges = new Map<string, any[]>();
+      const newBadges = new Map<string, CategoryBadge[]>();
 
       targetCells.forEach((cellId) => {
         delete updated[cellId]; // 완전히 제거하여 메모리 최적화
@@ -230,7 +231,7 @@ export function useBadgeHandlers({
 
       return updated;
     });
-  }, [contextMenu.targetCells, cellBadges, undoHistory]);
+  }, [contextMenu.targetCells, cellBadges, undoHistory, setCellBadges]);
 
   // 모든 카테고리 선택 핸들러 - 뱃지를 비워서 All로 표시
   const handleSelectAllCategories = useCallback(() => {
@@ -238,7 +239,7 @@ export function useBadgeHandlers({
     if (targetCells.length === 0) return;
 
     // 히스토리를 위한 이전 상태 저장
-    const previousBadges = new Map<string, any[]>();
+    const previousBadges = new Map<string, CategoryBadge[]>();
     targetCells.forEach((cellId) => {
       previousBadges.set(
         cellId,
@@ -248,7 +249,7 @@ export function useBadgeHandlers({
 
     setCellBadges((prev) => {
       const updated = { ...prev };
-      const newBadges = new Map<string, any[]>();
+      const newBadges = new Map<string, CategoryBadge[]>();
 
       targetCells.forEach((cellId) => {
         // 뱃지를 비워서 자동으로 All 표시되도록
@@ -268,7 +269,7 @@ export function useBadgeHandlers({
 
       return updated;
     });
-  }, [contextMenu.targetCells, cellBadges, undoHistory]);
+  }, [contextMenu.targetCells, cellBadges, undoHistory, setCellBadges]);
 
   return {
     handleToggleBadgeOption,

@@ -6,7 +6,7 @@ import {
   deepEqual,
 } from "../schedule-editor/helpers";
 import { useScheduleInitialization } from "./useScheduleInitialization";
-import type { ProcessStep } from "@/types/simulationTypes";
+import type { ProcessStep, Zone } from "@/types/simulationTypes";
 
 interface UseNormalizeAllSchedulesProps {
   timeSlots: string[];
@@ -61,7 +61,7 @@ export function useNormalizeAllSchedules({
       (acc, p) =>
         acc +
         Object.values(p.zones || {}).reduce(
-          (zacc: number, z: any) => zacc + (z.facilities?.length || 0),
+          (zacc: number, z: Zone) => zacc + (z.facilities?.length || 0),
           0
         ),
       0
@@ -85,8 +85,7 @@ export function useNormalizeAllSchedules({
       if (!process.zones) return;
 
       Object.entries(process.zones).forEach(([zoneName, zone]) => {
-        const facilities: FacilityWithSchedule[] =
-          (zone as any).facilities || [];
+        const facilities: FacilityWithSchedule[] = zone.facilities || [];
         if (facilities.length === 0) return;
 
         // 스케줄이 있는 facility가 하나도 없으면 스킵

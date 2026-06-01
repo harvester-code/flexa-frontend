@@ -2,6 +2,8 @@
 // 내부 헬퍼
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { Facility, ProcessStep, TimeBlock, Zone } from '@/types/simulationTypes';
+
 /** "YYYY-MM-DD HH:MM:SS" 문자열 → Date 객체 (UTC 기준 파싱 방지) */
 function parseDatetimeLocal(s: string): Date {
   const [datePart, timePart] = s.trim().split(" ");
@@ -38,14 +40,14 @@ function parsePeriodMs(period: string): [number, number] | null {
  * period 종료 시각이 00:00:00인 경우, 그것은 "전날 끝"을 의미하므로 하루 빼서 D를 구합니다.
  * 예) "2025-10-04 00:00:00" → D = 2025-10-03
  */
-function findPresetFlightDate(processFlow: any[]): string | null {
+function findPresetFlightDate(processFlow: ProcessStep[]): string | null {
   let latestMs = -Infinity;
   let latestDate: string | null = null;
 
   processFlow.forEach((process) => {
-    Object.values(process.zones || {}).forEach((zone: any) => {
-      (zone.facilities || []).forEach((facility: any) => {
-        (facility.operating_schedule?.time_blocks || []).forEach((block: any) => {
+    Object.values(process.zones || {}).forEach((zone: Zone) => {
+      (zone.facilities || []).forEach((facility: Facility) => {
+        (facility.operating_schedule?.time_blocks || []).forEach((block: TimeBlock) => {
           const parsed = parsePeriodMs(block.period || "");
           if (!parsed) return;
           const endDate = new Date(parsed[1]);
@@ -170,11 +172,11 @@ export function calcOperatingPeriod(
  * @param targetPeriod 새 시나리오의 운영 윈도우 ("YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS")
  */
 export function remapPresetDates(
-  processFlow: any[],
+  processFlow: ProcessStep[],
   targetDate: string | null,
   sourceDate: string | null = null,
   targetPeriod: string | null = null,
-): any[] {
+): ProcessStep[] {
   if (!Array.isArray(processFlow) || !targetDate) return processFlow;
 
   // ── 1. 날짜 오프셋 계산 ──────────────────────────────────────────────────
@@ -190,11 +192,11 @@ export function remapPresetDates(
   const windowMs = targetPeriod ? parsePeriodMs(targetPeriod) : null;
 
   return processFlow.map((process) => {
-    const updatedZones: Record<string, any> = {};
+    const updatedZones: Record<string, Zone> = {};
 
-    Object.entries(process.zones || {}).forEach(([zoneName, zone]: [string, any]) => {
-      const updatedFacilities = (zone.facilities || []).map((facility: any) => {
-        const rawBlocks: any[] = facility.operating_schedule?.time_blocks || [];
+    Object.entries(process.zones || {}).forEach(([zoneName, zone]) => {
+      const updatedFacilities = (zone.facilities || []).map((facility: Facility) => {
+        const rawBlocks: TimeBlock[] = facility.operating_schedule?.time_blocks || [];
 
         // ── Step A: 날짜 시프트 ─────────────────────────────────────────
         const shiftedBlocks = rawBlocks.map((block) => ({
@@ -216,7 +218,7 @@ export function remapPresetDates(
             if (!parsed) return null;
             return { startMs: parsed[0], endMs: parsed[1], block };
           })
-          .filter(Boolean) as { startMs: number; endMs: number; block: any }[];
+          .filter(Boolean) as { startMs: number; endMs: number; block: TimeBlock }[];
 
         if (parsedBlocks.length === 0) {
           return { ...facility, operating_schedule: { time_blocks: shiftedBlocks } };
@@ -276,7 +278,7 @@ export function remapPresetDates(
               period: `${formatDatetime(new Date(clippedStart))}-${formatDatetime(new Date(clippedEnd))}`,
             };
           })
-          .filter(Boolean) as any[];
+          .filter(Boolean) as TimeBlock[];
 
         return { ...facility, operating_schedule: { time_blocks: resultBlocks } };
       });
@@ -298,7 +300,7 @@ export function remapPresetDates(
  * // 기존: A_1, A_2, ..., A_28
  * // 변환: A_01, A_02, ..., A_28
  */
-export function migrateProcessFlowFacilityIds(processFlow: any[]): any[] {
+export function migrateProcessFlowFacilityIds(processFlow: ProcessStep[]): ProcessStep[] {
   if (!Array.isArray(processFlow)) return processFlow;
 
   return processFlow.map((process) => {
@@ -308,7 +310,7 @@ export function migrateProcessFlowFacilityIds(processFlow: any[]): any[] {
 
     const updatedZones = { ...process.zones };
 
-    Object.entries(updatedZones).forEach(([zoneName, zone]: [string, any]) => {
+    Object.entries(updatedZones).forEach(([zoneName, zone]) => {
       if (!zone?.facilities || !Array.isArray(zone.facilities)) {
         return;
       }
@@ -316,8 +318,7 @@ export function migrateProcessFlowFacilityIds(processFlow: any[]): any[] {
       const maxCount = zone.facilities.length;
       const digits = maxCount.toString().length;
 
-      // 각 시설의 ID를 제로 패딩으로 변환
-      zone.facilities = zone.facilities.map((facility: any, idx: number) => {
+      zone.facilities = zone.facilities.map((facility: Facility, idx: number) => {
         // 기존 ID에서 숫자 추출 (순서 보존)
         const match = facility.id.match(/^([A-Z_]+)_(\d+)$/);
         if (match) {

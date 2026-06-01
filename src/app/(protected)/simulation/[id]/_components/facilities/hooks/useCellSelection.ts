@@ -36,7 +36,9 @@ export const useCellSelection = ({ timeSlotCount, facilityCount }: UseCellSelect
 
   // 최신 상태 참조 (성능 최적화)
   const tempSelectedCellsRef = useRef<Set<string> | null>(null);
-  tempSelectedCellsRef.current = tempSelectedCells;
+  useEffect(() => {
+    tempSelectedCellsRef.current = tempSelectedCells;
+  }, [tempSelectedCells]);
 
   // 드래그 상태 헬퍼 함수들
   const resetDragState = useCallback(() => ({ ...DEFAULT_DRAG_STATE }), []);

@@ -1,11 +1,11 @@
 import { useCallback, useRef } from 'react';
 
-export function useDebounce<T extends (...args: any[]) => any>(
-  callback: T,
+export function useDebounce<Args extends unknown[], R>(
+  callback: (...args: Args) => R,
   delay: number
-): [T, () => void] {
+): [(...args: Args) => void, () => void] {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastArgsRef = useRef<any[]>([]);
+  const lastArgsRef = useRef<Args>([] as unknown as Args);
   const isPendingRef = useRef(false);
 
   const cancel = useCallback(() => {
@@ -17,7 +17,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
   }, []);
 
   const debouncedCallback = useCallback(
-    (...args: Parameters<T>) => {
+    (...args: Args) => {
       lastArgsRef.current = args;
       isPendingRef.current = true;
 
@@ -32,7 +32,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
       }, delay);
     },
     [callback, delay]
-  ) as T;
+  );
 
   return [debouncedCallback, cancel];
 }

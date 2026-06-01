@@ -42,13 +42,15 @@ import {
 } from "@/services/simulationService";
 import { useToast } from "@/hooks/useToast";
 import { createClient } from "@/lib/auth/client";
-import { ProcessStep, APIRequestLog } from "@/types/simulationTypes";
+import { ProcessStep, Zone, Facility, EntryCondition, TimeBlock, APIRequestLog, HttpErrorLike } from "@/types/simulationTypes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import Spinner from "@/components/ui/Spinner";
 import { formatProcessName } from "@/lib/utils";
+import { buildScenarioMetadataPayload } from "@/lib/scenarioMetadata";
 import { useSimulationStore } from "../../_stores";
+import type { PassengerData } from "../../_stores/store";
 import ScheduleEditor from "./ScheduleEditor";
 import FlightCriteriaSelector from "../flights/FlightCriteriaSelector";
 import {
@@ -80,7 +82,7 @@ interface ProcessFlowDesignerProps {
   selectedProcessIndex: number | null;
   onProcessSelect: (index: number | null) => void;
   parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
-  paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
+  paxDemographics?: PassengerData['pax_demographics'];
   simulationId: string; // 🆕 시뮬레이션 ID 추가
   apiRequestLog: APIRequestLog | null;
   setApiRequestLog: (log: APIRequestLog | null) => void;
@@ -124,13 +126,13 @@ function SortableProcessCard({
   };
 
   const isConfigured = Object.values(step.zones || {}).every(
-    (zone: any) => zone.facilities && zone.facilities.length > 0
+    (zone: Zone) => zone.facilities && zone.facilities.length > 0
   );
 
   // Group entry condition values by field
   const entryConditionBadges: string[] = [];
   if (step.entry_conditions && step.entry_conditions.length > 0) {
-    step.entry_conditions.forEach((condition: any) => {
+    step.entry_conditions.forEach((condition: EntryCondition) => {
       // Join multiple values from same field with |
       if (condition.values && condition.values.length > 0) {
         entryConditionBadges.push(condition.values.join(" | "));
@@ -253,7 +255,7 @@ export default function ProcessFlowDesigner({
   selectedProcessIndex,
   onProcessSelect,
   parquetMetadata = [],
-  paxDemographics = {},
+  paxDemographics,
   simulationId,
   apiRequestLog,
   setApiRequestLog,
@@ -475,7 +477,7 @@ export default function ProcessFlowDesigner({
 
       // Update the specific zone's facility count while preserving schedules
       const updatedZones = { ...editedProcess.zones };
-      const facilities: any[] = [];
+      const facilities: Facility[] = [];
 
       for (let i = 1; i <= count; i++) {
         // Priority: existing facilities from processFlow (when editing) > local edited data > new
@@ -652,7 +654,7 @@ export default function ProcessFlowDesigner({
       // Initialize entry conditions for the selected process
       const initialSelectedItems: Record<string, boolean> = {};
       if (currentProcess.entry_conditions) {
-        currentProcess.entry_conditions.forEach((condition: any) => {
+        currentProcess.entry_conditions.forEach((condition: EntryCondition) => {
           condition.values.forEach((value: string) => {
             const itemKey = `${condition.field}:${value}`;
             initialSelectedItems[itemKey] = true;
@@ -806,7 +808,7 @@ export default function ProcessFlowDesigner({
       JSON.stringify([...newZoneNames].sort()) !==
       JSON.stringify([...currentZoneNames].sort())
     ) {
-      const newZones: any = {};
+      const newZones: Record<string, Zone> = {};
       // Match zones by index position to maintain data integrity
       newZoneNames.forEach((newZoneName, newIndex) => {
         // Match by index position instead of facility count
@@ -823,7 +825,7 @@ export default function ProcessFlowDesigner({
           // Check if facility count has also changed
           if (originalFacilities.length !== newFacilityCount) {
             // Both zone name and facility count changed
-            const updatedFacilities: any[] = [];
+            const updatedFacilities: Facility[] = [];
 
             for (let i = 0; i < newFacilityCount; i++) {
               if (i < originalFacilities.length) {
@@ -841,7 +843,7 @@ export default function ProcessFlowDesigner({
                     ?.period;
 
                 if (!period) {
-                  const chartXData = (chartResult as any)?.chart_x_data;
+                  const chartXData = chartResult?.chart_x_data;
                   if (chartXData && chartXData.length >= 2) {
                     period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
                   } else {
@@ -887,7 +889,7 @@ export default function ProcessFlowDesigner({
             newZones[newZoneName] = {
               ...originalZone,
               facilities: originalFacilities.map(
-                (facility: any, index: number) => ({
+                (facility: Facility, index: number) => ({
                   ...facility,
                   id: `${newZoneName}_${index + 1}`,
                 })
@@ -901,7 +903,7 @@ export default function ProcessFlowDesigner({
           newZones[newZoneName] = {
             ...editedProcess.zones[newZoneName],
             facilities: editedFacilities.map(
-              (facility: any, index: number) => ({
+              (facility: Facility, index: number) => ({
                 ...facility,
                 id: `${newZoneName}_${index + 1}`,
               })
@@ -912,7 +914,7 @@ export default function ProcessFlowDesigner({
       updatedProcess.zones = newZones;
     } else {
       // Zone names haven't changed, handle facility count changes
-      const updatedZones: any = {};
+      const updatedZones: Record<string, Zone> = {};
 
       Object.keys(editedProcess.zones).forEach((zoneName) => {
         const currentZone = currentProcess.zones[zoneName];
@@ -935,7 +937,7 @@ export default function ProcessFlowDesigner({
 
           // Generate new facilities with incremented IDs
           const existingIds =
-            currentZone?.facilities?.map((f: any) => {
+            currentZone?.facilities?.map((f: Facility) => {
               const match = f.id.match(/_([\d]+)$/);
               return match ? parseInt(match[1]) : 0;
             }) || [];
@@ -948,7 +950,7 @@ export default function ProcessFlowDesigner({
           if (!period) {
             const chartResult =
               useSimulationStore.getState().passenger.chartResult;
-            const chartXData = (chartResult as any)?.chart_x_data;
+            const chartXData = chartResult?.chart_x_data;
             if (chartXData && chartXData.length >= 2) {
               period = `${chartXData[0]}:00-${chartXData[chartXData.length - 1]}:00`;
             } else {
@@ -991,21 +993,22 @@ export default function ProcessFlowDesigner({
 
     // Update process_time_seconds in all facilities
     if (editedProcess.process_time_seconds !== undefined) {
-      const zonesWithUpdatedProcessTime: any = {};
+      const zonesWithUpdatedProcessTime: Record<string, Zone> = {};
       Object.keys(updatedProcess.zones).forEach((zoneName) => {
         const zone = updatedProcess.zones[zoneName];
         if (zone?.facilities) {
           zonesWithUpdatedProcessTime[zoneName] = {
             ...zone,
-            facilities: zone.facilities.map((facility: any) => ({
+            facilities: zone.facilities.map((facility: Facility) => ({
               ...facility,
               operating_schedule: {
                 ...facility.operating_schedule,
                 time_blocks:
                   facility.operating_schedule?.time_blocks?.map(
-                    (block: any) => ({
+                    (block: TimeBlock) => ({
                       ...block,
-                      process_time_seconds: editedProcess.process_time_seconds,
+                      process_time_seconds:
+                        editedProcess.process_time_seconds ?? block.process_time_seconds,
                     })
                   ) || [],
               },
@@ -1051,10 +1054,10 @@ export default function ProcessFlowDesigner({
       const uniqueProcessTimes = new Set<number>();
 
       Object.values(currentProcess.zones || {})
-        .filter((zone: any) => zone?.facilities)
-        .forEach((zone: any) => {
-          zone.facilities.forEach((facility: any) => {
-            facility?.operating_schedule?.time_blocks?.forEach((block: any) => {
+        .filter((zone): zone is Zone => Boolean(zone?.facilities))
+        .forEach((zone) => {
+          zone.facilities.forEach((facility: Facility) => {
+            facility?.operating_schedule?.time_blocks?.forEach((block: TimeBlock) => {
               if (typeof block?.process_time_seconds === "number") {
                 uniqueProcessTimes.add(block.process_time_seconds);
               }
@@ -1120,17 +1123,7 @@ export default function ProcessFlowDesigner({
 
       // 🆕 시뮬레이션 실행 전 메타데이터 저장 (S3 저장 및 Supabase 업데이트)
       const simulationState = useSimulationStore.getState();
-      const completeMetadata = {
-        ...simulationState,
-        terminalLayout: simulationState.terminalLayout || { imageUrl: null, zoneAreas: {} },
-        savedAt: new Date().toISOString(),
-        context: {
-          ...simulationState.context,
-          date:
-            simulationState.context.date ||
-            new Date().toISOString().split("T")[0],
-        },
-      };
+      const completeMetadata = buildScenarioMetadataPayload(simulationState);
       await saveScenarioMetadata(simulationId, completeMetadata);
 
       const response = await runSimulation(
@@ -1153,7 +1146,8 @@ export default function ProcessFlowDesigner({
         description: "Simulation has been queued and is now running.",
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as HttpErrorLike;
       // Update with error
       const airport = useSimulationStore.getState().context.airport;
       const date = useSimulationStore.getState().context.date;
@@ -1175,15 +1169,15 @@ export default function ProcessFlowDesigner({
         },
         status: "error",
         error:
-          error.response?.data?.message ||
-          error.message ||
+          err.response?.data?.message ||
+          err.message ||
           "Failed to start simulation",
       });
 
       toast({
         title: "Simulation Failed",
         description:
-          error.response?.data?.message ||
+          err.response?.data?.message ||
           "Failed to start simulation. Please try again.",
         variant: "destructive",
       });
@@ -1467,7 +1461,7 @@ export default function ProcessFlowDesigner({
                                     selectedProcessIndex !== null
                                       ? processFlow[selectedProcessIndex]
                                       : null;
-                                  const newZones: any = {};
+                                  const newZones: Record<string, Zone> = {};
 
                                   expandedZones.forEach((name) => {
                                     // First check if zone exists in current process (from processFlow)
@@ -1491,7 +1485,7 @@ export default function ProcessFlowDesigner({
                                       newZones[name] = existingInEdited;
                                     } else {
                                       // Only create new zone if it doesn't exist at all
-                                      const facilities: any[] = [];
+                                      const facilities: Facility[] = [];
                                       const date =
                                         useSimulationStore.getState().context
                                           .date ||
@@ -1579,7 +1573,7 @@ export default function ProcessFlowDesigner({
                                       selectedProcessIndex !== null
                                         ? processFlow[selectedProcessIndex]
                                         : null;
-                                    const updatedZones: any = {};
+                                    const updatedZones: Record<string, Zone> = {};
 
                                     Object.keys(editedProcess.zones).forEach(
                                       (zoneName) => {
@@ -1607,7 +1601,7 @@ export default function ProcessFlowDesigner({
                                           const reindexedFacilities =
                                             currentFacilities
                                               .slice(0, count)
-                                              .map((f: any, idx: number) => {
+                                              .map((f: Facility, idx: number) => {
                                                 const paddedIndex = (idx + 1)
                                                   .toString()
                                                   .padStart(digits, "0");
@@ -1628,7 +1622,7 @@ export default function ProcessFlowDesigner({
                                           // 기존 시설들의 ID를 제로 패딩으로 리포맷
                                           const reformattedFacilities =
                                             currentFacilities.map(
-                                              (f: any, idx: number) => {
+                                              (f: Facility, idx: number) => {
                                                 const paddedIndex = (idx + 1)
                                                   .toString()
                                                   .padStart(digits, "0");
@@ -1645,7 +1639,7 @@ export default function ProcessFlowDesigner({
 
                                           // Find the highest existing ID number
                                           const existingIds =
-                                            currentFacilities.map((f: any) => {
+                                            currentFacilities.map((f: Facility) => {
                                               const match =
                                                 f.id.match(/_([\d]+)$/);
                                               return match
@@ -1666,9 +1660,8 @@ export default function ProcessFlowDesigner({
                                             const chartResult =
                                               useSimulationStore.getState()
                                                 .passenger.chartResult;
-                                            const chartXData = (
-                                              chartResult as any
-                                            )?.chart_x_data;
+                                            const chartXData =
+                                              chartResult?.chart_x_data;
                                             if (
                                               chartXData &&
                                               chartXData.length >= 2

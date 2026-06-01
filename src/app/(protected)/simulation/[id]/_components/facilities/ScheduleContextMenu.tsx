@@ -27,13 +27,7 @@ import { getBadgeStyle, getColorByIndex } from "@/styles/colors";
 import { getCategoryColorIndex } from "./schedule-editor/badgeMappings";
 import { LABELS } from "@/styles/columnMappings";
 
-// 카테고리별 뱃지 타입 정의
-interface CategoryBadge {
-  category: string;
-  options: string[];
-  colorIndex: number;  // 색상 인덱스 추가
-  style?: React.CSSProperties;  // 인라인 스타일 추가
-}
+import type { CategoryBadge, ConditionCategoriesMap, ProcessCategoriesMap } from "./schedule-editor/types";
 
 interface ContextMenuState {
   show: boolean;
@@ -46,14 +40,14 @@ interface ContextMenuState {
 interface CategoryGroup {
   title: string;
   categories: string[];
-  categoryConfigs?: Record<string, any>;
+  categoryConfigs?: ProcessCategoriesMap;
 }
 
 interface ScheduleContextMenuProps {
   contextMenu: ContextMenuState;
   onOpenChange: (open: boolean) => void;
   categoryGroups: CategoryGroup[];
-  conditionCategories: Record<string, any>;
+  conditionCategories: ConditionCategoriesMap;
   cellBadges: Record<string, CategoryBadge[]>;
   onToggleBadgeOption: (category: string, option: string) => void;
   onSelectAllCategories: () => void;
@@ -338,7 +332,10 @@ export const ScheduleContextMenu: React.FC<ScheduleContextMenuProps> = ({
                           {filteredOptions.map((option, optionIndex) => {
                             const checkState = getOptionCheckState(category, option);
                             // Use centralized color index or config's colorIndex
-                            const effectiveIndex = config.colorIndex ?? categoryColorIndex;
+                            const effectiveIndex =
+                              config && 'colorIndex' in config
+                                ? config.colorIndex
+                                : categoryColorIndex;
                             const optionColor = getColorByIndex(effectiveIndex);
 
                             return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Building2, MapPin, Plus, Save, Tag, X } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { FacilityItem } from "../types";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { formatProcessName } from "@/lib/utils";
+import { ParquetMetadataItem } from "@/types/parquet";
 
 // FacilityItem은 ../types에서 import
 
@@ -34,8 +35,8 @@ interface ProcessConfigModalProps {
     zoneFacilityCounts: Record<string, number>;
   }) => void;
   mode: "create" | "edit";
-  processFlow?: ProcessStep[]; // 🆕 현재 프로세스 플로우
-  parquetMetadata?: any; // 🆕 동적 조건 데이터
+  processFlow?: ProcessStep[];
+  parquetMetadata?: ParquetMetadataItem[];
 }
 
 export default function ProcessConfigModal({
@@ -192,36 +193,34 @@ export default function ProcessConfigModal({
     return facilityList;
   }, []);
 
-  // Modal 열릴 때 데이터 초기화
-  useEffect(() => {
-    if (isOpen) {
-      // 편집 상태 초기화
-      editingZoneRef.current = null;
-      setEditingZone(null);
-      setEditingValue("");
+  const formSessionKey = isOpen ? `${mode}:${processData?.name ?? "new"}` : "";
+  const [initializedSessionKey, setInitializedSessionKey] = useState("");
 
-      if (mode === "edit" && processData) {
-        setProcessName(processData.name);
-        setFacilitiesInput(processData.facilities.join(","));
-        setFacilities(
-          processData.facilities.map((name) => ({ name, isActive: true }))
-        );
-        setDefaultFacilityCount(
-          processData.defaultFacilityCount
-            ? processData.defaultFacilityCount.toString()
-            : ""
-        );
-        setZoneFacilityCounts(processData.zoneFacilityCounts || {});
-      } else {
-        // 새로 생성하는 경우 초기화
-        setProcessName("");
-        setFacilitiesInput("");
-        setFacilities([]);
-        setDefaultFacilityCount("");
-        setZoneFacilityCounts({});
-      }
+  if (isOpen && formSessionKey !== initializedSessionKey) {
+    setInitializedSessionKey(formSessionKey);
+    setEditingZone(null);
+    setEditingValue("");
+
+    if (mode === "edit" && processData) {
+      setProcessName(processData.name);
+      setFacilitiesInput(processData.facilities.join(","));
+      setFacilities(
+        processData.facilities.map((name) => ({ name, isActive: true }))
+      );
+      setDefaultFacilityCount(
+        processData.defaultFacilityCount
+          ? processData.defaultFacilityCount.toString()
+          : ""
+      );
+      setZoneFacilityCounts(processData.zoneFacilityCounts || {});
+    } else {
+      setProcessName("");
+      setFacilitiesInput("");
+      setFacilities([]);
+      setDefaultFacilityCount("");
+      setZoneFacilityCounts({});
     }
-  }, [isOpen, mode, processData]);
+  }
 
   // 시설 입력 변경 처리
   const handleFacilityInputChange = useCallback(
@@ -278,6 +277,7 @@ export default function ProcessConfigModal({
     onClose();
   }, [
     processName,
+    facilitiesInput,
     facilities,
     defaultFacilityCount,
     zoneFacilityCounts,

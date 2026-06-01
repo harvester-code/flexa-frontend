@@ -1,9 +1,10 @@
 import { useCallback } from "react";
+import type { ScheduleContextMenuState } from "../schedule-editor/types";
 
 interface UseContextMenuHandlersProps {
   selectedCells: Set<string>;
   setSelectedCells: (cells: Set<string>) => void;
-  setContextMenu: (menu: any) => void;
+  setContextMenu: (menu: ScheduleContextMenuState) => void;
   generateRowCells: (rowIndex: number) => Set<string>;
   generateColumnCells: (colIndex: number) => Set<string>;
   generateAllCells: () => Set<string>;
@@ -40,7 +41,7 @@ export function useContextMenuHandlers({
         y: e.clientY,
       });
     },
-    [selectedCells, setSelectedCells]
+    [selectedCells, setSelectedCells, setContextMenu]
   );
 
   // 행 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 행에 적용)
@@ -67,7 +68,7 @@ export function useContextMenuHandlers({
         y: e.clientY,
       });
     },
-    [generateRowCells, selectedCells, setSelectedCells]
+    [generateRowCells, selectedCells, setSelectedCells, setContextMenu]
   );
 
   // 열 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 해당 열에 적용)
@@ -94,7 +95,7 @@ export function useContextMenuHandlers({
         y: e.clientY,
       });
     },
-    [generateColumnCells, selectedCells, setSelectedCells]
+    [generateColumnCells, selectedCells, setSelectedCells, setContextMenu]
   );
 
   // Time 헤더 우클릭 핸들러 (현재 선택된 셀들 또는 전체 셀에 적용)
@@ -120,7 +121,7 @@ export function useContextMenuHandlers({
         y: e.clientY,
       });
     },
-    [generateAllCells, selectedCells]
+    [generateAllCells, selectedCells, setContextMenu]
   );
 
   return {

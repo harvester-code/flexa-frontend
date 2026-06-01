@@ -1,13 +1,51 @@
 import React from "react";
+import type { LucideProps } from "lucide-react";
 import { ProcessStep } from "@/types/simulationTypes";
 import { ParquetMetadataItem } from "@/types/parquet";
+import type { PassengerData } from "../../../_stores/store";
 
 export type { ParquetMetadataItem };
 
+export type StateUpdater<T> = T | ((prev: T) => T);
+
+export type ConditionCategoryConfig = {
+  icon: React.ComponentType<LucideProps>;
+  options: string[];
+  colorIndex: number;
+};
+
+export type ConditionCategoriesMap = Record<string, ConditionCategoryConfig>;
+
+export interface ProcessCategoryConfig {
+  icon: React.ComponentType<LucideProps>;
+  options: string[];
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+}
+
+export type ProcessCategoriesMap = Record<string, ProcessCategoryConfig>;
+
+export interface ScheduleDragState {
+  type: "cell" | "row" | "column" | null;
+  isActive: boolean;
+  start: { row: number; col: number } | null;
+  isAdditive: boolean;
+  originalSelection: Set<string> | null;
+}
+
+export interface ScheduleContextMenuState {
+  show: boolean;
+  cellId: string;
+  targetCells: string[];
+  x: number;
+  y: number;
+}
+
 export interface OperatingScheduleEditorProps {
   processFlow: ProcessStep[];
-  parquetMetadata?: ParquetMetadataItem[]; // 🆕 동적 데이터 추가
-  paxDemographics?: Record<string, any>; // 🆕 승객 정보 추가
+  parquetMetadata?: ParquetMetadataItem[];
+  paxDemographics?: PassengerData['pax_demographics'];
 }
 
 // 뱃지 타입 정의
@@ -96,7 +134,7 @@ export interface VirtualScrollConfig {
 // 엑셀 테이블 컴포넌트 분리
 export interface ExcelTableProps {
   selectedZone: string;
-  currentFacilities: any[];
+  currentFacilities: FacilityWithSchedule[];
   timeSlots: string[];
   selectedCells: Set<string>;
   cellBadges: Record<string, CategoryBadge[]>;

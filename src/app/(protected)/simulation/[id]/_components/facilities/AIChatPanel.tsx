@@ -140,10 +140,24 @@ export default function AIChatPanel({ simulationId }: AIChatPanelProps) {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const detail =
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'detail' in error.response.data &&
+        typeof error.response.data.detail === 'string'
+          ? error.response.data.detail
+          : undefined;
+
       toast({
         title: "Error",
-        description: error?.response?.data?.detail || "Failed to get response from AI.",
+        description: detail || "Failed to get response from AI.",
         variant: "destructive",
       });
 

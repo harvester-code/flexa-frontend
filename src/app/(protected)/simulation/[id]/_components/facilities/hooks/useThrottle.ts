@@ -1,15 +1,15 @@
 import { useCallback, useRef } from 'react';
 
-export function useThrottle<T extends (...args: any[]) => any>(
-  callback: T,
+export function useThrottle<Args extends unknown[], R>(
+  callback: (...args: Args) => R,
   delay: number
-): T {
+): (...args: Args) => void {
   const lastRun = useRef(0);
-  const lastArgs = useRef<any[]>([]);
+  const lastArgs = useRef<Args>([] as unknown as Args);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   return useCallback(
-    (...args: Parameters<T>) => {
+    (...args: Args) => {
       lastArgs.current = args;
       const now = Date.now();
 
@@ -28,5 +28,5 @@ export function useThrottle<T extends (...args: any[]) => any>(
       }
     },
     [callback, delay]
-  ) as T;
+  );
 }

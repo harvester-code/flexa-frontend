@@ -1,8 +1,8 @@
+import type { LucideIcon } from "lucide-react";
 import { Plane, Hash, Navigation, MapPin, Globe, Users } from "lucide-react";
 import { getColumnLabel, getStorageFieldName as getStorageField, LABELS } from "@/styles/columnMappings";
 
-// Icon mapping for categories
-const CATEGORY_ICON_MAP: Record<string, any> = {
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   [LABELS.AIRLINE]: Plane,
   [LABELS.FLIGHT_NUMBER]: Hash,
   [LABELS.AIRCRAFT_TYPE]: Plane,
@@ -27,7 +27,7 @@ export const getCategoryFieldName = (category: string): string => {
   return getStorageField(category);
 };
 
-export const getCategoryIcon = (category: string): any => {
+export const getCategoryIcon = (category: string): LucideIcon => {
   return CATEGORY_ICON_MAP[category] || Navigation;
 };
 
