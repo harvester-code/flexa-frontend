@@ -1,5 +1,6 @@
 import { createAPIService } from '@/lib/axios';
-import type { HomeStaticData, HomeMetricsData, MissedFlightsData } from '@/types/homeTypes';
+import type { HomeStaticData } from '@/types/api/homes/static';
+import type { HomeMetricsData, MissedFlightsData } from '@/types/homeTypes';
 import type { PassengerTimelineData } from '@/types/viewerTypes';
 
 const api = createAPIService('homes');

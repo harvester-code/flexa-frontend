@@ -1,19 +1,23 @@
 import { ScenariosDataResponse } from "@/types/homeTypes";
 import {
   CreateScenarioParams,
-  FlightScheduleResponse,
+  CreateScenarioResponse,
   FlightSchedulesParams,
-  MetadataLoadResponse,
   MetadataSaveResponse,
-  PassengerScheduleResponse,
-  PassengerShowUpResponse,
-} from "@/types/simulationTypes";
+  MetadataLoadResponse,
+  FlightScheduleResponse,
+  ShowUpPassengerRequest,
+  ShowUpPassengerResponse,
+  RunSimulationRequest,
+  ScenarioMetadataPayload,
+  FlightFiltersResponse,
+} from "@/types/api/simulations";
 import { createAPIService } from "@/lib/axios";
 
 const api = createAPIService("simulations");
 
 export const createScenario = (params: CreateScenarioParams) => {
-  return api.post("", params);
+  return api.post<CreateScenarioResponse>("", params);
 };
 
 export const fetchScenarios = () => {
@@ -44,7 +48,6 @@ export const getFlightSchedules = (
     .post<FlightScheduleResponse>("/flight-schedules", params);
 };
 
-// 새로운 GET flight-filters 엔드포인트
 export const getFlightFilters = (
   scenario_id: string,
   airport: string,
@@ -52,18 +55,22 @@ export const getFlightFilters = (
 ) => {
   return api
     .withScenario(scenario_id)
-    .get(`/flight-filters?airport=${airport}&date=${date}`);
+    .get<FlightFiltersResponse>(`/flight-filters?airport=${airport}&date=${date}`);
 };
 
-export const createPassengerShowUp = (scenarioId: string, params: any) => {
+export const createPassengerShowUp = (
+  scenarioId: string,
+  params: ShowUpPassengerRequest
+) => {
   return api
     .withScenario(scenarioId)
-    .post<PassengerShowUpResponse>("/show-up-passenger", params);
+    .post<ShowUpPassengerResponse>("/show-up-passenger", params);
 };
 
-// =======================================================================
-
-export const saveScenarioMetadata = (scenario_id: string, metadata: any) => {
+export const saveScenarioMetadata = (
+  scenario_id: string,
+  metadata: ScenarioMetadataPayload
+) => {
   return api
     .withScenario(scenario_id)
     .post<MetadataSaveResponse>("/metadata", metadata);
@@ -79,15 +86,13 @@ export const deleteScenarioMetadata = (scenario_id: string) => {
 
 export const runSimulation = (
   scenario_id: string,
-  processFlow: any[],
+  processFlow: RunSimulationRequest["process_flow"],
   airport: string,
   date: string
 ) => {
-  return api.withScenario(scenario_id).post("/run-simulation", {
-    setting: {
-      airport,
-      date,
-    },
+  const body: RunSimulationRequest = {
+    setting: { airport, date },
     process_flow: processFlow,
-  });
+  };
+  return api.withScenario(scenario_id).post("/run-simulation", body);
 };
