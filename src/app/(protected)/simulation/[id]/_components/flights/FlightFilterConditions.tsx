@@ -28,55 +28,19 @@ import {
   buildConditionFlightSets,
   intersectSets,
 } from './flight-utils';
+import type {
+  FlightFiltersResponse,
+  FlightFilterOption,
+  FlightDirectionFilters,
+  RegionFlightFilterOption,
+  AircraftClassFlightFilterOption,
+} from '@/types/api/simulations';
 
-// ==================== Types ====================
-// 실제 API 응답 구조에 맞춰 수정 (flight-filter.json 기준)
-interface FlightFiltersApiResponse {
-  airport: string;
-  date: string;
-  scenario_id: string;
-  total_flights: number;
-  airlines: Record<string, string>; // {"KE": "Korean Air", "7C": "Jeju Air"}
-  filters: {
-    departure: {
-      total_flights: number; // ✅ 백엔드에서 계산된 값
-      departure_terminal?: Record<string, FilterOption>;
-      arrival_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
-      flight_type?: Record<string, FilterOption>;
-      aircraft_class?: Record<string, AircraftClassFilterOption>;
-    };
-    arrival: {
-      total_flights: number; // ✅ 백엔드에서 계산된 값
-      arrival_terminal?: Record<string, FilterOption>;
-      departure_region?: Record<string, RegionFilterOption>; // 🆕 계층 구조
-      flight_type?: Record<string, FilterOption>;
-      aircraft_class?: Record<string, AircraftClassFilterOption>;
-    };
-  };
-}
-
-interface FilterOption {
-  total_flights: number; // ✅ 백엔드에서 계산된 값
-  airlines: Record<
-    string,
-    {
-      count: number;
-      flight_numbers: number[];
-    }
-  >;
-}
-
-// 🆕 Region-Country 계층 구조를 위한 새로운 타입
-interface RegionFilterOption {
-  total_flights: number;
-  countries: Record<string, FilterOption>; // Country별 데이터
-}
-
-// 🆕 Aircraft Class 필터 타입
-interface AircraftClassFilterOption {
-  total_flights: number;
-  aircraft_types: Record<string, { count: number; flight_numbers: string[] }>;
-}
+type FlightFiltersApiResponse = FlightFiltersResponse;
+type FilterOption = FlightFilterOption;
+type FilterAirlineEntry = FilterOption['airlines'][string];
+type RegionFilterOption = RegionFlightFilterOption;
+type AircraftClassFilterOption = AircraftClassFlightFilterOption;
 
 interface FlightDetail {
   flightId: string;
@@ -91,14 +55,17 @@ interface FlightDetail {
 
 interface FlightFilterConditionsProps {
   loading: boolean;
-  onApplyFilter: (type: string, conditions: Array<{ field: string; values: string[] }>) => Promise<any>;
+  onApplyFilter: (
+    type: string,
+    conditions: Array<{ field: string; values: string[] }>
+  ) => Promise<unknown>;
   isEmbedded?: boolean;
   // Multi-tab controlled mode
   controlled?: boolean;
   overrideFlightData?: {
     total_flights: number | null;
     airlines: Record<string, string> | null;
-    filters: Record<string, any> | null;
+    filters: FlightFiltersResponse['filters'] | Record<string, unknown> | null;
   } | null;
   initialSelectedFilter?: SelectedFilter;
   onFilterChange?: (filter: SelectedFilter) => void;
@@ -109,9 +76,14 @@ interface FlightFilterConditionsProps {
 // ==================== Dropdown Component for Region Countries ====================
 interface RegionCountriesDropdownProps {
   regionName: string;
-  regionData: any;
+  regionData: RegionFilterOption;
   currentCountries: string[];
-  handleCountryToggle: (countryName: string, regionName: string, regionData: any, checked: boolean) => void;
+  handleCountryToggle: (
+    countryName: string,
+    regionName: string,
+    regionData: RegionFilterOption,
+    checked: boolean
+  ) => void;
 }
 
 function RegionCountriesDropdown({
@@ -125,7 +97,7 @@ function RegionCountriesDropdown({
   // Sort countries: first by flight count (descending), then by name (ascending) when counts are equal
   const sortedCountries = useMemo(() => {
     return Object.entries(regionData.countries)
-      .sort(([nameA, a]: [string, any], [nameB, b]: [string, any]) => {
+      .sort(([nameA, a], [nameB, b]) => {
         // First sort by count (descending)
         if (b.total_flights !== a.total_flights) {
           return b.total_flights - a.total_flights;
@@ -205,7 +177,7 @@ function RegionCountriesDropdown({
             No countries found
           </div>
         ) : (
-          filteredCountries.map(([countryName, countryData]: [string, any]) => {
+          filteredCountries.map(([countryName, countryData]: [string, FilterOption]) => {
             const isCountrySelected = currentCountries.includes(countryName);
 
             return (
@@ -238,12 +210,21 @@ function RegionCountriesDropdown({
 // ==================== Dropdown Component for Terminal Airlines ====================
 interface TerminalAirlinesDropdownProps {
   terminalName: string;
-  terminalData: any;
+  terminalData: FilterOption;
   currentTerminalAirlines: string[];
   currentTerminals: string[];
   airlinesMapping: Record<string, string> | null;
-  handleAirlineToggle: (terminalName: string, airlineCode: string, airlineData: any, checked: boolean) => void;
-  handleTerminalToggle: (terminalName: string, terminalData: any, checked: boolean) => void;
+  handleAirlineToggle: (
+    terminalName: string,
+    airlineCode: string,
+    airlineData: FilterOption['airlines'][string],
+    checked: boolean
+  ) => void;
+  handleTerminalToggle: (
+    terminalName: string,
+    terminalData: FilterOption,
+    checked: boolean
+  ) => void;
   getValueDisplayName: (category: string, value: string) => string;
   category: string;
 }
@@ -264,7 +245,7 @@ function TerminalAirlinesDropdown({
   // Sort airlines: first by count (descending), then by name (ascending) when counts are equal
   const sortedAirlines = useMemo(() => {
     return Object.entries(terminalData.airlines)
-      .sort(([codeA, a]: [string, any], [codeB, b]: [string, any]) => {
+      .sort(([codeA, a]: [string, FilterAirlineEntry], [codeB, b]: [string, FilterAirlineEntry]) => {
         // First sort by count (descending)
         if (b.count !== a.count) {
           return b.count - a.count;
@@ -367,7 +348,7 @@ function TerminalAirlinesDropdown({
             No airlines found
           </div>
         ) : (
-          filteredAirlines.map(([airlineCode, airlineData]: [string, any]) => {
+          filteredAirlines.map(([airlineCode, airlineData]: [string, FilterAirlineEntry]) => {
             const isAirlineSelected = currentTerminalAirlines.includes(
               createTerminalAirlineCombo(terminalName, airlineCode)
             );
@@ -643,11 +624,13 @@ function FlightFilterConditions({
   const srcAirlines = controlled ? overrideFlightData?.airlines : flightDataFromStore.airlines;
   const srcFilters = controlled ? overrideFlightData?.filters : flightDataFromStore.filters;
 
-  const filtersData = useMemo<FlightFiltersApiResponse | null>(() => {
-    if (!srcFilters) return null;
+  const filtersRecord = srcFilters as FlightFiltersResponse['filters'] | null;
 
-    const depTotal = srcFilters.departure?.total_flights;
-    const arrTotal = srcFilters.arrival?.total_flights;
+  const filtersData = useMemo<FlightFiltersApiResponse | null>(() => {
+    if (!filtersRecord) return null;
+
+    const depTotal = filtersRecord.departure?.total_flights;
+    const arrTotal = filtersRecord.arrival?.total_flights;
     const hasNumericDep = typeof depTotal === 'number';
     const hasNumericArr = typeof arrTotal === 'number';
     if (!hasNumericDep && !hasNumericArr) return null;
@@ -661,9 +644,9 @@ function FlightFilterConditions({
       scenario_id: scenarioId,
       total_flights,
       airlines: srcAirlines || {},
-      filters: srcFilters,
+      filters: filtersRecord,
     } as FlightFiltersApiResponse;
-  }, [srcTotalFlights, srcAirlines, srcFilters, airport, date, scenarioId]);
+  }, [srcTotalFlights, srcAirlines, filtersRecord, airport, date, scenarioId]);
 
   const [selectedFilter, setSelectedFilter] = useState<SelectedFilter>(
     initialSelectedFilter || { mode: 'departure', categories: {} }
@@ -684,10 +667,10 @@ function FlightFilterConditions({
   useEffect(() => {
     if (controlled) return;
     if (selectedConditions && !hasRestoredFromZustand) {
-      let categories: Record<string, any> = {};
+      let categories: SelectedFilter['categories'] = {};
 
       if (selectedConditions.originalLocalState) {
-        categories = selectedConditions.originalLocalState;
+        categories = selectedConditions.originalLocalState as unknown as SelectedFilter['categories'];
       } else {
         selectedConditions.conditions.forEach((condition) => {
           categories[condition.field] = condition.values;
@@ -832,7 +815,7 @@ function FlightFilterConditions({
   );
 
   // 🆕 Terminal 전체 선택/해제 (Terminal-Airline 조합 방식)
-  const handleTerminalToggle = useCallback((terminalName: string, terminalData: any, checked: boolean) => {
+  const handleTerminalToggle = useCallback((terminalName: string, terminalData: FilterOption, checked: boolean) => {
     setSelectedFilter((prev) => {
       const terminalField = `${prev.mode}_terminal`;
       const currentTerminals = (prev.categories[terminalField] as string[]) || [];
@@ -871,7 +854,7 @@ function FlightFilterConditions({
 
   // 🆕 Airline 선택/해제 (Terminal-Airline 조합 방식)
   const handleAirlineToggle = useCallback(
-    (terminalName: string, airlineCode: string, airlineData: any, checked: boolean) => {
+    (terminalName: string, airlineCode: string, airlineData: FilterOption['airlines'][string], checked: boolean) => {
       setSelectedFilter((prev) => {
         const terminalField = `${prev.mode}_terminal`;
         const currentTerminals = (prev.categories[terminalField] as string[]) || [];
@@ -1156,7 +1139,7 @@ function FlightFilterConditions({
             const regionOptions = modeFilters[regionField];
 
             if (regionOptions) {
-              Object.entries(regionOptions).forEach(([regionName, regionData]: [string, any]) => {
+              Object.entries(regionOptions).forEach(([regionName, regionData]: [string, RegionFilterOption]) => {
                 const allCountriesInRegion = Object.keys(regionData.countries);
                 const selectedCountriesInRegion = currentCountries.filter((c) => allCountriesInRegion.includes(c));
 
@@ -1311,7 +1294,9 @@ function FlightFilterConditions({
     if (!filtersData?.filters?.[selectedFilter.mode]) return [];
     const modeFilters = filtersData.filters[selectedFilter.mode];
     const categories = selectedFilter.categories;
-    const hasFilters = Object.values(categories).some((v: any) => Array.isArray(v) ? v.length > 0 : !!v);
+    const hasFilters = Object.values(categories).some((v) =>
+      Array.isArray(v) ? v.length > 0 : !!v
+    );
     if (!hasFilters) return [];
 
     try {
@@ -1319,19 +1304,21 @@ function FlightFilterConditions({
       const intersected = intersectSets(sets);
       if (!intersected || intersected.size === 0) return [];
 
-      const tf = `${selectedFilter.mode}_terminal`;
-      const regionField = selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region';
-      const regionOptions = modeFilters[regionField];
+      const tf = `${selectedFilter.mode}_terminal` as keyof typeof modeFilters;
+      const regionField = (selectedFilter.mode === 'departure' ? 'arrival_region' : 'departure_region') as keyof typeof modeFilters;
+      const regionOptions = modeFilters[regionField] as
+        | Record<string, RegionFilterOption>
+        | undefined;
 
       // 역방향 조회: flight ID → 메타정보
       const flightMeta = new Map<string, FlightDetail>();
 
       // 터미널 데이터에서 항공사 코드 + 터미널명
-      const termData = modeFilters[tf];
+      const termData = modeFilters[tf] as Record<string, FilterOption> | undefined;
       if (termData) {
-        Object.entries(termData).forEach(([terminalName, tInfo]: [string, any]) => {
-          Object.entries(tInfo.airlines).forEach(([airlineCode, aInfo]: [string, any]) => {
-            aInfo.flight_numbers.forEach((fn: any) => {
+        Object.entries(termData).forEach(([terminalName, tInfo]) => {
+          Object.entries(tInfo.airlines).forEach(([airlineCode, aInfo]) => {
+            aInfo.flight_numbers.forEach((fn) => {
               const id = String(fn);
               if (!flightMeta.has(id)) {
                 flightMeta.set(id, {
@@ -1352,10 +1339,10 @@ function FlightFilterConditions({
 
       // 리전 데이터에서 목적지 국가
       if (regionOptions) {
-        Object.entries(regionOptions).forEach(([, rInfo]: [string, any]) => {
-          Object.entries(rInfo.countries).forEach(([countryName, cInfo]: [string, any]) => {
-            Object.entries(cInfo.airlines).forEach(([airlineCode, aInfo]: [string, any]) => {
-              aInfo.flight_numbers.forEach((fn: any) => {
+        Object.entries(regionOptions).forEach(([, rInfo]) => {
+          Object.entries(rInfo.countries).forEach(([countryName, cInfo]) => {
+            Object.entries(cInfo.airlines).forEach(([airlineCode, aInfo]) => {
+              aInfo.flight_numbers.forEach((fn) => {
                 const id = String(fn);
                 const existing = flightMeta.get(id);
                 if (existing) {
@@ -1380,9 +1367,9 @@ function FlightFilterConditions({
 
       // flight_type 데이터에서 국제/국내 구분
       if (modeFilters.flight_type) {
-        Object.entries(modeFilters.flight_type).forEach(([typeName, tInfo]: [string, any]) => {
-          Object.values(tInfo.airlines).forEach((aInfo: any) => {
-            aInfo.flight_numbers.forEach((fn: any) => {
+        Object.entries(modeFilters.flight_type).forEach(([typeName, tInfo]) => {
+          Object.values(tInfo.airlines).forEach((aInfo) => {
+            aInfo.flight_numbers.forEach((fn) => {
               const meta = flightMeta.get(String(fn));
               if (meta) meta.flightType = typeName;
             });
@@ -1392,9 +1379,9 @@ function FlightFilterConditions({
 
       // aircraft_class 데이터에서 기재 타입명 + 클래스
       if (modeFilters.aircraft_class) {
-        Object.entries(modeFilters.aircraft_class).forEach(([className, classData]: [string, any]) => {
-          Object.entries(classData.aircraft_types ?? {}).forEach(([typeName, typeData]: [string, any]) => {
-            (typeData as any).flight_numbers.forEach((fn: any) => {
+        Object.entries(modeFilters.aircraft_class).forEach(([className, classData]) => {
+          Object.entries(classData.aircraft_types ?? {}).forEach(([typeName, typeData]) => {
+            typeData.flight_numbers.forEach((fn) => {
               const meta = flightMeta.get(String(fn));
               if (meta) {
                 meta.aircraftType = typeName;
@@ -1574,7 +1561,7 @@ function FlightFilterConditions({
   ]);
 
   const renderFilterOptions = useCallback(
-    (mode: string, modeFilters: any) => {
+    (mode: string, modeFilters: FlightDirectionFilters) => {
       if (!modeFilters) return null;
 
       const categoryOrder = getCategoryOrder(mode);
@@ -1595,7 +1582,7 @@ function FlightFilterConditions({
                     <Label className="text-sm font-medium">Class</Label>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {Object.entries(options as Record<string, any>).map(([cls, clsData]: [string, any]) => {
+                    {Object.entries(options as Record<string, AircraftClassFilterOption>).map(([cls, clsData]) => {
                       const selectedClasses = selectedFilter.categories.selected_aircraft_classes || [];
                       const currentTypeIds = selectedFilter.categories.aircraft_type_flight_ids || [];
                       const prefix = `${cls}||`;
@@ -1617,7 +1604,7 @@ function FlightFilterConditions({
                             checked={isClassSelected}
                             ref={(el) => {
                               if (el && 'indeterminate' in el) {
-                                (el as any).indeterminate = isClassPartiallySelected;
+                                (el as HTMLInputElement).indeterminate = isClassPartiallySelected;
                               }
                             }}
                             onCheckedChange={(checked) => handleClassToggle(cls, allTypeNames, !!checked)}
@@ -1662,7 +1649,7 @@ function FlightFilterConditions({
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {Object.entries(options).map(([regionName, regionData]: [string, any]) => {
+                    {Object.entries(options as Record<string, RegionFilterOption>).map(([regionName, regionData]) => {
                       const currentRegions = selectedFilter.categories.region || [];
                       const currentCountries = selectedFilter.categories.countries || [];
                       const allCountriesInRegion = Object.keys(regionData.countries);
@@ -1686,7 +1673,7 @@ function FlightFilterConditions({
                             checked={isRegionSelected}
                             ref={(el) => {
                               if (el && 'indeterminate' in el) {
-                                (el as any).indeterminate = isRegionPartiallySelected;
+                                (el as HTMLInputElement).indeterminate = isRegionPartiallySelected;
                               }
                             }}
                             onCheckedChange={(checked) => handleRegionToggle(regionName, regionData, !!checked)}
@@ -1737,12 +1724,14 @@ function FlightFilterConditions({
               // ── Airline 섹션을 위한 집계: 모든 터미널의 항공사 데이터 합산
               // flight_numbers 는 이미 "PR221" 형태의 문자열 배열
               const aggregatedAirlines: Record<string, { count: number; flightNumbers: Set<string> }> = {};
-              Object.values(options).forEach((terminalData: any) => {
-                Object.entries(terminalData.airlines).forEach(([code, data]: [string, any]) => {
+              Object.values(options as Record<string, FilterOption>).forEach((terminalData) => {
+                Object.entries(terminalData.airlines).forEach(([code, data]) => {
                   if (!aggregatedAirlines[code]) {
                     aggregatedAirlines[code] = { count: 0, flightNumbers: new Set() };
                   }
-                  data.flight_numbers.forEach((fn: string) => aggregatedAirlines[code].flightNumbers.add(fn));
+                  data.flight_numbers.forEach((fn) => {
+                    aggregatedAirlines[code].flightNumbers.add(String(fn));
+                  });
                 });
               });
               // count 는 중복 제거된 편수로 재계산
@@ -1766,7 +1755,7 @@ function FlightFilterConditions({
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {Object.entries(options).map(([terminalName, terminalData]: [string, any]) => {
+                      {(Object.entries(options) as [string, FilterOption][]).map(([terminalName, terminalData]) => {
                         const currentTerminals = (selectedFilter.categories[category] as string[]) || [];
                         const currentTerminalAirlines = selectedFilter.categories.terminal_airlines || [];
                         const allAirlinesInTerminal = Object.keys(terminalData.airlines);
@@ -1792,7 +1781,7 @@ function FlightFilterConditions({
                               checked={isTerminalSelected}
                               ref={(el) => {
                                 if (el && 'indeterminate' in el) {
-                                  (el as any).indeterminate = isTerminalPartiallySelected;
+                                  (el as HTMLInputElement).indeterminate = isTerminalPartiallySelected;
                                 }
                               }}
                               onCheckedChange={(checked) => handleTerminalToggle(terminalName, terminalData, !!checked)}
@@ -1863,7 +1852,7 @@ function FlightFilterConditions({
                                 checked={isAirlineSelected}
                                 ref={(el) => {
                                   if (el && 'indeterminate' in el) {
-                                    (el as any).indeterminate = isAirlinePartiallySelected;
+                                    (el as HTMLInputElement).indeterminate = isAirlinePartiallySelected;
                                   }
                                 }}
                                 onCheckedChange={(checked) =>
@@ -1915,7 +1904,7 @@ function FlightFilterConditions({
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {Object.entries(options).map(([value, option]: [string, any]) => {
+                  {(Object.entries(options) as [string, FilterOption][]).map(([value, option]) => {
                     const isSelected = ((selectedFilter.categories[category] as string[]) || []).includes(value);
 
                     return (

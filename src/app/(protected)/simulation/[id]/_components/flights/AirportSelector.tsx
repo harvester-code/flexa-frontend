@@ -121,7 +121,13 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
   const handleSelect = (iata: string) => {
     onChange(iata);
     setSearchQuery('');
+    setSelectedIndex(SEARCH_INPUT_INDEX);
     setOpen(false);
+  };
+
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value);
+    setSelectedIndex(SEARCH_INPUT_INDEX);
   };
 
   useEffect(() => {
@@ -131,10 +137,6 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
       });
     }
   }, [open]);
-
-  useEffect(() => {
-    setSelectedIndex(SEARCH_INPUT_INDEX);
-  }, [searchQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!searchQuery) return;
@@ -197,7 +199,7 @@ export default function AirportSelector({ value, onChange }: AirportSelectorProp
               placeholder={TEXT.SEARCH}
               value={searchQuery}
               onChange={(e) =>
-                setSearchQuery(e.target.value.replace(/[^\x00-\x7F]/g, ""))
+                handleSearchQueryChange(e.target.value.replace(/[^\x00-\x7F]/g, ""))
               }
               onKeyDown={handleKeyDown}
               onFocus={() => setSelectedIndex(SEARCH_INPUT_INDEX)}

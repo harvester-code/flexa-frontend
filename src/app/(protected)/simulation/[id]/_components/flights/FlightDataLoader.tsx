@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { Calendar as CalendarIcon, Database } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -46,19 +46,22 @@ function FlightDataLoader({
   const [date, setDate] = useState(isControlled && controlledDate ? controlledDate : storeDate);
   const [openCalendarPopover, setOpenCalendarPopover] = useState(false);
 
-  useEffect(() => {
-    if (isControlled) {
-      setAirport(controlledAirport);
-    } else {
-      setAirport(storeAirport);
-    }
-  }, [isControlled, controlledAirport, storeAirport]);
+  const [prevControlledAirport, setPrevControlledAirport] = useState(controlledAirport);
+  const [prevStoreAirport, setPrevStoreAirport] = useState(storeAirport);
+  const [prevControlledDate, setPrevControlledDate] = useState(controlledDate);
 
-  useEffect(() => {
-    if (isControlled && controlledDate) {
-      setDate(controlledDate);
-    }
-  }, [isControlled, controlledDate]);
+  if (isControlled && controlledAirport !== prevControlledAirport) {
+    setPrevControlledAirport(controlledAirport);
+    setAirport(controlledAirport);
+  } else if (!isControlled && storeAirport !== prevStoreAirport) {
+    setPrevStoreAirport(storeAirport);
+    setAirport(storeAirport);
+  }
+
+  if (isControlled && controlledDate && controlledDate !== prevControlledDate) {
+    setPrevControlledDate(controlledDate);
+    setDate(controlledDate);
+  }
 
   const handleAirportChange = (value: string) => {
     setIsSomethingChanged(airport !== value);

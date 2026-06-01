@@ -5,6 +5,14 @@
  * API 요청 시에는 항공사 코드만 전송하도록 변환
  */
 
+import type { ChartSeries } from '@/types/api/common';
+import type {
+  FlightDirectionFilters,
+  FlightFilterOption,
+  FlightFiltersResponse,
+  RegionFlightFilterOption,
+} from '@/types/api/simulations';
+
 // ==================== Types ====================
 
 /** 터미널-항공사 조합 문자열 (예: "2_KE", "1_LJ", "unknown_AA") */
@@ -32,10 +40,26 @@ export interface SelectedFilter {
   };
 }
 
+export type FlightFiltersData = Pick<
+  FlightFiltersResponse,
+  'total_flights' | 'airlines' | 'filters'
+>;
+
 /** 터미널-항공사 조합이 분리된 형태 */
 export interface TerminalAirlinePair {
   terminal: string;
   airline: string;
+}
+
+export interface HttpErrorLike {
+  message?: string;
+  code?: string;
+  response?: {
+    status?: number;
+    data?: {
+      detail?: string;
+    };
+  };
 }
 
 // ==================== 유틸리티 함수들 ====================
@@ -138,7 +162,7 @@ export const convertTerminalAirlinesToApiCondition = (
  */
 export function convertFilterToApiConditions(
   selectedFilter: SelectedFilter,
-  filtersData: { filters: Record<string, any> } | null
+  filtersData: { filters: FlightFiltersResponse['filters'] } | null
 ): Array<{ field: string; values: string[] }> {
   const conditions: Array<{ field: string; values: string[] }> = [];
 
@@ -158,7 +182,7 @@ export function convertFilterToApiConditions(
           const regionOptions = modeFilters[regionField];
 
           if (regionOptions) {
-            Object.entries(regionOptions).forEach(([regionName, regionData]: [string, any]) => {
+            Object.entries(regionOptions).forEach(([regionName, regionData]) => {
               const allCountriesInRegion = Object.keys(regionData.countries);
               const selectedCountriesInRegion = currentCountries.filter((c: string) =>
                 allCountriesInRegion.includes(c)
@@ -230,12 +254,12 @@ export function convertFilterToApiConditions(
  * 나머지는 모두 raw flight ID(예: "KE712")를 key로 사용한다.
  */
 export function buildConditionFlightSets(
-  modeFilters: any,
-  categories: Record<string, any>,
+  modeFilters: FlightDirectionFilters,
+  categories: SelectedFilter['categories'],
   mode: string
 ): Set<string>[] {
   const sets: Set<string>[] = [];
-  const tf = `${mode}_terminal`;
+  const tf = `${mode}_terminal` as keyof FlightDirectionFilters;
 
   const flightTypes: string[]          = categories.flight_type             ?? [];
   const terminalAirlines: string[]     = categories.terminal_airlines        ?? [];
@@ -250,8 +274,8 @@ export function buildConditionFlightSets(
   if (flightTypes.length > 0) {
     const s = new Set<string>();
     flightTypes.forEach((ft) => {
-      Object.values(modeFilters.flight_type?.[ft]?.airlines ?? {}).forEach((ad: any) =>
-        ad.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+      Object.values(modeFilters.flight_type?.[ft]?.airlines ?? {}).forEach((ad) =>
+        ad.flight_numbers.forEach((fn) => s.add(String(fn)))
       );
     });
     sets.push(s);
@@ -263,8 +287,11 @@ export function buildConditionFlightSets(
     terminalAirlines.forEach((combo) => {
       const parsed = parseTerminalAirlineCombo(combo);
       if (!parsed) return;
-      const ad = modeFilters[tf]?.[parsed.terminal]?.airlines?.[parsed.airline];
-      if (ad) ad.flight_numbers.forEach((fn: any) => s.add(String(fn)));
+      const terminalFilters = modeFilters[tf] as
+        | Record<string, FlightFilterOption>
+        | undefined;
+      const ad = terminalFilters?.[parsed.terminal]?.airlines?.[parsed.airline];
+      if (ad) ad.flight_numbers.forEach((fn) => s.add(String(fn)));
     });
     sets.push(s);
   }
@@ -277,10 +304,10 @@ export function buildConditionFlightSets(
     sets.push(s);
   } else if (selectedAirlines.length > 0) {
     const s = new Set<string>();
-    Object.values(modeFilters[tf] ?? {}).forEach((td: any) => {
-      Object.entries(td.airlines).forEach(([code, data]: [string, any]) => {
+    Object.values((modeFilters[tf] ?? {}) as Record<string, FlightFilterOption>).forEach((td) => {
+      Object.entries(td.airlines).forEach(([code, data]) => {
         if (selectedAirlines.includes(code))
-          data.flight_numbers.forEach((fn: any) => s.add(String(fn)));
+          data.flight_numbers.forEach((fn) => s.add(String(fn)));
       });
     });
     if (s.size > 0) sets.push(s);
@@ -295,22 +322,24 @@ export function buildConditionFlightSets(
       const cls = id.slice(0, sep);
       const typeName = id.slice(sep + 2);
       modeFilters.aircraft_class?.[cls]?.aircraft_types?.[typeName]?.flight_numbers
-        ?.forEach((fn: any) => s.add(String(fn)));
+        ?.forEach((fn) => s.add(String(fn)));
     });
     if (s.size > 0) sets.push(s);
   } else if (selectedClasses.length > 0) {
     const s = new Set<string>();
     selectedClasses.forEach((cls) => {
-      Object.values(modeFilters.aircraft_class?.[cls]?.aircraft_types ?? {}).forEach((td: any) =>
-        td.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+      Object.values(modeFilters.aircraft_class?.[cls]?.aircraft_types ?? {}).forEach((td) =>
+        td.flight_numbers.forEach((fn) => s.add(String(fn)))
       );
     });
     if (s.size > 0) sets.push(s);
   }
 
   // 5. Location (Region/Country)
-  const regionField = mode === 'departure' ? 'arrival_region' : 'departure_region';
-  const regionOptions = modeFilters[regionField];
+  const regionField = (mode === 'departure' ? 'arrival_region' : 'departure_region') as keyof FlightDirectionFilters;
+  const regionOptions = modeFilters[regionField] as
+    | Record<string, RegionFlightFilterOption>
+    | undefined;
   if (regions.length > 0 && regionOptions) {
     const s = new Set<string>();
     regions.forEach((rName) => {
@@ -320,8 +349,8 @@ export function buildConditionFlightSets(
       const selC = countries.filter((c) => allC.includes(c));
       const targets = selC.length === 0 || selC.length === allC.length ? allC : selC;
       targets.forEach((cn) => {
-        Object.values(rData.countries[cn]?.airlines ?? {}).forEach((ad: any) =>
-          ad.flight_numbers.forEach((fn: any) => s.add(String(fn)))
+        Object.values(rData.countries[cn]?.airlines ?? {}).forEach((ad) =>
+          ad.flight_numbers.forEach((fn) => s.add(String(fn)))
         );
       });
     });
@@ -341,16 +370,16 @@ export function intersectSets<T>(sets: Set<T>[]): Set<T> | null {
   return result;
 }
 
-/** Axios/fetch 에러에서 사람이 읽기 쉬운 메시지를 추출한다. */
-export function extractHttpErrorMessage(error: any, fallback = "Unknown error"): string {
-  if (error?.response?.status === 503) return "Server is temporarily overloaded.";
-  if (error?.response?.status === 504 || error?.code === "ECONNABORTED") return "Request timed out.";
-  if (error?.response?.data?.detail) return error.response.data.detail;
-  if (error?.message) return error.message;
+export function extractHttpErrorMessage(error: unknown, fallback = "Unknown error"): string {
+  const err = error as HttpErrorLike;
+  if (err?.response?.status === 503) return "Server is temporarily overloaded.";
+  if (err?.response?.status === 504 || err?.code === "ECONNABORTED") return "Request timed out.";
+  if (err?.response?.data?.detail) return err.response.data.detail;
+  if (err?.message) return err.message;
   return fallback;
 }
 
 /** chart_y_data 항목을 acc_y 필드가 보장되도록 정규화한다. */
-export function normalizeChartYItem(item: any): any {
+export function normalizeChartYItem(item: ChartSeries): ChartSeries {
   return { ...item, acc_y: item.acc_y || [] };
 }

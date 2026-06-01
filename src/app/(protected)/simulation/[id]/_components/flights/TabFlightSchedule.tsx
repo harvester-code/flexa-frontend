@@ -22,6 +22,9 @@ import {
 import {
   APIRequestLog,
 } from "@/types/simulationTypes";
+import type { FlightFiltersSummary, FlightScheduleResponse } from "@/types/api/simulations";
+import type { ChartData } from "@/types/api/common";
+import type { ParquetMetadataItem } from "@/types/parquet";
 import { SimulationTabProps } from "../types";
 import {
   getFlightFilters,
@@ -44,13 +47,9 @@ import airportFlat from "../../_json/airport_flat.json";
 
 // ==================== Types ====================
 
-interface TabFlightScheduleProps extends SimulationTabProps {}
+type TabFlightScheduleProps = SimulationTabProps;
 
-interface TabFiltersData {
-  total_flights: number;
-  airlines: Record<string, string>;
-  filters: Record<string, any>;
-}
+type TabFiltersData = FlightFiltersSummary;
 
 interface AirportTab {
   id: string;
@@ -145,7 +144,8 @@ function TabFlightSchedule({
               filtersData: {
                 total_flights: storeTotalFlights,
                 airlines: flight.airlines || {},
-                filters: flight.filters || {},
+                filters: (flight.filters ||
+                  {}) as FlightFiltersSummary['filters'],
               },
               selectedFilter: restoredFilter,
               loading: false,
@@ -273,7 +273,7 @@ function TabFlightSchedule({
         } else {
           updateTab(tabId, { loading: false });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage = extractHttpErrorMessage(error, "Failed to load flight data");
 
         updateTab(tabId, { loading: false });
@@ -328,7 +328,7 @@ function TabFlightSchedule({
           status: "success",
         });
 
-        const processedChartData: Record<string, any[]> = {};
+        const processedChartData: ChartData = {};
         if (data.chart_y_data) {
           Object.keys(data.chart_y_data).forEach((category) => {
             processedChartData[category] = (data.chart_y_data[category] || []).map(normalizeChartYItem);
@@ -340,7 +340,11 @@ function TabFlightSchedule({
           chart_x_data: data.chart_x_data,
           chart_y_data: processedChartData,
           appliedAt: new Date().toISOString(),
-          parquet_metadata: (data as any).parquet_metadata || [],
+          parquet_metadata: Array.isArray(data.parquet_metadata)
+            ? (data.parquet_metadata as ParquetMetadataItem[])
+            : data.parquet_metadata
+              ? [data.parquet_metadata as unknown as ParquetMetadataItem]
+              : [],
         });
 
         toast({
@@ -350,7 +354,7 @@ function TabFlightSchedule({
         });
 
         return data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage = extractHttpErrorMessage(error);
 
         setApiRequestLog({
@@ -422,18 +426,14 @@ function TabFlightSchedule({
       );
 
       let totalFlights = 0;
-      const mergedParquetMetadata: any[] = [];
+      const mergedParquetMetadata: ParquetMetadataItem[] = [];
       let mergedChartXData: string[] = [];
-      const mergedChartYData: Record<string, any[]> = {};
+      const mergedChartYData: ChartData = {};
 
       allResults.forEach((data) => {
         totalFlights += data.total || 0;
-        if (data.parquet_metadata) {
-          if (Array.isArray(data.parquet_metadata)) {
-            mergedParquetMetadata.push(...data.parquet_metadata);
-          } else {
-            mergedParquetMetadata.push(data.parquet_metadata);
-          }
+        if (data.parquet_metadata && Array.isArray(data.parquet_metadata)) {
+          mergedParquetMetadata.push(...(data.parquet_metadata as ParquetMetadataItem[]));
         }
         if (data.chart_x_data && data.chart_x_data.length > mergedChartXData.length) {
           mergedChartXData = data.chart_x_data;
@@ -477,7 +477,7 @@ function TabFlightSchedule({
         description: `Successfully filtered ${totalFlights.toLocaleString()} flights across ${loaded.length} airports`,
         variant: "default",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Filter Failed",
         description: error instanceof Error ? error.message : "Failed to apply filters",
