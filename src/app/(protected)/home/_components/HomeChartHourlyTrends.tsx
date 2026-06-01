@@ -1,8 +1,24 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { ChevronDown, ChevronRight, Circle, Check } from 'lucide-react';
-import { Option } from '@/types/homeTypes';
-import { ScenarioData } from '@/types/homeTypes';
+import type { HomeHourlyTrendsData, FlowChartMetricSeries, FlowChartZoneData, FlowChartFacilityGroup } from '@/types/api/homes';
+
+function isFacilityGroup(
+  entry: FlowChartFacilityGroup | FlowChartZoneData
+): entry is FlowChartFacilityGroup {
+  return 'data' in entry || 'facilities' in entry || 'airline_names' in entry;
+}
+
+function getFacilityDataSource(
+  entry: FlowChartFacilityGroup | FlowChartZoneData | undefined
+): Record<string, FlowChartZoneData> | null {
+  if (!entry) return null;
+  if (isFacilityGroup(entry) && entry.data) {
+    return entry.data;
+  }
+  return entry as Record<string, FlowChartZoneData>;
+}
+import { Option, ScenarioData } from '@/types/homeTypes';
 import { Checkbox } from '@/components/ui/Checkbox';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
 import { cn } from '@/lib/utils';
@@ -69,8 +85,12 @@ const sanitizeNumericSeries = (series: unknown, expectedLength: number): number[
 
 interface HomeChartHourlyTrendsProps {
   scenario: ScenarioData | null;
-  data?: any; // 배치 API에서 받은 flow_chart 데이터
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: HomeHourlyTrendsData;
+  isLoading?: boolean;
+}
+
+function isScatterWithY(data: Plotly.Data): data is Plotly.ScatterData {
+  return 'y' in data;
 }
 
 function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: HomeChartHourlyTrendsProps) {
@@ -83,15 +103,18 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     showlegend: false,
   });
 
-  const convertSecondsToMinutesInt = (data: Plotly.Data): Plotly.Data => ({
-    ...data,
-    y: Array.isArray((data as any).y)
-      ? (data as any).y.map((v: any) => {
-          const num = Number(v);
-          return isNaN(num) ? null : Math.floor(num / 60);
-        })
-      : (data as any).y,
-  });
+  const convertSecondsToMinutesInt = (trace: Plotly.Data): Plotly.Data => {
+    if (!isScatterWithY(trace) || !Array.isArray(trace.y)) {
+      return trace;
+    }
+    return {
+      ...trace,
+      y: trace.y.map((v) => {
+        const num = Number(v);
+        return Number.isNaN(num) ? null : Math.floor(num / 60);
+      }),
+    };
+  };
   const getYAxisTitle = (optionValue: string) => (optionValue === 'waiting_time' ? '(min)' : '(pax)');
 
   const FACILITY_OPTIONS = useMemo(() => {
@@ -99,9 +122,9 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
     return Object.keys(hourlyTrendsData)
       .filter((key) => key !== 'times')
       .map((key) => {
-        const facilityData = hourlyTrendsData[key];
-        const dataSource = facilityData?.data || facilityData;
-        const facilities = facilityData?.facilities || [];
+        const facilityData = hourlyTrendsData[key] as FlowChartFacilityGroup | FlowChartZoneData;
+        const dataSource = getFacilityDataSource(facilityData);
+        const facilities = isFacilityGroup(facilityData) ? (facilityData.facilities || []) : [];
 
         // 총 처리 인원 계산 (facilities 리스트에 있는 시설들의 inflow만 합산)
         let totalThroughput = 0;
@@ -139,11 +162,14 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
   const ZONE_OPTIONS = useMemo(() => {
     if (!hourlyTrendsData || !selectedFacilityValue) return [];
-    const facilityData = hourlyTrendsData[selectedFacilityValue];
-    if (!facilityData) return [];
+    const facilityEntry = hourlyTrendsData[selectedFacilityValue] as
+      | FlowChartFacilityGroup
+      | FlowChartZoneData
+      | undefined;
+    if (!facilityEntry) return [];
 
-    // 새로운 구조 처리 - data 속성이 있으면 그 안의 키를 사용
-    const dataSource = facilityData.data || facilityData;
+    const dataSource = getFacilityDataSource(facilityEntry);
+    if (!dataSource) return [];
 
     return Object.keys(dataSource)
       .filter(key => key !== 'process_name' && key !== 'facilities') // 메타 정보 제외
@@ -169,14 +195,18 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   const AIRLINE_OPTIONS = useMemo(() => {
     if (!hourlyTrendsData || !selectedFacilityValue) return [];
 
-    const facilityData = hourlyTrendsData[selectedFacilityValue];
-    const dataSource = facilityData?.data || facilityData;
+    const facilityEntry = hourlyTrendsData[selectedFacilityValue] as
+      | FlowChartFacilityGroup
+      | FlowChartZoneData;
+    const dataSource = getFacilityDataSource(facilityEntry);
     if (!dataSource) return [];
 
-    const airlineNames = facilityData?.airline_names || {};
+    const airlineNames = isFacilityGroup(facilityEntry)
+      ? facilityEntry.airline_names || {}
+      : {};
 
     const airlinesSet = new Set<string>();
-    Object.values(dataSource).forEach((zoneData: any) => {
+    Object.values(dataSource).forEach((zoneData: FlowChartZoneData) => {
       if (zoneData.airlines) {
         Object.keys(zoneData.airlines).forEach((code: string) => airlinesSet.add(code));
       }
@@ -192,9 +222,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
   const flightsByAirline = useMemo(() => {
     if (!hourlyTrendsData || !selectedFacilityValue) return {};
 
-    const facilityData = hourlyTrendsData[selectedFacilityValue];
-    const dataSource = facilityData?.data || facilityData;
-    const flightAirlineMap: Record<string, string> = facilityData?.flight_airline_map || {};
+    const facilityEntry = hourlyTrendsData[selectedFacilityValue] as
+      | FlowChartFacilityGroup
+      | FlowChartZoneData;
+    const dataSource = getFacilityDataSource(facilityEntry);
+    const flightAirlineMap: Record<string, string> = isFacilityGroup(facilityEntry)
+      ? facilityEntry.flight_airline_map || {}
+      : {};
 
     if (!dataSource || Object.keys(flightAirlineMap).length === 0) return {};
 
@@ -384,8 +418,10 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     const times = filterDayTimes(hourlyTrendsData.times);
 
-    const facilityData = hourlyTrendsData[selectedFacilityValue];
-    const dataSource = facilityData?.data || facilityData;
+    const facilityEntry = hourlyTrendsData[selectedFacilityValue] as
+      | FlowChartFacilityGroup
+      | FlowChartZoneData;
+    const dataSource = getFacilityDataSource(facilityEntry);
 
     if (!dataSource || !times.length) {
       setLineChartData([]);
@@ -414,36 +450,47 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       if (!zoneData) return;
 
       // 항공사·편명 필터링이 적용된 경우 (flight → airline → all 순으로 우선 적용)
-      let dataToUse: any = {};
+      let dataToUse: FlowChartMetricSeries = {};
 
       const isFiltered = !selectedFlights.includes('all') && selectedFlights.length > 0;
 
       // 편명 있는 시나리오: selectedFlights = 편명 코드들
       // 편명 없는 시나리오: selectedFlights = 항공사 코드들 (leaf가 항공사)
       const aggregateByKeys = (
-        dataMap: Record<string, any>,
+        dataMap: Record<string, FlowChartMetricSeries>,
         keys: string[],
         tLen: number
-      ) => {
-        const result: any = {};
-        ['inflow', 'outflow', 'queue_length'].forEach(m => { result[m] = new Array(tLen).fill(0); });
+      ): FlowChartMetricSeries => {
+        const result: FlowChartMetricSeries = {};
+        const inflow = new Array<number>(tLen).fill(0);
+        const outflow = new Array<number>(tLen).fill(0);
+        const queueLength = new Array<number>(tLen).fill(0);
         const wtSum = new Array(tLen).fill(0);
         const wtW = new Array(tLen).fill(0);
 
         keys.forEach(key => {
           const d = dataMap[key];
           if (!d) return;
-          ['inflow', 'outflow', 'queue_length'].forEach(m => {
-            if (d[m]) d[m].slice(0, tLen).forEach((v: number, i: number) => { result[m][i] += v; });
-          });
+          if (d.inflow) {
+            d.inflow.slice(0, tLen).forEach((v, i) => { inflow[i] += v; });
+          }
+          if (d.outflow) {
+            d.outflow.slice(0, tLen).forEach((v, i) => { outflow[i] += v; });
+          }
+          if (d.queue_length) {
+            d.queue_length.slice(0, tLen).forEach((v, i) => { queueLength[i] += v; });
+          }
           if (d.waiting_time && d.inflow) {
-            d.waiting_time.slice(0, tLen).forEach((wt: number, i: number) => {
-              const w = d.inflow[i] || 0;
+            d.waiting_time.slice(0, tLen).forEach((wt, i) => {
+              const w = d.inflow?.[i] || 0;
               wtSum[i] += wt * w;
               wtW[i] += w;
             });
           }
         });
+        result.inflow = inflow;
+        result.outflow = outflow;
+        result.queue_length = queueLength;
         result.waiting_time = wtSum.map((s, i) => wtW[i] > 0 ? s / wtW[i] : 0);
         return result;
       };
@@ -542,7 +589,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       if (!sanitizedSeries) return;
 
       // Layout
-      const yAxisConfig = {
+      const yAxisConfig: Partial<Plotly.LayoutAxis> = {
         title: { text: `${option.label} ${getYAxisTitle(option.value)}`, standoff: 16, font: { color: option.color } },
         showgrid: true,
         gridcolor: option.color ? hexToRgba(option.color, 0.3) : '#e0e7ef',
@@ -551,7 +598,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         tickfont: { color: option.color, size: 10 },
         linecolor: option.color,
         showline: false,
-      } as any;
+      };
 
       if (yaxisId === 'y2') {
         newLayout.yaxis2 = {
@@ -605,11 +652,11 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         const paxRangeMax = maxPaxValue > 0 ? maxPaxValue * 1.1 : 10;
         if (newLayout.yaxis) {
           newLayout.yaxis.range = [0, paxRangeMax];
-          (newLayout.yaxis as any).autorange = false;
+          newLayout.yaxis.autorange = false;
         }
         if (newLayout.yaxis2) {
-          (newLayout.yaxis2 as any).range = [0, paxRangeMax];
-          (newLayout.yaxis2 as any).autorange = false;
+          newLayout.yaxis2.range = [0, paxRangeMax];
+          newLayout.yaxis2.autorange = false;
         }
       } else {
         const paxByAxis = new Map<string | undefined, typeof selectedPaxOptions>();
@@ -957,9 +1004,13 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
         {hourlyTrendsData && selectedFacilityValue && (() => {
           const times = filterDayTimes(hourlyTrendsData.times);
 
-          const facilityData = hourlyTrendsData[selectedFacilityValue];
-          const dataSource = facilityData?.data || facilityData;
-          const zoneFacilities = facilityData?.facilities || [];
+          const facilityEntry = hourlyTrendsData[selectedFacilityValue] as
+            | FlowChartFacilityGroup
+            | FlowChartZoneData;
+          const dataSource = getFacilityDataSource(facilityEntry);
+          const zoneFacilities = isFacilityGroup(facilityEntry)
+            ? facilityEntry.facilities || []
+            : [];
 
           if (!dataSource || zoneFacilities.length === 0 || times.length === 0) {
             return null;
@@ -983,7 +1034,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 .map(([code]) => code);
 
           // 편명별 데이터 집계 헬퍼 함수
-          const aggregateFlightData = (flightsData: Record<string, any>, timeLength: number) => {
+          const aggregateFlightData = (flightsData: Record<string, FlowChartMetricSeries>, timeLength: number) => {
             const result: Record<string, number[]> = {
               inflow: new Array(timeLength).fill(0),
               outflow: new Array(timeLength).fill(0),
@@ -1007,7 +1058,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
               if (flightData.waiting_time && flightData.inflow) {
                 flightData.waiting_time.forEach((wt: number, idx: number) => {
                   if (idx < timeLength) {
-                    const w = flightData.inflow[idx] || 0;
+                    const w = flightData.inflow![idx] || 0;
                     wtWeightedSum[idx] += wt * w;
                     wtInflowSum[idx] += w;
                   }
@@ -1022,7 +1073,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           };
 
           // 활성 항공사 기반 집계 (sub_facility airline-level fallback)
-          const aggregateAirlineData = (airlinesData: Record<string, any>, timeLength: number) => {
+          const aggregateAirlineData = (airlinesData: Record<string, FlowChartMetricSeries>, timeLength: number) => {
             const result: Record<string, number[]> = {
               inflow: new Array(timeLength).fill(0),
               outflow: new Array(timeLength).fill(0),
@@ -1046,7 +1097,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 if (airlineData.waiting_time && airlineData.inflow) {
                   airlineData.waiting_time.forEach((wt: number, idx: number) => {
                     if (idx < timeLength) {
-                      const w = airlineData.inflow[idx] || 0;
+                      const w = airlineData.inflow![idx] || 0;
                       waitingTimeWeightedSum[idx] += wt * w;
                       waitingTimeInflowSum[idx] += w;
                     }
@@ -1062,7 +1113,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           };
 
           let facilities: string[];
-          let filteredFacilityData: Record<string, any>;
+          let filteredFacilityData: Record<string, { inflow: number[]; capacity?: number[] }>;
 
           if (isAllZones) {
             // All Zones 선택 → zone 레벨 표시
@@ -1103,7 +1154,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
           } else {
             // 일부 zone 선택 (1개 이상) → 선택된 zone들의 모든 개별 facility 표시
             const tempFacilities: string[] = [];
-            const tempFacilityData: Record<string, any> = {};
+            const tempFacilityData: Record<string, FlowChartMetricSeries> = {};
 
             selectedZones.forEach((zoneName) => {
               const zoneData = dataSource[zoneName];
@@ -1112,8 +1163,8 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
                 tempFacilities.push(...zoneData.sub_facilities);
 
                 // facility_data의 각 facility 데이터를 시간에 맞춰 자르기
-                Object.keys(zoneData.facility_data).forEach((facilityName) => {
-                  const facData = zoneData.facility_data[facilityName];
+                Object.keys(zoneData.facility_data ?? {}).forEach((facilityName) => {
+                  const facData = zoneData.facility_data?.[facilityName];
                   if (typeof facData === 'object' && facData !== null) {
                     let facilityMetrics;
 
@@ -1176,7 +1227,15 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
             });
 
             facilities = tempFacilities;
-            filteredFacilityData = tempFacilityData;
+            filteredFacilityData = Object.fromEntries(
+              Object.entries(tempFacilityData).map(([name, metrics]) => [
+                name,
+                {
+                  inflow: metrics.inflow ?? [],
+                  capacity: metrics.capacity,
+                },
+              ])
+            );
           }
 
           if (facilities.length === 0) {

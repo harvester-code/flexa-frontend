@@ -1,6 +1,22 @@
 import React from 'react';
 import { pascalCase } from 'change-case';
 import clsx from 'clsx';
+import type { HomeSankeyDiagramData } from '@/types/api/homes';
+
+type FlowChartProcessEntry = NonNullable<HomeSankeyDiagramData['process_info']>[string] & {
+  process_name?: string;
+  facilities?: string[];
+};
+
+type FlowChartLayoutInput =
+  | string[]
+  | (Record<string, FlowChartProcessEntry | string[] | undefined> & { times?: string[] });
+
+export interface FlowChartLayoutResult {
+  nodeLabels: string[];
+  layerTitles: string[];
+  processInfo: Record<string, FlowChartProcessEntry> | null;
+}
 
 type UnitSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl';
 const UNIT_SIZE_CLASS_MAP: Record<UnitSize, string> = {
@@ -77,9 +93,9 @@ export function formatImageSize(icon: React.ReactNode, size: number): React.Reac
 /**
  * FlowChart(Sankey)용 라벨 및 레이어 타이틀 생성 함수 - 새로운 계층 구조 지원
  * @param data 백엔드에서 받은 새로운 구조 데이터
- * @returns { nodeLabels: string[], layerTitles: string[], processInfo: any }
+ * @returns { nodeLabels: string[], layerTitles: string[], processInfo: FlowChartProcessEntry | null }
  */
-export function formatFlowChartLayout(data: any): { nodeLabels: string[]; layerTitles: string[]; processInfo: any } {
+export function formatFlowChartLayout(data: FlowChartLayoutInput): FlowChartLayoutResult {
   // 이전 버전과의 호환성 체크
   if (Array.isArray(data)) {
     // 기존 방식 (label 배열)
@@ -108,13 +124,13 @@ export function formatFlowChartLayout(data: any): { nodeLabels: string[]; layerT
   // 새로운 계층 구조 방식
   const nodeLabels: string[] = [];
   const layerTitles: string[] = [];
-  const processInfo: any = {};
+  const processInfo: Record<string, FlowChartProcessEntry> = {};
 
   // 각 프로세스별로 처리
   Object.keys(data).forEach((processKey) => {
     if (processKey === 'times') return; // times는 건너뛰기
 
-    const process = data[processKey];
+    const process = data[processKey] as FlowChartProcessEntry | undefined;
     if (process && process.process_name && process.facilities) {
       // 레이어 타이틀 추가
       layerTitles.push(process.process_name);

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Option } from '@/types/homeTypes';
-import { ScenarioData } from '@/types/homeTypes';
+import { Option, ScenarioData } from '@/types/homeTypes';
+import type { HomeStaticData } from '@/types/api/homes/static';
 import TheHistogramChart from '@/components/charts/TheHistogramChart';
 import { Button } from '@/components/ui/Button';
 import ToggleButtonGroup from '@/components/ui/ToggleButtonGroup';
@@ -13,8 +13,8 @@ import TheDropdownMenu from './TheDropdownMenu';
 
 interface HomeChartHistogramProps {
   scenario: ScenarioData | null;
-  data?: any; // 배치 API에서 받은 histogram 데이터
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: HomeStaticData['histogram'];
+  isLoading?: boolean;
 }
 
 function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeChartHistogramProps) {
@@ -30,19 +30,17 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
     }));
   }, [histogramData]);
 
-  const [selectedFacilityValue, setSelectedFacilityValue] = useState('');
-  useEffect(() => {
-    if (FACILITY_OPTIONS.length > 0) {
-      // selectedFacilityValue가 비어있거나 현재 옵션에 없으면 첫 번째 옵션 선택
-      const isValidSelection = selectedFacilityValue && FACILITY_OPTIONS.some(opt => opt.value === selectedFacilityValue);
-      if (!isValidSelection) {
-        setSelectedFacilityValue(FACILITY_OPTIONS[0].value);
-      }
-    } else {
-      // 데이터가 없으면 선택값 초기화
-      setSelectedFacilityValue('');
+  const [userFacilityOverride, setUserFacilityOverride] = useState<string | null>(null);
+  const selectedFacilityValue = useMemo(() => {
+    if (FACILITY_OPTIONS.length === 0) return '';
+    if (
+      userFacilityOverride &&
+      FACILITY_OPTIONS.some((opt) => opt.value === userFacilityOverride)
+    ) {
+      return userFacilityOverride;
     }
-  }, [FACILITY_OPTIONS]);
+    return FACILITY_OPTIONS[0].value;
+  }, [FACILITY_OPTIONS, userFacilityOverride]);
 
   const ZONE_OPTIONS = useMemo(() => {
     if (!histogramData || !selectedFacilityValue) return [];
@@ -54,16 +52,18 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
     }));
   }, [histogramData, selectedFacilityValue]);
 
-  const [selectedZoneValue, setSelectedZoneValue] = useState('');
-  useEffect(() => {
-    if (ZONE_OPTIONS.length > 0) {
-      // all_zones가 아닌 첫 번째 실제 zone 선택
-      const firstActualZone = ZONE_OPTIONS.find(opt => opt.value !== 'all_zones');
-      setSelectedZoneValue(firstActualZone ? firstActualZone.value : ZONE_OPTIONS[0].value);
-    } else {
-      setSelectedZoneValue('');
+  const [userZoneOverride, setUserZoneOverride] = useState<string | null>(null);
+  const selectedZoneValue = useMemo(() => {
+    if (ZONE_OPTIONS.length === 0) return '';
+    if (
+      userZoneOverride &&
+      ZONE_OPTIONS.some((opt) => opt.value === userZoneOverride)
+    ) {
+      return userZoneOverride;
     }
-  }, [ZONE_OPTIONS]);
+    const firstActualZone = ZONE_OPTIONS.find((opt) => opt.value !== 'all_zones');
+    return firstActualZone ? firstActualZone.value : ZONE_OPTIONS[0].value;
+  }, [ZONE_OPTIONS, userZoneOverride]);
 
   const [selectedChartType, setSelectedChartType] = useState('waiting_time');
 
@@ -120,14 +120,17 @@ function HomeChartHistogram({ scenario, data, isLoading: propIsLoading }: HomeCh
               items={FACILITY_OPTIONS}
               icon={<ChevronDown />}
               label={FACILITY_OPTIONS.find((opt) => opt.value === selectedFacilityValue)?.label || 'Select Facility'}
-              onSelect={(item) => setSelectedFacilityValue(item.value)}
+              onSelect={(item) => {
+                setUserFacilityOverride(item.value);
+                setUserZoneOverride(null);
+              }}
             />
             <TheDropdownMenu
               className="min-w-48 flex-1 [&>*]:justify-start"
               items={ZONE_OPTIONS}
               icon={<ChevronDown />}
               label={ZONE_OPTIONS.find((opt) => opt.value === selectedZoneValue)?.label || 'Select Zone'}
-              onSelect={(item) => setSelectedZoneValue(item.value)}
+              onSelect={(item) => setUserZoneOverride(item.value)}
             />
           </div>
           <div className="chart-header-buttons">

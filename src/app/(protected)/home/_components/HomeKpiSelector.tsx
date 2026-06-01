@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { KpiValue } from '@/types/homeTypes';
 import { Button } from '@/components/ui/Button';
@@ -25,11 +25,6 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
   const [customInput, setCustomInput] = useState('');
   // 드롭다운 내부에서 토글 상태를 로컬로 관리 (항목 선택 시에만 반영)
   const [localCumulative, setLocalCumulative] = useState(value.cumulative ?? true);
-
-  // 외부 value 변경 시 로컬 상태 동기화
-  useEffect(() => {
-    setLocalCumulative(value.cumulative ?? true);
-  }, [value.cumulative]);
 
   const handleMeanClick = () => {
     onChange({ type: 'mean' });
@@ -115,7 +110,13 @@ const HomeKpiSelector: React.FC<HomeKpiSelectorProps> = ({ value, onChange }) =>
       </Button>
 
       {/* Top N% Dropdown Button */}
-      <DropdownMenu>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (open) {
+            setLocalCumulative(value.cumulative ?? true);
+          }
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             type="button"

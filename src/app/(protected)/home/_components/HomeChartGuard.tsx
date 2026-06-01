@@ -1,12 +1,13 @@
 import { type ReactNode } from 'react';
+import { ScenarioData } from '@/types/homeTypes';
 import HomeLoading from './HomeLoading';
 import HomeNoData from './HomeNoData';
 import HomeNoScenario from './HomeNoScenario';
 
 interface HomeChartGuardProps {
-  scenario: any;
+  scenario: ScenarioData | null;
   isLoading: boolean;
-  data?: any;
+  data?: unknown;
   children: ReactNode;
 }
 

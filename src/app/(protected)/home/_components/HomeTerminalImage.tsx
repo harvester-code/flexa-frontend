@@ -206,12 +206,8 @@ function HomeTerminalImage({
   );
 
   const [timeIndex, setTimeIndex] = useState(0);
-
-  useEffect(() => {
-    if (timeIndex >= times.length) {
-      setTimeIndex(times.length > 0 ? times.length - 1 : 0);
-    }
-  }, [timeIndex, times]);
+  const effectiveTimeIndex =
+    times.length === 0 ? 0 : Math.min(timeIndex, times.length - 1);
 
   const zoneOverlayData = useMemo<ZoneOverlayEntry[]>(() => {
     if (!zoneEntries.length) {
@@ -250,7 +246,7 @@ function HomeTerminalImage({
                   queueSeriesRaw as Array<number | string>
                 );
                 if (queueSeries.length > 0) {
-                  const safeIndex = Math.min(timeIndex, queueSeries.length - 1);
+                  const safeIndex = Math.min(effectiveTimeIndex, queueSeries.length - 1);
                   const currentValue = queueSeries[safeIndex] ?? 0;
                   queueValue = Math.max(0, Math.round(currentValue));
                   hasData = true;
@@ -272,15 +268,12 @@ function HomeTerminalImage({
         hasData,
       };
     });
-  }, [zoneEntries, combinedStepNames, flowChartData, times.length, timeIndex]);
+  }, [zoneEntries, combinedStepNames, flowChartData, times.length, effectiveTimeIndex]);
 
   const metadataImage = effectiveLayout?.imageUrl ?? null;
 
   useEffect(() => {
     if (!airport) {
-      setImageUrl(null);
-      setImageError(null);
-      setIsImageLoading(false);
       return;
     }
 
@@ -384,8 +377,8 @@ function HomeTerminalImage({
     };
   }, [airport, terminal, metadataImage, supabase]);
 
-  const selectedTimeLabel = timeLabels[timeIndex] ?? "";
-  const selectedTimestamp = times[timeIndex] ?? "";
+  const selectedTimeLabel = timeLabels[effectiveTimeIndex] ?? "";
+  const selectedTimestamp = times[effectiveTimeIndex] ?? "";
   const selectedDateTimeLabel = selectedTimestamp || selectedTimeLabel;
   const selectedMoment = useMemo(() => {
     if (!selectedTimestamp) {
@@ -396,7 +389,7 @@ function HomeTerminalImage({
   }, [selectedTimestamp]);
   const sliderPositionPercent =
     times.length > 1
-      ? Math.min(Math.max(timeIndex / (times.length - 1), 0), 1) * 100
+      ? Math.min(Math.max(effectiveTimeIndex / (times.length - 1), 0), 1) * 100
       : 0;
 
   // 양 끝 근처에서 점진적으로 박스 위치 조정
@@ -586,7 +579,7 @@ function HomeTerminalImage({
       {times.length > 0 ? (
         <div className="relative mt-3">
           <Slider
-            value={[timeIndex]}
+            value={[effectiveTimeIndex]}
             min={0}
             max={Math.max(times.length - 1, 0)}
             step={1}

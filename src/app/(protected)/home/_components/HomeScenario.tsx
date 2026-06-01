@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Ban,
@@ -139,15 +139,27 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
     return map;
   }, [notifications]);
 
-  const [isOpened, setIsOpened] = useState(false);
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const hasAutoOpened = useRef(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [autoOpenDismissed, setAutoOpenDismissed] = useState(false);
   const availableScenarioCount = Array.isArray(data) ? data.length : 0;
+  const shouldAutoOpen = !isLoading && !scenario && availableScenarioCount > 0;
+  const dialogOpen = manualOpen || (shouldAutoOpen && !autoOpenDismissed);
+
+  const [prevScenario, setPrevScenario] = useState(scenario);
+  if (scenario !== prevScenario) {
+    setPrevScenario(scenario);
+    if (scenario) {
+      setAutoOpenDismissed(false);
+      setManualOpen(false);
+    }
+  }
 
   // Airport와 Terminal 옵션 추출
   const airportOptions = useMemo(() => {
@@ -220,7 +232,8 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
   const selectScenario = (selectedScenario: ScenarioData) => {
     if (getHomeScenarioSelectState(selectedScenario) !== 'ready') return;
     onSelectScenario(selectedScenario);
-    setIsOpened(false);
+    setManualOpen(false);
+    setAutoOpenDismissed(true);
   };
 
   const toggleAirportFilter = (airport: string) => {
@@ -245,18 +258,12 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
 
   const appliedFilterCount = selectedAirports.length + selectedTerminals.length;
 
-  useEffect(() => {
-    if (!hasAutoOpened.current && !isLoading && !scenario && availableScenarioCount > 0) {
-      setIsOpened(true);
-      hasAutoOpened.current = true;
+  const handleDialogOpenChange = (open: boolean) => {
+    setManualOpen(open);
+    if (!open) {
+      setAutoOpenDismissed(true);
     }
-  }, [availableScenarioCount, isLoading, scenario]);
-
-  useEffect(() => {
-    if (scenario) {
-      hasAutoOpened.current = false;
-    }
-  }, [scenario]);
+  };
 
   return (
     <div className={cn('space-y-8', className)}>
@@ -268,7 +275,7 @@ function HomeScenario({ className, data, scenario, onSelectScenario, isLoading =
             Review analysis results and insights for the selected simulation scenario
           </p>
         </div>
-        <Dialog open={isOpened} onOpenChange={setIsOpened}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button>
               <Link2 className="mr-2 h-4 w-4" />

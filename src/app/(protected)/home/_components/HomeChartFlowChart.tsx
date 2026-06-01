@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { ScenarioData } from "@/types/homeTypes";
+import type { HomeSankeyDiagramData } from "@/types/api/homes/static";
 import { COMPONENT_TYPICAL_COLORS } from "@/styles/colors";
 import { formatFlowChartLayout } from "./HomeFormat";
 import HomeChartGuard from "./HomeChartGuard";
@@ -12,8 +13,8 @@ const SankeyChart = dynamic(() => import("@/components/charts/SankeyChart"), {
 
 interface HomeChartFlowChartProps {
   scenario: ScenarioData | null;
-  data?: any; // 배치 API에서 받은 sankey_diagram 데이터
-  isLoading?: boolean; // 배치 API 로딩 상태
+  data?: HomeSankeyDiagramData;
+  isLoading?: boolean;
 }
 
 function HomeChartFlowChart({
@@ -21,37 +22,27 @@ function HomeChartFlowChart({
   data,
   isLoading: propIsLoading,
 }: HomeChartFlowChartProps) {
-  // 부모 컴포넌트에서 데이터를 받아서 사용 (개별 API 호출 제거)
   const sankey = data;
   const isSankeyChartLoading = propIsLoading || false;
 
-  const [sankeyChartData, setSankeyChartData] = useState<Plotly.Data[]>([]);
-  const [layerTitles, setLayerTitles] = useState<string[]>([]);
-  const [processInfo, setProcessInfo] = useState<any>(null);
-  const [chartHeight, setChartHeight] = useState<number>(600);
-
-  useEffect(() => {
+  const { sankeyChartData, layerTitles, processInfo, chartHeight } = useMemo(() => {
     if (!sankey) {
-      // 데이터가 없으면 이전 상태 초기화
-      setSankeyChartData([]);
-      setLayerTitles([]);
-      setProcessInfo(null);
-      return;
+      return {
+        sankeyChartData: [] as Plotly.Data[],
+        layerTitles: [] as string[],
+        processInfo: null as Record<string, { facilities?: string[]; pax_count?: number }> | null,
+        chartHeight: 600,
+      };
     }
 
-    // 새로운 구조 처리 - process_info가 있으면 새 구조, 없으면 기존 구조
     const layoutData = sankey.process_info
       ? sankey.process_info
       : sankey.label || [];
     const { nodeLabels, layerTitles, processInfo } =
       formatFlowChartLayout(layoutData);
 
-    // 노드 수에 따라 차트 높이 동적 조정
     const nodeCount = nodeLabels.length;
-    const dynamicHeight = Math.max(400, Math.min(nodeCount * 20, 600)); // 노드당 20px, 최소 400px, 최대 600px
-    setChartHeight(dynamicHeight);
-
-    // 각 프로세스별로 색상을 COMPONENT_TYPICAL_COLORS 순서대로 할당
+    const dynamicHeight = Math.max(400, Math.min(nodeCount * 20, 600));
     const nodeColors: string[] = [];
 
     if (processInfo) {
@@ -59,13 +50,11 @@ function HomeChartFlowChart({
         const facilities = processInfo[processKey]?.facilities || [];
 
         facilities.forEach((facility: string, layerIndex: number) => {
-          // Failed와 Skipped는 특별 색상
           if (facility === "Failed") {
-            nodeColors.push("#EF4444"); // 빨간색
+            nodeColors.push("#EF4444");
           } else if (facility === "Skipped" || facility.includes("Skip")) {
-            nodeColors.push("#999999"); // 회색
+            nodeColors.push("#999999");
           } else {
-            // 나머지는 레이어 내 순서대로 COMPONENT_TYPICAL_COLORS 사용
             nodeColors.push(
               COMPONENT_TYPICAL_COLORS[
                 layerIndex % COMPONENT_TYPICAL_COLORS.length
@@ -75,7 +64,6 @@ function HomeChartFlowChart({
         });
       });
     } else {
-      // processInfo가 없는 경우 기본 처리
       nodeLabels.forEach((label, index) => {
         if (label === "Failed") {
           nodeColors.push("#EF4444");
@@ -89,7 +77,7 @@ function HomeChartFlowChart({
       });
     }
 
-    const data: Plotly.Data[] = [
+    const chartData: Plotly.Data[] = [
       {
         type: "sankey",
         orientation: "h",
@@ -102,10 +90,15 @@ function HomeChartFlowChart({
         link: sankey.link,
       },
     ];
-    setSankeyChartData(data);
-    setLayerTitles(layerTitles);
-    setProcessInfo(processInfo);
+
+    return {
+      sankeyChartData: chartData,
+      layerTitles,
+      processInfo,
+      chartHeight: dynamicHeight,
+    };
   }, [sankey]);
+
   return (
     <HomeChartGuard scenario={scenario} isLoading={!!isSankeyChartLoading}>
       <HomeChartSection title="Flow Chart">
@@ -113,7 +106,6 @@ function HomeChartFlowChart({
           {layerTitles.map((title, i) => {
             const isLast = i === layerTitles.length - 1;
 
-            // processInfo에서 해당 레이어의 pax_count 찾기
             let paxCount: number | null = null;
             if (processInfo) {
               const processKeys = Object.keys(processInfo);

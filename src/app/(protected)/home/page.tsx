@@ -27,32 +27,33 @@ function HomePage() {
   } = useScenarios();
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
 
-  // Home 진입 시 시나리오 플래그 최신화 (5분 stale 캐시로 L2 완료가 반영 안 되는 문제 방지)
-  useEffect(() => {
-    void refetchScenarios();
-  }, [refetchScenarios]);
-
-  // 선택된 시나리오 객체를 목록 최신 row와 동기화 (home_cache_status 등)
-  useEffect(() => {
-    if (!scenario?.scenario_id || !scenarios?.length) return;
+  const resolvedScenario = useMemo(() => {
+    if (!scenario?.scenario_id || !scenarios?.length) return scenario;
     const fresh = scenarios.find((s) => s.scenario_id === scenario.scenario_id);
-    if (!fresh) return;
+    if (!fresh) return scenario;
     if (
       fresh.simulation_status !== scenario.simulation_status ||
       fresh.home_cache_status !== scenario.home_cache_status ||
       fresh.has_simulation_data !== scenario.has_simulation_data ||
       fresh.has_home_static_cache !== scenario.has_home_static_cache
     ) {
-      setScenario(fresh);
+      return fresh;
     }
-  }, [scenarios, scenario]);
+    return scenario;
+  }, [scenario, scenarios]);
+
+  // Home 진입 시 시나리오 플래그 최신화 (5분 stale 캐시로 L2 완료가 반영 안 되는 문제 방지)
+  useEffect(() => {
+    void refetchScenarios();
+  }, [refetchScenarios]);
+
   const [kpi, setKpi] = useState<KpiValue>({
     type: "mean",
     percentile: 5,
     cumulative: true,
   });
 
-  const isAnalysisReady = isHomeAnalysisReady(scenario);
+  const isAnalysisReady = isHomeAnalysisReady(resolvedScenario);
 
   // 정적 데이터 (KPI와 무관 - 한 번만 호출하고 캐시)
   const {
@@ -60,8 +61,8 @@ function HomePage() {
     isLoading: isStaticLoading,
     isError: isStaticError,
   } = useStaticData({
-    scenarioId: scenario?.scenario_id,
-    enabled: !!scenario && isAnalysisReady,
+    scenarioId: resolvedScenario?.scenario_id,
+    enabled: !!resolvedScenario && isAnalysisReady,
   });
 
   // KPI 메트릭 데이터 (KPI 변경 시 재요청)
@@ -70,7 +71,7 @@ function HomePage() {
     isLoading: isMetricsLoading,
     isError: isMetricsError,
   } = useMetricsData({
-    scenarioId: scenario?.scenario_id,
+    scenarioId: resolvedScenario?.scenario_id,
     percentile: kpi.type === "top" ? (kpi.percentile ?? null) : null,
     percentileMode:
       kpi.type === "top"
@@ -78,7 +79,7 @@ function HomePage() {
           ? "cumulative"
           : "quantile"
         : undefined,
-    enabled: !!scenario && isAnalysisReady,
+    enabled: !!resolvedScenario && isAnalysisReady,
   });
 
   const terminalLayoutData = useMemo<ScenarioTerminalLayout | null>(() => {
@@ -134,9 +135,9 @@ function HomePage() {
     };
   }, [staticData]);
 
-  const waitingBanner = scenario && !isAnalysisReady && (
+  const waitingBanner = resolvedScenario && !isAnalysisReady && (
     <div className="mt-4 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-default-700">
-      {isSimulationPipelineActive(scenario) ? (
+      {isSimulationPipelineActive(resolvedScenario) ? (
         <>
           <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
           <span>
@@ -179,7 +180,7 @@ function HomePage() {
         <HomeScenario
           className="mt-8"
           data={scenarios || []}
-          scenario={scenario}
+          scenario={resolvedScenario}
           onSelectScenario={setScenario}
           isLoading={isScenariosLoading || isScenariosRefetching}
           kpi={kpi}
@@ -196,7 +197,7 @@ function HomePage() {
           open={true}
         >
           <HomeTerminalImage
-            scenario={scenario}
+            scenario={resolvedScenario}
             layoutData={isAnalysisReady ? terminalLayoutData : null}
             flowChartData={isAnalysisReady ? (staticData?.flow_chart ?? null) : null}
           />
@@ -209,7 +210,7 @@ function HomePage() {
           open={true}
         >
           <HomeSummary
-            scenario={scenario}
+            scenario={resolvedScenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
             data={isAnalysisReady ? metricsData?.summary : undefined}
             isLoading={isAnalysisReady && isMetricsLoading}
@@ -222,7 +223,7 @@ function HomePage() {
           open={true}
         >
           <HomeCharts
-            scenario={scenario}
+            scenario={resolvedScenario}
             data={
               isAnalysisReady
                 ? {
@@ -242,7 +243,7 @@ function HomePage() {
           open={true}
         >
           <HomeDetails
-            scenario={scenario}
+            scenario={resolvedScenario}
             percentile={kpi.type === "top" ? (kpi.percentile ?? null) : null}
             data={isAnalysisReady ? metricsData?.facility_details : undefined}
             isLoading={isAnalysisReady && isMetricsLoading}

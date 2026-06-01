@@ -104,7 +104,15 @@ function FacilityBarChart({
   }
 
   const toggleZone = (z: string) =>
-    setExpandedZones(prev => { const n = new Set(prev); n.has(z) ? n.delete(z) : n.add(z); return n; });
+    setExpandedZones((prev) => {
+      const n = new Set(prev);
+      if (n.has(z)) {
+        n.delete(z);
+      } else {
+        n.add(z);
+      }
+      return n;
+    });
 
   const maxZoneWait = Math.max(...Object.values(zoneMap).map(z => z.avgWait ?? 0), 1);
 
@@ -430,9 +438,13 @@ export default function MissedPaxModal({ open, onClose, data, isLoading, totalMi
   }, [flights]);
 
   const toggleCarrier = (code: string) =>
-    setCollapsedCarriers(prev => {
+    setCollapsedCarriers((prev) => {
       const next = new Set(prev);
-      next.has(code) ? next.delete(code) : next.add(code);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
       return next;
     });
 
