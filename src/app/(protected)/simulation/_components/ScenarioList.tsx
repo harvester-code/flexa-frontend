@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
+import { ScenarioData } from "@/types/homeTypes";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ interface EditingScenario {
 }
 
 interface ScenarioListProps {
-  scenarios: any[];
+  scenarios: ScenarioData[];
   isLoading: boolean;
   onCreateScenario: () => void;
   onDeleteScenario: (selectedIds: string[]) => void;
@@ -224,7 +225,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     useState<EditingScenario | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
-  const [copyingScenario, setCopyingScenario] = useState<any>(null);
+  const [copyingScenario, setCopyingScenario] = useState<ScenarioData | null>(null);
   const [copyName, setCopyName] = useState("");
   const [isCopying, setIsCopying] = useState(false);
   const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
@@ -335,12 +336,8 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
 
     // 정렬
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
-
-      // null/undefined 처리
-      if (aValue === null || aValue === undefined) aValue = "";
-      if (bValue === null || bValue === undefined) bValue = "";
+      const aValue: string | number = a[sortField] ?? "";
+      const bValue: string | number = b[sortField] ?? "";
 
       // 날짜 필드 처리
       if (
@@ -480,7 +477,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     setIsScenarioSelected(Array(filteredScenarios.length).fill(false));
   };
 
-  const startEdit = (scenario: any) => {
+  const startEdit = (scenario: ScenarioData) => {
     setEditingScenario({
       id: scenario.scenario_id, // scenario_id를 id로 사용
       scenario_id: scenario.scenario_id,
@@ -580,7 +577,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
     navigateToScenario(scenarioId, { scenarioName, airport });
   };
 
-  const handleCopyClick = (scenario: any) => {
+  const handleCopyClick = (scenario: ScenarioData) => {
     setCopyingScenario(scenario);
     setCopyName(`${scenario.name} (Copy)`);
     setShowCopyDialog(true);

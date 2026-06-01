@@ -2,15 +2,19 @@ import React from 'react';
 import { Button, ButtonGroup } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
-interface ToggleButtonGroupProps<T = any> {
+interface ToggleOption {
+  value?: string | number;
+}
+
+interface ToggleButtonGroupProps<T extends ToggleOption = ToggleOption> {
   /** 옵션 배열 */
   options: T[];
 
   /** 선택된 값 (단일 선택용) */
-  selectedValue?: any;
+  selectedValue?: T['value'];
 
-  /** 선택된 값들 (다중 선택용) */
-  selectedValues?: any[];
+  /** 선택된 인덱스 (다중 선택용, HourlyTrends 방식) */
+  selectedValues?: number[];
 
   /** 선택 시 호출되는 함수 */
   onSelect: (value: T, index: number) => void;
@@ -36,7 +40,7 @@ interface ToggleButtonGroupProps<T = any> {
 
 const SELECTED_STYLE = 'bg-muted font-semibold shadow-[inset_0px_-1px_4px_0px_rgba(185,192,212,0.80)]';
 
-export default function ToggleButtonGroup<T = any>({
+export default function ToggleButtonGroup<T extends ToggleOption = ToggleOption>({
   options,
   selectedValue,
   selectedValues,
@@ -58,7 +62,7 @@ export default function ToggleButtonGroup<T = any>({
     }
 
     if (selectedValue !== undefined) {
-      return selectedValue === (option as any)?.value; // 단일 선택
+      return selectedValue === option.value; // 단일 선택
     }
 
     return false;
@@ -68,7 +72,7 @@ export default function ToggleButtonGroup<T = any>({
     if (keyExtractor) {
       return keyExtractor(option, index);
     }
-    return (option as any)?.value || index;
+    return option.value ?? index;
   };
 
   return (

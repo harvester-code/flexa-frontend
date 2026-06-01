@@ -41,7 +41,7 @@ const SimulationPage = () => {
         description: `${selectedIds.length} scenario${selectedIds.length > 1 ? 's' : ''} ${selectedIds.length > 1 ? 'have' : 'has'} been successfully deleted.`,
       });
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Delete Failed',
         description: 'An error occurred while deleting the scenario(s).',

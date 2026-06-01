@@ -49,18 +49,16 @@ const BreadcrumbLink = React.forwardRef<
     asChild?: boolean;
   }
 >(({ className, asChild, ...props }, ref) => {
-  const Comp = asChild ? React.Fragment : Link;
-
-  return (
-    <Comp
-      ref={ref as any}
-      className={cn(
-        "text-default-600 transition-colors hover:text-default-900 font-medium",
-        className
-      )}
-      {...props}
-    />
+  const linkClassName = cn(
+    "text-default-600 transition-colors hover:text-default-900 font-medium",
+    className
   );
+
+  if (asChild) {
+    return <React.Fragment {...props} />;
+  }
+
+  return <Link ref={ref} className={linkClassName} {...props} />;
 });
 BreadcrumbLink.displayName = "BreadcrumbLink";
 

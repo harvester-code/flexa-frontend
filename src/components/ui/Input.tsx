@@ -97,7 +97,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         showAsciiWarning();
         e.preventDefault();
       }
-      props.onBeforeInput?.(e as any);
+      props.onBeforeInput?.(e as React.InputEvent<HTMLInputElement>);
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {

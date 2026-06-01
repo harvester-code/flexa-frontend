@@ -213,20 +213,22 @@ export default function NotificationBell() {
     }
 
     if (unreadCount > prevUnreadRef.current) {
-      setRinging(true);
-      setTimeout(() => setRinging(false), 700);
+      queueMicrotask(() => {
+        setRinging(true);
+        setTimeout(() => setRinging(false), 700);
 
-      const latestGroup = groups.find((g) => g.isUnread);
-      if (latestGroup) {
-        const popupId = latestGroup.key;
-        setPopups((prev) => {
-          const without = prev.filter((p) => p.id !== popupId);
-          return [...without, { id: popupId, group: latestGroup }];
-        });
-        setTimeout(() => {
-          setPopups((prev) => prev.filter((p) => p.id !== popupId));
-        }, 4500);
-      }
+        const latestGroup = groups.find((g) => g.isUnread);
+        if (latestGroup) {
+          const popupId = latestGroup.key;
+          setPopups((prev) => {
+            const without = prev.filter((p) => p.id !== popupId);
+            return [...without, { id: popupId, group: latestGroup }];
+          });
+          setTimeout(() => {
+            setPopups((prev) => prev.filter((p) => p.id !== popupId));
+          }, 4500);
+        }
+      });
     }
 
     prevUnreadRef.current = unreadCount;
@@ -237,12 +239,14 @@ export default function NotificationBell() {
     if (!isLoaded) return;
     const latestUnread = groups.find((g) => g.isUnread);
     if (!latestUnread) return;
-    setPopups((prev) => {
-      const idx = prev.findIndex((p) => p.id === latestUnread.key);
-      if (idx < 0) return prev;
-      const next = [...prev];
-      next[idx] = { id: latestUnread.key, group: latestUnread };
-      return next;
+    queueMicrotask(() => {
+      setPopups((prev) => {
+        const idx = prev.findIndex((p) => p.id === latestUnread.key);
+        if (idx < 0) return prev;
+        const next = [...prev];
+        next[idx] = { id: latestUnread.key, group: latestUnread };
+        return next;
+      });
     });
   }, [groups, isLoaded]);
 

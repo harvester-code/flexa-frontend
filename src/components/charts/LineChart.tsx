@@ -21,11 +21,11 @@ function LineChart({ chartData, chartLayout, config = {}, preserveAxisTickFormat
         ...chartLayout,
         yaxis: {
           ...yAxis,
-          tickformat: preserveAxisTickFormat ? ((yAxis as any)?.tickformat ?? ',d') : ',d',
+          tickformat: preserveAxisTickFormat ? (yAxis.tickformat ?? ',d') : ',d',
         },
         xaxis: {
           ...xAxis,
-          tickformat: preserveAxisTickFormat ? ((xAxis as any)?.tickformat ?? '%H:%M') : '%H:%M',
+          tickformat: preserveAxisTickFormat ? (xAxis.tickformat ?? '%H:%M') : '%H:%M',
         },
         ...(chartLayout?.yaxis2
           ? {

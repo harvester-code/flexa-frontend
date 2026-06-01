@@ -177,8 +177,8 @@ export default function ComponentsPage() {
     { value: 'newyork', label: 'New York' },
   ];
 
-  // DatePicker component for showcase
-  const DatePicker = () => (
+  // DatePicker showcase element
+  const datePickerElement = (
     <Popover open={openDatePicker} onOpenChange={setOpenDatePicker}>
       <PopoverTrigger asChild>
         <Button variant="outline">
@@ -202,8 +202,8 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  // Combobox components for showcase
-  const FrameworkCombobox = () => (
+  // Combobox showcase elements
+  const frameworkComboboxElement = (
     <Popover open={openFramework} onOpenChange={setOpenFramework}>
       <PopoverTrigger asChild>
         <Button
@@ -246,7 +246,7 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const LanguageCombobox = () => (
+  const languageComboboxElement = (
     <Popover open={openLanguageMain} onOpenChange={setOpenLanguageMain}>
       <PopoverTrigger asChild>
         <Button
@@ -289,7 +289,7 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const BrandCombobox = () => (
+  const brandComboboxElement = (
     <Popover open={openCountryBrand} onOpenChange={setOpenCountryBrand}>
       <PopoverTrigger asChild>
         <Button
@@ -332,7 +332,7 @@ export default function ComponentsPage() {
     </Popover>
   );
 
-  const SmallCombobox = () => (
+  const smallComboboxElement = (
     <Popover open={openCitySize} onOpenChange={setOpenCitySize}>
       <PopoverTrigger asChild>
         <Button
@@ -546,7 +546,7 @@ export default function ComponentsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Date (Calendar)</Label>
-                    <DatePicker />
+                    {datePickerElement}
                   </div>
                   <div className="space-y-2">
                     <Label>Time</Label>
@@ -766,11 +766,11 @@ export default function ComponentsPage() {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-2">
                       <Label>Framework</Label>
-                      <FrameworkCombobox />
+                      {frameworkComboboxElement}
                     </div>
                     <div className="space-y-2">
                       <Label>Language</Label>
-                      <LanguageCombobox />
+                      {languageComboboxElement}
                     </div>
                     <div className="space-y-2">
                       <Label>Disabled</Label>
@@ -789,7 +789,7 @@ export default function ComponentsPage() {
                 <div className="max-w-xs">
                   <div className="space-y-2">
                     <Label>Brand Style</Label>
-                    <BrandCombobox />
+                    {brandComboboxElement}
                   </div>
                 </div>
               </div>
@@ -799,7 +799,7 @@ export default function ComponentsPage() {
                 <h3 className="mb-4 text-lg font-medium">Combobox Size</h3>
                 <div className="flex items-center gap-3">
                   <span className="w-16 text-xs font-normal text-default-500">sm:</span>
-                  <SmallCombobox />
+                  {smallComboboxElement}
                 </div>
               </div>
             </div>

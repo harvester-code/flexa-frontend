@@ -21,12 +21,14 @@ export const LoadFactorSlider: React.FC<LoadFactorSliderProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState<string>(value.toString());
   const [hasError, setHasError] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [prevValue, setPrevValue] = useState(value);
 
-  // value prop이 변경될 때 inputValue 동기화
-  useEffect(() => {
+  if (value !== prevValue && !isEditing) {
+    setPrevValue(value);
     setInputValue(value.toString());
     setHasError(false);
-  }, [value]);
+  }
 
   const validateInput = (inputStr: string): boolean => {
     // 빈 문자열은 허용하지 않음
@@ -150,6 +152,8 @@ export const LoadFactorSlider: React.FC<LoadFactorSliderProps> = ({
             max={max}
             value={inputValue}
             onChange={handleInputChange}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => setIsEditing(false)}
             onKeyDown={handleInputKeyDown}
             onClick={handleInputClick}
             className={`w-16 rounded border px-2 py-1 text-center text-sm [appearance:textfield] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 interface IntegerNumberInputProps {
   value: number;
@@ -27,12 +27,13 @@ export const IntegerNumberInput: React.FC<IntegerNumberInputProps> = ({
   const [inputValue, setInputValue] = useState<string>(value.toString());
   const [hasError, setHasError] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [prevValue, setPrevValue] = useState(value);
 
-  // value prop이 변경될 때 inputValue 동기화
-  useEffect(() => {
+  if (value !== prevValue && !isFocused) {
+    setPrevValue(value);
     setInputValue(value.toString());
     setHasError(false);
-  }, [value]);
+  }
 
   const validateInput = (inputStr: string): boolean => {
     // 빈 문자열은 허용하지 않음
