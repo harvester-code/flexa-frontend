@@ -1,8 +1,18 @@
-export type CellStyle = Record<string, string | number | undefined>;
+import type { InternalAxiosRequestConfig } from 'axios';
+import type { ApiLogPayload, ChartData, ChartSeries } from '@/types/api/common';
 
-// =======================================================================
-// Common Types
-// =======================================================================
+export type {
+  CreateScenarioRequest as CreateScenarioParams,
+  FlightSchedulesRequest as FlightSchedulesParams,
+  MetadataSaveResponse,
+  MetadataLoadResponse,
+  FlightScheduleResponse,
+  ShowUpPassengerResponse as PassengerShowUpResponse,
+  SimplifiedCondition,
+  ScenarioMetadataPayload,
+} from '@/types/api/simulations';
+
+export type { ChartData, ChartSeries };
 
 // =======================================================================
 // Condition Types
@@ -22,19 +32,6 @@ export interface OperatorItem extends DropdownItem {
   multiSelect: boolean;
 }
 
-interface ConditionData {
-  logicItems: DropdownItem[];
-  criteriaItems: DropdownItem[];
-  operatorItems: { [criteriaId: string]: OperatorItem[] };
-  valueItems: { [criteriaId: string]: DropdownItem[] };
-}
-
-interface ConditionParams {
-  name: string;
-  operator: string[];
-  value: string[];
-}
-
 export interface Condition {
   logic: string;
   criteria: string;
@@ -42,141 +39,9 @@ export interface Condition {
   value: string[];
 }
 
-export interface SimplifiedCondition {
-  field: string;
-  values: string[];
-}
-
-interface ConditionState {
-  index?: number;
-  conditions: Condition[];
-  mean?: number;
-  standard_deviation?: number;
-}
-
-// =======================================================================
-// Service Layer Interfaces
-// =======================================================================
-
-export interface CreateScenarioParams {
-  name: string;
-  airport: string | null;
-  terminal: string | null;
-  memo: string | null;
-}
-
-export interface FlightSchedulesParams {
-  airport: string;
-  date: string;
-  conditions: SimplifiedCondition[];
-}
-
-export interface MetadataSaveResponse {
-  s3_key: string;
-  bucket: string;
-  saved_at: string;
-}
-
-export interface MetadataLoadResponse {
-  scenario_id: string;
-  metadata: {
-    tabs: {
-      overview: any;
-      flightSchedule: any;
-      passengerSchedule: any;
-      processingProcedures: any;
-    };
-    simulationUI?: {
-      flightSchedule: Record<string, unknown>;
-      passengerSchedule: Record<string, unknown>;
-      processingProcedures: Record<string, unknown>;
-    };
-  };
-  s3_key: string;
-  loaded_at: string;
-}
-
-// =======================================================================
-// Scenario Response Types
-// =======================================================================
-
-export interface FlightScheduleResponse {
-  total: number;
-  types: {
-    International: Array<{ iata: string; name: string }>;
-    Domestic: Array<{ iata: string; name: string }>;
-  };
-  terminals: {
-    [terminalName: string]: Array<{ iata: string; name: string }>;
-  };
-  chart_x_data: string[];
-  chart_y_data: ChartData;
-  parquet_metadata: {
-    columns: Array<{
-      name: string;
-      unique_values: string[];
-      count: number;
-    }>;
-  };
-}
-
-export interface PassengerScheduleResponse {
-  bar_chart_x_data: string[];
-  bar_chart_y_data: ChartData;
-  dst_chart: unknown;
-  total: number;
-  total_sub_obj: Array<{
-    title: string;
-    value: string;
-    unit?: string;
-  }>;
-}
-
-export interface PassengerShowUpResponse {
-  airport: string;
-  date: string;
-  scenario_id: string;
-  total: number;
-  chart_x_data: string[];
-  chart_y_data?: ChartData;
-  summary?: {
-    flights: number;
-    avg_seats: number;
-    load_factor: number;
-    min_arrival_minutes: number;
-  };
-}
-
-export interface ChartData {
-  [name: string]: Array<{
-    name: string;
-    order: number;
-    y: Array<number>;
-    acc_y?: Array<number>;
-  }>;
-}
-
 // =======================================================================
 // Domain Types
 // =======================================================================
-
-interface ScenarioOverview {
-  matrix: Array<{
-    name: string;
-    value: string;
-  }>;
-}
-
-interface FlightSchedule {
-  airport: string;
-  date: string;
-  type: "departure" | "arrival";
-  availableConditions: AvailableConditions;
-  selectedConditions: SelectedConditions;
-  total: number;
-  chartData: ChartData | null;
-  isCompleted: boolean;
-}
 
 export interface AvailableConditions {
   types: {
@@ -200,33 +65,6 @@ export interface AirlineInfo {
   name: string;
 }
 
-// New JSON structure for show_up_pax.json
-interface PassengerScheduleShowUpPax {
-  settings: Record<string, any>;
-  pax_demographics: Record<string, any>;
-  pax_arrival_patterns: {
-    rules: Array<{
-      conditions: {
-        operating_carrier_iata: string[];
-      };
-      mean: number;
-      std: number;
-    }>;
-    default: {
-      mean: number;
-      std: number;
-    };
-  };
-
-  apiResponseData: PassengerScheduleResponse | null;
-  isCompleted: boolean;
-}
-
-interface AirportProcessing {
-  process_flow: ProcessStep[];
-  isCompleted: boolean;
-}
-
 export interface ProcessStep {
   step: number;
   name: string;
@@ -248,10 +86,10 @@ export interface Facility {
 }
 
 export interface TimeBlock {
-  period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
+  period: string;
   process_time_seconds: number;
   passenger_conditions: PassengerCondition[];
-  activate?: boolean; // 시설 운영 활성화 여부
+  activate?: boolean;
 }
 
 export interface EntryCondition {
@@ -264,34 +102,22 @@ export interface PassengerCondition {
   values: string[];
 }
 
-interface FacilityCapacity {
-  selectedNodes: number[];
-  settings: Record<string, FacilityCapacitySetting>;
-  isCompleted: boolean;
-}
-
 export interface FacilityCapacitySetting {
   max_queue_length: number;
   facility_count: number;
   facility_schedules: number[][];
 }
 
-// =======================================================================
-// =======================================================================
-// Grid Types
-// =======================================================================
-
-interface AllocationTableHeader {
-  text: string;
-  value: string;
-  width: number;
-  resizable: boolean;
-  style?: CellStyle;
-}
-
-interface AllocationTableRow {
-  id: string;
-  data: { [key: string]: string | number };
+export interface PassengerScheduleResponse {
+  bar_chart_x_data: string[];
+  bar_chart_y_data: ChartData;
+  dst_chart: unknown;
+  total: number;
+  total_sub_obj: Array<{
+    title: string;
+    value: string;
+    unit?: string;
+  }>;
 }
 
 // =======================================================================
@@ -302,48 +128,24 @@ export interface APIRequestLog {
   timestamp: string;
   endpoint?: string;
   method?: string;
-  request?: any; // 요청 파라미터
-  response?: any; // 응답 데이터
-  requestBody?: any;
-  responseData?: any;
-  status: "loading" | "success" | "error";
+  request?: ApiLogPayload;
+  response?: ApiLogPayload;
+  requestBody?: ApiLogPayload;
+  responseData?: ApiLogPayload;
+  status: 'loading' | 'success' | 'error';
   duration?: number;
-  error?: string; // 에러 메시지
+  error?: string;
   errorMessage?: string;
 }
 
-// =======================================================================
-// Simulation Run Types
-// =======================================================================
-
-interface SimulationRunRequest {
-  setting: {
-    airport: string;
-    date: string;
+export interface HttpErrorLike {
+  response?: {
+    status?: number;
+    data?: { detail?: string; message?: string };
   };
-  process_flow: Array<{
-    step: number;
-    name: string;
-    travel_time_minutes: number;
-    entry_conditions: EntryCondition[];
-    zones: Record<
-      string,
-      {
-        facilities: Array<{
-          id: string;
-          operating_schedule: {
-            time_blocks: Array<{
-              period: string; // "YYYY-MM-DD HH:MM:SS-YYYY-MM-DD HH:MM:SS" format
-              process_time_seconds: number;
-              activate?: boolean; // 시설 운영 활성화 여부
-              passenger_conditions: Array<{
-                field: string;
-                values: string[];
-              }>;
-            }>;
-          };
-        }>;
-      }
-    >;
-  }>;
+  message?: string;
 }
+
+export type AxiosRetryConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};

@@ -257,11 +257,7 @@ export interface KpiValue {
 // Home API 응답 타입 (/homes/{scenarioId}/static)
 // ============================================================
 
-export interface HomeStaticData {
-  flow_chart?: Record<string, unknown>;
-  histogram?: Record<string, unknown>;
-  sankey_diagram?: Record<string, unknown>;
-}
+export type { HomeStaticData, HomeSankeyDiagramData, HistogramChartSlice } from '@/types/api/homes/static';
 
 // ============================================================
 // Home API 응답 타입 (/homes/{scenarioId}/metrics)
