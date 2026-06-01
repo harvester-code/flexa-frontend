@@ -545,7 +545,7 @@ export default function OperatingScheduleEditor({
 
     setProcessFlow(adjusted);
     incrementFacilityPresetVersion();
-  }, [chartResult?.chart_x_data]);
+  }, [chartResult, contextDate, processFlow, incrementFacilityPresetVersion, setProcessFlow]);
 
   // Generate time slots using custom hook
   const { timeSlots, isPreviousDay } = useTimeSlotGeneration({
@@ -1011,7 +1011,7 @@ export default function OperatingScheduleEditor({
       });
       return newSet;
     });
-  }, [contextMenu.targetCells, disabledCells]);
+  }, [contextMenu.targetCells, disabledCells, setDisabledCells]);
 
   // Handler for setting process time multiplier
   const handleSetProcessTime = useCallback(
@@ -1034,7 +1034,6 @@ export default function OperatingScheduleEditor({
     [
       contextMenu.targetCells,
       selectedProcessIndex,
-      selectedZone,
       currentProcessTime,
       setCellProcessTimes,
     ]

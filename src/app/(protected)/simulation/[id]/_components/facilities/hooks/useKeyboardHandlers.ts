@@ -263,7 +263,6 @@ export function useKeyboardHandlers({
       setDisabledCells,
       setCellBadges,
       cellBadges,
-      cellProcessTimes,
       setCellProcessTimes,
       undoHistory,
       handleUndo,

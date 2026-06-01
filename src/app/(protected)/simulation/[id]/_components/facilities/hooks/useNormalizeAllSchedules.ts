@@ -165,5 +165,6 @@ export function useNormalizeAllSchedules({
     processFlow,
     facilityPresetVersion,
     initializeDisabledCellsFromPeriods,
+    isTimeSlotsFromChartData,
   ]);
 }

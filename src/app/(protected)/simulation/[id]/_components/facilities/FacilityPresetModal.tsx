@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { BookOpen, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import {
   Dialog,
@@ -79,18 +79,7 @@ export default function FacilityPresetModal({
   // Load confirm
   const [loadingPreset, setLoadingPreset] = useState<FacilityPreset | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      setView("list");
-      setNewPresetName("");
-      setSaveMode("new");
-      setSelectedOverwriteId(null);
-      setEditingPresetId(null);
-      fetchPresets();
-    }
-  }, [isOpen]);
-
-  const fetchPresets = async () => {
+  const fetchPresets = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await listFacilityPresets();
@@ -100,7 +89,18 @@ export default function FacilityPresetModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setView("list");
+      setNewPresetName("");
+      setSaveMode("new");
+      setSelectedOverwriteId(null);
+      setEditingPresetId(null);
+      fetchPresets();
+    }
+  }, [isOpen, fetchPresets]);
 
   const handleSaveNew = async () => {
     if (!newPresetName.trim()) return;
