@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, LineChart, FileText, Image, AlertTriangle, Loader2 } from "lucide-react";
+import { BarChart3, LineChart, FileText, Image as ImageIcon, AlertTriangle, Loader2 } from "lucide-react";
 import type { ScenarioData, KpiValue } from "@/types/homeTypes";
 import { isHomeAnalysisReady, isSimulationPipelineActive } from "@/types/homeTypes";
 import { useStaticData, useMetricsData } from "@/queries/homeQueries";
@@ -192,7 +192,7 @@ function HomePage() {
 
         <HomeAccordion
           title="Terminal Layout"
-          icon={<Image className="h-5 w-5 text-primary" />}
+          icon={<ImageIcon className="h-5 w-5 text-primary" aria-hidden="true" />}
           className="mt-4"
           open={true}
         >

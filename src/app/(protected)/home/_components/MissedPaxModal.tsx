@@ -424,7 +424,7 @@ export default function MissedPaxModal({ open, onClose, data, isLoading, totalMi
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [collapsedCarriers, setCollapsedCarriers] = useState<Set<string>>(new Set());
 
-  const flights        = data?.flights ?? [];
+  const flights = useMemo(() => data?.flights ?? [], [data?.flights]);
   const selectedFlight = flights.find(f => f.flight_key === selectedKey) ?? flights[0] ?? null;
 
   const grouped = useMemo(() => {

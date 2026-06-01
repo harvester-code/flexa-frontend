@@ -158,7 +158,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
       // 데이터가 없으면 선택값 초기화
       setSelectedFacilityValue('');
     }
-  }, [FACILITY_OPTIONS]);
+  }, [FACILITY_OPTIONS, selectedFacilityValue]);
 
   const ZONE_OPTIONS = useMemo(() => {
     if (!hourlyTrendsData || !selectedFacilityValue) return [];
@@ -732,7 +732,7 @@ function HomeChartHourlyTrends({ scenario, data, isLoading: propIsLoading }: Hom
 
     setLineChartData(newLineChartData);
     setChartLayout(newLayout);
-  }, [chartOption1, selectedFacilityValue, selectedZones, selectedFlights, hourlyTrendsData]);
+  }, [chartOption1, selectedFacilityValue, selectedZones, selectedFlights, hourlyTrendsData, noFlightData]);
 
   // 선택된 zone들의 라벨 생성
   const selectedZonesLabel = useMemo(() => {
