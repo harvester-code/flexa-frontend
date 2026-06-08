@@ -8,6 +8,7 @@ import type {
 } from "@/types/simulationTypes";
 import type { ChartData } from "@/types/api/common";
 import type { ParquetMetadataItem } from "@/types/parquet";
+import { remapPresetDates } from "../_components/facilities/helpers";
 // Removed convertToDecimal import - no longer converting to decimals
 
 // ==================== Passenger Types ====================
@@ -553,7 +554,28 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setDate: (date) =>
       set((state) => {
+        const prevDate = state.context.date;
+        if (prevDate === date) return;
+
         state.context.date = date;
+
+        // Flight 날짜 변경 시 process_flow period도 함께 이동 (복사 시나리오 등 날짜 불일치 방지)
+        if (state.process_flow.length > 0) {
+          state.process_flow = remapPresetDates(
+            state.process_flow,
+            date,
+            null,
+            null,
+          ).map((process) => ({
+            step: process.step,
+            name: normalizeProcessName(process.name),
+            travel_time_minutes: process.travel_time_minutes || 0,
+            process_time_seconds: process.process_time_seconds ?? null,
+            entry_conditions: process.entry_conditions || [],
+            zones: process.zones || {},
+          }));
+          state.facilityPresetVersion = (state.facilityPresetVersion ?? 0) + 1;
+        }
       }),
 
     setLastSavedAt: (timestamp) =>

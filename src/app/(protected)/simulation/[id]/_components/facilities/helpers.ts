@@ -73,6 +73,27 @@ function findPresetFlightDate(processFlow: ProcessStep[]): string | null {
   return latestDate;
 }
 
+/**
+ * remap 시 사용할 source 비행일을 결정합니다.
+ *
+ * sourceDate가 targetDate와 같지만 process_flow period에는 다른 날짜가 박혀 있으면
+ * (시나리오 복사 후 context.date만 변경된 경우) period에 박힌 날짜를 신뢰합니다.
+ */
+function resolvePresetSourceDate(
+  sourceDate: string | null,
+  targetDate: string,
+  processFlow: ProcessStep[],
+): string | null {
+  const inferredDate = findPresetFlightDate(processFlow);
+  if (!sourceDate) return inferredDate;
+
+  if (sourceDate === targetDate && inferredDate && inferredDate !== targetDate) {
+    return inferredDate;
+  }
+
+  return sourceDate;
+}
+
 /** 날짜만 offset일 이동 (로컬 날짜 기준 — toISOString()은 UTC 변환으로 시차 오류 발생) */
 function shiftDateStr(dateStr: string, offsetDays: number): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -180,7 +201,7 @@ export function remapPresetDates(
   if (!Array.isArray(processFlow) || !targetDate) return processFlow;
 
   // ── 1. 날짜 오프셋 계산 ──────────────────────────────────────────────────
-  const presetFlightDate = sourceDate ?? findPresetFlightDate(processFlow);
+  const presetFlightDate = resolvePresetSourceDate(sourceDate, targetDate, processFlow);
   const offsetDays = presetFlightDate
     ? Math.round(
         (new Date(targetDate).getTime() - new Date(presetFlightDate).getTime()) /
