@@ -176,7 +176,7 @@ export default function PassengerFilterConditions({
           const adjustedFlow = remapPresetDates(
             processFlow,
             contextData.date,
-            contextData.date, // sourceDate = targetDate → 날짜 시프트 없음, 경계 확장만 수행
+            null, // process_flow period에서 원본 비행일 자동 감지
             newTargetPeriod,
           );
           setProcessFlow(adjustedFlow);

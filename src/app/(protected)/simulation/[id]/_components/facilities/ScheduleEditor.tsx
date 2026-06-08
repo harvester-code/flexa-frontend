@@ -530,8 +530,8 @@ export default function OperatingScheduleEditor({
     console.log("first block period:", firstBlockPeriod ?? "(no blocks)");
     console.log("processFlow[0] keys:", Object.keys(processFlow[0] || {}));
 
-    // sourceDate = targetDate = contextDate → 날짜 시프트 없이 경계 조정만 수행
-    const adjusted = remapPresetDates(processFlow, contextDate, contextDate, newPeriod);
+    // sourceDate=null → process_flow period에서 원본 비행일 자동 감지 후 경계 조정
+    const adjusted = remapPresetDates(processFlow, contextDate, null, newPeriod);
 
     const adjFirstBlock = adjusted[0]
       ? Object.values(adjusted[0].zones || {})[0]
