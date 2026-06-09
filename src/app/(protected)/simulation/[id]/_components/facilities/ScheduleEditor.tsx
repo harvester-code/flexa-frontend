@@ -299,7 +299,9 @@ export default function OperatingScheduleEditor({
     return result;
   }, [cellBadges, validOptionsMap]);
 
-  // 불일치 요약: processFlow 전체를 직접 스캔 (탭 방문 여부와 무관하게 모든 조건 포함)
+  // 불일치 요약: processFlow 전체를 직접 스캔
+  // - 1차 탭(Travel Tax, Check In, …) + 2차 탭(A/B/C, …) 전부 포함
+  // - 탭을 열어본 적 없는 zone도 passenger_conditions 기준으로 집계
   // 구조: { category → Map<value, Set<"ProcessName / ZoneName">> }
   const invalidConditionsSummary = useMemo(() => {
     const summary: Record<string, Map<string, Set<string>>> = {};
@@ -463,6 +465,13 @@ export default function OperatingScheduleEditor({
               operating_schedule: {
                 ...facility.operating_schedule,
                 time_blocks: (facility.operating_schedule?.time_blocks || []).map((block: TimeBlock) => {
+                  const wasAffected = (block.passenger_conditions || []).some(
+                    (cond: PassengerCondition) =>
+                      getCategoryNameFromField(cond.field) === category &&
+                      (cond.values || []).includes(value),
+                  );
+                  if (!wasAffected) return block;
+
                   const newConditions = (block.passenger_conditions || [])
                     .map((cond: PassengerCondition) => {
                       if (getCategoryNameFromField(cond.field) !== category) return cond;
@@ -470,6 +479,16 @@ export default function OperatingScheduleEditor({
                       return newValues.length > 0 ? { ...cond, values: newValues } : null;
                     })
                     .filter((cond): cond is PassengerCondition => cond !== null);
+
+                  // 유일한 조건이었으면 All(빈 conditions) + 비활성(꺼짐)으로 전환
+                  if (newConditions.length === 0) {
+                    return {
+                      ...block,
+                      passenger_conditions: [],
+                      activate: false,
+                    };
+                  }
+
                   return { ...block, passenger_conditions: newConditions };
                 }),
               },
@@ -479,10 +498,39 @@ export default function OperatingScheduleEditor({
       ),
     }));
 
+    // UI badge 캐시에서도 제거 — useFacilityScheduleSync가 stale 뱃지로 store를 덮어쓰지 않도록
+    setAllZoneBadges((prev) => {
+      const next: Record<string, Record<string, CategoryBadge[]>> = {};
+      for (const [key, badges] of Object.entries(prev)) {
+        const updatedCells: Record<string, CategoryBadge[]> = {};
+        for (const [cellId, badgeList] of Object.entries(badges)) {
+          const filtered = badgeList
+            .map((badge) => {
+              if (badge.category !== category) return badge;
+              const newOptions = badge.options.filter((opt) => opt !== value);
+              return newOptions.length > 0 ? { ...badge, options: newOptions } : null;
+            })
+            .filter((badge): badge is CategoryBadge => badge !== null);
+          if (filtered.length > 0) updatedCells[cellId] = filtered;
+        }
+        next[key] = updatedCells;
+      }
+      return next;
+    });
+
+    // 모든 zone을 processFlow 기준으로 다시 초기화하도록 UI 캐시 무효화
+    setAllZoneDisabledCells({});
+    setInitializedKeys(new Set());
+
     setProcessFlow(updatedFlow);
     incrementFacilityPresetVersion();
     setPendingConditionRemoval(null);
-  }, [pendingConditionRemoval, processFlow, setProcessFlow, incrementFacilityPresetVersion]);
+  }, [
+    pendingConditionRemoval,
+    processFlow,
+    setProcessFlow,
+    incrementFacilityPresetVersion,
+  ]);
 
   // Generate Pax 재실행 시 시간 범위 변화에 따라 Facility 설정 경계값 확장/클리핑
   const prevChartRangeRef = useRef<string>("");
@@ -1243,6 +1291,7 @@ export default function OperatingScheduleEditor({
     setCellProcessTimes,
     appliedTimeUnit,
     processFlow,
+    facilityPresetVersion,
   });
 
   // 🛡️ 안전성 검사 강화
@@ -1669,7 +1718,7 @@ export default function OperatingScheduleEditor({
                 {pendingConditionRemoval && pendingConditionRemoval.locations.length > 0 && (
                   <> Affected: {pendingConditionRemoval.locations.join(", ")}.</>
                 )}
-                {" "}If a time block had only this condition, it will become available to all passengers.
+                {" "}If a time block had only this condition, that slot will turn off (All, disabled) instead of accepting all passengers.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
