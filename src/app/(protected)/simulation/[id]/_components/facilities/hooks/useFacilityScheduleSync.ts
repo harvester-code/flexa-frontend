@@ -31,6 +31,7 @@ interface UseFacilityScheduleSyncProps {
   setCellProcessTimes: (processTimes: Record<string, number>) => void;
   appliedTimeUnit: number;
   processFlow: ProcessStep[];
+  facilityPresetVersion?: number;
 }
 
 export function useFacilityScheduleSync({
@@ -50,8 +51,10 @@ export function useFacilityScheduleSync({
   setCellProcessTimes,
   appliedTimeUnit,
   processFlow,
+  facilityPresetVersion = 0,
 }: UseFacilityScheduleSyncProps) {
   const timeSlotSignatureRef = useRef<string>("");
+  const lastPresetVersionRef = useRef<number>(facilityPresetVersion);
 
   // Sync facility schedules with store
   useEffect(() => {
@@ -63,6 +66,17 @@ export function useFacilityScheduleSync({
 
     // Create unique key for this process-zone combination
     const initKey = `${selectedProcessIndex}-${selectedZone}`;
+
+    // processFlow가 외부에서 갱신된 경우(조건 제거 등) stale UI 뱃지로 덮어쓰지 않도록 재초기화
+    if (lastPresetVersionRef.current !== facilityPresetVersion) {
+      lastPresetVersionRef.current = facilityPresetVersion;
+      setInitializedKeys((prev) => {
+        if (!prev.has(initKey)) return prev;
+        const next = new Set(prev);
+        next.delete(initKey);
+        return next;
+      });
+    }
     const storeState = useSimulationStore.getState();
     const contextDate =
       storeState?.context?.date || new Date().toISOString().split("T")[0];
@@ -161,5 +175,6 @@ export function useFacilityScheduleSync({
     appliedTimeUnit,
     isPreviousDay,
     initializeDisabledCellsFromPeriods,
+    facilityPresetVersion,
   ]); // All necessary dependencies included
 }
