@@ -236,7 +236,7 @@ const ScenarioListContent: React.FC<ScenarioListProps> = ({
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
   const [selectedTerminals, setSelectedTerminals] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("metadata_updated_at");
+  const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const airportOptions = React.useMemo(() => {
