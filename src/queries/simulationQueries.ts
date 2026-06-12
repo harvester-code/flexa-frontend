@@ -25,8 +25,8 @@ const useScenarios = () => {
         const normalized: ScenarioData[] = extractScenarioArray(data);
 
         const scenarios = [...normalized].sort((a, b) => {
-          const aTime = a.metadata_updated_at ? new Date(a.metadata_updated_at).getTime() : 0;
-          const bTime = b.metadata_updated_at ? new Date(b.metadata_updated_at).getTime() : 0;
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
           return bTime - aTime;
         });
 
